@@ -1,0 +1,70 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum EntryType {
+  WALLET_RECHARGE
+  CONSULTATION_DEBIT
+  ASTROLOGER_CREDIT
+  PLATFORM_COMMISSION
+  REFUND
+}
+
+enum OrderStatus {
+  CREATED
+  PAID
+  FAILED
+}
+
+model User {
+  id            String         @id @default(uuid())
+  phone         String         @unique
+  name          String?
+  walletBalance Decimal        @default(0.00) @db.Decimal(12, 2)
+  orders        PaymentOrder[]
+  ledgerEntries WalletLedger[]
+  createdAt     DateTime       @default(now())
+}
+
+model Astrologer {
+  id             String         @id @default(uuid())
+  name           String
+  ratePerMinute  Decimal        @db.Decimal(10, 2)
+  pendingPayout  Decimal        @default(0.00) @db.Decimal(12, 2)
+  ledgerEntries  WalletLedger[]
+  createdAt      DateTime       @default(now())
+}
+
+model PaymentOrder {
+  id                String      @id @default(uuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  amount            Decimal     @db.Decimal(12, 2)
+  currency          String      @default("INR")
+  razorpayOrderId   String      @unique
+  razorpayPaymentId String?     @unique
+  status            OrderStatus @default(CREATED)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model WalletLedger {
+  id             String      @id @default(uuid())
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id])
+  astrologerId   String?
+  astrologer     Astrologer? @relation(fields: [astrologerId], references: [id])
+  amount         Decimal     @db.Decimal(12, 2)
+  entryType      EntryType
+  idempotencyKey String      @unique
+  referenceId    String?
+  createdAt      DateTime    @default(now())
+
+  @@index([userId, createdAt])
+  @@index([astrologerId, createdAt])
+}

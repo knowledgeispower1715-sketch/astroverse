@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astrotalk Pro - Universal Vedic Astrology Suite</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #FFFDF0; color: #333; padding-bottom: 40px; }
+    header { background-color: #8B0000; color: #FFD700; text-align: center; padding: 18px 10px; border-bottom: 3px solid #D4AF37; }
+    header h1 { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
+    header p { color: #FFF; font-size: 13px; margin-top: 4px; }
+    
+    .nav-tabs { display: flex; background: #5A0000; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 14px 10px; color: #E0E0E0; background: none; border: none; font-size: 13px; font-weight: bold; cursor: pointer; text-align: center; border-bottom: 3px solid transparent; white-space: nowrap; }
+    .tab-btn.active { color: #FFD700; border-bottom-color: #FFD700; background: rgba(255,255,255,0.05); }
+
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .toggle-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
+    .toggle-btn { padding: 8px 16px; border-radius: 20px; border: 1px solid #8B0000; background: #FFF; color: #8B0000; font-size: 12px; font-weight: bold; cursor: pointer; }
+    .toggle-btn.active { background: #8B0000; color: #FFF; }
+
+    .chart-container { display: flex; justify-content: center; margin: 12px 0; }
+    svg { background: #FFFDF0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+    .card { background: #FFF; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #8B0000; }
+    .card h3 { font-size: 16px; color: #8B0000; margin-bottom: 6px; }
+    .card h4 { font-size: 14px; color: #2C3E50; margin-bottom: 4px; }
+    .card p { font-size: 13px; color: #555; line-height: 1.5; }
+    .highlight-green { color: #28A745; font-weight: bold; }
+    .highlight-gold { color: #B8860B; font-weight: bold; }
+
+    .timeline-item { display: flex; justify-content: space-between; align-items: center; background: #FFF; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #FFA500; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .timeline-time { font-size: 12px; color: #888; }
+    .timeline-title { font-size: 14px; font-weight: bold; color: #222; margin: 2px 0; }
+    .timeline-desc { font-size: 12px; color: #666; }
+    .score-badge { font-weight: bold; font-size: 12px; padding: 4px 8px; border-radius: 10px; background: #FFD700; color: #000; }
+
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+    .chip { background: #F0E6D2; border: 1px solid #D4C5A9; padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: bold; color: #5A0000; cursor: pointer; }
+    .chip:hover { background: #8B0000; color: #FFF; }
+
+    .chat-input-row { display: flex; gap: 8px; margin-top: 10px; }
+    .chat-input { flex: 1; padding: 10px 14px; border: 1px solid #DDD; border-radius: 20px; font-size: 13px; outline: none; }
+    .chat-submit { background: #8B0000; color: #FFD700; border: none; padding: 0 18px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+
+    .ai-bubble { background: #FFFDF9; border-left: 4px solid #FFD700; padding: 14px; border-radius: 8px; margin-top: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .remedy-box { background: #FDF6E2; padding: 10px; border-radius: 6px; margin-top: 10px; border-left: 3px solid #B8860B; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>ASTROTALK PRO</h1>
+    <p>Authentic Parashari Vedic Jyotish & AI Astrologer</p>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('kundli')">Kundli & D9</button>
+    <button class="tab-btn" onclick="switchTab('muhurta')">24h Horas & Muhurta</button>
+    <button class="tab-btn" onclick="switchTab('milan')">36-Guna Milan</button>
+    <button class="tab-btn" onclick="switchTab('ai')">Ask AI Astrologer</button>
+  </div>
+
+  <div class="container">
+    <!-- TAB 1: KUNDLI -->
+    <div id="kundli-tab" class="tab-content active">
+      <div class="toggle-row">
+        <button id="btn-d1" class="toggle-btn active" onclick="setChart('D1')">D1 Rashi Chart (Birth)</button>
+        <button id="btn-d9" class="toggle-btn" onclick="setChart('D9')">D9 Navamsha (Spouse & Destiny)</button>
+      </div>
+
+      <div class="chart-container">
+        <svg id="kundli-svg" width="320" height="320" viewBox="0 0 100 100">
+          <rect x="0" y="0" width="100" height="100" fill="#FFFDF0" stroke="#8B0000" stroke-width="2"/>
+          <line x1="0" y1="0" x2="100" y2="100" stroke="#8B0000" stroke-width="1"/>
+          <line x1="100" y1="0" x2="0" y2="100" stroke="#8B0000" stroke-width="1"/>
+          <line x1="50" y1="0" x2="0" y2="50" stroke="#8B0000" stroke-width="1"/>
+          <line x1="0" y1="50" x2="50" y2="100" stroke="#8B0000" stroke-width="1"/>
+          <line x1="50" y1="100" x2="100" y2="50" stroke="#8B0000" stroke-width="1"/>
+          <line x1="100" y1="50" x2="50" y2="0" stroke="#8B0000" stroke-width="1"/>
+          
+          <text id="h1-text" x="50" y="42" font-size="5" fill="#B22222" font-weight="bold" text-anchor="middle">1 Jup</text>
+          <text id="h2-text" x="28" y="22" font-size="4" fill="#333" text-anchor="middle">2</text>
+          <text id="h4-text" x="25" y="52" font-size="4" fill="#333" text-anchor="middle">4 Ket Sat</text>
+          <text id="h5-text" x="25" y="78" font-size="4" fill="#333" text-anchor="middle">5 Moo</text>
+          <text id="h7-text" x="50" y="75" font-size="4" fill="#333" text-anchor="middle">7</text>
+          <text id="h9-text" x="75" y="78" font-size="4" fill="#333" text-anchor="middle">9 Mar</text>
+          <text id="h10-text" x="75" y="52" font-size="4" fill="#333" text-anchor="middle">10 Rah</text>
+          <text id="h12-text" x="72" y="22" font-size="4" fill="#333" text-anchor="middle">12 Sun Mer</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <h3>Active Vimshottari Dasha (Timing of Life Events)</h3>
+        <h4>Jupiter Maha Dasha — Mercury Antar Dasha</h4>
+        <p>Active until: 2028-04-12 | Significance: Wealth generation, higher intellect, and expansion in leadership responsibilities.</p>
+      </div>
+
+      <div class="card">
+        <h3>Classical Doshas & Prescribed Remedies</h3>
+        <p class="highlight-green">Manglik Dosha: Cancelled (Anshik / No Affliction)</p>
+        <p>Kalsarp Yoga: Anant Kalsarp (Mitigated by benefic Jupiter in 1st House)</p>
+        <p class="highlight-gold" style="margin-top: 6px;">Lucky Gemstone: Yellow Sapphire (Pukhraj) in Gold on Thursday</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: MUHURTA & HORAS -->
+    <div id="muhurta-tab" class="tab-content">
+      <div class="card" style="border-left-color: #28A745;">
+        <h3 style="color: #28A745;">Today's Peak Auspicious Window</h3>
+        <h4>Abhijit Muhurta: 11:48 AM – 12:36 PM</h4>
+        <p>The single most powerful window of the day to sign agreements, launch businesses, or conduct investments.</p>
+      </div>
+
+      <h3 style="margin: 16px 0 10px; color: #8B0000;">24-Hour Planetary Horas & Productivity</h3>
+      <div class="timeline-item" style="border-left-color: #FFA500;">
+        <div>
+          <div class="timeline-time">06:24 AM – 07:21 AM</div>
+          <div class="timeline-title">Hora Lord: Sun</div>
+          <div class="timeline-desc">Government Work, Executive Leadership & Strategy</div>
+        </div>
+        <div class="score-badge" style="background: #FFA500; color: #FFF;">70%</div>
+      </div>
+
+      <div class="timeline-item" style="border-left-color: #FF69B4;">
+        <div>
+          <div class="timeline-time">07:21 AM – 08:18 AM</div>
+          <div class="timeline-title">Hora Lord: Venus</div>
+          <div class="timeline-desc">Creative Work, Romance & Luxury Purchases</div>
+        </div>
+        <div class="score-badge" style="background: #FF69B4; color: #FFF;">90%</div>
+      </div>
+
+      <div class="timeline-item" style="border-left-color: #00CED1;">
+        <div>
+          <div class="timeline-time">08:18 AM – 09:15 AM</div>
+          <div class="timeline-title">Hora Lord: Mercury</div>
+          <div class="timeline-desc">Trading, Contracts, Negotiations & Tech</div>
+        </div>
+        <div class="score-badge" style="background: #00CED1; color: #FFF;">85%</div>
+      </div>
+
+      <div class="timeline-item" style="border-left-color: #FFD700;">
+        <div>
+          <div class="timeline-time">09:15 AM – 10:12 AM</div>
+          <div class="timeline-title">Hora Lord: Jupiter</div>
+          <div class="timeline-desc">Wealth, Financial Investments & Wisdom Decisions</div>
+        </div>
+        <div class="score-badge" style="background: #FFD700; color: #000;">95%</div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MILAN -->
+    <div id="milan-tab" class="tab-content">
+      <div class="card" style="text-align: center; border-left-color: #28A745;">
+        <h3>Kundli Milan Compatibility Result</h3>
+        <h1 style="color: #28A745; font-size: 38px; margin: 8px 0;">29.5 / 36</h1>
+        <h4>Verdict: Highly Auspicious Match</h4>
+      </div>
+
+      <div class="card">
+        <h3>Ashtakoota 8-Factor Score Breakdown</h3>
+        <p style="margin: 4px 0;">1. <strong>Varna</strong> (Spiritual Alignment): 1 / 1</p>
+        <p style="margin: 4px 0;">2. <strong>Vashya</strong> (Mutual Attraction): 2 / 2</p>
+        <p style="margin: 4px 0;">3. <strong>Tara</strong> (Health & Longevity): 3 / 3</p>
+        <p style="margin: 4px 0;">4. <strong>Yoni</strong> (Biological Affinity): 3 / 4</p>
+        <p style="margin: 4px 0;">5. <strong>Graha Maitri</strong> (Psychological Bond): 4 / 5</p>
+        <p style="margin: 4px 0;">6. <strong>Gana</strong> (Temperament): 6 / 6</p>
+        <p style="margin: 4px 0;">7. <strong>Bhakoot</strong> (Emotional Welfare): 7 / 7</p>
+        <p style="margin: 4px 0;">8. <strong>Nadi</strong> (Genetic Harmony): 8 / 8 <span class="highlight-green">(No Nadi Dosha)</span></p>
+      </div>
+    </div>
+
+    <!-- TAB 4: AI ASTROLOGER -->
+    <div id="ai-tab" class="tab-content">
+      <div class="card">
+        <h3>Ask Astro-Expert AI</h3>
+        <p>Grounded in your exact birth chart (Sagittarius Lagna, Aries Moon) and current planetary transits.</p>
+        
+        <div class="chips">
+          <div class="chip" onclick="askPreset('career')">💼 Career & Promotion</div>
+          <div class="chip" onclick="askPreset('marriage')">💍 Marriage & Spouse</div>
+          <div class="chip" onclick="askPreset('wealth')">💰 Wealth & Investments</div>
+        </div>
+
+        <div class="chat-input-row">
+          <input id="ai-input" class="chat-input" type="text" placeholder="Or ask your personal question...">
+          <button class="chat-submit" onclick="askCustom()">Ask</button>
+        </div>
+      </div>
+
+      <div id="ai-result" class="ai-bubble" style="display: none;">
+        <h4 id="ai-result-category" style="color: #8B0000; margin-bottom: 6px;">Career Prediction</h4>
+        <p id="ai-result-text" style="line-height: 1.6; color: #2C3E50;"></p>
+        <div class="remedy-box">
+          <strong style="color: #8B0000; font-size: 12px;">Prescribed Vedic Remedy:</strong>
+          <p id="ai-result-remedy" style="font-size: 12px; margin-top: 2px; color: #444;"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId + '-tab').classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function setChart(type) {
+      document.getElementById('btn-d1').classList.toggle('active', type === 'D1');
+      document.getElementById('btn-d9').classList.toggle('active', type === 'D9');
+
+      if (type === 'D1') {
+        document.getElementById('h1-text').textContent = '1 Jup';
+        document.getElementById('h4-text').textContent = '4 Ket Sat';
+        document.getElementById('h5-text').textContent = '5 Moo';
+        document.getElementById('h9-text').textContent = '9 Mar';
+        document.getElementById('h10-text').textContent = '10 Rah';
+        document.getElementById('h12-text').textContent = '12 Sun Mer';
+      } else {
+        document.getElementById('h1-text').textContent = '1 Sun';
+        document.getElementById('h4-text').textContent = '4';
+        document.getElementById('h5-text').textContent = '5';
+        document.getElementById('h9-text').textContent = '9 Moo';
+        document.getElementById('h10-text').textContent = '10 Mar';
+        document.getElementById('h12-text').textContent = '12 Jup';
+      }
+    }
+
+    const readings = {
+      career: {
+        cat: "Career & Leadership Analysis",
+        text: "Based on your Sagittarius Lagna and Aries Moon, your 10th House of profession is tenanted by Rahu and strongly aspected by benefic Jupiter. You are in the auspicious Jupiter Mahadasha cycle. Transiting Jupiter is currently casting a benefic trine on your natal career house, signaling significant promotion opportunities, leadership elevation, and successful career transitions.",
+        remedy: "Offer water to the rising Sun daily and recite Aditya Hridaya Stotra on Sundays."
+      },
+      marriage: {
+        cat: "Marriage & Partnership Analysis",
+        text: "Analyzing your 7th House of partnership in both D1 Rashi and D9 Navamsha charts: your 7th house is unobstructed, and your Manglik status is Cancelled (Anshik). Your future spouse will be intellectually inclined, supportive, and career-driven. Marriage prospects peak as Jupiter aspects your 7th and 11th houses.",
+        remedy: "Wear a 5 Mukhi Rudraksha and perform Vishnu Sahasranama on Thursdays."
+      },
+      wealth: {
+        cat: "Wealth & Financial Growth Analysis",
+        text: "With Sagittarius Ascendant, your 2nd house of accumulated wealth and 11th house of recurrent gains are blessed by a powerful Dhana Yoga. Long-term assets, real estate, and capital investments will yield exceptional compounding returns under this Jupiter cycle.",
+        remedy: "Yellow Sapphire (Pukhraj) in gold on Thursday is your primary wealth gemstone."
+      }
+    };
+
+    function askPreset(category) {
+      const data = readings[category];
+      document.getElementById('ai-result').style.display = 'block';
+      document.getElementById('ai-result-category').textContent = data.cat;
+      document.getElementById('ai-result-text').textContent = data.text;
+      document.getElementById('ai-result-remedy').textContent = data.remedy;
+    }
+
+    function askCustom() {
+      const query = document.getElementById('ai-input').value;
+      if (!query) return;
+      askPreset('career');
+    }
+  </script>
+</body>
+</html>

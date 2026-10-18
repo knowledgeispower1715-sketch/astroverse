@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: astro_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: astro_admin
+      POSTGRES_PASSWORD: astro_secret_password
+      POSTGRES_DB: astrotalk_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U astro_admin -d astrotalk_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: astro_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  kundli-engine:
+    build:
+      context: ./services/kundli-engine
+      dockerfile: Dockerfile
+    container_name: astro_kundli_engine
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    depends_on:
+      - redis
+
+  wallet-service:
+    build:
+      context: ./services/wallet-service
+      dockerfile: Dockerfile
+    container_name: astro_wallet_service
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: "postgresql://astro_admin:astro_secret_password@postgres:5432/astrotalk_db?schema=public"
+      RAZORPAY_KEY_ID: "rzp_test_placeholder"
+      RAZORPAY_KEY_SECRET: "secret_placeholder"
+      PORT: 5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  consultation-service:
+    build:
+      context: ./services/consultation-service
+      dockerfile: Dockerfile
+    container_name: astro_consultation_service
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      REDIS_URL: "redis://redis:6379"
+      WALLET_SERVICE_URL: "http://wallet-service:5000"
+      PORT: 4000
+    depends_on:
+      redis:
+        condition: service_healthy
+      wallet-service:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
