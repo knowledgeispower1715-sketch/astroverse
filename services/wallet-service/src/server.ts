@@ -27,16 +27,32 @@ app.post('/api/auth/request-otp', async (req: Request, res: Response) => {
   const { identifier, type } = req.body; // type: "phone" | "email"
   if (!identifier) return res.status(400).json({ error: 'IDENTIFIER_REQUIRED' });
 
+  const cleanId = String(identifier).trim();
+  const isEmail = cleanId.includes('@');
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^\+?[0-9]{10,15}$/;
+
+  if (isEmail) {
+    if (!emailRegex.test(cleanId)) {
+      return res.status(400).json({ error: 'INVALID_IDENTIFIER_FORMAT', message: 'Invalid email address format.' });
+    }
+  } else {
+    const digitsOnly = cleanId.replace(/[\s\-\(\)]/g, '');
+    if (!phoneRegex.test(digitsOnly)) {
+      return res.status(400).json({ error: 'INVALID_IDENTIFIER_FORMAT', message: 'Invalid phone number format. Must be 10-15 digits.' });
+    }
+  }
+
   // Generate 6-digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
-  otpStore.set(identifier, { otp, expiresAt });
+  otpStore.set(cleanId, { otp, expiresAt });
 
-  console.log(`[AUTH_OTP_DISPATCH] Sent OTP for ${type} ${identifier}: ${otp}`);
+  console.log(`[AUTH_OTP_DISPATCH] Sent OTP for ${isEmail ? 'email' : 'phone'} ${cleanId}: ${otp}`);
 
   res.json({
     status: 'OTP_SENT',
-    message: `Verification code sent to ${identifier}.`,
+    message: `Verification code sent to ${cleanId}.`,
     cooldownSeconds: 60,
     // In dev/demo environment without live Twilio/SendGrid credentials, expose preview hint
     devPreviewOtp: otp
@@ -67,7 +83,7 @@ app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
           phone: isEmail ? null : identifier,
           email: isEmail ? identifier : null,
           displayName: displayName || (isEmail ? identifier.split('@')[0] : `User_${identifier.slice(-4)}`),
-          walletBalance: 150.00 // Promotional introductory credit
+          walletBalance: 0.00 // Strict zero balance on registration
         }
       });
     }
@@ -92,7 +108,12 @@ app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
 
 app.post('/api/profiles', async (req: Request, res: Response) => {
   const { userId, profileName, relationship, dateOfBirth, timeOfBirth, birthplaceName, latitude, longitude } = req.body;
-  if (!userId || !profileName || !dateOfBirth) return res.status(400).json({ error: 'REQUIRED_FIELDS_MISSING' });
+  if (!userId || !profileName || !dateOfBirth || !timeOfBirth || !birthplaceName || latitude == null || longitude == null) {
+    return res.status(400).json({
+      error: 'REQUIRED_FIELDS_MISSING',
+      message: 'userId, profileName, dateOfBirth, timeOfBirth, birthplaceName, latitude, and longitude are required.'
+    });
+  }
 
   try {
     const profile = await prisma.birthProfile.create({
@@ -101,10 +122,10 @@ app.post('/api/profiles', async (req: Request, res: Response) => {
         profileName,
         relationship: relationship || 'Self',
         dateOfBirth: new Date(dateOfBirth),
-        timeOfBirth: timeOfBirth || '12:00',
-        birthplaceName: birthplaceName || 'New Delhi, India',
-        latitude: latitude || 28.6139,
-        longitude: longitude || 77.2090
+        timeOfBirth,
+        birthplaceName,
+        latitude: Number(latitude),
+        longitude: Number(longitude)
       }
     });
     res.json(profile);

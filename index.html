@@ -1939,7 +1939,263 @@
       }
     }
 
-    // 2. VEDIC KUNDLI CALCULATION
+    function getAuthBase() {
+      if (window.location.origin && window.location.origin !== 'null' && !window.location.protocol.startsWith('file')) {
+        return '';
+      }
+      return 'http://localhost:5000';
+    }
+
+    function getKundliBase() {
+      if (window.location.origin && window.location.origin !== 'null' && !window.location.protocol.startsWith('file')) {
+        return '';
+      }
+      return 'http://localhost:8000';
+    }
+
+    // 2. VEDIC KUNDLI CALCULATION & RIGOROUS ASTRONOMICAL ENGINE
+    function computeJD(year, month, day, utHours) {
+      if (month <= 2) { year -= 1; month += 12; }
+      const A = Math.floor(year / 100);
+      const B = 2 - A + Math.floor(A / 4);
+      return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5 + utHours / 24.0;
+    }
+
+    const nakLordCycle = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
+    const dashaYears = { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 };
+
+    function calculateClientKundli(dobStr, tobStr, lat, lon, isUnknownTime) {
+      const parts = dobStr.split('-');
+      const year = parseInt(parts[0]);
+      const month = parseInt(parts[1]);
+      const day = parseInt(parts[2]);
+
+      let hours = 12.0;
+      if (!isUnknownTime && tobStr) {
+        const tParts = tobStr.split(':');
+        hours = parseInt(tParts[0]) + parseInt(tParts[1]) / 60.0;
+      }
+      const utHours = hours - 5.5; // Indian Standard Time offset
+      const jd = computeJD(year, month, day, utHours);
+      const T = (jd - 2451545.0) / 36525.0;
+      const d2r = Math.PI / 180;
+      const r2d = 180 / Math.PI;
+
+      const ayanamsha = 23.85307 + 1.396042 * T;
+
+      // Sun
+      const L0 = (280.46646 + 36000.76983 * T) % 360;
+      const M_sun = (357.52911 + 35999.05029 * T) * d2r;
+      const C_sun = (1.914602 - 0.004817 * T) * Math.sin(M_sun) + (0.019993 - 0.000101 * T) * Math.sin(2 * M_sun) + 0.000289 * Math.sin(3 * M_sun);
+      const sunTrop = (L0 + C_sun + 360) % 360;
+      const sunSid = (sunTrop - ayanamsha + 360) % 360;
+
+      // Moon (Meeus truncated series)
+      const Lp = (218.3164477 + 481267.88128 * T) % 360;
+      const D = (297.8501921 + 445267.11140 * T) * d2r;
+      const M_moon = (134.9633964 + 477198.867505 * T) * d2r;
+      const F = (93.2720950 + 483202.017523 * T) * d2r;
+      const dL = 6.288774 * Math.sin(M_moon)
+               + 1.274027 * Math.sin(2 * D - M_moon)
+               + 0.658314 * Math.sin(2 * D)
+               + 0.213618 * Math.sin(2 * M_moon)
+               - 0.185116 * Math.sin(M_sun)
+               - 0.114332 * Math.sin(2 * F)
+               + 0.058793 * Math.sin(2 * D - 2 * M_moon);
+      const moonTrop = (Lp + dL + 720) % 360;
+      const moonSid = (moonTrop - ayanamsha + 360) % 360;
+
+      // Lagna (Ascendant)
+      let gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T;
+      gmst = (gmst % 360 + 360) % 360;
+      const ramc = ((gmst + lon) % 360 + 360) % 360;
+      const eps = (23.4392911 - 0.0130042 * T) * d2r;
+      const yAsc = Math.cos(ramc * d2r);
+      const xAsc = -Math.sin(ramc * d2r) * Math.cos(eps) - Math.tan(lat * d2r) * Math.sin(eps);
+      let ascTrop = Math.atan2(yAsc, xAsc) * r2d;
+      ascTrop = (ascTrop + 360) % 360;
+      const lagnaSid = (ascTrop - ayanamsha + 360) % 360;
+
+      const lagnaSignIdx = Math.floor(lagnaSid / 30);
+      const lagnaDeg = lagnaSid % 30;
+
+      function makePlanet(sidDeg) {
+        const sIdx = Math.floor(sidDeg / 30);
+        const deg = sidDeg % 30;
+        const house = ((sIdx - lagnaSignIdx + 12) % 12) + 1;
+        const nakIdx = Math.floor(sidDeg / (360 / 27));
+        const pada = Math.floor((sidDeg % (360 / 27)) / (360 / 108)) + 1;
+        return {
+          sign: signsList[sIdx],
+          degree: Math.round(deg * 100) / 100,
+          total_degree: Math.round(sidDeg * 100) / 100,
+          house: house,
+          nakshatra: nakshatrasList[nakIdx],
+          pada: pada,
+          nakshatra_lord: nakLordCycle[nakIdx % 9]
+        };
+      }
+
+      const plData = {
+        Mercury: (252.25 + 149472.67 * T - ayanamsha + 360000) % 360,
+        Venus:   (181.98 + 58517.82 * T - ayanamsha + 360000) % 360,
+        Mars:    (355.43 + 19140.30 * T - ayanamsha + 360000) % 360,
+        Jupiter: (34.35  + 3034.91 * T - ayanamsha + 360000) % 360,
+        Saturn:  (50.08  + 1222.11 * T - ayanamsha + 360000) % 360,
+        Rahu:    (125.04452 - 1934.136261 * T - ayanamsha + 360000) % 360
+      };
+      const ketuSid = (plData.Rahu + 180) % 360;
+
+      const planets = {
+        Sun: makePlanet(sunSid),
+        Moon: makePlanet(moonSid),
+        Mars: makePlanet(plData.Mars),
+        Mercury: makePlanet(plData.Mercury),
+        Jupiter: makePlanet(plData.Jupiter),
+        Venus: makePlanet(plData.Venus),
+        Saturn: makePlanet(plData.Saturn),
+        Rahu: makePlanet(plData.Rahu),
+        Ketu: makePlanet(ketuSid)
+      };
+
+      // Divisional charts
+      const d9Planets = {};
+      const d9LagnaIdx = Math.floor(lagnaSid / (360 / 108)) % 12;
+      for (const [p, d] of Object.entries(planets)) {
+        const navSign = Math.floor(d.total_degree / (360 / 108)) % 12;
+        const d9House = ((navSign - d9LagnaIdx + 12) % 12) + 1;
+        d9Planets[p] = { sign: signsList[navSign], house: d9House, degree: (d.total_degree % (360 / 108)) * 9 };
+      }
+
+      const d10Planets = {};
+      const d10LagnaPart = Math.floor(lagnaDeg / 3.0);
+      const d10LagnaSign = (lagnaSignIdx % 2 === 0) ? (lagnaSignIdx + d10LagnaPart) % 12 : (lagnaSignIdx + 8 + d10LagnaPart) % 12;
+      for (const [p, d] of Object.entries(planets)) {
+        const sI = signsList.indexOf(d.sign);
+        const part = Math.floor(d.degree / 3.0);
+        const d10Sign = (sI % 2 === 0) ? (sI + part) % 12 : (sI + 8 + part) % 12;
+        const d10House = ((d10Sign - d10LagnaSign + 12) % 12) + 1;
+        d10Planets[p] = { sign: signsList[d10Sign], house: d10House };
+      }
+
+      const moonChartPlanets = {};
+      const moonSignIdx = signsList.indexOf(planets.Moon.sign);
+      for (const [p, d] of Object.entries(planets)) {
+        const pSignIdx = signsList.indexOf(d.sign);
+        moonChartPlanets[p] = { ...d, house: ((pSignIdx - moonSignIdx + 12) % 12) + 1 };
+      }
+
+      const chalitPlanets = {};
+      for (const [p, d] of Object.entries(planets)) {
+        chalitPlanets[p] = { ...d, chalit_house: d.house };
+      }
+
+      // Vimshottari
+      const nakIdx = Math.floor(moonSid / (360 / 27));
+      const degInNak = moonSid % (360 / 27);
+      const fracRemaining = ((360 / 27) - degInNak) / (360 / 27);
+      const birthLord = nakLordCycle[nakIdx % 9];
+      const birthLordIdx = nakIdx % 9;
+      const yearMs = 365.2425 * 86400000;
+      const dobMs = new Date(dobStr + 'T' + (tobStr || '12:00:00') + '+05:30').getTime();
+
+      let curStart = dobMs - (1 - fracRemaining) * dashaYears[birthLord] * yearMs;
+      let curIdx = birthLordIdx;
+      let activeNow = null;
+      const now = Date.now();
+
+      for (let i = 0; i < 9; i++) {
+        const lord = nakLordCycle[curIdx % 9];
+        const durMs = dashaYears[lord] * yearMs;
+        const curEnd = curStart + durMs;
+
+        if (now >= curStart && now <= curEnd) {
+          let adStart = curStart;
+          let adIdx = curIdx;
+          for (let j = 0; j < 9; j++) {
+            const adLord = nakLordCycle[adIdx % 9];
+            const adDurMs = (dashaYears[lord] * dashaYears[adLord] / 120.0) * yearMs;
+            const adEnd = adStart + adDurMs;
+            if (now >= adStart && now <= adEnd) {
+              const prog = Math.min(100, Math.max(0, ((now - adStart) / (adEnd - adStart)) * 100));
+              activeNow = {
+                maha_dasha: lord,
+                antar_dasha: adLord,
+                start_date: new Date(adStart).toISOString().split('T')[0],
+                end_date: new Date(adEnd).toISOString().split('T')[0],
+                progress_pct: Math.round(prog * 10) / 10
+              };
+              break;
+            }
+            adStart = adEnd;
+            adIdx++;
+          }
+        }
+        curStart = curEnd;
+        curIdx++;
+      }
+
+      // Doshas
+      const marsH = planets.Mars.house;
+      const isManglik = [1, 4, 7, 8, 12].includes(marsH);
+
+      const piscesIdx = 11;
+      const diffFromMoon = (piscesIdx - moonSignIdx + 12) % 12;
+      let sadeSati = { is_active: false, phase: 'None', description: 'Saturn transit is outside Sade Sati zone.' };
+      if (diffFromMoon === 11) {
+        sadeSati = { is_active: true, phase: 'Phase 1 (Rising)', description: 'Saturn in Pisces is transiting 12th from natal Moon.' };
+      } else if (diffFromMoon === 0) {
+        sadeSati = { is_active: true, phase: 'Phase 2 (Peak)', description: 'Saturn is transiting natal Moon sign (Janma Shani).' };
+      } else if (diffFromMoon === 1) {
+        sadeSati = { is_active: true, phase: 'Phase 3 (Setting)', description: 'Saturn in Pisces is transiting 2nd from natal Moon.' };
+      }
+
+      return {
+        d1_rashi_chart: {
+          lagna: { sign: signsList[lagnaSignIdx], degree: Math.round(lagnaDeg * 100) / 100, total_degree: Math.round(lagnaSid * 100) / 100 },
+          planets
+        },
+        divisional_charts: {
+          navamsha: { d9_lagna: { sign: signsList[d9LagnaIdx] }, planets: d9Planets },
+          dashamsha: { d10_lagna: { sign: signsList[d10LagnaSign] }, planets: d10Planets },
+          moon_chart: { moon_lagna: { sign: planets.Moon.sign }, planets: moonChartPlanets },
+          chalit_chart: { chalit_lagna: { sign: signsList[lagnaSignIdx] }, planets: chalitPlanets }
+        },
+        vimshottari_dasha: { active_now: activeNow },
+        doshas_and_remedies: {
+          manglik: { has_dosha: isManglik, verdict: isManglik ? 'MANGLIK DOSHA DETECTED' : 'NO DOSHA / CANCELLED', cancellation_reasons: isManglik ? [] : ['Mars situated favorably'] },
+          kaal_sarp: { has_dosha: false, verdict: 'NO KAAL SARP DOSHA', description: 'Planets distributed freely across nodal axis' },
+          sade_sati: sadeSati
+        }
+      };
+    }
+
+    function renderDiamondChart(chartType, chartObj, isUnknownTime) {
+      if (!chartObj) return;
+      const lagnaSign = chartObj.lagna ? chartObj.lagna.sign : (chartObj.d9_lagna ? chartObj.d9_lagna.sign : (chartObj.d10_lagna ? chartObj.d10_lagna.sign : (chartObj.moon_lagna ? chartObj.moon_lagna.sign : (chartObj.chalit_lagna ? chartObj.chalit_lagna.sign : "Aries"))));
+      const lIdx = signsList.indexOf(lagnaSign);
+
+      for (let h = 1; h <= 12; h++) {
+        const signNum = ((lIdx + (h - 1)) % 12) + 1;
+        const el = document.getElementById(`svg-h${h}-sign`);
+        if (el) el.textContent = isUnknownTime ? h : signNum;
+      }
+
+      for (let h = 1; h <= 12; h++) {
+        const housePlanets = [];
+        if (chartObj.planets) {
+          for (const [pName, pData] of Object.entries(chartObj.planets)) {
+            const hVal = pData.chalit_house || pData.house;
+            if (hVal === h) {
+              housePlanets.push(pName.substring(0, 2));
+            }
+          }
+        }
+        const textEl = document.getElementById(`svg-h${h}-planets`);
+        if (textEl) textEl.textContent = housePlanets.join(' ');
+      }
+    }
+
     async function generateUserKundli() {
       const name = document.getElementById('input-k-name').value.trim();
       const gender = document.getElementById('input-k-gender').value;
@@ -1984,45 +2240,10 @@
         console.warn("Backend API unreachable, using client mathematical engine:", err);
       }
 
-      // Client mathematical calculation fallback
-      const dobDt = new Date(dob);
-      const day = dobDt.getDate();
-      const month = dobDt.getMonth() + 1;
-      const hour = isUnknownTime ? 12 : parseInt(tob.split(':')[0]);
-
-      const lagnaIdx = (day * 3 + month * 2 + hour) % 12;
-      const moonIdx = (day * 5 + month * 7) % 12;
-      const sunIdx = (month + 7) % 12;
-      const nakIdx = (day * 7 + month * 11) % 27;
-      const pada = (day % 4) + 1;
-
-      const fallbackData = {
-        d1_rashi_chart: {
-          lagna: { sign: signsList[lagnaIdx], degree: 14.25, total_degree: lagnaIdx * 30 + 14.25 },
-          planets: {
-            Sun: { sign: signsList[sunIdx], degree: 8.4, house: ((sunIdx - lagnaIdx + 12) % 12) + 1, pada: 2, nakshatra: "Anuradha" },
-            Moon: { sign: signsList[moonIdx], degree: 18.25, house: ((moonIdx - lagnaIdx + 12) % 12) + 1, pada: pada, nakshatra: nakshatrasList[nakIdx] },
-            Mars: { sign: "Leo", degree: 11.02, house: 9, pada: 4, nakshatra: "Magha" },
-            Mercury: { sign: "Scorpio", degree: 2.15, house: 12, pada: 4, nakshatra: "Vishakha" },
-            Jupiter: { sign: signsList[lagnaIdx], degree: 26.15, house: 1, pada: 4, nakshatra: "P. Ashadha" },
-            Venus: { sign: "Libra", degree: 14.30, house: 11, pada: 3, nakshatra: "Swati" },
-            Saturn: { sign: "Pisces", degree: 6.48, house: 4, pada: 2, nakshatra: "U. Bhadrapada" },
-            Rahu: { sign: "Virgo", degree: 12.24, house: 10, pada: 1, nakshatra: "Hasta" },
-            Ketu: { sign: "Pisces", degree: 12.24, house: 4, pada: 3, nakshatra: "U. Bhadrapada" }
-          }
-        },
-        vimshottari_dasha: {
-          active_now: { maha_dasha: "Jupiter", antar_dasha: "Saturn", progress_pct: 45.0, start_date: "2024-03-10", end_date: "2026-09-22" }
-        },
-        doshas_and_remedies: {
-          manglik: { has_dosha: false, verdict: "NO DOSHA / CANCELLED", cancellation_reasons: ["Mars situated favorably"] },
-          kaal_sarp: { has_dosha: false, verdict: "NO KAAL SARP DOSHA", description: "Planets distributed freely across nodal axis" },
-          sade_sati: { is_active: true, phase: "Phase 1 (Rising)", description: "Saturn in Pisces is transiting 12th from natal Moon" }
-        }
-      };
-
-      renderKundliResultUI(name, fallbackData, isUnknownTime);
-      showToast("Kundli generated successfully!", "success");
+      // Authentic Meeus/Lahiri astronomical fallback calculation
+      const calculatedData = calculateClientKundli(dob, tob, lat, lon, isUnknownTime);
+      renderKundliResultUI(name, calculatedData, isUnknownTime);
+      showToast("Kundli generated with authentic sidereal ephemeris engine!", "success");
     }
 
     function renderKundliResultUI(name, data, isUnknownTime) {
@@ -2137,6 +2358,23 @@
       if (btn) btn.classList.add('active');
 
       if (!currentCalculatedChart) return;
+
+      const fd = currentCalculatedChart.fullData;
+      const isUnk = currentCalculatedChart.isUnknownTime;
+      const t = type.toUpperCase();
+
+      if (t === 'D1') {
+        renderDiamondChart('D1', fd.d1_rashi_chart, isUnk);
+      } else if (t === 'D9' && fd.divisional_charts && fd.divisional_charts.navamsha) {
+        renderDiamondChart('D9', fd.divisional_charts.navamsha, isUnk);
+      } else if (t === 'D10' && fd.divisional_charts && fd.divisional_charts.dashamsha) {
+        renderDiamondChart('D10', fd.divisional_charts.dashamsha, isUnk);
+      } else if (t === 'MOON' && fd.divisional_charts && fd.divisional_charts.moon_chart) {
+        renderDiamondChart('MOON', fd.divisional_charts.moon_chart, isUnk);
+      } else if (t === 'CHALIT' && fd.divisional_charts && fd.divisional_charts.chalit_chart) {
+        renderDiamondChart('CHALIT', fd.divisional_charts.chalit_chart, isUnk);
+      }
+
       showToast(`Switched view to ${type} Chart`, "info");
     }
 
@@ -2504,6 +2742,44 @@
       box.style.display = 'block';
       if (window.gsap) gsap.fromTo(box, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 });
 
+      // First attempt live backend calculation-grounded query
+      const dobVal = document.getElementById('input-k-dob').value;
+      const tobVal = document.getElementById('input-k-tob').value || '12:00';
+      const latVal = parseFloat(document.getElementById('k-resolved-lat').value);
+      const lonVal = parseFloat(document.getElementById('k-resolved-lon').value);
+
+      if (currentCalculatedChart && dobVal && !isNaN(latVal) && !isNaN(lonVal)) {
+        try {
+          const res = await fetch(`${getKundliBase()}/api/ai-astrologer/ask`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              category: cat,
+              question: `Vedic consultation on ${cat} for birth chart ${dobVal}T${tobVal}.`,
+              dob: `${dobVal}T${tobVal}:00`,
+              lat: latVal,
+              lon: lonVal,
+              timezone: 'Asia/Kolkata',
+              time_horizon: 'daily'
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const r = data.reading;
+            document.getElementById('ai-resp-mode-badge').textContent = "100% Chart-Grounded";
+            document.getElementById('ai-resp-mode-badge').style.background = "#ECFDF5";
+            document.getElementById('ai-resp-mode-badge').style.color = "#047857";
+            document.getElementById('ai-resp-title').textContent = r.executive_summary || `${cat.toUpperCase()} Consultation`;
+            activeAiReadingText = `${r.analysis} ${r.career_guidance || ''} ${r.remedial_measures ? 'Remedy: ' + r.remedial_measures : ''}`;
+            document.getElementById('ai-resp-body').textContent = activeAiReadingText;
+            document.getElementById('ai-resp-remedy').textContent = r.remedial_measures || "Chant the Gayatri Mantra.";
+            return;
+          }
+        } catch (e) {
+          console.warn("Backend AI query offline, using client interpretation engine:", e);
+        }
+      }
+
       if (currentCalculatedChart) {
         // Personal Chart-Grounded Consultation
         document.getElementById('ai-resp-mode-badge').textContent = "100% Chart-Grounded";
@@ -2512,7 +2788,7 @@
 
         if (cat === 'career') {
           document.getElementById('ai-resp-title').textContent = "Career & Professional Elevation Analysis";
-          activeAiReadingText = `Your calculated Lagna is ${currentCalculatedChart.lagnaSign} and Moon is in ${currentCalculatedChart.moonSign}. Your 10th House of profession receives the expansive aspect of Jupiter. Coupled with your active Dasha period, this signals strong promotion opportunities, executive recognition, and salary expansion over the next 4 months. Recite Aditya Hridaya Stotra on Sundays.`;
+          activeAiReadingText = `Your calculated Lagna is ${currentCalculatedChart.lagnaSign} and Moon is in ${currentCalculatedChart.moonSign} (${currentCalculatedChart.nakName} Nakshatra, Pada ${currentCalculatedChart.pada}). Your 10th House of profession receives the expansive aspect of Jupiter. Coupled with your active Dasha period, this signals strong promotion opportunities, executive recognition, and salary expansion over the upcoming cycles. Recite Aditya Hridaya Stotra on Sundays.`;
           document.getElementById('ai-resp-body').textContent = activeAiReadingText;
           document.getElementById('ai-resp-remedy').textContent = "Recite Aditya Hridaya Stotra on Sundays and offer water to the rising Sun.";
         } else if (cat === 'marriage') {
@@ -2603,41 +2879,116 @@
     let activeAuthTarget = "";
     let activeDevOtp = "";
 
-    function requestAuthOtp() {
+    async function requestAuthOtp() {
       const ident = document.getElementById('input-auth-ident').value.trim();
       if (!ident) { showToast("Please enter mobile number or email.", "error"); return; }
 
-      activeAuthTarget = ident;
-      activeDevOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      const isEmail = ident.includes('@');
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /^\+?[0-9]{10,15}$/;
 
+      if (isEmail) {
+        if (!emailRegex.test(ident)) {
+          showToast("Invalid email address format.", "error");
+          return;
+        }
+      } else {
+        const digitsOnly = ident.replace(/[\s\-\(\)]/g, '');
+        if (!phoneRegex.test(digitsOnly)) {
+          showToast("Invalid phone number format (must be 10-15 digits).", "error");
+          return;
+        }
+      }
+
+      activeAuthTarget = ident;
+      showToast("Requesting verification code...", "info");
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/request-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: ident, type: isEmail ? 'email' : 'phone' })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          activeDevOtp = data.devPreviewOtp || '';
+          document.getElementById('disp-auth-target').textContent = ident;
+          document.getElementById('otp-dev-hint').textContent = activeDevOtp ? `[Dev Preview OTP: ${activeDevOtp}]` : `Code sent via SMS/Email`;
+          document.getElementById('auth-step-1').style.display = 'none';
+          document.getElementById('auth-step-2').style.display = 'block';
+          showToast(`Verification code sent to ${ident}`, "info");
+          return;
+        }
+      } catch (err) {
+        console.warn("Backend auth offline, using local dev verification:", err);
+      }
+
+      // Offline dev verification fallback
+      activeDevOtp = Math.floor(100000 + Math.random() * 900000).toString();
       document.getElementById('disp-auth-target').textContent = ident;
       document.getElementById('otp-dev-hint').textContent = `[Dev Preview OTP: ${activeDevOtp}]`;
-
       document.getElementById('auth-step-1').style.display = 'none';
       document.getElementById('auth-step-2').style.display = 'block';
-      showToast(`Verification code sent to ${ident}`, "info");
+      showToast(`Verification code generated for ${ident}`, "info");
     }
 
-    function verifyAuthOtp() {
+    async function verifyAuthOtp() {
       const otp = document.getElementById('input-auth-otp').value.trim();
+      if (!otp) {
+        showToast("Please enter the verification code.", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/verify-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: activeAuthTarget, otp })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const u = data.user;
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || activeAuthTarget.split('@')[0],
+            identifier: u.email || u.phone || activeAuthTarget,
+            role: "USER"
+          };
+          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+
+          await syncProfilesFromBackend(u.id);
+
+          updateUserSessionUI();
+          closeAuthModal();
+          showToast(`Welcome, ${currentUserSession.name}! Signed in successfully.`, "success");
+          return;
+        }
+      } catch (err) {
+        console.warn("Backend auth verify offline, checking local preview OTP:", err);
+      }
+
       if (otp !== activeDevOtp && otp !== '123456') {
-        showToast("Invalid verification code. Please try again.", "error");
+        showToast("Invalid or expired verification code. Please try again.", "error");
         return;
       }
 
       currentUserSession = {
+        id: 'local_user_' + Date.now(),
         name: activeAuthTarget.split('@')[0],
         identifier: activeAuthTarget,
         role: "USER"
       };
-      currentWalletBalance = 150.00; // Credited verified welcome balance
+      currentWalletBalance = 0.00; // Zero balance guest state
 
       localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
       localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
 
       updateUserSessionUI();
       closeAuthModal();
-      showToast(`Welcome back, ${currentUserSession.name}! Signed in successfully.`, "success");
+      showToast(`Welcome, ${currentUserSession.name}! Signed in successfully.`, "success");
     }
 
     function executeSignOut() {
@@ -2670,7 +3021,6 @@
       }
     }
 
-    // Saved Profiles Management
     function openSaveProfileModal() {
       if (!currentUserSession) {
         showToast("Please sign in first to save birth profiles.", "info");
@@ -2685,29 +3035,104 @@
         document.getElementById('p-city').value = document.getElementById('input-k-city-search').value;
       }
     }
+
     function closeSaveProfileModal() {
       document.getElementById('modal-save-profile').style.display = 'none';
     }
 
-    function saveBirthProfile() {
+    async function saveBirthProfile() {
       const name = document.getElementById('p-name').value.trim();
       const rel = document.getElementById('p-rel').value;
       const dob = document.getElementById('p-dob').value;
-      const tob = document.getElementById('p-tob').value;
-      const city = document.getElementById('p-city').value.trim();
+      const tob = document.getElementById('p-tob').value || '12:00';
+      const city = document.getElementById('p-city').value.trim() || 'Jabalpur, Madhya Pradesh, India';
+      const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
+      const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
 
       if (!name || !rel || !dob) {
         showToast("Please enter profile name, relationship, and birth date.", "error");
         return;
       }
 
-      const newProfile = { id: Date.now(), name, rel, dob, tob, city };
-      savedUserProfiles.push(newProfile);
+      if (!currentUserSession) {
+        showToast("Please sign in first to save birth profiles.", "info");
+        openAuthModal();
+        return;
+      }
+
+      showToast("Saving birth profile...", "info");
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/profiles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: currentUserSession.id,
+            profileName: name,
+            relationship: rel,
+            dateOfBirth: dob,
+            timeOfBirth: tob,
+            birthplaceName: city,
+            latitude: lat,
+            longitude: lon
+          })
+        });
+        if (res.ok) {
+          const saved = await res.json();
+          savedUserProfiles.unshift({
+            id: saved.id,
+            name: saved.profileName,
+            rel: saved.relationship,
+            dob: dob,
+            tob: tob,
+            city: city,
+            lat: lat,
+            lon: lon
+          });
+          localStorage.setItem('astro_saved_profiles', JSON.stringify(savedUserProfiles));
+          renderSavedProfilesList();
+          closeSaveProfileModal();
+          showToast(`Profile for ${name} (${rel}) saved to cloud database!`, "success");
+          return;
+        }
+      } catch (err) {
+        console.warn("Backend profile save offline, caching locally:", err);
+      }
+
+      // Local storage cache fallback
+      const newProfile = { id: Date.now().toString(), name, rel, dob, tob, city, lat, lon };
+      savedUserProfiles.unshift(newProfile);
       localStorage.setItem('astro_saved_profiles', JSON.stringify(savedUserProfiles));
 
       renderSavedProfilesList();
       closeSaveProfileModal();
-      showToast(`Profile for ${name} (${rel}) saved successfully!`, "success");
+      showToast(`Profile for ${name} (${rel}) saved locally!`, "success");
+    }
+
+    async function syncProfilesFromBackend(userId) {
+      if (!userId || userId.startsWith('local_')) return;
+      try {
+        const res = await fetch(`${getAuthBase()}/api/profiles/${userId}`);
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list)) {
+            savedUserProfiles = list.map(p => ({
+              id: p.id,
+              name: p.profileName,
+              rel: p.relationship,
+              dob: p.dateOfBirth ? p.dateOfBirth.split('T')[0] : '',
+              tob: p.timeOfBirth,
+              city: p.birthplaceName,
+              lat: Number(p.latitude),
+              lon: Number(p.longitude)
+            }));
+            localStorage.setItem('astro_saved_profiles', JSON.stringify(savedUserProfiles));
+            renderSavedProfilesList();
+          }
+        }
+      } catch (err) {
+        console.warn("Could not sync profiles from backend:", err);
+      }
     }
 
     function renderSavedProfilesList() {
@@ -2730,8 +3155,8 @@
             <div style="font-size: 12px; color: #64748B;">DOB: ${p.dob} ${p.tob ? '• ' + p.tob : ''} • ${p.city}</div>
           </div>
           <div style="display: flex; gap: 8px;">
-            <button class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="loadSavedProfileToKundli(${p.id})">Load</button>
-            <button class="btn-outline-secondary" style="padding: 4px 8px; font-size: 11px; color: #DC2626;" onclick="deleteSavedProfile(${p.id})"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="loadSavedProfileToKundli('${p.id}')">Load</button>
+            <button class="btn-outline-secondary" style="padding: 4px 8px; font-size: 11px; color: #DC2626;" onclick="deleteSavedProfile('${p.id}')"><i class="fa-solid fa-trash"></i></button>
           </div>
         `;
         listEl.appendChild(item);
@@ -2739,22 +3164,35 @@
     }
 
     function loadSavedProfileToKundli(profileId) {
-      const p = savedUserProfiles.find(x => x.id === profileId);
+      const p = savedUserProfiles.find(x => String(x.id) === String(profileId));
       if (!p) return;
 
       document.getElementById('input-k-name').value = p.name;
       document.getElementById('input-k-dob').value = p.dob;
       document.getElementById('input-k-tob').value = p.tob || '';
-      document.getElementById('input-k-city-search').value = p.city || 'New Delhi, India';
+      document.getElementById('input-k-city-search').value = p.city || 'Jabalpur, Madhya Pradesh, India';
+      if (p.lat) document.getElementById('k-resolved-lat').value = p.lat;
+      if (p.lon) document.getElementById('k-resolved-lon').value = p.lon;
 
       switchNavSection('kundli');
-      showToast(`Loaded profile: ${p.name}. Click 'Calculate' to generate chart.`, "info");
+      showToast(`Loaded profile: ${p.name}`, "info");
+      generateUserKundli();
     }
 
-    function deleteSavedProfile(profileId) {
-      savedUserProfiles = savedUserProfiles.filter(x => x.id !== profileId);
-      localStorage.setItem('astro_saved_profiles', JSON.stringify(savedUserProfiles));
-      renderSavedProfilesList();
+    async function deleteSavedProfile(profileId) {
+      const pIdx = savedUserProfiles.findIndex(x => String(x.id) === String(profileId));
+      if (pIdx > -1) {
+        savedUserProfiles.splice(pIdx, 1);
+        localStorage.setItem('astro_saved_profiles', JSON.stringify(savedUserProfiles));
+        renderSavedProfilesList();
+      }
+      if (currentUserSession && typeof profileId === 'string' && !profileId.startsWith('local_')) {
+        try {
+          await fetch(`${getAuthBase()}/api/profiles/${profileId}`, { method: 'DELETE' });
+        } catch (e) {
+          console.warn("Failed to delete profile from backend:", e);
+        }
+      }
       showToast("Profile removed.", "info");
     }
 

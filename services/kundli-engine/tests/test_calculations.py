@@ -203,6 +203,49 @@ def test_external_api():
     assert chart_res.get("statusCode") == 200
     print("[PASS] test_external_api passed")
 
+def test_recording_case_jabalpur():
+    """
+    Forensic Regression Test: User Recording Case
+    DOB: 20 Aug 2005 14:05 (2:05 PM) Jabalpur, MP (Lat: 23.1815, Lon: 79.9864)
+    Recording Defect: Displayed Sun: Cancer 8.4°, Moon: Aries 18.3°, Nakshatra: Hasta (1).
+    Ground Truth (Swiss Ephemeris Lahiri):
+    - Sun: Leo ~3.49° (Magha Nakshatra)
+    - Moon: Aquarius ~12.21° (Shatabhisha Nakshatra, Pada 2)
+    - Lagna: Scorpio ~24.16° (Jyeshtha Nakshatra, Pada 3)
+    """
+    dob = "2005-08-20T14:05:00"
+    lat, lon = 23.1815, 79.9864
+    res = calculate_kundli(dob, lat, lon, "Asia/Kolkata")
+    
+    sun = res["planets"]["Sun"]
+    moon = res["planets"]["Moon"]
+    lagna = res["lagna"]
+    
+    # 1. Assert Sun is in Leo, NOT Cancer
+    assert sun["sign"] == "Leo", f"Expected Sun in Leo, got {sun['sign']}"
+    assert 3.0 <= sun["degree"] <= 4.0, f"Expected Sun ~3.49°, got {sun['degree']}"
+    
+    # 2. Assert Moon is in Aquarius, NOT Aries
+    assert moon["sign"] == "Aquarius", f"Expected Moon in Aquarius, got {moon['sign']}"
+    assert 11.5 <= moon["degree"] <= 13.0, f"Expected Moon ~12.21°, got {moon['degree']}"
+    
+    # 3. Assert Nakshatra is Shatabhisha (Pada 2), NOT Hasta
+    assert moon["nakshatra"] == "Shatabhisha", f"Expected Shatabhisha, got {moon['nakshatra']}"
+    assert moon["pada"] == 2, f"Expected Pada 2, got {moon['pada']}"
+    assert moon["nakshatra_lord"] == "Rahu", f"Expected Rahu as Nakshatra Lord, got {moon['nakshatra_lord']}"
+    
+    # 4. Assert Lagna is Scorpio
+    assert lagna["sign"] == "Scorpio", f"Expected Lagna in Scorpio, got {lagna['sign']}"
+    assert 23.5 <= lagna["degree"] <= 25.0, f"Expected Lagna ~24.16°, got {lagna['degree']}"
+
+    # 5. Assert Dasha calculation coherence
+    dashas = calculate_vimshottari_dasha(moon["absolute_degree"], datetime(2005, 8, 20, 14, 5, 0))
+    # Shatabhisha ruling lord is Rahu (18 years)
+    assert dashas["birth_balance"]["ruling_lord"] == "Rahu"
+    assert "active_now" in dashas
+    
+    print("[PASS] test_recording_case_jabalpur passed")
+
 if __name__ == "__main__":
     test_ephemeris_and_panchang()
     test_divisional_charts()
@@ -211,4 +254,5 @@ if __name__ == "__main__":
     test_ashtakoota_matchmaking()
     test_doshas()
     test_external_api()
-    print("\nALL 7 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
+    test_recording_case_jabalpur()
+    print("\nALL 8 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
