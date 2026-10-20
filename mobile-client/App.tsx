@@ -20,7 +20,8 @@ export default function App() {
     setAiResponse(null);
 
     try {
-      const res = await fetch('http://localhost:8000/api/ai-astrologer/ask', {
+      const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(new URL('/api/ai-astrologer/ask', apiBaseUrl).toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

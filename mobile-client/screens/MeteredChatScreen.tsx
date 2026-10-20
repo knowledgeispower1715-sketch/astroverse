@@ -15,7 +15,8 @@ export const MeteredChatScreen = ({ route, navigation }: any) => {
   const [showKundliModal, setShowKundliModal] = useState(false);
 
   useEffect(() => {
-    const socket = io('http://localhost:4000');
+    const consultationUrl = process.env.EXPO_PUBLIC_CONSULTATION_URL || 'http://localhost:4000';
+    const socket = io(consultationUrl);
     const sessionId = `session_${Date.now()}`;
 
     socket.emit('start_consultation', {

@@ -30,7 +30,9 @@ async function finalizeSession(session: ActiveConsultation) {
 
   if (totalDeducted > 0) {
     try {
-      await axios.post('http://localhost:5000/api/wallet/settle-consultation', {
+      const walletBaseUrl = process.env.WALLET_SERVICE_URL || 'http://localhost:5000';
+      const settleUrl = new URL('/api/wallet/settle-consultation', walletBaseUrl).toString();
+      await axios.post(settleUrl, {
         userId: session.userId,
         astrologerId: session.astrologerId,
         sessionId: session.sessionId,
