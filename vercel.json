@@ -7,6 +7,7 @@
     "consultation-service": {
       "root": "services/consultation-service",
       "runtime": "node",
+      "entrypoint": "server.ts",
       "bindings": [
         {
           "type": "service",
@@ -18,11 +19,13 @@
     },
     "kundli-engine": {
       "root": "services/kundli-engine",
-      "framework": "fastapi"
+      "framework": "fastapi",
+      "entrypoint": "main.py"
     },
     "wallet-service": {
       "root": "services/wallet-service",
-      "framework": "express"
+      "framework": "express",
+      "entrypoint": "src/server.ts"
     },
     "website": {
       "root": "website",
