@@ -23,6 +23,8 @@ from external_api import (
     fetch_external_planets,
     fetch_external_chart_url,
     fetch_external_navamsa,
+    fetch_external_vedic_chart,
+    fetch_external_visual_chart,
     get_api_key
 )
 
@@ -116,10 +118,10 @@ def admin_health_check():
                 "version": "2.10.3.2",
                 "ayanamsha": "Lahiri (SE_SIDM_LAHIRI)"
             },
-            "free_astrology_api": {
+            "free_astro_api": {
                 "status": external_api_status,
                 "api_key_configured": api_key_configured,
-                "endpoint": "https://json.freeastrologyapi.com"
+                "endpoint": "https://api.freeastroapi.com"
             },
             "geocoding_provider": {
                 "status": geo_status,
@@ -320,35 +322,28 @@ def get_matchmaking(req: MatchmakingRequest):
 @app.post("/api/external-kundli")
 def get_external_kundli(req: BirthDetails):
     """
-    FreeAstrologyAPI Integration:
+    FreeAstroAPI Integration:
     Queries third-party ephemeris and returns planetary coordinates alongside SVG chart URLs.
     """
     dt = datetime.fromisoformat(req.dob)
-    # Estimate offset in hours
-    tz_offset = 5.5
-    try:
-        from zoneinfo import ZoneInfo
-        tz_offset = datetime(dt.year, dt.month, dt.day, tzinfo=ZoneInfo(req.timezone)).utcoffset().total_seconds() / 3600.0
-    except Exception:
-        pass
 
-    planets_data = fetch_external_planets(
-        year=dt.year, month=dt.month, date=dt.day,
-        hours=dt.hour, minutes=dt.minute, seconds=dt.second,
-        latitude=req.lat, longitude=req.lon, timezone=tz_offset
+    chart_data = fetch_external_vedic_chart(
+        year=dt.year, month=dt.month, day=dt.day,
+        hour=dt.hour, minute=dt.minute,
+        lat=req.lat, lng=req.lon, tz_str=req.timezone
     )
 
-    chart_url_data = fetch_external_chart_url(
-        year=dt.year, month=dt.month, date=dt.day,
-        hours=dt.hour, minutes=dt.minute, seconds=dt.second,
-        latitude=req.lat, longitude=req.lon, timezone=tz_offset,
-        chart_type="rasi"
+    svg_data = fetch_external_visual_chart(
+        year=dt.year, month=dt.month, day=dt.day,
+        hour=dt.hour, minute=dt.minute,
+        lat=req.lat, lng=req.lon, tz_str=req.timezone,
+        chart_style="north_indian"
     )
 
     return {
-        "provider": "FreeAstrologyAPI",
-        "planets": planets_data,
-        "chart_url": chart_url_data
+        "provider": "FreeAstroAPI",
+        "chart": chart_data,
+        "svg": svg_data
     }
 
 if __name__ == "__main__":

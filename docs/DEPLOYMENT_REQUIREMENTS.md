@@ -44,8 +44,8 @@ RAZORPAY_KEY_SECRET="YourSecretKeyHere"
 
 ### 2.2 Ephemeris & AI Credentials
 ```ini
-# FreeAstrologyAPI Key (Configured for external chart rendering)
-FREE_ASTROLOGY_API_KEY="TlI51pEPIW3hTnSI8ogDTR66j48B5D278ZH7Gbkh"
+# FreeAstroAPI Key (Configured for external ephemeris & SVG chart rendering)
+FREE_ASTRO_API_KEY="your_freeastroapi_key_here"
 
 # AI Astrologer Guru Model Provider
 OPENAI_API_KEY="sk-proj-YourOpenAiKey"

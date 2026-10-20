@@ -23,7 +23,12 @@ from dasha_engine import calculate_vimshottari_dasha
 from hora_engine import calculate_sun_times, calculate_24h_horas
 from matchmaking import match_kundli_36_gunas
 from doshas_and_remedies import analyze_doshas_and_remedies
-from external_api import fetch_external_planets, fetch_external_chart_url
+from external_api import (
+    fetch_external_planets,
+    fetch_external_chart_url,
+    fetch_external_vedic_chart,
+    fetch_external_visual_chart
+)
 
 def test_ephemeris_and_panchang():
     dob = "1996-11-24T14:30:00"
@@ -194,14 +199,25 @@ def test_doshas():
     print("[PASS] test_doshas passed")
 
 def test_external_api():
-    # Verify FreeAstrologyAPI connection with configured key
+    # 1. Native FreeAstroAPI /api/v2/vedic/chart verification
+    chart = fetch_external_vedic_chart(1995, 6, 15, 10, 30, city="New Delhi", lat=28.6139, lng=77.2090)
+    assert "planets" in chart, f"Expected planets in FreeAstroAPI chart response, got: {chart}"
+    assert len(chart["planets"]) == 9
+    assert "ascendant" in chart
+
+    # 2. Native FreeAstroAPI /api/v2/vedic/visual/chart verification
+    svg = fetch_external_visual_chart(1995, 6, 15, 10, 30, city="New Delhi", lat=28.6139, lng=77.2090)
+    assert isinstance(svg, str) and "<svg" in svg, "Expected SVG XML string from visual chart endpoint"
+
+    # 3. Compatibility Adapters
     res = fetch_external_planets(1995, 6, 15, 10, 30, 0, 28.6139, 77.2090, 5.5)
     assert res.get("statusCode") == 200
     assert len(res.get("output", [])) > 0
     
     chart_res = fetch_external_chart_url(1995, 6, 15, 10, 30, 0, 28.6139, 77.2090, 5.5)
     assert chart_res.get("statusCode") == 200
-    print("[PASS] test_external_api passed")
+    assert "<svg" in chart_res.get("svg", "")
+    print("[PASS] test_external_api passed (FreeAstroAPI v2 integration verified)")
 
 def test_recording_case_jabalpur():
     """
