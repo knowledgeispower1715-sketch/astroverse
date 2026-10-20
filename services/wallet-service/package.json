@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "ts-node src/server.ts",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init_wallet"
   },

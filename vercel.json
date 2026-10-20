@@ -2,7 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
     "app": {
-      "root": "."
+      "root": ".",
+      "buildCommand": "echo 'Static app ready'",
+      "installCommand": "echo 'No install needed'",
+      "outputDirectory": "."
     },
     "consultation-service": {
       "root": "services/consultation-service",

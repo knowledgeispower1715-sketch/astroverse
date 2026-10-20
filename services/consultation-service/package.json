@@ -2,7 +2,8 @@
   "name": "consultation-service",
   "version": "1.0.0",
   "scripts": {
-    "dev": "ts-node server.ts"
+    "dev": "ts-node server.ts",
+    "build": "echo 'Consultation service ready'"
   },
   "dependencies": {
     "axios": "^1.6.8",
