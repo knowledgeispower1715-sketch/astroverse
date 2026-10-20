@@ -39,6 +39,24 @@
       }
     },
     {
+      "source": "/api/auth/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/profiles(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/pujas/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/(.*)",
       "destination": {
         "service": "kundli-engine"
