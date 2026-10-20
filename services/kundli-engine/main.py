@@ -27,6 +27,12 @@ from external_api import (
     fetch_external_visual_chart,
     get_api_key
 )
+from prokerala_api import (
+    get_access_token,
+    get_prokerala_planet_position,
+    get_prokerala_kundli,
+    get_prokerala_panchang
+)
 
 app = FastAPI(
     title="Astroverse Engine - High-Precision Vedic Astrology & Ephemeris Service",
@@ -109,6 +115,17 @@ def admin_health_check():
     except Exception as e:
         geo_status = f"DEGRADED_{str(e)[:30]}"
 
+    # 4. Prokerala API status
+    prokerala_status = "UNKNOWN"
+    try:
+        token = get_access_token()
+        if token and len(token) > 10:
+            prokerala_status = "HEALTHY"
+        else:
+            prokerala_status = "NO_TOKEN"
+    except Exception as e:
+        prokerala_status = f"FAILED_{str(e)[:30]}"
+
     return {
         "status": "OPERATIONAL",
         "timestamp": datetime.now().isoformat(),
@@ -122,6 +139,11 @@ def admin_health_check():
                 "status": external_api_status,
                 "api_key_configured": api_key_configured,
                 "endpoint": "https://api.freeastroapi.com"
+            },
+            "prokerala_api": {
+                "status": prokerala_status,
+                "auth_type": "OAuth 2.0 Bearer",
+                "endpoint": "https://api.prokerala.com/v2/astrology"
             },
             "geocoding_provider": {
                 "status": geo_status,
@@ -345,6 +367,38 @@ def get_external_kundli(req: BirthDetails):
         "chart": chart_data,
         "svg": svg_data
     }
+
+# ==================== PROKERALA API V2 ENDPOINTS ====================
+
+@app.get("/api/prokerala/planet-position")
+def prokerala_planet_position(
+    datetime_str: str = Query(..., alias="datetime", description="ISO 8601 datetime with tz offset, e.g. 2005-08-20T14:05:00+05:30"),
+    lat: float = Query(..., ge=-90.0, le=90.0),
+    lon: float = Query(..., ge=-180.0, le=180.0),
+    ayanamsa: int = Query(1, description="1 = Lahiri")
+):
+    """Prokerala API v2: Planetary Longitudes & Rashi placements."""
+    return get_prokerala_planet_position(datetime_str, lat, lon, ayanamsa)
+
+@app.get("/api/prokerala/kundli")
+def prokerala_kundli(
+    datetime_str: str = Query(..., alias="datetime", description="ISO 8601 datetime with tz offset"),
+    lat: float = Query(..., ge=-90.0, le=90.0),
+    lon: float = Query(..., ge=-180.0, le=180.0),
+    ayanamsa: int = Query(1)
+):
+    """Prokerala API v2: Nakshatra details, Mangal dosha, and Yogas."""
+    return get_prokerala_kundli(datetime_str, lat, lon, ayanamsa)
+
+@app.get("/api/prokerala/panchang")
+def prokerala_panchang(
+    datetime_str: str = Query(..., alias="datetime", description="ISO 8601 datetime with tz offset"),
+    lat: float = Query(..., ge=-90.0, le=90.0),
+    lon: float = Query(..., ge=-180.0, le=180.0),
+    ayanamsa: int = Query(1)
+):
+    """Prokerala API v2: Complete Vedic Panchang (Tithi, Vaara, Nakshatra, Yoga, Karana)."""
+    return get_prokerala_panchang(datetime_str, lat, lon, ayanamsa)
 
 if __name__ == "__main__":
     import uvicorn
