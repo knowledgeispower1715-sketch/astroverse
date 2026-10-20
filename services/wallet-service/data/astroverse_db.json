@@ -1,0 +1,218 @@
+{
+  "users": [
+    {
+      "id": "usr_super_admin_001",
+      "phone": "+919999999999",
+      "email": "admin@astroverse.app",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "displayName": "Platform Administrator",
+      "role": "SUPER_ADMIN",
+      "status": "ACTIVE",
+      "preferredLanguage": "en",
+      "preferredTimezone": "Asia/Kolkata",
+      "walletBalance": 1000,
+      "lastLoginAt": "2026-10-20T19:37:07.945Z",
+      "createdAt": "2026-10-21T00:00:00.000Z",
+      "updatedAt": "2026-10-20T19:37:07.945Z"
+    },
+    {
+      "id": "usr_283912024638a291",
+      "phone": "+919876538765",
+      "email": "test_astronomer_1792525027924@example.com",
+      "phoneVerified": true,
+      "emailVerified": true,
+      "displayName": "Acharya Astro Tester",
+      "role": "USER",
+      "status": "SUSPENDED",
+      "preferredLanguage": "hi",
+      "preferredTimezone": "Asia/Kolkata",
+      "walletBalance": 0,
+      "lastLoginAt": "2026-10-20T19:37:07.929Z",
+      "createdAt": "2026-10-20T19:37:07.929Z",
+      "updatedAt": "2026-10-20T19:37:07.948Z"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "sess_28419cc8de132372",
+      "userId": "usr_super_admin_001",
+      "tokenHash": "0a2f561794f3f02daee7133d9fc452562f44b7dfde497e519e283736e2b3fbc7",
+      "expiresAt": "2026-10-27T19:37:07.945Z",
+      "ipAddress": "::1",
+      "userAgent": "node",
+      "createdAt": "2026-10-20T19:37:07.945Z"
+    }
+  ],
+  "auditEvents": [
+    {
+      "id": "aud_8cfaf1df4e1d54d3",
+      "userId": "usr_super_admin_001",
+      "action": "ADMIN_STATUS_CHANGE",
+      "targetType": "USER",
+      "targetId": "usr_283912024638a291",
+      "metadata": {
+        "oldStatus": "ACTIVE",
+        "newStatus": "SUSPENDED"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-10-20T19:37:07.949Z"
+    },
+    {
+      "id": "aud_58a34abd34b2ae89",
+      "userId": "usr_super_admin_001",
+      "action": "AUTH_LOGIN",
+      "targetType": "USER",
+      "targetId": "usr_super_admin_001",
+      "metadata": {
+        "identifier": "admin@astroverse.app",
+        "method": "email_otp"
+      },
+      "ipAddress": "::1",
+      "createdAt": "2026-10-20T19:37:07.946Z"
+    },
+    {
+      "id": "aud_432570fe65939af5",
+      "userId": null,
+      "action": "OTP_DISPATCHED",
+      "targetType": "EMAIL",
+      "targetId": "admin@astroverse.app",
+      "metadata": {
+        "channel": "resend/email"
+      },
+      "ipAddress": "::1",
+      "createdAt": "2026-10-20T19:37:07.944Z"
+    },
+    {
+      "id": "aud_8e887fa0b7725d32",
+      "userId": "usr_283912024638a291",
+      "action": "PROFILE_CREATED",
+      "targetType": "PROFILE",
+      "targetId": "prof_2901be47a0075ad5",
+      "metadata": {
+        "profileName": "Amitabh Sharma",
+        "relationship": "Self"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-10-20T19:37:07.942Z"
+    },
+    {
+      "id": "aud_1ca93018a0727580",
+      "userId": "usr_283912024638a291",
+      "action": "IDENTITY_LINKED",
+      "targetType": "PHONE",
+      "targetId": "+919876538765",
+      "metadata": {
+        "linkedField": "phone"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-10-20T19:37:07.939Z"
+    },
+    {
+      "id": "aud_7efff2342b80f98f",
+      "userId": null,
+      "action": "OTP_DISPATCHED",
+      "targetType": "PHONE",
+      "targetId": "+919876538765",
+      "metadata": {
+        "channel": "twilio/sms"
+      },
+      "ipAddress": "::1",
+      "createdAt": "2026-10-20T19:37:07.937Z"
+    },
+    {
+      "id": "aud_bed326f71aefeeb1",
+      "userId": "usr_283912024638a291",
+      "action": "USER_PROFILE_UPDATED",
+      "targetType": "USER",
+      "targetId": "usr_283912024638a291",
+      "metadata": {
+        "displayName": "Acharya Astro Tester",
+        "preferredLanguage": "hi",
+        "preferredTimezone": "Asia/Kolkata"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-10-20T19:37:07.935Z"
+    },
+    {
+      "id": "aud_537a0d089549c00c",
+      "userId": "usr_283912024638a291",
+      "action": "AUTH_REGISTER",
+      "targetType": "USER",
+      "targetId": "usr_283912024638a291",
+      "metadata": {
+        "identifier": "test_astronomer_1792525027924@example.com",
+        "method": "email_otp"
+      },
+      "ipAddress": "::1",
+      "createdAt": "2026-10-20T19:37:07.931Z"
+    },
+    {
+      "id": "aud_73869c7dacc0eacf",
+      "userId": null,
+      "action": "OTP_DISPATCHED",
+      "targetType": "EMAIL",
+      "targetId": "test_astronomer_1792525027924@example.com",
+      "metadata": {
+        "channel": "resend/email"
+      },
+      "ipAddress": "::1",
+      "createdAt": "2026-10-20T19:37:07.925Z"
+    }
+  ],
+  "birthProfiles": [],
+  "savedReports": [],
+  "astrologers": [
+    {
+      "id": "astro_001",
+      "name": "Acharya Ramanuj",
+      "avatarUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
+      "specialities": "Vedic, Prashna, Career, Medical Astrology",
+      "languages": "Hindi, English, Sanskrit",
+      "experienceYears": 18,
+      "rating": 4.98,
+      "ordersCount": 4210,
+      "ratePerMinute": 45,
+      "isOnline": true,
+      "isBusy": false,
+      "pendingPayout": 0,
+      "createdAt": "2026-10-21T00:00:00.000Z",
+      "updatedAt": "2026-10-21T00:00:00.000Z"
+    },
+    {
+      "id": "astro_002",
+      "name": "Pandit Devratna",
+      "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "specialities": "Kundli Milan, Marriage, Relationship, Dasha",
+      "languages": "Hindi, Gujarati, English",
+      "experienceYears": 12,
+      "rating": 4.92,
+      "ordersCount": 2890,
+      "ratePerMinute": 35,
+      "isOnline": true,
+      "isBusy": false,
+      "pendingPayout": 0,
+      "createdAt": "2026-10-21T00:00:00.000Z",
+      "updatedAt": "2026-10-21T00:00:00.000Z"
+    },
+    {
+      "id": "astro_003",
+      "name": "Dr. Sunita Shastri",
+      "avatarUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80",
+      "specialities": "KP Astrology, Numerology, Financial Forecasting",
+      "languages": "Hindi, Marathi, English",
+      "experienceYears": 15,
+      "rating": 4.96,
+      "ordersCount": 3540,
+      "ratePerMinute": 40,
+      "isOnline": true,
+      "isBusy": true,
+      "pendingPayout": 0,
+      "createdAt": "2026-10-21T00:00:00.000Z",
+      "updatedAt": "2026-10-21T00:00:00.000Z"
+    }
+  ],
+  "walletLedgers": [],
+  "paymentOrders": [],
+  "pujaBookings": []
+}

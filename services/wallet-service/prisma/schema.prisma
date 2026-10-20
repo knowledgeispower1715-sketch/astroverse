@@ -7,6 +7,20 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  USER
+  SUPER_ADMIN
+  SUPPORT
+  OPERATIONS
+  ANALYST
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
 enum EntryType {
   WALLET_RECHARGE
   CONSULTATION_DEBIT
@@ -33,23 +47,73 @@ enum SessionStatus {
   CANCELLED
 }
 
-// 5.1 Identity and Profiles
+// 5.1 Identity, RBAC and Profiles
 model User {
   id                String             @id @default(uuid())
   phone             String?            @unique
   email             String?            @unique
+  phoneVerified     Boolean            @default(false)
+  emailVerified     Boolean            @default(false)
   displayName       String?
+  role              Role               @default(USER)
+  status            AccountStatus      @default(ACTIVE)
   preferredLanguage String             @default("en")
   preferredTimezone String             @default("Asia/Kolkata")
   walletBalance     Decimal            @default(0.00) @db.Decimal(12, 2)
+  lastLoginAt       DateTime?
   birthProfiles     BirthProfile[]
   calculations      KundliCalculation[]
+  savedReports      SavedReport[]
   paymentOrders     PaymentOrder[]
   ledgerEntries     WalletLedger[]
   consultations     ConsultationSession[]
   pujaBookings      PujaBooking[]
+  sessions          UserSession[]
+  auditEvents       AuditEvent[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+
+  @@index([role, status])
+}
+
+model UserSession {
+  id                String             @id @default(uuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash         String             @unique
+  expiresAt         DateTime
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime           @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+model AuditEvent {
+  id                String             @id @default(uuid())
+  userId            String?
+  user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action            String             // AUTH_LOGIN, AUTH_REGISTER, OTP_DISPATCHED, IDENTITY_LINKED, ROLE_CHANGED, STATUS_CHANGED, ACCOUNT_DEACTIVATED, ACCOUNT_DELETED
+  targetType        String?            // USER, PROFILE, ORDER, SESSION
+  targetId          String?
+  metadata          Json?
+  ipAddress         String?
+  createdAt         DateTime           @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+model SavedReport {
+  id                String             @id @default(uuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  reportType        String             // KUNDLI, DOSHA, HORA, MATCHING, AI_INSIGHT
+  payload           Json
+  createdAt         DateTime           @default(now())
+
+  @@index([userId, reportType])
 }
 
 model BirthProfile {

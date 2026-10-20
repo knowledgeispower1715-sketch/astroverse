@@ -57,6 +57,30 @@
       }
     },
     {
+      "source": "/api/user/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/admin/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/reports/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/astrologers(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/(.*)",
       "destination": {
         "service": "kundli-engine"

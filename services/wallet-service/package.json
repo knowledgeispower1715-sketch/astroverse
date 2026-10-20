@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "ts-node src/server.ts",
+    "test": "ts-node tests/auth.test.ts",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",

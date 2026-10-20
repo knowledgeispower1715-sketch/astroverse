@@ -582,6 +582,14 @@
     .table-astro-data tr:last-child td { border-bottom: none; }
     .table-astro-data tr:hover td { background: #FAF9F6; }
 
+    /* Identity & RBAC Badges */
+    .badge-status-active { background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-status-suspended { background: #FEE2E2; color: #991B1B; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-status-deactivated { background: #F3F4F6; color: #4B5563; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-role-admin { background: #FEF3C7; color: #92400E; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-role-user { background: #EFF6FF; color: #1E40AF; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+
+
     /* Planetary Horas & Timing Styles */
     .hora-banner {
       background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
@@ -1546,6 +1554,324 @@
       </div>
     </section>
 
+    
+    <!-- ==================== TAB 8: DEDICATED AUTHENTICATION VIEW ==================== -->
+    <section id="view-auth" class="page-tab-view">
+      <div class="section-title-wrap">
+        <h2><i class="fa-solid fa-user-lock" style="color: var(--vedic-maroon);"></i> Account Authentication & Sign In</h2>
+        <p>Access persistent birth profiles, private consultation history, and verified wallet balances across devices.</p>
+      </div>
+
+      <div style="max-width: 480px; margin: 0 auto;">
+        <div class="astro-card" style="padding: 32px 28px;">
+          <!-- Auth Mode Switcher (Phone vs Email) -->
+          <div style="display: flex; gap: 8px; margin-bottom: 20px; background: #F1F5F9; padding: 4px; border-radius: 8px;">
+            <button class="subtab-btn active" id="auth-tab-btn-phone" style="flex: 1; text-align: center;" onclick="switchAuthMode('phone')">
+              <i class="fa-solid fa-mobile-screen"></i> Mobile Phone
+            </button>
+            <button class="subtab-btn" id="auth-tab-btn-email" style="flex: 1; text-align: center;" onclick="switchAuthMode('email')">
+              <i class="fa-solid fa-envelope"></i> Email Address
+            </button>
+          </div>
+
+          <!-- Step 1: Request OTP Form -->
+          <div id="auth-view-step-1">
+            <!-- Phone input container -->
+            <div id="auth-phone-container">
+              <label class="form-field-label">Mobile Phone Number</label>
+              <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <select id="auth-country-code" class="form-input-text" style="width: 140px; flex-shrink: 0;">
+                  <option value="+91" selected>🇮🇳 +91 (IN)</option>
+                  <option value="+1">🇺🇸 +1 (US/CA)</option>
+                  <option value="+44">🇬🇧 +44 (UK)</option>
+                  <option value="+61">🇦🇺 +61 (AU)</option>
+                  <option value="+971">🇦🇪 +971 (AE)</option>
+                  <option value="+65">🇸🇬 +65 (SG)</option>
+                  <option value="+49">🇩🇪 +49 (DE)</option>
+                  <option value="+33">🇫🇷 +33 (FR)</option>
+                  <option value="+81">🇯🇵 +81 (JP)</option>
+                </select>
+                <input type="tel" id="auth-phone-num" class="form-input-text" placeholder="98765 43210" maxlength="15">
+              </div>
+            </div>
+
+            <!-- Email input container -->
+            <div id="auth-email-container" style="display: none; margin-bottom: 16px;">
+              <label class="form-field-label">Email Address</label>
+              <input type="email" id="auth-email-addr" class="form-input-text" placeholder="e.g. yourname@example.com">
+            </div>
+
+            <p style="font-size: 12px; color: #64748B; margin-bottom: 18px; line-height: 1.5;">
+              We will send a cryptographically secure 6-digit one-time password (OTP). No password required.
+            </p>
+
+            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px;" onclick="requestDedicatedAuthOtp()">
+              <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+            </button>
+          </div>
+
+          <!-- Step 2: Verify OTP Form -->
+          <div id="auth-view-step-2" style="display: none;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <div style="font-size: 13px; color: #64748B;">Verification code sent to:</div>
+              <strong id="disp-dedicated-target" style="font-size: 16px; color: var(--vedic-maroon);">--</strong>
+              <div style="font-size: 11px; color: #2563EB; cursor: pointer; margin-top: 4px;" onclick="resetAuthForm()">Change identifier</div>
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label" style="text-align: center;">Enter 6-Digit Code</label>
+              <input type="text" id="input-dedicated-otp" class="form-input-text" placeholder="------" maxlength="6"
+                     style="letter-spacing: 8px; font-size: 24px; text-align: center; font-weight: 800; font-family: monospace;">
+              <div id="dedicated-otp-dev-hint" style="font-size: 12px; color: #059669; text-align: center; margin-top: 8px; font-weight: 600;"></div>
+            </div>
+
+            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;" onclick="verifyDedicatedAuthOtp()">
+              <i class="fa-solid fa-lock-open"></i> Verify & Sign In
+            </button>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; font-size: 12px;">
+              <span id="countdown-text" style="color: #64748B;">Resend code in <strong id="countdown-secs">60</strong>s</span>
+              <button id="btn-resend-otp" class="btn-text-link" style="display: none;" onclick="resendDedicatedAuthOtp()">Resend Code</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 9: USER SETTINGS & SECURITY ==================== -->
+    <section id="view-settings" class="page-tab-view">
+      <div class="section-title-wrap">
+        <h2><i class="fa-solid fa-sliders" style="color: var(--vedic-maroon);"></i> Account Settings & Privacy</h2>
+        <p>Manage your personal profile, linked identity providers, preferred language, timezone, and security controls.</p>
+      </div>
+
+      <div class="grid-layout-2col">
+        <!-- Profile Preferences Card -->
+        <div class="astro-card">
+          <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 16px;">
+            <i class="fa-solid fa-user-gear"></i> Profile Preferences
+          </h3>
+
+          <div class="form-field-group">
+            <label class="form-field-label">Display Name</label>
+            <input type="text" id="settings-display-name" class="form-input-text" placeholder="Enter full name">
+          </div>
+
+          <div class="form-field-group">
+            <label class="form-field-label">Preferred Language</label>
+            <select id="settings-pref-lang" class="form-input-text">
+              <option value="en">English (Default)</option>
+              <option value="hi">हिंदी (Hindi)</option>
+              <option value="sa">संस्कृतम् (Sanskrit)</option>
+              <option value="gu">ગુજરાતી (Gujarati)</option>
+              <option value="mr">मराठी (Marathi)</option>
+              <option value="ta">தமிழ் (Tamil)</option>
+              <option value="te">తెలుగు (Telugu)</option>
+              <option value="bn">বাংলা (Bengali)</option>
+            </select>
+          </div>
+
+          <div class="form-field-group">
+            <label class="form-field-label">Preferred Timezone</label>
+            <select id="settings-pref-tz" class="form-input-text">
+              <option value="Asia/Kolkata">Asia/Kolkata (IST - UTC+05:30)</option>
+              <option value="America/New_York">America/New_York (EST/EDT - UTC-05:00/04:00)</option>
+              <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT - UTC-08:00/07:00)</option>
+              <option value="Europe/London">Europe/London (GMT/BST - UTC+00:00/01:00)</option>
+              <option value="Asia/Dubai">Asia/Dubai (GST - UTC+04:00)</option>
+              <option value="Asia/Singapore">Asia/Singapore (SGT - UTC+08:00)</option>
+              <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT - UTC+10:00/11:00)</option>
+            </select>
+          </div>
+
+          <button class="btn-gold-primary" style="margin-top: 8px; width: 100%; justify-content: center;" onclick="saveProfilePreferences()">
+            <i class="fa-solid fa-floppy-disk"></i> Save Profile Settings
+          </button>
+        </div>
+
+        <!-- Identity & Security Card -->
+        <div class="astro-card">
+          <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 16px;">
+            <i class="fa-solid fa-shield-halved"></i> Linked Identities & Security
+          </h3>
+
+          <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
+            <!-- Email Identity Status -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: #FAF9F6;">
+              <div>
+                <div style="font-size: 12px; color: #64748B; font-weight: 600;">Email Address</div>
+                <div id="settings-linked-email" style="font-size: 14px; font-weight: 700; color: #1E293B; margin-top: 2px;">Not Linked</div>
+              </div>
+              <div id="settings-email-badge">
+                <span class="badge-status-deactivated">Unlinked</span>
+              </div>
+            </div>
+
+            <!-- Phone Identity Status -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: #FAF9F6;">
+              <div>
+                <div style="font-size: 12px; color: #64748B; font-weight: 600;">Mobile Phone Number</div>
+                <div id="settings-linked-phone" style="font-size: 14px; font-weight: 700; color: #1E293B; margin-top: 2px;">Not Linked</div>
+              </div>
+              <div id="settings-phone-badge">
+                <span class="badge-status-deactivated">Unlinked</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-outline-secondary" id="btn-open-link-modal" style="width: 100%; justify-content: center; margin-bottom: 24px;" onclick="openLinkIdentityModal()">
+            <i class="fa-solid fa-link"></i> Link Secondary Mobile or Email
+          </button>
+
+          <!-- Danger Zone -->
+          <div style="border-top: 1px solid #FEE2E2; padding-top: 16px;">
+            <h4 style="font-size: 13px; font-weight: 800; color: #DC2626; margin-bottom: 8px; text-transform: uppercase;">
+              <i class="fa-solid fa-triangle-exclamation"></i> Danger Zone
+            </h4>
+            <p style="font-size: 12px; color: #64748B; margin-bottom: 12px;">
+              Deactivating your account terminates all active sessions. Deletion permanently erases your account, saved charts, and birth profiles.
+            </p>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-outline-secondary" style="color: #D97706; border-color: #FCD34D; font-size: 12px; flex: 1; justify-content: center;" onclick="confirmDeactivateAccount()">
+                Deactivate
+              </button>
+              <button class="btn-outline-secondary" style="color: #DC2626; border-color: #FCA5A5; font-size: 12px; flex: 1; justify-content: center;" onclick="confirmDeleteAccount()">
+                Delete Permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 10: ADMINISTRATIVE MANAGEMENT CONSOLE ==================== -->
+    <section id="view-admin" class="page-tab-view">
+      <div class="section-title-wrap">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2><i class="fa-solid fa-shield-halved" style="color: #991B1B;"></i> Astroverse Administrative Console</h2>
+            <p>Platform monitoring, user lifecycle moderation, role assignment, and security audit trail explorer.</p>
+          </div>
+          <span class="badge-role-admin" id="admin-role-badge">SUPER_ADMIN</span>
+        </div>
+      </div>
+
+      <!-- Access Denied Banner (if regular user) -->
+      <div id="admin-access-denied" class="empty-state-card" style="display: none; padding: 36px 20px; background: #FEF2F2; border-color: #FECACA;">
+        <i class="fa-solid fa-lock" style="font-size: 36px; color: #DC2626; margin-bottom: 12px;"></i>
+        <h3 style="font-size: 18px; font-weight: 800; color: #991B1B;">Administrative Access Required</h3>
+        <p style="font-size: 13px; color: #7F1D1D; margin: 8px 0 16px;">This portal is strictly restricted to authorized platform personnel (Super Admin, Support, Operations, Analyst).</p>
+        <button class="btn-gold-primary" onclick="openAuthModal()">Sign in with Admin Credentials</button>
+      </div>
+
+      <!-- Admin Dashboard Content -->
+      <div id="admin-dashboard-content">
+        <!-- Platform KPI Cards -->
+        <div class="category-pills-bar" style="margin-bottom: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+          <div class="astro-card" style="padding: 16px;">
+            <div style="font-size: 11px; color: #64748B; font-weight: 700; text-transform: uppercase;">Total Users</div>
+            <div style="font-size: 26px; font-weight: 800; color: #1E293B; margin-top: 4px;" id="metric-total-users">--</div>
+          </div>
+          <div class="astro-card" style="padding: 16px;">
+            <div style="font-size: 11px; color: #059669; font-weight: 700; text-transform: uppercase;">Active Accounts</div>
+            <div style="font-size: 26px; font-weight: 800; color: #059669; margin-top: 4px;" id="metric-active-users">--</div>
+          </div>
+          <div class="astro-card" style="padding: 16px;">
+            <div style="font-size: 11px; color: #DC2626; font-weight: 700; text-transform: uppercase;">Suspended</div>
+            <div style="font-size: 26px; font-weight: 800; color: #DC2626; margin-top: 4px;" id="metric-suspended-users">--</div>
+          </div>
+          <div class="astro-card" style="padding: 16px;">
+            <div style="font-size: 11px; color: #D97706; font-weight: 700; text-transform: uppercase;">Wallet Recharges</div>
+            <div style="font-size: 26px; font-weight: 800; color: #D97706; margin-top: 4px;">₹<span id="metric-total-deposits">0.00</span></div>
+          </div>
+          <div class="astro-card" style="padding: 16px;">
+            <div style="font-size: 11px; color: #7C3AED; font-weight: 700; text-transform: uppercase;">Saved Profiles</div>
+            <div style="font-size: 26px; font-weight: 800; color: #7C3AED; margin-top: 4px;" id="metric-total-profiles">--</div>
+          </div>
+        </div>
+
+        <!-- User Management Card -->
+        <div class="astro-card" style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 0;">
+              <i class="fa-solid fa-users-gear"></i> User Lifecycle & Moderation
+            </h3>
+            <button class="btn-outline-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="loadAdminUsersList()">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh
+            </button>
+          </div>
+
+          <!-- Filters -->
+          <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+            <input type="text" id="admin-user-search" class="form-input-text" placeholder="Search by name, email, phone, or UUID..." style="flex: 2; min-width: 220px;" oninput="debounceAdminSearch()">
+            <select id="admin-filter-role" class="form-input-text" style="flex: 1; min-width: 140px;" onchange="loadAdminUsersList()">
+              <option value="ALL">All Roles</option>
+              <option value="USER">USER</option>
+              <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+              <option value="SUPPORT">SUPPORT</option>
+              <option value="OPERATIONS">OPERATIONS</option>
+              <option value="ANALYST">ANALYST</option>
+            </select>
+            <select id="admin-filter-status" class="form-input-text" style="flex: 1; min-width: 140px;" onchange="loadAdminUsersList()">
+              <option value="ALL">All Statuses</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="SUSPENDED">SUSPENDED</option>
+              <option value="DEACTIVATED">DEACTIVATED</option>
+            </select>
+          </div>
+
+          <!-- Users Table -->
+          <div class="table-responsive-box">
+            <table class="table-astro-data">
+              <thead>
+                <tr>
+                  <th>User Details</th>
+                  <th>Contact & Identities</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Wallet</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <tr><td colspan="6" style="text-align: center; color: #64748B;">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Security & Audit Trail Card -->
+        <div class="astro-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 0;">
+              <i class="fa-solid fa-clipboard-check"></i> Security & Moderation Audit Trail
+            </h3>
+            <button class="btn-outline-secondary" style="font-size: 12px; padding: 6px 12px;" onclick="loadAdminAuditLogs()">
+              <i class="fa-solid fa-arrows-rotate"></i> Refresh Logs
+            </button>
+          </div>
+
+          <div class="table-responsive-box">
+            <table class="table-astro-data">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Action</th>
+                  <th>Target Type / ID</th>
+                  <th>Actor ID</th>
+                  <th>IP Address</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="admin-audit-tbody">
+                <tr><td colspan="6" style="text-align: center; color: #64748B;">Loading audit logs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ==================== SECTION: AI ASTROLOGER GURU ==================== -->
     <section style="margin-top: 48px;">
       <div class="section-title-wrap">
@@ -1728,6 +2054,46 @@
     </div>
   </div>
 
+  
+  <!-- ==================== MODAL: LINK SECONDARY IDENTITY ==================== -->
+  <div id="modal-link-identity" class="modal-backdrop-wrap">
+    <div class="modal-dialog-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon);">
+          <i class="fa-solid fa-link"></i> Link Secondary Identity
+        </h3>
+        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px;" onclick="closeLinkIdentityModal()"></i>
+      </div>
+
+      <div id="link-step-1">
+        <p style="font-size: 13px; color: #64748B; margin-bottom: 14px;">
+          Link an unverified mobile number or email address to your account. A 6-digit OTP will be dispatched to confirm ownership.
+        </p>
+        <div class="form-field-group">
+          <label class="form-field-label">Target Mobile Number or Email</label>
+          <input type="text" id="input-link-target" class="form-input-text" placeholder="+91 98765 43210 or user@example.com">
+        </div>
+        <button class="btn-gold-primary" style="width: 100%; justify-content: center;" onclick="requestLinkOtp()">
+          Send Verification Code
+        </button>
+      </div>
+
+      <div id="link-step-2" style="display: none;">
+        <p style="font-size: 13px; color: #64748B; margin-bottom: 14px;">
+          Enter the 6-digit verification code sent to <strong id="disp-link-target">--</strong>:
+        </p>
+        <div class="form-field-group">
+          <label class="form-field-label">Verification Code</label>
+          <input type="text" id="input-link-otp" class="form-input-text" placeholder="123456" maxlength="6" style="letter-spacing: 4px; font-size: 18px; text-align: center;">
+          <div id="link-otp-dev-hint" style="font-size: 11px; color: #059669; margin-top: 4px; font-weight: 600;"></div>
+        </div>
+        <button class="btn-gold-primary" style="width: 100%; justify-content: center;" onclick="verifyLinkOtp()">
+          Confirm & Link Identity
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Mobile Bottom Navigation Dock -->
   <nav class="mobile-bottom-dock">
     <button class="mob-dock-btn active" id="mob-dock-kundli" onclick="switchNavSection('kundli')">
@@ -1795,7 +2161,12 @@
     }
 
     // Navigation & Tabs
-    function switchNavSection(sectionId) {
+    function switchNavSection(sectionId, updateHash = true) {
+      if (updateHash && window.location.hash !== '#/' + sectionId) {
+        window.location.hash = '#/' + sectionId;
+      }
+      if (sectionId === 'settings') loadSettingsViewData();
+      if (sectionId === 'admin') loadAdminConsoleData();
       document.querySelectorAll('.page-tab-view').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-link-btn').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-pill').forEach(el => el.classList.remove('active'));
@@ -2866,23 +3237,105 @@
       document.getElementById('tts-label').textContent = "Stop";
     }
 
-    // 7. AUTHENTICATION & WALLET (Section 10)
+    // 7. AUTHENTICATION, SETTINGS & ADMIN CONTROLLER (Sections 4, 10 & 11)
+    let currentSessionToken = localStorage.getItem('astro_session_token') || '';
+    let activeAuthTarget = "";
+    let activeDevOtp = "";
+    let authCountdownTimer = null;
+    let authCountdownSeconds = 0;
+
+    function getAuthHeaders() {
+      const h = { 'Content-Type': 'application/json' };
+      if (currentSessionToken) {
+        h['Authorization'] = 'Bearer ' + currentSessionToken;
+      }
+      return h;
+    }
+
+    // Modal Controls
     function openAuthModal() {
       document.getElementById('modal-auth').style.display = 'flex';
       document.getElementById('auth-step-1').style.display = 'block';
       document.getElementById('auth-step-2').style.display = 'none';
+      const input = document.getElementById('input-auth-ident');
+      if (input) input.focus();
     }
+
     function closeAuthModal() {
       document.getElementById('modal-auth').style.display = 'none';
     }
 
-    let activeAuthTarget = "";
-    let activeDevOtp = "";
+    // Mode Switcher for Dedicated Auth View
+    let dedicatedAuthMode = 'phone'; // 'phone' | 'email'
 
+    function switchAuthMode(mode) {
+      dedicatedAuthMode = mode;
+      document.getElementById('auth-tab-btn-phone').classList.toggle('active', mode === 'phone');
+      document.getElementById('auth-tab-btn-email').classList.toggle('active', mode === 'email');
+      document.getElementById('auth-phone-container').style.display = mode === 'phone' ? 'block' : 'none';
+      document.getElementById('auth-email-container').style.display = mode === 'email' ? 'block' : 'none';
+    }
+
+    function startOtpCountdown(seconds = 60) {
+      if (authCountdownTimer) clearInterval(authCountdownTimer);
+      authCountdownSeconds = seconds;
+      const countEl = document.getElementById('countdown-secs');
+      const textEl = document.getElementById('countdown-text');
+      const resendBtn = document.getElementById('btn-resend-otp');
+
+      if (countEl) countEl.textContent = authCountdownSeconds;
+      if (textEl) textEl.style.display = 'inline';
+      if (resendBtn) resendBtn.style.display = 'none';
+
+      authCountdownTimer = setInterval(() => {
+        authCountdownSeconds--;
+        if (countEl) countEl.textContent = authCountdownSeconds;
+        if (authCountdownSeconds <= 0) {
+          clearInterval(authCountdownTimer);
+          authCountdownTimer = null;
+          if (textEl) textEl.style.display = 'none';
+          if (resendBtn) resendBtn.style.display = 'inline';
+        }
+      }, 1000);
+    }
+
+    // Dedicated Full-Page Auth Request
+    async function requestDedicatedAuthOtp() {
+      let ident = "";
+      if (dedicatedAuthMode === 'phone') {
+        const code = document.getElementById('auth-country-code').value;
+        const phone = document.getElementById('auth-phone-num').value.trim();
+        if (!phone) { showToast("Please enter your mobile phone number.", "error"); return; }
+        ident = code + phone.replace(/^0+/, '');
+      } else {
+        const email = document.getElementById('auth-email-addr').value.trim();
+        if (!email) { showToast("Please enter your email address.", "error"); return; }
+        ident = email;
+      }
+
+      await executeRequestOtp(ident, 'dedicated');
+    }
+
+    function resendDedicatedAuthOtp() {
+      if (activeAuthTarget) {
+        executeRequestOtp(activeAuthTarget, 'dedicated');
+      }
+    }
+
+    function resetAuthForm() {
+      document.getElementById('auth-view-step-1').style.display = 'block';
+      document.getElementById('auth-view-step-2').style.display = 'none';
+    }
+
+    // Modal Auth Request
     async function requestAuthOtp() {
       const ident = document.getElementById('input-auth-ident').value.trim();
       if (!ident) { showToast("Please enter mobile number or email.", "error"); return; }
+      await executeRequestOtp(ident, 'modal');
+    }
 
+    // Common Server-Side OTP Dispatch
+    async function executeRequestOtp(ident, context = 'modal') {
       const isEmail = ident.includes('@');
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const phoneRegex = /^\+?[0-9]{10,15}$/;
@@ -2895,7 +3348,7 @@
       } else {
         const digitsOnly = ident.replace(/[\s\-\(\)]/g, '');
         if (!phoneRegex.test(digitsOnly)) {
-          showToast("Invalid phone number format (must be 10-15 digits).", "error");
+          showToast("Invalid phone number format (must be 10-15 digits with country code).", "error");
           return;
         }
       }
@@ -2909,119 +3362,574 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ identifier: ident, type: isEmail ? 'email' : 'phone' })
         });
+        const data = await res.json();
+
         if (res.ok) {
-          const data = await res.json();
           activeDevOtp = data.devPreviewOtp || '';
-          document.getElementById('disp-auth-target').textContent = ident;
-          document.getElementById('otp-dev-hint').textContent = activeDevOtp ? `[Dev Preview OTP: ${activeDevOtp}]` : `Code sent via SMS/Email`;
-          document.getElementById('auth-step-1').style.display = 'none';
-          document.getElementById('auth-step-2').style.display = 'block';
-          showToast(`Verification code sent to ${ident}`, "info");
-          return;
+
+          if (context === 'dedicated') {
+            document.getElementById('disp-dedicated-target').textContent = ident;
+            document.getElementById('dedicated-otp-dev-hint').textContent = activeDevOtp ? `[Dev Preview OTP: ${activeDevOtp}]` : 'Code sent via SMS/Email';
+            document.getElementById('auth-view-step-1').style.display = 'none';
+            document.getElementById('auth-view-step-2').style.display = 'block';
+            startOtpCountdown(data.cooldownSeconds || 60);
+          } else {
+            document.getElementById('disp-auth-target').textContent = ident;
+            document.getElementById('otp-dev-hint').textContent = activeDevOtp ? `[Dev Preview OTP: ${activeDevOtp}]` : 'Code sent via SMS/Email';
+            document.getElementById('auth-step-1').style.display = 'none';
+            document.getElementById('auth-step-2').style.display = 'block';
+          }
+
+          showToast(`Verification code dispatched to ${ident}`, "info");
+        } else {
+          showToast(data.message || "Failed to dispatch verification code.", "error");
         }
       } catch (err) {
-        console.warn("Backend auth offline, using local dev verification:", err);
+        console.error("Auth request network error:", err);
+        showToast("Authentication service unavailable. Please check server on port 5000.", "error");
       }
-
-      // Offline dev verification fallback
-      activeDevOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      document.getElementById('disp-auth-target').textContent = ident;
-      document.getElementById('otp-dev-hint').textContent = `[Dev Preview OTP: ${activeDevOtp}]`;
-      document.getElementById('auth-step-1').style.display = 'none';
-      document.getElementById('auth-step-2').style.display = 'block';
-      showToast(`Verification code generated for ${ident}`, "info");
     }
 
+    // Verify OTP (Dedicated View)
+    async function verifyDedicatedAuthOtp() {
+      const otp = document.getElementById('input-dedicated-otp').value.trim();
+      if (!otp) { showToast("Please enter the 6-digit verification code.", "error"); return; }
+      await executeVerifyOtp(otp, 'dedicated');
+    }
+
+    // Verify OTP (Modal)
     async function verifyAuthOtp() {
       const otp = document.getElementById('input-auth-otp').value.trim();
-      if (!otp) {
-        showToast("Please enter the verification code.", "error");
-        return;
-      }
+      if (!otp) { showToast("Please enter the verification code.", "error"); return; }
+      await executeVerifyOtp(otp, 'modal');
+    }
 
+    // Common Server-Side OTP Verification
+    async function executeVerifyOtp(otp, context = 'modal') {
       try {
         const res = await fetch(`${getAuthBase()}/api/auth/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ identifier: activeAuthTarget, otp })
         });
+        const data = await res.json();
+
         if (res.ok) {
-          const data = await res.json();
           const u = data.user;
+          currentSessionToken = data.sessionToken;
           currentUserSession = {
             id: u.id,
             name: u.displayName || activeAuthTarget.split('@')[0],
             identifier: u.email || u.phone || activeAuthTarget,
-            role: "USER"
+            email: u.email,
+            phone: u.phone,
+            phoneVerified: u.phoneVerified,
+            emailVerified: u.emailVerified,
+            role: u.role,
+            status: u.status,
+            preferredLanguage: u.preferredLanguage,
+            preferredTimezone: u.preferredTimezone
           };
           currentWalletBalance = parseFloat(u.walletBalance || 0.00);
 
+          localStorage.setItem('astro_session_token', currentSessionToken);
           localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
           localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
 
           await syncProfilesFromBackend(u.id);
-
           updateUserSessionUI();
-          closeAuthModal();
+
+          if (context === 'modal') {
+            closeAuthModal();
+          } else {
+            switchNavSection('dashboard');
+          }
+
           showToast(`Welcome, ${currentUserSession.name}! Signed in successfully.`, "success");
-          return;
+        } else {
+          showToast(data.message || "Invalid or expired verification code.", "error");
         }
       } catch (err) {
-        console.warn("Backend auth verify offline, checking local preview OTP:", err);
+        console.error("Auth verify network error:", err);
+        showToast("Authentication server unavailable. Please ensure service is running on port 5000.", "error");
       }
-
-      if (otp !== activeDevOtp && otp !== '123456') {
-        showToast("Invalid or expired verification code. Please try again.", "error");
-        return;
-      }
-
-      currentUserSession = {
-        id: 'local_user_' + Date.now(),
-        name: activeAuthTarget.split('@')[0],
-        identifier: activeAuthTarget,
-        role: "USER"
-      };
-      currentWalletBalance = 0.00; // Zero balance guest state
-
-      localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
-      localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-
-      updateUserSessionUI();
-      closeAuthModal();
-      showToast(`Welcome, ${currentUserSession.name}! Signed in successfully.`, "success");
     }
 
-    function executeSignOut() {
+    // Sign Out
+    async function executeSignOut(notify = true) {
+      if (currentSessionToken) {
+        try {
+          await fetch(`${getAuthBase()}/api/auth/logout`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+        } catch (e) {}
+      }
+
       currentUserSession = null;
+      currentSessionToken = '';
       currentWalletBalance = 0.00;
+      localStorage.removeItem('astro_session_token');
       localStorage.removeItem('astro_user_session');
       localStorage.removeItem('astro_wallet_bal');
+
       updateUserSessionUI();
-      showToast("Signed out successfully.", "info");
+      if (notify) showToast("Signed out successfully.", "info");
+      switchNavSection('kundli');
     }
 
+    // Validate stored session with server on startup
+    async function validateStoredSession() {
+      if (!currentSessionToken) return;
+      try {
+        const res = await fetch(`${getAuthBase()}/api/user/me`, {
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          const u = await res.json();
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || u.email?.split('@')[0] || u.phone || 'User',
+            identifier: u.email || u.phone,
+            email: u.email,
+            phone: u.phone,
+            emailVerified: u.emailVerified,
+            phoneVerified: u.phoneVerified,
+            role: u.role,
+            status: u.status,
+            preferredLanguage: u.preferredLanguage,
+            preferredTimezone: u.preferredTimezone
+          };
+          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+          updateUserSessionUI();
+        } else if (res.status === 401 || res.status === 403) {
+          executeSignOut(false);
+        }
+      } catch (err) {
+        console.warn("[SESSION] Offline validation fallback:", err);
+      }
+    }
+
+    // Update UI Elements with Session State
     function updateUserSessionUI() {
       const authBtnText = document.getElementById('auth-btn-text');
       const unauthBox = document.getElementById('dash-unauth-box');
       const authBox = document.getElementById('dash-auth-box');
+      const adminNavBtn = document.getElementById('btn-nav-admin');
 
       document.getElementById('global-wallet-bal').textContent = currentWalletBalance.toFixed(2);
       document.getElementById('dash-wallet-bal').textContent = currentWalletBalance.toFixed(2);
 
+      const isAdmin = currentUserSession && ['SUPER_ADMIN', 'SUPPORT', 'OPERATIONS', 'ANALYST'].includes(currentUserSession.role);
+
+      if (adminNavBtn) {
+        adminNavBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+      }
+
       if (currentUserSession) {
         authBtnText.textContent = currentUserSession.name;
-        unauthBox.style.display = 'none';
-        authBox.style.display = 'block';
-        document.getElementById('dash-user-name').textContent = currentUserSession.name;
-        document.getElementById('dash-user-ident').textContent = currentUserSession.identifier;
+        if (unauthBox) unauthBox.style.display = 'none';
+        if (authBox) authBox.style.display = 'block';
+        const dName = document.getElementById('dash-user-name');
+        const dIdent = document.getElementById('dash-user-ident');
+        if (dName) dName.textContent = currentUserSession.name;
+        if (dIdent) dIdent.textContent = currentUserSession.identifier;
+
+        // Populate settings
+        loadSettingsViewData();
       } else {
         authBtnText.textContent = "Sign In";
-        unauthBox.style.display = 'block';
-        authBox.style.display = 'none';
+        if (unauthBox) unauthBox.style.display = 'block';
+        if (authBox) authBox.style.display = 'none';
       }
     }
 
-    function openSaveProfileModal() {
+    // ==================== USER SETTINGS CONTROLLER ====================
+
+    function loadSettingsViewData() {
+      if (!currentUserSession) return;
+      const nameInput = document.getElementById('settings-display-name');
+      const langSel = document.getElementById('settings-pref-lang');
+      const tzSel = document.getElementById('settings-pref-tz');
+      const emailDisp = document.getElementById('settings-linked-email');
+      const emailBadge = document.getElementById('settings-email-badge');
+      const phoneDisp = document.getElementById('settings-linked-phone');
+      const phoneBadge = document.getElementById('settings-phone-badge');
+
+      if (nameInput) nameInput.value = currentUserSession.name || '';
+      if (langSel && currentUserSession.preferredLanguage) langSel.value = currentUserSession.preferredLanguage;
+      if (tzSel && currentUserSession.preferredTimezone) tzSel.value = currentUserSession.preferredTimezone;
+
+      if (emailDisp) {
+        if (currentUserSession.email) {
+          emailDisp.textContent = currentUserSession.email;
+          emailBadge.innerHTML = currentUserSession.emailVerified ? 
+            '<span class="badge-status-active"><i class="fa-solid fa-check"></i> Verified</span>' : 
+            '<span class="badge-status-suspended">Unverified</span>';
+        } else {
+          emailDisp.textContent = "Not Linked";
+          emailBadge.innerHTML = '<span class="badge-status-deactivated">Unlinked</span>';
+        }
+      }
+
+      if (phoneDisp) {
+        if (currentUserSession.phone) {
+          phoneDisp.textContent = currentUserSession.phone;
+          phoneBadge.innerHTML = currentUserSession.phoneVerified ? 
+            '<span class="badge-status-active"><i class="fa-solid fa-check"></i> Verified</span>' : 
+            '<span class="badge-status-suspended">Unverified</span>';
+        } else {
+          phoneDisp.textContent = "Not Linked";
+          phoneBadge.innerHTML = '<span class="badge-status-deactivated">Unlinked</span>';
+        }
+      }
+    }
+
+    async function saveProfilePreferences() {
+      if (!currentUserSession) {
+        showToast("Please sign in first.", "error");
+        return;
+      }
+
+      const displayName = document.getElementById('settings-display-name').value.trim();
+      const preferredLanguage = document.getElementById('settings-pref-lang').value;
+      const preferredTimezone = document.getElementById('settings-pref-tz').value;
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/user/profile`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ displayName, preferredLanguage, preferredTimezone })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          currentUserSession.name = data.user.displayName;
+          currentUserSession.preferredLanguage = data.user.preferredLanguage;
+          currentUserSession.preferredTimezone = data.user.preferredTimezone;
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          updateUserSessionUI();
+          showToast("Profile preferences updated successfully.", "success");
+        } else {
+          showToast(data.message || "Failed to update profile.", "error");
+        }
+      } catch (err) {
+        showToast("Network error updating profile preferences.", "error");
+      }
+    }
+
+    // Link Identity Modal
+    let activeLinkTarget = "";
+
+    function openLinkIdentityModal() {
+      if (!currentUserSession) {
+        showToast("Please sign in first.", "error");
+        return;
+      }
+      document.getElementById('modal-link-identity').style.display = 'flex';
+      document.getElementById('link-step-1').style.display = 'block';
+      document.getElementById('link-step-2').style.display = 'none';
+      document.getElementById('input-link-target').value = '';
+    }
+
+    function closeLinkIdentityModal() {
+      document.getElementById('modal-link-identity').style.display = 'none';
+    }
+
+    async function requestLinkOtp() {
+      const target = document.getElementById('input-link-target').value.trim();
+      if (!target) { showToast("Please enter mobile phone or email.", "error"); return; }
+
+      activeLinkTarget = target;
+      showToast("Dispatching linking code...", "info");
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/request-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: target })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('disp-link-target').textContent = target;
+          document.getElementById('link-otp-dev-hint').textContent = data.devPreviewOtp ? `[Dev Preview OTP: ${data.devPreviewOtp}]` : 'Code sent';
+          document.getElementById('link-step-1').style.display = 'none';
+          document.getElementById('link-step-2').style.display = 'block';
+          showToast(`Code sent to ${target}`, "info");
+        } else {
+          showToast(data.message || "Failed to send code.", "error");
+        }
+      } catch (err) {
+        showToast("Failed to request linking verification code.", "error");
+      }
+    }
+
+    async function verifyLinkOtp() {
+      const otp = document.getElementById('input-link-otp').value.trim();
+      if (!otp) { showToast("Please enter verification code.", "error"); return; }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/link-identity`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ targetIdentifier: activeLinkTarget, otp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const u = data.user;
+          currentUserSession.phone = u.phone;
+          currentUserSession.phoneVerified = u.phoneVerified;
+          currentUserSession.email = u.email;
+          currentUserSession.emailVerified = u.emailVerified;
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          updateUserSessionUI();
+          closeLinkIdentityModal();
+          showToast(`Successfully linked ${activeLinkTarget}!`, "success");
+        } else {
+          showToast(data.message || "Failed to link identity.", "error");
+        }
+      } catch (err) {
+        showToast("Network error linking identity.", "error");
+      }
+    }
+
+    async function confirmDeactivateAccount() {
+      if (!confirm("Are you sure you want to deactivate your account? All active sessions will be terminated.")) return;
+      try {
+        const res = await fetch(`${getAuthBase()}/api/user/deactivate`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          showToast("Account deactivated.", "info");
+          executeSignOut(false);
+        }
+      } catch (err) {
+        showToast("Failed to deactivate account.", "error");
+      }
+    }
+
+    async function confirmDeleteAccount() {
+      if (!confirm("PERMANENT ACTION: Are you absolutely sure you want to permanently delete your account and all saved profiles? This cannot be undone.")) return;
+      try {
+        const res = await fetch(`${getAuthBase()}/api/user/account`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          showToast("Account deleted permanently.", "info");
+          executeSignOut(false);
+        }
+      } catch (err) {
+        showToast("Failed to delete account.", "error");
+      }
+    }
+
+    // ==================== ADMIN CONSOLE CONTROLLER ====================
+
+    let adminSearchDebounce = null;
+    function debounceAdminSearch() {
+      clearTimeout(adminSearchDebounce);
+      adminSearchDebounce = setTimeout(() => loadAdminUsersList(), 300);
+    }
+
+    async function loadAdminConsoleData() {
+      const isAdmin = currentUserSession && ['SUPER_ADMIN', 'SUPPORT', 'OPERATIONS', 'ANALYST'].includes(currentUserSession.role);
+      const deniedBox = document.getElementById('admin-access-denied');
+      const contentBox = document.getElementById('admin-dashboard-content');
+      const roleBadge = document.getElementById('admin-role-badge');
+
+      if (!isAdmin) {
+        if (deniedBox) deniedBox.style.display = 'block';
+        if (contentBox) contentBox.style.display = 'none';
+        return;
+      }
+
+      if (deniedBox) deniedBox.style.display = 'none';
+      if (contentBox) contentBox.style.display = 'block';
+      if (roleBadge) roleBadge.textContent = currentUserSession.role;
+
+      await Promise.all([
+        loadAdminMetrics(),
+        loadAdminUsersList(),
+        loadAdminAuditLogs()
+      ]);
+    }
+
+    async function loadAdminMetrics() {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/metrics`, {
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          const m = await res.json();
+          document.getElementById('metric-total-users').textContent = m.totalUsers;
+          document.getElementById('metric-active-users').textContent = m.activeUsers;
+          document.getElementById('metric-suspended-users').textContent = m.suspendedUsers;
+          document.getElementById('metric-total-deposits').textContent = Number(m.totalWalletDeposits).toFixed(2);
+          document.getElementById('metric-total-profiles').textContent = m.totalProfiles;
+        }
+      } catch (err) {
+        console.warn("Failed to load admin metrics:", err);
+      }
+    }
+
+    async function loadAdminUsersList() {
+      const search = document.getElementById('admin-user-search')?.value || '';
+      const role = document.getElementById('admin-filter-role')?.value || 'ALL';
+      const status = document.getElementById('admin-filter-status')?.value || 'ALL';
+      const tbody = document.getElementById('admin-users-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B;">Refreshing user list...</td></tr>';
+
+      try {
+        const url = new URL(`${getAuthBase()}/api/admin/users`);
+        if (search) url.searchParams.append('search', search);
+        if (role !== 'ALL') url.searchParams.append('role', role);
+        if (status !== 'ALL') url.searchParams.append('status', status);
+
+        const res = await fetch(url.toString(), { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          const users = data.users;
+          if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B;">No matching users found.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = users.map(u => {
+            const statusClass = u.status === 'ACTIVE' ? 'badge-status-active' : (u.status === 'SUSPENDED' ? 'badge-status-suspended' : 'badge-status-deactivated');
+            const roleClass = u.role === 'SUPER_ADMIN' ? 'badge-role-admin' : 'badge-role-user';
+            const isSuperAdmin = currentUserSession.role === 'SUPER_ADMIN';
+
+            return `
+              <tr>
+                <td>
+                  <strong>${u.displayName || 'Unnamed'}</strong>
+                  <div style="font-size: 11px; color: #64748B;">ID: ${u.id}</div>
+                </td>
+                <td>
+                  <div>${u.email ? `<i class="fa-solid fa-envelope" style="color: #64748B; font-size: 11px;"></i> ${u.email}` : ''}</div>
+                  <div>${u.phone ? `<i class="fa-solid fa-phone" style="color: #64748B; font-size: 11px;"></i> ${u.phone}` : ''}</div>
+                </td>
+                <td>
+                  ${isSuperAdmin ? `
+                    <select onchange="changeAdminUserRole('${u.id}', this.value)" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #CBD5E1;">
+                      ${['USER', 'ANALYST', 'OPERATIONS', 'SUPPORT', 'SUPER_ADMIN'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}
+                    </select>
+                  ` : `<span class="${roleClass}">${u.role}</span>`}
+                </td>
+                <td><span class="${statusClass}">${u.status}</span></td>
+                <td><strong>₹${Number(u.walletBalance).toFixed(2)}</strong></td>
+                <td>
+                  <div style="display: flex; gap: 6px;">
+                    <button class="btn-outline-secondary" style="padding: 4px 8px; font-size: 11px; ${u.status === 'ACTIVE' ? 'color: #DC2626;' : 'color: #059669;'}"
+                            onclick="toggleAdminUserStatus('${u.id}', '${u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'}')">
+                      ${u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #DC2626;">Error loading user directory.</td></tr>';
+      }
+    }
+
+    async function toggleAdminUserStatus(userId, newStatus) {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/users/${userId}/status`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`User status updated to ${newStatus}`, "success");
+          loadAdminUsersList();
+          loadAdminMetrics();
+        } else {
+          showToast(data.message || "Failed to update user status.", "error");
+        }
+      } catch (err) {
+        showToast("Network error updating status.", "error");
+      }
+    }
+
+    async function changeAdminUserRole(userId, newRole) {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/users/${userId}/role`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ role: newRole })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Role updated to ${newRole}`, "success");
+          loadAdminUsersList();
+        } else {
+          showToast(data.message || "Failed to update role.", "error");
+        }
+      } catch (err) {
+        showToast("Network error updating role.", "error");
+      }
+    }
+
+    async function loadAdminAuditLogs() {
+      const tbody = document.getElementById('admin-audit-tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B;">Refreshing audit logs...</td></tr>';
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/audit-logs?limit=30`, {
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const events = data.events;
+          if (events.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B;">No security audit events recorded.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = events.map(e => {
+            const timeStr = new Date(e.createdAt).toLocaleString();
+            return `
+              <tr>
+                <td style="font-size: 11px; color: #64748B; white-space: nowrap;">${timeStr}</td>
+                <td><strong style="color: var(--vedic-maroon);">${e.action}</strong></td>
+                <td>${e.targetType ? `${e.targetType}: ${e.targetId || ''}` : '--'}</td>
+                <td style="font-size: 11px; color: #64748B;">${e.userId || 'system'}</td>
+                <td style="font-size: 11px;">${e.ipAddress || '127.0.0.1'}</td>
+                <td style="font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${e.metadata ? JSON.stringify(e.metadata) : '--'}
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #DC2626;">Error loading audit logs.</td></tr>';
+      }
+    }
+
+    // Hash Route Listener
+    function handleHashRoute() {
+      const hash = window.location.hash.replace('#/', '').replace('#', '');
+      const validTabs = ['kundli', 'horas', 'astrologers', 'matchmaking', 'horoscope', 'dashboard', 'pujas', 'auth', 'settings', 'admin'];
+      if (validTabs.includes(hash)) {
+        switchNavSection(hash, false);
+      }
+    }
+    window.addEventListener('hashchange', handleHashRoute);
+
+
+        function openSaveProfileModal() {
       if (!currentUserSession) {
         showToast("Please sign in first to save birth profiles.", "info");
         openAuthModal();
