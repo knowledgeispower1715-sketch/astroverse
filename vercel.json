@@ -26,10 +26,6 @@
       "root": "services/wallet-service",
       "framework": "express",
       "entrypoint": "src/server.ts"
-    },
-    "website": {
-      "root": "website",
-      "runtime": "python"
     }
   },
   "rewrites": [
