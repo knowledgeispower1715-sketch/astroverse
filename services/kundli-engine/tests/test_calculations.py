@@ -4,21 +4,26 @@ Exercises:
 1. Ephemeris Planetary Longitudes & Ketu 180° opposition
 2. Divisional Charts (D1, D9 Navamsha, D10 Dashamsha, Chalit)
 3. Vimshottari Dasha 120-year cycle & Antardashas
-4. 24-Hour Planetary Horas & Chaldean sequence
+4. 24-Hour Planetary Horas & Chaldean sequence with unequal intervals & Rahu Kaal
 5. Ashtakoota 36-Guna Matchmaking algorithm
 6. Manglik, Kaal Sarp, and Sade Sati rules
+7. FreeAstrologyAPI connectivity & external verification
+8. Location & Timezone geocoding validation
 """
 import sys
 import os
+from datetime import datetime, date
+from zoneinfo import ZoneInfo
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from datetime import datetime
 from ephemeris import calculate_kundli
 from divisional_charts import calculate_navamsha, calculate_dashamsha, calculate_moon_chart, calculate_chalit_chart
 from dasha_engine import calculate_vimshottari_dasha
-from hora_engine import calculate_24h_horas
+from hora_engine import calculate_sun_times, calculate_24h_horas
 from matchmaking import match_kundli_36_gunas
 from doshas_and_remedies import analyze_doshas_and_remedies
+from external_api import fetch_external_planets, fetch_external_chart_url
 
 def test_ephemeris_and_panchang():
     dob = "1996-11-24T14:30:00"
@@ -112,30 +117,47 @@ def test_vimshottari_dasha():
     print("[PASS] test_vimshottari_dasha passed")
 
 def test_hora_engine():
-    sunrise = datetime(2026, 10, 20, 6, 24, 0)
-    sunset = datetime(2026, 10, 20, 17, 48, 0)
-    horas = calculate_24h_horas(sunrise, sunset)
+    # Test sunrise/sunset computation for Delhi
+    target_d = date(2026, 10, 20)
+    s_rise, s_set, s_next = calculate_sun_times(target_d, 28.6139, 77.2090, "Asia/Kolkata")
+    
+    assert s_rise.hour == 6
+    assert s_set.hour == 17
+    assert s_next.day == 21
+
+    horas_res = calculate_24h_horas(s_rise, s_set, s_next)
+    timeline = horas_res["timeline"]
 
     # Must contain exactly 24 Horas
-    assert len(horas) == 24
+    assert len(timeline) == 24
     
     # First 12 are Day Horas, next 12 are Night Horas
-    day_horas = [h for h in horas if h["period"] == "Day"]
-    night_horas = [h for h in horas if h["period"] == "Night"]
+    day_horas = [h for h in timeline if h["period"] == "Day"]
+    night_horas = [h for h in timeline if h["period"] == "Night"]
     assert len(day_horas) == 12
     assert len(night_horas) == 12
 
-    # Verify Tuesday lord is Mars
-    # 2026-10-20 was a Tuesday (weekday = 1)
+    # Verify unequal day and night durations
+    assert horas_res["day_hora_duration_minutes"] > 0
+    assert horas_res["night_hora_duration_minutes"] > 0
+    assert horas_res["day_hora_duration_minutes"] != horas_res["night_hora_duration_minutes"]
+
+    # 2026-10-20 was a Tuesday (weekday = 1) -> Lord is Mars
+    assert horas_res["day_ruler"] == "Mars"
     assert day_horas[0]["ruling_planet"] == "Mars"
-    # Following Chaldean order: Mars -> Sun -> Venus -> Mercury -> Moon -> Saturn -> Jupiter
+    # Chaldean order: Mars -> Sun -> Venus -> Mercury -> Moon -> Saturn -> Jupiter
     assert day_horas[1]["ruling_planet"] == "Sun"
     assert day_horas[2]["ruling_planet"] == "Venus"
     assert day_horas[3]["ruling_planet"] == "Mercury"
+
+    # Verify Rahu Kaal computed
+    assert "rahu_kaal" in horas_res["special_periods"]
+    assert len(horas_res["special_periods"]["rahu_kaal"]["start"]) > 0
+
     print("[PASS] test_hora_engine passed")
 
 def test_ashtakoota_matchmaking():
-    # Test Case 1: Aries Moon (0°) & Sagittarius Moon (245°)
+    # Test Case 1: Aries Moon (15°) & Sagittarius Moon (245°)
     m1 = match_kundli_36_gunas(15.0, 245.0)
     assert 0 <= m1["total_score"] <= 36.0
     bd1 = m1["breakdown"]
@@ -144,7 +166,7 @@ def test_ashtakoota_matchmaking():
               bd1["bhakoot"]["obtained"] + bd1["nadi"]["obtained"])
     assert round(total1, 1) == m1["total_score"]
 
-    # Test Case 2: Identical Nakshatra => Same Nadi
+    # Test Case 2: Identical Nakshatra => Same Nadi Dosha
     m2 = match_kundli_36_gunas(15.0, 15.0)
     assert m2["breakdown"]["nadi"]["has_dosha"] is True
     assert m2["breakdown"]["nadi"]["obtained"] == 0.0
@@ -171,6 +193,16 @@ def test_doshas():
     assert "Phase 1" in doshas["sade_sati"]["phase"]
     print("[PASS] test_doshas passed")
 
+def test_external_api():
+    # Verify FreeAstrologyAPI connection with configured key
+    res = fetch_external_planets(1995, 6, 15, 10, 30, 0, 28.6139, 77.2090, 5.5)
+    assert res.get("statusCode") == 200
+    assert len(res.get("output", [])) > 0
+    
+    chart_res = fetch_external_chart_url(1995, 6, 15, 10, 30, 0, 28.6139, 77.2090, 5.5)
+    assert chart_res.get("statusCode") == 200
+    print("[PASS] test_external_api passed")
+
 if __name__ == "__main__":
     test_ephemeris_and_panchang()
     test_divisional_charts()
@@ -178,4 +210,5 @@ if __name__ == "__main__":
     test_hora_engine()
     test_ashtakoota_matchmaking()
     test_doshas()
-    print("\nALL 6 ASTRONOMICAL CALCULATION TEST SUITES PASSED!")
+    test_external_api()
+    print("\nALL 7 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
