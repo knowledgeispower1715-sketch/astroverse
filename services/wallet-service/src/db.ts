@@ -1,7 +1,52 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { PrismaClient, Role, AccountStatus, EntryType, OrderStatus, SessionStatus } from '@prisma/client';
+
+export enum Role {
+  USER = 'USER',
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  SUPPORT = 'SUPPORT',
+  OPERATIONS = 'OPERATIONS',
+  ANALYST = 'ANALYST'
+}
+
+export enum AccountStatus {
+  ACTIVE = 'ACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  DEACTIVATED = 'DEACTIVATED'
+}
+
+export enum EntryType {
+  WALLET_RECHARGE = 'WALLET_RECHARGE',
+  CONSULTATION_DEBIT = 'CONSULTATION_DEBIT',
+  ASTROLOGER_CREDIT = 'ASTROLOGER_CREDIT',
+  PLATFORM_COMMISSION = 'PLATFORM_COMMISSION',
+  PUJA_BOOKING = 'PUJA_BOOKING',
+  STORE_PURCHASE = 'STORE_PURCHASE'
+}
+
+export enum OrderStatus {
+  CREATED = 'CREATED',
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED'
+}
+
+export enum SessionStatus {
+  INITIATED = 'INITIATED',
+  ACCEPTED = 'ACCEPTED',
+  ACTIVE = 'ACTIVE',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+let PrismaClientConstructor: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  PrismaClientConstructor = require('@prisma/client').PrismaClient;
+} catch (e: any) {
+  console.warn('[DB] Prisma client native library not pre-loaded:', e.message);
+}
 
 export interface UserRecord {
   id: string;
@@ -135,32 +180,62 @@ interface DatabaseSchema {
   pujaBookings: PujaBookingRecord[];
 }
 
-const DATA_DIR = path.resolve(__dirname, '..', 'data');
-const DB_FILE = path.join(DATA_DIR, 'astroverse_db.json');
+function resolveDbPaths(): { dataDir: string; dbFile: string } {
+  if (process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const tmpDir = path.join('/tmp', 'astroverse_data');
+    try {
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+      return { dataDir: tmpDir, dbFile: path.join(tmpDir, 'astroverse_db.json') };
+    } catch {
+      // Fall through
+    }
+  }
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const localDir = path.resolve(__dirname, '..', 'data');
+  const localFile = path.join(localDir, 'astroverse_db.json');
+  try {
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+    return { dataDir: localDir, dbFile: localFile };
+  } catch {
+    const tmpDir = path.join('/tmp', 'astroverse_data');
+    try {
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+    } catch (_) {}
+    return { dataDir: tmpDir, dbFile: path.join(tmpDir, 'astroverse_db.json') };
+  }
 }
 
 // In-memory cache + file persistence with ACID-like atomic writes
 class ResilientDatabase {
   private data: DatabaseSchema;
   private isPostgresAvailable: boolean = false;
-  private prisma: PrismaClient;
+  private prisma: any = null;
+  private dbFilePath: string;
 
   constructor() {
-    this.prisma = new PrismaClient();
-    if (process.env.DATABASE_URL) {
+    const paths = resolveDbPaths();
+    this.dbFilePath = paths.dbFile;
+
+    if (process.env.DATABASE_URL && PrismaClientConstructor) {
       try {
+        this.prisma = new PrismaClientConstructor();
         this.isPostgresAvailable = true;
         console.log('[DB] DATABASE_URL detected. Configuring durable PostgreSQL via Prisma.');
-      } catch (err) {
-        console.error('[DB] Failed to initialize Prisma client:', err);
+      } catch (err: any) {
+        console.error('[DB] Failed to initialize Prisma client:', err?.message || err);
         this.isPostgresAvailable = false;
       }
-    } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
-      console.warn('[DB_CONFIG_REQUIRED] Running in production/Vercel without DATABASE_URL. Ephemeral file storage cannot persist across lambda invocations.');
+    } else {
+      this.isPostgresAvailable = false;
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+        console.warn('[DB_CONFIG_REQUIRED] Running in production/Vercel without DATABASE_URL. Ephemeral file storage cannot persist across lambda invocations.');
+      }
     }
 
     this.data = this.loadFromFile();
@@ -202,12 +277,21 @@ class ResilientDatabase {
   }
 
   private loadFromFile(): DatabaseSchema {
-    if (fs.existsSync(DB_FILE)) {
+    if (fs.existsSync(this.dbFilePath)) {
       try {
-        const raw = fs.readFileSync(DB_FILE, 'utf-8');
+        const raw = fs.readFileSync(this.dbFilePath, 'utf-8');
         return JSON.parse(raw);
       } catch (err) {
-        console.warn('[DB] Could not parse DB file, reinitializing fresh schema:', err);
+        console.warn('[DB] Could not parse DB file, checking packaged seed:', err);
+      }
+    }
+    const packagedFile = path.resolve(__dirname, '..', 'data', 'astroverse_db.json');
+    if (packagedFile !== this.dbFilePath && fs.existsSync(packagedFile)) {
+      try {
+        const raw = fs.readFileSync(packagedFile, 'utf-8');
+        return JSON.parse(raw);
+      } catch (err) {
+        console.warn('[DB] Could not parse packaged DB file:', err);
       }
     }
     return {
@@ -229,18 +313,19 @@ class ResilientDatabase {
       return;
     }
     try {
-      const tempFile = `${DB_FILE}.tmp.${Date.now()}`;
+      const tempFile = `${this.dbFilePath}.tmp.${Date.now()}`;
       fs.writeFileSync(tempFile, JSON.stringify(this.data, null, 2), 'utf-8');
-      fs.renameSync(tempFile, DB_FILE);
+      fs.renameSync(tempFile, this.dbFilePath);
     } catch (err: any) {
-      console.error('[DB] Failed to persist database state:', err);
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' || err.code === 'EROFS') {
+      console.error('[DB] Failed to persist database state:', err?.message || err);
+      if (err.code === 'EROFS') {
         throw new Error(`PERSISTENCE_FAILED: Read-only filesystem (EROFS) detected under /var/task. Durable PostgreSQL database (DATABASE_URL) is required in production: ${err.message}`);
       }
     }
   }
 
   private seedDefaults(): void {
+    let modified = false;
     // Seed default Super Admin user if not exists
     const adminExists = this.data.users.some(u => u.role === Role.SUPER_ADMIN || u.email === 'admin@astroverse.app');
     if (!adminExists) {
@@ -262,6 +347,7 @@ class ResilientDatabase {
         updatedAt: new Date().toISOString()
       });
       console.log('[DB_INIT] Default Super Admin seeded: admin@astroverse.app / +919999999999');
+      modified = true;
     }
 
     // Seed sample astrologers if empty
@@ -316,8 +402,15 @@ class ResilientDatabase {
           updatedAt: new Date().toISOString()
         }
       ];
+      modified = true;
     }
-    this.saveToFile();
+    if (modified && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      try {
+        this.saveToFile();
+      } catch (err: any) {
+        console.warn('[DB] Skipped saving default seed:', err?.message || err);
+      }
+    }
   }
 
   // ==================== USERS & AUTH ====================

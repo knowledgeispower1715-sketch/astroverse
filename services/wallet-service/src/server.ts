@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { db, UserRecord } from './db';
-import { Role, AccountStatus, OrderStatus } from '@prisma/client';
+import { db, UserRecord, Role, AccountStatus, OrderStatus } from './db';
 import { razorpay, isRazorpayConfigured, verifyRazorpaySignature } from './razorpay';
 
 const app = express();

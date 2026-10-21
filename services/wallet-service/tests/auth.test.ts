@@ -2,8 +2,7 @@ process.env.NODE_ENV = 'test';
 import assert from 'assert';
 import http from 'http';
 import app from '../src/server';
-import { db } from '../src/db';
-import { Role, AccountStatus } from '@prisma/client';
+import { db, Role, AccountStatus } from '../src/db';
 import { generateTestPaymentSignature } from '../src/razorpay';
 
 let server: http.Server;
