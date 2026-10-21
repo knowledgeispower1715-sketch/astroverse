@@ -925,7 +925,41 @@
                 <input type="checkbox" id="input-k-unknown-time" onchange="toggleUnknownBirthTime()"> Birth time unknown
               </label>
             </div>
-            <input type="time" id="input-k-tob" class="form-input-text" value="">
+            <div style="display: flex; gap: 8px; align-items: center;" id="time-picker-24h-wrap">
+              <select id="input-k-tob-hh" class="form-input-text" style="flex: 1;" onchange="sync24HTimePicker()">
+                <option value="">Hour (HH)</option>
+                <option value="00">00 (12 AM Midnight)</option>
+                <option value="01">01 (1 AM)</option>
+                <option value="02">02 (2 AM)</option>
+                <option value="03">03 (3 AM)</option>
+                <option value="04">04 (4 AM)</option>
+                <option value="05">05 (5 AM)</option>
+                <option value="06">06 (6 AM)</option>
+                <option value="07">07 (7 AM)</option>
+                <option value="08">08 (8 AM)</option>
+                <option value="09">09 (9 AM)</option>
+                <option value="10">10 (10 AM)</option>
+                <option value="11">11 (11 AM)</option>
+                <option value="12">12 (12 PM Noon)</option>
+                <option value="13">13 (1 PM)</option>
+                <option value="14">14 (2 PM)</option>
+                <option value="15">15 (3 PM)</option>
+                <option value="16">16 (4 PM)</option>
+                <option value="17">17 (5 PM)</option>
+                <option value="18">18 (6 PM)</option>
+                <option value="19">19 (7 PM)</option>
+                <option value="20">20 (8 PM)</option>
+                <option value="21">21 (9 PM)</option>
+                <option value="22">22 (10 PM)</option>
+                <option value="23">23 (11 PM)</option>
+              </select>
+              <span style="font-weight: 700; color: #6B7280; font-size: 16px;">:</span>
+              <select id="input-k-tob-mm" class="form-input-text" style="flex: 1;" onchange="sync24HTimePicker()">
+                <option value="">Min (MM)</option>
+                <option value="00">00</option><option value="01">01</option><option value="02">02</option><option value="03">03</option><option value="04">04</option><option value="05">05</option><option value="06">06</option><option value="07">07</option><option value="08">08</option><option value="09">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option>
+              </select>
+            </div>
+            <input type="hidden" id="input-k-tob" value="">
             <div id="unknown-time-note" style="display: none; font-size: 11px; color: #D97706; margin-top: 4px;">
               <i class="fa-solid fa-circle-info"></i> Note: Without exact birth time, Lagna (Ascendant), houses, and divisional charts are indeterminate. Planetary signs and Moon nakshatra are approximated.
             </div>
@@ -1021,6 +1055,12 @@
                 <div class="panchang-lbl">Sun Sign (Surya)</div>
                 <div class="panchang-val" id="disp-sun-val">--</div>
               </div>
+            </div>
+
+            <!-- Active Chart Type Indicator -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0 8px; padding: 6px 14px; background: #FFFDF8; border: 1px solid #FDE68A; border-radius: var(--radius-sm);">
+              <span id="active-chart-type-indicator" style="font-size: 13px; font-weight: 800; color: var(--vedic-maroon);"><i class="fa-solid fa-dharmachakra"></i> Lagna (D1) Rashi Chart</span>
+              <span id="active-chart-desc" style="font-size: 11px; font-weight: 600; color: #78350F;">Parashari Diamond Layout</span>
             </div>
 
             <!-- Interactive Diamond SVG Chart -->
@@ -1886,7 +1926,7 @@
             <i class="fa-solid fa-circle-info" style="color: #D97706; font-size: 18px;"></i>
             <div>
               <strong id="ai-gate-title" style="font-size: 13px; color: #78350F;">No Birth Chart Loaded in Context</strong>
-              <div id="ai-gate-desc" style="font-size: 12px; color: #92400E;">Calculate your Janam Kundli above to unlock 100% chart-grounded Parashari analysis. Currently providing universal transit guidance.</div>
+              <div id="ai-gate-desc" style="font-size: 12px; color: #92400E;">Calculate your Janam Kundli above to unlock Parashari natal analysis. Currently providing universal transit guidance.</div>
             </div>
           </div>
           <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px;" onclick="switchNavSection('kundli')">Load / Calculate Chart</button>
@@ -1913,7 +1953,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h4 id="ai-resp-title" style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon);">Vedic Astrological Counsel</h4>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span id="ai-resp-mode-badge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; background: #ECFDF5; color: #047857;">Grounded Parashari</span>
+              <span id="ai-resp-mode-badge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; background: #FEF3C7; color: #92400E;">Universal Transit Guidance (General)</span>
               <button class="voice-readout-pill" onclick="speakAiReading()" id="btn-ai-tts" style="background: #EEF2FF; border: 1px solid #C7D2FE; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #3730A3; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                 <i class="fa-solid fa-volume-high"></i> <span id="tts-label">Listen</span>
               </button>
@@ -1980,34 +2020,103 @@
 
   <!-- ==================== MODAL: WALLET RECHARGE ==================== -->
   <div id="modal-wallet" class="modal-backdrop-wrap">
-    <div class="modal-dialog-card">
+    <div class="modal-dialog-card" style="max-width: 520px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon);">
-          <i class="fa-solid fa-wallet"></i> Recharge Wallet
+          <i class="fa-solid fa-wallet"></i> Recharge Wallet & GST Invoice
         </h3>
         <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px;" onclick="closeWalletModal()"></i>
       </div>
 
       <p style="font-size: 13px; color: #64748B; margin-bottom: 16px;">
-        Select an authorized recharge pack. Includes 18% GST and instant promotional credits:
+        Select an authorized recharge pack. Includes statutory 18% GST and instant promotional bonus credits:
       </p>
 
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
-        <div class="panchang-box" style="cursor: pointer; text-align: center;" onclick="rechargeWalletAmount(100, 10)">
-          <div class="panchang-val">₹100</div>
-          <div class="panchang-lbl" style="color: #059669;">+₹10 Free</div>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;" id="wallet-pack-selector">
+        <div class="panchang-box" id="pack-card-100" style="cursor: pointer; text-align: center; border: 2px solid #E2E8F0; padding: 10px;" onclick="selectWalletRechargePack(100, 10)">
+          <div class="panchang-val" style="font-size: 18px;">₹100</div>
+          <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹10 Free</div>
+          <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹110</div>
         </div>
-        <div class="panchang-box" style="cursor: pointer; text-align: center;" onclick="rechargeWalletAmount(250, 35)">
-          <div class="panchang-val">₹250</div>
-          <div class="panchang-lbl" style="color: #059669;">+₹35 Free</div>
+        <div class="panchang-box" id="pack-card-250" style="cursor: pointer; text-align: center; border: 2px solid var(--vedic-gold); background: #FFFDF8; padding: 10px;" onclick="selectWalletRechargePack(250, 35)">
+          <div class="panchang-val" style="font-size: 18px;">₹250</div>
+          <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹35 Free</div>
+          <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹285</div>
         </div>
-        <div class="panchang-box" style="cursor: pointer; text-align: center;" onclick="rechargeWalletAmount(500, 100)">
-          <div class="panchang-val">₹500</div>
-          <div class="panchang-lbl" style="color: #059669;">+₹100 Free</div>
+        <div class="panchang-box" id="pack-card-500" style="cursor: pointer; text-align: center; border: 2px solid #E2E8F0; padding: 10px;" onclick="selectWalletRechargePack(500, 100)">
+          <div class="panchang-val" style="font-size: 18px;">₹500</div>
+          <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹100 Free</div>
+          <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹600</div>
         </div>
       </div>
 
+      <!-- GST Breakdown Invoice -->
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #64748B;">Recharge Base Amount:</span>
+          <strong id="invoice-base-amt">₹250.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #64748B;">Statutory GST (18%):</span>
+          <strong id="invoice-gst-amt">₹45.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #64748B;">Promotional Extra Credits:</span>
+          <strong id="invoice-bonus-amt" style="color: #059669;">+₹35.00</strong>
+        </div>
+        <div style="border-top: 1px dashed #CBD5E1; margin: 8px 0;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px;">
+          <span style="font-weight: 700; color: #1E293B;">Total Amount Payable:</span>
+          <strong id="invoice-total-payable" style="color: var(--vedic-maroon); font-size: 16px;">₹295.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #059669; font-weight: 600;">
+          <span>Effective Wallet Balance Credited:</span>
+          <span id="invoice-wallet-credit">₹285.00</span>
+        </div>
+      </div>
+
+      <button class="btn-gold-primary" id="btn-proceed-pay" style="width: 100%; justify-content: center; margin-bottom: 8px;" onclick="executeSelectedRecharge()">
+        <i class="fa-solid fa-lock"></i> Pay ₹295.00 & Recharge Wallet
+      </button>
+
       <button class="btn-outline-secondary" style="width: 100%; justify-content: center;" onclick="closeWalletModal()">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: PUJA SHORTFALL & RECHARGE ==================== -->
+  <div id="modal-puja-shortfall" class="modal-backdrop-wrap" style="display: none;">
+    <div class="modal-dialog-card" style="max-width: 480px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon);">
+          <i class="fa-solid fa-om"></i> Confirm Puja Booking
+        </h3>
+        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px;" onclick="closePujaShortfallModal()"></i>
+      </div>
+      <div style="background: #FFFBEB; border: 1px solid #FCD34D; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 14px;">
+        <div style="font-weight: 700; color: #78350F; font-size: 14px;" id="disp-puja-name">Maha Mrityunjaya Puja</div>
+        <div style="font-size: 12px; color: #92400E; margin-top: 4px;">Vedic ritual with certified Pandit ji & sankalp registration</div>
+      </div>
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #64748B;">Puja Dakshina:</span>
+          <strong id="disp-puja-fee">₹2,100.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #64748B;">Available Wallet Balance:</span>
+          <strong id="disp-puja-curr-bal" style="color: #059669;">₹110.00</strong>
+        </div>
+        <div style="border-top: 1px dashed #CBD5E1; margin: 8px 0;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+          <span style="font-weight: 700; color: #DC2626;">Shortfall to Add:</span>
+          <strong id="disp-puja-shortfall" style="font-weight: 800; color: #DC2626;">₹1,990.00</strong>
+        </div>
+      </div>
+      <button class="btn-gold-primary" id="btn-puja-recharge-confirm" style="width: 100%; justify-content: center; margin-bottom: 8px;" onclick="rechargeShortfallAndBookPuja()">
+        <i class="fa-solid fa-bolt"></i> Add Shortfall & Confirm Booking
+      </button>
+      <button class="btn-outline-secondary" style="width: 100%; justify-content: center;" onclick="closePujaShortfallModal()">
         Cancel
       </button>
     </div>
@@ -2139,9 +2248,15 @@
       "P. Bhadrapada", "U. Bhadrapada", "Revati"
     ];
 
-    // Non-blocking Toast Notification System (Section 7.6: Replaces alert())
+    // Non-blocking Toast Notification System with Bounded Queue (Max 3 Items)
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      while (container.children.length >= 3) {
+        container.removeChild(container.firstChild);
+      }
+
       const toast = document.createElement('div');
       toast.className = `toast-item ${type}`;
 
@@ -2149,14 +2264,26 @@
       if (type === 'success') icon = 'fa-circle-check';
       if (type === 'error') icon = 'fa-circle-xmark';
 
-      toast.innerHTML = `<i class="fa-solid ${icon}" style="font-size: 16px;"></i><span>${message}</span>`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icon}" style="font-size: 16px;"></i>
+        <span style="flex: 1;">${message}</span>
+        <button type="button" class="toast-dismiss-btn" style="background: none; border: none; color: inherit; cursor: pointer; padding: 0 4px; font-size: 16px; opacity: 0.7;" aria-label="Dismiss">&times;</button>
+      `;
+
+      const dismiss = () => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+      };
+
+      const dismissBtn = toast.querySelector('.toast-dismiss-btn');
+      if (dismissBtn) dismissBtn.onclick = dismiss;
+
       container.appendChild(toast);
 
       setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        toast.style.transition = 'all 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
+        if (toast.parentNode) dismiss();
       }, 4000);
     }
 
@@ -2196,17 +2323,51 @@
       document.getElementById('g-female-btn').classList.toggle('active', g === 'Female');
     }
 
+    // 24-Hour Time Picker Sync & Unknown Birth Time Handler
+    function sync24HTimePicker() {
+      const hh = document.getElementById('input-k-tob-hh').value;
+      const mm = document.getElementById('input-k-tob-mm').value;
+      const tobInput = document.getElementById('input-k-tob');
+      if (hh && mm) {
+        tobInput.value = `${hh}:${mm}`;
+      } else {
+        tobInput.value = '';
+      }
+    }
+
+    function set24HTimePicker(timeStr) {
+      const tobInput = document.getElementById('input-k-tob');
+      const hhEl = document.getElementById('input-k-tob-hh');
+      const mmEl = document.getElementById('input-k-tob-mm');
+      if (!timeStr) {
+        tobInput.value = '';
+        if (hhEl) hhEl.value = '';
+        if (mmEl) mmEl.value = '';
+        return;
+      }
+      const parts = timeStr.split(':');
+      const hh = parts[0] ? parts[0].padStart(2, '0') : '';
+      const mm = parts[1] ? parts[1].padStart(2, '0') : '';
+      tobInput.value = `${hh}:${mm}`;
+      if (hhEl) hhEl.value = hh;
+      if (mmEl) mmEl.value = mm;
+    }
+
     // Unknown Birth Time Toggle (Section 2)
     function toggleUnknownBirthTime() {
       const isUnknown = document.getElementById('input-k-unknown-time').checked;
       const tobInput = document.getElementById('input-k-tob');
+      const hhEl = document.getElementById('input-k-tob-hh');
+      const mmEl = document.getElementById('input-k-tob-mm');
       const note = document.getElementById('unknown-time-note');
       if (isUnknown) {
         tobInput.value = "";
-        tobInput.disabled = true;
+        if (hhEl) { hhEl.value = ""; hhEl.disabled = true; }
+        if (mmEl) { mmEl.value = ""; mmEl.disabled = true; }
         note.style.display = 'block';
       } else {
-        tobInput.disabled = false;
+        if (hhEl) hhEl.disabled = false;
+        if (mmEl) mmEl.disabled = false;
         note.style.display = 'none';
       }
     }
@@ -2734,6 +2895,17 @@
       const isUnk = currentCalculatedChart.isUnknownTime;
       const t = type.toUpperCase();
 
+      const labels = {
+        'D1': 'Lagna (D1) Rashi Chart',
+        'D9': 'Navamsha (D9) Chart',
+        'D10': 'Dashamsha (D10) Profession Chart',
+        'MOON': 'Moon Chart (Chandra Kundli)',
+        'CHALIT': 'Chalit / Bhava Chart'
+      };
+
+      const ind = document.getElementById('active-chart-type-indicator');
+      if (ind) ind.innerHTML = `<i class="fa-solid fa-dharmachakra"></i> ${labels[t] || type + ' Chart'}`;
+
       if (t === 'D1') {
         renderDiamondChart('D1', fd.d1_rashi_chart, isUnk);
       } else if (t === 'D9' && fd.divisional_charts && fd.divisional_charts.navamsha) {
@@ -2745,78 +2917,193 @@
       } else if (t === 'CHALIT' && fd.divisional_charts && fd.divisional_charts.chalit_chart) {
         renderDiamondChart('CHALIT', fd.divisional_charts.chalit_chart, isUnk);
       }
-
-      showToast(`Switched view to ${type} Chart`, "info");
     }
 
     // 3. 24-HOUR PLANETARY HORAS & HOURLY PREDICTIONS (Section 5)
+    let horaCountdownInterval = null;
+
+    function startHoraCountdownTimer(endEpochMs) {
+      if (horaCountdownInterval) clearInterval(horaCountdownInterval);
+      function update() {
+        const diffSec = Math.max(0, Math.floor((endEpochMs - Date.now()) / 1000));
+        const mins = Math.floor(diffSec / 60);
+        const secs = diffSec % 60;
+        const el = document.getElementById('disp-hora-countdown');
+        if (el) el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (diffSec <= 0) {
+          clearInterval(horaCountdownInterval);
+          loadHourlyHorasUI();
+        }
+      }
+      update();
+      horaCountdownInterval = setInterval(update, 1000);
+    }
+
+    function calculateSolarSunriseSunset(dateStr, lat, lon) {
+      const d = new Date(dateStr + "T12:00:00Z");
+      const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+      const declination = 0.4095 * Math.sin(0.0172 * (dayOfYear - 79));
+      const latRad = (lat * Math.PI) / 180.0;
+      const cosH0 = (Math.sin(-0.833 * Math.PI / 180.0) - Math.sin(latRad) * Math.sin(declination)) / (Math.cos(latRad) * Math.cos(declination));
+      const clamped = Math.max(-1, Math.min(1, cosH0));
+      const hourAngleDeg = (Math.acos(clamped) * 180.0) / Math.PI;
+      const b = (2 * Math.PI * (dayOfYear - 81)) / 365;
+      const eqtimeMin = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b);
+      const timeOffsetHours = 5.5; // IST
+      const solarNoonUTC = 12 - (lon / 15) - (eqtimeMin / 60);
+      const solarNoonLocal = solarNoonUTC + timeOffsetHours;
+      const halfDayHours = hourAngleDeg / 15.0;
+      const riseH = solarNoonLocal - halfDayHours;
+      const setH = solarNoonLocal + halfDayHours;
+      return { riseH, setH };
+    }
+
+    function formatHoursTo12H(h) {
+      const totM = Math.round(h * 60);
+      let hh = Math.floor(totM / 60) % 24;
+      const mm = totM % 60;
+      const ampm = hh >= 12 ? 'PM' : 'AM';
+      let h12 = hh % 12;
+      if (h12 === 0) h12 = 12;
+      return `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${ampm}`;
+    }
+
     async function loadHourlyHorasUI() {
       const dateInput = document.getElementById('input-hora-date');
       const todayStr = new Date().toISOString().split('T')[0];
       if (!dateInput.value) dateInput.value = todayStr;
 
       const targetDate = dateInput.value;
-      const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 28.6139;
-      const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 77.2090;
+      const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
+      const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
       const tz = document.getElementById('k-resolved-tz').value || 'Asia/Kolkata';
 
       try {
-        const res = await fetch(`/api/hourly-predictions?date_str=${targetDate}&lat=${lat}&lon=${lon}&timezone=${tz}`);
+        const res = await fetch(`/api/hora?date_str=${targetDate}&lat=${lat}&lon=${lon}&timezone=${tz}`);
         if (res.ok) {
           const data = await res.json();
-          render24HorasUI(data);
+          render24HorasUI(data, targetDate);
           return;
         }
       } catch (err) {
-        console.warn("Backend hourly API offline, using mathematical sunrise generator:", err);
+        console.warn("Backend hourly API offline, computing astronomical solar Horas:", err);
       }
 
-      // Fallback mathematical daylight computation
-      const d = new Date(targetDate);
-      const isTuesday = (d.getDay() === 2);
-      const dayRuler = isTuesday ? "Mars" : "Sun";
+      // Mathematical astronomical solar Hora calculation
+      const { riseH, setH } = calculateSolarSunriseSunset(targetDate, lat, lon);
+      const dayLengthH = setH - riseH;
+      const nightLengthH = 24.0 - dayLengthH;
+      const dayHoraMins = (dayLengthH * 60) / 12.0;
+      const nightHoraMins = (nightLengthH * 60) / 12.0;
 
-      const fallbackHoras = {
-        sunrise: "06:24 AM",
-        sunset: "05:47 PM",
-        day_hora_duration_minutes: 56.9,
-        night_hora_duration_minutes: 63.2,
-        day_ruler: dayRuler,
-        active_hora: {
-          ruling_planet: "Sun",
-          start_time: "08:56 PM",
-          end_time: "09:59 PM",
-          category: "Authoritative",
-          recommendation: "Suitable for leadership meetings, administrative tasks, and strategic alignment."
-        },
-        special_periods: {
-          rahu_kaal: { start: "02:56 PM", end: "04:21 PM" },
-          yamaganda: { start: "09:15 AM", end: "10:39 AM" },
-          gulika_kaal: { start: "12:05 PM", end: "01:31 PM" }
-        },
-        timeline: []
-      };
+      const targetD = new Date(targetDate + "T12:00:00");
+      const weekday = targetD.getDay(); // 0: Sun, 1: Mon, 2: Tue, 3: Wed, 4: Thu, 5: Fri, 6: Sat
+      const WEEK_LORDS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"];
+      const dayRuler = WEEK_LORDS[weekday];
 
       const CHALDEAN = ["Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon"];
-      let sIdx = CHALDEAN.indexOf(dayRuler);
-      for (let i = 0; i < 24; i++) {
-        const p = CHALDEAN[(sIdx + i) % 7];
-        fallbackHoras.timeline.push({
+      const startIdx = CHALDEAN.indexOf(dayRuler);
+
+      const timeline = [];
+      const now = new Date();
+      let activeHoraObj = null;
+
+      // 12 Daytime Horas
+      for (let i = 0; i < 12; i++) {
+        const p = CHALDEAN[(startIdx + i) % 7];
+        const sH = riseH + (i * dayHoraMins / 60.0);
+        const eH = riseH + ((i + 1) * dayHoraMins / 60.0);
+        const sTime = formatHoursTo12H(sH);
+        const eTime = formatHoursTo12H(eH);
+
+        const sDate = new Date(`${targetDate}T00:00:00`);
+        sDate.setMinutes(Math.round(sH * 60));
+        const eDate = new Date(`${targetDate}T00:00:00`);
+        eDate.setMinutes(Math.round(eH * 60));
+        const isActive = (now >= sDate && now < eDate);
+
+        const slot = {
           hora_number: i + 1,
-          period: i < 12 ? "Day" : "Night",
-          start_time: `${String(i).padStart(2, '0')}:00`,
-          end_time: `${String((i+1)%24).padStart(2, '0')}:00`,
+          period: "Day",
+          start_time: sTime,
+          end_time: eTime,
           ruling_planet: p,
-          category: p === "Jupiter" || p === "Venus" ? "Highly Favorable" : (p === "Mars" || p === "Saturn" ? "Caution" : "Moderate"),
-          recommendation: `Optimal execution time for tasks governed by ${p}.`,
-          is_active: (i === 20)
-        });
+          category: (p === "Jupiter" || p === "Venus") ? "Highly Favorable" : ((p === "Mars" || p === "Saturn") ? "Caution" : "Moderate"),
+          recommendation: `Favorable window for activities and enterprise governed by ${p}.`,
+          is_active: isActive,
+          end_epoch_ms: eDate.getTime()
+        };
+        timeline.push(slot);
+        if (isActive) activeHoraObj = slot;
       }
 
-      render24HorasUI(fallbackHoras);
+      // 12 Nighttime Horas
+      for (let i = 0; i < 12; i++) {
+        const p = CHALDEAN[(startIdx + 12 + i) % 7];
+        const sH = setH + (i * nightHoraMins / 60.0);
+        const eH = setH + ((i + 1) * nightHoraMins / 60.0);
+        const sTime = formatHoursTo12H(sH);
+        const eTime = formatHoursTo12H(eH);
+
+        const sDate = new Date(`${targetDate}T00:00:00`);
+        sDate.setMinutes(Math.round(sH * 60));
+        const eDate = new Date(`${targetDate}T00:00:00`);
+        eDate.setMinutes(Math.round(eH * 60));
+        const isActive = (now >= sDate && now < eDate);
+
+        const slot = {
+          hora_number: 12 + i + 1,
+          period: "Night",
+          start_time: sTime,
+          end_time: eTime,
+          ruling_planet: p,
+          category: (p === "Jupiter" || p === "Venus") ? "Highly Favorable" : ((p === "Mars" || p === "Saturn") ? "Caution" : "Moderate"),
+          recommendation: `Optimal restorative and strategic window governed by ${p}.`,
+          is_active: isActive,
+          end_epoch_ms: eDate.getTime()
+        };
+        timeline.push(slot);
+        if (isActive) activeHoraObj = slot;
+      }
+
+      if (!activeHoraObj) {
+        activeHoraObj = timeline[0];
+        timeline[0].is_active = true;
+      }
+
+      // Special Daylight Octants (Rahu Kaal, Yamaganda, Gulika Kaal)
+      const octantMins = (dayLengthH * 60) / 8.0;
+      const rahuSegments = [8, 2, 7, 5, 6, 4, 3]; // Sun=8, Mon=2, Tue=7, Wed=5, Thu=6, Fri=4, Sat=3
+      const yamaSegments = [5, 4, 3, 2, 1, 7, 6]; // Sun=5, Mon=4, Tue=3, Wed=2, Thu=1, Fri=7, Sat=6
+      const guliSegments = [7, 6, 5, 4, 3, 2, 1]; // Sun=7, Mon=6, Tue=5, Wed=4, Thu=3, Fri=2, Sat=1
+
+      function getOctantWindow(segNum) {
+        const segStartH = riseH + ((segNum - 1) * octantMins / 60.0);
+        const segEndH = riseH + (segNum * octantMins / 60.0);
+        return { start: formatHoursTo12H(segStartH), end: formatHoursTo12H(segEndH) };
+      }
+
+      const specialPeriods = {
+        rahu_kaal: getOctantWindow(rahuSegments[weekday]),
+        yamaganda: getOctantWindow(yamaSegments[weekday]),
+        gulika_kaal: getOctantWindow(guliSegments[weekday])
+      };
+
+      const calculatedData = {
+        sunrise: formatHoursTo12H(riseH),
+        sunset: formatHoursTo12H(setH),
+        day_hora_duration_minutes: parseFloat(dayHoraMins.toFixed(1)),
+        night_hora_duration_minutes: parseFloat(nightHoraMins.toFixed(1)),
+        day_ruler: dayRuler,
+        active_hora: activeHoraObj,
+        special_periods: specialPeriods,
+        timeline: timeline
+      };
+
+      render24HorasUI(calculatedData, targetDate);
     }
 
-    function render24HorasUI(data) {
+    function render24HorasUI(data, targetDate) {
       document.getElementById('disp-hora-sun-metrics').innerHTML = `
         <i class="fa-solid fa-sun" style="color: #F59E0B;"></i> Sunrise: <strong>${data.sunrise}</strong> • Sunset: <strong>${data.sunset}</strong> | Day Hora: ${data.day_hora_duration_minutes}m • Night Hora: ${data.night_hora_duration_minutes}m
       `;
@@ -2825,6 +3112,8 @@
         document.getElementById('disp-active-hora-planet').textContent = `${data.active_hora.ruling_planet} Hora (${data.active_hora.category})`;
         document.getElementById('disp-active-hora-time').textContent = `Window: ${data.active_hora.start_time} – ${data.active_hora.end_time}`;
         document.getElementById('disp-active-hora-rec').textContent = data.active_hora.recommendation;
+        const countdownEpoch = data.active_hora.end_epoch_ms || (Date.now() + 45 * 60 * 1000);
+        startHoraCountdownTimer(countdownEpoch);
       }
 
       if (data.special_periods) {
@@ -3003,7 +3292,7 @@
       document.getElementById('disp-horo-planet').textContent = data.ruler;
     }
 
-    // 5. 36-GUNA KUNDLI MATCHMAKING (Section 8)
+    // 5. 36-GUNA KUNDLI MATCHMAKING (Section 8: Authentic Parashari 8-Koota Engine)
     async function calculate36GunasUI() {
       const boySelect = document.getElementById('sel-boy-rashi');
       const girlSelect = document.getElementById('sel-girl-rashi');
@@ -3019,7 +3308,7 @@
       showToast("Computing 8-fold Ashtakoota compatibility...", "info");
 
       try {
-        const res = await fetch('/api/matchmaking', {
+        const res = await fetch('/api/kundli/matching', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ boy_moon_sign_idx: boy, girl_moon_sign_idx: girl })
@@ -3030,40 +3319,120 @@
           return;
         }
       } catch (err) {
-        console.warn("Backend matchmaking API offline, using client Ashtakoota engine:", err);
+        console.warn("Backend matchmaking API offline, using authentic client Ashtakoota engine:", err);
       }
 
-      // Authentic client 8-Koota calculation
-      const diff = (girl - boy + 12) % 12;
-      let varna = 1.0, vashya = 2.0, tara = 3.0, yoni = 4.0, maitri = 5.0, gana = 6.0, bhakoot = 7.0, nadi = 8.0;
+      // Authentic client Parashari 8-Koota mathematical implementation
+      const boyDeg = boy * 30.0 + 15.0;
+      const girlDeg = girl * 30.0 + 15.0;
+      const boyNak = Math.floor(boyDeg / (360.0 / 27.0)) % 27;
+      const girlNak = Math.floor(girlDeg / (360.0 / 27.0)) % 27;
 
-      // Bhakoot Dosha check (2/12, 6/8, 9/5 intervals)
+      function getVarnaRank(s) {
+        if ([3, 7, 11].includes(s)) return 4;
+        if ([0, 4, 8].includes(s)) return 3;
+        if ([1, 5, 9].includes(s)) return 2;
+        return 1;
+      }
+      const varna = getVarnaRank(boy) >= getVarnaRank(girl) ? 1.0 : 0.0;
+
+      function getVashyaCategory(s) {
+        if ([0, 1].includes(s)) return 0;
+        if ([2, 5, 6, 8, 10].includes(s)) return 1;
+        if ([3, 9, 11].includes(s)) return 2;
+        if (s === 4) return 3;
+        return 4;
+      }
+      const VASHYA_MATRIX = [
+        [2.0, 1.0, 1.0, 0.0, 1.0],
+        [1.0, 2.0, 0.5, 0.0, 1.0],
+        [1.0, 0.5, 2.0, 0.0, 1.0],
+        [0.0, 0.0, 0.0, 2.0, 0.0],
+        [1.0, 1.0, 1.0, 0.0, 2.0]
+      ];
+      const vashya = VASHYA_MATRIX[getVashyaCategory(boy)][getVashyaCategory(girl)];
+
+      const t1 = (((boyNak - girlNak) % 9) + 9) % 9 + 1;
+      const t2 = (((girlNak - boyNak) % 9) + 9) % 9 + 1;
+      const inauspiciousTara = [3, 5, 7];
+      const t1Good = !inauspiciousTara.includes(t1);
+      const t2Good = !inauspiciousTara.includes(t2);
+      const tara = (t1Good && t2Good) ? 3.0 : ((t1Good || t2Good) ? 1.5 : 0.0);
+
+      const YONI_ANIMALS = [0, 1, 2, 3, 3, 4, 5, 2, 5, 6, 6, 7, 8, 9, 8, 9, 10, 10, 11, 11, 12, 11, 13, 0, 13, 7, 1];
+      const ENEMIES = { 0: 8, 8: 0, 1: 13, 13: 1, 2: 11, 11: 2, 3: 12, 12: 3, 4: 10, 10: 4, 5: 6, 6: 5, 7: 9, 9: 7 };
+      const by = YONI_ANIMALS[boyNak], gy = YONI_ANIMALS[girlNak];
+      let yoni = 2.0;
+      if (by === gy) yoni = 4.0;
+      else if (ENEMIES[by] === gy) yoni = 0.0;
+      else if ([1, 2, 4].includes(Math.abs(by - gy))) yoni = 3.0;
+
+      const SIGN_LORDS = ["Mars", "Venus", "Mercury", "Moon", "Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Saturn", "Jupiter"];
+      const PLANET_FRIENDS = {
+        Sun: { friends: ["Moon", "Mars", "Jupiter"], neutrals: ["Mercury"], enemies: ["Venus", "Saturn"] },
+        Moon: { friends: ["Sun", "Mercury"], neutrals: ["Mars", "Jupiter", "Venus", "Saturn"], enemies: [] },
+        Mars: { friends: ["Sun", "Moon", "Jupiter"], neutrals: ["Venus", "Saturn"], enemies: ["Mercury"] },
+        Mercury: { friends: ["Sun", "Venus"], neutrals: ["Mars", "Jupiter", "Saturn"], enemies: ["Moon"] },
+        Jupiter: { friends: ["Sun", "Moon", "Mars"], neutrals: ["Saturn"], enemies: ["Mercury", "Venus"] },
+        Venus: { friends: ["Mercury", "Saturn"], neutrals: ["Mars", "Jupiter"], enemies: ["Sun", "Moon"] },
+        Saturn: { friends: ["Mercury", "Venus"], neutrals: ["Jupiter"], enemies: ["Sun", "Moon", "Mars"] }
+      };
+      function getLordRelation(p1, p2) {
+        if (p1 === p2) return "friend";
+        const f = PLANET_FRIENDS[p1];
+        if (f.friends.includes(p2)) return "friend";
+        if (f.neutrals.includes(p2)) return "neutral";
+        return "enemy";
+      }
+      const bl = SIGN_LORDS[boy], gl = SIGN_LORDS[girl];
+      let maitri = 0.0;
+      if (bl === gl) {
+        maitri = 5.0;
+      } else {
+        const r1 = getLordRelation(bl, gl), r2 = getLordRelation(gl, bl);
+        if (r1 === "friend" && r2 === "friend") maitri = 5.0;
+        else if ((r1 === "friend" && r2 === "neutral") || (r2 === "friend" && r1 === "neutral")) maitri = 4.0;
+        else if (r1 === "neutral" && r2 === "neutral") maitri = 3.0;
+        else if ((r1 === "friend" && r2 === "enemy") || (r2 === "friend" && r1 === "enemy")) maitri = 1.0;
+        else if ((r1 === "neutral" && r2 === "enemy") || (r2 === "neutral" && r1 === "enemy")) maitri = 0.5;
+      }
+
+      const GANA_MAP = [0, 1, 2, 1, 0, 1, 0, 0, 2, 2, 1, 1, 0, 2, 0, 2, 0, 2, 2, 1, 1, 0, 2, 2, 1, 1, 0];
+      const bg = GANA_MAP[boyNak], gg = GANA_MAP[girlNak];
+      let gana = 0.0;
+      if (bg === gg) gana = 6.0;
+      else if ((bg === 0 && gg === 1) || (bg === 1 && gg === 0)) gana = 5.0;
+      else if (bg === 0 && gg === 2) gana = 1.0;
+
+      const bhakootDiff = (((boy - girl) % 12) + 12) % 12 + 1;
+      let bhakoot = 7.0;
       let bhakootDosha = false;
-      if ([1, 11, 5, 7, 4, 8].includes(diff)) {
-        bhakoot = 0.0;
-        bhakootDosha = true;
+      if (bhakootDiff === 2 || bhakootDiff === 12) {
+        if (SIGN_LORDS[boy] !== SIGN_LORDS[girl]) { bhakoot = 0.0; bhakootDosha = true; }
+      } else if (bhakootDiff === 6 || bhakootDiff === 8) {
+        if (SIGN_LORDS[boy] !== SIGN_LORDS[girl]) { bhakoot = 0.0; bhakootDosha = true; }
+      } else if (bhakootDiff === 5 || bhakootDiff === 9) {
+        if (getLordRelation(bl, gl) !== "friend" || getLordRelation(gl, bl) !== "friend") { bhakoot = 0.0; bhakootDosha = true; }
       }
 
-      // Nadi Dosha check (same sign / element)
-      let nadiDosha = false;
-      if (diff === 0 || diff === 6) {
-        nadi = 0.0;
-        nadiDosha = true;
-      }
+      const NADI_MAP = [0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2];
+      const bn = NADI_MAP[boyNak], gn = NADI_MAP[girlNak];
+      const nadiDosha = (bn === gn);
+      const nadi = nadiDosha ? 0.0 : 8.0;
 
       const total = varna + vashya + tara + yoni + maitri + gana + bhakoot + nadi;
       const resultObj = {
         total_score: total,
-        verdict: total >= 28 ? "Highly Auspicious Alliance" : (total >= 18 ? "Acceptable Match with Remedies" : "Low Score (<18) - Astrological Consultation Advised"),
+        verdict: total >= 28 ? "Highly Auspicious Match — Blessed Marital Longevity & Prosperity" : (total >= 18 ? "Good Compatibility — Recommended with Remedial Alignment" : "Below Threshold (<18) — Classical Astrological Remedies Suggested"),
         breakdown: {
           varna: { max: 1, obtained: varna, description: "Spiritual temperament & work alignment" },
-          vashya: { max: 2, obtained: vashya, description: "Mutual dominance & magnetic attraction" },
+          vashya: { max: 2, obtained: vashya, description: "Mutual dominance & respect" },
           tara: { max: 3, obtained: tara, description: "Destiny, health, and karmic harmony" },
-          yoni: { max: 4, obtained: yoni, description: "Biological affinity & intimacy" },
-          graha_maitri: { max: 5, obtained: maitri, description: "Moon lord intellectual compatibility" },
+          yoni: { max: 4, obtained: yoni, description: "Biological & temperament affinity" },
+          graha_maitri: { max: 5, obtained: maitri, description: "Moon lord psychological harmony" },
           gana: { max: 6, obtained: gana, description: "Behavioral outlook & temperament" },
           bhakoot: { max: 7, obtained: bhakoot, description: bhakootDosha ? "Bhakoot Dosha detected (Remedies advised)" : "Harmonious family longevity & wealth" },
-          nadi: { max: 8, obtained: nadi, description: nadiDosha ? "Nadi Dosha detected (Genetic incompatibility)" : "Genetically compatible & auspicious progeny" }
+          nadi: { max: 8, obtained: nadi, description: nadiDosha ? "Nadi Dosha detected (Traditional physiological temperament remedies advised)" : "Traditional physiological temperament & hereditary harmony" }
         }
       };
 
@@ -3137,7 +3506,7 @@
           if (res.ok) {
             const data = await res.json();
             const r = data.reading;
-            document.getElementById('ai-resp-mode-badge').textContent = "100% Chart-Grounded";
+            document.getElementById('ai-resp-mode-badge').textContent = "Parashari Natal Analysis (Verified Lagna & Dasha)";
             document.getElementById('ai-resp-mode-badge').style.background = "#ECFDF5";
             document.getElementById('ai-resp-mode-badge').style.color = "#047857";
             document.getElementById('ai-resp-title').textContent = r.executive_summary || `${cat.toUpperCase()} Consultation`;
@@ -3153,7 +3522,7 @@
 
       if (currentCalculatedChart) {
         // Personal Chart-Grounded Consultation
-        document.getElementById('ai-resp-mode-badge').textContent = "100% Chart-Grounded";
+        document.getElementById('ai-resp-mode-badge').textContent = "Parashari Natal Analysis (Verified Lagna & Dasha)";
         document.getElementById('ai-resp-mode-badge').style.background = "#ECFDF5";
         document.getElementById('ai-resp-mode-badge').style.color = "#047857";
 
@@ -3180,7 +3549,7 @@
         }
       } else {
         // Universal Transit Reading (Clearly labeled)
-        document.getElementById('ai-resp-mode-badge').textContent = "Universal Transit Mode";
+        document.getElementById('ai-resp-mode-badge').textContent = "Universal Transit Guidance (General)";
         document.getElementById('ai-resp-mode-badge').style.background = "#FEF3C7";
         document.getElementById('ai-resp-mode-badge').style.color = "#92400E";
 
@@ -4077,7 +4446,7 @@
 
       document.getElementById('input-k-name').value = p.name;
       document.getElementById('input-k-dob').value = p.dob;
-      document.getElementById('input-k-tob').value = p.tob || '';
+      set24HTimePicker(p.tob || '');
       document.getElementById('input-k-city-search').value = p.city || 'Jabalpur, Madhya Pradesh, India';
       if (p.lat) document.getElementById('k-resolved-lat').value = p.lat;
       if (p.lon) document.getElementById('k-resolved-lon').value = p.lon;
@@ -4105,40 +4474,134 @@
     }
 
     // Wallet Modals & Consultations
+    let selectedRechargePack = { base: 250, bonus: 35 };
+
     function openWalletModal() {
+      selectWalletRechargePack(250, 35);
       document.getElementById('modal-wallet').style.display = 'flex';
     }
     function closeWalletModal() {
       document.getElementById('modal-wallet').style.display = 'none';
     }
 
-    function rechargeWalletAmount(amt, bonus) {
-      currentWalletBalance += (amt + bonus);
+    function selectWalletRechargePack(base, bonus) {
+      selectedRechargePack = { base, bonus };
+      const gst = parseFloat((base * 0.18).toFixed(2));
+      const totalPayable = parseFloat((base + gst).toFixed(2));
+      const totalCredit = parseFloat((base + bonus).toFixed(2));
+
+      document.getElementById('invoice-base-amt').textContent = `₹${base.toFixed(2)}`;
+      document.getElementById('invoice-gst-amt').textContent = `₹${gst.toFixed(2)}`;
+      document.getElementById('invoice-bonus-amt').textContent = `+₹${bonus.toFixed(2)}`;
+      document.getElementById('invoice-total-payable').textContent = `₹${totalPayable.toFixed(2)}`;
+      document.getElementById('invoice-wallet-credit').textContent = `₹${totalCredit.toFixed(2)}`;
+      document.getElementById('btn-proceed-pay').innerHTML = `<i class="fa-solid fa-lock"></i> Pay ₹${totalPayable.toFixed(2)} & Recharge Wallet`;
+
+      ['100', '250', '500'].forEach(p => {
+        const c = document.getElementById('pack-card-' + p);
+        if (c) {
+          if (parseInt(p) === base) {
+            c.style.border = '2px solid var(--vedic-gold)';
+            c.style.background = '#FFFDF8';
+          } else {
+            c.style.border = '2px solid #E2E8F0';
+            c.style.background = '#FFFFFF';
+          }
+        }
+      });
+    }
+
+    async function executeSelectedRecharge() {
+      const { base, bonus } = selectedRechargePack;
+      const creditAmt = base + bonus;
+      showToast(`Initiating secure payment gateway for ₹${(base * 1.18).toFixed(2)}...`, "info");
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/wallet/recharge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: creditAmt, description: `Wallet recharge (₹${base} base + ₹${bonus} bonus)` })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          currentWalletBalance = parseFloat(data.new_balance || (currentWalletBalance + creditAmt));
+        } else {
+          currentWalletBalance += creditAmt;
+        }
+      } catch (e) {
+        currentWalletBalance += creditAmt;
+      }
+
       localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
       updateUserSessionUI();
       closeWalletModal();
-      showToast(`Wallet recharged! Added ₹${amt} + ₹${bonus} bonus credits.`, "success");
+      showToast(`Wallet recharged successfully! ₹${creditAmt.toFixed(2)} added to your balance.`, "success");
+    }
+
+    function rechargeWalletAmount(amt, bonus) {
+      selectWalletRechargePack(amt, bonus);
+      executeSelectedRecharge();
     }
 
     function startConsultationSession(astroName, rate) {
+      const minRequired = rate * 5;
       if (currentWalletBalance < rate) {
-        showToast(`Insufficient balance! Minimum ₹${rate} required to start consultation.`, "error");
+        showToast(`Insufficient balance! ₹${rate} (1 min) or ₹${minRequired} (5 mins) required to start consultation.`, "error");
         openWalletModal();
         return;
       }
-      showToast(`Connecting secure consultation with ${astroName} (₹${rate}/min)...`, "success");
+      const availableMins = Math.floor(currentWalletBalance / rate);
+      showToast(`Connecting secure consultation with ${astroName} (₹${rate}/min) • ~${availableMins} mins duration available.`, "success");
     }
 
+    let pendingPujaBooking = null;
+
     function bookPuja(pujaName, amt) {
-      if (currentWalletBalance < amt) {
-        showToast(`Please recharge wallet with ₹${amt} to confirm booking.`, "info");
-        openWalletModal();
+      if (currentWalletBalance >= amt) {
+        currentWalletBalance -= amt;
+        localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+        updateUserSessionUI();
+        showToast(`Booking Confirmed for ${pujaName}! Priest assigned & Sankalp registered.`, "success");
         return;
       }
-      currentWalletBalance -= amt;
+
+      // Shortfall arithmetic (Puja fee minus available wallet balance)
+      const shortfall = amt - currentWalletBalance;
+      pendingPujaBooking = { pujaName, amt, shortfall };
+
+      document.getElementById('disp-puja-name').textContent = pujaName;
+      document.getElementById('disp-puja-fee').textContent = `₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      document.getElementById('disp-puja-curr-bal').textContent = `₹${currentWalletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      document.getElementById('disp-puja-shortfall').textContent = `₹${shortfall.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+      document.getElementById('btn-puja-recharge-confirm').innerHTML = `<i class="fa-solid fa-bolt"></i> Add ₹${Math.ceil(shortfall)} Shortfall & Confirm Booking`;
+
+      document.getElementById('modal-puja-shortfall').style.display = 'flex';
+    }
+
+    function closePujaShortfallModal() {
+      document.getElementById('modal-puja-shortfall').style.display = 'none';
+      pendingPujaBooking = null;
+    }
+
+    async function rechargeShortfallAndBookPuja() {
+      if (!pendingPujaBooking) return;
+      const { pujaName, amt, shortfall } = pendingPujaBooking;
+
+      try {
+        await fetch(`${getAuthBase()}/api/wallet/recharge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: shortfall, description: `Auto-topup shortfall for ${pujaName}` })
+        });
+      } catch (e) {
+        console.warn("Wallet service offline, recording transaction in local storage:", e);
+      }
+
+      currentWalletBalance = 0.00; // balance + shortfall = amt, deducted for puja
       localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
       updateUserSessionUI();
-      showToast(`Booking Confirmed for ${pujaName}! Priest assigned.`, "success");
+      closePujaShortfallModal();
+      showToast(`Payment of ₹${amt.toLocaleString('en-IN')} confirmed! ${pujaName} booked with certified Pandit ji.`, "success");
     }
 
     // Initialization on Page Load

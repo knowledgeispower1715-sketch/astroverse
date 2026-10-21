@@ -194,6 +194,7 @@ def get_base_kundli(req: BirthDetails):
     return calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
 
 @app.post("/api/complete-kundli")
+@app.post("/api/kundli/calculate")
 def get_complete_kundli(req: BirthDetails):
     """
     Computes full Vedic profile:
@@ -234,11 +235,13 @@ def get_complete_kundli(req: BirthDetails):
     }
 
 @app.get("/api/hourly-predictions")
+@app.get("/api/hora")
 def get_hourly_predictions(
     date_str: Optional[str] = None,
     lat: float = 28.6139,
     lon: float = 77.2090,
-    timezone: str = "Asia/Kolkata"
+    timezone: str = "Asia/Kolkata",
+    current_instant: Optional[str] = None
 ):
     """
     Calculates authentic 24-hour planetary Horas, Rahu Kaal, and Yamaganda (Section 5)
@@ -256,10 +259,18 @@ def get_hourly_predictions(
         tz_name=timezone
     )
 
+    curr_dt = None
+    if current_instant:
+        try:
+            curr_dt = datetime.fromisoformat(current_instant)
+        except Exception:
+            curr_dt = None
+
     horas_data = calculate_24h_horas(
         sunrise_dt=sunrise_dt,
         sunset_dt=sunset_dt,
-        next_sunrise_dt=next_sunrise_dt
+        next_sunrise_dt=next_sunrise_dt,
+        current_dt=curr_dt
     )
 
     return {
@@ -321,6 +332,7 @@ def ask_ai_astrologer(req: AIQuestionRequest):
         }
 
 @app.post("/api/matchmaking")
+@app.post("/api/kundli/matching")
 def get_matchmaking(req: MatchmakingRequest):
     """
     Ashtakoota 36-Guna Matchmaking (Section 8):

@@ -260,6 +260,6 @@ def match_kundli_36_gunas(boy_moon_deg: float, girl_moon_deg: float):
             "graha_maitri": {"obtained": maitri, "max": 5, "description": "Psychological friendship & intellect"},
             "gana": {"obtained": gana, "max": 6, "description": "Behavioral temperament & social outlook"},
             "bhakoot": {"obtained": bhakoot, "max": 7, "description": "Family welfare & emotional bonding", "has_dosha": bhakoot == 0},
-            "nadi": {"obtained": nadi, "max": 8, "description": "Genetics & progeny health", "has_dosha": has_nadi_dosha}
+            "nadi": {"obtained": nadi, "max": 8, "description": "Traditional physiological temperament & hereditary harmony", "has_dosha": has_nadi_dosha}
         }
     }

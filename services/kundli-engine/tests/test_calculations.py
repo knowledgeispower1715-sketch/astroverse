@@ -262,6 +262,66 @@ def test_recording_case_jabalpur():
     
     print("[PASS] test_recording_case_jabalpur passed")
 
+def test_recording_case_21_oct_2026_jabalpur_hora():
+    """
+    Forensic Regression Test: User Recording Hora Case
+    Location: Jabalpur (Lat: 23.17, Lon: 79.95), Asia/Kolkata
+    Date: Wednesday, 21 October 2026
+    Verified Astronomical Schedule:
+    - Sunrise: ~06:09 AM IST
+    - Sunset: ~05:40 PM IST
+    - Next Sunrise: ~06:10 AM IST (22 Oct)
+    - Weekday: Wednesday -> Weekday Lord: Mercury
+    - 12 Daytime Horas starting at sunrise with Mercury
+    - Day duration ~57.5 mins, Night duration ~62.5 mins (unequal day/night periods)
+    - Active Hora at 14:38 (2:38 PM) is Hora 9 (01:49 PM - 02:47 PM): Moon Hora!
+    - Rahu Kaal: 5th daylight part (~11:54 AM - 01:21 PM)
+    - Yamaganda: 2nd daylight part (~07:35 AM - 09:02 AM)
+    - Gulika Kaal: 4th daylight part (~10:28 AM - 11:54 AM)
+    """
+    d = date(2026, 10, 21)
+    lat, lon = 23.17, 79.95
+    s_rise, s_set, s_next = calculate_sun_times(d, lat, lon, "Asia/Kolkata")
+    
+    assert s_rise.hour == 6 and s_rise.minute == 9
+    assert s_set.hour == 17 and s_set.minute in [39, 40]
+    
+    test_dt = datetime(2026, 10, 21, 14, 38, 0, tzinfo=ZoneInfo("Asia/Kolkata"))
+    res = calculate_24h_horas(s_rise, s_set, s_next, current_dt=test_dt)
+    
+    assert res["day_ruler"] == "Mercury"
+    assert res["timeline"][0]["ruling_planet"] == "Mercury"
+    assert res["timeline"][0]["period"] == "Day"
+    assert res["day_hora_duration_minutes"] == 57.5
+    assert res["night_hora_duration_minutes"] == 62.5
+    
+    # Active Hora at 14:38 MUST be Moon (Hora 9)
+    assert res["active_hora"] is not None
+    assert res["active_hora"]["hora_number"] == 9
+    assert res["active_hora"]["ruling_planet"] == "Moon"
+    assert res["active_hora"]["period"] == "Day"
+    
+    # Verify Special Periods
+    sp = res["special_periods"]
+    assert "rahu_kaal" in sp and "11:54 AM" in sp["rahu_kaal"]["start"]
+    assert "yamaganda" in sp and "07:35 AM" in sp["yamaganda"]["start"]
+    assert "gulika_kaal" in sp and "10:28 AM" in sp["gulika_kaal"]["start"]
+    print("[PASS] test_recording_case_21_oct_2026_jabalpur_hora passed")
+
+def test_ashtakoota_libra_aries():
+    """
+    Forensic Regression Test: Matchmaking Case from Video
+    Boy: Libra (Swati Nakshatra, ~195°), Girl: Aries (Bharani Nakshatra, ~15°)
+    True Parashari result is 27.5 / 36 (NOT hardcoded 28.0).
+    Nadi score is 8.0/8 (Antya vs Madhya => No Nadi Dosha).
+    """
+    res = match_kundli_36_gunas(195.0, 15.0)
+    assert res["total_score"] == 27.5
+    assert res["breakdown"]["nadi"]["obtained"] == 8.0
+    assert res["breakdown"]["nadi"]["has_dosha"] is False
+    assert res["breakdown"]["bhakoot"]["obtained"] == 7.0
+    print("[PASS] test_ashtakoota_libra_aries passed")
+
 if __name__ == "__main__":
     test_ephemeris_and_panchang()
     test_divisional_charts()
@@ -271,4 +331,6 @@ if __name__ == "__main__":
     test_doshas()
     test_external_api()
     test_recording_case_jabalpur()
-    print("\nALL 8 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
+    test_recording_case_21_oct_2026_jabalpur_hora()
+    test_ashtakoota_libra_aries()
+    print("\nALL 10 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
