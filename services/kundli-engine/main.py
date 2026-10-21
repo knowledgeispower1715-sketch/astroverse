@@ -2,7 +2,8 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+from zoneinfo import ZoneInfo
 import urllib.request
 import urllib.parse
 import json
@@ -280,6 +281,18 @@ def get_hourly_predictions(
     except Exception:
         target_date = date.today()
 
+    tz_obj = ZoneInfo(timezone)
+    curr_dt = None
+    if current_instant:
+        try:
+            curr_dt = datetime.fromisoformat(current_instant)
+            if curr_dt.tzinfo is None:
+                curr_dt = curr_dt.replace(tzinfo=tz_obj)
+        except Exception:
+            curr_dt = None
+    else:
+        curr_dt = datetime.now(tz_obj)
+
     sunrise_dt, sunset_dt, next_sunrise_dt = calculate_sun_times(
         target_date=target_date,
         latitude=lat,
@@ -287,12 +300,16 @@ def get_hourly_predictions(
         tz_name=timezone
     )
 
-    curr_dt = None
-    if current_instant:
-        try:
-            curr_dt = datetime.fromisoformat(current_instant)
-        except Exception:
-            curr_dt = None
+    # In Vedic solar reckoning, if the current moment is before sunrise and no specific date was queried,
+    # the active solar cycle belongs to the previous day's sunrise through today's sunrise.
+    if not date_str and curr_dt and curr_dt < sunrise_dt:
+        target_date = target_date - timedelta(days=1)
+        sunrise_dt, sunset_dt, next_sunrise_dt = calculate_sun_times(
+            target_date=target_date,
+            latitude=lat,
+            longitude=lon,
+            tz_name=timezone
+        )
 
     horas_data = calculate_24h_horas(
         sunrise_dt=sunrise_dt,
@@ -301,11 +318,20 @@ def get_hourly_predictions(
         current_dt=curr_dt
     )
 
+    now_epoch_ms = int(datetime.now(ZoneInfo("UTC")).timestamp() * 1000)
+
     return {
         "date": target_date.isoformat(),
         "latitude": lat,
         "longitude": lon,
         "timezone": timezone,
+        "planet": horas_data.get("planet"),
+        "category": horas_data.get("category"),
+        "start_epoch_ms": horas_data.get("start_epoch_ms"),
+        "end_epoch_ms": horas_data.get("end_epoch_ms"),
+        "server_now_epoch_ms": horas_data.get("server_now_epoch_ms", now_epoch_ms),
+        "source": "swiss_ephemeris",
+        "calculation_method": "traditional_chaldean_solar_hours",
         **horas_data
     }
 

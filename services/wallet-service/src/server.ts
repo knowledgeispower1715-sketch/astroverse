@@ -765,10 +765,42 @@ app.post('/api/profiles', async (req: Request, res: Response) => {
     });
   }
 
+  // Cross-user authorization validation: If Authorization header is present, ensure caller matches target userId
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1].trim();
+    const tokenHash = hashToken(token);
+    const session = await db.findSessionByTokenHash(tokenHash);
+    if (!session) {
+      return res.status(401).json({ error: 'INVALID_OR_EXPIRED_SESSION', message: 'Session has expired or is invalid.' });
+    }
+    const user = await db.findUserById(session.userId);
+    if (!user) {
+      return res.status(401).json({ error: 'USER_NOT_FOUND', message: 'Associated user account no longer exists.' });
+    }
+    if (user.id !== userId && user.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Cannot create or link birth profile to another user account.' });
+    }
+  }
+
   try {
+    // Idempotency: Prevent duplicate profile creation during network retries
+    const existing = await db.getProfilesByUserId(userId);
+    const trimmedName = String(profileName).trim();
+    const duplicate = existing.find(p =>
+      p.dateOfBirth === dateOfBirth &&
+      p.timeOfBirth === timeOfBirth &&
+      p.profileName.toLowerCase() === trimmedName.toLowerCase() &&
+      Math.abs(Number(p.latitude) - Number(latitude)) < 0.001 &&
+      Math.abs(Number(p.longitude) - Number(longitude)) < 0.001
+    );
+    if (duplicate) {
+      return res.json(duplicate);
+    }
+
     const profile = await db.createProfile({
       userId,
-      profileName: String(profileName).trim(),
+      profileName: trimmedName,
       relationship: relationship || 'Self',
       dateOfBirth,
       timeOfBirth,
@@ -783,7 +815,7 @@ app.post('/api/profiles', async (req: Request, res: Response) => {
       action: 'PROFILE_CREATED',
       targetType: 'PROFILE',
       targetId: profile.id,
-      metadata: { profileName, relationship }
+      metadata: { profileName: trimmedName, relationship }
     });
 
     res.json(profile);

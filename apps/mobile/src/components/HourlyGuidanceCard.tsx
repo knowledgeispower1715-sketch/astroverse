@@ -16,25 +16,33 @@ export const HourlyGuidanceCard: React.FC<HourlyGuidanceCardProps> = ({
   hora,
   onPressSchedule
 }) => {
-  const [remainingMinutes, setRemainingMinutes] = useState<number>(45);
-  const [progressPct, setProgressPct] = useState<number>(30);
+  const [timeRemainingStr, setTimeRemainingStr] = useState<string>('--:-- remaining');
+  const [progressPct, setProgressPct] = useState<number>(0);
 
   useEffect(() => {
-    if (!hora) return;
+    if (!hora || !hora.start_epoch_ms || !hora.end_epoch_ms) return;
 
     const updateTimer = () => {
       const now = Date.now();
       const totalDuration = hora.end_epoch_ms - hora.start_epoch_ms;
-      const elapsed = now - hora.start_epoch_ms;
-      const remaining = Math.max(0, Math.floor((hora.end_epoch_ms - now) / 60000));
-      const pct = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+      if (totalDuration <= 0) {
+        setProgressPct(0);
+        setTimeRemainingStr('--:-- remaining');
+        return;
+      }
 
-      setRemainingMinutes(remaining);
+      const elapsed = now - hora.start_epoch_ms;
+      const pct = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
       setProgressPct(pct);
+
+      const remainingSec = Math.max(0, Math.ceil((hora.end_epoch_ms - now) / 1000));
+      const mins = Math.floor(remainingSec / 60);
+      const secs = remainingSec % 60;
+      setTimeRemainingStr(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} remaining`);
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 30000); // Check every 30s
+    const interval = setInterval(updateTimer, 1000); // 1s tick for real-time MM:SS
     return () => clearInterval(interval);
   }, [hora]);
 
@@ -46,19 +54,11 @@ export const HourlyGuidanceCard: React.FC<HourlyGuidanceCardProps> = ({
     );
   }
 
-  const categoryColor =
-    hora.category === 'Highly Favorable'
-      ? Colors.success
-      : hora.category === 'Caution'
-      ? Colors.error
-      : Colors.warning;
-
-  const categoryBg =
-    hora.category === 'Highly Favorable'
-      ? Colors.successMuted
-      : hora.category === 'Caution'
-      ? Colors.maroonMuted
-      : Colors.goldMuted;
+  const isFavorable = ['Jupiter', 'Venus', 'Mercury'].includes(hora.ruling_planet);
+  const isModerate = ['Sun', 'Moon'].includes(hora.ruling_planet);
+  const categoryColor = isFavorable ? Colors.success : (isModerate ? Colors.warning : Colors.error);
+  const categoryBg = isFavorable ? Colors.successMuted : (isModerate ? Colors.goldMuted : Colors.maroonMuted);
+  const categoryLabel = isFavorable ? 'Favorable' : (isModerate ? 'Authoritative / Moderate' : 'Caution');
 
   return (
     <View style={styles.card}>
@@ -69,13 +69,13 @@ export const HourlyGuidanceCard: React.FC<HourlyGuidanceCardProps> = ({
           <Text style={styles.headerLabel}>ACTIVE HORA NOW</Text>
         </View>
         <View style={[styles.categoryBadge, { backgroundColor: categoryBg, borderColor: categoryColor }]}>
-          <Text style={[styles.categoryText, { color: categoryColor }]}>{hora.category}</Text>
+          <Text style={[styles.categoryText, { color: categoryColor }]}>{categoryLabel}</Text>
         </View>
       </View>
 
       {/* Main Hora Title & Times */}
       <View style={styles.mainInfo}>
-        <Text style={styles.horaName}>{hora.sanskrit_name}</Text>
+        <Text style={styles.horaName}>{hora.sanskrit_name || hora.ruling_planet} Hora</Text>
         <Text style={styles.timeRange}>
           {hora.start_time} – {hora.end_time}
         </Text>
@@ -84,10 +84,10 @@ export const HourlyGuidanceCard: React.FC<HourlyGuidanceCardProps> = ({
       {/* Progress Bar & Countdown */}
       <View style={styles.progressContainer}>
         <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${progressPct}%`, backgroundColor: categoryColor }]} />
+          <View style={[styles.progressBarFill, { width: `${progressPct.toFixed(1)}%`, backgroundColor: categoryColor }]} />
         </View>
         <View style={styles.timerRow}>
-          <Text style={styles.timerText}>{remainingMinutes} mins remaining in this hora</Text>
+          <Text style={styles.timerText}>{timeRemainingStr}</Text>
           <Text style={styles.dayNightTag}>{hora.is_daytime ? '☀️ Daytime' : '🌙 Night'}</Text>
         </View>
       </View>

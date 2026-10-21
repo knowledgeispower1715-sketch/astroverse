@@ -28,10 +28,15 @@ WEEKDAY_LORDS = {
 }
 
 # Traditional Parashari Hora Interpretive Attributes (No fabricated percentages)
+# Canonical Qualitative Classification:
+# Favorable: Jupiter, Venus, Mercury -> #10B981
+# Authoritative / Moderate: Sun, Moon -> #F59E0B
+# Caution: Mars, Saturn -> #EF4444
 HORA_ATTRIBUTES = {
     "Jupiter": {
         "sanskrit": "Guru",
-        "category": "Highly Favorable",
+        "category": "Favorable",
+        "category_code": "favorable",
         "recommendation": "Ideal for major financial investments, legal contracts, higher education, spiritual practices and auspicious ceremonies.",
         "avoid": "Trivial pursuits and routine manual labor.",
         "color_badge": "#10B981"
@@ -39,44 +44,50 @@ HORA_ATTRIBUTES = {
     "Venus": {
         "sanskrit": "Shukra",
         "category": "Favorable",
+        "category_code": "favorable",
         "recommendation": "Excellent for arts, design, romance, luxury acquisitions, social reconciliation, and client presentations.",
         "avoid": "Harsh negotiations and aggressive confrontation.",
-        "color_badge": "#06B6D4"
+        "color_badge": "#10B981"
     },
     "Mercury": {
         "sanskrit": "Budha",
         "category": "Favorable",
+        "category_code": "favorable",
         "recommendation": "Ideal for commercial trade, analytics, accounting, contracts, technical writing, and strategic communication.",
         "avoid": "Over-emotional debates and impulsive decisions.",
-        "color_badge": "#3B82F6"
+        "color_badge": "#10B981"
     },
     "Moon": {
         "sanskrit": "Chandra",
-        "category": "Moderate",
+        "category": "Authoritative / Moderate",
+        "category_code": "authoritative_moderate",
         "recommendation": "Favorable for public relations, home affairs, maritime matters, wellness, and nurturing relationships.",
         "avoid": "High-risk speculative investments during waning phase.",
-        "color_badge": "#8B5CF6"
+        "color_badge": "#F59E0B"
     },
     "Sun": {
         "sanskrit": "Surya",
-        "category": "Authoritative",
+        "category": "Authoritative / Moderate",
+        "category_code": "authoritative_moderate",
         "recommendation": "Suitable for leadership meetings, government administrative work, career advancement discussions, and vital decisions.",
         "avoid": "Submissive compromise and personal artistic pursuits.",
         "color_badge": "#F59E0B"
     },
     "Mars": {
         "sanskrit": "Mangal",
-        "category": "Rigorous / Exercise Caution",
+        "category": "Caution",
+        "category_code": "caution",
         "recommendation": "Suitable for intense physical exercise, engineering work, surgical operations, and decisive defensive action.",
         "avoid": "Signing sensitive partnerships and heated legal discussions.",
         "color_badge": "#EF4444"
     },
     "Saturn": {
         "sanskrit": "Shani",
-        "category": "Restrictive / Groundwork",
+        "category": "Caution",
+        "category_code": "caution",
         "recommendation": "Favorable for routine labor, clearing backlog, mining, agriculture, long-term discipline, and meditation.",
         "avoid": "Initiating new speculative business ventures or matrimonial proposals.",
-        "color_badge": "#6B7280"
+        "color_badge": "#EF4444"
     }
 }
 
@@ -254,12 +265,15 @@ def calculate_24h_horas(
             "end_iso": e_time.isoformat(),
             "start_epoch_ms": int(s_time.timestamp() * 1000),
             "end_epoch_ms": int(e_time.timestamp() * 1000),
+            "planet": planet,
             "ruling_planet": planet,
             "sanskrit_name": attrs["sanskrit"],
             "category": attrs["category"],
+            "category_code": attrs["category_code"],
             "recommendation": attrs["recommendation"],
             "avoid": attrs["avoid"],
             "badge_color": attrs["color_badge"],
+            "color": attrs["color_badge"],
             "is_active": is_active
         }
         timeline.append(hora_data)
@@ -284,12 +298,15 @@ def calculate_24h_horas(
             "end_iso": e_time.isoformat(),
             "start_epoch_ms": int(s_time.timestamp() * 1000),
             "end_epoch_ms": int(e_time.timestamp() * 1000),
+            "planet": planet,
             "ruling_planet": planet,
             "sanskrit_name": attrs["sanskrit"],
             "category": attrs["category"],
+            "category_code": attrs["category_code"],
             "recommendation": attrs["recommendation"],
             "avoid": attrs["avoid"],
             "badge_color": attrs["color_badge"],
+            "color": attrs["color_badge"],
             "is_active": is_active
         }
         timeline.append(hora_data)
@@ -299,6 +316,14 @@ def calculate_24h_horas(
     # Fallback if current_dt is outside the window (e.g. earlier than sunrise)
     if not active_hora and timeline:
         active_hora = timeline[0]
+
+    now_epoch_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+    if active_hora:
+        active_hora["planet"] = active_hora["ruling_planet"]
+        active_hora["category_code"] = active_hora.get("category_code", "favorable")
+        active_hora["server_now_epoch_ms"] = now_epoch_ms
+        active_hora["source"] = "swiss_ephemeris"
+        active_hora["calculation_method"] = "traditional_chaldean_solar_hours"
 
     special_periods = calculate_special_periods(sunrise_dt, sunset_dt, weekday)
 
@@ -313,5 +338,12 @@ def calculate_24h_horas(
         "day_ruler": day_ruler,
         "timeline": timeline,
         "active_hora": active_hora,
-        "special_periods": special_periods
+        "special_periods": special_periods,
+        "planet": active_hora["ruling_planet"] if active_hora else "Sun",
+        "category": active_hora.get("category_code", "favorable") if active_hora else "favorable",
+        "start_epoch_ms": active_hora["start_epoch_ms"] if active_hora else int(sunrise_dt.timestamp() * 1000),
+        "end_epoch_ms": active_hora["end_epoch_ms"] if active_hora else int((sunrise_dt + timedelta(seconds=day_hora_duration)).timestamp() * 1000),
+        "server_now_epoch_ms": now_epoch_ms,
+        "source": "swiss_ephemeris",
+        "calculation_method": "traditional_chaldean_solar_hours"
     }

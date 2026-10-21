@@ -34,13 +34,25 @@
       --radius-full: 9999px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      box-sizing: border-box;
+      max-width: 100%;
+      overflow-x: clip;
+    }
+    *, *::before, *::after {
+      box-sizing: inherit;
+      margin: 0;
+      padding: 0;
+    }
     body {
+      max-width: 100%;
+      margin: 0;
       font-family: 'Plus Jakarta Sans', sans-serif;
       background-color: var(--canvas-bg);
       color: var(--text-main);
       line-height: 1.5;
-      overflow-x: hidden;
+      overflow-x: clip;
+      overflow-y: auto;
     }
 
     /* Top Announcement Promo Bar */
@@ -592,7 +604,7 @@
 
     /* Planetary Horas & Timing Styles */
     .hora-banner {
-      background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+      background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #312E81 100%);
       color: white;
       border-radius: var(--radius-lg);
       padding: 24px;
@@ -602,6 +614,112 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 16px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+    }
+    .hora-progress-container {
+      width: 100%;
+      margin-top: 14px;
+    }
+    .hora-progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .hora-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.4s ease, background-color 0.4s ease;
+      background: #10B981;
+    }
+    .hora-progress-labels {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #C7D2FE;
+      margin-top: 6px;
+    }
+
+    /* Cosmic-Navy and Vedic-Gold Auth Modal Styles */
+    .auth-modal-card {
+      background: #131B2E;
+      border: 1px solid #2A364F;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: min(480px, calc(100vw - 32px));
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(245, 158, 11, 0.1);
+      box-sizing: border-box;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .auth-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #1E293B;
+    }
+    .auth-modal-close-btn {
+      background: none;
+      border: none;
+      color: #94A3B8;
+      font-size: 20px;
+      cursor: pointer;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: color 0.2s, background-color 0.2s;
+    }
+    .auth-modal-close-btn:hover {
+      color: #F8FAFC;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .auth-modal-tabs {
+      display: flex;
+      gap: 6px;
+      background: #0B0F19;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .auth-modal-tab {
+      flex: 1;
+      padding: 10px 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #94A3B8;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 44px;
+      transition: all 0.2s ease;
+    }
+    .auth-modal-tab.active {
+      color: #F8FAFC;
+      background: #1E293B;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .auth-modal-panel {
+      display: none;
+    }
+    .auth-modal-panel.active {
+      display: block;
     }
     .special-periods-grid {
       display: grid;
@@ -1530,7 +1648,10 @@
             </div>
             <div style="display: flex; align-items: baseline; gap: 6px;">
               <strong id="guidance-active-hora-name" style="font-size: 15px; color: var(--vedic-maroon);">Calculating...</strong>
-              <span id="guidance-active-hora-timer" style="font-size: 13px; font-family: monospace; font-weight: 700; color: #059669;">--:-- left</span>
+              <span id="guidance-active-hora-timer" style="font-size: 13px; font-family: monospace; font-weight: 700; color: #059669;">--:-- remaining</span>
+            </div>
+            <div class="hora-mini-progress-track" style="width: 100%; height: 4px; background: rgba(0,0,0,0.08); border-radius: 999px; margin-top: 4px; overflow: hidden;" role="progressbar" aria-label="Active Hora Progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+              <div class="hora-progress-fill" id="guidance-hora-progress-fill" style="height: 100%; width: 0%; background: #10B981;"></div>
             </div>
           </div>
         </div>
@@ -1581,10 +1702,10 @@
                 Sign in or calculate your Janam Kundli below to generate 100% chart-grounded Parashari predictions personalized to your natal Lagna, Moon sign, and active Vimshottari Mahadasha.
               </p>
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="switchNavSection('login')">
+                <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px; min-height: 44px;" onclick="openAuthModal('otp')">
                   <i class="fa-solid fa-right-to-bracket"></i> Sign In to Account
                 </button>
-                <button class="btn-outline-secondary" style="padding: 6px 14px; font-size: 12px;" onclick="document.getElementById('input-k-name').focus()">
+                <button class="btn-outline-secondary" style="padding: 6px 14px; font-size: 12px; min-height: 44px;" onclick="document.getElementById('input-k-name').focus()">
                   <i class="fa-solid fa-arrow-down"></i> Enter Birth Details Below
                 </button>
               </div>
@@ -1592,16 +1713,27 @@
           </div>
         </div>
 
-        <!-- 7-Section Structured Prediction Content -->
+        <!-- 9-Section Canonical Structured Prediction Content -->
         <div id="guidance-sections-wrap" class="guidance-sections-wrap">
           <div id="guidance-report-title" class="guidance-report-title">
             Hourly Personal Guidance
           </div>
 
-          <!-- Section A: Overall Outlook -->
+          <!-- Section 1: Executive Summary -->
           <div class="guidance-section-box">
             <div class="guidance-section-heading">
-              <span class="section-letter-tag">A</span>
+              <span class="section-letter-tag">1</span>
+              <h4>Executive Summary</h4>
+            </div>
+            <p id="guidance-disp-summary" class="guidance-body-text" style="font-weight: 600; color: #1E1B4B;">
+              Loading high-precision astrological overview...
+            </p>
+          </div>
+
+          <!-- Section 2: Overall Outlook -->
+          <div class="guidance-section-box">
+            <div class="guidance-section-heading">
+              <span class="section-letter-tag">2</span>
               <h4>Overall Outlook</h4>
             </div>
             <p id="guidance-disp-outlook" class="guidance-body-text">
@@ -1609,11 +1741,11 @@
             </p>
           </div>
 
-          <!-- Section B: Supportive Developments -->
+          <!-- Section 3: Potentially Supportive Themes -->
           <div class="guidance-section-box supportive">
             <div class="guidance-section-heading">
-              <span class="section-letter-tag tag-supportive">B</span>
-              <h4 style="color: #065F46;">Supportive Developments</h4>
+              <span class="section-letter-tag tag-supportive">3</span>
+              <h4 style="color: #065F46;">Potentially Supportive Themes</h4>
             </div>
             <ul id="guidance-disp-supportive" class="guidance-list supportive">
               <li>Analyzing benefic planetary alignments...</li>
@@ -1622,10 +1754,10 @@
 
           <!-- Deep Analysis Sections (Gated by Freemium / Premium Unlock for Weekly/Monthly/Yearly) -->
           <div id="guidance-deep-sections-wrap" class="guidance-deep-sections-wrap">
-            <!-- Section C: Possible Challenges and Cautions -->
+            <!-- Section 4: Possible Challenges and Cautions -->
             <div class="guidance-section-box cautions">
               <div class="guidance-section-heading">
-                <span class="section-letter-tag tag-caution">C</span>
+                <span class="section-letter-tag tag-caution">4</span>
                 <h4 style="color: #991B1B;">Possible Challenges &amp; Cautions</h4>
               </div>
               <ul id="guidance-disp-challenges" class="guidance-list cautions">
@@ -1633,37 +1765,48 @@
               </ul>
             </div>
 
-            <!-- Section D: Relevant Time Windows -->
+            <!-- Section 5: Key Time Windows -->
             <div class="guidance-section-box">
               <div class="guidance-section-heading">
-                <span class="section-letter-tag">D</span>
-                <h4>Relevant Time Windows</h4>
+                <span class="section-letter-tag">5</span>
+                <h4>Key Time Windows</h4>
               </div>
               <div id="guidance-disp-windows" class="guidance-windows-container">
                 <!-- Window cards dynamically populated -->
               </div>
             </div>
 
-            <!-- Section E: Why This Applies (Grounding) -->
+            <!-- Section 6: Relevant Chart Facts -->
             <div class="guidance-section-box grounding-box">
               <div class="guidance-section-heading">
-                <span class="section-letter-tag tag-grounding">E</span>
-                <h4 style="color: #4C0519;">Why This Applies (Astrological Grounding)</h4>
+                <span class="section-letter-tag tag-grounding">6</span>
+                <h4 style="color: #4C0519;">Relevant Chart Facts</h4>
               </div>
-              <p id="guidance-disp-why" class="guidance-body-text" style="color: #4C0519;">
-                Grounded in Parashari Jyotish principles and Swiss Ephemeris astronomical positions.
-              </p>
               <div id="guidance-disp-profile-metrics" class="guidance-profile-metrics">
                 <!-- Lagna, Moon Sign, Mahadasha, Antardasha chips -->
               </div>
+              <p id="guidance-disp-facts" class="guidance-body-text" style="color: #4C0519; font-size: 13px; margin-top: 8px;">
+                Verified against calculated planetary positions and active Dasha cycle.
+              </p>
             </div>
 
-            <!-- Section F & G in 2-column grid -->
+            <!-- Section 7: Applicable Traditional Rules -->
+            <div class="guidance-section-box">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag">7</span>
+                <h4>Applicable Traditional Rules</h4>
+              </div>
+              <p id="guidance-disp-why" class="guidance-body-text" style="color: #334155;">
+                Grounded in classical Parashari Jyotish principles and Swiss Ephemeris astronomical positions.
+              </p>
+            </div>
+
+            <!-- Section 8 & 9 in 2-column grid -->
             <div class="guidance-2col-grid">
-              <!-- Section F: Practical Reflection -->
+              <!-- Section 8: Practical Reflection -->
               <div class="guidance-section-box reflection">
                 <div class="guidance-section-heading">
-                  <span class="section-letter-tag tag-reflection">F</span>
+                  <span class="section-letter-tag tag-reflection">8</span>
                   <h4 style="color: #1E3A8A;">Practical Reflection</h4>
                 </div>
                 <p id="guidance-disp-reflection" class="guidance-body-text">
@@ -1671,10 +1814,10 @@
                 </p>
               </div>
 
-              <!-- Section G: Limitations & Epistemic Scope -->
+              <!-- Section 9: Epistemic Limitations -->
               <div class="guidance-section-box limitations">
                 <div class="guidance-section-heading">
-                  <span class="section-letter-tag tag-limitations">G</span>
+                  <span class="section-letter-tag tag-limitations">9</span>
                   <h4 style="color: #475569;">Scope &amp; Limitations</h4>
                 </div>
                 <p id="guidance-disp-limitations" class="guidance-body-text" style="font-size: 12px; color: #64748B;">
@@ -2011,16 +2154,30 @@
       </div>
 
       <!-- Live Active Hora Banner -->
-      <div class="hora-banner">
-        <div>
-          <span style="font-size: 11px; font-weight: 800; background: rgba(255, 255, 255, 0.15); padding: 3px 10px; border-radius: 12px; text-transform: uppercase;">Current Live Planetary Hora</span>
-          <h3 id="disp-active-hora-planet" style="font-size: 28px; font-weight: 800; margin-top: 6px;">Loading...</h3>
+      <div class="hora-banner" id="hora-banner-box">
+        <div style="flex: 1; min-width: 260px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 800; background: rgba(255, 255, 255, 0.15); padding: 3px 10px; border-radius: 12px; text-transform: uppercase;">Current Live Planetary Hora</span>
+            <span id="disp-active-hora-badge" class="hora-badge-pill" style="background: rgba(16, 185, 129, 0.2); color: #34D399; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">Favorable</span>
+          </div>
+          <h3 id="disp-active-hora-planet" style="font-size: 28px; font-weight: 800; margin-top: 6px; color: #FFFFFF;">Loading...</h3>
           <p id="disp-active-hora-time" style="font-size: 14px; color: #E0E7FF; margin-top: 2px;">--</p>
           <div id="disp-active-hora-rec" style="font-size: 13px; color: #FEF08A; margin-top: 8px; max-width: 650px;">--</div>
         </div>
-        <div style="text-align: right;">
+        <div style="text-align: right; min-width: 140px;">
           <div style="font-size: 11px; color: #A5B4FC; text-transform: uppercase; font-weight: 700;">Time Remaining</div>
-          <div id="disp-hora-countdown" style="font-size: 32px; font-weight: 800; font-family: monospace; color: #34D399;">--:--</div>
+          <div id="disp-hora-countdown" style="font-size: 32px; font-weight: 800; font-family: monospace; color: #10B981;">--:--</div>
+          <div id="disp-hora-elapsed-sub" style="font-size: 11px; color: #CBD5E1; margin-top: 2px;">--% elapsed</div>
+        </div>
+        <div class="hora-progress-container">
+          <div class="hora-progress-track" role="progressbar" aria-label="Planetary Hora Progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div class="hora-progress-fill" id="hora-progress-bar-fill"></div>
+          </div>
+          <div class="hora-progress-labels">
+            <span id="hora-progress-start-label">Start: --</span>
+            <span id="hora-progress-pct-label">0% Elapsed</span>
+            <span id="hora-progress-end-label">End: --</span>
+          </div>
         </div>
       </div>
 
@@ -2057,10 +2214,10 @@
           Complete 24-Hour Solar Schedule
         </h4>
         <div class="subtabs-pill-row" style="margin-bottom: 0;">
-          <button class="subtab-btn active" id="btn-hz-hourly" onclick="switchForecastHorizon('hourly')">Hourly Horas</button>
-          <button class="subtab-btn" id="btn-hz-weekly" onclick="switchForecastHorizon('weekly')">Weekly Forecast</button>
-          <button class="subtab-btn" id="btn-hz-monthly" onclick="switchForecastHorizon('monthly')">Monthly Forecast</button>
-          <button class="subtab-btn" id="btn-hz-yearly" onclick="switchForecastHorizon('yearly')">Yearly 2026</button>
+          <button class="subtab-btn active" id="btn-sched-hourly" onclick="switchForecastHorizon('hourly')">Hourly Horas</button>
+          <button class="subtab-btn" id="btn-sched-weekly" onclick="switchForecastHorizon('weekly')">Weekly Forecast</button>
+          <button class="subtab-btn" id="btn-sched-monthly" onclick="switchForecastHorizon('monthly')">Monthly Forecast</button>
+          <button class="subtab-btn" id="btn-sched-yearly" onclick="switchForecastHorizon('yearly')">Yearly 2026</button>
         </div>
       </div>
 
@@ -3298,44 +3455,140 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL: AUTHENTICATION ==================== -->
-  <div id="modal-auth" class="modal-backdrop-wrap">
-    <div class="modal-dialog-card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon);">
-          <i class="fa-solid fa-user-lock"></i> Account Authentication
-        </h3>
-        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px;" onclick="closeAuthModal()"></i>
-      </div>
-
-      <!-- Step 1: Input Identifier -->
-      <div id="auth-step-1">
-        <p style="font-size: 13px; color: #64748B; margin-bottom: 14px;">
-          Enter your mobile phone number or email to receive a secure 6-digit one-time password (OTP):
-        </p>
-        <div class="form-field-group">
-          <label class="form-field-label">Mobile Number or Email</label>
-          <input type="text" id="input-auth-ident" class="form-input-text" placeholder="+91 98765 43210 or user@example.com">
+  <!-- ==================== MODAL: DEDICATED SEAMLESS AUTHENTICATION DIALOG ==================== -->
+  <div id="modal-auth-dialog" class="modal-backdrop-wrap" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title" style="display: none; align-items: center; justify-content: center; z-index: 10400;">
+    <div class="auth-modal-card">
+      <!-- Modal Header -->
+      <div class="auth-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; color: #F59E0B; font-size: 18px;">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <h3 id="auth-modal-title" style="font-size: 17px; font-weight: 800; color: #F8FAFC; margin: 0;">AstroVerse Authentication</h3>
+            <span style="font-size: 12px; color: #94A3B8;">Secure Vedic Life Intelligence &amp; Profile Access</span>
+          </div>
         </div>
-        <button class="btn-gold-primary" style="width: 100%; justify-content: center;" onclick="requestAuthOtp()">
-          Send Verification Code
+        <button class="auth-modal-close-btn" onclick="closeAuthModal()" aria-label="Close authentication dialog">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <!-- Step 2: Input OTP -->
-      <div id="auth-step-2" style="display: none;">
-        <p style="font-size: 13px; color: #64748B; margin-bottom: 14px;">
-          A 6-digit verification code has been dispatched to <strong id="disp-auth-target">--</strong>:
-        </p>
-        <div class="form-field-group">
-          <label class="form-field-label">6-Digit OTP</label>
-          <input type="text" id="input-auth-otp" class="form-input-text" placeholder="123456" maxlength="6" style="letter-spacing: 4px; font-size: 18px; text-align: center;">
-          <div id="otp-dev-hint" style="font-size: 11px; color: #059669; margin-top: 4px; font-weight: 600;"></div>
-        </div>
-        <button class="btn-gold-primary" style="width: 100%; justify-content: center;" onclick="verifyAuthOtp()">
-          Verify & Sign In
+      <!-- Tab Switcher (3 Tabs: Mobile OTP, Password Sign In, New Registration) -->
+      <div class="auth-modal-tabs" role="tablist">
+        <button class="auth-modal-tab active" id="modal-tab-otp" role="tab" aria-selected="true" onclick="switchAuthModalTab('otp')">
+          <i class="fa-solid fa-mobile-screen"></i> Mobile OTP
+        </button>
+        <button class="auth-modal-tab" id="modal-tab-password" role="tab" aria-selected="false" onclick="switchAuthModalTab('password')">
+          <i class="fa-solid fa-key"></i> Password
+        </button>
+        <button class="auth-modal-tab" id="modal-tab-register" role="tab" aria-selected="false" onclick="switchAuthModalTab('register')">
+          <i class="fa-solid fa-user-plus"></i> Register
         </button>
       </div>
+
+      <!-- Tab A: Mobile OTP -->
+      <div id="modal-panel-otp" class="auth-modal-panel active" role="tabpanel">
+        <div id="modal-otp-step-1">
+          <p style="font-size: 13px; color: #94A3B8; margin-bottom: 14px;">
+            Enter your mobile number to receive a secure 6-digit one-time password (OTP):
+          </p>
+          <div class="form-field-group">
+            <label class="form-field-label" style="color: #E2E8F0;">Country Code &amp; Mobile Number</label>
+            <div style="display: flex; gap: 8px;">
+              <select id="modal-otp-country-code" class="form-input-text" style="width: 85px; flex-shrink: 0; background: #0F172A; color: #F8FAFC; border-color: #334155;">
+                <option value="+91" selected>🇮🇳 +91</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+971">🇦🇪 +971</option>
+              </select>
+              <input type="tel" id="modal-otp-phone" class="form-input-text" placeholder="9876543210" maxlength="10" style="background: #0F172A; color: #F8FAFC; border-color: #334155; flex: 1;">
+            </div>
+            <span id="modal-otp-phone-error" style="font-size: 11px; color: #EF4444; display: none; margin-top: 4px;"></span>
+          </div>
+          <button class="btn-gold-primary" id="btn-modal-send-otp" style="width: 100%; justify-content: center; min-height: 44px;" onclick="handleModalRequestOtp()">
+            <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+          </button>
+        </div>
+
+        <div id="modal-otp-step-2" style="display: none;">
+          <p style="font-size: 13px; color: #94A3B8; margin-bottom: 12px;">
+            Enter the 6-digit verification code sent to <strong id="modal-otp-sent-to" style="color: #F8FAFC;"></strong>:
+          </p>
+          <div class="form-field-group">
+            <label class="form-field-label" style="color: #E2E8F0;">6-Digit OTP</label>
+            <input type="text" id="modal-otp-code" class="form-input-text" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;" maxlength="6" style="background: #0F172A; color: #F8FAFC; border-color: #334155; font-size: 20px; letter-spacing: 6px; text-align: center;">
+            <div id="modal-otp-preview-hint" style="font-size: 11px; color: #10B981; margin-top: 4px; font-weight: 600;"></div>
+            <span id="modal-otp-verify-error" style="font-size: 11px; color: #EF4444; display: none; margin-top: 4px;"></span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-outline-secondary" style="flex: 1; justify-content: center; min-height: 44px; color: #CBD5E1; border-color: #475569;" onclick="resetModalOtpStep()">
+              Back
+            </button>
+            <button class="btn-gold-primary" id="btn-modal-verify-otp" style="flex: 2; justify-content: center; min-height: 44px;" onclick="handleModalVerifyOtp()">
+              <i class="fa-solid fa-shield-check"></i> Verify &amp; Sign In
+            </button>
+          </div>
+          <div style="margin-top: 12px; text-align: center;">
+            <button id="btn-modal-resend-otp" onclick="handleModalResendOtp()" style="background: none; border: none; font-size: 12px; color: #F59E0B; cursor: pointer; text-decoration: underline;" disabled>
+              Resend OTP (wait 60s)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab B: Password Sign In -->
+      <div id="modal-panel-password" class="auth-modal-panel" role="tabpanel" style="display: none;">
+        <div class="form-field-group">
+          <label class="form-field-label" style="color: #E2E8F0;">Email Address or Mobile Number</label>
+          <input type="text" id="modal-pwd-ident" class="form-input-text" placeholder="name@example.com or +919876543210" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
+        </div>
+        <div class="form-field-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-field-label" style="color: #E2E8F0; margin-bottom: 0;">Password</label>
+            <button type="button" onclick="switchAuthModalTab('otp')" style="background: none; border: none; font-size: 12px; color: #60A5FA; cursor: pointer; text-decoration: none;">
+              Use OTP instead
+            </button>
+          </div>
+          <div style="position: relative;">
+            <input type="password" id="modal-pwd-val" class="form-input-text" placeholder="Enter your password" style="background: #0F172A; color: #F8FAFC; border-color: #334155; padding-right: 40px;">
+            <i class="fa-regular fa-eye" id="modal-pwd-toggle" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; cursor: pointer;" onclick="togglePasswordVisibility('modal-pwd-val', 'modal-pwd-toggle')"></i>
+          </div>
+          <span id="modal-pwd-error" style="font-size: 11px; color: #EF4444; display: none; margin-top: 4px;"></span>
+        </div>
+        <button class="btn-gold-primary" id="btn-modal-pwd-login" style="width: 100%; justify-content: center; min-height: 44px; margin-top: 6px;" onclick="handleModalPasswordLogin()">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Account
+        </button>
+      </div>
+
+      <!-- Tab C: New Registration -->
+      <div id="modal-panel-register" class="auth-modal-panel" role="tabpanel" style="display: none;">
+        <div class="form-field-group">
+          <label class="form-field-label" style="color: #E2E8F0;">Full Name</label>
+          <input type="text" id="modal-reg-name" class="form-input-text" placeholder="Amitabh Sharma" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
+        </div>
+        <div class="form-field-group">
+          <label class="form-field-label" style="color: #E2E8F0;">Mobile Number</label>
+          <input type="tel" id="modal-reg-phone" class="form-input-text" placeholder="+919876543210" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
+        </div>
+        <div class="form-field-group">
+          <label class="form-field-label" style="color: #E2E8F0;">Email Address (Optional)</label>
+          <input type="email" id="modal-reg-email" class="form-input-text" placeholder="name@example.com" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
+        </div>
+        <div class="form-field-group">
+          <label class="form-field-label" style="color: #E2E8F0;">Create Password (Min 8 characters)</label>
+          <div style="position: relative;">
+            <input type="password" id="modal-reg-pwd" class="form-input-text" placeholder="Create a strong password" style="background: #0F172A; color: #F8FAFC; border-color: #334155; padding-right: 40px;" oninput="checkModalRegPwdStrength(this.value)">
+            <i class="fa-regular fa-eye" id="modal-reg-pwd-toggle" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; cursor: pointer;" onclick="togglePasswordVisibility('modal-reg-pwd', 'modal-reg-pwd-toggle')"></i>
+          </div>
+          <div id="modal-reg-pwd-strength" style="font-size: 11px; color: #94A3B8; margin-top: 4px;">Min 8 chars, 1 uppercase, 1 number</div>
+          <span id="modal-reg-error" style="font-size: 11px; color: #EF4444; display: none; margin-top: 4px;"></span>
+        </div>
+        <button class="btn-gold-primary" id="btn-modal-reg-submit" style="width: 100%; justify-content: center; min-height: 44px;" onclick="handleModalRegister()">
+          <i class="fa-solid fa-user-check"></i> Complete Registration
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -3601,8 +3854,13 @@
       let targetSection = sectionId;
 
       if (authRoutes.includes(sectionId)) {
-        targetSection = 'auth';
-        showAuthSubPanel(sectionId);
+        if (sectionId === 'complete-profile') {
+          targetSection = 'auth';
+          showAuthSubPanel(sectionId);
+        } else {
+          openAuthModal(sectionId === 'signup' ? 'register' : 'otp');
+          return;
+        }
       } else if (sectionId === 'settings/security' || sectionId === 'security') {
         targetSection = 'settings';
         setTimeout(() => {
@@ -4251,22 +4509,107 @@
 
     // 3. 24-HOUR PLANETARY HORAS & HOURLY PREDICTIONS (Section 5)
     let horaCountdownInterval = null;
+    let isFetchingNextHora = false;
 
-    function startHoraCountdownTimer(endEpochMs) {
+    function calculateHoraProgress(nowMs, startEpochMs, endEpochMs) {
+      if (
+        !Number.isFinite(nowMs) ||
+        !Number.isFinite(startEpochMs) ||
+        !Number.isFinite(endEpochMs) ||
+        endEpochMs <= startEpochMs
+      ) {
+        return null;
+      }
+      const progress = ((nowMs - startEpochMs) / (endEpochMs - startEpochMs)) * 100;
+      return Math.min(100, Math.max(0, progress));
+    }
+
+    function getHoraColor(planet) {
+      if (['Jupiter', 'Venus', 'Mercury'].includes(planet)) return '#10B981';
+      if (['Sun', 'Moon'].includes(planet)) return '#F59E0B';
+      return '#EF4444';
+    }
+
+    function getHoraCategory(planet) {
+      if (['Jupiter', 'Venus', 'Mercury'].includes(planet)) return 'Favorable';
+      if (['Sun', 'Moon'].includes(planet)) return 'Authoritative / Moderate';
+      return 'Caution';
+    }
+
+    function startHoraCountdownTimer(startEpochMs, endEpochMs, planet, category) {
       if (horaCountdownInterval) clearInterval(horaCountdownInterval);
+
+      const rulingPlanet = planet || window.currentActiveHoraPlanet || "Sun";
+      const catColor = getHoraColor(rulingPlanet);
+      const catName = category || getHoraCategory(rulingPlanet);
+
       function update() {
-        const diffSec = Math.max(0, Math.floor((endEpochMs - Date.now()) / 1000));
-        const mins = Math.floor(diffSec / 60);
-        const secs = diffSec % 60;
+        const now = Date.now();
+        if (!Number.isFinite(endEpochMs) || !Number.isFinite(startEpochMs) || endEpochMs <= startEpochMs) {
+          const el = document.getElementById('disp-hora-countdown');
+          if (el) el.textContent = "--:-- remaining";
+          const gTimer = document.getElementById('guidance-active-hora-timer');
+          if (gTimer) gTimer.textContent = "--:-- remaining";
+          return;
+        }
+
+        const remainingSec = Math.max(0, Math.ceil((endEpochMs - now) / 1000));
+        const mins = Math.floor(remainingSec / 60);
+        const secs = remainingSec % 60;
+        const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} remaining`;
+
         const el = document.getElementById('disp-hora-countdown');
-        if (el) el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (el) {
+          el.textContent = timeStr;
+          el.style.color = catColor;
+        }
         const gTimer = document.getElementById('guidance-active-hora-timer');
-        if (gTimer) gTimer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} left`;
-        if (diffSec <= 0) {
+        if (gTimer) {
+          gTimer.textContent = timeStr;
+          gTimer.style.color = catColor;
+        }
+
+        // Real-Time Progress Engine
+        const progress = calculateHoraProgress(now, startEpochMs, endEpochMs);
+        const pct = progress !== null ? progress : 0;
+        const pctStr = `${pct.toFixed(1)}%`;
+
+        const fillEl = document.getElementById('hora-progress-bar-fill');
+        if (fillEl) {
+          fillEl.style.width = pctStr;
+          fillEl.style.backgroundColor = catColor;
+          const track = fillEl.parentElement;
+          if (track) track.setAttribute('aria-valuenow', Math.round(pct));
+        }
+
+        const gFillEl = document.getElementById('guidance-hora-progress-fill');
+        if (gFillEl) {
+          gFillEl.style.width = pctStr;
+          gFillEl.style.backgroundColor = catColor;
+          const gTrack = gFillEl.parentElement;
+          if (gTrack) gTrack.setAttribute('aria-valuenow', Math.round(pct));
+        }
+
+        const pctLabel = document.getElementById('hora-progress-pct-label');
+        if (pctLabel) pctLabel.textContent = `${Math.round(pct)}% Elapsed`;
+
+        const elSub = document.getElementById('disp-hora-elapsed-sub');
+        if (elSub) elSub.textContent = `${Math.round(pct)}% elapsed`;
+
+        // Slot Boundary Transition: Fetch next slot atomically without reload
+        if (remainingSec <= 0 && !isFetchingNextHora) {
+          isFetchingNextHora = true;
           clearInterval(horaCountdownInterval);
-          loadHourlyHorasUI();
+          setTimeout(async () => {
+            try {
+              await loadHourlyHorasUI();
+            } finally {
+              isFetchingNextHora = false;
+            }
+          }, 1200);
         }
       }
+
       update();
       horaCountdownInterval = setInterval(update, 1000);
     }
@@ -4441,19 +4784,51 @@
       `;
 
       if (data.active_hora) {
-        document.getElementById('disp-active-hora-planet').textContent = `${data.active_hora.ruling_planet} Hora (${data.active_hora.category})`;
-        document.getElementById('disp-active-hora-time').textContent = `Window: ${data.active_hora.start_time} – ${data.active_hora.end_time}`;
-        document.getElementById('disp-active-hora-rec').textContent = data.active_hora.recommendation;
-        const countdownEpoch = data.active_hora.end_epoch_ms || (Date.now() + 45 * 60 * 1000);
-        startHoraCountdownTimer(countdownEpoch);
+        const ah = data.active_hora;
+        const planet = ah.ruling_planet || ah.planet || "Sun";
+        const cat = ah.category || getHoraCategory(planet);
+        const catColor = getHoraColor(planet);
+
+        const badgeEl = document.getElementById('disp-active-hora-badge');
+        if (badgeEl) {
+          badgeEl.textContent = cat;
+          badgeEl.style.background = `${catColor}25`;
+          badgeEl.style.color = catColor;
+        }
+
+        const planetEl = document.getElementById('disp-active-hora-planet');
+        if (planetEl) planetEl.textContent = `${planet} Hora (${cat})`;
+
+        const timeEl = document.getElementById('disp-active-hora-time');
+        if (timeEl) timeEl.textContent = `Window: ${ah.start_time} – ${ah.end_time}`;
+
+        const recEl = document.getElementById('disp-active-hora-rec');
+        if (recEl) recEl.textContent = ah.recommendation;
+
+        const sLabel = document.getElementById('hora-progress-start-label');
+        if (sLabel) sLabel.textContent = `Start: ${ah.start_time}`;
+
+        const eLabel = document.getElementById('hora-progress-end-label');
+        if (eLabel) eLabel.textContent = `End: ${ah.end_time}`;
+
+        window.currentActiveHoraPlanet = planet;
+        window.currentActiveHoraWindow = `${ah.start_time} – ${ah.end_time}`;
+        const ghName = document.getElementById('guidance-active-hora-name');
+        if (ghName) ghName.textContent = `${planet} Hora`;
+
+        const startEpoch = ah.start_epoch_ms || (Date.now() - 15 * 60 * 1000);
+        const endEpoch = ah.end_epoch_ms || (Date.now() + 45 * 60 * 1000);
+        startHoraCountdownTimer(startEpoch, endEpoch, planet, cat);
       }
 
       // Synchronize featured header guidance hora indicators
       if (data.active_hora) {
-        window.currentActiveHoraPlanet = data.active_hora.ruling_planet;
-        window.currentActiveHoraWindow = `${data.active_hora.start_time} – ${data.active_hora.end_time}`;
+        const ah = data.active_hora;
+        const planet = ah.ruling_planet || ah.planet || "Sun";
+        window.currentActiveHoraPlanet = planet;
+        window.currentActiveHoraWindow = `${ah.start_time} – ${ah.end_time}`;
         const ghName = document.getElementById('guidance-active-hora-name');
-        if (ghName) ghName.textContent = `${data.active_hora.ruling_planet} Hora`;
+        if (ghName) ghName.textContent = `${planet} Hora`;
       }
 
       if (data.special_periods) {
@@ -4471,8 +4846,8 @@
         let badgeBg = '#ECFDF5', badgeColor = '#065F46';
         if (slot.category && slot.category.includes('Caution')) {
           badgeBg = '#FEF2F2'; badgeColor = '#991B1B';
-        } else if (slot.category && slot.category.includes('Moderate')) {
-          badgeBg = '#F3F4F6'; badgeColor = '#374151';
+        } else if (slot.category && (slot.category.includes('Moderate') || slot.category.includes('Authoritative'))) {
+          badgeBg = '#FEF3C7'; badgeColor = '#92400E';
         }
 
         card.innerHTML = `
@@ -4489,29 +4864,10 @@
 
     function switchForecastHorizon(hz) {
       document.querySelectorAll('.subtabs-pill-row .subtab-btn').forEach(b => b.classList.remove('active'));
-      const activeBtn = document.getElementById('btn-hz-' + hz);
+      const activeBtn = document.getElementById('btn-sched-' + hz);
       if (activeBtn) activeBtn.classList.add('active');
-
-      const panel = document.getElementById('inline-forecast-box');
-      const title = document.getElementById('inline-forecast-title');
-      const body = document.getElementById('inline-forecast-body');
-
-      if (hz === 'hourly') {
-        panel.style.display = 'none';
-        return;
-      }
-
-      panel.style.display = 'block';
-      if (hz === 'weekly') {
-        title.textContent = "Weekly Astronomical Transit Analysis";
-        body.textContent = "Sun in Libra conjunct Mercury activates strategic commerce. Jupiter trines your 9th house of fortune, supporting negotiations, legal resolution, and contracts.";
-      } else if (hz === 'monthly') {
-        title.textContent = "Monthly Gochara Transit Forecast";
-        body.textContent = "Mars ingress into Scorpio strengthens real estate, property acquisitions, and executive courage. Maintain disciplined investment horizons during the waxing Moon.";
-      } else if (hz === 'yearly') {
-        title.textContent = "Yearly 2026 Mahadasha & Transit Outlook";
-        body.textContent = "Saturn transiting sidereal Pisces demands systematic restructuring of long-term assets. Jupiter in Gemini unlocks intellectual partnerships and international expansion.";
-      }
+      selectGuidanceHorizon(hz);
+      switchNavSection('kundli');
     }
 
     // 4. 12-SIGN DISTINCT HOROSCOPES (Section 6)
@@ -4992,18 +5348,6 @@
       return h;
     }
 
-    // Modal Controls
-    function openAuthModal() {
-      document.getElementById('modal-auth').style.display = 'flex';
-      document.getElementById('auth-step-1').style.display = 'block';
-      document.getElementById('auth-step-2').style.display = 'none';
-      const input = document.getElementById('input-auth-ident');
-      if (input) input.focus();
-    }
-
-    function closeAuthModal() {
-      document.getElementById('modal-auth').style.display = 'none';
-    }
 
     // Mode Switcher for Dedicated Auth View
     let dedicatedAuthMode = 'phone'; // 'phone' | 'email'
@@ -6195,20 +6539,414 @@
       handleHashRoute();
     });
 
-    // ==================== AUTH VIEW & PANEL CONTROLLERS ====================
+    // ==================== AUTH MODAL & MULTI-CHANNEL CONTROLLERS ====================
+
+    let lastFocusedElementBeforeAuth = null;
+    let modalOtpCountdownInterval = null;
+    let activeModalOtpPhone = '';
+
+    function saveCurrentGuestState() {
+      const name = document.getElementById('input-k-name')?.value?.trim();
+      const dob = document.getElementById('input-k-dob')?.value;
+      const hh = document.getElementById('input-k-tob-hh')?.value || "12";
+      const mm = document.getElementById('input-k-tob-mm')?.value || "00";
+      const tob = `${hh}:${mm}`;
+      const city = document.getElementById('input-k-city-search')?.value?.trim();
+      const lat = parseFloat(document.getElementById('k-resolved-lat')?.value);
+      const lon = parseFloat(document.getElementById('k-resolved-lon')?.value);
+      const tz = document.getElementById('k-resolved-tz')?.value || 'Asia/Kolkata';
+
+      if (dob && Number.isFinite(lat) && Number.isFinite(lon)) {
+        window.pendingGuestProfile = {
+          name: name || 'Self',
+          dob,
+          tob,
+          city: city || 'Current Location',
+          lat,
+          lon,
+          tz
+        };
+      }
+    }
+
+    async function linkPendingGuestProfileToUser(user, sessionToken) {
+      if (!window.pendingGuestProfile) return;
+      const gp = window.pendingGuestProfile;
+      if (!gp.dob || !Number.isFinite(gp.lat) || !Number.isFinite(gp.lon)) return;
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/profiles`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionToken}`
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            profileName: gp.name || 'Self',
+            relationship: 'Self',
+            dateOfBirth: gp.dob,
+            timeOfBirth: gp.tob || '12:00',
+            birthplaceName: gp.city || 'Birthplace',
+            latitude: gp.lat,
+            longitude: gp.lon,
+            resolvedTimezone: gp.tz || 'Asia/Kolkata'
+          })
+        });
+        if (res.ok) {
+          window.pendingGuestProfile = null;
+          await syncProfilesFromBackend(user.id);
+        }
+      } catch (err) {
+        console.warn("Could not automatically link guest profile to account:", err);
+      }
+    }
 
     function handleAuthButtonClick() {
       if (currentUserSession) {
         switchNavSection('dashboard');
       } else {
-        switchNavSection('login');
+        openAuthModal('otp');
       }
     }
 
-    // Adapt legacy openAuthModal to navigate cleanly without popup
-    function openAuthModal() {
-      handleAuthButtonClick();
+    function openAuthModal(defaultTab = 'otp') {
+      saveCurrentGuestState();
+      lastFocusedElementBeforeAuth = document.activeElement;
+
+      const modal = document.getElementById('modal-auth-dialog');
+      if (modal) {
+        modal.style.display = 'flex';
+        switchAuthModalTab(defaultTab);
+      }
     }
+
+    function closeAuthModal() {
+      const modal = document.getElementById('modal-auth-dialog');
+      if (modal) modal.style.display = 'none';
+      if (modalOtpCountdownInterval) clearInterval(modalOtpCountdownInterval);
+      if (lastFocusedElementBeforeAuth && typeof lastFocusedElementBeforeAuth.focus === 'function') {
+        lastFocusedElementBeforeAuth.focus();
+      }
+    }
+
+    function switchAuthModalTab(tab) {
+      const tabs = ['otp', 'password', 'register'];
+      tabs.forEach(t => {
+        const tabBtn = document.getElementById(`modal-tab-${t}`);
+        const panel = document.getElementById(`modal-panel-${t}`);
+        if (tabBtn) {
+          tabBtn.classList.toggle('active', t === tab);
+          tabBtn.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+        }
+        if (panel) {
+          panel.style.display = (t === tab) ? 'block' : 'none';
+          panel.classList.toggle('active', t === tab);
+        }
+      });
+
+      if (tab === 'otp') {
+        setTimeout(() => { document.getElementById('modal-otp-phone')?.focus(); }, 120);
+      } else if (tab === 'password') {
+        setTimeout(() => { document.getElementById('modal-pwd-ident')?.focus(); }, 120);
+      } else if (tab === 'register') {
+        setTimeout(() => { document.getElementById('modal-reg-name')?.focus(); }, 120);
+      }
+    }
+
+    function resetModalOtpStep() {
+      document.getElementById('modal-otp-step-2').style.display = 'none';
+      document.getElementById('modal-otp-step-1').style.display = 'block';
+      if (modalOtpCountdownInterval) clearInterval(modalOtpCountdownInterval);
+    }
+
+    function startModalOtpCooldown(seconds = 60) {
+      let rem = seconds;
+      const resendBtn = document.getElementById('btn-modal-resend-otp');
+      if (!resendBtn) return;
+      resendBtn.disabled = true;
+      resendBtn.textContent = `Resend OTP (wait ${rem}s)`;
+
+      if (modalOtpCountdownInterval) clearInterval(modalOtpCountdownInterval);
+      modalOtpCountdownInterval = setInterval(() => {
+        rem--;
+        if (rem <= 0) {
+          clearInterval(modalOtpCountdownInterval);
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend OTP';
+        } else {
+          resendBtn.textContent = `Resend OTP (wait ${rem}s)`;
+        }
+      }, 1000);
+    }
+
+    function handleModalResendOtp() {
+      handleModalRequestOtp();
+    }
+
+    async function handleModalRequestOtp() {
+      const countryCode = document.getElementById('modal-otp-country-code')?.value || '+91';
+      const phoneInput = document.getElementById('modal-otp-phone')?.value?.trim();
+      const errEl = document.getElementById('modal-otp-phone-error');
+      if (errEl) errEl.style.display = 'none';
+
+      if (!phoneInput) {
+        if (errEl) { errEl.textContent = 'Please enter your 10-digit mobile number.'; errEl.style.display = 'block'; }
+        return;
+      }
+      const cleanPhone = phoneInput.replace(/[\s\-]/g, '');
+      if (!/^\d{10}$/.test(cleanPhone) && countryCode === '+91') {
+        if (errEl) { errEl.textContent = 'Please enter a valid 10-digit Indian mobile number.'; errEl.style.display = 'block'; }
+        return;
+      }
+
+      const fullPhone = countryCode + cleanPhone;
+      activeModalOtpPhone = fullPhone;
+      activeAuthTarget = fullPhone;
+
+      const btn = document.getElementById('btn-modal-send-otp');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...'; }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/request-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: fullPhone, type: 'phone' })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('modal-otp-sent-to').textContent = fullPhone;
+          document.getElementById('modal-otp-step-1').style.display = 'none';
+          document.getElementById('modal-otp-step-2').style.display = 'block';
+          const hint = document.getElementById('modal-otp-preview-hint');
+          if (hint && data.devPreviewOtp) {
+            hint.textContent = `[Dev Test Code: ${data.devPreviewOtp}]`;
+          } else if (hint) {
+            hint.textContent = '';
+          }
+          startModalOtpCooldown(data.cooldownSeconds || 60);
+          setTimeout(() => { document.getElementById('modal-otp-code')?.focus(); }, 120);
+          showToast(`Verification code dispatched to ${fullPhone}`, 'info');
+        } else {
+          if (errEl) { errEl.textContent = data.message || 'Failed to dispatch OTP.'; errEl.style.display = 'block'; }
+          showToast(data.message || 'Failed to send OTP.', 'error');
+        }
+      } catch (err) {
+        if (errEl) { errEl.textContent = 'Authentication service offline.'; errEl.style.display = 'block'; }
+        showToast('Authentication service offline.', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Verification Code'; }
+      }
+    }
+
+    async function handleModalVerifyOtp() {
+      const otp = document.getElementById('modal-otp-code')?.value?.trim();
+      const errEl = document.getElementById('modal-otp-verify-error');
+      if (errEl) errEl.style.display = 'none';
+
+      if (!otp || otp.length !== 6) {
+        if (errEl) { errEl.textContent = 'Please enter the 6-digit verification code.'; errEl.style.display = 'block'; }
+        return;
+      }
+
+      const btn = document.getElementById('btn-modal-verify-otp');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...'; }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/verify-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: activeModalOtpPhone, otp })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const u = data.user;
+          currentSessionToken = data.sessionToken;
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || u.phone || 'User',
+            identifier: u.phone || activeModalOtpPhone,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            status: u.status
+          };
+          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+
+          localStorage.setItem('astro_session_token', currentSessionToken);
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+
+          await linkPendingGuestProfileToUser(u, currentSessionToken);
+          await syncProfilesFromBackend(u.id);
+          updateUserSessionUI();
+          closeAuthModal();
+          showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
+        } else {
+          if (errEl) { errEl.textContent = data.message || 'Invalid or expired code.'; errEl.style.display = 'block'; }
+          showToast(data.message || 'Invalid or expired OTP.', 'error');
+        }
+      } catch (err) {
+        if (errEl) { errEl.textContent = 'Server connection error.'; errEl.style.display = 'block'; }
+        showToast('Authentication server unavailable.', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Verify &amp; Sign In'; }
+      }
+    }
+
+    async function handleModalPasswordLogin() {
+      const ident = document.getElementById('modal-pwd-ident')?.value?.trim();
+      const password = document.getElementById('modal-pwd-val')?.value;
+      const errEl = document.getElementById('modal-pwd-error');
+      if (errEl) errEl.style.display = 'none';
+
+      if (!ident) {
+        if (errEl) { errEl.textContent = 'Please enter your email or phone number.'; errEl.style.display = 'block'; }
+        return;
+      }
+      if (!password) {
+        if (errEl) { errEl.textContent = 'Please enter your password.'; errEl.style.display = 'block'; }
+        return;
+      }
+
+      const btn = document.getElementById('btn-modal-pwd-login');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...'; }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/login-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: ident, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const u = data.user;
+          currentSessionToken = data.sessionToken;
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || u.email?.split('@')[0] || 'User',
+            identifier: u.email || u.phone || ident,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            status: u.status
+          };
+          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+
+          localStorage.setItem('astro_session_token', currentSessionToken);
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+
+          await linkPendingGuestProfileToUser(u, currentSessionToken);
+          await syncProfilesFromBackend(u.id);
+          updateUserSessionUI();
+          closeAuthModal();
+          showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
+        } else {
+          if (errEl) { errEl.textContent = data.message || 'Invalid credentials.'; errEl.style.display = 'block'; }
+          showToast(data.message || 'Invalid credentials.', 'error');
+        }
+      } catch (err) {
+        if (errEl) { errEl.textContent = 'Server connection error.'; errEl.style.display = 'block'; }
+        showToast('Authentication server unavailable.', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Account'; }
+      }
+    }
+
+    async function handleModalRegister() {
+      const name = document.getElementById('modal-reg-name')?.value?.trim();
+      const phone = document.getElementById('modal-reg-phone')?.value?.trim();
+      const email = document.getElementById('modal-reg-email')?.value?.trim();
+      const password = document.getElementById('modal-reg-pwd')?.value;
+      const errEl = document.getElementById('modal-reg-error');
+      if (errEl) errEl.style.display = 'none';
+
+      if (!name) {
+        if (errEl) { errEl.textContent = 'Please enter your full name.'; errEl.style.display = 'block'; }
+        return;
+      }
+      if (!phone) {
+        if (errEl) { errEl.textContent = 'Please enter your mobile phone number.'; errEl.style.display = 'block'; }
+        return;
+      }
+      if (!password || password.length < 8) {
+        if (errEl) { errEl.textContent = 'Password must be at least 8 characters long.'; errEl.style.display = 'block'; }
+        return;
+      }
+
+      const btn = document.getElementById('btn-modal-reg-submit');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account...'; }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/register-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, email: email || undefined, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const u = data.user;
+          currentSessionToken = data.sessionToken;
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || name,
+            identifier: u.email || u.phone || phone,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            status: u.status
+          };
+          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+
+          localStorage.setItem('astro_session_token', currentSessionToken);
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+
+          await linkPendingGuestProfileToUser(u, currentSessionToken);
+          await syncProfilesFromBackend(u.id);
+          updateUserSessionUI();
+          closeAuthModal();
+          showToast(`Welcome, ${name}! Your account has been registered.`, 'success');
+        } else {
+          if (errEl) { errEl.textContent = data.message || 'Registration failed.'; errEl.style.display = 'block'; }
+          showToast(data.message || 'Registration failed.', 'error');
+        }
+      } catch (err) {
+        if (errEl) { errEl.textContent = 'Server connection error.'; errEl.style.display = 'block'; }
+        showToast('Authentication server unavailable.', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-user-check"></i> Complete Registration'; }
+      }
+    }
+
+    function checkModalRegPwdStrength(pwd) {
+      const el = document.getElementById('modal-reg-pwd-strength');
+      if (!el) return;
+      const hasLen = pwd.length >= 8;
+      const hasUpper = /[A-Z]/.test(pwd);
+      const hasNum = /[0-9]/.test(pwd);
+      const score = [hasLen, hasUpper, hasNum].filter(Boolean).length;
+      if (score === 3) {
+        el.textContent = '✓ Strong password';
+        el.style.color = '#10B981';
+      } else if (score === 2) {
+        el.textContent = 'Moderate password (add uppercase or number)';
+        el.style.color = '#F59E0B';
+      } else {
+        el.textContent = 'Weak: needs min 8 chars, 1 uppercase, 1 number';
+        el.style.color = '#EF4444';
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('modal-auth-dialog');
+        if (modal && modal.style.display === 'flex') {
+          closeAuthModal();
+        }
+      }
+    });
 
     function showAuthSubPanel(mode) {
       const panels = ['login', 'signup', 'verify', 'forgot-password', 'reset-password', 'complete-profile'];
@@ -6659,55 +7397,98 @@
     }
 
     function renderStructuredPredictionUI(data) {
+      if (!data || !data.sections) return;
       const s = data.sections;
-      const isChartGrounded = data.profile_loaded && data.mode === 'PERSONALIZED_CHART_GROUNDED';
+      const isChartGrounded = Boolean(data.profile_loaded && data.mode === 'PERSONALIZED_CHART_GROUNDED');
       const guestBanner = document.getElementById('guidance-guest-banner');
       const badge = document.getElementById('guidance-grounding-badge');
 
       if (guestBanner) guestBanner.style.display = isChartGrounded ? 'none' : 'block';
 
       if (badge) {
-        if (isChartGrounded) {
+        if (isChartGrounded && data.profile) {
           badge.className = 'badge-grounded';
-          badge.innerHTML = `<i class="fa-solid fa-certificate"></i> 100% Chart-Grounded &bull; ${data.profile.lagna} Lagna &bull; ${data.profile.moon_sign} Moon`;
+          badge.innerHTML = `<i class="fa-solid fa-certificate"></i> Chart-Grounded &bull; ${data.profile.lagna || 'Ascendant'} Lagna &bull; ${data.profile.moon_sign || 'Moon'} Moon`;
         } else {
           badge.className = 'badge-guest';
-          badge.innerHTML = `<i class="fa-solid fa-compass"></i> Guest Mode (Solar Transit)`;
+          badge.innerHTML = `<i class="fa-solid fa-compass"></i> General Solar Transit Guidance`;
         }
       }
 
-      document.getElementById('guidance-report-title').textContent = data.report_title;
-      document.getElementById('guidance-disp-outlook').textContent = s.overall_outlook;
+      const titleEl = document.getElementById('guidance-report-title');
+      if (titleEl) titleEl.textContent = data.report_title || "Personal Astrological Guidance";
 
-      // Supportive list
+      // 1. Executive Summary
+      const summaryEl = document.getElementById('guidance-disp-summary');
+      if (summaryEl) {
+        summaryEl.textContent = s.executive_summary || (s.overall_outlook ? s.overall_outlook.split('. ')[0] + '.' : 'Grounded astrological overview loaded.');
+      }
+
+      // 2. Overall Outlook
+      const outlookEl = document.getElementById('guidance-disp-outlook');
+      if (outlookEl) outlookEl.textContent = s.overall_outlook || '--';
+
+      // 3. Potentially Supportive Themes
       const suppEl = document.getElementById('guidance-disp-supportive');
-      suppEl.innerHTML = s.supportive_developments.map(item => `<li>${item}</li>`).join('');
+      if (suppEl) {
+        const suppList = Array.isArray(s.supportive_themes) ? s.supportive_themes : (Array.isArray(s.supportive_developments) ? s.supportive_developments : []);
+        suppEl.innerHTML = suppList.length ? suppList.map(item => `<li>${item}</li>`).join('') : '<li>Benefic planetary alignments support positive effort.</li>';
+      }
 
-      // Challenges list
+      // 4. Possible Challenges & Cautions
       const challEl = document.getElementById('guidance-disp-challenges');
-      challEl.innerHTML = s.challenges_and_cautions.map(item => `<li>${item}</li>`).join('');
+      if (challEl) {
+        const challList = Array.isArray(s.challenges_and_cautions) ? s.challenges_and_cautions : [];
+        challEl.innerHTML = challList.length ? challList.map(item => `<li>${item}</li>`).join('') : '<li>Maintain calm mindfulness during challenging transits.</li>';
+      }
 
-      // Windows
+      // 5. Key Time Windows
       const winEl = document.getElementById('guidance-disp-windows');
-      winEl.innerHTML = s.relevant_time_windows.map(w => `
-        <div class="guidance-window-card">
-          <i class="fa-regular fa-clock" style="color: #D97706; font-size: 16px;"></i>
-          <span>${w}</span>
-        </div>
-      `).join('');
+      if (winEl) {
+        const winList = Array.isArray(s.key_time_windows) ? s.key_time_windows : (Array.isArray(s.relevant_time_windows) ? s.relevant_time_windows : []);
+        winEl.innerHTML = winList.length ? winList.map(w => `
+          <div class="guidance-window-card">
+            <i class="fa-regular fa-clock" style="color: #D97706; font-size: 16px;"></i>
+            <span>${w}</span>
+          </div>
+        `).join('') : '<div class="guidance-window-card"><span>Active Solar Interval</span></div>';
+      }
 
-      // Why this applies & profile pills
-      document.getElementById('guidance-disp-why').textContent = s.why_this_applies;
-      const p = data.profile;
-      document.getElementById('guidance-disp-profile-metrics').innerHTML = `
-        <span class="guidance-metric-pill">Lagna: <strong>${p.lagna}</strong></span>
-        <span class="guidance-metric-pill">Moon: <strong>${p.moon_sign} (${p.moon_nakshatra})</strong></span>
-        <span class="guidance-metric-pill">Active Dasha: <strong>${p.active_mahadasha}-${p.active_antardasha}</strong></span>
-        <span class="guidance-metric-pill">Sade Sati: <strong>${p.sade_sati_phase}</strong></span>
-      `;
+      // 6. Relevant Chart Facts
+      const p = data.profile || {};
+      const factsPills = document.getElementById('guidance-disp-profile-metrics');
+      if (factsPills) {
+        factsPills.innerHTML = `
+          <span class="guidance-metric-pill">Lagna: <strong>${p.lagna || '--'}</strong></span>
+          <span class="guidance-metric-pill">Moon: <strong>${p.moon_sign || '--'} (${p.moon_nakshatra || '--'})</strong></span>
+          <span class="guidance-metric-pill">Active Dasha: <strong>${p.active_mahadasha || '--'}-${p.active_antardasha || '--'}</strong></span>
+          <span class="guidance-metric-pill">Sade Sati: <strong>${p.sade_sati_phase || 'Clear'}</strong></span>
+        `;
+      }
 
-      document.getElementById('guidance-disp-reflection').textContent = s.practical_reflection;
-      document.getElementById('guidance-disp-limitations').textContent = s.limitations;
+      const factsText = document.getElementById('guidance-disp-facts');
+      if (factsText) {
+        if (s.relevant_chart_facts && typeof s.relevant_chart_facts === 'object') {
+          const rf = s.relevant_chart_facts;
+          factsText.textContent = `Natal ${rf.lagna || p.lagna || ''} | Moon in ${rf.moon || p.moon_sign || ''} | Dasha: ${rf.active_dasha || p.active_mahadasha || ''} | Saturn: ${rf.saturn_transit || p.sade_sati_phase || ''}`;
+        } else {
+          factsText.textContent = "Verified against computed Swiss Ephemeris coordinates.";
+        }
+      }
+
+      // 7. Applicable Traditional Rules
+      const rulesEl = document.getElementById('guidance-disp-why');
+      if (rulesEl) {
+        rulesEl.textContent = s.applicable_traditional_rules || s.why_this_applies || "Grounded in classical Parashari Jyotish principles and Swiss Ephemeris astronomical positions.";
+      }
+
+      // 8. Practical Reflection
+      const refEl = document.getElementById('guidance-disp-reflection');
+      if (refEl) refEl.textContent = s.practical_reflection || "Select your high-priority responsibilities with deliberate discipline.";
+
+      // 9. Epistemic Limitations
+      const limEl = document.getElementById('guidance-disp-limitations');
+      if (limEl) limEl.textContent = s.limitations || "Vedic astrology provides qualitative planetary timings and qualitative tendencies. Personal free will, moral integrity, and practical effort govern lived outcomes.";
 
       // Freemium Paywall Gating:
       // Hourly & Daily are 100% free previews. Weekly, Monthly, Yearly, Mahadasha require unlock.
@@ -6743,157 +7524,212 @@
       let reportTitle = "";
       let s = {};
 
+      const chartFacts = {
+        lagna: lagna,
+        moon: `${moon} (${nak} Pada ${pada})`,
+        active_dasha: `${activeMaha}-${activeAntar}`,
+        saturn_transit: sadeSati
+      };
+
       if (horizon === 'daily') {
         reportTitle = `DAILY Personal Forecast: ${targetDate} (Solar & Lunar Transit)`;
+        const supportive = [
+          `Morning Window (Sunrise to Noon): Heightened focus for strategic decisions during benefic ${activeMaha} and Mercury Horas.`,
+          `Afternoon Window (Noon to Sunset): Supportive planetary aspects assist in collaborative agreements, technical reviews, and project milestones.`,
+          `Evening Window (Sunset to Night): Calming lunar alignment encourages domestic harmony, intellectual study, and contemplative rest.`
+        ];
+        const windows = [
+          `Auspicious Action Window: Morning benefic Hora periods (governed by Jupiter/Venus/Mercury)`,
+          `Mid-Day Peak Focus: Abhijit Muhurta (~11:45 AM - 12:35 PM local solar window)`,
+          `Cautionary Period: Daily Rahu Kaal interval (refer to Horas schedule for exact timings)`
+        ];
+        const why = hasChart
+          ? `Calculated from your natal ${lagna} Lagna, Moon in ${moon} (${nak} Pada ${pada}), and active Vimshottari period of ${activeMaha}-${activeAntar}.`
+          : `Universal transit baseline computed for ${targetDate} via Swiss Ephemeris. Calculate Kundli to personalize.`;
         s = {
+          executive_summary: `Daily Parashari transit forecast for ${lagna} Lagna and ${moon} Moon under ${activeMaha}-${activeAntar} Dasha.`,
           overall_outlook: `For your natal ${lagna} Lagna and ${moon} Moon (${nak} Nakshatra), today's planetary transit geometry energizes your communicative and professional sectors under the ${activeMaha}-${activeAntar} Dasha cycle. Cosmic alignments favor disciplined execution and clear priority management.`,
-          supportive_developments: [
-            `Morning Window (Sunrise to Noon): Heightened focus for strategic decisions during benefic ${activeMaha} and Mercury Horas.`,
-            `Afternoon Window (Noon to Sunset): Supportive planetary aspects assist in collaborative agreements, technical reviews, and project milestones.`,
-            `Evening Window (Sunset to Night): Calming lunar alignment encourages domestic harmony, intellectual study, and contemplative rest.`
-          ],
+          supportive_themes: supportive,
+          supportive_developments: supportive,
           challenges_and_cautions: [
             `Maintain heightened awareness during the localized Rahu Kaal window; avoid signing unvetted contracts or initiating speculative trades.`,
             `Stay mindful of hydration and digestive balance to harmonize natural Pitta and Vata energies during mid-afternoon.`,
             `Keep team communications documented in writing to prevent transient misunderstandings.`
           ],
-          relevant_time_windows: [
-            `Auspicious Action Window: Morning benefic Hora periods (governed by Jupiter/Venus/Mercury)`,
-            `Mid-Day Peak Focus: Abhijit Muhurta (~11:45 AM - 12:35 PM local solar window)`,
-            `Cautionary Period: Daily Rahu Kaal interval (refer to Horas schedule for exact timings)`
-          ],
-          why_this_applies: hasChart
-            ? `Calculated from your natal ${lagna} Lagna, Moon in ${moon} (${nak} Pada ${pada}), and active Vimshottari period of ${activeMaha}-${activeAntar}.`
-            : `Universal transit baseline computed for ${targetDate} via Swiss Ephemeris. Calculate Kundli to personalize.`,
+          key_time_windows: windows,
+          relevant_time_windows: windows,
+          relevant_chart_facts: chartFacts,
+          applicable_traditional_rules: why,
+          why_this_applies: why,
           practical_reflection: `Select your three most consequential responsibilities for today. Complete the primary milestone before solar noon.`,
           limitations: `Daily forecasts represent qualitative atmospheric trends. Conscious moral resolve and proactive initiative govern daily outcomes.`
         };
       } else if (horizon === 'weekly') {
         reportTitle = `WEEKLY 7-Day Parashari Forecast: Comprehensive Life Progression`;
+        const supportive = [
+          `Days 1–2 (Monday–Tuesday): Favorable for professional presentations, contract finalization, and executive dialogue.`,
+          `Days 3–4 (Wednesday–Thursday): Financial clarity emerges through careful review of expenditure and investment allocations.`,
+          `Days 5–7 (Friday–Sunday): Relationship bonding and reflective philosophical reading receive strong celestial support.`
+        ];
+        const windows = [
+          `Primary Breakthrough Window: Tuesday and Thursday mornings during Sun and Jupiter Horas`,
+          `Reflective / Cautionary Window: Wednesday afternoon (during localized Rahu Kaal)`,
+          `Social & Familial Auspicious Window: Friday evening during Venus Hora`
+        ];
+        const why = hasChart
+          ? `Grounded in your ${lagna} Lagna and ${moon} Moon: Transiting Sun and Mercury illuminate your 10th/11th house axis, while your active ${activeMaha} Mahadasha ensures institutional stability.`
+          : `Grounded in classical 7-day planetary transit cycles computed via Swiss Ephemeris.`;
         s = {
+          executive_summary: `Weekly 7-day progression for ${lagna} Lagna navigating Kendra and Trikona lunar transits.`,
           overall_outlook: `This seven-day forecast period is energized by the transiting Moon traversing your ${lagna} Lagna's Kendra and Trikona houses under the ${activeMaha}-${activeAntar} Dasha. Early-week momentum favors professional initiation, mid-week highlights asset consolidation, and the weekend promotes spiritual rejuvenation and family harmony.`,
-          supportive_developments: [
-            `Days 1–2 (Monday–Tuesday): Favorable for professional presentations, contract finalization, and executive dialogue.`,
-            `Days 3–4 (Wednesday–Thursday): Financial clarity emerges through careful review of expenditure and investment allocations.`,
-            `Days 5–7 (Friday–Sunday): Relationship bonding and reflective philosophical reading receive strong celestial support.`
-          ],
+          supportive_themes: supportive,
+          supportive_developments: supportive,
           challenges_and_cautions: [
             `Mid-week lunar transit across your 6th house suggests possible workplace friction if communication is ambiguous.`,
             `Watch dietary habits and sleep rhythms during late evening hours to preserve physical vitality.`,
             `Exercise added patience when dealing with administrative delays or bureaucratic processes.`
           ],
-          relevant_time_windows: [
-            `Primary Breakthrough Window: Tuesday and Thursday mornings during Sun and Jupiter Horas`,
-            `Reflective / Cautionary Window: Wednesday afternoon (during localized Rahu Kaal)`,
-            `Social & Familial Auspicious Window: Friday evening during Venus Hora`
-          ],
-          why_this_applies: hasChart
-            ? `Grounded in your ${lagna} Lagna and ${moon} Moon: Transiting Sun and Mercury illuminate your 10th/11th house axis, while your active ${activeMaha} Mahadasha ensures institutional stability.`
-            : `Grounded in classical 7-day planetary transit cycles computed via Swiss Ephemeris.`,
+          key_time_windows: windows,
+          relevant_time_windows: windows,
+          relevant_chart_facts: chartFacts,
+          applicable_traditional_rules: why,
+          why_this_applies: why,
           practical_reflection: `Establish three clear milestones at the beginning of the week. Dedicate early morning hours to deep strategic work before opening digital channels.`,
           limitations: `Weekly forecasts trace planetary transits (Gochara) overlaid upon natal dasha cycles. Individual daily events depend on exact birth time accuracy.`
         };
       } else if (horizon === 'monthly') {
         reportTitle = `MONTHLY 4-Week Personal Analysis: Transit & Dasha Synthesis`;
+        const supportive = [
+          `Weeks 1 & 2: Career expansion, leadership visibility, and endorsement from senior mentors.`,
+          `Week 3: Financial optimization, settlement of pending obligations, and property/asset deliberations.`,
+          `Week 4: Harmonious domestic atmosphere, personal rejuvenation, and spiritual grounding.`
+        ];
+        const windows = [
+          `Waxing Moon (Shukla Paksha): Ideal for inaugurating new ventures and signing agreements`,
+          `Full Moon Phase: Heightened intuition and clarity regarding personal relationships`,
+          `Waning Moon (Krishna Paksha): Optimal for introspection, audit, and concluding legacy projects`
+        ];
+        const why = hasChart
+          ? `Your ${lagna} Lagna lord establishes strong functional support. Jupiter's trine aspects reinforce your fortune axis, mitigating the restrictive pressure of Saturn in ${sadeSati}.`
+          : `Synthesized from lunar month phases and major planetary ingress across sidereal zodiacs.`;
         s = {
+          executive_summary: `4-week consolidation cycle under ${activeMaha}-${activeAntar} Dasha supporting career advancement and asset stability.`,
           overall_outlook: `This monthly cycle presents a structured phase of institutional elevation and capital consolidation for your ${lagna} Lagna. With your 10th House aspected by functional benefics and your active ${activeMaha}-${activeAntar} Dasha progressing steadily, the upcoming four weeks reward patience, systematic labor, and measured long-term investments.`,
-          supportive_developments: [
-            `Weeks 1 & 2: Career expansion, leadership visibility, and endorsement from senior mentors.`,
-            `Week 3: Financial optimization, settlement of pending obligations, and property/asset deliberations.`,
-            `Week 4: Harmonious domestic atmosphere, personal rejuvenation, and spiritual grounding.`
-          ],
+          supportive_themes: supportive,
+          supportive_developments: supportive,
           challenges_and_cautions: [
             `Weeks 2 & 3: Elevated mental expenditure; avoid taking on unvetted commitments.`,
             `Slight digestive sensitivity during Saturn-aspect transit windows; prioritize whole foods.`,
             `Manage expectations in collaborative projects by ensuring deliverables are explicitly documented in writing.`
           ],
-          relevant_time_windows: [
-            `Waxing Moon (Shukla Paksha): Ideal for inaugurating new ventures and signing agreements`,
-            `Full Moon Phase: Heightened intuition and clarity regarding personal relationships`,
-            `Waning Moon (Krishna Paksha): Optimal for introspection, audit, and concluding legacy projects`
-          ],
-          why_this_applies: hasChart
-            ? `Your ${lagna} Lagna lord establishes strong functional support. Jupiter's trine aspects reinforce your fortune axis, mitigating the restrictive pressure of Saturn in ${sadesati}.`
-            : `Synthesized from lunar month phases and major planetary ingress across sidereal zodiacs.`,
+          key_time_windows: windows,
+          relevant_time_windows: windows,
+          relevant_chart_facts: chartFacts,
+          applicable_traditional_rules: why,
+          why_this_applies: why,
           practical_reflection: `Review your quarterly budget and professional goals at the start of the month. Incorporate a regular morning meditation practice.`,
           limitations: `Monthly evaluations synthesize major planetary ingress and nakshatra transits against natal bhava cusps.`
         };
       } else if (horizon === 'yearly') {
         reportTitle = `YEARLY 12-Month Parashari Outlook: Comprehensive Mahadasha & Transit Map`;
+        const supportive = [
+          `Quarter 1 (Months 1–3): Career restructuring, high-visibility assignments, and professional recognition.`,
+          `Quarter 2 (Months 4–6): Financial growth through disciplined capital accumulation and strategic partnerships.`,
+          `Quarter 3 (Months 7–9): Academic, spiritual, and philosophical advancement; possible auspicious travel.`,
+          `Quarter 4 (Months 10–12): Domestic consolidation, property stability, and celebration of family milestones.`
+        ];
+        const windows = [
+          `Spring / Post-Equinox: Optimal window for strategic career transitions and business launches`,
+          `Autumn Lunar Cycle: Favorable for wealth consolidation and formalizing personal commitments`,
+          `Winter Solstice Phase: Ideal for spiritual retreats, health recalibration, and annual audits`
+        ];
+        const why = hasChart
+          ? `Natal Lagna ${lagna} with ${moon} Moon provides an enduring constitutional foundation. The major transits of Jupiter and Saturn align harmoniously with your D1 and D9 charts.`
+          : `Grounded in 12-month planetary ephemeris transits and major planetary stations.`;
         s = {
+          executive_summary: `12-month life progression mapping foundational growth and financial sovereignty under ${activeMaha} Mahadasha.`,
           overall_outlook: `The upcoming twelve-month cycle marks a pivotal transformative epoch in your life trajectory under ${lagna} Lagna. Under the governance of your ${activeMaha} Mahadasha and ${activeAntar} Antardasha, foundations laid in career, financial sovereignty, and personal wisdom will compound substantially.`,
-          supportive_developments: [
-            `Quarter 1 (Months 1–3): Career restructuring, high-visibility assignments, and professional recognition.`,
-            `Quarter 2 (Months 4–6): Financial growth through disciplined capital accumulation and strategic partnerships.`,
-            `Quarter 3 (Months 7–9): Academic, spiritual, and philosophical advancement; possible auspicious travel.`,
-            `Quarter 4 (Months 10–12): Domestic consolidation, property stability, and celebration of family milestones.`
-          ],
+          supportive_themes: supportive,
+          supportive_developments: supportive,
           challenges_and_cautions: [
             `Maintaining balance between relentless career ambition and domestic well-being.`,
             `Navigating Saturn's disciplined transit requires consistent daily routine without shortcuts.`,
             `Avoiding speculative investments during eclipse seasons or Rahu transit shifts.`
           ],
-          relevant_time_windows: [
-            `Spring / Post-Equinox: Optimal window for strategic career transitions and business launches`,
-            `Autumn Lunar Cycle: Favorable for wealth consolidation and formalizing personal commitments`,
-            `Winter Solstice Phase: Ideal for spiritual retreats, health recalibration, and annual audits`
-          ],
-          why_this_applies: hasChart
-            ? `Natal Lagna ${lagna} with ${moon} Moon provides an enduring constitutional foundation. The major transits of Jupiter and Saturn align harmoniously with your D1 and D9 charts.`
-            : `Grounded in 12-month planetary ephemeris transits and major planetary stations.`,
+          key_time_windows: windows,
+          relevant_time_windows: windows,
+          relevant_chart_facts: chartFacts,
+          applicable_traditional_rules: why,
+          why_this_applies: why,
           practical_reflection: `Adopt an annual thematic intention rather than rigid checklists. Cultivate disciplined daily habits and practice regular philanthropy.`,
           limitations: `Annual forecasts provide a high-level strategic compass grounded in classical Parashari Dasha and Gochara rules.`
         };
       } else if (horizon === 'mahadasha') {
         reportTitle = `MAHADASHA 5-Year Life Arc: ${activeMaha} Mahadasha (${activeAntar} Antardasha)`;
+        const supportive = [
+          `Year 1: Foundation Building — Consolidating professional reputation and securing strategic mentorship.`,
+          `Year 2: Capital & Wealth Expansion — Compounding investments, property decisions, and business alliances.`,
+          `Year 3: Intellectual & Creative Elevation — Academic, philosophical, or spiritual mastery; valuable travel.`,
+          `Year 4: Relational & Family Fulfillment — Deepening marital bonding, domestic stability, and community respect.`,
+          `Year 5: Fruition of Karmic Milestones — Transition into advisory authority and celebratory life achievements.`
+        ];
+        const windows = [
+          `Active Antardasha Peak: Current cycle of ${activeMaha}-${activeAntar}`,
+          `Major Transit Milestone: Jupiter transit across Kendra and Trikona houses`,
+          `Karmic Recalibration Phase: Saturn transit completion in sidereal Pisces (${sadeSati})`
+        ];
+        const why = hasChart
+          ? `This 5-year arc is derived from your natal Moon at ${moon} (${nak} Nakshatra, Pada ${pada}) under the canonical 120-year Vimshottari Dasha system.`
+          : `Vimshottari 120-year cycle timeline calculated via classical Parashari rules.`;
         s = {
+          executive_summary: `5-year karmic arc under ${activeMaha} Mahadasha (${activeAntar} Antardasha) establishing long-term authority and legacy.`,
           overall_outlook: `You are currently traversing the transformative 16-year cycle of ${activeMaha} Mahadasha, with the active sub-period (Antardasha) of ${activeAntar}. For your ${lagna} Lagna, ${activeMaha} acts as a vital functional ruler, governing key houses of growth, wisdom, and material manifestation. The upcoming five-year window brings structural maturity, expansion of influence, and lasting legacy development.`,
-          supportive_developments: [
-            `Year 1: Foundation Building — Consolidating professional reputation and securing strategic mentorship.`,
-            `Year 2: Capital & Wealth Expansion — Compounding investments, property decisions, and business alliances.`,
-            `Year 3: Intellectual & Creative Elevation — Academic, philosophical, or spiritual mastery; valuable travel.`,
-            `Year 4: Relational & Family Fulfillment — Deepening marital bonding, domestic stability, and community respect.`,
-            `Year 5: Fruition of Karmic Milestones — Transition into advisory authority and celebratory life achievements.`
-          ],
+          supportive_themes: supportive,
+          supportive_developments: supportive,
           challenges_and_cautions: [
             `Antardasha Sandhi: Navigate the transition boundaries between major planetary sub-periods with deliberate patience.`,
             `Avoid over-expansion or over-leveraging assets during peak optimistic planetary cycles.`,
             `Honor consistent spiritual discipline and daily health maintenance to sustain high vitality across the 5-year cycle.`
           ],
-          relevant_time_windows: [
-            `Active Antardasha Peak: Current cycle of ${activeMaha}-${activeAntar}`,
-            `Major Transit Milestone: Jupiter transit across Kendra and Trikona houses`,
-            `Karmic Recalibration Phase: Saturn transit completion in sidereal Pisces (${sadeSati})`
-          ],
-          why_this_applies: hasChart
-            ? `This 5-year arc is derived from your natal Moon at ${moon} (${nak} Nakshatra, Pada ${pada}) under the canonical 120-year Vimshottari Dasha system.`
-            : `Vimshottari 120-year cycle timeline calculated via classical Parashari rules.`,
+          key_time_windows: windows,
+          relevant_time_windows: windows,
+          relevant_chart_facts: chartFacts,
+          applicable_traditional_rules: why,
+          why_this_applies: why,
           practical_reflection: `Align your five-year personal vision with the core nature of ${activeMaha}: wisdom, ethics, mentorship, and sustainable growth.`,
           limitations: `Mahadasha analysis illuminates broad karmic seasons and major developmental chapters. Daily choices and moral resolve shape the realization of your highest potential.`
         };
       } else {
         // Hourly (Default)
         reportTitle = `HOURLY Personal Guidance: ${horaPlanet} Hora Window (${horaWindow})`;
+        const supportive = [
+          `High mental focus for tasks aligned with ${horaPlanet} significations (planning, negotiation, and structured dialogue).`,
+          `Supportive synergy between your ${moon} Moon and transiting benefics, aiding composed decision-making.`,
+          `Auspicious window for consulting seniors, signing documentation, or reviewing long-term financial plans.`
+        ];
+        const windows = [
+          `Active Hora Interval: ${horaWindow} (Governed by ${horaPlanet})`,
+          `Recommended Focus Peak: Middle 30 minutes of the active Hora for vital communications`,
+          `Cautionary Period: Maintain heightened care during localized Rahu Kaal intervals`
+        ];
+        const why = hasChart
+          ? `This interpretation applies because your natal Ascendant is ${lagna}, your Moon resides in ${moon} (${nak} Nakshatra), and your active Vimshottari Dasha is ${activeMaha}-${activeAntar}.`
+          : `Grounded in classical Chaldean solar hora sequences computed via Swiss Ephemeris.`;
         s = {
+          executive_summary: `Active ${horaPlanet} Hora (${horaWindow}) focusing deliberate execution and analytical discernment.`,
           overall_outlook: `During this active ${horaPlanet} planetary window, celestial influences interact with your natal ${lagna} Lagna and current ${activeMaha}-${activeAntar} Dasha cycle. Traditionally, the ${horaPlanet} Hora emphasizes focused strategic execution, analytical discernment, and aligning mental priorities with your core life responsibilities.`,
-          supportive_developments: [
-            `High mental focus for tasks aligned with ${horaPlanet} significations (planning, negotiation, and structured dialogue).`,
-            `Supportive synergy between your ${moon} Moon and transiting benefics, aiding composed decision-making.`,
-            `Auspicious window for consulting seniors, signing documentation, or reviewing long-term financial plans.`
-          ],
+          supportive_themes: supportive,
+          supportive_developments: supportive,
           challenges_and_cautions: [
             `Avoid rash, reactive speech or hasty commitments during transitions between diurnal Hora intervals.`,
             `If handling technical disputes or litigation, maintain emotional neutrality to mitigate temporary planetary tension.`,
             `Be mindful of fatigue during the final quarter of the Hora window; schedule brief reflective breaks.`
           ],
-          relevant_time_windows: [
-            `Active Hora Interval: ${horaWindow} (Governed by ${horaPlanet})`,
-            `Recommended Focus Peak: Middle 30 minutes of the active Hora for vital communications`,
-            `Cautionary Period: Maintain heightened care during localized Rahu Kaal intervals`
-          ],
-          why_this_applies: hasChart
-            ? `This interpretation applies because your natal Ascendant is ${lagna}, your Moon resides in ${moon} (${nak} Nakshatra), and your active Vimshottari Dasha is ${activeMaha}-${activeAntar}.`
-            : `Grounded in classical Chaldean solar hora sequences computed via Swiss Ephemeris.`,
+          key_time_windows: windows,
+          relevant_time_windows: windows,
+          relevant_chart_facts: chartFacts,
+          applicable_traditional_rules: why,
+          why_this_applies: why,
           practical_reflection: `Direct your conscious effort toward one high-priority responsibility during this ${horaPlanet} window. Take three mindful breaths before sending critical messages.`,
           limitations: `Astrological Horas represent traditional qualitative tendencies and auspicious time windows rather than deterministic fatalism.`
         };
