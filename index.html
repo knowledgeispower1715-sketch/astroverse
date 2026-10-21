@@ -1333,6 +1333,66 @@
       }
     }
 
+
+    /* ==================== AI ASTROLOGER & PAYWALL STYLES ==================== */
+    .guidance-deep-sections-wrap.is-locked {
+      filter: blur(5px);
+      opacity: 0.5;
+      pointer-events: none;
+      user-select: none;
+      max-height: 240px;
+      overflow: hidden;
+    }
+    .guidance-premium-cta-box {
+      background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+      border: 2px dashed #F59E0B;
+      border-radius: 14px;
+      padding: 24px 20px;
+      text-align: center;
+      margin: 18px 0;
+      box-shadow: 0 4px 14px rgba(217, 119, 6, 0.09);
+    }
+    .consultation-chip-btn {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      border-radius: 16px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+    .consultation-chip-btn:hover {
+      background: #FEF3C7;
+      border-color: #F59E0B;
+      color: var(--vedic-maroon);
+    }
+    .chat-bubble-agent {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px 14px 14px 2px;
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #1E293B;
+      max-width: 88%;
+      align-self: flex-start;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .chat-bubble-user {
+      background: linear-gradient(135deg, var(--vedic-maroon), var(--deep-maroon));
+      color: #FFFFFF;
+      border-radius: 14px 14px 2px 14px;
+      padding: 10px 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 82%;
+      align-self: flex-end;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
   </style>
 </head>
 <body>
@@ -1479,7 +1539,10 @@
         <div class="horizon-switcher-row">
           <div class="horizon-btn-group">
             <button class="horizon-btn active" id="btn-hz-hourly" onclick="selectGuidanceHorizon('hourly')">
-              <i class="fa-solid fa-clock"></i> Hourly Guidance
+              <i class="fa-solid fa-clock"></i> Hourly (Hora)
+            </button>
+            <button class="horizon-btn" id="btn-hz-daily" onclick="selectGuidanceHorizon('daily')">
+              <i class="fa-solid fa-sun"></i> Daily Forecast
             </button>
             <button class="horizon-btn" id="btn-hz-weekly" onclick="selectGuidanceHorizon('weekly')">
               <i class="fa-solid fa-calendar-week"></i> Weekly (7 Days)
@@ -1489,6 +1552,9 @@
             </button>
             <button class="horizon-btn" id="btn-hz-yearly" onclick="selectGuidanceHorizon('yearly')">
               <i class="fa-solid fa-calendar"></i> Yearly (12 Months)
+            </button>
+            <button class="horizon-btn" id="btn-hz-mahadasha" onclick="selectGuidanceHorizon('mahadasha')">
+              <i class="fa-solid fa-dharmachakra"></i> Mahadasha (5-Yr)
             </button>
           </div>
 
@@ -1543,19 +1609,19 @@
             </p>
           </div>
 
-          <!-- Section B & C in 2-column grid -->
-          <div class="guidance-2col-grid">
-            <!-- Section B: Supportive Developments -->
-            <div class="guidance-section-box supportive">
-              <div class="guidance-section-heading">
-                <span class="section-letter-tag tag-supportive">B</span>
-                <h4 style="color: #065F46;">Supportive Developments</h4>
-              </div>
-              <ul id="guidance-disp-supportive" class="guidance-list supportive">
-                <li>Analyzing benefic planetary alignments...</li>
-              </ul>
+          <!-- Section B: Supportive Developments -->
+          <div class="guidance-section-box supportive">
+            <div class="guidance-section-heading">
+              <span class="section-letter-tag tag-supportive">B</span>
+              <h4 style="color: #065F46;">Supportive Developments</h4>
             </div>
+            <ul id="guidance-disp-supportive" class="guidance-list supportive">
+              <li>Analyzing benefic planetary alignments...</li>
+            </ul>
+          </div>
 
+          <!-- Deep Analysis Sections (Gated by Freemium / Premium Unlock for Weekly/Monthly/Yearly) -->
+          <div id="guidance-deep-sections-wrap" class="guidance-deep-sections-wrap">
             <!-- Section C: Possible Challenges and Cautions -->
             <div class="guidance-section-box cautions">
               <div class="guidance-section-heading">
@@ -1566,55 +1632,70 @@
                 <li>Evaluating planetary transit friction...</li>
               </ul>
             </div>
+
+            <!-- Section D: Relevant Time Windows -->
+            <div class="guidance-section-box">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag">D</span>
+                <h4>Relevant Time Windows</h4>
+              </div>
+              <div id="guidance-disp-windows" class="guidance-windows-container">
+                <!-- Window cards dynamically populated -->
+              </div>
+            </div>
+
+            <!-- Section E: Why This Applies (Grounding) -->
+            <div class="guidance-section-box grounding-box">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-grounding">E</span>
+                <h4 style="color: #4C0519;">Why This Applies (Astrological Grounding)</h4>
+              </div>
+              <p id="guidance-disp-why" class="guidance-body-text" style="color: #4C0519;">
+                Grounded in Parashari Jyotish principles and Swiss Ephemeris astronomical positions.
+              </p>
+              <div id="guidance-disp-profile-metrics" class="guidance-profile-metrics">
+                <!-- Lagna, Moon Sign, Mahadasha, Antardasha chips -->
+              </div>
+            </div>
+
+            <!-- Section F & G in 2-column grid -->
+            <div class="guidance-2col-grid">
+              <!-- Section F: Practical Reflection -->
+              <div class="guidance-section-box reflection">
+                <div class="guidance-section-heading">
+                  <span class="section-letter-tag tag-reflection">F</span>
+                  <h4 style="color: #1E3A8A;">Practical Reflection</h4>
+                </div>
+                <p id="guidance-disp-reflection" class="guidance-body-text">
+                  Focus on disciplined execution and mindful decisions.
+                </p>
+              </div>
+
+              <!-- Section G: Limitations & Epistemic Scope -->
+              <div class="guidance-section-box limitations">
+                <div class="guidance-section-heading">
+                  <span class="section-letter-tag tag-limitations">G</span>
+                  <h4 style="color: #475569;">Scope &amp; Limitations</h4>
+                </div>
+                <p id="guidance-disp-limitations" class="guidance-body-text" style="font-size: 12px; color: #64748B;">
+                  Vedic astrology provides qualitative planetary timings and qualitative tendencies. Personal free will, moral integrity, and practical effort govern lived outcomes.
+                </p>
+              </div>
+            </div>
           </div>
 
-          <!-- Section D: Relevant Time Windows -->
-          <div class="guidance-section-box">
-            <div class="guidance-section-heading">
-              <span class="section-letter-tag">D</span>
-              <h4>Relevant Time Windows</h4>
-            </div>
-            <div id="guidance-disp-windows" class="guidance-windows-container">
-              <!-- Window cards dynamically populated -->
-            </div>
-          </div>
-
-          <!-- Section E: Why This Applies (Grounding) -->
-          <div class="guidance-section-box grounding-box">
-            <div class="guidance-section-heading">
-              <span class="section-letter-tag tag-grounding">E</span>
-              <h4 style="color: #4C0519;">Why This Applies (Astrological Grounding)</h4>
-            </div>
-            <p id="guidance-disp-why" class="guidance-body-text" style="color: #4C0519;">
-              Grounded in Parashari Jyotish principles and Swiss Ephemeris astronomical positions.
+          <!-- Premium Unlock Banner (Shown when deeper horizons are locked) -->
+          <div id="guidance-premium-cta-box" class="guidance-premium-cta-box" style="display: none;">
+            <div style="font-size: 26px; color: #D97706; margin-bottom: 8px;"><i class="fa-solid fa-crown"></i></div>
+            <h4 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Unlock Complete Multi-Horizon Deep Report</h4>
+            <p style="font-size: 13px; color: #64748B; max-width: 520px; margin: 0 auto 16px;">
+              Unlock full 7-Day Day-by-Day Forecasts, 4-Week Monthly Blueprints, 12-Month Annual Transit Maps, and 5-Year Mahadasha Karmic Blueprints personalized to your Janam Kundli.
             </p>
-            <div id="guidance-disp-profile-metrics" class="guidance-profile-metrics">
-              <!-- Lagna, Moon Sign, Mahadasha, Antardasha chips -->
-            </div>
-          </div>
-
-          <!-- Section F & G in 2-column grid -->
-          <div class="guidance-2col-grid">
-            <!-- Section F: Practical Reflection -->
-            <div class="guidance-section-box reflection">
-              <div class="guidance-section-heading">
-                <span class="section-letter-tag tag-reflection">F</span>
-                <h4 style="color: #1E3A8A;">Practical Reflection</h4>
-              </div>
-              <p id="guidance-disp-reflection" class="guidance-body-text">
-                Focus on disciplined execution and mindful decisions.
-              </p>
-            </div>
-
-            <!-- Section G: Limitations & Epistemic Scope -->
-            <div class="guidance-section-box limitations">
-              <div class="guidance-section-heading">
-                <span class="section-letter-tag tag-limitations">G</span>
-                <h4 style="color: #475569;">Scope &amp; Limitations</h4>
-              </div>
-              <p id="guidance-disp-limitations" class="guidance-body-text" style="font-size: 12px; color: #64748B;">
-                Vedic astrology provides qualitative planetary timings and qualitative tendencies. Personal free will, moral integrity, and practical effort govern lived outcomes.
-              </p>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <span class="price-pill" style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); background: #FEF3C7; padding: 6px 14px; border-radius: 20px;">₹49 <span style="font-size: 11px; font-weight: 500; color: #78350F;">All Horizons Access</span></span>
+              <button class="btn-gold-primary" style="padding: 8px 20px; font-size: 13px;" onclick="openPremiumPaywallModal()">
+                <i class="fa-solid fa-lock-open"></i> Unlock Full Report with Wallet
+              </button>
             </div>
           </div>
         </div>
@@ -3295,6 +3376,138 @@
           Confirm & Link Identity
         </button>
       </div>
+    </div>
+  </div>
+
+
+  <!-- ==================== MODAL: PREMIUM REPORT PAYWALL ==================== -->
+  <div id="modal-premium-paywall" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10600;">
+    <div class="modal-dialog-card" style="max-width: 500px; width: 92%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #FEF3C7; display: flex; align-items: center; justify-content: center; color: #D97706; font-size: 18px;">
+            <i class="fa-solid fa-crown"></i>
+          </div>
+          <div>
+            <h3 style="font-size: 17px; font-weight: 800; color: #1E1B4B; margin: 0;">Unlock Comprehensive Report</h3>
+            <span style="font-size: 12px; color: #64748B;">Multi-Horizon Vedic Life Intelligence</span>
+          </div>
+        </div>
+        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px; color: #64748B;" onclick="closePremiumPaywallModal()"></i>
+      </div>
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+        <div style="font-size: 13px; font-weight: 700; color: #1E293B; margin-bottom: 8px;">What's included in this unlock:</div>
+        <ul style="font-size: 12px; color: #475569; padding-left: 18px; margin: 0; line-height: 1.6;">
+          <li><strong>7-Day Parashari Cycle:</strong> Day-by-day transit transitions &amp; peak timing</li>
+          <li><strong>4-Week Monthly Blueprint:</strong> Week-by-week synthesis &amp; asset deliberations</li>
+          <li><strong>12-Month Annual Map:</strong> Slow-moving transits (Guru/Shani) &amp; quarterly roadmap</li>
+          <li><strong>5-Year Mahadasha Arc:</strong> Vimshottari karmic trajectory &amp; house lordship</li>
+        </ul>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; margin-bottom: 16px;">
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; color: #92400E; font-weight: 700;">One-Time Unlock Fee</div>
+          <div style="font-size: 20px; font-weight: 800; color: var(--vedic-maroon);">₹49.00</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 11px; text-transform: uppercase; color: #64748B; font-weight: 600;">Your Wallet Balance</div>
+          <div id="paywall-current-wallet-disp" style="font-size: 16px; font-weight: 800; color: #059669;">₹0.00</div>
+        </div>
+      </div>
+      <div id="paywall-sufficient-controls">
+        <button class="btn-gold-primary" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 700; justify-content: center;" onclick="confirmUnlockPremiumReport()">
+          <i class="fa-solid fa-lock-open"></i> Confirm &amp; Deduct ₹49 from Wallet
+        </button>
+      </div>
+      <div id="paywall-insufficient-controls" style="display: none;">
+        <div style="font-size: 12px; color: #DC2626; margin-bottom: 10px; text-align: center;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Insufficient balance to unlock. Quick recharge below:
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <button class="btn-gold-primary" style="padding: 10px; font-size: 13px; justify-content: center;" onclick="quickRechargePaywall(50)">Recharge ₹50</button>
+          <button class="btn-outline-secondary" style="padding: 10px; font-size: 13px; justify-content: center;" onclick="quickRechargePaywall(100)">Recharge ₹100</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: INTERACTIVE AI ASTROLOGER CONSULTATION ROOM ==================== -->
+  <div id="modal-ai-consultation" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10500;">
+    <div class="modal-dialog-card" style="max-width: 680px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+      
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #4C0519 0%, #1E1B4B 100%); color: #FFFFFF; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 42px; height: 42px; font-size: 18px; margin: 0; border: 2px solid #F59E0B;">
+            <i class="fa-solid fa-user-astronaut"></i>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <h3 id="ai-chat-astrologer-name" style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0;">Acharya Devratan</h3>
+              <span class="badge-grounded" style="font-size: 10px; padding: 2px 6px; background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #059669;">
+                <span class="status-dot-online"></span> LIVE
+              </span>
+            </div>
+            <div id="ai-chat-specialty" style="font-size: 11px; color: #CBD5E1;">Vedic Astrology &amp; Career Specialist</div>
+          </div>
+        </div>
+        
+        <!-- Live Session Timers & Meter -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="text-align: right;">
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #F59E0B; font-weight: 700;">Duration</div>
+            <div id="ai-consultation-timer" style="font-size: 15px; font-family: monospace; font-weight: 800; color: #FFFFFF;">00:00</div>
+          </div>
+          <button onclick="endConsultationSession()" style="background: #EF4444; color: #FFFFFF; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-phone-slash"></i> End Chat
+          </button>
+        </div>
+      </div>
+
+      <!-- Context Bar (User Chart Grounding) -->
+      <div id="ai-chat-context-bar" style="background: #FFFBEB; border-bottom: 1px solid #FEF3C7; padding: 8px 16px; font-size: 11px; color: #92400E; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+        <div id="ai-chat-chart-pill">
+          <i class="fa-solid fa-certificate" style="color: #D97706;"></i> <strong>Grounded Chart:</strong> <span id="ai-chat-chart-details">Loading active Kundli...</span>
+        </div>
+        <div style="color: #64748B;">
+          Wallet: <strong id="ai-chat-wallet-balance" style="color: #059669;">₹0.00</strong> (<span id="ai-chat-rate-disp">₹25/min</span>)
+        </div>
+      </div>
+
+      <!-- Chat Message Area -->
+      <div id="ai-chat-messages-container" style="flex: 1; min-height: 280px; max-height: 48vh; overflow-y: auto; padding: 16px; background: #F8FAFC; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Message bubbles injected here -->
+      </div>
+
+      <!-- Typing Indicator -->
+      <div id="ai-chat-typing-indicator" style="display: none; padding: 6px 18px; font-size: 11px; color: #64748B; font-style: italic; background: #F8FAFC;">
+        <span id="ai-chat-typing-name">Acharya</span> is consulting your planetary houses...
+      </div>
+
+      <!-- Quick Consultation Chips -->
+      <div style="background: #FFFFFF; border-top: 1px solid #E2E8F0; padding: 8px 14px; display: flex; gap: 6px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;">
+        <button class="consultation-chip-btn" onclick="sendAiConsultationPrompt('Analyze my 10th House of Career &amp; promotion timing')">
+          <i class="fa-solid fa-briefcase"></i> Career Outlook
+        </button>
+        <button class="consultation-chip-btn" onclick="sendAiConsultationPrompt('When will I find marital harmony or marriage timing?')">
+          <i class="fa-solid fa-heart"></i> Marriage Timing
+        </button>
+        <button class="consultation-chip-btn" onclick="sendAiConsultationPrompt('What does my chart say about wealth accumulation and Dhana Yogas?')">
+          <i class="fa-solid fa-coins"></i> Wealth &amp; Finance
+        </button>
+        <button class="consultation-chip-btn" onclick="sendAiConsultationPrompt('What gemstones and Vedic remedies should I follow?')">
+          <i class="fa-solid fa-gem"></i> Gemstone &amp; Remedies
+        </button>
+      </div>
+
+      <!-- Input Bar -->
+      <div style="background: #FFFFFF; border-top: 1px solid #E2E8F0; padding: 12px 16px; display: flex; gap: 10px; align-items: center;">
+        <input type="text" id="ai-chat-user-input" class="form-input-text" placeholder="Ask anything about your life, career, marriage, remedies..." style="margin: 0; flex: 1;" onkeydown="handleAiChatKey(event)">
+        <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px;" onclick="sendAiUserChatMessage()">
+          <i class="fa-solid fa-paper-plane"></i> Send
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -5702,15 +5915,221 @@
       executeSelectedRecharge();
     }
 
+    // ==================== INTERACTIVE AI ASTROLOGER AGENT CONSULTATION ====================
+    let activeConsultationSession = null;
+    let consultationTimerInterval = null;
+
     function startConsultationSession(astroName, rate) {
-      const minRequired = rate * 5;
       if (currentWalletBalance < rate) {
-        showToast(`Insufficient balance! ₹${rate} (1 min) or ₹${minRequired} (5 mins) required to start consultation.`, "error");
-        openWalletModal();
+        showToast(`Your wallet balance (₹${currentWalletBalance.toFixed(2)}) is low. Please recharge at least ₹${rate} for consultation.`, "info");
+      }
+
+      const specialties = {
+        'Acharya Devratan': 'Vedic Astrology, Prashna Kundli, Vastu & Career',
+        'Dr. Sunita Shastri': 'Jaimini Astrology, Career & Marriage Specialist',
+        'Pandit Raghavendra': 'Parashari System, Wealth & Stock Market Yogas'
+      };
+
+      const avatars = {
+        'Acharya Devratan': '<i class="fa-solid fa-user-astronaut"></i>',
+        'Dr. Sunita Shastri': '<i class="fa-solid fa-user-graduate"></i>',
+        'Pandit Raghavendra': '<i class="fa-solid fa-user-shield"></i>'
+      };
+
+      activeConsultationSession = {
+        astrologerName: astroName,
+        rate: rate,
+        specialty: specialties[astroName] || 'Vedic Astrology Specialist',
+        startTime: Date.now(),
+        secondsElapsed: 0,
+        messages: []
+      };
+
+      // Populate Modal Header & Meter
+      document.getElementById('ai-chat-astrologer-name').textContent = astroName;
+      document.getElementById('ai-chat-specialty').textContent = activeConsultationSession.specialty;
+      document.getElementById('ai-chat-avatar').innerHTML = avatars[astroName] || '<i class="fa-solid fa-user-astronaut"></i>';
+      document.getElementById('ai-chat-rate-disp').textContent = `₹${rate}/min`;
+      document.getElementById('ai-chat-wallet-balance').textContent = `₹${currentWalletBalance.toFixed(2)}`;
+
+      // Chart context pill
+      const chartPill = document.getElementById('ai-chat-chart-details');
+      if (currentCalculatedChart) {
+        const d = currentCalculatedChart;
+        const fd = d.fullData;
+        const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
+        const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
+        chartPill.textContent = `${d.name || 'Seeker'} (${d.lagnaSign} Lagna, Moon in ${d.moonSign}, ${dashaMaha}-${dashaAntar} Dasha)`;
+      } else {
+        chartPill.textContent = 'Universal Transit Mode (No natal Kundli loaded)';
+      }
+
+      // Clear previous messages and render initial welcome message
+      const msgBox = document.getElementById('ai-chat-messages-container');
+      msgBox.innerHTML = '';
+
+      let welcomeText = '';
+      if (currentCalculatedChart) {
+        const d = currentCalculatedChart;
+        const fd = d.fullData;
+        const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
+        const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
+        if (astroName.includes('Sunita')) {
+          welcomeText = `Namaste! I am Dr. Sunita Shastri. I am examining your ${d.lagnaSign} Lagna and ${d.moonSign} Moon (${d.nakName} Nakshatra) with active ${dashaMaha}-${dashaAntar} Dasha. In your relationship and 7th house geometry, planetary transits are active. What specific question on love, partnership, or family harmony can I help clarify for you?`;
+        } else if (astroName.includes('Raghavendra')) {
+          welcomeText = `Om Namah Shivaya! I am Pandit Raghavendra. Looking at your ${d.lagnaSign} chart and active ${dashaMaha}-${dashaAntar} cycle, I evaluate planetary doshas, gemstone compatibility, and traditional Vedic remedies. What challenge or karmic timing inquiry would you like to resolve today?`;
+        } else {
+          welcomeText = `Pranam! I am Acharya Devratan. I have analyzed your ${d.lagnaSign} Lagna, 10th House of career, and ${dashaMaha}-${dashaAntar} Dasha. Auspicious planetary combinations are active for professional elevation and financial strategy. What guidance can I offer regarding your career, investments, or life direction?`;
+        }
+      } else {
+        welcomeText = `Pranam! I am ${astroName}. Welcome to AstroVerse live consultation. I am ready to guide you based on universal celestial transits. For exact 100% personal chart insights, you can calculate your Janam Kundli in the Kundli section. What question is on your mind today?`;
+      }
+
+      appendAiMessageBubble(welcomeText);
+
+      // Start live duration timer
+      if (consultationTimerInterval) clearInterval(consultationTimerInterval);
+      const timerEl = document.getElementById('ai-consultation-timer');
+      timerEl.textContent = '00:00';
+      consultationTimerInterval = setInterval(() => {
+        if (!activeConsultationSession) return;
+        activeConsultationSession.secondsElapsed++;
+        const mins = Math.floor(activeConsultationSession.secondsElapsed / 60);
+        const secs = activeConsultationSession.secondsElapsed % 60;
+        timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }, 1000);
+
+      document.getElementById('modal-ai-consultation').style.display = 'flex';
+      setTimeout(() => {
+        const inp = document.getElementById('ai-chat-user-input');
+        if (inp) inp.focus();
+      }, 300);
+    }
+
+    function appendUserMessageBubble(text) {
+      const msgBox = document.getElementById('ai-chat-messages-container');
+      const div = document.createElement('div');
+      div.className = 'chat-bubble-user';
+      div.textContent = text;
+      msgBox.appendChild(div);
+      msgBox.scrollTop = msgBox.scrollHeight;
+    }
+
+    function appendAiMessageBubble(text) {
+      const msgBox = document.getElementById('ai-chat-messages-container');
+      const div = document.createElement('div');
+      div.className = 'chat-bubble-agent';
+      div.textContent = text;
+      msgBox.appendChild(div);
+      msgBox.scrollTop = msgBox.scrollHeight;
+    }
+
+    function sendAiConsultationPrompt(promptText) {
+      document.getElementById('ai-chat-user-input').value = promptText;
+      sendAiUserChatMessage();
+    }
+
+    function handleAiChatKey(event) {
+      if (event.key === 'Enter') {
+        sendAiUserChatMessage();
+      }
+    }
+
+    function sendAiUserChatMessage() {
+      const inp = document.getElementById('ai-chat-user-input');
+      const text = inp.value.trim();
+      if (!text) return;
+      inp.value = '';
+
+      appendUserMessageBubble(text);
+
+      const astro = activeConsultationSession ? activeConsultationSession.astrologerName : 'Acharya Devratan';
+      const typingEl = document.getElementById('ai-chat-typing-indicator');
+      const typingName = document.getElementById('ai-chat-typing-name');
+      if (typingName) typingName.textContent = astro.split(' ')[0];
+      if (typingEl) typingEl.style.display = 'block';
+
+      setTimeout(() => {
+        if (typingEl) typingEl.style.display = 'none';
+        const response = generatePersonaAstrologicalResponse(astro, text);
+        appendAiMessageBubble(response);
+      }, 700);
+    }
+
+    function generatePersonaAstrologicalResponse(astroName, query) {
+      const q = query.toLowerCase();
+      const hasChart = !!currentCalculatedChart;
+      const lagna = currentCalculatedChart?.lagnaSign || "Scorpio";
+      const moon = currentCalculatedChart?.moonSign || "Aquarius";
+      const nak = currentCalculatedChart?.nakName || "Shatabhisha";
+      const fd = currentCalculatedChart?.fullData;
+      const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
+      const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
+      const sadesati = fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis";
+
+      if (astroName.includes('Sunita')) {
+        // Dr. Sunita Shastri: Relationships, Marriage, Emotional Life
+        if (q.includes('marri') || q.includes('love') || q.includes('relationship') || q.includes('partner') || q.includes('spouse')) {
+          return `Based on your natal ${lagna} Lagna and ${moon} Moon in ${nak} Nakshatra: Your 7th House of partnership is influenced by your active ${dashaMaha}-${dashaAntar} Dasha. In the D9 Navamsha chart, your relationship indicators show an intellectually mature, emotionally grounded partner. Transiting benefics in Kendra houses activate an auspicious 8 to 14 month window for formalizing alliances. Maintain gentle, transparent dialogue and avoid bringing work tensions into romantic conversations.`;
+        } else if (q.includes('career') || q.includes('job')) {
+          return `In Jaimini and Parashari evaluation: while your heart seeks harmony, your career axis under ${dashaMaha} Mahadasha is entering a productive expansion phase. Seek positions where your emotional intelligence and strategic discernment are valued equally.`;
+        } else {
+          return `Looking deeply into your chart's lunar energy: your Moon in ${moon} brings deep intuition and analytical depth. During this ${dashaMaha}-${dashaAntar} period, focusing on genuine interpersonal connections and emotional balance will bring profound peace of mind.`;
+        }
+      } else if (astroName.includes('Raghavendra')) {
+        // Pandit Raghavendra: Remedies, Gemstones, Doshas, KP
+        if (q.includes('gem') || q.includes('stone') || q.includes('pukhraj') || q.includes('manik') || q.includes('ruby')) {
+          return `Regarding gemstone prescription for ${lagna} Lagna: Always fortify your functional benefics (Lagna Lord and Trikona lords). Under ${dashaMaha} Mahadasha, wearing a certified natural Yellow Sapphire (Pukhraj) set in gold on a Thursday morning, or Emerald (Panna) for intellectual vigor, is highly favorable after verifying natal degrees. Avoid wearing Blue Sapphire without personal trial.`;
+        } else if (q.includes('remed') || q.includes('mantra') || q.includes('puja') || q.includes('dosha') || q.includes('sade')) {
+          return `Examining your planetary afflictions: Your chart indicates Saturn in ${sadesati}. The classical Parashari remedy to neutralize this transit is chanting the Maha Mrityunjaya Mantra 108 times at dawn and lighting a pure mustard or sesame oil lamp under a Peepal tree on Saturdays. For current ${dashaMaha} Dasha, reciting the Vishnu Sahasranama on Thursdays dissolves financial and personal hurdles.`;
+        } else {
+          return `Every astrological challenge contains a divine remedial key. For your ${lagna} Lagna and ${moon} Moon: cultivate regular spiritual discipline (Dhyana) and practice charity (Daan) on planetary days to clear accumulated karmic blocks and invite favorable grace.`;
+        }
+      } else {
+        // Acharya Devratan: Career, Wealth, 10th House, Leadership
+        if (q.includes('career') || q.includes('job') || q.includes('promot') || q.includes('business') || q.includes('10th')) {
+          return `Analyzing your 10th House of Karma and authority for ${lagna} Lagna: Your active ${dashaMaha} Mahadasha with ${dashaAntar} Antardasha is classically an accelerator for institutional recognition and career advancement. Transiting Jupiter casts an auspicious trine aspect on your professional houses, indicating that major interviews, leadership promotions, and compensation renegotiations will receive strong backing over the next 2 to 4 months. Maintain composed executive posture during high-stakes meetings.`;
+        } else if (q.includes('wealth') || q.includes('money') || q.includes('finance') || q.includes('invest') || q.includes('stock')) {
+          return `Regarding Dhana Yogas in your chart: A potent connection links your 2nd House of liquid cash with your 11th House of gains under ${dashaMaha}-${dashaAntar} Dasha. Disciplined capital deployment into established equity index funds, sovereign bonds, or real estate will yield sustainable compounded gains. Avoid high-risk speculative intraday trading during localized Rahu Kaal.`;
+        } else {
+          return `In classical Parashari Jyotish, your ${lagna} Lagna and ${moon} Moon form a resilient, determined constitution. Navigating this ${dashaMaha} period with clear quarterly objectives will yield immense professional clarity and long-term authority. What specific milestone would you like to analyze next?`;
+        }
+      }
+    }
+
+    function endConsultationSession() {
+      if (!activeConsultationSession) {
+        document.getElementById('modal-ai-consultation').style.display = 'none';
         return;
       }
-      const availableMins = Math.floor(currentWalletBalance / rate);
-      showToast(`Connecting secure consultation with ${astroName} (₹${rate}/min) • ~${availableMins} mins duration available.`, "success");
+
+      if (consultationTimerInterval) clearInterval(consultationTimerInterval);
+
+      const mins = Math.max(1, Math.ceil(activeConsultationSession.secondsElapsed / 60));
+      const rate = activeConsultationSession.rate;
+      const totalCost = (mins <= 1) ? 0 : (mins - 1) * rate; // First minute promotional free!
+
+      let confirmMsg = `End consultation with ${activeConsultationSession.astrologerName}?\n\nSession Duration: ${Math.floor(activeConsultationSession.secondsElapsed / 60)}m ${activeConsultationSession.secondsElapsed % 60}s\nBilled Duration: ${mins} minute(s)\nPromotional Free Minute: 1 min\nTotal Deducted: ₹${totalCost.toFixed(2)}`;
+      
+      if (confirm(confirmMsg)) {
+        if (totalCost > 0 && currentWalletBalance >= totalCost) {
+          currentWalletBalance -= totalCost;
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+          updateUserSessionUI();
+        }
+        showToast(`Consultation completed! Session transcript saved.`, "success");
+        activeConsultationSession = null;
+        document.getElementById('modal-ai-consultation').style.display = 'none';
+      } else {
+        // Resume timer if user canceled
+        consultationTimerInterval = setInterval(() => {
+          if (!activeConsultationSession) return;
+          activeConsultationSession.secondsElapsed++;
+          const m = Math.floor(activeConsultationSession.secondsElapsed / 60);
+          const s = activeConsultationSession.secondsElapsed % 60;
+          document.getElementById('ai-consultation-timer').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }, 1000);
+      }
     }
 
     let pendingPujaBooking = null;
@@ -6130,6 +6549,57 @@
     let currentGuidanceHorizon = 'hourly';
     window.currentActivePrediction = null;
 
+    function isPremiumReportUnlocked() {
+      return localStorage.getItem('astro_premium_unlocked') === 'true';
+    }
+
+    function openPremiumPaywallModal() {
+      const balEl = document.getElementById('paywall-current-wallet-disp');
+      if (balEl) balEl.textContent = `₹${currentWalletBalance.toFixed(2)}`;
+
+      const suffBox = document.getElementById('paywall-sufficient-controls');
+      const insuffBox = document.getElementById('paywall-insufficient-controls');
+
+      if (currentWalletBalance >= 49.0) {
+        if (suffBox) suffBox.style.display = 'block';
+        if (insuffBox) insuffBox.style.display = 'none';
+      } else {
+        if (suffBox) suffBox.style.display = 'none';
+        if (insuffBox) insuffBox.style.display = 'block';
+      }
+
+      document.getElementById('modal-premium-paywall').style.display = 'flex';
+    }
+
+    function closePremiumPaywallModal() {
+      document.getElementById('modal-premium-paywall').style.display = 'none';
+    }
+
+    function quickRechargePaywall(amt) {
+      currentWalletBalance += amt;
+      localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+      updateUserSessionUI();
+      showToast(`Added ₹${amt} to wallet! You can now unlock the comprehensive report.`, "success");
+      openPremiumPaywallModal();
+    }
+
+    function confirmUnlockPremiumReport() {
+      if (currentWalletBalance < 49.0) {
+        showToast("Insufficient balance for report unlock.", "error");
+        openPremiumPaywallModal();
+        return;
+      }
+
+      currentWalletBalance -= 49.0;
+      localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+      localStorage.setItem('astro_premium_unlocked', 'true');
+      updateUserSessionUI();
+
+      closePremiumPaywallModal();
+      showToast("🎉 Premium Multi-Horizon Analysis Unlocked Successfully!", "success");
+      generatePersonalizedGuidance(currentGuidanceHorizon);
+    }
+
     function selectGuidanceHorizon(horizon) {
       currentGuidanceHorizon = horizon;
       document.querySelectorAll('.horizon-btn').forEach(b => b.classList.remove('active'));
@@ -6145,19 +6615,16 @@
     async function generatePersonalizedGuidance(horizon = 'hourly') {
       const targetDate = new Date().toISOString().split('T')[0];
       const hasChart = !!currentCalculatedChart;
-      const guestBanner = document.getElementById('guidance-guest-banner');
-      const badge = document.getElementById('guidance-grounding-badge');
 
       let payload = {
         horizon: horizon,
         target_date: targetDate,
-        active_hora_planet: window.currentActiveHoraPlanet || "Jupiter",
-        hora_window: window.currentActiveHoraWindow || "Current Solar Hour",
+        active_hora_planet: window.currentActiveHoraPlanet || "Sun",
+        hora_window: window.currentActiveHoraWindow || "Active Solar Hour",
         category: "general"
       };
 
       if (hasChart && currentCalculatedChart.fullData) {
-        const d1 = currentCalculatedChart.fullData.d1_rashi_chart;
         const dob = document.getElementById('input-k-dob').value;
         const tob = document.getElementById('input-k-tob').value || "12:00";
         const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
@@ -6184,10 +6651,10 @@
           return;
         }
       } catch (err) {
-        console.warn("Prediction API error, rendering calculated fallback:", err);
+        // Fallback to client synthesis engine
       }
 
-      // Client mathematical fallback for resilience
+      // Client mathematical multi-horizon engine
       renderFallbackGuidanceUI(horizon, hasChart);
     }
 
@@ -6241,42 +6708,208 @@
 
       document.getElementById('guidance-disp-reflection').textContent = s.practical_reflection;
       document.getElementById('guidance-disp-limitations').textContent = s.limitations;
+
+      // Freemium Paywall Gating:
+      // Hourly & Daily are 100% free previews. Weekly, Monthly, Yearly, Mahadasha require unlock.
+      const deepWrap = document.getElementById('guidance-deep-sections-wrap');
+      const ctaBox = document.getElementById('guidance-premium-cta-box');
+      const isFreeHorizon = (currentGuidanceHorizon === 'hourly' || currentGuidanceHorizon === 'daily');
+      const isUnlocked = isPremiumReportUnlocked();
+
+      if (deepWrap && ctaBox) {
+        if (isFreeHorizon || isUnlocked) {
+          deepWrap.classList.remove('is-locked');
+          ctaBox.style.display = 'none';
+        } else {
+          deepWrap.classList.add('is-locked');
+          ctaBox.style.display = 'block';
+        }
+      }
     }
 
     function renderFallbackGuidanceUI(horizon, hasChart) {
-      const horaPlanet = window.currentActiveHoraPlanet || "Jupiter";
-      const s = {
-        overall_outlook: `During this active ${horaPlanet} planetary window, cosmic alignments favor strategic discernment and composed communication.`,
-        supportive_developments: [
-          `Favorable period for structured dialogue, negotiation, and reviewing long-term plans.`,
-          `High mental focus for analytical tasks and financial reconciliations.`
-        ],
-        challenges_and_cautions: [
-          `Avoid rash commitments during the transitional boundaries of the solar hour.`,
-          `Maintain emotional composure if unexpected delays occur.`
-        ],
-        relevant_time_windows: [
-          `Active Interval: Governed by ${horaPlanet}`,
-          `Recommended Peak Focus: Mid-hour interval for vital discussions`
-        ],
-        why_this_applies: hasChart
-          ? `Grounded in natal Lagna and active Vimshottari Dasha with sidereal solar transit positions.`
-          : `Grounded in classical Chaldean solar hora sequences computed via Swiss Ephemeris.`,
-        practical_reflection: `Direct your mental bandwidth toward one high-leverage responsibility during this interval.`,
-        limitations: `Astrological Horas represent qualitative auspicious tendencies. Practical initiative and ethics govern all outcomes.`
-      };
+      const fd = currentCalculatedChart?.fullData;
+      const lagna = currentCalculatedChart?.lagnaSign || "Scorpio";
+      const moon = currentCalculatedChart?.moonSign || "Aquarius";
+      const nak = currentCalculatedChart?.nakName || "Shatabhisha";
+      const pada = currentCalculatedChart?.pada || 2;
+      const activeMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
+      const activeAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
+      const sadeSati = fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis";
+      const horaPlanet = window.currentActiveHoraPlanet || "Sun";
+      const horaWindow = window.currentActiveHoraWindow || "Active Solar Hour";
+      const targetDate = new Date().toISOString().split('T')[0];
+
+      let reportTitle = "";
+      let s = {};
+
+      if (horizon === 'daily') {
+        reportTitle = `DAILY Personal Forecast: ${targetDate} (Solar & Lunar Transit)`;
+        s = {
+          overall_outlook: `For your natal ${lagna} Lagna and ${moon} Moon (${nak} Nakshatra), today's planetary transit geometry energizes your communicative and professional sectors under the ${activeMaha}-${activeAntar} Dasha cycle. Cosmic alignments favor disciplined execution and clear priority management.`,
+          supportive_developments: [
+            `Morning Window (Sunrise to Noon): Heightened focus for strategic decisions during benefic ${activeMaha} and Mercury Horas.`,
+            `Afternoon Window (Noon to Sunset): Supportive planetary aspects assist in collaborative agreements, technical reviews, and project milestones.`,
+            `Evening Window (Sunset to Night): Calming lunar alignment encourages domestic harmony, intellectual study, and contemplative rest.`
+          ],
+          challenges_and_cautions: [
+            `Maintain heightened awareness during the localized Rahu Kaal window; avoid signing unvetted contracts or initiating speculative trades.`,
+            `Stay mindful of hydration and digestive balance to harmonize natural Pitta and Vata energies during mid-afternoon.`,
+            `Keep team communications documented in writing to prevent transient misunderstandings.`
+          ],
+          relevant_time_windows: [
+            `Auspicious Action Window: Morning benefic Hora periods (governed by Jupiter/Venus/Mercury)`,
+            `Mid-Day Peak Focus: Abhijit Muhurta (~11:45 AM - 12:35 PM local solar window)`,
+            `Cautionary Period: Daily Rahu Kaal interval (refer to Horas schedule for exact timings)`
+          ],
+          why_this_applies: hasChart
+            ? `Calculated from your natal ${lagna} Lagna, Moon in ${moon} (${nak} Pada ${pada}), and active Vimshottari period of ${activeMaha}-${activeAntar}.`
+            : `Universal transit baseline computed for ${targetDate} via Swiss Ephemeris. Calculate Kundli to personalize.`,
+          practical_reflection: `Select your three most consequential responsibilities for today. Complete the primary milestone before solar noon.`,
+          limitations: `Daily forecasts represent qualitative atmospheric trends. Conscious moral resolve and proactive initiative govern daily outcomes.`
+        };
+      } else if (horizon === 'weekly') {
+        reportTitle = `WEEKLY 7-Day Parashari Forecast: Comprehensive Life Progression`;
+        s = {
+          overall_outlook: `This seven-day forecast period is energized by the transiting Moon traversing your ${lagna} Lagna's Kendra and Trikona houses under the ${activeMaha}-${activeAntar} Dasha. Early-week momentum favors professional initiation, mid-week highlights asset consolidation, and the weekend promotes spiritual rejuvenation and family harmony.`,
+          supportive_developments: [
+            `Days 1–2 (Monday–Tuesday): Favorable for professional presentations, contract finalization, and executive dialogue.`,
+            `Days 3–4 (Wednesday–Thursday): Financial clarity emerges through careful review of expenditure and investment allocations.`,
+            `Days 5–7 (Friday–Sunday): Relationship bonding and reflective philosophical reading receive strong celestial support.`
+          ],
+          challenges_and_cautions: [
+            `Mid-week lunar transit across your 6th house suggests possible workplace friction if communication is ambiguous.`,
+            `Watch dietary habits and sleep rhythms during late evening hours to preserve physical vitality.`,
+            `Exercise added patience when dealing with administrative delays or bureaucratic processes.`
+          ],
+          relevant_time_windows: [
+            `Primary Breakthrough Window: Tuesday and Thursday mornings during Sun and Jupiter Horas`,
+            `Reflective / Cautionary Window: Wednesday afternoon (during localized Rahu Kaal)`,
+            `Social & Familial Auspicious Window: Friday evening during Venus Hora`
+          ],
+          why_this_applies: hasChart
+            ? `Grounded in your ${lagna} Lagna and ${moon} Moon: Transiting Sun and Mercury illuminate your 10th/11th house axis, while your active ${activeMaha} Mahadasha ensures institutional stability.`
+            : `Grounded in classical 7-day planetary transit cycles computed via Swiss Ephemeris.`,
+          practical_reflection: `Establish three clear milestones at the beginning of the week. Dedicate early morning hours to deep strategic work before opening digital channels.`,
+          limitations: `Weekly forecasts trace planetary transits (Gochara) overlaid upon natal dasha cycles. Individual daily events depend on exact birth time accuracy.`
+        };
+      } else if (horizon === 'monthly') {
+        reportTitle = `MONTHLY 4-Week Personal Analysis: Transit & Dasha Synthesis`;
+        s = {
+          overall_outlook: `This monthly cycle presents a structured phase of institutional elevation and capital consolidation for your ${lagna} Lagna. With your 10th House aspected by functional benefics and your active ${activeMaha}-${activeAntar} Dasha progressing steadily, the upcoming four weeks reward patience, systematic labor, and measured long-term investments.`,
+          supportive_developments: [
+            `Weeks 1 & 2: Career expansion, leadership visibility, and endorsement from senior mentors.`,
+            `Week 3: Financial optimization, settlement of pending obligations, and property/asset deliberations.`,
+            `Week 4: Harmonious domestic atmosphere, personal rejuvenation, and spiritual grounding.`
+          ],
+          challenges_and_cautions: [
+            `Weeks 2 & 3: Elevated mental expenditure; avoid taking on unvetted commitments.`,
+            `Slight digestive sensitivity during Saturn-aspect transit windows; prioritize whole foods.`,
+            `Manage expectations in collaborative projects by ensuring deliverables are explicitly documented in writing.`
+          ],
+          relevant_time_windows: [
+            `Waxing Moon (Shukla Paksha): Ideal for inaugurating new ventures and signing agreements`,
+            `Full Moon Phase: Heightened intuition and clarity regarding personal relationships`,
+            `Waning Moon (Krishna Paksha): Optimal for introspection, audit, and concluding legacy projects`
+          ],
+          why_this_applies: hasChart
+            ? `Your ${lagna} Lagna lord establishes strong functional support. Jupiter's trine aspects reinforce your fortune axis, mitigating the restrictive pressure of Saturn in ${sadesati}.`
+            : `Synthesized from lunar month phases and major planetary ingress across sidereal zodiacs.`,
+          practical_reflection: `Review your quarterly budget and professional goals at the start of the month. Incorporate a regular morning meditation practice.`,
+          limitations: `Monthly evaluations synthesize major planetary ingress and nakshatra transits against natal bhava cusps.`
+        };
+      } else if (horizon === 'yearly') {
+        reportTitle = `YEARLY 12-Month Parashari Outlook: Comprehensive Mahadasha & Transit Map`;
+        s = {
+          overall_outlook: `The upcoming twelve-month cycle marks a pivotal transformative epoch in your life trajectory under ${lagna} Lagna. Under the governance of your ${activeMaha} Mahadasha and ${activeAntar} Antardasha, foundations laid in career, financial sovereignty, and personal wisdom will compound substantially.`,
+          supportive_developments: [
+            `Quarter 1 (Months 1–3): Career restructuring, high-visibility assignments, and professional recognition.`,
+            `Quarter 2 (Months 4–6): Financial growth through disciplined capital accumulation and strategic partnerships.`,
+            `Quarter 3 (Months 7–9): Academic, spiritual, and philosophical advancement; possible auspicious travel.`,
+            `Quarter 4 (Months 10–12): Domestic consolidation, property stability, and celebration of family milestones.`
+          ],
+          challenges_and_cautions: [
+            `Maintaining balance between relentless career ambition and domestic well-being.`,
+            `Navigating Saturn's disciplined transit requires consistent daily routine without shortcuts.`,
+            `Avoiding speculative investments during eclipse seasons or Rahu transit shifts.`
+          ],
+          relevant_time_windows: [
+            `Spring / Post-Equinox: Optimal window for strategic career transitions and business launches`,
+            `Autumn Lunar Cycle: Favorable for wealth consolidation and formalizing personal commitments`,
+            `Winter Solstice Phase: Ideal for spiritual retreats, health recalibration, and annual audits`
+          ],
+          why_this_applies: hasChart
+            ? `Natal Lagna ${lagna} with ${moon} Moon provides an enduring constitutional foundation. The major transits of Jupiter and Saturn align harmoniously with your D1 and D9 charts.`
+            : `Grounded in 12-month planetary ephemeris transits and major planetary stations.`,
+          practical_reflection: `Adopt an annual thematic intention rather than rigid checklists. Cultivate disciplined daily habits and practice regular philanthropy.`,
+          limitations: `Annual forecasts provide a high-level strategic compass grounded in classical Parashari Dasha and Gochara rules.`
+        };
+      } else if (horizon === 'mahadasha') {
+        reportTitle = `MAHADASHA 5-Year Life Arc: ${activeMaha} Mahadasha (${activeAntar} Antardasha)`;
+        s = {
+          overall_outlook: `You are currently traversing the transformative 16-year cycle of ${activeMaha} Mahadasha, with the active sub-period (Antardasha) of ${activeAntar}. For your ${lagna} Lagna, ${activeMaha} acts as a vital functional ruler, governing key houses of growth, wisdom, and material manifestation. The upcoming five-year window brings structural maturity, expansion of influence, and lasting legacy development.`,
+          supportive_developments: [
+            `Year 1: Foundation Building — Consolidating professional reputation and securing strategic mentorship.`,
+            `Year 2: Capital & Wealth Expansion — Compounding investments, property decisions, and business alliances.`,
+            `Year 3: Intellectual & Creative Elevation — Academic, philosophical, or spiritual mastery; valuable travel.`,
+            `Year 4: Relational & Family Fulfillment — Deepening marital bonding, domestic stability, and community respect.`,
+            `Year 5: Fruition of Karmic Milestones — Transition into advisory authority and celebratory life achievements.`
+          ],
+          challenges_and_cautions: [
+            `Antardasha Sandhi: Navigate the transition boundaries between major planetary sub-periods with deliberate patience.`,
+            `Avoid over-expansion or over-leveraging assets during peak optimistic planetary cycles.`,
+            `Honor consistent spiritual discipline and daily health maintenance to sustain high vitality across the 5-year cycle.`
+          ],
+          relevant_time_windows: [
+            `Active Antardasha Peak: Current cycle of ${activeMaha}-${activeAntar}`,
+            `Major Transit Milestone: Jupiter transit across Kendra and Trikona houses`,
+            `Karmic Recalibration Phase: Saturn transit completion in sidereal Pisces (${sadeSati})`
+          ],
+          why_this_applies: hasChart
+            ? `This 5-year arc is derived from your natal Moon at ${moon} (${nak} Nakshatra, Pada ${pada}) under the canonical 120-year Vimshottari Dasha system.`
+            : `Vimshottari 120-year cycle timeline calculated via classical Parashari rules.`,
+          practical_reflection: `Align your five-year personal vision with the core nature of ${activeMaha}: wisdom, ethics, mentorship, and sustainable growth.`,
+          limitations: `Mahadasha analysis illuminates broad karmic seasons and major developmental chapters. Daily choices and moral resolve shape the realization of your highest potential.`
+        };
+      } else {
+        // Hourly (Default)
+        reportTitle = `HOURLY Personal Guidance: ${horaPlanet} Hora Window (${horaWindow})`;
+        s = {
+          overall_outlook: `During this active ${horaPlanet} planetary window, celestial influences interact with your natal ${lagna} Lagna and current ${activeMaha}-${activeAntar} Dasha cycle. Traditionally, the ${horaPlanet} Hora emphasizes focused strategic execution, analytical discernment, and aligning mental priorities with your core life responsibilities.`,
+          supportive_developments: [
+            `High mental focus for tasks aligned with ${horaPlanet} significations (planning, negotiation, and structured dialogue).`,
+            `Supportive synergy between your ${moon} Moon and transiting benefics, aiding composed decision-making.`,
+            `Auspicious window for consulting seniors, signing documentation, or reviewing long-term financial plans.`
+          ],
+          challenges_and_cautions: [
+            `Avoid rash, reactive speech or hasty commitments during transitions between diurnal Hora intervals.`,
+            `If handling technical disputes or litigation, maintain emotional neutrality to mitigate temporary planetary tension.`,
+            `Be mindful of fatigue during the final quarter of the Hora window; schedule brief reflective breaks.`
+          ],
+          relevant_time_windows: [
+            `Active Hora Interval: ${horaWindow} (Governed by ${horaPlanet})`,
+            `Recommended Focus Peak: Middle 30 minutes of the active Hora for vital communications`,
+            `Cautionary Period: Maintain heightened care during localized Rahu Kaal intervals`
+          ],
+          why_this_applies: hasChart
+            ? `This interpretation applies because your natal Ascendant is ${lagna}, your Moon resides in ${moon} (${nak} Nakshatra), and your active Vimshottari Dasha is ${activeMaha}-${activeAntar}.`
+            : `Grounded in classical Chaldean solar hora sequences computed via Swiss Ephemeris.`,
+          practical_reflection: `Direct your conscious effort toward one high-priority responsibility during this ${horaPlanet} window. Take three mindful breaths before sending critical messages.`,
+          limitations: `Astrological Horas represent traditional qualitative tendencies and auspicious time windows rather than deterministic fatalism.`
+        };
+      }
 
       renderStructuredPredictionUI({
-        report_title: `${horizon.toUpperCase()} Personal Guidance: ${horaPlanet} Window`,
+        report_title: reportTitle,
         profile_loaded: hasChart,
         mode: hasChart ? 'PERSONALIZED_CHART_GROUNDED' : 'GENERAL_TRANSIT_UNPERSONALIZED',
         profile: {
-          lagna: currentCalculatedChart?.lagnaSign || "Aries",
-          moon_sign: currentCalculatedChart?.moonSign || "Taurus",
-          moon_nakshatra: currentCalculatedChart?.nakName || "Rohini",
-          active_mahadasha: "Jupiter",
-          active_antardasha: "Saturn",
-          sade_sati_phase: "Transit Analysis"
+          lagna: lagna,
+          moon_sign: moon,
+          moon_nakshatra: nak,
+          active_mahadasha: activeMaha,
+          active_antardasha: activeAntar,
+          sade_sati_phase: sadeSati
         },
         sections: s
       });

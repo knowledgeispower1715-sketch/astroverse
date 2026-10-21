@@ -61,7 +61,8 @@ class AIQuestionRequest(BaseModel):
     lat: Optional[float] = None
     lon: Optional[float] = None
     timezone: str = "Asia/Kolkata"
-    time_horizon: str = Field("daily", description="hourly, daily, weekly, monthly, yearly")
+    time_horizon: str = Field("daily", description="hourly, daily, weekly, monthly, yearly, mahadasha")
+    astrologer_name: Optional[str] = Field(None, description="Astrologer persona name")
 
 class MatchmakingRequest(BaseModel):
     boy_moon_sign_idx: Optional[int] = Field(None, ge=0, le=11)
@@ -317,7 +318,8 @@ def ask_ai_astrologer(req: AIQuestionRequest):
             kundli=d1,
             dasha=dashas,
             doshas=doshas,
-            time_horizon=req.time_horizon
+            time_horizon=req.time_horizon,
+            astrologer_name=req.astrologer_name
         )
         return {
             "mode": "PERSONALIZED_CHART_GROUNDED",

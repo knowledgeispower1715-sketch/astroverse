@@ -138,11 +138,43 @@ All defects have been analyzed to their code-level root causes and categorized i
 * **Regression Test**: Test verifying disclaimer and qualified badge rendering.
 * **Status**: `CONFIRMED_DEFECT`
 
+### Item 7: Multi-Horizon Prediction Stagnation (Identical Sun-Hora Fallback)
+* **Visible in Video**: Switching between Hourly, Weekly, Monthly, and Yearly guidance tabs retained essentially the same Sun-Hora narrative, supportive developments, challenges, and time windows. Only the report heading changed while the body remained stagnant.
+* **Relevant Source Files**: [`index.html`](file:///E:/rea/index.html) `renderFallbackGuidanceUI()`, [`services/kundli-engine/ai_astrologer.py`](file:///E:/rea/services/kundli-engine/ai_astrologer.py).
+* **Existing Implementation**: Client fallback `renderFallbackGuidanceUI` completely ignored the `horizon` argument and emitted a generic single-paragraph Sun-Hora template across all 4 tabs.
+* **Root Cause**: Missing client-side synthesis engine for multi-horizon temporal windows (Daily, Weekly 7-day, Monthly 4-week, Yearly 12-month, Mahadasha 5-year arc).
+* **Required Repair**: Implement horizon-aware synthesis engines in both Python and client JavaScript. Generate genuine day-by-day weekly progressions, monthly lunar phases, quarterly annual roadmaps, and 5-year Mahadasha arcs.
+* **Status**: `CONFIRMED_DEFECT` -> `REPAIRED`
+
+### Item 8: Contradiction Between Chart Dasha and Prediction Grounding
+* **Visible in Video**: Kundli chart displayed active Jupiter Mahadasha and Jupiter/Venus Antardasha, while the Personal Guidance Grounding card cited `Jupiter-Saturn` as the active Dasha.
+* **Relevant Source Files**: [`index.html`](file:///E:/rea/index.html) line 6278, [`services/kundli-engine/main.py`](file:///E:/rea/services/kundli-engine/main.py).
+* **Existing Implementation**: `renderFallbackGuidanceUI` hardcoded `active_mahadasha: "Jupiter", active_antardasha: "Saturn"` in its fallback profile dictionary.
+* **Root Cause**: Decoupled state extraction failing to read `currentCalculatedChart.fullData.vimshottari_dasha.active_now`.
+* **Required Repair**: Authoritatively bind prediction grounding metrics to the calculated Dasha timeline (`activeNow.maha_dasha` and `activeNow.antar_dasha`).
+* **Status**: `CONFIRMED_DEFECT` -> `REPAIRED`
+
+### Item 9: Static Astrologer Directory vs. Autonomous Conversational AI Agents
+* **Visible in Video**: Astrologer directory cards (Acharya Devratan, Dr. Sunita Shastri, Pandit Raghavendra) featured `Chat` and `Call` buttons that only displayed brief toast notices without opening a consultation experience.
+* **Relevant Source Files**: [`index.html`](file:///E:/rea/index.html) `startConsultationSession()`, [`services/kundli-engine/ai_astrologer.py`](file:///E:/rea/services/kundli-engine/ai_astrologer.py).
+* **Existing Implementation**: No conversational modal, session state machine, or chart context injection existed for listed astrologers.
+* **Root Cause**: Incomplete interactive consultation workflow.
+* **Required Repair**: Implement full-screen/modal interactive AI Astrologer Consultation Room with live duration timer, per-minute billing metering, chat message bubbles, persona-specific reasoning (Parashari, Jaimini, Remedial), and full birth chart context injection.
+* **Status**: `CONFIRMED_DEFECT` -> `REPAIRED`
+
+### Item 10: Freemium & Premium Report Gating (Paywall Architecture)
+* **Visible in Video**: All reports were either accessible in low depth or lacked clear monetization and unlock incentives.
+* **Relevant Source Files**: [`index.html`](file:///E:/rea/index.html).
+* **Existing Implementation**: No transparent distinction existed between free overview and premium deep reports.
+* **Root Cause**: Missing paywall modal, blurred previews, and wallet deduction triggers for deep multi-horizon reports.
+* **Required Repair**: Provide 100% free access to Hourly and Daily guidance; lock deep Weekly, Monthly, Yearly, and Mahadasha reports behind a ₹49 wallet unlock with blurred previews and transparent paywall modal.
+* **Status**: `CONFIRMED_DEFECT` -> `REPAIRED`
+
 ---
 
 ## 3. Summary of Baseline Verification Statuses
 
-| Module / Subsystem | Pre-Audit Status | Target Post-Repair Status |
+| Module / Subsystem | Pre-Audit Status | Current Status |
 | :--- | :--- | :--- |
 | Birth Form Initializers | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
 | Toast Notification Queue | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
@@ -150,10 +182,13 @@ All defects have been analyzed to their code-level root causes and categorized i
 | Ashtakoota Matchmaking Engine | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
 | Wallet & Accounting Ledger | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
 | Puja Shortfall Arithmetic | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
-| AI Astrologer Personalization | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
+| Multi-Horizon Prediction Depth | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
+| Dasha Grounding Consistency | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
+| AI Astrologer Consultation Room | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
+| Freemium Paywall & Report Gating | `CONFIRMED_DEFECT` | `VERIFIED_WORKING` |
 | Swiss Ephemeris Engine | `VERIFIED_WORKING` | `VERIFIED_WORKING` |
 | Administrative Console | `VERIFIED_WORKING` | `VERIFIED_WORKING` |
 
 ---
 
-*This document establishes the verified baseline for all engineering remediations.*
+*This document establishes the verified baseline and remediation record for all engineering audits.*

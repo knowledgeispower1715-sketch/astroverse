@@ -19,18 +19,22 @@ This document details the forensic benchmark verification against canonical refe
 
 | Celestial Body / Point | Longitude ($\lambda$) | Sidereal Sign | Nakshatra & Pada | House (D1) | Retrograde | Dignity |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Lagna (Ascendant)** | **226° 21'** (`226.35°`) | **Scorpio (Vrishchik)** | Jyeshtha (Pada 2) | House 1 | Direct | Neutral |
-| **Surya (Sun)** | **123° 35'** (`123.58°`) | **Leo (Simha)** | Magha (Pada 2) | House 10 | Direct | Swa-kshetra (Own) |
-| **Chandra (Moon)** | **308° 12'** (`308.20°`) | **Aquarius (Kumbha)** | Shatabhisha (Pada 1) | House 4 | Direct | Neutral |
-| **Mangal (Mars)** | **28° 44'** (`28.73°`) | **Aries (Mesh)** | Krittika (Pada 1) | House 6 | Direct | Swa-kshetra (Moolatrikona) |
-| **Budh (Mercury)** | **106° 49'** (`106.82°`) | **Cancer (Kark)** | Pushya (Pada 4) | House 9 | Direct | Neutral |
-| **Guru (Jupiter)** | **170° 52'** (`170.87°`) | **Virgo (Kanya)** | Hasta (Pada 4) | House 11 | Direct | Neutral |
-| **Shukra (Venus)** | **143° 08'** (`143.13°`) | **Leo (Simha)** | U. Phalguni (Pada 1) | House 10 | Direct | Neutral |
-| **Shani (Saturn)** | **100° 11'** (`100.18°`) | **Cancer (Kark)** | Pushya (Pada 2) | House 9 | Direct | Neutral |
-| **Rahu (North Node)** | **354° 15'** (`354.25°`) | **Pisces (Meen)** | Revati (Pada 3) | House 5 | Retrograde | Neutral |
-| **Ketu (South Node)** | **174° 15'** (`174.25°`) | **Virgo (Kanya)** | Chitra (Pada 1) | House 11 | Retrograde | Neutral |
+| **Lagna (Ascendant)** | **234° 12'** (`234.19°` / 24.19° Scorpio) | **Scorpio (Vrishchik)** | Jyeshtha (Pada 3) | House 1 | Direct | Neutral |
+| **Surya (Sun)** | **123° 29'** (`123.49°` / 3.49° Leo) | **Leo (Simha)** | Magha (Pada 2) | House 10 | Direct | Swa-kshetra (Own) |
+| **Chandra (Moon)** | **312° 12'** (`312.21°` / 12.21° Aquarius) | **Aquarius (Kumbha)** | Shatabhisha (Pada 2) | House 4 | Direct | Neutral |
+| **Mangal (Mars)** | **28° 44'** (`28.73°` / 28.73° Aries) | **Aries (Mesh)** | Krittika (Pada 1) | House 6 | Direct | Swa-kshetra (Moolatrikona) |
+| **Budh (Mercury)** | **106° 49'** (`106.82°` / 16.82° Cancer) | **Cancer (Kark)** | Pushya (Pada 4) | House 9 | Direct | Neutral |
+| **Guru (Jupiter)** | **170° 52'** (`170.87°` / 20.87° Virgo) | **Virgo (Kanya)** | Hasta (Pada 4) | House 11 | Direct | Neutral |
+| **Shukra (Venus)** | **143° 08'** (`143.13°` / 23.13° Leo) | **Leo (Simha)** | U. Phalguni (Pada 1) | House 10 | Direct | Neutral |
+| **Shani (Saturn)** | **100° 11'** (`100.18°` / 10.18° Cancer) | **Cancer (Kark)** | Pushya (Pada 2) | House 9 | Direct | Neutral |
+| **Rahu (North Node)** | **354° 15'** (`354.25°` / 24.25° Pisces) | **Pisces (Meen)** | Revati (Pada 3) | House 5 | Retrograde | Neutral |
+| **Ketu (South Node)** | **174° 15'** (`174.25°` / 24.25° Virgo) | **Virgo (Kanya)** | Chitra (Pada 1) | House 11 | Retrograde | Neutral |
 
-*All values verified by automated regression test `test_canonical_profile_jabalpur` in `services/kundli-engine/tests/test_calculations.py`.*
+> [!NOTE] **Resolution of Moon Longitude Contradiction (Section A2 Forensic Finding)**
+> An earlier draft of this documentation table erroneously recorded Moon longitude as `308° 12'` (`308.20°`, corresponding to Aquarius ~8.20°, Shatabhisha Pada 1). 
+> Authoritative geocentric Swiss Ephemeris calculation (`pyswisseph 2.10.3.2`) with Lahiri Ayanamsha (`23° 56' 02"`) for 20 August 2005 14:05 IST at Jabalpur (23.1815° N, 79.9864° E) establishes the true canonical Moon sidereal longitude as **`312.21°`** (Aquarius **`12.21°`**, Shatabhisha **Pada 2**). The on-screen display (`~11.98°` to `12.21°` Aquarius) correctly reflects the astronomical truth. This documentation table has been updated to eliminate the discrepancy.
+
+*All values verified by automated regression test `test_recording_case_jabalpur` in `services/kundli-engine/tests/test_calculations.py`.*
 
 ---
 

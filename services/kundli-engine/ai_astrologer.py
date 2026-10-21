@@ -54,7 +54,8 @@ def generate_astrological_reading(
     kundli: dict,
     dasha: dict,
     doshas: dict,
-    time_horizon: str = "daily"
+    time_horizon: str = "daily",
+    astrologer_name: Optional[str] = None
 ):
     lagna = kundli["lagna"]["sign"]
     lagna_deg = kundli["lagna"]["degree"]
@@ -77,61 +78,77 @@ def generate_astrological_reading(
     h2_str = f"tenanted by {', '.join(h2_planets)}" if h2_planets else "governed by your 2nd lord"
 
     cat = category.lower()
+    astro = (astrologer_name or "").lower()
 
-    if cat == "career" or "job" in user_query.lower() or "promotion" in user_query.lower():
-        title = "Career Advancement & Leadership Elevation"
+    if "shastri" in astro or cat == "marriage" or "love" in user_query.lower() or "spouse" in user_query.lower() or "relationship" in user_query.lower():
+        title = "Marriage Timing, Partner Compatibility & Relationship Harmony"
+        manglik_verdict = doshas.get("manglik", {}).get("verdict", "No Manglik Dosha")
+        body = (
+            f"Under your {lagna} Lagna and {moon_sign} Moon ({moon_nak} Nakshatra), your 7th House of partnership is {h7_str}. "
+            f"Regarding marital doshas: {manglik_verdict}. Your active Dasha is {active_maha}-{active_antar}. "
+            f"In your D9 Navamsha chart, your relationship indicators point to an emotionally grounded, intellectually compatible, "
+            f"and supportive partner who honors shared values. "
+            f"The upcoming transit of transiting benefics across your Kendra and Trikona houses creates an auspicious 12-month window "
+            f"for formal engagement, emotional consolidation, and relationship harmony. "
+            f"Communicate with openness, especially when Moon transits your 7th house axis."
+        )
+        remedy = "Observe fast on Thursdays, donate yellow sweets to Vishnu temples, and chant 'Om Kleem Kamadevaya Namah' 108 times."
+        gemstone = "Natural Yellow Sapphire (Pukhraj) or Natural White Zircon set in silver or gold."
+
+    elif "raghavendra" in astro or "rajeshwar" in astro or "remedy" in user_query.lower() or "gemstone" in user_query.lower() or "dosha" in user_query.lower():
+        title = "Vedic Remedial Jyotish & Planetary Harmonization"
+        sadesati = doshas.get("sade_sati", {}).get("phase", "Free")
+        body = (
+            f"Examining the energetic geometry of your {lagna} Lagna ({lagna_deg:.2f}°): "
+            f"Your chart is currently navigating {active_maha} Mahadasha and {active_antar} Antardasha, with Saturn in {sadesati}. "
+            f"To clear subtle planetary obstacles and strengthen your natural vitality: "
+            f"Strengthen your Lagna Lord and functional benefics while appeasing malefic transits. "
+            f"Consistent spiritual discipline and targeted classical remedies neutralize negative karmic impressions and accelerate positive breakthroughs."
+        )
+        remedy = "Recite the Maha Mrityunjaya Mantra 108 times daily at sunrise and light a pure sesame oil lamp on Saturdays."
+        gemstone = "Consult Lagna Lord dignity before wearing Red Coral or Yellow Sapphire; chant Navagraha Suktam for balance."
+
+    elif "career" in user_query.lower() or "job" in user_query.lower() or "promotion" in user_query.lower() or cat == "career":
+        title = "Career Elevation, Leadership & Professional Authority"
         body = (
             f"Under your {lagna} Lagna and {moon_sign} Moon ({moon_nak} Nakshatra), your 10th House of profession is {h10_str}. "
             f"You are currently navigating the powerful {active_maha} Mahadasha and {active_antar} Antardasha. "
-            f"In classical Vedic astrology, this planetary period acts as an accelerator for strategic recognition and career shifts. "
-            f"Transiting Jupiter casts a highly favorable 5th/9th trine onto your career axis, indicating that major interviews, "
-            f"executive promotions, and salary renegotiations will encounter strong institutional support over the coming months. "
-            f"Avoid unnecessary conflicts with senior leadership when Mercury or Mars Horas are active."
+            f"In classical Parashari Jyotish, this period acts as an accelerator for strategic recognition and career advancement. "
+            f"Transiting benefics cast supportive aspects onto your 10th house and 11th house of gains, indicating that executive interviews, "
+            f"promotions, and expanded responsibilities will receive strong backing over upcoming quarters. "
+            f"Maintain emotional neutrality during high-stakes corporate discussions."
         )
-        remedy = "Recite the Aditya Hridaya Stotra on Sundays and offer Arghya (water with red kumkum) to the rising Sun."
-        gemstone = "Ruby (Manik) in Gold or Emerald (Panna) depending on Lagna Lord strength."
-
-    elif cat == "marriage" or "love" in user_query.lower() or "spouse" in user_query.lower():
-        title = "Marriage Timing & Partner Compatibility"
-        manglik_verdict = doshas.get("manglik", {}).get("verdict", "No Manglik Dosha")
-        body = (
-            f"Analyzing your 7th House of partnership: your Kalatra Bhava is {h7_str}. "
-            f"Regarding marital status: {manglik_verdict}. Your active Dasha lord {active_maha} holds significant influence over relational harmony. "
-            f"In the D9 Navamsha chart, your relationship indicators demonstrate an emotionally mature, intellectually sharp, "
-            f"and professionally grounded partner who values family traditions. "
-            f"The upcoming transit of Jupiter through your Kendra/Trikona houses creates an exceptionally auspicious window "
-            f"for formal engagement and marriage solemnization within the next 8 to 14 months."
-        )
-        remedy = "Observe fast on Thursdays, donate yellow sweets to Vishnu temples, and chant 'Om Kleem Kamadevaya Namah'."
-        gemstone = "Yellow Sapphire (Pukhraj) or Natural White Zircon in Silver."
+        remedy = "Recite the Aditya Hridaya Stotra on Sundays and offer Arghya (clean water with red kumkum) to the rising Sun."
+        gemstone = "Ruby (Manik) or Emerald (Panna) depending on Lagna Lord strength."
 
     elif cat == "wealth" or "money" in user_query.lower() or "finance" in user_query.lower():
         title = "Wealth Accumulation & Dhana Yoga Activation"
         body = (
-            f"Your 2nd House of accumulated savings is {h2_str}, while your 11th House of recurring gains is influenced by your {lagna} Lagna lord. "
-            f"A prominent Dhana Yoga is currently energized by your {active_maha}-{active_antar} planetary cycle. "
-            f"Long-term capital deployment in real estate, equity indices, and precious metals will experience strong compounded yields. "
-            f"Be prudent with speculative intraday trading during Rahu Kaal or when transiting Moon aspects your 8th house."
+            f"Your 2nd House of liquid wealth is {h2_str}, while your 11th House of recurring gains is energized by your {lagna} Lagna lord. "
+            f"A prominent Dhana Yoga is activated by your active {active_maha}-{active_antar} planetary cycle. "
+            f"Disciplined asset deployment in real estate, index equity, and stable long-term vehicles will compound significantly. "
+            f"Avoid speculative intraday trading during localized Rahu Kaal or volatile lunar phases."
         )
         remedy = "Light a pure cow ghee lamp in front of Goddess Mahalakshmi on Friday evenings and chant Sri Suktam."
-        gemstone = "Yellow Sapphire (Pukhraj) or Emerald (Panna) to fortify the 2nd and 11th lord axis."
+        gemstone = "Yellow Sapphire (Pukhraj) or Emerald (Panna) to fortify the 2nd and 11th wealth axis."
 
     else:
-        title = "Health, Vitality & Holistic Well-Being"
+        title = "Comprehensive Life Guidance & Vitality Assessment"
         sadesati = doshas.get("sade_sati", {}).get("phase", "Free")
         body = (
-            f"Your Lagna degree ({lagna} {lagna_deg:.2f}°) establishes strong constitution. Your 6th House is currently receiving planetary aspects. "
-            f"Regarding Saturn transit: you are in {sadesati}. "
-            f"Maintain disciplined sleep schedules and mindful nutrition to balance Pitta and Vata doshas. "
-            f"Your vitality improves steadily as the benefic Antardasha of {active_antar} strengthens your 1st house lord."
+            f"Under your {lagna} Lagna ({lagna_deg:.2f}°) and {moon_sign} Moon ({moon_nak} Nakshatra), "
+            f"your chart is guided by the active {active_maha}-{active_antar} Dasha cycle. "
+            f"Regarding planetary transits: your chart exhibits resilience with Saturn transiting {sadesati}. "
+            f"This is an optimal period for strategic restructuring, personal wellness, and stepping into greater maturity and responsibility."
         )
-        remedy = "Chant the Maha Mrityunjaya Mantra 108 times daily at dawn and practice Pranayama."
-        gemstone = "Pearl (Moti) or Red Coral depending on planetary combustion."
+        remedy = "Chant the Gayatri Mantra 11 times at dawn and practice mindful meditation."
+        gemstone = "Consult an experienced Vedic astrologer for custom planetary talisman alignment."
 
     return {
         "title": title,
         "query": user_query,
         "category": cat,
+        "astrologer_name": astrologer_name or "AstroVerse AI Vedic Acharya",
         "reading": body,
         "remedy": remedy,
         "prescribed_gemstone": gemstone,
@@ -221,6 +238,46 @@ def generate_structured_prediction(
             "Free will, situational ethics, and practical diligence remain the decisive drivers of all outcomes."
         )
 
+    elif horizon_lower == "daily":
+        report_title = f"Daily Personal Forecast: {target_date_str} (Solar & Lunar Transit Synthesis)"
+        
+        overall = (
+            f"For your natal {lagna} Lagna and {moon_sign} Moon, today's planetary transit geometry energizes your "
+            f"core functional houses under the {active_maha}-{active_antar} Dasha cycle. "
+            f"The daily cosmic currents favor disciplined execution, lucid communication, and steady progress."
+        )
+
+        supportive = [
+            f"Morning (Dawn to Solar Noon): Heightened focus for high-leverage initiatives during benefic Hora windows.",
+            f"Mid-Day Momentum: Supportive planetary aspects assist in collaborative agreements, negotiations, and technical reviews.",
+            f"Evening (Sunset onward): Calming lunar alignment encourages domestic harmony, intellectual study, and contemplative rest."
+        ]
+
+        challenges = [
+            f"Maintain heightened awareness during the localized Rahu Kaal window; avoid signing unvetted speculative contracts.",
+            f"Stay mindful of digestive balance and hydration to harmonize natural Pitta and Vata energies.",
+            f"Keep communication direct and transparent to prevent minor misunderstandings in team communications."
+        ]
+
+        windows = [
+            f"Auspicious Action Window: Morning benefic Hora periods (governed by Jupiter/Venus/Mercury)",
+            f"Mid-Day Peak Focus: Abhijit Muhurta (~11:45 AM - 12:35 PM local solar window)",
+            f"Cautionary Period: Daily Rahu Kaal interval (refer to Horas schedule for exact timings)"
+        ]
+
+        why = (
+            f"Today's transit interacts with your natal {lagna} Lagna ({lagna_deg:.2f}°), "
+            f"your Moon in {moon_sign} ({moon_nak}), and active Vimshottari period of {active_maha}-{active_antar}."
+        )
+
+        reflection = (
+            "Select your three most consequential responsibilities for today. Complete the primary milestone before midday."
+        )
+
+        limitations = (
+            "Daily forecasts represent qualitative atmospheric trends. Conscious moral resolve and proactive initiative govern daily outcomes."
+        )
+
     elif horizon_lower == "weekly":
         report_title = f"Weekly Personal Forecast: 7-Day Parashari Cycle ({target_date_str})"
         
@@ -303,6 +360,49 @@ def generate_structured_prediction(
         limitations = (
             "Monthly evaluations synthesize major planetary ingress and nakshatra transits against natal bhava cusps. "
             "Predictions indicate broad environmental seasons rather than unavoidable personal occurrences."
+        )
+
+    elif horizon_lower in ["mahadasha", "5year", "five_year"]:
+        report_title = f"Mahadasha 5-Year Life Arc: {active_maha} Mahadasha ({active_antar} Antardasha)"
+        
+        overall = (
+            f"You are currently traversing the transformative cycle of {active_maha} Mahadasha, "
+            f"with the active sub-period (Antardasha) of {active_antar}. "
+            f"For your {lagna} Lagna, {active_maha} acts as a vital functional ruler, governing key houses of growth, wisdom, and material manifestation. "
+            f"The upcoming five-year window brings structural maturity, expansion of influence, and lasting legacy development."
+        )
+
+        supportive = [
+            f"Year 1: Foundation Building — Consolidating professional reputation and securing strategic mentorship.",
+            f"Year 2: Capital & Wealth Expansion — Compounding investments, property decisions, and business alliances.",
+            f"Year 3: Intellectual & Creative Elevation — Academic, philosophical, or spiritual mastery; valuable travel.",
+            f"Year 4: Relational & Family Fulfillment — Deepening marital bonding, domestic stability, and community respect.",
+            f"Year 5: Fruition of Karmic Milestones — Transition into advisory authority and celebratory life achievements."
+        ]
+
+        challenges = [
+            f"Antardasha Sandhi: Navigate the transition boundaries between major planetary sub-periods with deliberate patience.",
+            f"Avoid over-expansion or over-leveraging assets during peak optimistic planetary cycles.",
+            f"Honor consistent spiritual discipline and daily health maintenance to sustain high vitality across the 5-year cycle."
+        ]
+
+        windows = [
+            f"Active Antardasha Peak: Current cycle of {active_maha}-{active_antar}",
+            f"Major Transit Milestone: Jupiter transit across Kendra and Trikona houses",
+            f"Karmic Recalibration Phase: Saturn transit completion in sidereal Pisces ({sadesati})"
+        ]
+
+        why = (
+            f"This 5-year arc is derived from your natal Moon in {moon_sign} ({moon_nak} Nakshatra, Pada {kundli['planets']['Moon'].get('pada', 1)}) "
+            f"under the canonical 120-year Vimshottari Dasha system."
+        )
+
+        reflection = (
+            f"Align your five-year personal vision with the core nature of {active_maha}: wisdom, ethics, mentorship, and sustainable growth."
+        )
+
+        limitations = (
+            "Mahadasha analysis illuminates broad karmic seasons and major developmental chapters. Daily choices and moral resolve shape the realization of your highest potential."
         )
 
     else:

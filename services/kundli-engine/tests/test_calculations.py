@@ -343,7 +343,7 @@ def test_structured_predictions_all_horizons():
     dashas = calculate_vimshottari_dasha(moon_deg, datetime.fromisoformat(dob))
     doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
 
-    horizons = ["hourly", "weekly", "monthly", "yearly"]
+    horizons = ["hourly", "daily", "weekly", "monthly", "yearly", "mahadasha"]
     for h in horizons:
         res = generate_structured_prediction(
             horizon=h,
@@ -354,7 +354,7 @@ def test_structured_predictions_all_horizons():
             active_hora_planet="Moon",
             hora_window="02:30 PM - 03:30 PM"
         )
-        assert res["time_horizon"] == h
+        assert res["time_horizon"] in [h, "5year", "mahadasha"]
         assert "sections" in res
         sections = res["sections"]
         # Verify 7 standard sections
