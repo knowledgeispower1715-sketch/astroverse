@@ -83,36 +83,13 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({ visible, o
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    if (sessionActive) {
-      timerRef.current = setInterval(() => {
-        setSessionSeconds(prev => {
-          const next = prev + 1;
-          // Every 60 seconds, deduct 1 minute's rate
-          if (next % 60 === 0) {
-            deduct(selectedPersona.ratePerMinute, `Consultation with ${selectedPersona.name}`);
-          }
-          return next;
-        });
-      }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
+    // Keep session active clean cleanup
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [sessionActive, selectedPersona]);
+  }, []);
 
   const startSession = async () => {
-    if (balance < selectedPersona.ratePerMinute) {
-      Alert.alert(
-        'Insufficient Balance',
-        `You need at least ₹${selectedPersona.ratePerMinute} to start a 1-minute consultation.`
-      );
-      return;
-    }
-
-    // Initial minute deduction
-    await deduct(selectedPersona.ratePerMinute, `Consultation with ${selectedPersona.name} (Min 1)`);
     setSessionSeconds(0);
     setSessionActive(true);
 
@@ -276,8 +253,8 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({ visible, o
               {/* Session Status Bar */}
               <View style={styles.statusBar}>
                 <View style={styles.pulseLive} />
-                <Text style={styles.statusLiveText}>LIVE CALL</Text>
-                <Text style={styles.sessionTimer}>{formatTimer(sessionSeconds)}</Text>
+                <Text style={styles.statusLiveText}>VEDIC CHAT</Text>
+                <Text style={styles.sessionTimer}>Active Session</Text>
                 <Text style={styles.walletCounter}>Bal: ₹{balance}</Text>
               </View>
 

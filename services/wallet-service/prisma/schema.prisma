@@ -60,6 +60,10 @@ model User {
   preferredLanguage String             @default("en")
   preferredTimezone String             @default("Asia/Kolkata")
   walletBalance     Decimal            @default(0.00) @db.Decimal(12, 2)
+  passwordHash      String?
+  passwordSalt      String?
+  resetTokenHash    String?
+  resetTokenExpiresAt DateTime?
   lastLoginAt       DateTime?
   birthProfiles     BirthProfile[]
   calculations      KundliCalculation[]

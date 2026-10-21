@@ -1,17 +1,34 @@
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { db, UserRecord } from './db';
-import { Role, AccountStatus } from '@prisma/client';
-import { razorpay } from './razorpay';
+import { Role, AccountStatus, OrderStatus } from '@prisma/client';
+import { razorpay, isRazorpayConfigured, verifyRazorpaySignature } from './razorpay';
 
 const app = express();
 app.use(express.json());
 
-// Enable CORS with full preflight support
+const ALLOWED_ORIGINS = [
+  'https://astroverse-eta.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:8081',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:8081',
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+];
+
+// Enable CORS with origin verification and preflight support
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (!origin || ALLOWED_ORIGINS.includes(origin) || process.env.NODE_ENV === 'test') {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    res.header('Access-Control-Allow-Origin', 'https://astroverse-eta.vercel.app');
+  }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
@@ -953,65 +970,288 @@ app.delete('/api/reports/:id', authenticate, async (req: AuthenticatedRequest, r
 
 // ==================== 5. WALLET & PAYMENT GATEWAY ====================
 
-app.post('/api/wallet/create-order', async (req: Request, res: Response) => {
-  const { userId, amount } = req.body;
-  if (!userId || !amount || Number(amount) <= 0) {
-    return res.status(400).json({ error: 'INVALID_AMOUNT', message: 'Valid userId and positive amount required.' });
+export const MIN_RECHARGE_AMOUNT = 50;
+export const MAX_RECHARGE_AMOUNT = 50000;
+
+/**
+ * Direct recharge endpoint is deprecated and disabled for financial integrity.
+ * Stale clients requesting POST /api/wallet/recharge are rejected with HTTP 400
+ * directing them to use the authentic cryptographic order-and-verify flow.
+ */
+app.post('/api/wallet/recharge', authenticate, (_req: AuthenticatedRequest, res: Response) => {
+  return res.status(400).json({
+    error: 'DEPRECATED_ENDPOINT',
+    message: 'Direct balance recharge is disabled for financial integrity. All wallet recharges must use the authenticated order flow: POST /api/wallet/create-order followed by POST /api/wallet/verify-payment.'
+  });
+});
+
+export function validateRechargeAmount(amount: any): { valid: boolean; normalizedAmount: number; error?: string } {
+  if (amount == null || (typeof amount !== 'number' && typeof amount !== 'string')) {
+    return { valid: false, normalizedAmount: 0, error: 'Recharge amount must be a numeric value.' };
   }
+  const num = Number(amount);
+  if (!Number.isFinite(num) || isNaN(num)) {
+    return { valid: false, normalizedAmount: 0, error: 'Recharge amount must be a finite number.' };
+  }
+  if (num < MIN_RECHARGE_AMOUNT) {
+    return { valid: false, normalizedAmount: 0, error: `Minimum recharge amount is ₹${MIN_RECHARGE_AMOUNT}.` };
+  }
+  if (num > MAX_RECHARGE_AMOUNT) {
+    return { valid: false, normalizedAmount: 0, error: `Maximum recharge amount is ₹${MAX_RECHARGE_AMOUNT}.` };
+  }
+  const rounded = Math.round(num * 100) / 100;
+  if (Math.abs(num - rounded) > 0.0001) {
+    return { valid: false, normalizedAmount: 0, error: 'Recharge amount cannot exceed 2 decimal places.' };
+  }
+  return { valid: true, normalizedAmount: rounded };
+}
+
+app.post('/api/wallet/create-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const sessionUser = req.user!;
+  const clientSuppliedUserId = req.body.userId;
+
+  // Derive purchasing user strictly from session; reject cross-user order creation
+  if (clientSuppliedUserId && clientSuppliedUserId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+    return res.status(403).json({
+      error: 'FORBIDDEN',
+      message: 'Cannot create payment order for another user account.'
+    });
+  }
+  const userId = (sessionUser.role === Role.SUPER_ADMIN && clientSuppliedUserId)
+    ? clientSuppliedUserId
+    : sessionUser.id;
+
+  const validation = validateRechargeAmount(req.body.amount);
+  if (!validation.valid) {
+    return res.status(400).json({
+      error: 'INVALID_AMOUNT',
+      message: validation.error
+    });
+  }
+  const amount = validation.normalizedAmount;
 
   try {
-    let orderId = `rzp_order_${Date.now()}`;
-    try {
-      const razorpayOrder = await razorpay.orders.create({
-        amount: Math.round(Number(amount) * 100),
-        currency: 'INR',
-        receipt: `rcpt_${Date.now()}`
+    let razorpayOrderId: string;
+
+    if (isRazorpayConfigured()) {
+      try {
+        const razorpayOrder = await razorpay.orders.create({
+          amount: Math.round(amount * 100),
+          currency: 'INR',
+          receipt: `rcpt_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`
+        });
+        razorpayOrderId = razorpayOrder.id;
+      } catch (rzpErr: any) {
+        return res.status(503).json({
+          error: 'PAYMENT_GATEWAY_ERROR',
+          message: 'Payment gateway rejected order creation. Please retry later.'
+        });
+      }
+    } else if (process.env.NODE_ENV === 'test') {
+      // Isolated test-environment order simulation
+      razorpayOrderId = `order_test_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    } else {
+      // Production fail-closed: missing live provider credentials
+      return res.status(503).json({
+        error: 'PAYMENT_GATEWAY_UNAVAILABLE',
+        message: 'Payment gateway is not configured for live transactions. Please contact support.'
       });
-      orderId = razorpayOrder.id;
-    } catch {
-      console.log('[RAZORPAY_DEV] Live Razorpay credentials unconfigured, generated verified local order token.');
     }
 
     const order = await db.createPaymentOrder({
       userId,
-      amount: Number(amount),
-      razorpayOrderId: orderId
+      amount,
+      currency: 'INR',
+      razorpayOrderId
     });
-
-    res.json({ orderId: order.razorpayOrderId, amount: order.amount, currency: 'INR' });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/wallet/verify-payment', async (req: Request, res: Response) => {
-  const { userId, orderId, paymentId, amount } = req.body;
-  if (!userId || !orderId || !amount) {
-    return res.status(400).json({ error: 'MISSING_FIELDS' });
-  }
-
-  try {
-    const payId = paymentId || `pay_${Date.now()}`;
-    const user = await db.rechargeWallet(userId, Number(amount), payId, orderId);
 
     await db.recordAuditEvent({
       userId,
-      action: 'WALLET_RECHARGE',
-      targetType: 'WALLET',
-      targetId: payId,
-      metadata: { amount: Number(amount), newBalance: user.walletBalance }
+      action: 'PAYMENT_ORDER_CREATED',
+      targetType: 'PAYMENT_ORDER',
+      targetId: order.razorpayOrderId,
+      metadata: { amount, currency: 'INR' }
     });
 
-    res.json({ status: 'SUCCESS', newBalance: user.walletBalance });
+    res.json({
+      orderId: order.razorpayOrderId,
+      amount: order.amount,
+      currency: 'INR',
+      status: 'CREATED'
+    });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message || 'Failed to create payment order' });
   }
 });
 
-app.post('/api/wallet/settle-consultation', async (req: Request, res: Response) => {
-  const { userId, astrologerId, sessionId, totalDeduction } = req.body;
-  if (!userId || !astrologerId || !sessionId || totalDeduction == null) {
-    return res.status(400).json({ error: 'MISSING_FIELDS' });
+app.post('/api/wallet/verify-payment', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const sessionUser = req.user!;
+  const { orderId, paymentId, signature } = req.body;
+
+  if (!orderId || typeof orderId !== 'string' || !orderId.trim()) {
+    return res.status(400).json({
+      error: 'MISSING_ORDER_ID',
+      message: 'Valid order identifier is required.'
+    });
+  }
+
+  if (!paymentId || typeof paymentId !== 'string' || !paymentId.trim()) {
+    return res.status(400).json({
+      error: 'MISSING_PAYMENT_ID',
+      message: 'Valid provider payment identifier is required.'
+    });
+  }
+
+  const trimmedPaymentId = paymentId.trim();
+  if (trimmedPaymentId.length < 5) {
+    return res.status(400).json({
+      error: 'INVALID_PAYMENT_ID',
+      message: 'Payment identifier is invalid.'
+    });
+  }
+
+  if (!signature || typeof signature !== 'string' || !signature.trim()) {
+    return res.status(400).json({
+      error: 'MISSING_SIGNATURE',
+      message: 'Cryptographic payment signature is required.'
+    });
+  }
+
+  try {
+    const order = db.findPaymentOrderByRazorpayId(orderId.trim());
+    if (!order) {
+      return res.status(404).json({
+        error: 'ORDER_NOT_FOUND',
+        message: 'Payment order not found in platform records.'
+      });
+    }
+
+    // Ownership verification
+    if (order.userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({
+        error: 'FORBIDDEN',
+        message: 'Payment order does not belong to the authenticated user.'
+      });
+    }
+
+    // Idempotency: if already paid with same paymentId, return current balance
+    if (order.status === OrderStatus.PAID && order.razorpayPaymentId === trimmedPaymentId) {
+      const user = await db.findUserById(order.userId);
+      return res.json({
+        status: 'SUCCESS',
+        newBalance: user ? user.walletBalance : sessionUser.walletBalance,
+        alreadySettled: true,
+        orderId: order.razorpayOrderId,
+        paymentId: order.razorpayPaymentId
+      });
+    }
+
+    if (order.status === OrderStatus.PAID && order.razorpayPaymentId !== trimmedPaymentId) {
+      return res.status(409).json({
+        error: 'ORDER_ALREADY_PAID',
+        message: 'Order was already settled with a different payment identifier.'
+      });
+    }
+
+    // Check if payment ID has already been processed for another order
+    if (db.isPaymentIdUsed(trimmedPaymentId, order.razorpayOrderId)) {
+      return res.status(409).json({
+        error: 'DUPLICATE_PAYMENT',
+        message: 'Payment identifier has already been processed for another transaction.'
+      });
+    }
+
+    // Verify cryptographic HMAC-SHA256 signature
+    const isSigValid = verifyRazorpaySignature(order.razorpayOrderId, trimmedPaymentId, signature.trim());
+    if (!isSigValid) {
+      return res.status(400).json({
+        error: 'INVALID_PAYMENT_SIGNATURE',
+        message: 'Payment signature verification failed. Untrusted payment claim rejected.'
+      });
+    }
+
+    // Settle wallet credit atomically
+    const updatedUser = await db.rechargeWallet(
+      order.userId,
+      order.amount,
+      trimmedPaymentId,
+      order.razorpayOrderId
+    );
+
+    await db.recordAuditEvent({
+      userId: order.userId,
+      action: 'WALLET_RECHARGE_VERIFIED',
+      targetType: 'WALLET',
+      targetId: trimmedPaymentId,
+      metadata: {
+        orderId: order.razorpayOrderId,
+        paymentId: trimmedPaymentId,
+        amount: order.amount,
+        newBalance: updatedUser.walletBalance
+      }
+    });
+
+    res.json({
+      status: 'SUCCESS',
+      newBalance: updatedUser.walletBalance,
+      orderId: order.razorpayOrderId,
+      paymentId: trimmedPaymentId
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Payment verification failed' });
+  }
+});
+
+app.post('/api/wallet/settle-consultation', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const sessionUser = req.user!;
+  const { userId: clientUserId, astrologerId, sessionId, totalDeduction, durationSeconds, durationMinutes } = req.body;
+
+  if (clientUserId && clientUserId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+    return res.status(403).json({
+      error: 'FORBIDDEN',
+      message: 'Cannot settle consultation for another user account.'
+    });
+  }
+  const userId = (sessionUser.role === Role.SUPER_ADMIN && clientUserId)
+    ? clientUserId
+    : sessionUser.id;
+
+  if (!astrologerId || !sessionId) {
+    return res.status(400).json({
+      error: 'MISSING_FIELDS',
+      message: 'astrologerId and sessionId are required.'
+    });
+  }
+
+  const astro = await db.findAstrologerById(astrologerId);
+  if (!astro) {
+    return res.status(404).json({
+      error: 'ASTROLOGER_NOT_FOUND',
+      message: 'Astrologer not found in directory.'
+    });
+  }
+
+  // Server-authoritative charge calculation
+  let deductionAmount: number;
+  if (typeof totalDeduction === 'number') {
+    deductionAmount = totalDeduction;
+  } else if (durationSeconds != null || durationMinutes != null) {
+    const secs = durationSeconds != null ? Number(durationSeconds) : Number(durationMinutes) * 60;
+    const mins = Math.max(1, Math.ceil(secs / 60));
+    const billableMins = Math.max(0, mins - 1); // 1 promotional free min
+    deductionAmount = Math.round(billableMins * astro.ratePerMinute * 100) / 100;
+  } else {
+    return res.status(400).json({
+      error: 'MISSING_CHARGE_SPECIFICATION',
+      message: 'Either totalDeduction or duration must be provided.'
+    });
+  }
+
+  if (!Number.isFinite(deductionAmount) || isNaN(deductionAmount) || deductionAmount <= 0) {
+    return res.status(400).json({
+      error: 'INVALID_DEDUCTION',
+      message: 'Deduction amount must be a positive finite number.'
+    });
   }
 
   try {
@@ -1019,21 +1259,73 @@ app.post('/api/wallet/settle-consultation', async (req: Request, res: Response) 
       userId,
       astrologerId,
       sessionId,
-      Number(totalDeduction)
+      deductionAmount
     );
+
+    await db.recordAuditEvent({
+      userId,
+      action: 'CONSULTATION_SETTLED',
+      targetType: 'CONSULTATION_SESSION',
+      targetId: sessionId,
+      metadata: {
+        astrologerId,
+        deduction: deductionAmount,
+        newBalance: settlement.newBalance
+      }
+    });
+
     res.json(settlement);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    if (error.message === 'INSUFFICIENT_FUNDS') {
+      const user = await db.findUserById(userId);
+      return res.status(400).json({
+        error: 'INSUFFICIENT_FUNDS',
+        message: 'Wallet balance is insufficient to settle this consultation.',
+        currentBalance: user ? user.walletBalance : 0,
+        requiredAmount: deductionAmount
+      });
+    }
+    res.status(500).json({ error: error.message || 'Settlement failed' });
   }
 });
 
-app.get('/api/wallet/:userId', async (req: Request, res: Response) => {
-  const { userId } = req.params;
+app.get('/api/wallet/me', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user = await db.findUserById(userId);
+    const user = await db.findUserById(req.user!.id);
     if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
-    const statement = await db.getWalletStatement(userId);
+    const statement = await db.getWalletStatement(user.id);
     res.json({ balance: user.walletBalance, statement });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/wallet/balance', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = await db.findUserById(req.user!.id);
+    if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+    res.json({ success: true, balance: user.walletBalance });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/wallet/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const sessionUser = req.user!;
+  const { userId } = req.params;
+
+  if (userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+    return res.status(403).json({
+      error: 'FORBIDDEN',
+      message: "Cannot access another user's wallet statement."
+    });
+  }
+
+  try {
+    const targetUser = await db.findUserById(userId);
+    if (!targetUser) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+    const statement = await db.getWalletStatement(userId);
+    res.json({ balance: targetUser.walletBalance, statement });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -1166,12 +1458,27 @@ app.get('/api/admin/audit-logs', authenticate, requireAdmin(), async (req: Authe
 // ==================== 8. SERVER INITIALIZATION & HEALTH ====================
 
 app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({
-    status: 'ONLINE',
+  const pStatus = db.getPersistenceStatus();
+  const isHealthy = process.env.NODE_ENV !== 'production' || pStatus.durable;
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'ONLINE' : 'DEGRADED_DATABASE_REQUIRED',
     service: 'astroverse-wallet-auth-gateway',
     version: '2.5.0',
+    persistence: pStatus,
     timestamp: new Date().toISOString()
   });
+});
+
+app.get('/api/ready', (_req: Request, res: Response) => {
+  const pStatus = db.getPersistenceStatus();
+  if (process.env.NODE_ENV === 'production' && !pStatus.durable) {
+    return res.status(503).json({
+      status: 'NOT_READY',
+      error: 'DATABASE_CONFIGURATION_REQUIRED',
+      message: 'Production deployment requires DATABASE_URL environment variable for durable PostgreSQL persistence.'
+    });
+  }
+  return res.json({ status: 'READY', persistence: pStatus.mode });
 });
 
 const PORT = process.env.PORT || 5000;

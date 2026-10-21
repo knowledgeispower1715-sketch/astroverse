@@ -4,6 +4,7 @@ import http from 'http';
 import app from '../src/server';
 import { db } from '../src/db';
 import { Role, AccountStatus } from '@prisma/client';
+import { generateTestPaymentSignature } from '../src/razorpay';
 
 let server: http.Server;
 const TEST_PORT = 5055;
@@ -609,6 +610,342 @@ async function runAuthTestSuite() {
       } finally {
         console.log = originalLog;
       }
+    });
+
+    // ===============================================================
+    // 13. FINANCIAL INTEGRITY, PAYMENT GATEWAY & CONSULTATION TESTS
+    // ===============================================================
+
+    // Setup fresh buyer user and attacker user
+    const buyerEmail = `buyer_${Date.now()}@example.com`;
+    const buyerOtpRes = await request('/api/auth/request-otp', { method: 'POST', body: { identifier: buyerEmail } });
+    const buyerAuth = await request('/api/auth/verify-otp', {
+      method: 'POST',
+      body: { identifier: buyerEmail, otp: buyerOtpRes.data.devPreviewOtp }
+    });
+    const buyerToken = buyerAuth.data.sessionToken;
+    const buyerId = buyerAuth.data.user.id;
+
+    const attackerEmail = `attacker_${Date.now()}@example.com`;
+    const attackerOtpRes = await request('/api/auth/request-otp', { method: 'POST', body: { identifier: attackerEmail } });
+    const attackerAuth = await request('/api/auth/verify-otp', {
+      method: 'POST',
+      body: { identifier: attackerEmail, otp: attackerOtpRes.data.devPreviewOtp }
+    });
+    const attackerToken = attackerAuth.data.sessionToken;
+    const attackerId = attackerAuth.data.user.id;
+
+    // A. Order Creation Tests
+    await test('POST /api/wallet/create-order rejects unauthenticated request with HTTP 401', async () => {
+      const res = await request('/api/wallet/create-order', {
+        method: 'POST',
+        body: { amount: 500 }
+      });
+      assert.strictEqual(res.status, 401);
+    });
+
+    await test('POST /api/wallet/create-order rejects cross-user order creation with HTTP 403', async () => {
+      const res = await request('/api/wallet/create-order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${attackerToken}` },
+        body: { userId: buyerId, amount: 500 }
+      });
+      assert.strictEqual(res.status, 403);
+    });
+
+    await test('POST /api/wallet/create-order rejects zero, negative, non-finite, and out-of-range amounts', async () => {
+      const invalidAmounts = [0, -100, NaN, Infinity, 25, 60000, 100.555, 'not-a-number'];
+      for (const amt of invalidAmounts) {
+        const res = await request('/api/wallet/create-order', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: { amount: amt }
+        });
+        assert.strictEqual(res.status, 400, `Expected 400 for amount ${amt}, got ${res.status}`);
+      }
+    });
+
+    let validOrderId = '';
+    const rechargeAmount = 500;
+    await test('POST /api/wallet/create-order succeeds for authenticated user and persists pending order', async () => {
+      const res = await request('/api/wallet/create-order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { amount: rechargeAmount }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.amount, rechargeAmount);
+      assert.strictEqual(res.data.currency, 'INR');
+      assert.ok(res.data.orderId.startsWith('order_test_') || res.data.orderId.startsWith('order_'));
+      validOrderId = res.data.orderId;
+
+      // Verify order is persisted in db
+      const persisted = db.findPaymentOrderByRazorpayId(validOrderId);
+      assert.ok(persisted);
+      assert.strictEqual(persisted.userId, buyerId);
+      assert.strictEqual(persisted.amount, rechargeAmount);
+      assert.strictEqual(persisted.status, 'CREATED');
+    });
+
+    // B. Payment Verification Tests
+    await test('POST /api/wallet/verify-payment rejects unauthenticated request with HTTP 401', async () => {
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        body: { orderId: validOrderId, paymentId: 'pay_test_123', signature: 'sig' }
+      });
+      assert.strictEqual(res.status, 401);
+    });
+
+    await test('POST /api/wallet/verify-payment rejects non-existent order with HTTP 404', async () => {
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { orderId: 'order_non_existent_99999', paymentId: 'pay_test_123', signature: 'sig' }
+      });
+      assert.strictEqual(res.status, 404);
+      assert.strictEqual(res.data.error, 'ORDER_NOT_FOUND');
+    });
+
+    await test('POST /api/wallet/verify-payment rejects cross-user order verification with HTTP 403', async () => {
+      const fakePaymentId = 'pay_test_attacker_001';
+      const fakeSig = generateTestPaymentSignature(validOrderId, fakePaymentId);
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${attackerToken}` },
+        body: { orderId: validOrderId, paymentId: fakePaymentId, signature: fakeSig }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'FORBIDDEN');
+    });
+
+    await test('POST /api/wallet/verify-payment rejects invalid or forged cryptographic signature with HTTP 400', async () => {
+      const fakePaymentId = 'pay_test_buyer_001';
+      const forgedSig = 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { orderId: validOrderId, paymentId: fakePaymentId, signature: forgedSig }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INVALID_PAYMENT_SIGNATURE');
+    });
+
+    const realPaymentId = `pay_rzp_${Date.now()}_test`;
+    await test('POST /api/wallet/verify-payment verifies authentic payment, credits wallet balance, and creates ledger entry', async () => {
+      const validSig = generateTestPaymentSignature(validOrderId, realPaymentId);
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { orderId: validOrderId, paymentId: realPaymentId, signature: validSig }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'SUCCESS');
+      assert.strictEqual(res.data.newBalance, rechargeAmount);
+
+      // Verify DB record
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, rechargeAmount);
+
+      const orderRecord = db.findPaymentOrderByRazorpayId(validOrderId);
+      assert.strictEqual(orderRecord?.status, 'PAID');
+      assert.strictEqual(orderRecord?.razorpayPaymentId, realPaymentId);
+    });
+
+    await test('POST /api/wallet/verify-payment is idempotent: duplicate payment callback returns existing balance without double-crediting', async () => {
+      const validSig = generateTestPaymentSignature(validOrderId, realPaymentId);
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { orderId: validOrderId, paymentId: realPaymentId, signature: validSig }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.newBalance, rechargeAmount); // Still 500, NOT 1000!
+      assert.strictEqual(res.data.alreadySettled, true);
+
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, rechargeAmount);
+    });
+
+    await test('POST /api/wallet/verify-payment rejects reusing same payment identifier on a different order with HTTP 409', async () => {
+      // Create second order for buyer
+      const secondOrderRes = await request('/api/wallet/create-order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { amount: 200 }
+      });
+      assert.strictEqual(secondOrderRes.status, 200);
+      const secondOrderId = secondOrderRes.data.orderId;
+
+      // Try to verify second order with already-used realPaymentId
+      const sig = generateTestPaymentSignature(secondOrderId, realPaymentId);
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { orderId: secondOrderId, paymentId: realPaymentId, signature: sig }
+      });
+      assert.strictEqual(res.status, 409);
+      assert.strictEqual(res.data.error, 'DUPLICATE_PAYMENT');
+    });
+
+    // C. Wallet Statements & Privacy
+    await test('GET /api/wallet/:userId rejects unauthenticated request with HTTP 401', async () => {
+      const res = await request(`/api/wallet/${buyerId}`);
+      assert.strictEqual(res.status, 401);
+    });
+
+    await test('GET /api/wallet/:userId rejects cross-user statement access with HTTP 403', async () => {
+      const res = await request(`/api/wallet/${buyerId}`, {
+        headers: { Authorization: `Bearer ${attackerToken}` }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'FORBIDDEN');
+    });
+
+    await test('GET /api/wallet/me returns authenticated user wallet statement and balance', async () => {
+      const res = await request('/api/wallet/me', {
+        headers: { Authorization: `Bearer ${buyerToken}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.balance, rechargeAmount);
+      assert.ok(Array.isArray(res.data.statement));
+      assert.ok(res.data.statement.some((l: any) => l.referenceId === realPaymentId && l.amount === rechargeAmount));
+    });
+
+    await test('Super Admin can inspect user wallet statement via GET /api/wallet/:userId', async () => {
+      const res = await request(`/api/wallet/${buyerId}`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.balance, rechargeAmount);
+      assert.ok(Array.isArray(res.data.statement));
+    });
+
+    // D. Consultation Settlement Tests
+    const sessionId = `test_consult_${Date.now()}`;
+    const deduction = 150;
+
+    await test('POST /api/wallet/settle-consultation rejects unauthenticated request with HTTP 401', async () => {
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        body: { astrologerId: 'astro_001', sessionId, totalDeduction: deduction }
+      });
+      assert.strictEqual(res.status, 401);
+    });
+
+    await test('POST /api/wallet/settle-consultation rejects cross-user settlement attempt with HTTP 403', async () => {
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${attackerToken}` },
+        body: { userId: buyerId, astrologerId: 'astro_001', sessionId, totalDeduction: deduction }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'FORBIDDEN');
+    });
+
+    await test('POST /api/wallet/settle-consultation rejects non-existent astrologer with HTTP 404', async () => {
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { astrologerId: 'astro_fake_999', sessionId, totalDeduction: deduction }
+      });
+      assert.strictEqual(res.status, 404);
+      assert.strictEqual(res.data.error, 'ASTROLOGER_NOT_FOUND');
+    });
+
+    await test('POST /api/wallet/settle-consultation rejects zero or negative deduction with HTTP 400', async () => {
+      const invalidDeductions = [0, -50, -1000, NaN, Infinity];
+      for (const d of invalidDeductions) {
+        const res = await request('/api/wallet/settle-consultation', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: { astrologerId: 'astro_001', sessionId: `${sessionId}_inv`, totalDeduction: d }
+        });
+        assert.strictEqual(res.status, 400);
+      }
+    });
+
+    await test('POST /api/wallet/settle-consultation rejects deduction exceeding user balance with HTTP 400 INSUFFICIENT_FUNDS', async () => {
+      const excessiveDeduction = rechargeAmount + 5000;
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { astrologerId: 'astro_001', sessionId: `${sessionId}_insuf`, totalDeduction: excessiveDeduction }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INSUFFICIENT_FUNDS');
+      assert.strictEqual(res.data.currentBalance, rechargeAmount);
+    });
+
+    await test('POST /api/wallet/settle-consultation successfully deducts user balance, credits astrologer payout, and records dual ledger entries', async () => {
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { astrologerId: 'astro_001', sessionId, totalDeduction: deduction }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'SETTLED');
+      assert.strictEqual(res.data.totalDeduction, deduction);
+      assert.strictEqual(res.data.astroShare, 90); // 60% of 150 = 90
+      assert.strictEqual(res.data.platformShare, 60); // 40% of 150 = 60
+      assert.strictEqual(res.data.newBalance, rechargeAmount - deduction); // 500 - 150 = 350
+
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, 350);
+
+      const astroRecord = await db.findAstrologerById('astro_001');
+      assert.ok(astroRecord && astroRecord.pendingPayout >= 90);
+    });
+
+    await test('POST /api/wallet/settle-consultation is idempotent: duplicate session settlement returns existing record without double-deduction', async () => {
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { astrologerId: 'astro_001', sessionId, totalDeduction: deduction }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.alreadySettled, true);
+      assert.strictEqual(res.data.newBalance, 350); // Still 350, NOT 200!
+
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, 350);
+    });
+
+    // ===============================================================
+    // 14. PRODUCTION PERSISTENCE & DEPRECATED ENDPOINT SAFEGUARDS
+    // ===============================================================
+
+    await test('POST /api/wallet/recharge rejects unauthenticated requests with HTTP 401', async () => {
+      const res = await request('/api/wallet/recharge', {
+        method: 'POST',
+        body: { amount: 100 }
+      });
+      assert.strictEqual(res.status, 401);
+    });
+
+    await test('POST /api/wallet/recharge blocks direct balance inflation with HTTP 400 DEPRECATED_ENDPOINT', async () => {
+      const res = await request('/api/wallet/recharge', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { amount: 500 }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'DEPRECATED_ENDPOINT');
+      assert.ok(res.data.message.includes('create-order'));
+    });
+
+    await test('GET /api/ready reports server readiness and persistence mode', async () => {
+      const res = await request('/api/ready');
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'READY');
+      assert.ok(res.data.persistence);
+    });
+
+    await test('GET /api/health exposes persistence status and durability metadata', async () => {
+      const res = await request('/api/health');
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'ONLINE');
+      assert.ok(res.data.persistence);
+      assert.strictEqual(typeof res.data.persistence.durable, 'boolean');
     });
 
   } finally {

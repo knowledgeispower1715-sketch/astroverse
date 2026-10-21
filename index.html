@@ -3729,21 +3729,17 @@
             <div style="display: flex; align-items: center; gap: 6px;">
               <h3 id="ai-chat-astrologer-name" style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0;">Acharya Devratan</h3>
               <span class="badge-grounded" style="font-size: 10px; padding: 2px 6px; background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #059669;">
-                <span class="status-dot-online"></span> LIVE
+                <span class="status-dot-online"></span> Verified Vedic Master
               </span>
             </div>
             <div id="ai-chat-specialty" style="font-size: 11px; color: #CBD5E1;">Vedic Astrology &amp; Career Specialist</div>
           </div>
         </div>
         
-        <!-- Live Session Timers & Meter -->
+        <!-- Session Controls -->
         <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="text-align: right;">
-            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #F59E0B; font-weight: 700;">Duration</div>
-            <div id="ai-consultation-timer" style="font-size: 15px; font-family: monospace; font-weight: 800; color: #FFFFFF;">00:00</div>
-          </div>
-          <button onclick="endConsultationSession()" style="background: #EF4444; color: #FFFFFF; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-phone-slash"></i> End Chat
+          <button onclick="closeConsultationModal()" style="background: rgba(255, 255, 255, 0.15); color: #FFFFFF; border: 1px solid rgba(255, 255, 255, 0.3); padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-xmark"></i> Close
           </button>
         </div>
       </div>
@@ -6204,30 +6200,81 @@
     }
 
     async function executeSelectedRecharge() {
-      const { base, bonus } = selectedRechargePack;
-      const creditAmt = base + bonus;
-      showToast(`Initiating secure payment gateway for ₹${(base * 1.18).toFixed(2)}...`, "info");
-
-      try {
-        const res = await fetch(`${getAuthBase()}/api/wallet/recharge`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: creditAmt, description: `Wallet recharge (₹${base} base + ₹${bonus} bonus)` })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          currentWalletBalance = parseFloat(data.new_balance || (currentWalletBalance + creditAmt));
-        } else {
-          currentWalletBalance += creditAmt;
-        }
-      } catch (e) {
-        currentWalletBalance += creditAmt;
+      if (!currentSessionToken) {
+        showToast("Please sign in to recharge your wallet.", "error");
+        openAuthModal('otp');
+        return;
       }
 
-      localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-      updateUserSessionUI();
-      closeWalletModal();
-      showToast(`Wallet recharged successfully! ₹${creditAmt.toFixed(2)} added to your balance.`, "success");
+      const { base, bonus } = selectedRechargePack;
+      const creditAmt = base + bonus;
+      showToast(`Creating secure order for ₹${creditAmt}...`, "info");
+
+      try {
+        const orderRes = await fetch(`${getAuthBase()}/api/wallet/create-order`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ amount: creditAmt })
+        });
+
+        if (!orderRes.ok) {
+          const errData = await orderRes.json().catch(() => ({}));
+          showToast(errData.message || "Failed to create payment order. Gateway unavailable.", "error");
+          return;
+        }
+
+        const orderData = await orderRes.json();
+        if (typeof Razorpay !== 'undefined') {
+          const rzpOptions = {
+            key: "rzp_test_placeholder",
+            amount: Math.round(creditAmt * 100),
+            currency: "INR",
+            name: "AstroVerse",
+            description: `Wallet recharge ₹${base} (+₹${bonus} bonus)`,
+            order_id: orderData.orderId,
+            handler: async function (response) {
+              await verifyAndCreditWallet(orderData.orderId, response.razorpay_payment_id, response.razorpay_signature);
+            },
+            prefill: {
+              name: currentUserSession?.name || "Astro Native",
+              email: currentUserSession?.email || "",
+              contact: currentUserSession?.phone || ""
+            },
+            theme: { color: "#F59E0B" }
+          };
+          const rzpInstance = new Razorpay(rzpOptions);
+          rzpInstance.open();
+        } else {
+          showToast(`Order created (${orderData.orderId}). Payment SDK not loaded in browser.`, "info");
+        }
+      } catch (err) {
+        showToast("Network error while connecting to payment gateway.", "error");
+      }
+    }
+
+    async function verifyAndCreditWallet(orderId, paymentId, signature) {
+      try {
+        const verifyRes = await fetch(`${getAuthBase()}/api/wallet/verify-payment`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ orderId, paymentId, signature })
+        });
+
+        if (!verifyRes.ok) {
+          const errData = await verifyRes.json().catch(() => ({}));
+          showToast(errData.message || "Payment verification failed.", "error");
+          return;
+        }
+
+        const verifyData = await verifyRes.json();
+        currentWalletBalance = parseFloat(verifyData.newBalance);
+        localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+        updateUserSessionUI();
+        closeWalletModal();
+        showToast(`Wallet recharged successfully! ₹${verifyData.newBalance.toFixed(2)} current balance.`, "success");
+      } catch (e) {
+        showToast("Error verifying payment with server.", "error");
+      }
     }
 
     function rechargeWalletAmount(amt, bonus) {
@@ -6244,6 +6291,12 @@
         showToast(`Your wallet balance (₹${currentWalletBalance.toFixed(2)}) is low. Please recharge at least ₹${rate} for consultation.`, "info");
       }
 
+      const astroIds = {
+        'Acharya Devratan': 'astro_001',
+        'Dr. Sunita Shastri': 'astro_003',
+        'Pandit Raghavendra': 'astro_002'
+      };
+
       const specialties = {
         'Acharya Devratan': 'Vedic Astrology, Prashna Kundli, Vastu & Career',
         'Dr. Sunita Shastri': 'Jaimini Astrology, Career & Marriage Specialist',
@@ -6257,6 +6310,8 @@
       };
 
       activeConsultationSession = {
+        astrologerId: astroIds[astroName] || 'astro_001',
+        sessionId: 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
         astrologerName: astroName,
         rate: rate,
         specialty: specialties[astroName] || 'Vedic Astrology Specialist',
@@ -6307,23 +6362,17 @@
 
       appendAiMessageBubble(welcomeText);
 
-      // Start live duration timer
-      if (consultationTimerInterval) clearInterval(consultationTimerInterval);
-      const timerEl = document.getElementById('ai-consultation-timer');
-      timerEl.textContent = '00:00';
-      consultationTimerInterval = setInterval(() => {
-        if (!activeConsultationSession) return;
-        activeConsultationSession.secondsElapsed++;
-        const mins = Math.floor(activeConsultationSession.secondsElapsed / 60);
-        const secs = activeConsultationSession.secondsElapsed % 60;
-        timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-      }, 1000);
-
       document.getElementById('modal-ai-consultation').style.display = 'flex';
       setTimeout(() => {
         const inp = document.getElementById('ai-chat-user-input');
         if (inp) inp.focus();
       }, 300);
+    }
+
+    function closeConsultationModal() {
+      if (consultationTimerInterval) clearInterval(consultationTimerInterval);
+      activeConsultationSession = null;
+      document.getElementById('modal-ai-consultation').style.display = 'none';
     }
 
     function appendUserMessageBubble(text) {
@@ -6418,38 +6467,7 @@
     }
 
     function endConsultationSession() {
-      if (!activeConsultationSession) {
-        document.getElementById('modal-ai-consultation').style.display = 'none';
-        return;
-      }
-
-      if (consultationTimerInterval) clearInterval(consultationTimerInterval);
-
-      const mins = Math.max(1, Math.ceil(activeConsultationSession.secondsElapsed / 60));
-      const rate = activeConsultationSession.rate;
-      const totalCost = (mins <= 1) ? 0 : (mins - 1) * rate; // First minute promotional free!
-
-      let confirmMsg = `End consultation with ${activeConsultationSession.astrologerName}?\n\nSession Duration: ${Math.floor(activeConsultationSession.secondsElapsed / 60)}m ${activeConsultationSession.secondsElapsed % 60}s\nBilled Duration: ${mins} minute(s)\nPromotional Free Minute: 1 min\nTotal Deducted: ₹${totalCost.toFixed(2)}`;
-      
-      if (confirm(confirmMsg)) {
-        if (totalCost > 0 && currentWalletBalance >= totalCost) {
-          currentWalletBalance -= totalCost;
-          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-          updateUserSessionUI();
-        }
-        showToast(`Consultation completed! Session transcript saved.`, "success");
-        activeConsultationSession = null;
-        document.getElementById('modal-ai-consultation').style.display = 'none';
-      } else {
-        // Resume timer if user canceled
-        consultationTimerInterval = setInterval(() => {
-          if (!activeConsultationSession) return;
-          activeConsultationSession.secondsElapsed++;
-          const m = Math.floor(activeConsultationSession.secondsElapsed / 60);
-          const s = activeConsultationSession.secondsElapsed % 60;
-          document.getElementById('ai-consultation-timer').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        }, 1000);
-      }
+      closeConsultationModal();
     }
 
     let pendingPujaBooking = null;
@@ -6483,34 +6501,30 @@
 
     async function rechargeShortfallAndBookPuja() {
       if (!pendingPujaBooking) return;
+      if (!currentSessionToken) {
+        showToast("Please sign in to proceed with puja booking.", "error");
+        openAuthModal('otp');
+        return;
+      }
       const { pujaName, amt, shortfall } = pendingPujaBooking;
 
-      try {
-        await fetch(`${getAuthBase()}/api/wallet/recharge`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: shortfall, description: `Auto-topup shortfall for ${pujaName}` })
-        });
-      } catch (e) {
-        console.warn("Wallet service offline, recording transaction in local storage:", e);
-      }
-
-      currentWalletBalance = 0.00; // balance + shortfall = amt, deducted for puja
-      localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-      updateUserSessionUI();
+      showToast(`Shortfall of ₹${Math.ceil(shortfall)} required. Opening wallet recharge...`, "info");
       closePujaShortfallModal();
-      showToast(`Payment of ₹${amt.toLocaleString('en-IN')} confirmed! ${pujaName} booked with certified Pandit ji.`, "success");
+      openWalletModal();
     }
 
     // Initialization on Page Load
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       updateUserSessionUI();
       renderSavedProfilesList();
       selectHoroscopeSign('Aries');
       loadHourlyHorasUI();
       generatePersonalizedGuidance('hourly');
-      if (currentUserSession) {
-        loadUserSavedReports();
+      if (currentUserSession && currentSessionToken) {
+        await validateSessionWithBackend();
+        if (currentUserSession && currentSessionToken) {
+          loadUserSavedReports();
+        }
       }
       handleHashRoute();
     });
@@ -7290,11 +7304,11 @@
     }
 
     function quickRechargePaywall(amt) {
-      currentWalletBalance += amt;
-      localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-      updateUserSessionUI();
-      showToast(`Added ₹${amt} to wallet! You can now unlock the comprehensive report.`, "success");
-      openPremiumPaywallModal();
+      if (!currentSessionToken) {
+        openAuthModal('otp');
+        return;
+      }
+      rechargeWalletAmount(amt, 0);
     }
 
     function confirmUnlockPremiumReport() {
@@ -7326,50 +7340,58 @@
       generatePersonalizedGuidance(currentGuidanceHorizon);
     }
 
+    let isGuidanceGenerating = false;
+
     async function generatePersonalizedGuidance(horizon = 'hourly') {
-      const targetDate = new Date().toISOString().split('T')[0];
-      const hasChart = !!currentCalculatedChart;
-
-      let payload = {
-        horizon: horizon,
-        target_date: targetDate,
-        active_hora_planet: window.currentActiveHoraPlanet || "Sun",
-        hora_window: window.currentActiveHoraWindow || "Active Solar Hour",
-        category: "general"
-      };
-
-      if (hasChart && currentCalculatedChart.fullData) {
-        const dob = document.getElementById('input-k-dob').value;
-        const tob = document.getElementById('input-k-tob').value || "12:00";
-        const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
-        const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
-        const tz = document.getElementById('k-resolved-tz').value || "Asia/Kolkata";
-
-        payload.dob = `${dob}T${tob}:00`;
-        payload.lat = lat;
-        payload.lon = lon;
-        payload.timezone = tz;
-      }
-
+      if (isGuidanceGenerating) return;
+      isGuidanceGenerating = true;
       try {
-        const res = await fetch('/api/predictions/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        const targetDate = new Date().toISOString().split('T')[0];
+        const hasChart = !!currentCalculatedChart;
 
-        if (res.ok) {
-          const data = await res.json();
-          window.currentActivePrediction = data;
-          renderStructuredPredictionUI(data);
-          return;
+        let payload = {
+          horizon: horizon,
+          target_date: targetDate,
+          active_hora_planet: window.currentActiveHoraPlanet || "Sun",
+          hora_window: window.currentActiveHoraWindow || "Active Solar Hour",
+          category: "general"
+        };
+
+        if (hasChart && currentCalculatedChart.fullData) {
+          const dob = document.getElementById('input-k-dob').value;
+          const tob = document.getElementById('input-k-tob').value || "12:00";
+          const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
+          const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
+          const tz = document.getElementById('k-resolved-tz').value || "Asia/Kolkata";
+
+          payload.dob = `${dob}T${tob}:00`;
+          payload.lat = lat;
+          payload.lon = lon;
+          payload.timezone = tz;
         }
-      } catch (err) {
-        // Fallback to client synthesis engine
-      }
 
-      // Client mathematical multi-horizon engine
-      renderFallbackGuidanceUI(horizon, hasChart);
+        try {
+          const res = await fetch('/api/predictions/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            window.currentActivePrediction = data;
+            renderStructuredPredictionUI(data);
+            return;
+          }
+        } catch (err) {
+          // Fallback to client synthesis engine
+        }
+
+        // Client mathematical multi-horizon engine
+        renderFallbackGuidanceUI(horizon, hasChart);
+      } finally {
+        isGuidanceGenerating = false;
+      }
     }
 
     function renderStructuredPredictionUI(data) {
@@ -7766,7 +7788,7 @@
     window.currentUserSavedReports = [];
 
     async function loadUserSavedReports() {
-      if (!currentUserSession) return;
+      if (!currentUserSession || !currentSessionToken) return;
       try {
         const res = await fetch(`${getAuthBase()}/api/reports/${currentUserSession.id}`, {
           headers: getAuthHeaders()
@@ -7775,6 +7797,10 @@
           const list = await res.json();
           window.currentUserSavedReports = list;
           renderSavedReportsListUI(list);
+        } else if (res.status === 401 || res.status === 403) {
+          // Token is expired or invalid on the backend
+          console.warn("Session token expired or rejected by server when fetching saved reports.");
+          executeSignOut(false);
         }
       } catch (e) {
         console.warn("Could not load user saved reports:", e);

@@ -18,7 +18,7 @@ from divisional_charts import (
     calculate_chalit_chart
 )
 from doshas_and_remedies import analyze_doshas_and_remedies
-from matchmaking import match_kundli_36_gunas
+from matchmaking import match_kundli_36_gunas, calculate_full_kundli_milan
 from ai_astrologer import generate_astrological_reading, generate_structured_prediction
 from jaimini_engine import analyze_jaimini_system
 from kp_engine import calculate_kp_chart
@@ -29,6 +29,7 @@ from multi_method_engine import build_multi_method_comparison
 from external_api import (
     fetch_external_planets,
     fetch_external_chart_url,
+    fetch_external_navamsa,
     fetch_external_vedic_chart,
     fetch_external_visual_chart,
     get_api_key
@@ -70,7 +71,16 @@ class AIQuestionRequest(BaseModel):
     time_horizon: str = Field("daily", description="hourly, daily, weekly, monthly, yearly, mahadasha")
     astrologer_name: Optional[str] = Field(None, description="Astrologer persona name")
 
+class PartnerBirthProfile(BaseModel):
+    name: Optional[str] = "Partner"
+    dob: str = Field(..., description="ISO 8601 birth datetime, e.g. '1995-06-15T10:30:00'")
+    lat: float = Field(..., ge=-90.0, le=90.0, description="Latitude")
+    lon: float = Field(..., ge=-180.0, le=180.0, description="Longitude")
+    timezone: str = Field("Asia/Kolkata", description="IANA Timezone Identifier")
+
 class MatchmakingRequest(BaseModel):
+    boy: Optional[PartnerBirthProfile] = None
+    girl: Optional[PartnerBirthProfile] = None
     boy_moon_sign_idx: Optional[int] = Field(None, ge=0, le=11)
     girl_moon_sign_idx: Optional[int] = Field(None, ge=0, le=11)
     boy_moon_degree: Optional[float] = None
@@ -479,9 +489,13 @@ def generate_prediction_endpoint(req: PredictionRequest):
 @app.post("/api/kundli/matching")
 def get_matchmaking(req: MatchmakingRequest):
     """
-    Ashtakoota 36-Guna Matchmaking (Section 8):
-    Computes all 8 Kootas strictly summing to <= 36.0 with Nadi & Bhakoot Dosha evaluation.
+    Ashtakoota 36-Guna Matchmaking:
+    Supports full dual birth profiles with independent Swiss Ephemeris calculations,
+    or legacy Moon degree/sign inputs.
     """
+    if req.boy and req.girl:
+        return calculate_full_kundli_milan(req.boy.dict(), req.girl.dict())
+
     if req.boy_moon_degree is not None and req.girl_moon_degree is not None:
         boy_deg = req.boy_moon_degree
         girl_deg = req.girl_moon_degree
@@ -492,7 +506,7 @@ def get_matchmaking(req: MatchmakingRequest):
     else:
         raise HTTPException(
             status_code=400,
-            detail="Either moon degrees or both moon signs must be explicitly selected."
+            detail="Either complete birth profiles for boy and girl or moon particulars must be provided."
         )
 
     return match_kundli_36_gunas(boy_deg, girl_deg)

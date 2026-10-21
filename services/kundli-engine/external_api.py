@@ -283,3 +283,31 @@ def fetch_external_chart_url(
         "error": "FAILED_TO_GENERATE_SVG",
         "details": svg_res
     }
+
+def fetch_external_navamsa(
+    year: int, month: int, date: int,
+    hours: int, minutes: int, seconds: int = 0,
+    latitude: float = 28.6139, longitude: float = 77.2090, timezone: float = 5.5
+) -> Dict[str, Any]:
+    """
+    Backward-compatible adapter querying FreeAstroAPI v2 /calculate for D9 Navamsha.
+    Resolves runtime ImportError across Vercel deployment revisions.
+    """
+    calc_res = fetch_external_calculate(
+        year=year,
+        month=month,
+        day=date,
+        hour=hours,
+        minute=minutes,
+        lat=latitude,
+        lng=longitude,
+        vargas=[9]
+    )
+    if isinstance(calc_res, dict) and "vargas" in calc_res:
+        return {
+            "statusCode": 200,
+            "navamsa": calc_res.get("vargas", {}).get("D9", {}),
+            "output": calc_res.get("planets", []),
+            "raw": calc_res
+        }
+    return calc_res

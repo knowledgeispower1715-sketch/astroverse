@@ -151,8 +151,54 @@ class ResilientDatabase {
 
   constructor() {
     this.prisma = new PrismaClient();
+    if (process.env.DATABASE_URL) {
+      try {
+        this.isPostgresAvailable = true;
+        console.log('[DB] DATABASE_URL detected. Configuring durable PostgreSQL via Prisma.');
+      } catch (err) {
+        console.error('[DB] Failed to initialize Prisma client:', err);
+        this.isPostgresAvailable = false;
+      }
+    } else if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+      console.warn('[DB_CONFIG_REQUIRED] Running in production/Vercel without DATABASE_URL. Ephemeral file storage cannot persist across lambda invocations.');
+    }
+
     this.data = this.loadFromFile();
-    this.seedDefaults();
+    if (!this.isPostgresAvailable) {
+      this.seedDefaults();
+    }
+  }
+
+  getPersistenceStatus() {
+    return {
+      durable: this.isPostgresAvailable,
+      mode: this.isPostgresAvailable ? 'POSTGRES_PRISMA' : (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' ? 'UNCONFIGURED_PRODUCTION' : 'LOCAL_DEVELOPMENT_FILE'),
+      databaseConfigured: Boolean(process.env.DATABASE_URL),
+      connected: this.isPostgresAvailable
+    };
+  }
+
+  private mapPrismaUser(u: any): UserRecord {
+    return {
+      id: u.id,
+      phone: u.phone,
+      email: u.email,
+      phoneVerified: u.phoneVerified,
+      emailVerified: u.emailVerified,
+      displayName: u.displayName,
+      passwordHash: u.passwordHash,
+      passwordSalt: u.passwordSalt,
+      resetTokenHash: u.resetTokenHash,
+      resetTokenExpiresAt: u.resetTokenExpiresAt ? u.resetTokenExpiresAt.toISOString() : null,
+      role: u.role,
+      status: u.status,
+      preferredLanguage: u.preferredLanguage,
+      preferredTimezone: u.preferredTimezone,
+      walletBalance: Number(u.walletBalance),
+      lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
+      createdAt: u.createdAt.toISOString(),
+      updatedAt: u.updatedAt.toISOString()
+    };
   }
 
   private loadFromFile(): DatabaseSchema {
@@ -178,12 +224,19 @@ class ResilientDatabase {
   }
 
   private saveToFile(): void {
+    if (this.isPostgresAvailable) {
+      // Durably persisted in PostgreSQL; file write not required
+      return;
+    }
     try {
       const tempFile = `${DB_FILE}.tmp.${Date.now()}`;
       fs.writeFileSync(tempFile, JSON.stringify(this.data, null, 2), 'utf-8');
       fs.renameSync(tempFile, DB_FILE);
-    } catch (err) {
+    } catch (err: any) {
       console.error('[DB] Failed to persist database state:', err);
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' || err.code === 'EROFS') {
+        throw new Error(`PERSISTENCE_FAILED: Read-only filesystem (EROFS) detected under /var/task. Durable PostgreSQL database (DATABASE_URL) is required in production: ${err.message}`);
+      }
     }
   }
 
@@ -595,11 +648,65 @@ class ResilientDatabase {
 
   // ==================== WALLET & LEDGER ====================
 
+  findPaymentOrderByRazorpayId(razorpayOrderId: string): PaymentOrderRecord | null {
+    return this.data.paymentOrders.find(o => o.razorpayOrderId === razorpayOrderId) || null;
+  }
+
+  isPaymentIdUsed(paymentId: string, excludeOrderId?: string): boolean {
+    const usedInOrders = this.data.paymentOrders.some(
+      o => o.razorpayPaymentId === paymentId && o.razorpayOrderId !== excludeOrderId
+    );
+    if (usedInOrders) return true;
+
+    const usedInLedger = this.data.walletLedgers.some(
+      l => l.referenceId === paymentId || l.idempotencyKey === `RECHARGE_${paymentId}`
+    );
+    return usedInLedger;
+  }
+
   async rechargeWallet(userId: string, amount: number, paymentId: string, orderId: string): Promise<UserRecord> {
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
-    const newBal = Math.round((user.walletBalance + amount) * 100) / 100;
+    const order = this.data.paymentOrders.find(o => o.razorpayOrderId === orderId);
+    if (!order) {
+      throw new Error('ORDER_NOT_FOUND');
+    }
+    if (order.userId !== userId) {
+      throw new Error('ORDER_USER_MISMATCH');
+    }
+    if (Math.round(order.amount * 100) !== Math.round(amount * 100)) {
+      throw new Error('AMOUNT_MISMATCH');
+    }
+
+    // Idempotency check: has this payment already been credited?
+    const existingLedger = this.data.walletLedgers.find(
+      l => l.idempotencyKey === `RECHARGE_${paymentId}` || l.referenceId === paymentId
+    );
+    if (existingLedger) {
+      // Payment already settled idempotently, return current user state without double crediting
+      return user;
+    }
+
+    if (order.status === OrderStatus.PAID && order.razorpayPaymentId === paymentId) {
+      return user;
+    }
+
+    if (order.status === OrderStatus.PAID && order.razorpayPaymentId !== paymentId) {
+      throw new Error('ORDER_ALREADY_PAID_DIFFERENT_PAYMENT');
+    }
+
+    // Unique payment identifier check
+    if (this.isPaymentIdUsed(paymentId, orderId)) {
+      throw new Error('PAYMENT_ID_ALREADY_USED');
+    }
+
+    // Atomic mutation of state
+    order.status = OrderStatus.PAID;
+    order.razorpayPaymentId = paymentId;
+    order.updatedAt = new Date().toISOString();
+
+    const newBal = Math.round((user.walletBalance + order.amount) * 100) / 100;
     user.walletBalance = newBal;
     user.updatedAt = new Date().toISOString();
 
@@ -607,20 +714,13 @@ class ResilientDatabase {
       id: 'led_' + crypto.randomBytes(8).toString('hex'),
       userId,
       astrologerId: null,
-      amount,
+      amount: order.amount,
       entryType: EntryType.WALLET_RECHARGE,
       idempotencyKey: `RECHARGE_${paymentId}`,
       referenceId: paymentId,
-      description: `Wallet recharge of ₹${amount.toFixed(2)} via Razorpay (${paymentId})`,
+      description: `Wallet recharge of ₹${order.amount.toFixed(2)} via Razorpay (${paymentId})`,
       createdAt: new Date().toISOString()
     });
-
-    const orderIdx = this.data.paymentOrders.findIndex(o => o.razorpayOrderId === orderId);
-    if (orderIdx !== -1) {
-      this.data.paymentOrders[orderIdx].status = OrderStatus.PAID;
-      this.data.paymentOrders[orderIdx].razorpayPaymentId = paymentId;
-      this.data.paymentOrders[orderIdx].updatedAt = new Date().toISOString();
-    }
 
     this.saveToFile();
     return user;
@@ -629,20 +729,46 @@ class ResilientDatabase {
   async settleConsultation(userId: string, astrologerId: string, sessionId: string, totalDeduction: number) {
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
-    if (user.walletBalance < totalDeduction) throw new Error('INSUFFICIENT_FUNDS');
 
     const astro = this.data.astrologers.find(a => a.id === astrologerId);
+    if (!astro) throw new Error('ASTROLOGER_NOT_FOUND');
+
+    if (typeof totalDeduction !== 'number' || !Number.isFinite(totalDeduction) || totalDeduction <= 0) {
+      throw new Error('INVALID_DEDUCTION');
+    }
+
+    // Enforce unique settlement idempotency key
+    const existingDebit = this.data.walletLedgers.find(
+      l => l.idempotencyKey === `DEBIT_${sessionId}` || l.referenceId === sessionId
+    );
+    if (existingDebit) {
+      const settledAmount = Math.abs(existingDebit.amount);
+      const settledAstroShare = Math.round(settledAmount * 0.60 * 100) / 100;
+      const settledPlatformShare = Math.round((settledAmount - settledAstroShare) * 100) / 100;
+      return {
+        status: 'ALREADY_SETTLED',
+        sessionId,
+        totalDeduction: settledAmount,
+        astroShare: settledAstroShare,
+        platformShare: settledPlatformShare,
+        newBalance: user.walletBalance,
+        alreadySettled: true
+      };
+    }
+
+    if (user.walletBalance < totalDeduction) {
+      throw new Error('INSUFFICIENT_FUNDS');
+    }
+
     const astroShare = Math.round(totalDeduction * 0.60 * 100) / 100;
     const platformShare = Math.round((totalDeduction - astroShare) * 100) / 100;
 
     user.walletBalance = Math.round((user.walletBalance - totalDeduction) * 100) / 100;
     user.updatedAt = new Date().toISOString();
 
-    if (astro) {
-      astro.pendingPayout = Math.round((astro.pendingPayout + astroShare) * 100) / 100;
-      astro.ordersCount += 1;
-      astro.updatedAt = new Date().toISOString();
-    }
+    astro.pendingPayout = Math.round((astro.pendingPayout + astroShare) * 100) / 100;
+    astro.ordersCount += 1;
+    astro.updatedAt = new Date().toISOString();
 
     this.data.walletLedgers.unshift({
       id: 'led_' + crypto.randomBytes(8).toString('hex'),
@@ -652,7 +778,7 @@ class ResilientDatabase {
       entryType: EntryType.CONSULTATION_DEBIT,
       idempotencyKey: `DEBIT_${sessionId}`,
       referenceId: sessionId,
-      description: `Consultation session with ${astro ? astro.name : astrologerId}`,
+      description: `Consultation session with ${astro.name}`,
       createdAt: new Date().toISOString()
     });
 
@@ -669,19 +795,34 @@ class ResilientDatabase {
     });
 
     this.saveToFile();
-    return { status: 'SETTLED', totalDeduction, astroShare, platformShare, newBalance: user.walletBalance };
+    return {
+      status: 'SETTLED',
+      sessionId,
+      totalDeduction,
+      astroShare,
+      platformShare,
+      newBalance: user.walletBalance
+    };
   }
 
   async getWalletStatement(userId: string): Promise<WalletLedgerRecord[]> {
     return this.data.walletLedgers.filter(l => l.userId === userId);
   }
 
-  async createPaymentOrder(data: { userId: string; amount: number; razorpayOrderId: string }): Promise<PaymentOrderRecord> {
+  async createPaymentOrder(data: {
+    userId: string;
+    amount: number;
+    currency?: string;
+    razorpayOrderId: string;
+  }): Promise<PaymentOrderRecord> {
+    const existing = this.data.paymentOrders.find(o => o.razorpayOrderId === data.razorpayOrderId);
+    if (existing) return existing;
+
     const order: PaymentOrderRecord = {
       id: 'ord_' + crypto.randomBytes(8).toString('hex'),
       userId: data.userId,
       amount: data.amount,
-      currency: 'INR',
+      currency: data.currency || 'INR',
       razorpayOrderId: data.razorpayOrderId,
       razorpayPaymentId: null,
       status: OrderStatus.CREATED,
@@ -694,6 +835,10 @@ class ResilientDatabase {
   }
 
   // ==================== ASTROLOGERS ====================
+
+  async findAstrologerById(id: string): Promise<AstrologerRecord | null> {
+    return this.data.astrologers.find(a => a.id === id) || null;
+  }
 
   async listAstrologers(): Promise<AstrologerRecord[]> {
     return this.data.astrologers;
