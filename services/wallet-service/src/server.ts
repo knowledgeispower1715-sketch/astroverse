@@ -984,6 +984,16 @@ app.post('/api/wallet/recharge', authenticate, (_req: AuthenticatedRequest, res:
   });
 });
 
+export const APPROVED_RECHARGE_PACKAGES = [
+  { id: 'pack_50', baseAmount: 50, bonus: 0, totalCredit: 50 },
+  { id: 'pack_100', baseAmount: 100, bonus: 10, totalCredit: 110 },
+  { id: 'pack_250', baseAmount: 250, bonus: 35, totalCredit: 285 },
+  { id: 'pack_500', baseAmount: 500, bonus: 100, totalCredit: 600 },
+  { id: 'pack_1000', baseAmount: 1000, bonus: 250, totalCredit: 1250 },
+  { id: 'pack_2000', baseAmount: 2000, bonus: 600, totalCredit: 2600 },
+  { id: 'pack_5000', baseAmount: 5000, bonus: 1750, totalCredit: 6750 }
+];
+
 export function validateRechargeAmount(amount: any): { valid: boolean; normalizedAmount: number; error?: string } {
   if (amount == null || (typeof amount !== 'number' && typeof amount !== 'string')) {
     return { valid: false, normalizedAmount: 0, error: 'Recharge amount must be a numeric value.' };
@@ -1020,7 +1030,19 @@ app.post('/api/wallet/create-order', authenticate, async (req: AuthenticatedRequ
     ? clientSuppliedUserId
     : sessionUser.id;
 
-  const validation = validateRechargeAmount(req.body.amount);
+  let requestedAmount = req.body.amount;
+  if (req.body.packageId) {
+    const pkg = APPROVED_RECHARGE_PACKAGES.find(p => p.id === req.body.packageId);
+    if (!pkg) {
+      return res.status(400).json({
+        error: 'INVALID_PACKAGE',
+        message: `Package identifier '${req.body.packageId}' is not an approved recharge package.`
+      });
+    }
+    requestedAmount = pkg.baseAmount;
+  }
+
+  const validation = validateRechargeAmount(requestedAmount);
   if (!validation.valid) {
     return res.status(400).json({
       error: 'INVALID_AMOUNT',
@@ -1169,6 +1191,42 @@ app.post('/api/wallet/verify-payment', authenticate, async (req: AuthenticatedRe
       });
     }
 
+    // If live Razorpay credentials are configured, cross-verify payment directly against provider API
+    if (isRazorpayConfigured()) {
+      try {
+        const paymentData = await razorpay.payments.fetch(trimmedPaymentId);
+        if (paymentData.order_id !== order.razorpayOrderId) {
+          return res.status(400).json({
+            error: 'ORDER_PAYMENT_MISMATCH',
+            message: 'Provider payment record does not match the platform order ID.'
+          });
+        }
+        if (paymentData.amount !== Math.round(order.amount * 100)) {
+          return res.status(400).json({
+            error: 'AMOUNT_MISMATCH',
+            message: 'Payment amount recorded by provider differs from platform order amount.'
+          });
+        }
+        if (paymentData.currency !== 'INR') {
+          return res.status(400).json({
+            error: 'CURRENCY_MISMATCH',
+            message: 'Payment currency recorded by provider is not INR.'
+          });
+        }
+        if (paymentData.status !== 'captured' && paymentData.status !== 'authorized') {
+          return res.status(400).json({
+            error: 'PAYMENT_NOT_SETTLED',
+            message: `Provider payment is not in an authorized or captured state (current status: ${paymentData.status}).`
+          });
+        }
+      } catch (fetchErr: any) {
+        return res.status(400).json({
+          error: 'PROVIDER_PAYMENT_FETCH_FAILED',
+          message: 'Could not verify payment with provider: ' + (fetchErr?.error?.description || fetchErr.message)
+        });
+      }
+    }
+
     // Settle wallet credit atomically
     const updatedUser = await db.rechargeWallet(
       order.userId,
@@ -1232,13 +1290,42 @@ app.post('/api/wallet/settle-consultation', authenticate, async (req: Authentica
 
   // Server-authoritative charge calculation
   let deductionAmount: number;
-  if (typeof totalDeduction === 'number') {
-    deductionAmount = totalDeduction;
-  } else if (durationSeconds != null || durationMinutes != null) {
-    const secs = durationSeconds != null ? Number(durationSeconds) : Number(durationMinutes) * 60;
-    const mins = Math.max(1, Math.ceil(secs / 60));
-    const billableMins = Math.max(0, mins - 1); // 1 promotional free min
-    deductionAmount = Math.round(billableMins * astro.ratePerMinute * 100) / 100;
+  if (durationSeconds != null || durationMinutes != null) {
+    const rawSecs = durationSeconds != null ? Number(durationSeconds) : Number(durationMinutes) * 60;
+    if (!Number.isFinite(rawSecs) || rawSecs <= 0 || isNaN(rawSecs)) {
+      return res.status(400).json({
+        error: 'INVALID_DURATION',
+        message: 'Duration must be a positive finite number of seconds or minutes.'
+      });
+    }
+    const mins = Math.max(1, Math.ceil(rawSecs / 60));
+    const serverCalculated = Math.round(mins * astro.ratePerMinute * 100) / 100;
+
+    if (typeof totalDeduction === 'number') {
+      if (!Number.isFinite(totalDeduction) || totalDeduction <= 0 || isNaN(totalDeduction)) {
+        return res.status(400).json({
+          error: 'INVALID_DEDUCTION',
+          message: 'Deduction amount must be a positive finite number.'
+        });
+      }
+      if (totalDeduction < serverCalculated) {
+        return res.status(400).json({
+          error: 'TAMPERED_CHARGE',
+          message: `Supplied deduction (₹${totalDeduction}) is less than server-calculated rate for duration (₹${serverCalculated}).`
+        });
+      }
+      deductionAmount = Math.round(totalDeduction * 100) / 100;
+    } else {
+      deductionAmount = serverCalculated;
+    }
+  } else if (typeof totalDeduction === 'number') {
+    if (!Number.isFinite(totalDeduction) || totalDeduction <= 0 || isNaN(totalDeduction)) {
+      return res.status(400).json({
+        error: 'INVALID_DEDUCTION',
+        message: 'Deduction amount must be a positive finite number.'
+      });
+    }
+    deductionAmount = Math.round(totalDeduction * 100) / 100;
   } else {
     return res.status(400).json({
       error: 'MISSING_CHARGE_SPECIFICATION',
@@ -1246,10 +1333,11 @@ app.post('/api/wallet/settle-consultation', authenticate, async (req: Authentica
     });
   }
 
-  if (!Number.isFinite(deductionAmount) || isNaN(deductionAmount) || deductionAmount <= 0) {
+  const MAX_SESSION_DEDUCTION = 50000.00;
+  if (deductionAmount > MAX_SESSION_DEDUCTION) {
     return res.status(400).json({
-      error: 'INVALID_DEDUCTION',
-      message: 'Deduction amount must be a positive finite number.'
+      error: 'EXCESSIVE_DEDUCTION',
+      message: `Single consultation deduction cannot exceed safety limit of ₹${MAX_SESSION_DEDUCTION}.`
     });
   }
 

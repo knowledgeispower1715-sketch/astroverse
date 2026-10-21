@@ -276,6 +276,20 @@ class ResilientDatabase {
     };
   }
 
+  private mapPrismaPaymentOrder(o: any): PaymentOrderRecord {
+    return {
+      id: o.id,
+      userId: o.userId,
+      amount: Number(o.amount),
+      currency: o.currency,
+      razorpayOrderId: o.razorpayOrderId,
+      razorpayPaymentId: o.razorpayPaymentId,
+      status: o.status,
+      createdAt: o.createdAt.toISOString(),
+      updatedAt: o.updatedAt.toISOString()
+    };
+  }
+
   private loadFromFile(): DatabaseSchema {
     if (fs.existsSync(this.dbFilePath)) {
       try {
@@ -794,6 +808,56 @@ class ResilientDatabase {
       throw new Error('PAYMENT_ID_ALREADY_USED');
     }
 
+    // If PostgreSQL Prisma is active, execute ACID transaction
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgUpdatedUser = await this.prisma.$transaction(async (tx: any) => {
+          const pgOrder = await tx.paymentOrder.findUnique({
+            where: { razorpayOrderId: orderId }
+          });
+          if (!pgOrder) throw new Error('ORDER_NOT_FOUND');
+          if (pgOrder.userId !== userId) throw new Error('ORDER_USER_MISMATCH');
+          if (Math.round(Number(pgOrder.amount) * 100) !== Math.round(amount * 100)) throw new Error('AMOUNT_MISMATCH');
+
+          await tx.paymentOrder.update({
+            where: { razorpayOrderId: orderId },
+            data: {
+              status: OrderStatus.PAID,
+              razorpayPaymentId: paymentId
+            }
+          });
+
+          await tx.walletLedger.create({
+            data: {
+              userId,
+              amount,
+              entryType: EntryType.WALLET_RECHARGE,
+              idempotencyKey: `RECHARGE_${paymentId}`,
+              referenceId: paymentId,
+              description: `Wallet recharge of ₹${order.amount.toFixed(2)} via Razorpay (${paymentId})`
+            }
+          });
+
+          const updated = await tx.user.update({
+            where: { id: userId },
+            data: { walletBalance: { increment: amount } }
+          });
+
+          return this.mapPrismaUser(updated);
+        });
+
+        order.status = OrderStatus.PAID;
+        order.razorpayPaymentId = paymentId;
+        user.walletBalance = pgUpdatedUser.walletBalance;
+        return pgUpdatedUser;
+      } catch (err: any) {
+        if (err.message?.includes('Unique constraint failed') && err.message?.includes('idempotencyKey')) {
+          return user;
+        }
+        throw err;
+      }
+    }
+
     // Atomic mutation of state
     order.status = OrderStatus.PAID;
     order.razorpayPaymentId = paymentId;
@@ -853,6 +917,87 @@ class ResilientDatabase {
       throw new Error('INSUFFICIENT_FUNDS');
     }
 
+    // If PostgreSQL Prisma is active, execute ACID transaction
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgSettlement = await this.prisma.$transaction(async (tx: any) => {
+          const pgUser = await tx.user.findUnique({ where: { id: userId } });
+          if (!pgUser) throw new Error('USER_NOT_FOUND');
+          if (Number(pgUser.walletBalance) < totalDeduction) throw new Error('INSUFFICIENT_FUNDS');
+
+          const pgAstro = await tx.astrologer.findUnique({ where: { id: astrologerId } });
+          if (!pgAstro) throw new Error('ASTROLOGER_NOT_FOUND');
+
+          const astroShare = Math.round(totalDeduction * 0.60 * 100) / 100;
+          const platformShare = Math.round((totalDeduction - astroShare) * 100) / 100;
+
+          const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: { walletBalance: { decrement: totalDeduction } }
+          });
+
+          await tx.astrologer.update({
+            where: { id: astrologerId },
+            data: {
+              pendingPayout: { increment: astroShare },
+              ordersCount: { increment: 1 }
+            }
+          });
+
+          await tx.walletLedger.create({
+            data: {
+              userId,
+              astrologerId,
+              amount: -totalDeduction,
+              entryType: EntryType.CONSULTATION_DEBIT,
+              idempotencyKey: `DEBIT_${sessionId}`,
+              referenceId: sessionId,
+              description: `Consultation session with ${pgAstro.name}`
+            }
+          });
+
+          await tx.walletLedger.create({
+            data: {
+              userId: null,
+              astrologerId,
+              amount: astroShare,
+              entryType: EntryType.ASTROLOGER_CREDIT,
+              idempotencyKey: `CREDIT_ASTRO_${sessionId}`,
+              referenceId: sessionId,
+              description: `Astrologer earnings share for session ${sessionId}`
+            }
+          });
+
+          return {
+            status: 'SETTLED',
+            sessionId,
+            totalDeduction,
+            astroShare,
+            platformShare,
+            newBalance: Number(updatedUser.walletBalance)
+          };
+        });
+
+        user.walletBalance = pgSettlement.newBalance;
+        astro.pendingPayout = Math.round((astro.pendingPayout + pgSettlement.astroShare) * 100) / 100;
+        astro.ordersCount += 1;
+        return pgSettlement;
+      } catch (err: any) {
+        if (err.message?.includes('Unique constraint failed') && err.message?.includes('idempotencyKey')) {
+          return {
+            status: 'ALREADY_SETTLED',
+            sessionId,
+            totalDeduction,
+            astroShare: Math.round(totalDeduction * 0.60 * 100) / 100,
+            platformShare: Math.round(totalDeduction * 0.40 * 100) / 100,
+            newBalance: user.walletBalance,
+            alreadySettled: true
+          };
+        }
+        throw err;
+      }
+    }
+
     const astroShare = Math.round(totalDeduction * 0.60 * 100) / 100;
     const platformShare = Math.round((totalDeduction - astroShare) * 100) / 100;
 
@@ -899,6 +1044,27 @@ class ResilientDatabase {
   }
 
   async getWalletStatement(userId: string): Promise<WalletLedgerRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgLedgers = await this.prisma.walletLedger.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' }
+        });
+        return pgLedgers.map((l: any) => ({
+          id: l.id,
+          userId: l.userId,
+          astrologerId: l.astrologerId,
+          amount: Number(l.amount),
+          entryType: l.entryType,
+          idempotencyKey: l.idempotencyKey,
+          referenceId: l.referenceId,
+          description: l.description,
+          createdAt: l.createdAt.toISOString()
+        }));
+      } catch (err: any) {
+        console.error('[DB] Failed to fetch wallet statement from Postgres:', err?.message || err);
+      }
+    }
     return this.data.walletLedgers.filter(l => l.userId === userId);
   }
 
@@ -910,6 +1076,27 @@ class ResilientDatabase {
   }): Promise<PaymentOrderRecord> {
     const existing = this.data.paymentOrders.find(o => o.razorpayOrderId === data.razorpayOrderId);
     if (existing) return existing;
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgOrder = await this.prisma.paymentOrder.upsert({
+          where: { razorpayOrderId: data.razorpayOrderId },
+          create: {
+            userId: data.userId,
+            amount: data.amount,
+            currency: data.currency || 'INR',
+            razorpayOrderId: data.razorpayOrderId,
+            status: OrderStatus.CREATED
+          },
+          update: {}
+        });
+        const mapped = this.mapPrismaPaymentOrder(pgOrder);
+        this.data.paymentOrders.unshift(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] Failed to create payment order in Postgres:', err?.message || err);
+      }
+    }
 
     const order: PaymentOrderRecord = {
       id: 'ord_' + crypto.randomBytes(8).toString('hex'),

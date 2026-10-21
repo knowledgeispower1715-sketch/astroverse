@@ -910,7 +910,199 @@ async function runAuthTestSuite() {
     });
 
     // ===============================================================
-    // 14. PRODUCTION PERSISTENCE & DEPRECATED ENDPOINT SAFEGUARDS
+    // 14. COMPREHENSIVE PAYMENT INTEGRITY & FINANCIAL INVARIANT TESTS
+    // ===============================================================
+
+    await test('POST /api/wallet/verify-payment rejects missing or empty paymentId without triggering synthetic credits', async () => {
+      const emptyPaymentIds = ['', '   '];
+      for (const pId of emptyPaymentIds) {
+        const res = await request('/api/wallet/verify-payment', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: { orderId: validOrderId, paymentId: pId, signature: 'sig' }
+        });
+        assert.strictEqual(res.status, 400);
+      }
+      // Confirm buyer balance was never changed
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, 350);
+    });
+
+    await test('POST /api/wallet/verify-payment rejects unknown orders and leaves balances unchanged', async () => {
+      const fakeOrder = 'order_fabricated_unknown_9999';
+      const fakePayment = `pay_fake_${Date.now()}`;
+      const sig = generateTestPaymentSignature(fakeOrder, fakePayment);
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { orderId: fakeOrder, paymentId: fakePayment, signature: sig }
+      });
+      assert.strictEqual(res.status, 404);
+      assert.strictEqual(res.data.error, 'ORDER_NOT_FOUND');
+
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, 350);
+    });
+
+    await test('Direct database rechargeWallet rejects altered amount (AMOUNT_MISMATCH)', async () => {
+      const order3 = await request('/api/wallet/create-order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { amount: 100 }
+      });
+      assert.strictEqual(order3.status, 200);
+
+      let caughtError = '';
+      try {
+        await db.rechargeWallet(buyerId, 1000, `pay_tampered_${Date.now()}`, order3.data.orderId);
+      } catch (err: any) {
+        caughtError = err.message;
+      }
+      assert.strictEqual(caughtError, 'AMOUNT_MISMATCH');
+
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, 350);
+    });
+
+    await test('Concurrent duplicate payment verification requests credit the wallet EXACTLY ONCE (idempotency race resistance)', async () => {
+      const orderRes = await request('/api/wallet/create-order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { amount: 250 }
+      });
+      assert.strictEqual(orderRes.status, 200);
+      const concurrentOrderId = orderRes.data.orderId;
+      const concurrentPaymentId = `pay_concurrent_${Date.now()}`;
+      const sig = generateTestPaymentSignature(concurrentOrderId, concurrentPaymentId);
+
+      const promises = Array.from({ length: 5 }).map(() =>
+        request('/api/wallet/verify-payment', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: { orderId: concurrentOrderId, paymentId: concurrentPaymentId, signature: sig }
+        })
+      );
+      const responses = await Promise.all(promises);
+
+      for (const r of responses) {
+        assert.strictEqual(r.status, 200);
+      }
+
+      // Balance must have increased by EXACTLY 250 (350 + 250 = 600)
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, 600);
+    });
+
+    await test('Concurrent duplicate consultation settlements deduct funds EXACTLY ONCE', async () => {
+      const concurrentSessionId = `consult_race_${Date.now()}`;
+      const fee = 100;
+
+      const promises = Array.from({ length: 5 }).map(() =>
+        request('/api/wallet/settle-consultation', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: { astrologerId: 'astro_001', sessionId: concurrentSessionId, totalDeduction: fee }
+        })
+      );
+      const responses = await Promise.all(promises);
+
+      for (const r of responses) {
+        assert.strictEqual(r.status, 200);
+      }
+
+      // Balance must have decreased by EXACTLY 100 (600 - 100 = 500)
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, 500);
+    });
+
+    await test('POST /api/wallet/settle-consultation rejects tampered underpayments where client deduction < server calculated duration rate', async () => {
+      // 10 minutes with astro_001 (rate ₹45/min) = ₹450
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: {
+          astrologerId: 'astro_001',
+          sessionId: `tamper_session_${Date.now()}`,
+          durationMinutes: 10,
+          totalDeduction: 10
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'TAMPERED_CHARGE');
+    });
+
+    await test('POST /api/wallet/settle-consultation calculates server-authoritative charge from duration alone', async () => {
+      const sessionAuto = `consult_auto_${Date.now()}`;
+      // 2 minutes with astro_001 (rate ₹45/min) = ₹90
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: {
+          astrologerId: 'astro_001',
+          sessionId: sessionAuto,
+          durationSeconds: 120
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.totalDeduction, 90);
+      assert.strictEqual(res.data.astroShare, 54);
+      assert.strictEqual(res.data.platformShare, 36);
+      assert.strictEqual(res.data.newBalance, 410); // 500 - 90 = 410
+    });
+
+    await test('POST /api/wallet/settle-consultation rejects excessive deductions exceeding safety limit', async () => {
+      const res = await request('/api/wallet/settle-consultation', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: {
+          astrologerId: 'astro_001',
+          sessionId: `excessive_${Date.now()}`,
+          totalDeduction: 60000
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'EXCESSIVE_DEDUCTION');
+    });
+
+    await test('POST /api/wallet/create-order supports approved recharge packageId', async () => {
+      const res = await request('/api/wallet/create-order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { packageId: 'pack_250' }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.amount, 250);
+      assert.strictEqual(res.data.currency, 'INR');
+    });
+
+    await test('POST /api/wallet/create-order rejects invalid packageId with HTTP 400 INVALID_PACKAGE', async () => {
+      const res = await request('/api/wallet/create-order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { packageId: 'pack_invalid_9999' }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INVALID_PACKAGE');
+    });
+
+    await test('Production fail-closed check: create-order fails with 503 when live provider is not configured in production', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      try {
+        process.env.NODE_ENV = 'production';
+        const res = await request('/api/wallet/create-order', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: { amount: 500 }
+        });
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.data.error, 'PAYMENT_GATEWAY_UNAVAILABLE');
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
+
+    // ===============================================================
+    // 15. PRODUCTION PERSISTENCE & DEPRECATED ENDPOINT SAFEGUARDS
     // ===============================================================
 
     await test('POST /api/wallet/recharge rejects unauthenticated requests with HTTP 401', async () => {
