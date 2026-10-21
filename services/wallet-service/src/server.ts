@@ -1481,10 +1481,12 @@ app.get('/api/ready', (_req: Request, res: Response) => {
 });
 
 const PORT = process.env.PORT || 5000;
-if (require.main === module) {
+if (require.main === module && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
   app.listen(PORT, () => {
     console.log(`[ASTROVERSE] Wallet, Auth & Admin Gateway running on port ${PORT}`);
   });
 }
 
+module.exports = app;
+module.exports.default = app;
 export default app;
