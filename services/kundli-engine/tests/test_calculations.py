@@ -23,6 +23,7 @@ from dasha_engine import calculate_vimshottari_dasha
 from hora_engine import calculate_sun_times, calculate_24h_horas
 from matchmaking import match_kundli_36_gunas
 from doshas_and_remedies import analyze_doshas_and_remedies
+from ai_astrologer import generate_structured_prediction
 from external_api import (
     fetch_external_planets,
     fetch_external_chart_url,
@@ -322,6 +323,54 @@ def test_ashtakoota_libra_aries():
     assert res["breakdown"]["bhakoot"]["obtained"] == 7.0
     print("[PASS] test_ashtakoota_libra_aries passed")
 
+def test_structured_predictions_all_horizons():
+    """
+    Structured Prediction Engine Test:
+    Verifies that generate_structured_prediction returns all standard 7 sections
+    (A. Overall Outlook, B. Supportive Developments, C. Challenges/Cautions,
+    D. Relevant Time Windows, E. Why This Applies, F. Practical Reflection, G. Limitations)
+    for Hourly, Weekly, Monthly, and Yearly horizons.
+    """
+    dob = "1996-11-24T14:30:00"
+    lat, lon, tz = 28.6139, 77.2090, "Asia/Kolkata"
+    d1 = calculate_kundli(dob, lat, lon, tz)
+    SIGNS = [
+        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+    ]
+    moon_idx = SIGNS.index(d1["planets"]["Moon"]["sign"])
+    moon_deg = (moon_idx * 30.0) + d1["planets"]["Moon"]["degree"]
+    dashas = calculate_vimshottari_dasha(moon_deg, datetime.fromisoformat(dob))
+    doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
+
+    horizons = ["hourly", "weekly", "monthly", "yearly"]
+    for h in horizons:
+        res = generate_structured_prediction(
+            horizon=h,
+            target_date_str="2026-10-21",
+            kundli=d1,
+            dasha=dashas,
+            doshas=doshas,
+            active_hora_planet="Moon",
+            hora_window="02:30 PM - 03:30 PM"
+        )
+        assert res["time_horizon"] == h
+        assert "sections" in res
+        sections = res["sections"]
+        # Verify 7 standard sections
+        assert len(sections["overall_outlook"]) > 20
+        assert len(sections["supportive_developments"]) >= 1
+        assert len(sections["challenges_and_cautions"]) >= 1
+        assert len(sections["relevant_time_windows"]) >= 1
+        assert len(sections["why_this_applies"]) > 20
+        assert len(sections["practical_reflection"]) > 10
+        assert len(sections["limitations"]) > 10
+        # Check profile grounding
+        assert res["profile"]["lagna"] == d1["lagna"]["sign"]
+        assert res["profile"]["moon_sign"] == d1["planets"]["Moon"]["sign"]
+
+    print("[PASS] test_structured_predictions_all_horizons passed")
+
 if __name__ == "__main__":
     test_ephemeris_and_panchang()
     test_divisional_charts()
@@ -333,4 +382,6 @@ if __name__ == "__main__":
     test_recording_case_jabalpur()
     test_recording_case_21_oct_2026_jabalpur_hora()
     test_ashtakoota_libra_aries()
-    print("\nALL 10 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
+    test_structured_predictions_all_horizons()
+    print("\nALL 11 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
+

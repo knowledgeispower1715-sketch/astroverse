@@ -18,7 +18,7 @@ from divisional_charts import (
 )
 from doshas_and_remedies import analyze_doshas_and_remedies
 from matchmaking import match_kundli_36_gunas
-from ai_astrologer import generate_astrological_reading
+from ai_astrologer import generate_astrological_reading, generate_structured_prediction
 from external_api import (
     fetch_external_planets,
     fetch_external_chart_url,
@@ -68,6 +68,17 @@ class MatchmakingRequest(BaseModel):
     girl_moon_sign_idx: Optional[int] = Field(None, ge=0, le=11)
     boy_moon_degree: Optional[float] = None
     girl_moon_degree: Optional[float] = None
+
+class PredictionRequest(BaseModel):
+    horizon: str = Field("hourly", description="hourly, weekly, monthly, yearly")
+    target_date: Optional[str] = Field(None, description="ISO target date string, e.g. '2026-10-21'")
+    dob: Optional[str] = Field(None, description="ISO 8601 birth datetime, e.g. '1995-06-15T10:30:00'")
+    lat: Optional[float] = Field(None, ge=-90.0, le=90.0, description="Latitude")
+    lon: Optional[float] = Field(None, ge=-180.0, le=180.0, description="Longitude")
+    timezone: str = Field("Asia/Kolkata", description="IANA Timezone Identifier")
+    active_hora_planet: Optional[str] = Field(None, description="Active planetary hora ruler")
+    hora_window: Optional[str] = Field(None, description="Hora time window string")
+    category: str = Field("general", description="Category: general, career, wealth, health, relationships")
 
 @app.get("/api/health")
 def health_check():
@@ -330,6 +341,83 @@ def ask_ai_astrologer(req: AIQuestionRequest):
             "category": req.category,
             "reading": general_reading
         }
+
+@app.post("/api/predictions/generate")
+def generate_prediction_endpoint(req: PredictionRequest):
+    """
+    Structured Personalized Prediction API:
+    Generates standardized 7-section prediction reports (A. Overall Outlook,
+    B. Supportive Developments, C. Challenges/Cautions, D. Relevant Time Windows,
+    E. Why This Applies, F. Practical Reflection, G. Limitations)
+    for Hourly, Weekly, Monthly, and Yearly horizons grounded in Parashari Jyotish.
+    """
+    target_date_str = req.target_date or date.today().isoformat()
+
+    if req.dob and req.lat is not None and req.lon is not None:
+        d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+        SIGNS = [
+            "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+            "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+        ]
+        moon_sign_idx = SIGNS.index(d1["planets"]["Moon"]["sign"])
+        moon_abs_deg = (moon_sign_idx * 30.0) + d1["planets"]["Moon"]["degree"]
+
+        dashas = calculate_vimshottari_dasha(moon_abs_deg, datetime.fromisoformat(req.dob))
+        doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
+
+        result = generate_structured_prediction(
+            horizon=req.horizon,
+            target_date_str=target_date_str,
+            kundli=d1,
+            dasha=dashas,
+            doshas=doshas,
+            active_hora_planet=req.active_hora_planet,
+            hora_window=req.hora_window,
+            category=req.category
+        )
+        result["mode"] = "PERSONALIZED_CHART_GROUNDED"
+        result["profile_loaded"] = True
+        return result
+    else:
+        # Fallback for guest users without birth profile
+        default_kundli = {
+            "profile_name": "Guest Seeker",
+            "lagna": {"sign": "Aries", "degree": 15.0},
+            "planets": {
+                "Moon": {"sign": "Taurus", "nakshatra": "Rohini", "degree": 10.0, "house": 2},
+                "Sun": {"sign": "Libra", "nakshatra": "Swati", "degree": 5.0, "house": 7},
+                "Jupiter": {"sign": "Gemini", "degree": 18.0, "house": 3},
+                "Saturn": {"sign": "Pisces", "degree": 22.0, "house": 12}
+            }
+        }
+        default_dasha = {
+            "active_now": {
+                "maha_dasha": "Jupiter",
+                "antar_dasha": "Saturn"
+            }
+        }
+        default_doshas = {
+            "sade_sati": {"phase": "Generic Transit"},
+            "manglik": {"is_manglik": False}
+        }
+        result = generate_structured_prediction(
+            horizon=req.horizon,
+            target_date_str=target_date_str,
+            kundli=default_kundli,
+            dasha=default_dasha,
+            doshas=default_doshas,
+            active_hora_planet=req.active_hora_planet,
+            hora_window=req.hora_window,
+            category=req.category
+        )
+        result["mode"] = "GENERAL_TRANSIT_UNPERSONALIZED"
+        result["profile_loaded"] = False
+        result["sections"]["limitations"] = (
+            "This prediction is an unpersonalized transit baseline because no birth chart was loaded. "
+            "Sign in and calculate your Janam Kundli to unlock 100% chart-grounded Parashari predictions."
+        )
+        return result
+
 
 @app.post("/api/matchmaking")
 @app.post("/api/kundli/matching")

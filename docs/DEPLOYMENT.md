@@ -89,8 +89,8 @@ Astroverse is configured for native deployment on Vercel using the **Vercel Serv
 
 ### 1.2 Routing & Internal Bindings
 * **Top-Level Rewrites**:
-  - `/api/auth/*`, `/api/wallet/*`, `/api/profiles*`, `/api/pujas/*` $\to$ routed to `wallet-service`.
-  - `/api/*` (Kundli calculations, horoscopes, matchmaking, AI astrologer) $\to$ routed to `kundli-engine`.
+  - `/api/auth/*`, `/api/wallet/*`, `/api/profiles*`, `/api/reports/*`, `/api/pujas/*`, `/api/user/*`, `/api/admin/*` $\to$ routed to `wallet-service`.
+  - `/api/predictions/*`, `/api/kundli/*`, `/api/hora`, `/api/hourly-predictions`, `/api/geocode`, `/api/*` $\to$ routed to `kundli-engine`.
   - `/socket.io/*` $\to$ routed to `consultation-service`.
   - `/*` (Catch-all) $\to$ served by static frontend application (`app`).
 * **Service Binding**:

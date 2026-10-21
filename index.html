@@ -780,6 +780,310 @@
       .hero-title { font-size: 24px; }
       .hero-stats-panel { width: 100%; justify-content: space-around; }
     }
+  
+    /* Featured Astrological Guidance Card */
+    .featured-guidance-card {
+      background: linear-gradient(135deg, #FFFFFF 0%, #FFFBEB 100%);
+      border: 1px solid #FDE68A;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.08), 0 8px 10px -6px rgba(217, 119, 6, 0.05);
+      margin-bottom: 28px;
+    }
+    .guidance-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .guidance-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #FEF3C7;
+      border: 1px solid #FDE68A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .badge-grounded {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+    .badge-guest {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FCD34D;
+    }
+    .hora-countdown-chip {
+      background: #FFFFFF;
+      border: 1px solid #FDE68A;
+      padding: 8px 16px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .horizon-switcher-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+      background: #FFFFFF;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid #E2E8F0;
+    }
+    .horizon-btn-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .horizon-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: #F8FAFC;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .horizon-btn:hover {
+      background: #F1F5F9;
+      color: var(--vedic-maroon);
+    }
+    .horizon-btn.active {
+      background: linear-gradient(135deg, var(--vedic-maroon), var(--deep-maroon));
+      color: #FFFFFF;
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-save-report {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid #D97706;
+      background: #FFFBEB;
+      color: #B45309;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-save-report:hover {
+      background: #FDE68A;
+    }
+    .btn-refresh-guidance {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+      color: #64748B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-refresh-guidance:hover {
+      color: var(--vedic-maroon);
+      border-color: var(--vedic-maroon);
+    }
+    .guidance-guest-banner {
+      background: #FFFBEB;
+      border: 1px solid #FCD34D;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+    }
+    .guidance-sections-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .guidance-report-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--vedic-maroon);
+      padding-bottom: 8px;
+      border-bottom: 2px solid #FDE68A;
+    }
+    .guidance-section-box {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+    .guidance-section-box.supportive {
+      border-left: 4px solid #10B981;
+      background: #F0FDF4;
+    }
+    .guidance-section-box.cautions {
+      border-left: 4px solid #EF4444;
+      background: #FEF2F2;
+    }
+    .guidance-section-box.grounding-box {
+      border-left: 4px solid var(--vedic-maroon);
+      background: #FFF1F2;
+    }
+    .guidance-section-box.reflection {
+      border-left: 4px solid #3B82F6;
+      background: #EFF6FF;
+    }
+    .guidance-section-box.limitations {
+      border-left: 4px solid #64748B;
+      background: #F8FAFC;
+    }
+    .guidance-section-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .section-letter-tag {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: #E2E8F0;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .section-letter-tag.tag-supportive { background: #D1FAE5; color: #065F46; }
+    .section-letter-tag.tag-caution { background: #FEE2E2; color: #991B1B; }
+    .section-letter-tag.tag-grounding { background: #FFE4E6; color: var(--vedic-maroon); }
+    .section-letter-tag.tag-reflection { background: #DBEAFE; color: #1E40AF; }
+    .section-letter-tag.tag-limitations { background: #E2E8F0; color: #475569; }
+    .guidance-section-heading h4 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--vedic-maroon);
+      margin: 0;
+    }
+    .guidance-body-text {
+      font-size: 14px;
+      color: #334155;
+      line-height: 1.6;
+    }
+    .guidance-2col-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 768px) {
+      .guidance-2col-grid { grid-template-columns: 1fr; }
+    }
+    .guidance-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .guidance-list li {
+      font-size: 13px;
+      line-height: 1.5;
+      position: relative;
+      padding-left: 20px;
+    }
+    .guidance-list.supportive li::before {
+      content: "\2713";
+      position: absolute;
+      left: 0;
+      color: #059669;
+      font-weight: 800;
+    }
+    .guidance-list.cautions li::before {
+      content: "\26A0";
+      position: absolute;
+      left: 0;
+      color: #DC2626;
+      font-weight: 800;
+    }
+    .guidance-windows-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .guidance-window-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #1E293B;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .guidance-profile-metrics {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .guidance-metric-pill {
+      font-size: 11px;
+      font-weight: 700;
+      background: #FFFFFF;
+      border: 1px solid #FECDD3;
+      color: var(--vedic-maroon);
+      padding: 3px 10px;
+      border-radius: 12px;
+    }
+    /* Password Strength Meter */
+    .pwd-strength-container {
+      margin-top: 6px;
+      margin-bottom: 12px;
+    }
+    .pwd-strength-track {
+      height: 6px;
+      background: #E2E8F0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    .pwd-strength-fill {
+      height: 100%;
+      width: 0%;
+      transition: all 0.3s ease;
+    }
+    .pwd-checklist {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      font-size: 11px;
+      color: #64748B;
+    }
+    .pwd-criterion {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pwd-criterion.valid { color: #059669; font-weight: 600; }
+    .pwd-criterion.invalid { color: #94A3B8; }
+
   </style>
 </head>
 <body>
@@ -831,7 +1135,7 @@
         <div class="wallet-add-btn"><i class="fa-solid fa-plus"></i></div>
       </div>
 
-      <button class="btn-auth-trigger" id="auth-state-btn" onclick="openAuthModal()">
+      <button class="btn-auth-trigger" id="auth-state-btn" onclick="handleAuthButtonClick()">
         <i class="fa-solid fa-right-to-bracket"></i> <span id="auth-btn-text">Sign In</span>
       </button>
     </div>
@@ -891,6 +1195,182 @@
         <h2><i class="fa-solid fa-dharmachakra" style="color: var(--vedic-maroon);"></i> Free Janam Kundli Generator</h2>
         <p>Complete astronomical calculation based on Lahiri Ayanamsha (SE_SIDM_LAHIRI). Computes D1, D9 Navamsha, D10 Dashamsha, Moon Chart, Chalit Chart, Vimshottari Dasha, and Classical Doshas.</p>
       </div>
+
+      <!-- ==================== FEATURED: YOUR PERSONAL HOURLY & MULTI-HORIZON GUIDANCE ==================== -->
+      <div id="featured-guidance-card" class="featured-guidance-card">
+        <div class="guidance-header-bar">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div class="guidance-icon-badge">
+              <i class="fa-solid fa-compass" style="color: #F59E0B; font-size: 20px;"></i>
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h2 style="font-size: 20px; font-weight: 800; color: #1E1B4B; margin: 0;">Your Personal Astrological Guidance</h2>
+                <span id="guidance-grounding-badge" class="badge-guest">Guest Mode (Solar Transit)</span>
+              </div>
+              <p id="guidance-header-sub" style="font-size: 13px; color: #64748B; margin: 2px 0 0;">
+                Calculated via Swiss Ephemeris &bull; Authentic Parashari Jyotish Principles
+              </p>
+            </div>
+          </div>
+
+          <!-- Active Hora Pill & Countdown -->
+          <div class="hora-countdown-chip" id="guidance-hora-chip">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #D97706; font-weight: 700;">
+              <i class="fa-solid fa-circle-dot" style="color: #10B981;"></i> Active Solar Hora
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 6px;">
+              <strong id="guidance-active-hora-name" style="font-size: 15px; color: var(--vedic-maroon);">Calculating...</strong>
+              <span id="guidance-active-hora-timer" style="font-size: 13px; font-family: monospace; font-weight: 700; color: #059669;">--:-- left</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Horizon Switcher: Hourly | Weekly | Monthly | Yearly -->
+        <div class="horizon-switcher-row">
+          <div class="horizon-btn-group">
+            <button class="horizon-btn active" id="btn-hz-hourly" onclick="selectGuidanceHorizon('hourly')">
+              <i class="fa-solid fa-clock"></i> Hourly Guidance
+            </button>
+            <button class="horizon-btn" id="btn-hz-weekly" onclick="selectGuidanceHorizon('weekly')">
+              <i class="fa-solid fa-calendar-week"></i> Weekly (7 Days)
+            </button>
+            <button class="horizon-btn" id="btn-hz-monthly" onclick="selectGuidanceHorizon('monthly')">
+              <i class="fa-solid fa-calendar-days"></i> Monthly (4 Weeks)
+            </button>
+            <button class="horizon-btn" id="btn-hz-yearly" onclick="selectGuidanceHorizon('yearly')">
+              <i class="fa-solid fa-calendar"></i> Yearly (12 Months)
+            </button>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-save-report" id="btn-save-prediction-report" onclick="saveActivePredictionReport()">
+              <i class="fa-solid fa-bookmark"></i> Save This Prediction
+            </button>
+            <button class="btn-refresh-guidance" onclick="refreshCurrentGuidance()" title="Re-calculate guidance">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Guest Prompt Banner (Displayed when no birth chart is loaded) -->
+        <div id="guidance-guest-banner" class="guidance-guest-banner" style="display: block;">
+          <div style="display: flex; align-items: flex-start; gap: 14px;">
+            <i class="fa-solid fa-circle-info" style="color: #D97706; font-size: 20px; margin-top: 2px;"></i>
+            <div style="flex: 1;">
+              <div style="font-size: 14px; font-weight: 700; color: #92400E; margin-bottom: 4px;">
+                You are currently viewing general solar Hora transit data.
+              </div>
+              <p style="font-size: 13px; color: #78350F; line-height: 1.5; margin-bottom: 10px;">
+                Sign in or calculate your Janam Kundli below to generate 100% chart-grounded Parashari predictions personalized to your natal Lagna, Moon sign, and active Vimshottari Mahadasha.
+              </p>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="switchNavSection('login')">
+                  <i class="fa-solid fa-right-to-bracket"></i> Sign In to Account
+                </button>
+                <button class="btn-outline-secondary" style="padding: 6px 14px; font-size: 12px;" onclick="document.getElementById('input-k-name').focus()">
+                  <i class="fa-solid fa-arrow-down"></i> Enter Birth Details Below
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7-Section Structured Prediction Content -->
+        <div id="guidance-sections-wrap" class="guidance-sections-wrap">
+          <div id="guidance-report-title" class="guidance-report-title">
+            Hourly Personal Guidance
+          </div>
+
+          <!-- Section A: Overall Outlook -->
+          <div class="guidance-section-box">
+            <div class="guidance-section-heading">
+              <span class="section-letter-tag">A</span>
+              <h4>Overall Outlook</h4>
+            </div>
+            <p id="guidance-disp-outlook" class="guidance-body-text">
+              Loading current astrological horizon guidance...
+            </p>
+          </div>
+
+          <!-- Section B & C in 2-column grid -->
+          <div class="guidance-2col-grid">
+            <!-- Section B: Supportive Developments -->
+            <div class="guidance-section-box supportive">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-supportive">B</span>
+                <h4 style="color: #065F46;">Supportive Developments</h4>
+              </div>
+              <ul id="guidance-disp-supportive" class="guidance-list supportive">
+                <li>Analyzing benefic planetary alignments...</li>
+              </ul>
+            </div>
+
+            <!-- Section C: Possible Challenges and Cautions -->
+            <div class="guidance-section-box cautions">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-caution">C</span>
+                <h4 style="color: #991B1B;">Possible Challenges &amp; Cautions</h4>
+              </div>
+              <ul id="guidance-disp-challenges" class="guidance-list cautions">
+                <li>Evaluating planetary transit friction...</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Section D: Relevant Time Windows -->
+          <div class="guidance-section-box">
+            <div class="guidance-section-heading">
+              <span class="section-letter-tag">D</span>
+              <h4>Relevant Time Windows</h4>
+            </div>
+            <div id="guidance-disp-windows" class="guidance-windows-container">
+              <!-- Window cards dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Section E: Why This Applies (Grounding) -->
+          <div class="guidance-section-box grounding-box">
+            <div class="guidance-section-heading">
+              <span class="section-letter-tag tag-grounding">E</span>
+              <h4 style="color: #4C0519;">Why This Applies (Astrological Grounding)</h4>
+            </div>
+            <p id="guidance-disp-why" class="guidance-body-text" style="color: #4C0519;">
+              Grounded in Parashari Jyotish principles and Swiss Ephemeris astronomical positions.
+            </p>
+            <div id="guidance-disp-profile-metrics" class="guidance-profile-metrics">
+              <!-- Lagna, Moon Sign, Mahadasha, Antardasha chips -->
+            </div>
+          </div>
+
+          <!-- Section F & G in 2-column grid -->
+          <div class="guidance-2col-grid">
+            <!-- Section F: Practical Reflection -->
+            <div class="guidance-section-box reflection">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-reflection">F</span>
+                <h4 style="color: #1E3A8A;">Practical Reflection</h4>
+              </div>
+              <p id="guidance-disp-reflection" class="guidance-body-text">
+                Focus on disciplined execution and mindful decisions.
+              </p>
+            </div>
+
+            <!-- Section G: Limitations & Epistemic Scope -->
+            <div class="guidance-section-box limitations">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-limitations">G</span>
+                <h4 style="color: #475569;">Scope &amp; Limitations</h4>
+              </div>
+              <p id="guidance-disp-limitations" class="guidance-body-text" style="font-size: 12px; color: #64748B;">
+                Vedic astrology provides qualitative planetary timings and qualitative tendencies. Personal free will, moral integrity, and practical effort govern lived outcomes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
 
       <div class="grid-layout-2col">
         <!-- Input Form (Strict Empty State) -->
@@ -1540,6 +2020,28 @@
           <div id="dash-profiles-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
       </div>
+
+      <!-- Saved Prediction Reports Section -->
+      <div class="astro-card" style="margin-top: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 2px;">
+              <i class="fa-solid fa-bookmark" style="color: #D97706;"></i> Saved Prediction Reports
+            </h3>
+            <p style="font-size: 12px; color: #64748B; margin: 0;">
+              Personalized multi-horizon guidance reports saved to your account.
+            </p>
+          </div>
+          <button class="btn-outline-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="loadUserSavedReports()">
+            <i class="fa-solid fa-rotate-right"></i> Refresh Reports
+          </button>
+        </div>
+
+        <div id="dash-empty-reports" class="empty-state-card" style="padding: 24px 16px;">
+          <p style="font-size: 13px; color: #6B7280;">No prediction reports saved yet. Generate personalized hourly, weekly, monthly, or yearly guidance on the homepage and click 'Save This Prediction'.</p>
+        </div>
+        <div id="dash-reports-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px;"></div>
+      </div>
     </section>
 
     <!-- ==================== TAB 7: ASTROMALL & PUJAS ==================== -->
@@ -1598,75 +2100,206 @@
     <!-- ==================== TAB 8: DEDICATED AUTHENTICATION VIEW ==================== -->
     <section id="view-auth" class="page-tab-view">
       <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-user-lock" style="color: var(--vedic-maroon);"></i> Account Authentication & Sign In</h2>
-        <p>Access persistent birth profiles, private consultation history, and verified wallet balances across devices.</p>
+        <h2><i class="fa-solid fa-user-shield" style="color: var(--vedic-maroon);"></i> AstroVerse Account Security &amp; Access</h2>
+        <p>Manage persistent birth profiles, private consultation history, multi-horizon reports, and verified wallet balances across devices.</p>
       </div>
 
-      <div style="max-width: 480px; margin: 0 auto;">
+      <div style="max-width: 520px; margin: 0 auto;">
+        <!-- Auth View Switcher Breadcrumb -->
+        <div style="display: flex; gap: 8px; margin-bottom: 20px; background: #F1F5F9; padding: 4px; border-radius: 10px;">
+          <button class="subtab-btn active" id="auth-nav-tab-login" style="flex: 1; text-align: center;" onclick="switchNavSection('login')">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In
+          </button>
+          <button class="subtab-btn" id="auth-nav-tab-signup" style="flex: 1; text-align: center;" onclick="switchNavSection('signup')">
+            <i class="fa-solid fa-user-plus"></i> Create Account
+          </button>
+        </div>
+
         <div class="astro-card" style="padding: 32px 28px;">
-          <!-- Auth Mode Switcher (Phone vs Email) -->
-          <div style="display: flex; gap: 8px; margin-bottom: 20px; background: #F1F5F9; padding: 4px; border-radius: 8px;">
-            <button class="subtab-btn active" id="auth-tab-btn-phone" style="flex: 1; text-align: center;" onclick="switchAuthMode('phone')">
-              <i class="fa-solid fa-mobile-screen"></i> Mobile Phone
-            </button>
-            <button class="subtab-btn" id="auth-tab-btn-email" style="flex: 1; text-align: center;" onclick="switchAuthMode('email')">
-              <i class="fa-solid fa-envelope"></i> Email Address
-            </button>
+
+          <!-- ================= SUB-PANEL 1: LOGIN ================= -->
+          <div id="auth-panel-login">
+            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
+              Welcome Back to AstroVerse
+            </h3>
+            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
+              Choose your preferred sign-in method:
+            </p>
+
+            <!-- Mode Switcher: Password vs OTP -->
+            <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px;">
+              <button class="subtab-btn active" id="btn-login-mode-password" style="flex: 1; text-align: center;" onclick="switchLoginAuthMode('password')">
+                <i class="fa-solid fa-key"></i> Password
+              </button>
+              <button class="subtab-btn" id="btn-login-mode-otp" style="flex: 1; text-align: center;" onclick="switchLoginAuthMode('otp')">
+                <i class="fa-solid fa-mobile-screen"></i> One-Time OTP
+              </button>
+            </div>
+
+            <!-- Login Form: Password Flow -->
+            <div id="login-flow-password">
+              <div class="form-field-group">
+                <label class="form-field-label">Email Address or Mobile Number</label>
+                <input type="text" id="login-ident" class="form-input-text" placeholder="name@example.com or +919876543210">
+              </div>
+
+              <div class="form-field-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label class="form-field-label" style="margin-bottom: 0;">Password</label>
+                  <a href="#/forgot-password" onclick="switchNavSection('forgot-password'); return false;" style="font-size: 12px; color: #2563EB; text-decoration: none; font-weight: 600;">
+                    Forgot Password?
+                  </a>
+                </div>
+                <div style="position: relative;">
+                  <input type="password" id="login-password" class="form-input-text" placeholder="Enter your password">
+                  <i class="fa-regular fa-eye" id="toggle-login-pwd" onclick="togglePasswordVisibility('login-password', 'toggle-login-pwd')"
+                     style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748B;"></i>
+                </div>
+              </div>
+
+              <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;" onclick="executePasswordLogin()">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign In to Account
+              </button>
+            </div>
+
+            <!-- Login Form: OTP Flow -->
+            <div id="login-flow-otp" style="display: none;">
+              <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                <button class="gender-pill-btn active" id="otp-type-phone" onclick="switchOtpType('phone')" style="flex: 1;">Mobile Phone</button>
+                <button class="gender-pill-btn" id="otp-type-email" onclick="switchOtpType('email')" style="flex: 1;">Email</button>
+              </div>
+
+              <div id="otp-phone-input-wrap">
+                <label class="form-field-label">Mobile Number</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                  <select id="login-country-code" class="form-input-text" style="width: 130px; flex-shrink: 0;">
+                    <option value="+91" selected>🇮🇳 +91 (IN)</option>
+                    <option value="+1">🇺🇸 +1 (US)</option>
+                    <option value="+44">🇬🇧 +44 (UK)</option>
+                    <option value="+61">🇦🇺 +61 (AU)</option>
+                    <option value="+971">🇦🇪 +971 (AE)</option>
+                    <option value="+65">🇸🇬 +65 (SG)</option>
+                    <option value="+49">🇩🇪 +49 (DE)</option>
+                  </select>
+                  <input type="tel" id="login-phone-num" class="form-input-text" placeholder="98765 43210">
+                </div>
+              </div>
+
+              <div id="otp-email-input-wrap" style="display: none; margin-bottom: 16px;">
+                <label class="form-field-label">Email Address</label>
+                <input type="email" id="login-email-addr" class="form-input-text" placeholder="name@example.com">
+              </div>
+
+              <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px;" onclick="requestDedicatedAuthOtp()">
+                <i class="fa-solid fa-paper-plane"></i> Send 6-Digit Code
+              </button>
+            </div>
+
+            <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #F1F5F9; font-size: 13px; color: #64748B;">
+              Don't have an AstroVerse account?
+              <a href="#/signup" onclick="switchNavSection('signup'); return false;" style="color: var(--vedic-maroon); font-weight: 700; text-decoration: none; margin-left: 4px;">
+                Create Account &rarr;
+              </a>
+            </div>
           </div>
 
-          <!-- Step 1: Request OTP Form -->
-          <div id="auth-view-step-1">
-            <!-- Phone input container -->
-            <div id="auth-phone-container">
-              <label class="form-field-label">Mobile Phone Number</label>
-              <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <select id="auth-country-code" class="form-input-text" style="width: 140px; flex-shrink: 0;">
+          <!-- ================= SUB-PANEL 2: SIGN UP ================= -->
+          <div id="auth-panel-signup" style="display: none;">
+            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
+              Create AstroVerse Account
+            </h3>
+            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
+              Unlock persistent birth profiles, personalized multi-horizon forecasts, and private consultations.
+            </p>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Full Name</label>
+              <input type="text" id="signup-name" class="form-input-text" placeholder="Your full name">
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Email Address</label>
+              <input type="email" id="signup-email" class="form-input-text" placeholder="name@example.com">
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Mobile Phone (Optional)</label>
+              <div style="display: flex; gap: 8px;">
+                <select id="signup-country-code" class="form-input-text" style="width: 130px; flex-shrink: 0;">
                   <option value="+91" selected>🇮🇳 +91 (IN)</option>
-                  <option value="+1">🇺🇸 +1 (US/CA)</option>
+                  <option value="+1">🇺🇸 +1 (US)</option>
                   <option value="+44">🇬🇧 +44 (UK)</option>
                   <option value="+61">🇦🇺 +61 (AU)</option>
                   <option value="+971">🇦🇪 +971 (AE)</option>
-                  <option value="+65">🇸🇬 +65 (SG)</option>
-                  <option value="+49">🇩🇪 +49 (DE)</option>
-                  <option value="+33">🇫🇷 +33 (FR)</option>
-                  <option value="+81">🇯🇵 +81 (JP)</option>
                 </select>
-                <input type="tel" id="auth-phone-num" class="form-input-text" placeholder="98765 43210" maxlength="15">
+                <input type="tel" id="signup-phone" class="form-input-text" placeholder="98765 43210">
               </div>
             </div>
 
-            <!-- Email input container -->
-            <div id="auth-email-container" style="display: none; margin-bottom: 16px;">
-              <label class="form-field-label">Email Address</label>
-              <input type="email" id="auth-email-addr" class="form-input-text" placeholder="e.g. yourname@example.com">
+            <div class="form-field-group">
+              <label class="form-field-label">Create Password</label>
+              <div style="position: relative;">
+                <input type="password" id="signup-password" class="form-input-text" placeholder="Minimum 8 characters" oninput="evaluatePasswordStrength(this.value, 'signup-pwd-track', 'signup-pwd-crit')">
+                <i class="fa-regular fa-eye" id="toggle-signup-pwd" onclick="togglePasswordVisibility('signup-password', 'toggle-signup-pwd')"
+                   style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748B;"></i>
+              </div>
+              <!-- Strength meter -->
+              <div class="pwd-strength-container">
+                <div class="pwd-strength-track">
+                  <div class="pwd-strength-fill" id="signup-pwd-track"></div>
+                </div>
+                <div class="pwd-checklist" id="signup-pwd-crit">
+                  <div class="pwd-criterion invalid" id="crit-len"><i class="fa-solid fa-circle-check"></i> Min 8 characters</div>
+                  <div class="pwd-criterion invalid" id="crit-upper"><i class="fa-solid fa-circle-check"></i> 1 Uppercase (A-Z)</div>
+                  <div class="pwd-criterion invalid" id="crit-lower"><i class="fa-solid fa-circle-check"></i> 1 Lowercase (a-z)</div>
+                  <div class="pwd-criterion invalid" id="crit-num"><i class="fa-solid fa-circle-check"></i> 1 Number (0-9)</div>
+                  <div class="pwd-criterion invalid" id="crit-spec"><i class="fa-solid fa-circle-check"></i> 1 Special (@$!%*?&)</div>
+                </div>
+              </div>
             </div>
 
-            <p style="font-size: 12px; color: #64748B; margin-bottom: 18px; line-height: 1.5;">
-              We will send a cryptographically secure 6-digit one-time password (OTP). No password required.
-            </p>
+            <div class="form-field-group">
+              <label class="form-field-label">Confirm Password</label>
+              <input type="password" id="signup-confirm-password" class="form-input-text" placeholder="Re-enter your password">
+            </div>
 
-            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px;" onclick="requestDedicatedAuthOtp()">
-              <i class="fa-solid fa-paper-plane"></i> Send Verification Code
+            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;" onclick="executePasswordRegister()">
+              <i class="fa-solid fa-user-plus"></i> Create Account
             </button>
+
+            <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #F1F5F9; font-size: 13px; color: #64748B;">
+              Already have an AstroVerse account?
+              <a href="#/login" onclick="switchNavSection('login'); return false;" style="color: var(--vedic-maroon); font-weight: 700; text-decoration: none; margin-left: 4px;">
+                Sign In &rarr;
+              </a>
+            </div>
           </div>
 
-          <!-- Step 2: Verify OTP Form -->
-          <div id="auth-view-step-2" style="display: none;">
+          <!-- ================= SUB-PANEL 3: VERIFY OTP ================= -->
+          <div id="auth-panel-verify" style="display: none;">
             <div style="text-align: center; margin-bottom: 20px;">
-              <div style="font-size: 13px; color: #64748B;">Verification code sent to:</div>
-              <strong id="disp-dedicated-target" style="font-size: 16px; color: var(--vedic-maroon);">--</strong>
-              <div style="font-size: 11px; color: #2563EB; cursor: pointer; margin-top: 4px;" onclick="resetAuthForm()">Change identifier</div>
+              <div class="guidance-icon-badge" style="margin: 0 auto 12px; width: 50px; height: 50px;">
+                <i class="fa-solid fa-envelope-open-text" style="color: var(--vedic-maroon); font-size: 24px;"></i>
+              </div>
+              <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon);">Verification Code Sent</h3>
+              <p style="font-size: 13px; color: #64748B; margin-top: 4px;">
+                We dispatched a secure 6-digit code to:<br>
+                <strong id="disp-dedicated-target" style="color: #0F172A; font-size: 15px;">--</strong>
+              </p>
+              <div style="font-size: 11px; color: #2563EB; cursor: pointer; margin-top: 4px;" onclick="switchNavSection('login')">
+                Change identifier
+              </div>
             </div>
 
             <div class="form-field-group">
               <label class="form-field-label" style="text-align: center;">Enter 6-Digit Code</label>
               <input type="text" id="input-dedicated-otp" class="form-input-text" placeholder="------" maxlength="6"
-                     style="letter-spacing: 8px; font-size: 24px; text-align: center; font-weight: 800; font-family: monospace;">
+                     style="letter-spacing: 8px; font-size: 26px; text-align: center; font-weight: 800; font-family: monospace;">
               <div id="dedicated-otp-dev-hint" style="font-size: 12px; color: #059669; text-align: center; margin-top: 8px; font-weight: 600;"></div>
             </div>
 
             <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;" onclick="verifyDedicatedAuthOtp()">
-              <i class="fa-solid fa-lock-open"></i> Verify & Sign In
+              <i class="fa-solid fa-lock-open"></i> Verify &amp; Sign In
             </button>
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; font-size: 12px;">
@@ -1674,6 +2307,147 @@
               <button id="btn-resend-otp" class="btn-text-link" style="display: none;" onclick="resendDedicatedAuthOtp()">Resend Code</button>
             </div>
           </div>
+
+          <!-- ================= SUB-PANEL 4: FORGOT PASSWORD ================= -->
+          <div id="auth-panel-forgot-password" style="display: none;">
+            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
+              Reset Account Password
+            </h3>
+            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
+              Enter your registered email address and we will dispatch a 6-digit verification code to reset your password.
+            </p>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Registered Email Address</label>
+              <input type="email" id="forgot-email" class="form-input-text" placeholder="name@example.com">
+            </div>
+
+            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;" onclick="executeForgotPasswordRequest()">
+              <i class="fa-solid fa-paper-plane"></i> Send Password Reset Code
+            </button>
+
+            <div style="text-align: center; margin-top: 20px; font-size: 13px;">
+              <a href="#/login" onclick="switchNavSection('login'); return false;" style="color: #64748B; text-decoration: none;">
+                &larr; Back to Sign In
+              </a>
+            </div>
+          </div>
+
+          <!-- ================= SUB-PANEL 5: RESET PASSWORD ================= -->
+          <div id="auth-panel-reset-password" style="display: none;">
+            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
+              Set New Password
+            </h3>
+            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
+              Enter the 6-digit code received in your email along with your new password.
+            </p>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Email Address</label>
+              <input type="email" id="reset-email" class="form-input-text" placeholder="name@example.com">
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">6-Digit Reset Code</label>
+              <input type="text" id="reset-token" class="form-input-text" placeholder="123456" maxlength="6" style="letter-spacing: 4px; font-family: monospace; font-size: 18px; text-align: center;">
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">New Password</label>
+              <input type="password" id="reset-new-password" class="form-input-text" placeholder="Minimum 8 characters" oninput="evaluatePasswordStrength(this.value, 'reset-pwd-track', 'reset-pwd-crit')">
+              <div class="pwd-strength-container">
+                <div class="pwd-strength-track">
+                  <div class="pwd-strength-fill" id="reset-pwd-track"></div>
+                </div>
+                <div class="pwd-checklist" id="reset-pwd-crit">
+                  <div class="pwd-criterion invalid" id="rcrit-len"><i class="fa-solid fa-circle-check"></i> Min 8 characters</div>
+                  <div class="pwd-criterion invalid" id="rcrit-upper"><i class="fa-solid fa-circle-check"></i> 1 Uppercase</div>
+                  <div class="pwd-criterion invalid" id="rcrit-lower"><i class="fa-solid fa-circle-check"></i> 1 Lowercase</div>
+                  <div class="pwd-criterion invalid" id="rcrit-num"><i class="fa-solid fa-circle-check"></i> 1 Number</div>
+                  <div class="pwd-criterion invalid" id="rcrit-spec"><i class="fa-solid fa-circle-check"></i> 1 Special</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Confirm New Password</label>
+              <input type="password" id="reset-confirm-password" class="form-input-text" placeholder="Re-enter your new password">
+            </div>
+
+            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;" onclick="executeResetPassword()">
+              <i class="fa-solid fa-shield-check"></i> Update Password &amp; Sign In
+            </button>
+
+            <div style="text-align: center; margin-top: 20px; font-size: 13px;">
+              <a href="#/login" onclick="switchNavSection('login'); return false;" style="color: #64748B; text-decoration: none;">
+                &larr; Back to Sign In
+              </a>
+            </div>
+          </div>
+
+          <!-- ================= SUB-PANEL 6: COMPLETE PROFILE ================= -->
+          <div id="auth-panel-complete-profile" style="display: none;">
+            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
+              Complete Your Astrological Profile
+            </h3>
+            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
+              Enter your birth coordinates to activate personalized Parashari predictions and accurate planetary Horas.
+            </p>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Full Name</label>
+              <input type="text" id="cp-name" class="form-input-text" placeholder="Full name">
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Gender</label>
+              <div class="gender-toggle-row">
+                <div class="gender-pill-btn active" id="cp-g-male-btn" onclick="selectCompleteProfileGender('Male')">Male</div>
+                <div class="gender-pill-btn" id="cp-g-female-btn" onclick="selectCompleteProfileGender('Female')">Female</div>
+              </div>
+              <input type="hidden" id="cp-gender" value="Male">
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Date of Birth</label>
+              <input type="date" id="cp-dob" class="form-input-text">
+            </div>
+
+            <div class="form-field-group">
+              <label class="form-field-label">Time of Birth (24-Hour)</label>
+              <div style="display: flex; gap: 8px;">
+                <select id="cp-tob-hh" class="form-input-text" style="flex: 1;">
+                  <option value="12" selected>12 (Noon)</option>
+                  <option value="00">00 (Midnight)</option>
+                  <option value="06">06 AM</option>
+                  <option value="09">09 AM</option>
+                  <option value="15">15 (3 PM)</option>
+                  <option value="18">18 (6 PM)</option>
+                  <option value="21">21 (9 PM)</option>
+                </select>
+                <select id="cp-tob-mm" class="form-input-text" style="flex: 1;">
+                  <option value="00" selected>00</option>
+                  <option value="15">15</option>
+                  <option value="30">30</option>
+                  <option value="45">45</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-field-group" style="position: relative;">
+              <label class="form-field-label">Birth Place</label>
+              <input type="text" id="cp-city-search" class="form-input-text" placeholder="Type city, e.g. Jabalpur or Delhi" oninput="searchGeocodingCompleteProfile()">
+              <input type="hidden" id="cp-lat" value="23.1815">
+              <input type="hidden" id="cp-lon" value="79.9864">
+              <input type="hidden" id="cp-tz" value="Asia/Kolkata">
+              <div id="cp-city-dropdown" class="autocomplete-dropdown" style="display: none;"></div>
+            </div>
+
+            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;" onclick="executeSaveCompleteProfile()">
+              <i class="fa-solid fa-dharmachakra"></i> Save &amp; Generate Janam Kundli
+            </button>
+          </div>
+
         </div>
       </div>
     </section>
@@ -1969,6 +2743,31 @@
     </section>
 
   </main>
+
+  
+  <!-- ==================== MODAL: SAVED REPORT VIEWER ==================== -->
+  <div id="modal-report-viewer" class="modal-backdrop-wrap" style="display: none;">
+    <div class="modal-dialog-card" style="max-width: 820px; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px;">
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #D97706;" id="viewer-report-type">PREDICTION REPORT</div>
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin: 2px 0 0;" id="viewer-report-title">
+            Astrological Guidance Report
+          </h3>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button class="btn-outline-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="window.print()">
+            <i class="fa-solid fa-print"></i> Print
+          </button>
+          <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 20px; color: #64748B;" onclick="closeReportViewer()"></i>
+        </div>
+      </div>
+
+      <div id="viewer-report-body" style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Populated dynamically with full 7 sections -->
+      </div>
+    </div>
+  </div>
 
   <!-- ==================== MODAL: SAVE BIRTH PROFILE ==================== -->
   <div id="modal-save-profile" class="modal-backdrop-wrap">
@@ -2289,30 +3088,49 @@
 
     // Navigation & Tabs
     function switchNavSection(sectionId, updateHash = true) {
+      const authRoutes = ['login', 'signup', 'verify', 'forgot-password', 'reset-password', 'complete-profile'];
+      let targetSection = sectionId;
+
+      if (authRoutes.includes(sectionId)) {
+        targetSection = 'auth';
+        showAuthSubPanel(sectionId);
+      } else if (sectionId === 'settings/security' || sectionId === 'security') {
+        targetSection = 'settings';
+        setTimeout(() => {
+          const secCard = document.getElementById('settings-security-card');
+          if (secCard) secCard.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+
       if (updateHash && window.location.hash !== '#/' + sectionId) {
         window.location.hash = '#/' + sectionId;
       }
-      if (sectionId === 'settings') loadSettingsViewData();
-      if (sectionId === 'admin') loadAdminConsoleData();
+      if (targetSection === 'settings') loadSettingsViewData();
+      if (targetSection === 'admin') loadAdminConsoleData();
+      if (targetSection === 'dashboard') loadUserSavedReports();
+      if (targetSection === 'kundli') {
+        if (!window.currentActivePrediction) generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+      }
+
       document.querySelectorAll('.page-tab-view').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-link-btn').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-pill').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.mob-dock-btn').forEach(el => el.classList.remove('active'));
 
-      const sec = document.getElementById('view-' + sectionId);
+      const sec = document.getElementById('view-' + targetSection);
       if (sec) {
         sec.classList.add('active');
         if (window.gsap) gsap.fromTo(sec, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" });
       }
 
-      const navBtn = document.getElementById('btn-nav-' + sectionId);
+      const navBtn = document.getElementById('btn-nav-' + targetSection);
       if (navBtn) navBtn.classList.add('active');
-      const pill = document.getElementById('pill-' + sectionId);
+      const pill = document.getElementById('pill-' + targetSection);
       if (pill) pill.classList.add('active');
-      const mobBtn = document.getElementById('mob-dock-' + sectionId);
+      const mobBtn = document.getElementById('mob-dock-' + targetSection);
       if (mobBtn) mobBtn.classList.add('active');
 
-      if (sectionId === 'horas') loadHourlyHorasUI();
+      if (targetSection === 'horas') loadHourlyHorasUI();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2829,6 +3647,9 @@
         if (textEl) textEl.textContent = housePlanets.join(' ');
       }
 
+      // Automatically refresh personalized guidance with newly calculated chart
+      generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+
       // Planetary Table
       const tbody = document.getElementById('tbody-planetary-positions');
       tbody.innerHTML = '';
@@ -2930,6 +3751,8 @@
         const secs = diffSec % 60;
         const el = document.getElementById('disp-hora-countdown');
         if (el) el.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        const gTimer = document.getElementById('guidance-active-hora-timer');
+        if (gTimer) gTimer.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} left`;
         if (diffSec <= 0) {
           clearInterval(horaCountdownInterval);
           loadHourlyHorasUI();
@@ -3114,6 +3937,14 @@
         document.getElementById('disp-active-hora-rec').textContent = data.active_hora.recommendation;
         const countdownEpoch = data.active_hora.end_epoch_ms || (Date.now() + 45 * 60 * 1000);
         startHoraCountdownTimer(countdownEpoch);
+      }
+
+      // Synchronize featured header guidance hora indicators
+      if (data.active_hora) {
+        window.currentActiveHoraPlanet = data.active_hora.ruling_planet;
+        window.currentActiveHoraWindow = `${data.active_hora.start_time} – ${data.active_hora.end_time}`;
+        const ghName = document.getElementById('guidance-active-hora-name');
+        if (ghName) ghName.textContent = `${data.active_hora.ruling_planet} Hora`;
       }
 
       if (data.special_periods) {
@@ -4290,8 +5121,9 @@
     // Hash Route Listener
     function handleHashRoute() {
       const hash = window.location.hash.replace('#/', '').replace('#', '');
+      const authRoutes = ['login', 'signup', 'verify', 'forgot-password', 'reset-password', 'complete-profile', 'settings/security'];
       const validTabs = ['kundli', 'horas', 'astrologers', 'matchmaking', 'horoscope', 'dashboard', 'pujas', 'auth', 'settings', 'admin'];
-      if (validTabs.includes(hash)) {
+      if (authRoutes.includes(hash) || validTabs.includes(hash)) {
         switchNavSection(hash, false);
       }
     }
@@ -4610,7 +5442,740 @@
       renderSavedProfilesList();
       selectHoroscopeSign('Aries');
       loadHourlyHorasUI();
+      generatePersonalizedGuidance('hourly');
+      if (currentUserSession) {
+        loadUserSavedReports();
+      }
+      handleHashRoute();
     });
+
+    // ==================== AUTH VIEW & PANEL CONTROLLERS ====================
+
+    function handleAuthButtonClick() {
+      if (currentUserSession) {
+        switchNavSection('dashboard');
+      } else {
+        switchNavSection('login');
+      }
+    }
+
+    // Adapt legacy openAuthModal to navigate cleanly without popup
+    function openAuthModal() {
+      handleAuthButtonClick();
+    }
+
+    function showAuthSubPanel(mode) {
+      const panels = ['login', 'signup', 'verify', 'forgot-password', 'reset-password', 'complete-profile'];
+      panels.forEach(p => {
+        const el = document.getElementById('auth-panel-' + p);
+        if (el) el.style.display = (p === mode) ? 'block' : 'none';
+      });
+
+      const tabLogin = document.getElementById('auth-nav-tab-login');
+      const tabSignup = document.getElementById('auth-nav-tab-signup');
+      if (tabLogin) tabLogin.classList.toggle('active', mode === 'login');
+      if (tabSignup) tabSignup.classList.toggle('active', mode === 'signup');
+    }
+
+    function switchLoginAuthMode(mode) {
+      document.getElementById('btn-login-mode-password').classList.toggle('active', mode === 'password');
+      document.getElementById('btn-login-mode-otp').classList.toggle('active', mode === 'otp');
+      document.getElementById('login-flow-password').style.display = (mode === 'password') ? 'block' : 'none';
+      document.getElementById('login-flow-otp').style.display = (mode === 'otp') ? 'block' : 'none';
+    }
+
+    function switchOtpType(type) {
+      dedicatedAuthMode = type;
+      document.getElementById('otp-type-phone').classList.toggle('active', type === 'phone');
+      document.getElementById('otp-type-email').classList.toggle('active', type === 'email');
+      document.getElementById('otp-phone-input-wrap').style.display = (type === 'phone') ? 'block' : 'none';
+      document.getElementById('otp-email-input-wrap').style.display = (type === 'email') ? 'block' : 'none';
+    }
+
+    function togglePasswordVisibility(inputId, toggleIconId) {
+      const inp = document.getElementById(inputId);
+      const icon = document.getElementById(toggleIconId);
+      if (!inp || !icon) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'fa-regular fa-eye-slash';
+      } else {
+        inp.type = 'password';
+        icon.className = 'fa-regular fa-eye';
+      }
+    }
+
+    function evaluatePasswordStrength(pwd, trackId, critPrefix) {
+      const hasLength = pwd.length >= 8;
+      const hasUpper = /[A-Z]/.test(pwd);
+      const hasLower = /[a-z]/.test(pwd);
+      const hasNum = /[0-9]/.test(pwd);
+      const hasSpec = /[@$!%*?&]/.test(pwd);
+
+      const track = document.getElementById(trackId);
+      const score = [hasLength, hasUpper, hasLower, hasNum, hasSpec].filter(Boolean).length;
+      if (track) {
+        const pct = (score / 5) * 100;
+        track.style.width = pct + '%';
+        track.style.background = score <= 2 ? '#EF4444' : (score <= 4 ? '#F59E0B' : '#10B981');
+      }
+
+      const updateCrit = (id, valid) => {
+        const el = document.getElementById(id);
+        if (el) el.className = 'pwd-criterion ' + (valid ? 'valid' : 'invalid');
+      };
+
+      if (critPrefix === 'signup-pwd-crit') {
+        updateCrit('crit-len', hasLength);
+        updateCrit('crit-upper', hasUpper);
+        updateCrit('crit-lower', hasLower);
+        updateCrit('crit-num', hasNum);
+        updateCrit('crit-spec', hasSpec);
+      } else if (critPrefix === 'reset-pwd-crit') {
+        updateCrit('rcrit-len', hasLength);
+        updateCrit('rcrit-upper', hasUpper);
+        updateCrit('rcrit-lower', hasLower);
+        updateCrit('rcrit-num', hasNum);
+        updateCrit('rcrit-spec', hasSpec);
+      }
+
+      return (score === 5);
+    }
+
+    async function executePasswordRegister() {
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const countryCode = document.getElementById('signup-country-code').value;
+      const phoneRaw = document.getElementById('signup-phone').value.trim();
+      const phone = phoneRaw ? countryCode + phoneRaw.replace(/^0+/, '') : '';
+      const password = document.getElementById('signup-password').value;
+      const confirmPwd = document.getElementById('signup-confirm-password').value;
+
+      if (!name) { showToast("Please enter your full name.", "error"); return; }
+      if (!email || !email.includes('@')) { showToast("Please enter a valid email address.", "error"); return; }
+      if (password !== confirmPwd) { showToast("Passwords do not match.", "error"); return; }
+
+      const isStrong = evaluatePasswordStrength(password, 'signup-pwd-track', 'signup-pwd-crit');
+      if (!isStrong) {
+        showToast("Password must satisfy all strength criteria (8+ chars, upper, lower, number, special).", "error");
+        return;
+      }
+
+      showToast("Creating account...", "info");
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/register-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const u = data.user;
+          currentSessionToken = data.sessionToken;
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || name,
+            identifier: u.email || email,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            status: u.status
+          };
+          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+          localStorage.setItem('astro_session_token', currentSessionToken);
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+          updateUserSessionUI();
+          showToast(`Welcome, ${name}! Account created successfully.`, "success");
+          // Pre-fill complete profile
+          document.getElementById('cp-name').value = name;
+          switchNavSection('complete-profile');
+        } else {
+          showToast(data.message || "Registration failed.", "error");
+        }
+      } catch (err) {
+        showToast("Authentication server unavailable.", "error");
+      }
+    }
+
+    async function executePasswordLogin() {
+      const identifier = document.getElementById('login-ident').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!identifier) { showToast("Please enter your email or mobile number.", "error"); return; }
+      if (!password) { showToast("Please enter your password.", "error"); return; }
+
+      showToast("Signing in...", "info");
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/login-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const u = data.user;
+          currentSessionToken = data.sessionToken;
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || u.email?.split('@')[0] || 'User',
+            identifier: u.email || u.phone || identifier,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            status: u.status
+          };
+          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+          localStorage.setItem('astro_session_token', currentSessionToken);
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+          await syncProfilesFromBackend(u.id);
+          updateUserSessionUI();
+          loadUserSavedReports();
+          showToast(`Welcome back, ${currentUserSession.name}!`, "success");
+          switchNavSection('dashboard');
+        } else {
+          showToast(data.message || "Invalid credentials.", "error");
+        }
+      } catch (err) {
+        showToast("Authentication server unavailable.", "error");
+      }
+    }
+
+    async function executeForgotPasswordRequest() {
+      const email = document.getElementById('forgot-email').value.trim();
+      if (!email || !email.includes('@')) { showToast("Please enter a valid email address.", "error"); return; }
+
+      showToast("Sending reset code...", "info");
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast("Password reset code sent! Please check your email.", "info");
+          document.getElementById('reset-email').value = email;
+          switchNavSection('reset-password');
+        } else {
+          showToast(data.message || "Failed to send reset code.", "error");
+        }
+      } catch (err) {
+        showToast("Authentication server unavailable.", "error");
+      }
+    }
+
+    async function executeResetPassword() {
+      const email = document.getElementById('reset-email').value.trim();
+      const resetToken = document.getElementById('reset-token').value.trim();
+      const newPassword = document.getElementById('reset-new-password').value;
+      const confirmPwd = document.getElementById('reset-confirm-password').value;
+
+      if (!email || !resetToken || !newPassword) {
+        showToast("Please fill all required fields.", "error");
+        return;
+      }
+      if (newPassword !== confirmPwd) {
+        showToast("Passwords do not match.", "error");
+        return;
+      }
+      const isStrong = evaluatePasswordStrength(newPassword, 'reset-pwd-track', 'reset-pwd-crit');
+      if (!isStrong) {
+        showToast("New password must satisfy all strength criteria.", "error");
+        return;
+      }
+
+      showToast("Resetting password...", "info");
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, resetToken, newPassword })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast("Password reset successfully! Please sign in with your new password.", "success");
+          document.getElementById('login-ident').value = email;
+          switchNavSection('login');
+        } else {
+          showToast(data.message || "Failed to reset password.", "error");
+        }
+      } catch (err) {
+        showToast("Authentication server unavailable.", "error");
+      }
+    }
+
+    function selectCompleteProfileGender(g) {
+      document.getElementById('cp-gender').value = g;
+      document.getElementById('cp-g-male-btn').classList.toggle('active', g === 'Male');
+      document.getElementById('cp-g-female-btn').classList.toggle('active', g === 'Female');
+    }
+
+    async function searchGeocodingCompleteProfile() {
+      const q = document.getElementById('cp-city-search').value.trim();
+      const dropdown = document.getElementById('cp-city-dropdown');
+      if (q.length < 2) { dropdown.style.display = 'none'; return; }
+
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const data = await res.json();
+          dropdown.innerHTML = '';
+          if (data.results && data.results.length > 0) {
+            data.results.forEach(r => {
+              const item = document.createElement('div');
+              item.className = 'autocomplete-item';
+              item.textContent = r.display_name;
+              item.onclick = () => {
+                document.getElementById('cp-city-search').value = r.display_name;
+                document.getElementById('cp-lat').value = r.latitude;
+                document.getElementById('cp-lon').value = r.longitude;
+                document.getElementById('cp-tz').value = r.timezone;
+                dropdown.style.display = 'none';
+              };
+              dropdown.appendChild(item);
+            });
+            dropdown.style.display = 'block';
+          } else {
+            dropdown.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        dropdown.style.display = 'none';
+      }
+    }
+
+    async function executeSaveCompleteProfile() {
+      const name = document.getElementById('cp-name').value.trim();
+      const gender = document.getElementById('cp-gender').value;
+      const dob = document.getElementById('cp-dob').value;
+      const hh = document.getElementById('cp-tob-hh').value;
+      const mm = document.getElementById('cp-tob-mm').value;
+      const city = document.getElementById('cp-city-search').value.trim() || 'Jabalpur, Madhya Pradesh, India';
+      const lat = parseFloat(document.getElementById('cp-lat').value) || 23.1815;
+      const lon = parseFloat(document.getElementById('cp-lon').value) || 79.9864;
+      const tz = document.getElementById('cp-tz').value || 'Asia/Kolkata';
+
+      if (!name || !dob) { showToast("Please enter your name and date of birth.", "error"); return; }
+      const tob = `${hh}:${mm}`;
+
+      // Save to backend if authenticated
+      if (currentUserSession) {
+        try {
+          await fetch(`${getAuthBase()}/api/profiles`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              userId: currentUserSession.id,
+              profileName: name,
+              gender,
+              dob,
+              tob,
+              birthPlace: city,
+              latitude: lat,
+              longitude: lon,
+              timezone: tz,
+              relation: 'Self'
+            })
+          });
+          await syncProfilesFromBackend(currentUserSession.id);
+        } catch (e) {}
+      }
+
+      // Populate home form
+      document.getElementById('input-k-name').value = name;
+      selectGender(gender);
+      document.getElementById('input-k-dob').value = dob;
+      set24HTimePicker(tob);
+      document.getElementById('input-k-city-search').value = city;
+      document.getElementById('k-resolved-lat').value = lat;
+      document.getElementById('k-resolved-lon').value = lon;
+      document.getElementById('k-resolved-tz').value = tz;
+
+      switchNavSection('kundli');
+      showToast("Profile saved! Generating Janam Kundli and personalized guidance...", "success");
+      await generateUserKundli();
+    }
+
+    // ==================== FEATURED PERSONAL GUIDANCE & MULTI-HORIZON ====================
+
+    let currentGuidanceHorizon = 'hourly';
+    window.currentActivePrediction = null;
+
+    function selectGuidanceHorizon(horizon) {
+      currentGuidanceHorizon = horizon;
+      document.querySelectorAll('.horizon-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('btn-hz-' + horizon);
+      if (activeBtn) activeBtn.classList.add('active');
+      generatePersonalizedGuidance(horizon);
+    }
+
+    function refreshCurrentGuidance() {
+      generatePersonalizedGuidance(currentGuidanceHorizon);
+    }
+
+    async function generatePersonalizedGuidance(horizon = 'hourly') {
+      const targetDate = new Date().toISOString().split('T')[0];
+      const hasChart = !!currentCalculatedChart;
+      const guestBanner = document.getElementById('guidance-guest-banner');
+      const badge = document.getElementById('guidance-grounding-badge');
+
+      let payload = {
+        horizon: horizon,
+        target_date: targetDate,
+        active_hora_planet: window.currentActiveHoraPlanet || "Jupiter",
+        hora_window: window.currentActiveHoraWindow || "Current Solar Hour",
+        category: "general"
+      };
+
+      if (hasChart && currentCalculatedChart.fullData) {
+        const d1 = currentCalculatedChart.fullData.d1_rashi_chart;
+        const dob = document.getElementById('input-k-dob').value;
+        const tob = document.getElementById('input-k-tob').value || "12:00";
+        const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
+        const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
+        const tz = document.getElementById('k-resolved-tz').value || "Asia/Kolkata";
+
+        payload.dob = `${dob}T${tob}:00`;
+        payload.lat = lat;
+        payload.lon = lon;
+        payload.timezone = tz;
+      }
+
+      try {
+        const res = await fetch('/api/predictions/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          window.currentActivePrediction = data;
+          renderStructuredPredictionUI(data);
+          return;
+        }
+      } catch (err) {
+        console.warn("Prediction API error, rendering calculated fallback:", err);
+      }
+
+      // Client mathematical fallback for resilience
+      renderFallbackGuidanceUI(horizon, hasChart);
+    }
+
+    function renderStructuredPredictionUI(data) {
+      const s = data.sections;
+      const isChartGrounded = data.profile_loaded && data.mode === 'PERSONALIZED_CHART_GROUNDED';
+      const guestBanner = document.getElementById('guidance-guest-banner');
+      const badge = document.getElementById('guidance-grounding-badge');
+
+      if (guestBanner) guestBanner.style.display = isChartGrounded ? 'none' : 'block';
+
+      if (badge) {
+        if (isChartGrounded) {
+          badge.className = 'badge-grounded';
+          badge.innerHTML = `<i class="fa-solid fa-certificate"></i> 100% Chart-Grounded &bull; ${data.profile.lagna} Lagna &bull; ${data.profile.moon_sign} Moon`;
+        } else {
+          badge.className = 'badge-guest';
+          badge.innerHTML = `<i class="fa-solid fa-compass"></i> Guest Mode (Solar Transit)`;
+        }
+      }
+
+      document.getElementById('guidance-report-title').textContent = data.report_title;
+      document.getElementById('guidance-disp-outlook').textContent = s.overall_outlook;
+
+      // Supportive list
+      const suppEl = document.getElementById('guidance-disp-supportive');
+      suppEl.innerHTML = s.supportive_developments.map(item => `<li>${item}</li>`).join('');
+
+      // Challenges list
+      const challEl = document.getElementById('guidance-disp-challenges');
+      challEl.innerHTML = s.challenges_and_cautions.map(item => `<li>${item}</li>`).join('');
+
+      // Windows
+      const winEl = document.getElementById('guidance-disp-windows');
+      winEl.innerHTML = s.relevant_time_windows.map(w => `
+        <div class="guidance-window-card">
+          <i class="fa-regular fa-clock" style="color: #D97706; font-size: 16px;"></i>
+          <span>${w}</span>
+        </div>
+      `).join('');
+
+      // Why this applies & profile pills
+      document.getElementById('guidance-disp-why').textContent = s.why_this_applies;
+      const p = data.profile;
+      document.getElementById('guidance-disp-profile-metrics').innerHTML = `
+        <span class="guidance-metric-pill">Lagna: <strong>${p.lagna}</strong></span>
+        <span class="guidance-metric-pill">Moon: <strong>${p.moon_sign} (${p.moon_nakshatra})</strong></span>
+        <span class="guidance-metric-pill">Active Dasha: <strong>${p.active_mahadasha}-${p.active_antardasha}</strong></span>
+        <span class="guidance-metric-pill">Sade Sati: <strong>${p.sade_sati_phase}</strong></span>
+      `;
+
+      document.getElementById('guidance-disp-reflection').textContent = s.practical_reflection;
+      document.getElementById('guidance-disp-limitations').textContent = s.limitations;
+    }
+
+    function renderFallbackGuidanceUI(horizon, hasChart) {
+      const horaPlanet = window.currentActiveHoraPlanet || "Jupiter";
+      const s = {
+        overall_outlook: `During this active ${horaPlanet} planetary window, cosmic alignments favor strategic discernment and composed communication.`,
+        supportive_developments: [
+          `Favorable period for structured dialogue, negotiation, and reviewing long-term plans.`,
+          `High mental focus for analytical tasks and financial reconciliations.`
+        ],
+        challenges_and_cautions: [
+          `Avoid rash commitments during the transitional boundaries of the solar hour.`,
+          `Maintain emotional composure if unexpected delays occur.`
+        ],
+        relevant_time_windows: [
+          `Active Interval: Governed by ${horaPlanet}`,
+          `Recommended Peak Focus: Mid-hour interval for vital discussions`
+        ],
+        why_this_applies: hasChart
+          ? `Grounded in natal Lagna and active Vimshottari Dasha with sidereal solar transit positions.`
+          : `Grounded in classical Chaldean solar hora sequences computed via Swiss Ephemeris.`,
+        practical_reflection: `Direct your mental bandwidth toward one high-leverage responsibility during this interval.`,
+        limitations: `Astrological Horas represent qualitative auspicious tendencies. Practical initiative and ethics govern all outcomes.`
+      };
+
+      renderStructuredPredictionUI({
+        report_title: `${horizon.toUpperCase()} Personal Guidance: ${horaPlanet} Window`,
+        profile_loaded: hasChart,
+        mode: hasChart ? 'PERSONALIZED_CHART_GROUNDED' : 'GENERAL_TRANSIT_UNPERSONALIZED',
+        profile: {
+          lagna: currentCalculatedChart?.lagnaSign || "Aries",
+          moon_sign: currentCalculatedChart?.moonSign || "Taurus",
+          moon_nakshatra: currentCalculatedChart?.nakName || "Rohini",
+          active_mahadasha: "Jupiter",
+          active_antardasha: "Saturn",
+          sade_sati_phase: "Transit Analysis"
+        },
+        sections: s
+      });
+    }
+
+    async function saveActivePredictionReport() {
+      if (!currentUserSession) {
+        showToast("Please sign in first to save personal prediction reports.", "info");
+        switchNavSection('login');
+        return;
+      }
+      if (!window.currentActivePrediction) {
+        showToast("No prediction report loaded. Please refresh guidance first.", "error");
+        return;
+      }
+
+      showToast("Saving prediction report to your dashboard...", "info");
+      try {
+        const res = await fetch(`${getAuthBase()}/api/reports/save`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            title: window.currentActivePrediction.report_title || `${currentGuidanceHorizon.toUpperCase()} Personal Guidance`,
+            reportType: `PREDICTION_${currentGuidanceHorizon.toUpperCase()}`,
+            payload: window.currentActivePrediction
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast("Prediction report saved successfully to My Dashboard!", "success");
+          loadUserSavedReports();
+        } else {
+          showToast(data.message || "Failed to save report.", "error");
+        }
+      } catch (err) {
+        showToast("Failed to communicate with report database.", "error");
+      }
+    }
+
+    // ==================== SAVED REPORTS & REPORT VIEWER ====================
+
+    window.currentUserSavedReports = [];
+
+    async function loadUserSavedReports() {
+      if (!currentUserSession) return;
+      try {
+        const res = await fetch(`${getAuthBase()}/api/reports/${currentUserSession.id}`, {
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          const list = await res.json();
+          window.currentUserSavedReports = list;
+          renderSavedReportsListUI(list);
+        }
+      } catch (e) {
+        console.warn("Could not load user saved reports:", e);
+      }
+    }
+
+    function renderSavedReportsListUI(reports) {
+      const emptyEl = document.getElementById('dash-empty-reports');
+      const listEl = document.getElementById('dash-reports-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      if (!reports || reports.length === 0) {
+        if (emptyEl) emptyEl.style.display = 'block';
+        return;
+      }
+      if (emptyEl) emptyEl.style.display = 'none';
+
+      reports.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'astro-card';
+        card.style.padding = '16px';
+        card.style.background = '#FFFFFF';
+        card.style.border = '1px solid #E2E8F0';
+
+        const dtStr = new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <span class="badge-grounded" style="font-size: 10px;">${r.reportType}</span>
+            <span style="font-size: 11px; color: #64748B;">${dtStr}</span>
+          </div>
+          <h4 style="font-size: 14px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px; line-height: 1.4;">
+            ${r.title}
+          </h4>
+          <p style="font-size: 12px; color: #475569; margin-bottom: 14px; line-height: 1.5; max-height: 40px; overflow: hidden; text-overflow: ellipsis;">
+            ${r.payload?.sections?.overall_outlook || 'Standard 7-section Parashari guidance report.'}
+          </p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #F1F5F9; padding-top: 10px;">
+            <button class="btn-gold-primary" style="padding: 5px 12px; font-size: 11px;" onclick="openReportViewer('${r.id}')">
+              <i class="fa-solid fa-eye"></i> Reopen Report
+            </button>
+            <button class="btn-text-link" style="color: #DC2626; font-size: 12px;" onclick="deleteReportRecord('${r.id}')">
+              <i class="fa-solid fa-trash"></i> Delete
+            </button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    function openReportViewer(reportId) {
+      const rep = window.currentUserSavedReports.find(x => x.id === reportId);
+      if (!rep) return;
+
+      document.getElementById('viewer-report-type').textContent = rep.reportType;
+      document.getElementById('viewer-report-title').textContent = rep.title;
+
+      const body = document.getElementById('viewer-report-body');
+      const s = rep.payload?.sections;
+      const p = rep.payload?.profile;
+
+      if (!s) {
+        body.innerHTML = '<p>Unable to parse structured report payload.</p>';
+      } else {
+        body.innerHTML = `
+          <!-- Section A -->
+          <div class="guidance-section-box">
+            <div class="guidance-section-heading">
+              <span class="section-letter-tag">A</span>
+              <h4>Overall Outlook</h4>
+            </div>
+            <p class="guidance-body-text">${s.overall_outlook}</p>
+          </div>
+
+          <!-- Section B & C -->
+          <div class="guidance-2col-grid">
+            <div class="guidance-section-box supportive">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-supportive">B</span>
+                <h4 style="color: #065F46;">Supportive Developments</h4>
+              </div>
+              <ul class="guidance-list supportive">
+                ${s.supportive_developments.map(item => `<li>${item}</li>`).join('')}
+              </ul>
+            </div>
+            <div class="guidance-section-box cautions">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-caution">C</span>
+                <h4 style="color: #991B1B;">Possible Challenges &amp; Cautions</h4>
+              </div>
+              <ul class="guidance-list cautions">
+                ${s.challenges_and_cautions.map(item => `<li>${item}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+
+          <!-- Section D -->
+          <div class="guidance-section-box">
+            <div class="guidance-section-heading">
+              <span class="section-letter-tag">D</span>
+              <h4>Relevant Time Windows</h4>
+            </div>
+            <div class="guidance-windows-container">
+              ${s.relevant_time_windows.map(w => `
+                <div class="guidance-window-card">
+                  <i class="fa-regular fa-clock" style="color: #D97706;"></i>
+                  <span>${w}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Section E -->
+          <div class="guidance-section-box grounding-box">
+            <div class="guidance-section-heading">
+              <span class="section-letter-tag tag-grounding">E</span>
+              <h4 style="color: #4C0519;">Why This Applies (Astrological Grounding)</h4>
+            </div>
+            <p class="guidance-body-text" style="color: #4C0519;">${s.why_this_applies}</p>
+            ${p ? `
+              <div class="guidance-profile-metrics">
+                <span class="guidance-metric-pill">Lagna: <strong>${p.lagna}</strong></span>
+                <span class="guidance-metric-pill">Moon: <strong>${p.moon_sign}</strong></span>
+                <span class="guidance-metric-pill">Dasha: <strong>${p.active_mahadasha}-${p.active_antardasha}</strong></span>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Section F & G -->
+          <div class="guidance-2col-grid">
+            <div class="guidance-section-box reflection">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-reflection">F</span>
+                <h4 style="color: #1E40AF;">Practical Reflection</h4>
+              </div>
+              <p class="guidance-body-text">${s.practical_reflection}</p>
+            </div>
+            <div class="guidance-section-box limitations">
+              <div class="guidance-section-heading">
+                <span class="section-letter-tag tag-limitations">G</span>
+                <h4 style="color: #475569;">Scope &amp; Limitations</h4>
+              </div>
+              <p class="guidance-body-text" style="font-size: 12px; color: #64748B;">${s.limitations}</p>
+            </div>
+          </div>
+        `;
+      }
+
+      document.getElementById('modal-report-viewer').style.display = 'flex';
+    }
+
+    function closeReportViewer() {
+      document.getElementById('modal-report-viewer').style.display = 'none';
+    }
+
+    async function deleteReportRecord(reportId) {
+      if (!confirm("Are you sure you want to delete this saved prediction report?")) return;
+      try {
+        const res = await fetch(`${getAuthBase()}/api/reports/${reportId}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          showToast("Report deleted successfully.", "info");
+          await loadUserSavedReports();
+        } else {
+          showToast("Failed to delete report.", "error");
+        }
+      } catch (err) {
+        showToast("Error contacting report service.", "error");
+      }
+    }
+
   </script>
 </body>
 </html>

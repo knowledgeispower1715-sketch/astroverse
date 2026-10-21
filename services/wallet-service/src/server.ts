@@ -21,6 +21,23 @@ function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+// Helper: Sanitize user record (never return passwords or reset tokens to client)
+function sanitizeUser(user: UserRecord): any {
+  const { passwordHash, passwordSalt, resetTokenHash, resetTokenExpiresAt, ...safe } = user as any;
+  return safe;
+}
+
+// Helper: Scrypt password hashing & timing-safe verification
+function hashPassword(password: string, salt: string): string {
+  return crypto.scryptSync(password, salt, 64).toString('hex');
+}
+
+function verifyPassword(password: string, salt: string, storedHash: string): boolean {
+  const hash = hashPassword(password, salt);
+  if (Buffer.byteLength(hash) !== Buffer.byteLength(storedHash)) return false;
+  return crypto.timingSafeEqual(Buffer.from(hash, 'utf8'), Buffer.from(storedHash, 'utf8'));
+}
+
 // In-Memory OTP Store with Anti-Abuse, Cooldown, and Attempt Counting
 interface OtpEntry {
   otp: string;
@@ -166,12 +183,15 @@ app.post('/api/auth/request-otp', async (req: Request, res: Response) => {
 
   console.log(`[AUTH_OTP_DISPATCH] Dispatched OTP to ${isEmail ? 'email' : 'phone'} ${cleanId}: ${otp}`);
 
-  res.json({
+  const responsePayload: any = {
     status: 'OTP_SENT',
     message: `Verification code sent to ${cleanId}.`,
-    cooldownSeconds: 60,
-    devPreviewOtp: otp // Server-side preview for local evaluation & testing
-  });
+    cooldownSeconds: 60
+  };
+  if (process.env.NODE_ENV === 'test') {
+    responsePayload.devPreviewOtp = otp; // Only populated for isolated automated test runs
+  }
+  res.json(responsePayload);
 });
 
 // POST /api/auth/verify-otp
@@ -269,19 +289,304 @@ app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
     res.json({
       status: 'AUTHENTICATED',
       sessionToken: rawSessionToken,
-      user: {
-        id: user.id,
-        displayName: user.displayName,
-        phone: user.phone,
-        email: user.email,
-        phoneVerified: user.phoneVerified,
-        emailVerified: user.emailVerified,
-        role: user.role,
-        status: user.status,
-        walletBalance: user.walletBalance,
-        preferredLanguage: user.preferredLanguage,
-        preferredTimezone: user.preferredTimezone
-      }
+      user: sanitizeUser(user)
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/register-password
+app.post('/api/auth/register-password', async (req: Request, res: Response) => {
+  const { email, password, displayName, phone } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Email and password are required.' });
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ error: 'INVALID_EMAIL_FORMAT', message: 'Please provide a valid email address.' });
+  }
+
+  if (typeof password !== 'string' || password.length < 8 || !/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
+    return res.status(400).json({
+      error: 'WEAK_PASSWORD',
+      message: 'Password must be at least 8 characters long and contain both letters and numbers.'
+    });
+  }
+
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  if (!checkIpRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests. Please wait 10 minutes.' });
+  }
+
+  try {
+    let existing = await db.findUserByEmail(cleanEmail);
+    if (existing && existing.passwordHash) {
+      return res.status(409).json({
+        error: 'EMAIL_ALREADY_EXISTS',
+        message: 'An account with this email already exists. Please log in.'
+      });
+    }
+
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = hashPassword(password, salt);
+
+    let user: UserRecord;
+    let isNewUser = false;
+    if (existing) {
+      user = await db.updateUser(existing.id, {
+        passwordHash: hash,
+        passwordSalt: salt,
+        displayName: displayName ? String(displayName).trim() : existing.displayName,
+        lastLoginAt: new Date().toISOString()
+      });
+    } else {
+      isNewUser = true;
+      user = await db.createUser({
+        email: cleanEmail,
+        phone: phone ? String(phone).trim() : null,
+        emailVerified: true,
+        displayName: displayName ? String(displayName).trim() : cleanEmail.split('@')[0],
+        passwordHash: hash,
+        passwordSalt: salt,
+        role: Role.USER,
+        status: AccountStatus.ACTIVE,
+        walletBalance: 0.00
+      });
+    }
+
+    const rawSessionToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(rawSessionToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await db.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+      ipAddress: clientIp,
+      userAgent: req.headers['user-agent'] || null
+    });
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: isNewUser ? 'AUTH_REGISTER_PASSWORD' : 'AUTH_LINK_PASSWORD',
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: clientIp,
+      metadata: { email: cleanEmail }
+    });
+
+    res.json({
+      status: 'AUTHENTICATED',
+      sessionToken: rawSessionToken,
+      user: sanitizeUser(user)
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/login-password
+app.post('/api/auth/login-password', async (req: Request, res: Response) => {
+  const { identifier, password } = req.body;
+  if (!identifier || !password) {
+    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier and password are required.' });
+  }
+
+  const cleanId = String(identifier).trim();
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  if (!checkIpRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many attempts. Please try again later.' });
+  }
+
+  try {
+    const user = await db.findUserByIdentifier(cleanId);
+    if (!user || !user.passwordHash || !user.passwordSalt) {
+      return res.status(401).json({
+        error: 'INVALID_CREDENTIALS',
+        message: 'Invalid email/phone or password. If you registered via OTP, please log in with OTP.'
+      });
+    }
+
+    if (user.status !== AccountStatus.ACTIVE) {
+      return res.status(403).json({
+        error: 'ACCOUNT_INACTIVE',
+        message: `Account is ${user.status.toLowerCase()}. Please contact customer support.`
+      });
+    }
+
+    const matches = verifyPassword(String(password), user.passwordSalt, user.passwordHash);
+    if (!matches) {
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: 'AUTH_FAILED_PASSWORD',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: clientIp,
+        metadata: { identifier: cleanId }
+      });
+      return res.status(401).json({
+        error: 'INVALID_CREDENTIALS',
+        message: 'Invalid email/phone or password.'
+      });
+    }
+
+    const rawSessionToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(rawSessionToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await db.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+      ipAddress: clientIp,
+      userAgent: req.headers['user-agent'] || null
+    });
+
+    await db.updateUser(user.id, { lastLoginAt: new Date().toISOString() });
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'AUTH_LOGIN_PASSWORD',
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: clientIp,
+      metadata: { identifier: cleanId }
+    });
+
+    res.json({
+      status: 'AUTHENTICATED',
+      sessionToken: rawSessionToken,
+      user: sanitizeUser(user)
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/forgot-password
+app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
+  const { identifier } = req.body;
+  if (!identifier) {
+    return res.status(400).json({ error: 'IDENTIFIER_REQUIRED', message: 'Email address or phone number is required.' });
+  }
+
+  const cleanId = String(identifier).trim();
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  if (!checkIpRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests. Please wait 10 minutes.' });
+  }
+
+  try {
+    const user = await db.findUserByIdentifier(cleanId);
+    if (!user) {
+      return res.json({
+        status: 'RESET_CODE_SENT',
+        message: `If an account exists for ${cleanId}, a 6-digit password reset code has been dispatched.`
+      });
+    }
+
+    const resetCode = crypto.randomInt(100000, 999999).toString();
+    const resetTokenHash = crypto.createHash('sha256').update(resetCode).digest('hex');
+    const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    await db.updateUser(user.id, {
+      resetTokenHash,
+      resetTokenExpiresAt
+    });
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'PASSWORD_RESET_REQUESTED',
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: clientIp,
+      metadata: { identifier: cleanId }
+    });
+
+    console.log(`[AUTH_PASSWORD_RESET] Code for ${cleanId}: ${resetCode}`);
+
+    const resPayload: any = {
+      status: 'RESET_CODE_SENT',
+      message: `A 6-digit password reset code has been dispatched to ${cleanId}.`
+    };
+    if (process.env.NODE_ENV === 'test') {
+      resPayload.devResetCode = resetCode;
+    }
+    res.json(resPayload);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/auth/reset-password
+app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
+  const { identifier, resetCode, newPassword } = req.body;
+  if (!identifier || !resetCode || !newPassword) {
+    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier, reset code, and new password are required.' });
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || !/\d/.test(newPassword) || !/[a-zA-Z]/.test(newPassword)) {
+    return res.status(400).json({
+      error: 'WEAK_PASSWORD',
+      message: 'New password must be at least 8 characters long and contain both letters and numbers.'
+    });
+  }
+
+  const cleanId = String(identifier).trim();
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+
+  try {
+    const user = await db.findUserByIdentifier(cleanId);
+    if (!user || !user.resetTokenHash || !user.resetTokenExpiresAt) {
+      return res.status(400).json({
+        error: 'INVALID_RESET_REQUEST',
+        message: 'No active reset request found for this account. Please request a new code.'
+      });
+    }
+
+    if (new Date(user.resetTokenExpiresAt).getTime() < Date.now()) {
+      return res.status(400).json({
+        error: 'RESET_CODE_EXPIRED',
+        message: 'The password reset code has expired. Please request a new code.'
+      });
+    }
+
+    const submittedHash = crypto.createHash('sha256').update(String(resetCode).trim()).digest('hex');
+    if (submittedHash !== user.resetTokenHash) {
+      return res.status(400).json({
+        error: 'INVALID_RESET_CODE',
+        message: 'Incorrect password reset code.'
+      });
+    }
+
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = hashPassword(newPassword, salt);
+
+    await db.updateUser(user.id, {
+      passwordHash: hash,
+      passwordSalt: salt,
+      resetTokenHash: null,
+      resetTokenExpiresAt: null
+    });
+
+    // Invalidate existing sessions for security
+    await db.deleteUserSessions(user.id);
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'PASSWORD_RESET_COMPLETED',
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: clientIp,
+      metadata: { identifier: cleanId }
+    });
+
+    res.json({
+      status: 'PASSWORD_RESET_SUCCESS',
+      message: 'Password has been reset successfully. Please log in with your new password.'
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -487,8 +792,11 @@ app.post('/api/profiles', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/profiles/:userId', async (req: Request, res: Response) => {
+app.get('/api/profiles/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { userId } = req.params;
+  if (req.user!.role !== Role.SUPER_ADMIN && req.user!.id !== userId) {
+    return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot access another user\'s birth profiles.' });
+  }
   try {
     const profiles = await db.getProfilesByUserId(userId);
     res.json(profiles);
@@ -497,9 +805,14 @@ app.get('/api/profiles/:userId', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/profiles/:id', async (req: Request, res: Response) => {
+app.put('/api/profiles/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
+    const profile = await db.getProfileById(id);
+    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
+    if (req.user!.role !== Role.SUPER_ADMIN && profile.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot update another user\'s birth profile.' });
+    }
     const updated = await db.updateProfile(id, req.body);
     res.json(updated);
   } catch (err: any) {
@@ -507,9 +820,14 @@ app.put('/api/profiles/:id', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/profiles/:id', async (req: Request, res: Response) => {
+app.delete('/api/profiles/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
+    const profile = await db.getProfileById(id);
+    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
+    if (req.user!.role !== Role.SUPER_ADMIN && profile.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot delete another user\'s birth profile.' });
+    }
     const deleted = await db.deleteProfile(id);
     if (!deleted) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
     res.json({ status: 'DELETED' });
@@ -539,8 +857,11 @@ app.post('/api/reports/save', authenticate, async (req: AuthenticatedRequest, re
   }
 });
 
-app.get('/api/reports/:userId', async (req: Request, res: Response) => {
+app.get('/api/reports/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { userId } = req.params;
+  if (req.user!.role !== Role.SUPER_ADMIN && req.user!.id !== userId) {
+    return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot access another user\'s saved reports.' });
+  }
   try {
     const reports = await db.getSavedReportsByUserId(userId);
     res.json(reports);
@@ -549,9 +870,28 @@ app.get('/api/reports/:userId', async (req: Request, res: Response) => {
   }
 });
 
+app.get('/api/reports/detail/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    const report = await db.getSavedReportById(id);
+    if (!report) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
+    if (req.user!.role !== Role.SUPER_ADMIN && report.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot access another user\'s saved report.' });
+    }
+    res.json(report);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete('/api/reports/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
+    const report = await db.getSavedReportById(id);
+    if (!report) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
+    if (req.user!.role !== Role.SUPER_ADMIN && report.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot delete another user\'s saved report.' });
+    }
     const deleted = await db.deleteSavedReport(id);
     if (!deleted) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
     res.json({ status: 'DELETED' });

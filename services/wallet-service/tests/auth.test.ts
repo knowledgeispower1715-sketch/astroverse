@@ -226,11 +226,173 @@ async function runAuthTestSuite() {
     });
 
     await test('GET /api/profiles/:userId retrieves persisted birth profiles', async () => {
-      const res = await request(`/api/profiles/${userId}`);
+      const res = await request(`/api/profiles/${userId}`, {
+        headers: { Authorization: `Bearer ${sessionToken}` }
+      });
       assert.strictEqual(res.status, 200);
       assert.ok(Array.isArray(res.data));
       assert.strictEqual(res.data.length, 1);
       assert.strictEqual(res.data[0].id, profileId);
+    });
+
+    // 8.1 Password Authentication Test Suite
+    const pwdEmail = `astro_pwd_${Date.now()}@example.com`;
+    const strongPassword = 'VedicPass2026!';
+    let pwdToken = '';
+    let pwdUserId = '';
+
+    await test('POST /api/auth/register-password rejects weak passwords', async () => {
+      const res = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: pwdEmail, password: 'short' }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'WEAK_PASSWORD');
+    });
+
+    await test('POST /api/auth/register-password registers user and returns session', async () => {
+      const res = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: pwdEmail, password: strongPassword, displayName: 'Password User' }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'AUTHENTICATED');
+      assert.strictEqual(res.data.user.email, pwdEmail);
+      assert.strictEqual(res.data.user.passwordHash, undefined); // Never leaked to client
+      assert.strictEqual(typeof res.data.sessionToken, 'string');
+      pwdToken = res.data.sessionToken;
+      pwdUserId = res.data.user.id;
+    });
+
+    await test('POST /api/auth/login-password rejects incorrect password', async () => {
+      const res = await request('/api/auth/login-password', {
+        method: 'POST',
+        body: { identifier: pwdEmail, password: 'WrongPassword123' }
+      });
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.data.error, 'INVALID_CREDENTIALS');
+    });
+
+    await test('POST /api/auth/login-password authenticates valid credentials', async () => {
+      const res = await request('/api/auth/login-password', {
+        method: 'POST',
+        body: { identifier: pwdEmail, password: strongPassword }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'AUTHENTICATED');
+      assert.strictEqual(res.data.user.id, pwdUserId);
+      assert.strictEqual(typeof res.data.sessionToken, 'string');
+    });
+
+    // 8.2 Password Reset Flow
+    let resetCode = '';
+    await test('POST /api/auth/forgot-password issues reset code for registered account', async () => {
+      const res = await request('/api/auth/forgot-password', {
+        method: 'POST',
+        body: { identifier: pwdEmail }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'RESET_CODE_SENT');
+      assert.strictEqual(typeof res.data.devResetCode, 'string');
+      resetCode = res.data.devResetCode;
+    });
+
+    await test('POST /api/auth/reset-password resets password and allows login with new password', async () => {
+      const newPassword = 'NewSecret2026!';
+      const res = await request('/api/auth/reset-password', {
+        method: 'POST',
+        body: { identifier: pwdEmail, resetCode, newPassword }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'PASSWORD_RESET_SUCCESS');
+
+      // Login with new password
+      const loginRes = await request('/api/auth/login-password', {
+        method: 'POST',
+        body: { identifier: pwdEmail, password: newPassword }
+      });
+      assert.strictEqual(loginRes.status, 200);
+      assert.strictEqual(loginRes.data.status, 'AUTHENTICATED');
+      pwdToken = loginRes.data.sessionToken;
+    });
+
+    // 8.3 Tenant Isolation & Authorization (BOLA/IDOR Defense)
+    await test('User A cannot retrieve User B birth profiles (HTTP 403 Forbidden)', async () => {
+      // pwdUser attempts to access original test user's profiles
+      const res = await request(`/api/profiles/${userId}`, {
+        headers: { Authorization: `Bearer ${pwdToken}` }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'FORBIDDEN');
+    });
+
+    await test('User A cannot retrieve User B saved reports (HTTP 403 Forbidden)', async () => {
+      const res = await request(`/api/reports/${userId}`, {
+        headers: { Authorization: `Bearer ${pwdToken}` }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'FORBIDDEN');
+    });
+
+    let savedReportId = '';
+    await test('User can save a multi-horizon structured prediction report', async () => {
+      const res = await request('/api/reports/save', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${sessionToken}` },
+        body: {
+          title: 'Hourly Personal Guidance: Jupiter Hora',
+          reportType: 'PREDICTION_HOURLY',
+          payload: {
+            report_title: 'Hourly Personal Guidance: Jupiter Hora',
+            time_horizon: 'hourly',
+            sections: {
+              overall_outlook: 'Favorable strategic window for analytical execution.',
+              supportive_developments: ['High focus for negotiations'],
+              challenges_and_cautions: ['Avoid hasty speech'],
+              relevant_time_windows: ['Active interval: Jupiter Hora'],
+              why_this_applies: 'Grounded in Aries Lagna and Jupiter Mahadasha.',
+              practical_reflection: 'Focus on high-leverage execution.',
+              limitations: 'Qualitative guidance only.'
+            }
+          }
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.ok(res.data.id);
+      assert.strictEqual(res.data.userId, userId);
+      savedReportId = res.data.id;
+    });
+
+    await test('User can fetch their saved report by ID', async () => {
+      const res = await request(`/api/reports/detail/${savedReportId}`, {
+        headers: { Authorization: `Bearer ${sessionToken}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.id, savedReportId);
+      assert.strictEqual(res.data.reportType, 'PREDICTION_HOURLY');
+    });
+
+    await test('User A cannot fetch User B saved report by ID (HTTP 403 Forbidden)', async () => {
+      const res = await request(`/api/reports/detail/${savedReportId}`, {
+        headers: { Authorization: `Bearer ${pwdToken}` }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'FORBIDDEN');
+    });
+
+    await test('User can delete their own saved report', async () => {
+      const res = await request(`/api/reports/${savedReportId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${sessionToken}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'DELETED');
+    });
+
+    await test('Unauthenticated profile request is rejected with HTTP 401', async () => {
+      const res = await request(`/api/profiles/${userId}`);
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.data.error, 'UNAUTHORIZED');
     });
 
     // 9. RBAC Protection & Admin Console
@@ -297,9 +459,12 @@ async function runAuthTestSuite() {
       assert.ok(res.data.events.some((e: any) => e.action === 'ADMIN_STATUS_CHANGE'));
     });
 
-    // 11. Cleanup test birth profile
+    // 11. Cleanup test birth profile (Super Admin authority)
     await test('DELETE /api/profiles/:id deletes birth profile', async () => {
-      const res = await request(`/api/profiles/${profileId}`, { method: 'DELETE' });
+      const res = await request(`/api/profiles/${profileId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.data.status, 'DELETED');
     });

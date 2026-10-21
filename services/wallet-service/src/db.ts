@@ -10,6 +10,10 @@ export interface UserRecord {
   phoneVerified: boolean;
   emailVerified: boolean;
   displayName: string | null;
+  passwordHash?: string | null;
+  passwordSalt?: string | null;
+  resetTokenHash?: string | null;
+  resetTokenExpiresAt?: string | null;
   role: Role;
   status: AccountStatus;
   preferredLanguage: string;
@@ -293,6 +297,8 @@ class ResilientDatabase {
     phoneVerified?: boolean;
     emailVerified?: boolean;
     displayName?: string | null;
+    passwordHash?: string | null;
+    passwordSalt?: string | null;
     role?: Role;
     status?: AccountStatus;
     preferredLanguage?: string;
@@ -307,6 +313,10 @@ class ResilientDatabase {
       phoneVerified: userData.phoneVerified || false,
       emailVerified: userData.emailVerified || false,
       displayName: userData.displayName || (userData.email ? userData.email.split('@')[0] : `User_${userData.phone?.slice(-4) || 'Astro'}`),
+      passwordHash: userData.passwordHash || null,
+      passwordSalt: userData.passwordSalt || null,
+      resetTokenHash: null,
+      resetTokenExpiresAt: null,
       role: userData.role || Role.USER,
       status: userData.status || AccountStatus.ACTIVE,
       preferredLanguage: userData.preferredLanguage || 'en',
@@ -507,6 +517,10 @@ class ResilientDatabase {
     return this.data.birthProfiles.filter(p => p.userId === userId);
   }
 
+  async getProfileById(id: string): Promise<BirthProfileRecord | null> {
+    return this.data.birthProfiles.find(p => p.id === id) || null;
+  }
+
   async updateProfile(id: string, updates: Partial<BirthProfileRecord>): Promise<BirthProfileRecord> {
     const idx = this.data.birthProfiles.findIndex(p => p.id === id);
     if (idx === -1) throw new Error('PROFILE_NOT_FOUND');
@@ -551,6 +565,10 @@ class ResilientDatabase {
 
   async getSavedReportsByUserId(userId: string): Promise<SavedReportRecord[]> {
     return this.data.savedReports.filter(r => r.userId === userId);
+  }
+
+  async getSavedReportById(id: string): Promise<SavedReportRecord | null> {
+    return this.data.savedReports.find(r => r.id === id) || null;
   }
 
   async deleteSavedReport(id: string): Promise<boolean> {
