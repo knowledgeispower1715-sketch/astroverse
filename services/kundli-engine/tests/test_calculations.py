@@ -12,8 +12,9 @@ Exercises:
 """
 import sys
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
+from fastapi import HTTPException
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -24,6 +25,7 @@ from hora_engine import calculate_sun_times, calculate_24h_horas
 from matchmaking import match_kundli_36_gunas
 from doshas_and_remedies import analyze_doshas_and_remedies
 from ai_astrologer import generate_structured_prediction
+from main import get_hourly_predictions
 from external_api import (
     fetch_external_planets,
     fetch_external_chart_url,
@@ -444,6 +446,162 @@ def test_canonical_hora_contract_and_presunrise():
 
     print("[PASS] test_canonical_hora_contract_and_presunrise passed")
 
+def test_solar_cycle_boundary_transitions_and_dst():
+    """
+    Blocker 4 Verification Suite:
+    - Pre-sunrise nocturnal query with and without date_str
+    - Exact sunrise boundary
+    - Immediately before and after a Hora boundary
+    - Sunset transition (Day Hora 12 to Night Hora 13)
+    - Midnight interval
+    - Next sunrise advance
+    - Distinct historical date vs active instant
+    - IANA timezone with Daylight Saving Time transitions (America/New_York)
+    - Explicit HTTPException 400 rejection for malformed inputs
+    """
+    tz_delhi = "Asia/Kolkata"
+    lat, lon = 28.6139, 77.2090 # New Delhi
+
+    # 1. Pre-Sunrise: 02:30 AM on 2026-10-21 (sunrise is ~06:25 AM)
+    # A. With date_str passed as today's calendar date:
+    pre_sun_with_date = get_hourly_predictions(
+        date_str="2026-10-21",
+        lat=lat,
+        lon=lon,
+        timezone=tz_delhi,
+        current_instant="2026-10-21T02:30:00"
+    )
+    ah1 = pre_sun_with_date["active_hora"]
+    assert ah1 is not None, "Expected active hora for pre-sunrise instant"
+    t_instant_ms = int(datetime(2026, 10, 21, 2, 30, tzinfo=ZoneInfo(tz_delhi)).timestamp() * 1000)
+    assert ah1["start_epoch_ms"] <= t_instant_ms < ah1["end_epoch_ms"]
+    assert ah1["period"] == "Night"
+    assert pre_sun_with_date["date"] == "2026-10-20", "Expected previous day's solar cycle date"
+
+    # B. Without date_str (automatic instant grounding):
+    pre_sun_no_date = get_hourly_predictions(
+        lat=lat,
+        lon=lon,
+        timezone=tz_delhi,
+        current_instant="2026-10-21T02:30:00"
+    )
+    ah2 = pre_sun_no_date["active_hora"]
+    assert ah2["start_epoch_ms"] == ah1["start_epoch_ms"]
+    assert ah2["end_epoch_ms"] == ah1["end_epoch_ms"]
+
+    # 2. Exact Sunrise: get exact sunrise time for Delhi on 2026-10-21
+    s_rise, s_set, s_next = calculate_sun_times(date(2026, 10, 21), lat, lon, tz_delhi)
+    rise_res = get_hourly_predictions(
+        date_str="2026-10-21",
+        lat=lat,
+        lon=lon,
+        timezone=tz_delhi,
+        current_instant=s_rise.isoformat()
+    )
+    ah_rise = rise_res["active_hora"]
+    assert ah_rise is not None
+    assert ah_rise["hora_number"] == 1
+    assert ah_rise["period"] == "Day"
+    rise_ms = int(s_rise.timestamp() * 1000)
+    assert ah_rise["start_epoch_ms"] <= rise_ms < ah_rise["end_epoch_ms"]
+
+    # 3. Boundary Crossing: immediately before and after Hora 1 ends
+    h1_end_epoch_ms = ah_rise["end_epoch_ms"]
+    # 1 second before end of Hora 1:
+    dt_before_end = datetime.fromtimestamp((h1_end_epoch_ms - 1000) / 1000.0, tz=ZoneInfo(tz_delhi))
+    res_before = get_hourly_predictions(lat=lat, lon=lon, timezone=tz_delhi, current_instant=dt_before_end.isoformat())
+    assert res_before["active_hora"]["hora_number"] == 1
+
+    # 1 second after start of Hora 2:
+    dt_after_start = datetime.fromtimestamp((h1_end_epoch_ms + 1000) / 1000.0, tz=ZoneInfo(tz_delhi))
+    res_after = get_hourly_predictions(lat=lat, lon=lon, timezone=tz_delhi, current_instant=dt_after_start.isoformat())
+    assert res_after["active_hora"]["hora_number"] == 2
+
+    # 4. Sunset Transition: instant at sunset
+    sunset_res = get_hourly_predictions(lat=lat, lon=lon, timezone=tz_delhi, current_instant=s_set.isoformat())
+    ah_sunset = sunset_res["active_hora"]
+    assert ah_sunset["hora_number"] == 13
+    assert ah_sunset["period"] == "Night"
+    sunset_ms = int(s_set.timestamp() * 1000)
+    assert ah_sunset["start_epoch_ms"] <= sunset_ms < ah_sunset["end_epoch_ms"]
+
+    # 5. Midnight Instant: 2026-10-21 23:59:59 and 2026-10-22 00:00:01
+    dt_midnight = datetime(2026, 10, 22, 0, 0, 1, tzinfo=ZoneInfo(tz_delhi))
+    mid_res = get_hourly_predictions(lat=lat, lon=lon, timezone=tz_delhi, current_instant=dt_midnight.isoformat())
+    ah_mid = mid_res["active_hora"]
+    assert ah_mid is not None
+    assert ah_mid["period"] == "Night"
+    mid_ms = int(dt_midnight.timestamp() * 1000)
+    assert ah_mid["start_epoch_ms"] <= mid_ms < ah_mid["end_epoch_ms"]
+
+    # 6. Distinct Historical Date Query: user inspects 2020-01-01 while current instant is in 2026
+    hist_res = get_hourly_predictions(
+        date_str="2020-01-01",
+        lat=lat,
+        lon=lon,
+        timezone=tz_delhi,
+        current_instant="2026-10-21T14:00:00"
+    )
+    assert len(hist_res["timeline"]) == 24
+    assert hist_res["active_hora"] is None, "Historical timeline outside current instant must have active_hora: None"
+    assert hist_res["planet"] is None
+    assert hist_res["start_epoch_ms"] is None
+
+    # 7. Timezone with Daylight Saving Time (DST): America/New_York
+    ny_tz = "America/New_York"
+    ny_lat, ny_lon = 40.7128, -74.0060
+
+    # Summer / EDT instant: 2026-06-21 13:00 (EDT = UTC-4)
+    ny_summer = get_hourly_predictions(
+        lat=ny_lat,
+        lon=ny_lon,
+        timezone=ny_tz,
+        current_instant="2026-06-21T13:00:00"
+    )
+    assert ny_summer["active_hora"] is not None
+    assert ny_summer["active_hora"]["period"] == "Day"
+    ny_s_ms = int(datetime(2026, 6, 21, 13, 0, tzinfo=ZoneInfo(ny_tz)).timestamp() * 1000)
+    assert ny_summer["active_hora"]["start_epoch_ms"] <= ny_s_ms < ny_summer["active_hora"]["end_epoch_ms"]
+
+    # Winter / EST instant: 2026-01-15 22:30 (EST = UTC-5)
+    ny_winter = get_hourly_predictions(
+        lat=ny_lat,
+        lon=ny_lon,
+        timezone=ny_tz,
+        current_instant="2026-01-15T22:30:00"
+    )
+    assert ny_winter["active_hora"] is not None
+    assert ny_winter["active_hora"]["period"] == "Night"
+    ny_w_ms = int(datetime(2026, 1, 15, 22, 30, tzinfo=ZoneInfo(ny_tz)).timestamp() * 1000)
+    assert ny_winter["active_hora"]["start_epoch_ms"] <= ny_w_ms < ny_winter["active_hora"]["end_epoch_ms"]
+
+    # 8. Explicit Error Handling: Malformed Inputs Reject with HTTPException 400
+    try:
+        get_hourly_predictions(timezone="Invalid/Timezone_That_Does_Not_Exist")
+        assert False, "Expected 400 for invalid timezone"
+    except HTTPException as e:
+        assert e.status_code == 400
+
+    try:
+        get_hourly_predictions(date_str="malformed-date-format")
+        assert False, "Expected 400 for malformed date_str"
+    except HTTPException as e:
+        assert e.status_code == 400
+
+    try:
+        get_hourly_predictions(current_instant="bad-instant")
+        assert False, "Expected 400 for malformed current_instant"
+    except HTTPException as e:
+        assert e.status_code == 400
+
+    try:
+        get_hourly_predictions(lat=999.0)
+        assert False, "Expected 400 for out-of-bounds latitude"
+    except HTTPException as e:
+        assert e.status_code == 400
+
+    print("[PASS] test_solar_cycle_boundary_transitions_and_dst passed")
+
 if __name__ == "__main__":
     test_ephemeris_and_panchang()
     test_divisional_charts()
@@ -457,5 +615,6 @@ if __name__ == "__main__":
     test_ashtakoota_libra_aries()
     test_structured_predictions_all_horizons()
     test_canonical_hora_contract_and_presunrise()
-    print("\nALL 12 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
+    test_solar_cycle_boundary_transitions_and_dst()
+    print("\nALL 13 ASTRONOMICAL & INTEGRATION TEST SUITES PASSED!")
 

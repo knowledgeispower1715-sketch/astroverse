@@ -191,10 +191,46 @@ async function runAuthTestSuite() {
       assert.strictEqual(res.data.user.emailVerified, true);
     });
 
-    // 8. Strict Birth Profile CRUD (Zero-default rejection)
+    // 8. Strict Birth Profile CRUD & Ownership Security
+    await test('POST /api/profiles rejects unauthenticated request with HTTP 401', async () => {
+      const res = await request('/api/profiles', {
+        method: 'POST',
+        body: {
+          profileName: 'Unauthenticated Profile',
+          relationship: 'Self',
+          dateOfBirth: '1990-05-15',
+          timeOfBirth: '14:30',
+          birthplaceName: 'Varanasi',
+          latitude: 25.3176,
+          longitude: 82.9739
+        }
+      });
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.data.error, 'UNAUTHORIZED');
+    });
+
+    await test('POST /api/profiles rejects invalid/expired token with HTTP 401', async () => {
+      const res = await request('/api/profiles', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer bad_expired_token_12345' },
+        body: {
+          profileName: 'Invalid Token Profile',
+          relationship: 'Self',
+          dateOfBirth: '1990-05-15',
+          timeOfBirth: '14:30',
+          birthplaceName: 'Varanasi',
+          latitude: 25.3176,
+          longitude: 82.9739
+        }
+      });
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.data.error, 'INVALID_OR_EXPIRED_SESSION');
+    });
+
     await test('Birth Profile creation rejects payload with missing required fields', async () => {
       const res = await request('/api/profiles', {
         method: 'POST',
+        headers: { Authorization: `Bearer ${sessionToken}` },
         body: {
           userId,
           profileName: 'Incomplete Profile'
@@ -206,11 +242,11 @@ async function runAuthTestSuite() {
     });
 
     let profileId = '';
-    await test('Birth Profile creation succeeds with valid complete payload', async () => {
+    await test('Birth Profile creation succeeds with valid complete payload deriving owner ID from session', async () => {
       const res = await request('/api/profiles', {
         method: 'POST',
+        headers: { Authorization: `Bearer ${sessionToken}` },
         body: {
-          userId,
           profileName: 'Amitabh Sharma',
           relationship: 'Self',
           dateOfBirth: '1990-05-15',
@@ -224,6 +260,27 @@ async function runAuthTestSuite() {
       assert.strictEqual(res.data.profileName, 'Amitabh Sharma');
       assert.strictEqual(res.data.userId, userId);
       profileId = res.data.id;
+    });
+
+    await test('Idempotency & Concurrent Retries: duplicate creation returns existing profile', async () => {
+      const payload = {
+        profileName: 'Amitabh Sharma',
+        relationship: 'Self',
+        dateOfBirth: '1990-05-15',
+        timeOfBirth: '14:30',
+        birthplaceName: 'Varanasi, Uttar Pradesh, India',
+        latitude: 25.3176,
+        longitude: 82.9739
+      };
+      // Concurrent execution simulating network retries
+      const [r1, r2] = await Promise.all([
+        request('/api/profiles', { method: 'POST', headers: { Authorization: `Bearer ${sessionToken}` }, body: payload }),
+        request('/api/profiles', { method: 'POST', headers: { Authorization: `Bearer ${sessionToken}` }, body: payload })
+      ]);
+      assert.strictEqual(r1.status, 200);
+      assert.strictEqual(r2.status, 200);
+      assert.strictEqual(r1.data.id, profileId);
+      assert.strictEqual(r2.data.id, profileId);
     });
 
     await test('GET /api/profiles/:userId retrieves persisted birth profiles', async () => {
@@ -318,6 +375,26 @@ async function runAuthTestSuite() {
     });
 
     // 8.3 Tenant Isolation & Authorization (BOLA/IDOR Defense)
+    await test('User A cannot create a profile under User B account (HTTP 403 Forbidden)', async () => {
+      // pwdUser attempts to create a profile under original test user's account
+      const res = await request('/api/profiles', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${pwdToken}` },
+        body: {
+          userId: userId, // Target user B's id
+          profileName: 'Illegitimate Cross-User Profile',
+          relationship: 'Friend',
+          dateOfBirth: '1992-08-10',
+          timeOfBirth: '09:15',
+          birthplaceName: 'Mumbai',
+          latitude: 19.0760,
+          longitude: 72.8777
+        }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'FORBIDDEN');
+    });
+
     await test('User A cannot retrieve User B birth profiles (HTTP 403 Forbidden)', async () => {
       // pwdUser attempts to access original test user's profiles
       const res = await request(`/api/profiles/${userId}`, {
@@ -460,7 +537,30 @@ async function runAuthTestSuite() {
       assert.ok(res.data.events.some((e: any) => e.action === 'ADMIN_STATUS_CHANGE'));
     });
 
-    // 11. Cleanup test birth profile (Super Admin authority)
+    // Super Admin authorized cross-account profile creation
+    let adminCreatedProfileId = '';
+    await test('Super Admin can create a profile under another user account', async () => {
+      const res = await request('/api/profiles', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: {
+          userId: userId, // Target user
+          profileName: 'Admin Managed Profile',
+          relationship: 'Client',
+          dateOfBirth: '1985-04-20',
+          timeOfBirth: '11:00',
+          birthplaceName: 'Jaipur',
+          latitude: 26.9124,
+          longitude: 75.7873
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.userId, userId);
+      assert.strictEqual(res.data.profileName, 'Admin Managed Profile');
+      adminCreatedProfileId = res.data.id;
+    });
+
+    // 11. Cleanup test birth profiles (Super Admin authority)
     await test('DELETE /api/profiles/:id deletes birth profile', async () => {
       const res = await request(`/api/profiles/${profileId}`, {
         method: 'DELETE',
@@ -468,6 +568,47 @@ async function runAuthTestSuite() {
       });
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.data.status, 'DELETED');
+    });
+
+    if (adminCreatedProfileId) {
+      await test('DELETE /api/profiles/:id deletes admin-created birth profile', async () => {
+        const res = await request(`/api/profiles/${adminCreatedProfileId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${adminToken}` }
+        });
+        assert.strictEqual(res.status, 200);
+        assert.strictEqual(res.data.status, 'DELETED');
+      });
+    }
+
+    // 12. Security & Log Redaction Regression Test (Blocker 2)
+    await test('Security: Production log redaction never exposes OTP or password reset tokens', async () => {
+      const capturedLogs: string[] = [];
+      const originalLog = console.log;
+      console.log = (...args: any[]) => {
+        capturedLogs.push(args.map(a => String(a)).join(' '));
+      };
+
+      try {
+        const testIdent = `sec_audit_${Date.now()}@example.com`;
+        const otpRes = await request('/api/auth/request-otp', {
+          method: 'POST',
+          body: { identifier: testIdent }
+        });
+        assert.strictEqual(otpRes.status, 200);
+        const secretOtp = String(otpRes.data.devPreviewOtp);
+        assert.ok(secretOtp && secretOtp.length === 6, 'Expected 6-digit test preview OTP');
+
+        const combinedLogs = capturedLogs.join('\n');
+        // Assert secret OTP is NOT in any log line
+        assert.ok(!combinedLogs.includes(secretOtp), `Security breach: Log contains raw OTP: ${secretOtp}`);
+        // Assert raw full identifier is masked in logs
+        assert.ok(!combinedLogs.includes(testIdent), `Privacy breach: Log contains unmasked identifier: ${testIdent}`);
+        // Assert masked format present in logs
+        assert.ok(combinedLogs.includes('@example.com'), 'Expected masked identifier format in log output');
+      } finally {
+        console.log = originalLog;
+      }
     });
 
   } finally {

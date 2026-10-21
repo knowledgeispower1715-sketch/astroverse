@@ -313,10 +313,6 @@ def calculate_24h_horas(
         if is_active:
             active_hora = hora_data
 
-    # Fallback if current_dt is outside the window (e.g. earlier than sunrise)
-    if not active_hora and timeline:
-        active_hora = timeline[0]
-
     now_epoch_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
     if active_hora:
         active_hora["planet"] = active_hora["ruling_planet"]
@@ -339,10 +335,10 @@ def calculate_24h_horas(
         "timeline": timeline,
         "active_hora": active_hora,
         "special_periods": special_periods,
-        "planet": active_hora["ruling_planet"] if active_hora else "Sun",
-        "category": active_hora.get("category_code", "favorable") if active_hora else "favorable",
-        "start_epoch_ms": active_hora["start_epoch_ms"] if active_hora else int(sunrise_dt.timestamp() * 1000),
-        "end_epoch_ms": active_hora["end_epoch_ms"] if active_hora else int((sunrise_dt + timedelta(seconds=day_hora_duration)).timestamp() * 1000),
+        "planet": active_hora["ruling_planet"] if active_hora else None,
+        "category": active_hora.get("category_code") if active_hora else None,
+        "start_epoch_ms": active_hora["start_epoch_ms"] if active_hora else None,
+        "end_epoch_ms": active_hora["end_epoch_ms"] if active_hora else None,
         "server_now_epoch_ms": now_epoch_ms,
         "source": "swiss_ephemeris",
         "calculation_method": "traditional_chaldean_solar_hours"

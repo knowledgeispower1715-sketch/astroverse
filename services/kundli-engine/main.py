@@ -29,7 +29,6 @@ from multi_method_engine import build_multi_method_comparison
 from external_api import (
     fetch_external_planets,
     fetch_external_chart_url,
-    fetch_external_navamsa,
     fetch_external_vedic_chart,
     fetch_external_visual_chart,
     get_api_key
@@ -275,41 +274,54 @@ def get_hourly_predictions(
     """
     Calculates authentic 24-hour planetary Horas, Rahu Kaal, and Yamaganda (Section 5)
     using exact solar sunrise and sunset computed via Swiss Ephemeris for the given location & date.
+    Strictly preserves Vedic solar-day boundaries (sunrise-to-sunrise).
     """
-    try:
-        target_date = date.fromisoformat(date_str) if date_str else date.today()
-    except Exception:
-        target_date = date.today()
+    if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lon <= 180.0):
+        raise HTTPException(status_code=400, detail="Latitude must be between -90 and 90, longitude between -180 and 180.")
 
-    tz_obj = ZoneInfo(timezone)
-    curr_dt = None
+    try:
+        tz_obj = ZoneInfo(timezone)
+    except Exception:
+        raise HTTPException(status_code=400, detail=f"Invalid IANA timezone: '{timezone}'")
+
     if current_instant:
         try:
             curr_dt = datetime.fromisoformat(current_instant)
             if curr_dt.tzinfo is None:
                 curr_dt = curr_dt.replace(tzinfo=tz_obj)
-        except Exception:
-            curr_dt = None
+            else:
+                curr_dt = curr_dt.astimezone(tz_obj)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid current_instant format: {str(e)}")
     else:
         curr_dt = datetime.now(tz_obj)
 
-    sunrise_dt, sunset_dt, next_sunrise_dt = calculate_sun_times(
-        target_date=target_date,
-        latitude=lat,
-        longitude=lon,
-        tz_name=timezone
-    )
+    queried_date: Optional[date] = None
+    if date_str:
+        try:
+            queried_date = date.fromisoformat(date_str)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid date_str format. Expected YYYY-MM-DD: {str(e)}")
 
-    # In Vedic solar reckoning, if the current moment is before sunrise and no specific date was queried,
-    # the active solar cycle belongs to the previous day's sunrise through today's sunrise.
-    if not date_str and curr_dt and curr_dt < sunrise_dt:
-        target_date = target_date - timedelta(days=1)
-        sunrise_dt, sunset_dt, next_sunrise_dt = calculate_sun_times(
-            target_date=target_date,
-            latitude=lat,
-            longitude=lon,
-            tz_name=timezone
-        )
+    # Distinguish active Hora request for the current instant vs explicit distinct historical/future calendar date
+    if queried_date is None or queried_date == curr_dt.date():
+        # In Vedic solar reckoning, a solar cycle runs from sunrise(D) to sunrise(D+1).
+        # Determine whether curr_dt precedes today's sunrise:
+        s_rise, s_set, s_next = calculate_sun_times(curr_dt.date(), lat, lon, timezone)
+        if curr_dt < s_rise:
+            # Pre-sunrise: belongs to the preceding day's nocturnal solar cycle
+            target_date = curr_dt.date() - timedelta(days=1)
+            sunrise_dt, sunset_dt, next_sunrise_dt = calculate_sun_times(target_date, lat, lon, timezone)
+        elif curr_dt >= s_next:
+            target_date = curr_dt.date() + timedelta(days=1)
+            sunrise_dt, sunset_dt, next_sunrise_dt = calculate_sun_times(target_date, lat, lon, timezone)
+        else:
+            target_date = curr_dt.date()
+            sunrise_dt, sunset_dt, next_sunrise_dt = s_rise, s_set, s_next
+    else:
+        # Explicit distinct calendar date requested
+        target_date = queried_date
+        sunrise_dt, sunset_dt, next_sunrise_dt = calculate_sun_times(target_date, lat, lon, timezone)
 
     horas_data = calculate_24h_horas(
         sunrise_dt=sunrise_dt,

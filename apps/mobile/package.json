@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('[PASS] AstroVerse Mobile sanity suite verified')\""
+    "test": "node --experimental-strip-types --test tests/hourlyGuidance.test.ts"
   },
   "dependencies": {
     "expo": "~51.0.0",

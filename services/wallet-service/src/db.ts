@@ -492,16 +492,30 @@ class ResilientDatabase {
     longitude: number;
     resolvedTimezone?: string;
   }): Promise<BirthProfileRecord> {
+    const trimmedName = data.profileName.trim();
+    // Atomic uniqueness and idempotency check (prevents concurrency race conditions)
+    const existing = this.data.birthProfiles.find(p =>
+      p.userId === data.userId &&
+      p.dateOfBirth === data.dateOfBirth &&
+      p.timeOfBirth === data.timeOfBirth &&
+      p.profileName.toLowerCase() === trimmedName.toLowerCase() &&
+      Math.abs(Number(p.latitude) - Number(data.latitude)) < 0.001 &&
+      Math.abs(Number(p.longitude) - Number(data.longitude)) < 0.001
+    );
+    if (existing) {
+      return existing;
+    }
+
     const now = new Date().toISOString();
     const profile: BirthProfileRecord = {
       id: 'prof_' + crypto.randomBytes(8).toString('hex'),
       userId: data.userId,
-      profileName: data.profileName,
+      profileName: trimmedName,
       relationship: data.relationship || 'Self',
       dateOfBirth: data.dateOfBirth,
       timeOfBirth: data.timeOfBirth,
       birthTimeKnown: true,
-      birthplaceName: data.birthplaceName,
+      birthplaceName: data.birthplaceName.trim(),
       latitude: Number(data.latitude),
       longitude: Number(data.longitude),
       resolvedTimezone: data.resolvedTimezone || 'Asia/Kolkata',

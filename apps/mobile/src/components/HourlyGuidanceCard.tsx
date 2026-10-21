@@ -2,63 +2,93 @@
  * AstroVerse Mobile OS - Personal Hourly Guidance Hero Card
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, AppState, AppStateStatus } from 'react-native';
 import { Colors } from '../theme/colors';
 import { HourlyHoraSlot } from '../types';
+import {
+  getHoraCategoryAndColors,
+  calculateHoraProgressMobile,
+  HoraCategoryColors,
+  HoraProgressResult
+} from '../utils/horaCalculation';
 
-interface HourlyGuidanceCardProps {
+export {
+  getHoraCategoryAndColors,
+  calculateHoraProgressMobile
+};
+export type {
+  HoraCategoryColors,
+  HoraProgressResult
+};
+
+export interface HourlyGuidanceCardProps {
   hora?: HourlyHoraSlot | null;
   onPressSchedule?: () => void;
+  onRefreshNextHora?: () => void;
 }
 
 export const HourlyGuidanceCard: React.FC<HourlyGuidanceCardProps> = ({
   hora,
-  onPressSchedule
+  onPressSchedule,
+  onRefreshNextHora
 }) => {
   const [timeRemainingStr, setTimeRemainingStr] = useState<string>('--:-- remaining');
   const [progressPct, setProgressPct] = useState<number>(0);
+  const hasTriggeredExpiryRef = useRef<boolean>(false);
 
   useEffect(() => {
-    if (!hora || !hora.start_epoch_ms || !hora.end_epoch_ms) return;
+    hasTriggeredExpiryRef.current = false;
+    if (!hora || typeof hora.start_epoch_ms !== 'number' || typeof hora.end_epoch_ms !== 'number' || hora.end_epoch_ms <= hora.start_epoch_ms) {
+      setTimeRemainingStr('--:-- unavailable');
+      setProgressPct(0);
+      return;
+    }
 
     const updateTimer = () => {
       const now = Date.now();
-      const totalDuration = hora.end_epoch_ms - hora.start_epoch_ms;
-      if (totalDuration <= 0) {
-        setProgressPct(0);
-        setTimeRemainingStr('--:-- remaining');
-        return;
+      const res = calculateHoraProgressMobile(now, hora.start_epoch_ms, hora.end_epoch_ms);
+      setProgressPct(res.progressPct);
+      setTimeRemainingStr(res.timeStr);
+
+      if (res.remainingSec <= 0 && !hasTriggeredExpiryRef.current) {
+        hasTriggeredExpiryRef.current = true;
+        if (onRefreshNextHora) {
+          onRefreshNextHora();
+        }
       }
-
-      const elapsed = now - hora.start_epoch_ms;
-      const pct = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-      setProgressPct(pct);
-
-      const remainingSec = Math.max(0, Math.ceil((hora.end_epoch_ms - now) / 1000));
-      const mins = Math.floor(remainingSec / 60);
-      const secs = remainingSec % 60;
-      setTimeRemainingStr(`${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')} remaining`);
     };
 
     updateTimer();
     const interval = setInterval(updateTimer, 1000); // 1s tick for real-time MM:SS
-    return () => clearInterval(interval);
-  }, [hora]);
+
+    // Background/resume listener: recalculates immediately when app foregrounds
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        updateTimer();
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [hora, onRefreshNextHora]);
 
   if (!hora) {
     return (
       <View style={styles.card}>
-        <Text style={styles.placeholderText}>Calculating active planetary hora...</Text>
+        <Text style={styles.placeholderText}>Planetary hora data unavailable.</Text>
+        {onRefreshNextHora && (
+          <TouchableOpacity style={styles.retryBtn} onPress={onRefreshNextHora} activeOpacity={0.8}>
+            <Text style={styles.retryBtnText}>Retry Calculation</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
 
-  const isFavorable = ['Jupiter', 'Venus', 'Mercury'].includes(hora.ruling_planet);
-  const isModerate = ['Sun', 'Moon'].includes(hora.ruling_planet);
-  const categoryColor = isFavorable ? Colors.success : (isModerate ? Colors.warning : Colors.error);
-  const categoryBg = isFavorable ? Colors.successMuted : (isModerate ? Colors.goldMuted : Colors.maroonMuted);
-  const categoryLabel = isFavorable ? 'Favorable' : (isModerate ? 'Authoritative / Moderate' : 'Caution');
+  const { label: categoryLabel, color: categoryColor, bg: categoryBg } = getHoraCategoryAndColors(hora.ruling_planet);
 
   return (
     <View style={styles.card}>
@@ -84,7 +114,7 @@ export const HourlyGuidanceCard: React.FC<HourlyGuidanceCardProps> = ({
       {/* Progress Bar & Countdown */}
       <View style={styles.progressContainer}>
         <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${progressPct.toFixed(1)}%`, backgroundColor: categoryColor }]} />
+          <View style={[styles.progressBarFill, { width: `${Math.round(progressPct)}%` as `${number}%`, backgroundColor: categoryColor }]} />
         </View>
         <View style={styles.timerRow}>
           <Text style={styles.timerText}>{timeRemainingStr}</Text>
@@ -226,6 +256,21 @@ const styles = StyleSheet.create({
   },
   scheduleBtnText: {
     color: Colors.goldLight,
+    fontSize: 13,
+    fontWeight: '600'
+  },
+  retryBtn: {
+    marginTop: 10,
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.gold
+  },
+  retryBtnText: {
+    color: Colors.gold,
     fontSize: 13,
     fontWeight: '600'
   }

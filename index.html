@@ -1378,11 +1378,17 @@
 
     /* Ultra-compact Smartphone Breakpoint (< 480px) */
     @media (max-width: 480px) {
-      .main-header {
-        padding: 8px 12px !important;
+      .main-navbar, .main-header {
+        padding: 8px 10px !important;
+      }
+      .nav-right-actions {
+        gap: 6px !important;
+      }
+      .brand-logo-wrap {
+        gap: 6px !important;
       }
       .brand-title {
-        font-size: 17px !important;
+        font-size: 15px !important;
       }
       .brand-tag {
         display: none !important;
@@ -1390,10 +1396,12 @@
       .wallet-chip {
         padding: 4px 8px !important;
         font-size: 11px !important;
+        gap: 4px !important;
       }
       .btn-auth-trigger {
-        padding: 5px 10px !important;
+        padding: 5px 8px !important;
         font-size: 11px !important;
+        gap: 4px !important;
       }
       .astro-card {
         padding: 16px 12px !important;
@@ -1448,6 +1456,29 @@
       .form-input-text {
         font-size: 13px !important;
         padding: 8px 10px !important;
+      }
+    }
+    @media (max-width: 340px) {
+      .main-navbar, .main-header {
+        padding: 6px 6px !important;
+      }
+      .brand-title {
+        font-size: 13px !important;
+        letter-spacing: 0px !important;
+      }
+      .brand-icon {
+        font-size: 16px !important;
+      }
+      .wallet-chip {
+        padding: 3px 5px !important;
+        font-size: 10px !important;
+      }
+      .wallet-add-btn {
+        display: none !important;
+      }
+      .btn-auth-trigger {
+        padding: 4px 6px !important;
+        font-size: 10px !important;
       }
     }
 
@@ -4614,178 +4645,82 @@
       horaCountdownInterval = setInterval(update, 1000);
     }
 
-    function calculateSolarSunriseSunset(dateStr, lat, lon) {
-      const d = new Date(dateStr + "T12:00:00Z");
-      const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-      const declination = 0.4095 * Math.sin(0.0172 * (dayOfYear - 79));
-      const latRad = (lat * Math.PI) / 180.0;
-      const cosH0 = (Math.sin(-0.833 * Math.PI / 180.0) - Math.sin(latRad) * Math.sin(declination)) / (Math.cos(latRad) * Math.cos(declination));
-      const clamped = Math.max(-1, Math.min(1, cosH0));
-      const hourAngleDeg = (Math.acos(clamped) * 180.0) / Math.PI;
-      const b = (2 * Math.PI * (dayOfYear - 81)) / 365;
-      const eqtimeMin = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b);
-      const timeOffsetHours = 5.5; // IST
-      const solarNoonUTC = 12 - (lon / 15) - (eqtimeMin / 60);
-      const solarNoonLocal = solarNoonUTC + timeOffsetHours;
-      const halfDayHours = hourAngleDeg / 15.0;
-      const riseH = solarNoonLocal - halfDayHours;
-      const setH = solarNoonLocal + halfDayHours;
-      return { riseH, setH };
-    }
-
-    function formatHoursTo12H(h) {
-      const totM = Math.round(h * 60);
-      let hh = Math.floor(totM / 60) % 24;
-      const mm = totM % 60;
-      const ampm = hh >= 12 ? 'PM' : 'AM';
-      let h12 = hh % 12;
-      if (h12 === 0) h12 = 12;
-      return `${String(h12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${ampm}`;
-    }
+    let isHourlyHorasLoading = false;
 
     async function loadHourlyHorasUI() {
+      if (isHourlyHorasLoading) return;
+      isHourlyHorasLoading = true;
+
       const dateInput = document.getElementById('input-hora-date');
       const todayStr = new Date().toISOString().split('T')[0];
       if (!dateInput.value) dateInput.value = todayStr;
 
       const targetDate = dateInput.value;
-      const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
-      const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
+      const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 28.6139;
+      const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 77.2090;
       const tz = document.getElementById('k-resolved-tz').value || 'Asia/Kolkata';
 
+      const metricsEl = document.getElementById('disp-hora-sun-metrics');
+      if (metricsEl) {
+        metricsEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="color: #F59E0B;"></i> Computing authoritative Swiss Ephemeris solar Horas...`;
+      }
+
       try {
-        const res = await fetch(`/api/hora?date_str=${targetDate}&lat=${lat}&lon=${lon}&timezone=${tz}`);
+        const currentInstant = new Date().toISOString();
+        const res = await fetch(`/api/hora?date_str=${encodeURIComponent(targetDate)}&lat=${lat}&lon=${lon}&timezone=${encodeURIComponent(tz)}&current_instant=${encodeURIComponent(currentInstant)}`);
         if (res.ok) {
           const data = await res.json();
-          render24HorasUI(data, targetDate);
-          return;
+          // Validate required astronomical schema
+          if (data && Array.isArray(data.timeline) && data.timeline.length === 24) {
+            render24HorasUI(data, targetDate);
+            return;
+          }
         }
+        // Recoverable HTTP/API failure state
+        displayHoraUnavailableState(`Calculation server returned HTTP ${res.status}`);
       } catch (err) {
-        console.warn("Backend hourly API offline, computing astronomical solar Horas:", err);
+        console.warn("Backend hourly API unavailable:", err);
+        displayHoraUnavailableState("Connection to astronomical engine offline");
+      } finally {
+        isHourlyHorasLoading = false;
       }
+    }
 
-      // Mathematical astronomical solar Hora calculation
-      const { riseH, setH } = calculateSolarSunriseSunset(targetDate, lat, lon);
-      const dayLengthH = setH - riseH;
-      const nightLengthH = 24.0 - dayLengthH;
-      const dayHoraMins = (dayLengthH * 60) / 12.0;
-      const nightHoraMins = (nightLengthH * 60) / 12.0;
-
-      const targetD = new Date(targetDate + "T12:00:00");
-      const weekday = targetD.getDay(); // 0: Sun, 1: Mon, 2: Tue, 3: Wed, 4: Thu, 5: Fri, 6: Sat
-      const WEEK_LORDS = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"];
-      const dayRuler = WEEK_LORDS[weekday];
-
-      const CHALDEAN = ["Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon"];
-      const startIdx = CHALDEAN.indexOf(dayRuler);
-
-      const timeline = [];
-      const now = new Date();
-      let activeHoraObj = null;
-
-      // 12 Daytime Horas
-      for (let i = 0; i < 12; i++) {
-        const p = CHALDEAN[(startIdx + i) % 7];
-        const sH = riseH + (i * dayHoraMins / 60.0);
-        const eH = riseH + ((i + 1) * dayHoraMins / 60.0);
-        const sTime = formatHoursTo12H(sH);
-        const eTime = formatHoursTo12H(eH);
-
-        const sDate = new Date(`${targetDate}T00:00:00`);
-        sDate.setMinutes(Math.round(sH * 60));
-        const eDate = new Date(`${targetDate}T00:00:00`);
-        eDate.setMinutes(Math.round(eH * 60));
-        const isActive = (now >= sDate && now < eDate);
-
-        const slot = {
-          hora_number: i + 1,
-          period: "Day",
-          start_time: sTime,
-          end_time: eTime,
-          ruling_planet: p,
-          category: (p === "Jupiter" || p === "Venus") ? "Highly Favorable" : ((p === "Mars" || p === "Saturn") ? "Caution" : "Moderate"),
-          recommendation: `Favorable window for activities and enterprise governed by ${p}.`,
-          is_active: isActive,
-          end_epoch_ms: eDate.getTime()
-        };
-        timeline.push(slot);
-        if (isActive) activeHoraObj = slot;
+    function displayHoraUnavailableState(reason) {
+      if (horaCountdownInterval) clearInterval(horaCountdownInterval);
+      const metricsEl = document.getElementById('disp-hora-sun-metrics');
+      if (metricsEl) {
+        metricsEl.innerHTML = `<span style="color: #DC2626;"><i class="fa-solid fa-triangle-exclamation"></i> Astronomical solar calculation unavailable: ${reason}.</span> <button onclick="loadHourlyHorasUI()" class="btn-outline-secondary" style="padding: 2px 8px; font-size: 11px; margin-left: 8px;"><i class="fa-solid fa-rotate-right"></i> Retry</button>`;
       }
-
-      // 12 Nighttime Horas
-      for (let i = 0; i < 12; i++) {
-        const p = CHALDEAN[(startIdx + 12 + i) % 7];
-        const sH = setH + (i * nightHoraMins / 60.0);
-        const eH = setH + ((i + 1) * nightHoraMins / 60.0);
-        const sTime = formatHoursTo12H(sH);
-        const eTime = formatHoursTo12H(eH);
-
-        const sDate = new Date(`${targetDate}T00:00:00`);
-        sDate.setMinutes(Math.round(sH * 60));
-        const eDate = new Date(`${targetDate}T00:00:00`);
-        eDate.setMinutes(Math.round(eH * 60));
-        const isActive = (now >= sDate && now < eDate);
-
-        const slot = {
-          hora_number: 12 + i + 1,
-          period: "Night",
-          start_time: sTime,
-          end_time: eTime,
-          ruling_planet: p,
-          category: (p === "Jupiter" || p === "Venus") ? "Highly Favorable" : ((p === "Mars" || p === "Saturn") ? "Caution" : "Moderate"),
-          recommendation: `Optimal restorative and strategic window governed by ${p}.`,
-          is_active: isActive,
-          end_epoch_ms: eDate.getTime()
-        };
-        timeline.push(slot);
-        if (isActive) activeHoraObj = slot;
-      }
-
-      if (!activeHoraObj) {
-        activeHoraObj = timeline[0];
-        timeline[0].is_active = true;
-      }
-
-      // Special Daylight Octants (Rahu Kaal, Yamaganda, Gulika Kaal)
-      const octantMins = (dayLengthH * 60) / 8.0;
-      const rahuSegments = [8, 2, 7, 5, 6, 4, 3]; // Sun=8, Mon=2, Tue=7, Wed=5, Thu=6, Fri=4, Sat=3
-      const yamaSegments = [5, 4, 3, 2, 1, 7, 6]; // Sun=5, Mon=4, Tue=3, Wed=2, Thu=1, Fri=7, Sat=6
-      const guliSegments = [7, 6, 5, 4, 3, 2, 1]; // Sun=7, Mon=6, Tue=5, Wed=4, Thu=3, Fri=2, Sat=1
-
-      function getOctantWindow(segNum) {
-        const segStartH = riseH + ((segNum - 1) * octantMins / 60.0);
-        const segEndH = riseH + (segNum * octantMins / 60.0);
-        return { start: formatHoursTo12H(segStartH), end: formatHoursTo12H(segEndH) };
-      }
-
-      const specialPeriods = {
-        rahu_kaal: getOctantWindow(rahuSegments[weekday]),
-        yamaganda: getOctantWindow(yamaSegments[weekday]),
-        gulika_kaal: getOctantWindow(guliSegments[weekday])
-      };
-
-      const calculatedData = {
-        sunrise: formatHoursTo12H(riseH),
-        sunset: formatHoursTo12H(setH),
-        day_hora_duration_minutes: parseFloat(dayHoraMins.toFixed(1)),
-        night_hora_duration_minutes: parseFloat(nightHoraMins.toFixed(1)),
-        day_ruler: dayRuler,
-        active_hora: activeHoraObj,
-        special_periods: specialPeriods,
-        timeline: timeline
-      };
-
-      render24HorasUI(calculatedData, targetDate);
+      const cdEl = document.getElementById('disp-hora-countdown');
+      if (cdEl) cdEl.textContent = "--:-- unavailable";
+      const gTimer = document.getElementById('guidance-active-hora-timer');
+      if (gTimer) gTimer.textContent = "--:-- unavailable";
+      const fillEl = document.getElementById('hora-progress-bar-fill');
+      if (fillEl) fillEl.style.width = '0%';
+      const gFill = document.getElementById('guidance-hora-progress-fill');
+      if (gFill) gFill.style.width = '0%';
+      const pLabel = document.getElementById('hora-progress-pct-label');
+      if (pLabel) pLabel.textContent = "Unavailable";
+      const pSub = document.getElementById('disp-hora-elapsed-sub');
+      if (pSub) pSub.textContent = "Calculation unavailable";
+      const recEl = document.getElementById('disp-active-hora-rec');
+      if (recEl) recEl.textContent = "Authoritative Swiss Ephemeris connection is required to compute planetary horas. Click Retry to re-establish connection.";
     }
 
     function render24HorasUI(data, targetDate) {
-      document.getElementById('disp-hora-sun-metrics').innerHTML = `
-        <i class="fa-solid fa-sun" style="color: #F59E0B;"></i> Sunrise: <strong>${data.sunrise}</strong> • Sunset: <strong>${data.sunset}</strong> | Day Hora: ${data.day_hora_duration_minutes}m • Night Hora: ${data.night_hora_duration_minutes}m
-      `;
+      const metricsEl = document.getElementById('disp-hora-sun-metrics');
+      if (metricsEl) {
+        metricsEl.innerHTML = `
+          <i class="fa-solid fa-sun" style="color: #F59E0B;"></i> Sunrise: <strong>${data.sunrise || '--'}</strong> • Sunset: <strong>${data.sunset || '--'}</strong> | Day Hora: ${data.day_hora_duration_minutes || '--'}m • Night Hora: ${data.night_hora_duration_minutes || '--'}m
+        `;
+      }
 
-      if (data.active_hora) {
-        const ah = data.active_hora;
-        const planet = ah.ruling_planet || ah.planet || "Sun";
+      const ah = data.active_hora;
+      const isValidActiveHora = ah && typeof ah.start_epoch_ms === 'number' && typeof ah.end_epoch_ms === 'number' && ah.end_epoch_ms > ah.start_epoch_ms;
+
+      if (isValidActiveHora) {
+        const planet = ah.planet || ah.ruling_planet || "Sun";
         const cat = ah.category || getHoraCategory(planet);
         const catColor = getHoraColor(planet);
 
@@ -4816,19 +4751,42 @@
         const ghName = document.getElementById('guidance-active-hora-name');
         if (ghName) ghName.textContent = `${planet} Hora`;
 
-        const startEpoch = ah.start_epoch_ms || (Date.now() - 15 * 60 * 1000);
-        const endEpoch = ah.end_epoch_ms || (Date.now() + 45 * 60 * 1000);
-        startHoraCountdownTimer(startEpoch, endEpoch, planet, cat);
-      }
-
-      // Synchronize featured header guidance hora indicators
-      if (data.active_hora) {
-        const ah = data.active_hora;
-        const planet = ah.ruling_planet || ah.planet || "Sun";
-        window.currentActiveHoraPlanet = planet;
-        window.currentActiveHoraWindow = `${ah.start_time} – ${ah.end_time}`;
-        const ghName = document.getElementById('guidance-active-hora-name');
-        if (ghName) ghName.textContent = `${planet} Hora`;
+        startHoraCountdownTimer(ah.start_epoch_ms, ah.end_epoch_ms, planet, cat);
+      } else {
+        // Historical or future calendar date (not containing current instant)
+        if (horaCountdownInterval) clearInterval(horaCountdownInterval);
+        const badgeEl = document.getElementById('disp-active-hora-badge');
+        if (badgeEl) {
+          badgeEl.textContent = "Schedule";
+          badgeEl.style.background = '#F1F5F9';
+          badgeEl.style.color = '#64748B';
+        }
+        const planetEl = document.getElementById('disp-active-hora-planet');
+        if (planetEl) planetEl.textContent = `Solar Timeline for ${targetDate}`;
+        const timeEl = document.getElementById('disp-active-hora-time');
+        if (timeEl) timeEl.textContent = `Sunrise ${data.sunrise || ''} to Next Sunrise ${data.next_sunrise || ''}`;
+        const cdEl = document.getElementById('disp-hora-countdown');
+        if (cdEl) {
+          cdEl.textContent = "--:-- (Viewing Schedule)";
+          cdEl.style.color = '#64748B';
+        }
+        const gTimer = document.getElementById('guidance-active-hora-timer');
+        if (gTimer) {
+          gTimer.textContent = "--:-- (Schedule)";
+          gTimer.style.color = '#64748B';
+        }
+        const fillEl = document.getElementById('hora-progress-bar-fill');
+        if (fillEl) fillEl.style.width = '0%';
+        const gFill = document.getElementById('guidance-hora-progress-fill');
+        if (gFill) gFill.style.width = '0%';
+        const sLabel = document.getElementById('hora-progress-start-label');
+        if (sLabel) sLabel.textContent = `Sunrise: ${data.sunrise || '--'}`;
+        const eLabel = document.getElementById('hora-progress-end-label');
+        if (eLabel) eLabel.textContent = `Sunset: ${data.sunset || '--'}`;
+        const pLabel = document.getElementById('hora-progress-pct-label');
+        if (pLabel) pLabel.textContent = "Schedule View";
+        const pSub = document.getElementById('disp-hora-elapsed-sub');
+        if (pSub) pSub.textContent = "Select today to view active live planetary hora progress.";
       }
 
       if (data.special_periods) {
@@ -4839,28 +4797,41 @@
 
       const grid = document.getElementById('grid-hourly-cards');
       grid.innerHTML = '';
-      data.timeline.forEach(slot => {
-        const card = document.createElement('div');
-        card.className = `hora-slot-card ${slot.is_active ? 'active-now' : ''}`;
-        
-        let badgeBg = '#ECFDF5', badgeColor = '#065F46';
-        if (slot.category && slot.category.includes('Caution')) {
-          badgeBg = '#FEF2F2'; badgeColor = '#991B1B';
-        } else if (slot.category && (slot.category.includes('Moderate') || slot.category.includes('Authoritative'))) {
-          badgeBg = '#FEF3C7'; badgeColor = '#92400E';
-        }
+      if (Array.isArray(data.timeline)) {
+        data.timeline.forEach(slot => {
+          const card = document.createElement('div');
+          card.className = `hora-slot-card ${slot.is_active ? 'active-now' : ''}`;
 
-        card.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <strong style="color: var(--vedic-maroon); font-size: 14px;"><i class="fa-regular fa-clock"></i> ${slot.start_time} – ${slot.end_time}</strong>
-            <span class="hora-badge-pill" style="background: ${badgeBg}; color: ${badgeColor};">${slot.category}</span>
-          </div>
-          <div style="font-size: 14px; font-weight: 700; color: #0F172A;">#${slot.hora_number} ${slot.ruling_planet} Hora (${slot.period})</div>
-          <p style="font-size: 12px; color: #475569; margin-top: 4px;">${slot.recommendation}</p>
-        `;
-        grid.appendChild(card);
-      });
+          let badgeBg = '#ECFDF5', badgeColor = '#065F46';
+          if (slot.category && slot.category.includes('Caution')) {
+            badgeBg = '#FEF2F2'; badgeColor = '#991B1B';
+          } else if (slot.category && (slot.category.includes('Moderate') || slot.category.includes('Authoritative'))) {
+            badgeBg = '#FEF3C7'; badgeColor = '#92400E';
+          }
+
+          card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 700; color: #1E293B;">#${slot.hora_number} • ${slot.period} Hora</span>
+              <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600; background: ${badgeBg}; color: ${badgeColor};">
+                ${slot.category || 'Standard'}
+              </span>
+            </div>
+            <div style="font-size: 18px; font-weight: 800; color: var(--navy-dark); margin-bottom: 4px;">
+              ${slot.ruling_planet || slot.planet}
+              <span style="font-size: 13px; font-weight: 500; color: #64748B;">(${slot.sanskrit_name || ''})</span>
+            </div>
+            <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">
+              <i class="fa-regular fa-clock"></i> ${slot.start_time} – ${slot.end_time}
+            </div>
+            <div style="font-size: 12px; color: #334155; line-height: 1.4;">
+              ${slot.recommendation || ''}
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      }
     }
+
 
     function switchForecastHorizon(hz) {
       document.querySelectorAll('.subtabs-pill-row .subtab-btn').forEach(b => b.classList.remove('active'));
@@ -6058,7 +6029,7 @@
       try {
         const res = await fetch(`${getAuthBase()}/api/profiles`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({
             userId: currentUserSession.id,
             profileName: name,
@@ -6105,7 +6076,9 @@
     async function syncProfilesFromBackend(userId) {
       if (!userId || userId.startsWith('local_')) return;
       try {
-        const res = await fetch(`${getAuthBase()}/api/profiles/${userId}`);
+        const res = await fetch(`${getAuthBase()}/api/profiles/${userId}`, {
+          headers: getAuthHeaders()
+        });
         if (res.ok) {
           const list = await res.json();
           if (Array.isArray(list)) {
@@ -6181,7 +6154,10 @@
       }
       if (currentUserSession && typeof profileId === 'string' && !profileId.startsWith('local_')) {
         try {
-          await fetch(`${getAuthBase()}/api/profiles/${profileId}`, { method: 'DELETE' });
+          await fetch(`${getAuthBase()}/api/profiles/${profileId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+          });
         } catch (e) {
           console.warn("Failed to delete profile from backend:", e);
         }

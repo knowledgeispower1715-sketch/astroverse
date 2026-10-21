@@ -29,7 +29,7 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({
   onOpenProfileModal,
   onOpenPaywall
 }) => {
-  const { activeProfile, horasData, kundliData } = useChart();
+  const { activeProfile, horasData, kundliData, refreshHoras } = useChart();
   const { balance } = useWallet();
 
   const activeHora = horasData?.active_hora;
@@ -68,6 +68,7 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({
         <HourlyGuidanceCard
           hora={activeHora}
           onPressSchedule={() => onNavigateTab('Predictions')}
+          onRefreshNextHora={refreshHoras}
         />
 
         {/* Quick Access Action Grid */}

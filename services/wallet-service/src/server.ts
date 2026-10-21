@@ -38,6 +38,25 @@ function verifyPassword(password: string, salt: string, storedHash: string): boo
   return crypto.timingSafeEqual(Buffer.from(hash, 'utf8'), Buffer.from(storedHash, 'utf8'));
 }
 
+// Helper: Mask sensitive personal identifiers in logs (redacts emails & phone numbers)
+export function maskIdentifier(id: string): string {
+  if (!id) return '';
+  const trimmed = id.trim();
+  if (trimmed.includes('@')) {
+    const parts = trimmed.split('@');
+    const local = parts[0];
+    const domain = parts[1] || '';
+    const maskedLocal = local.length <= 2
+      ? local[0] + '*'
+      : local[0] + '*'.repeat(Math.max(1, local.length - 2)) + local[local.length - 1];
+    return `${maskedLocal}@${domain}`;
+  }
+  if (trimmed.length > 4) {
+    return trimmed.slice(0, 3) + '*'.repeat(Math.max(1, trimmed.length - 7)) + trimmed.slice(-4);
+  }
+  return '***';
+}
+
 // In-Memory OTP Store with Anti-Abuse, Cooldown, and Attempt Counting
 interface OtpEntry {
   otp: string;
@@ -181,7 +200,7 @@ app.post('/api/auth/request-otp', async (req: Request, res: Response) => {
     metadata: { channel: isEmail ? 'resend/email' : 'twilio/sms' }
   });
 
-  console.log(`[AUTH_OTP_DISPATCH] Dispatched OTP to ${isEmail ? 'email' : 'phone'} ${cleanId}: ${otp}`);
+  console.log(`[AUTH_OTP_DISPATCH] Dispatched verification OTP to ${isEmail ? 'email' : 'phone'} ${maskIdentifier(cleanId)}`);
 
   const responsePayload: any = {
     status: 'OTP_SENT',
@@ -506,7 +525,7 @@ app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
       metadata: { identifier: cleanId }
     });
 
-    console.log(`[AUTH_PASSWORD_RESET] Code for ${cleanId}: ${resetCode}`);
+    console.log(`[AUTH_PASSWORD_RESET] Dispatched password reset token to ${maskIdentifier(cleanId)}`);
 
     const resPayload: any = {
       status: 'RESET_CODE_SENT',
@@ -755,67 +774,67 @@ app.delete('/api/user/account', authenticate, async (req: AuthenticatedRequest, 
 
 // ==================== 3. BIRTH PROFILES (SELF, SPOUSE, CHILD, FRIEND) ====================
 
-app.post('/api/profiles', async (req: Request, res: Response) => {
+app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { userId, profileName, relationship, dateOfBirth, timeOfBirth, birthplaceName, latitude, longitude, resolvedTimezone } = req.body;
 
-  if (!userId || !profileName || !dateOfBirth || !timeOfBirth || !birthplaceName || latitude == null || longitude == null) {
+  if (!profileName || !dateOfBirth || !timeOfBirth || !birthplaceName || latitude == null || longitude == null) {
     return res.status(400).json({
       error: 'REQUIRED_FIELDS_MISSING',
-      message: 'userId, profileName, dateOfBirth, timeOfBirth, birthplaceName, latitude, and longitude are strictly required.'
+      message: 'profileName, dateOfBirth, timeOfBirth, birthplaceName, latitude, and longitude are strictly required.'
     });
   }
 
-  // Cross-user authorization validation: If Authorization header is present, ensure caller matches target userId
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1].trim();
-    const tokenHash = hashToken(token);
-    const session = await db.findSessionByTokenHash(tokenHash);
-    if (!session) {
-      return res.status(401).json({ error: 'INVALID_OR_EXPIRED_SESSION', message: 'Session has expired or is invalid.' });
+  const numLat = Number(latitude);
+  const numLon = Number(longitude);
+  if (!Number.isFinite(numLat) || !Number.isFinite(numLon)) {
+    return res.status(400).json({
+      error: 'INVALID_COORDINATES',
+      message: 'latitude and longitude must be valid finite numbers.'
+    });
+  }
+
+  // Derive owner ID from the authenticated session (never trust client-supplied userId alone)
+  const sessionUser = req.user!;
+  let targetUserId = sessionUser.id;
+
+  // Cross-account operations are strictly forbidden unless performed by an authorized Administrator
+  if (userId && String(userId) !== sessionUser.id) {
+    if (sessionUser.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({
+        error: 'FORBIDDEN',
+        message: 'Cannot create or link birth profile to another user account.'
+      });
     }
-    const user = await db.findUserById(session.userId);
-    if (!user) {
-      return res.status(401).json({ error: 'USER_NOT_FOUND', message: 'Associated user account no longer exists.' });
+    const targetUser = await db.findUserById(String(userId));
+    if (!targetUser) {
+      return res.status(404).json({
+        error: 'TARGET_USER_NOT_FOUND',
+        message: 'Target user account does not exist.'
+      });
     }
-    if (user.id !== userId && user.role !== Role.SUPER_ADMIN) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Cannot create or link birth profile to another user account.' });
-    }
+    targetUserId = targetUser.id;
   }
 
   try {
-    // Idempotency: Prevent duplicate profile creation during network retries
-    const existing = await db.getProfilesByUserId(userId);
     const trimmedName = String(profileName).trim();
-    const duplicate = existing.find(p =>
-      p.dateOfBirth === dateOfBirth &&
-      p.timeOfBirth === timeOfBirth &&
-      p.profileName.toLowerCase() === trimmedName.toLowerCase() &&
-      Math.abs(Number(p.latitude) - Number(latitude)) < 0.001 &&
-      Math.abs(Number(p.longitude) - Number(longitude)) < 0.001
-    );
-    if (duplicate) {
-      return res.json(duplicate);
-    }
-
     const profile = await db.createProfile({
-      userId,
+      userId: targetUserId,
       profileName: trimmedName,
       relationship: relationship || 'Self',
       dateOfBirth,
       timeOfBirth,
       birthplaceName: String(birthplaceName).trim(),
-      latitude: Number(latitude),
-      longitude: Number(longitude),
+      latitude: numLat,
+      longitude: numLon,
       resolvedTimezone: resolvedTimezone || 'Asia/Kolkata'
     });
 
     await db.recordAuditEvent({
-      userId,
+      userId: targetUserId,
       action: 'PROFILE_CREATED',
       targetType: 'PROFILE',
       targetId: profile.id,
-      metadata: { profileName: trimmedName, relationship }
+      metadata: { profileName: trimmedName, relationship, actorId: sessionUser.id }
     });
 
     res.json(profile);
