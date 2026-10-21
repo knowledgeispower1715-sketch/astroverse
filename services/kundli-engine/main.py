@@ -19,6 +19,12 @@ from divisional_charts import (
 from doshas_and_remedies import analyze_doshas_and_remedies
 from matchmaking import match_kundli_36_gunas
 from ai_astrologer import generate_astrological_reading, generate_structured_prediction
+from jaimini_engine import analyze_jaimini_system
+from kp_engine import calculate_kp_chart
+from tajika_engine import calculate_varshaphal
+from panchang_engine import calculate_full_panchang
+from shadbala_and_yogas import detect_classical_yogas, calculate_shadbala
+from multi_method_engine import build_multi_method_comparison
 from external_api import (
     fetch_external_planets,
     fetch_external_chart_url,
@@ -80,6 +86,12 @@ class PredictionRequest(BaseModel):
     active_hora_planet: Optional[str] = Field(None, description="Active planetary hora ruler")
     hora_window: Optional[str] = Field(None, description="Hora time window string")
     category: str = Field("general", description="Category: general, career, wealth, health, relationships")
+
+class TajikaRequest(BirthDetails):
+    target_year: Optional[int] = Field(None, description="Target year for solar return calculation, e.g. 2026")
+
+class MultiMethodRequest(BirthDetails):
+    target_year: Optional[int] = Field(None, description="Target year for annual comparison, e.g. 2026")
 
 @app.get("/api/health")
 def health_check():
@@ -235,6 +247,8 @@ def get_complete_kundli(req: BirthDetails):
 
     dashas = calculate_vimshottari_dasha(moon_abs_deg, datetime.fromisoformat(req.dob))
     doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
+    yogas = detect_classical_yogas(d1["planets"], d1["lagna"]["sign"])
+    shadbala = calculate_shadbala(d1["planets"], d1["lagna"]["sign"])
 
     return {
         "d1_rashi_chart": d1,
@@ -243,7 +257,9 @@ def get_complete_kundli(req: BirthDetails):
         "moon_chart": moon_chart,
         "chalit_chart": chalit,
         "vimshottari_dasha": dashas,
-        "doshas_and_remedies": doshas
+        "doshas_and_remedies": doshas,
+        "yogas": yogas,
+        "shadbala": shadbala
     }
 
 @app.get("/api/hourly-predictions")
@@ -501,6 +517,91 @@ def prokerala_panchang(
 ):
     """Prokerala API v2: Complete Vedic Panchang (Tithi, Vaara, Nakshatra, Yoga, Karana)."""
     return get_prokerala_panchang(datetime_str, lat, lon, ayanamsa)
+
+# ==================== ADVANCED METHODOLOGY MODULES ====================
+
+@app.get("/api/panchang/calculate")
+def get_panchang_calculation(
+    date_str: Optional[str] = Query(None, alias="date", description="Target date YYYY-MM-DD"),
+    lat: float = Query(28.6139, ge=-90.0, le=90.0),
+    lon: float = Query(77.2090, ge=-180.0, le=180.0),
+    timezone: str = Query("Asia/Kolkata")
+):
+    """
+    Computes authentic Vedic Panchang (5 Limbs) & Muhurtas:
+    - Tithi, Vara, Nakshatra, Yoga, Karana
+    - Solar Sunrise, Sunset, Day Length
+    - Rahu Kaal, Yamaganda, Gulika Kaal
+    - Abhijit Muhurta & Brahma Muhurta
+    """
+    target = date_str or date.today().isoformat()
+    return calculate_full_panchang(target, lat, lon, timezone)
+
+@app.post("/api/jaimini/calculate")
+def get_jaimini_calculation(req: BirthDetails):
+    """
+    Computes Jaimini Astrology analysis:
+    - 7 Chara Karakas (AK, AmK, BK, MK, PK, GK, DK)
+    - Arudha Lagna (AL) & 12 Bhava Arudhas with cancellation rules
+    - Upapada Lagna (UL)
+    - Rashi Drishti (Sign Aspects)
+    - Chara Dasha progression
+    """
+    d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+    return analyze_jaimini_system(d1["planets"], d1["lagna"]["sign"])
+
+@app.post("/api/kp/calculate")
+def get_kp_calculation(req: BirthDetails):
+    """
+    Computes Krishnamurti Padhdhati (KP System) analysis:
+    - KP Ayanamsha (swe.SIDM_KRISHNAMURTI)
+    - Placidus Semi-Arc unequal house cusps
+    - 249-Sub table with Star-Lord & Sub-Lord hierarchy
+    - 4-Fold Significators (Levels A, B, C, D)
+    """
+    return calculate_kp_chart(req.dob, req.lat, req.lon, req.timezone)
+
+@app.post("/api/tajika/varshaphal")
+def get_tajika_varshaphal(req: TajikaRequest):
+    """
+    Computes Tajika Varshaphal (Annual Solar Return):
+    - Exact instant when transiting Sun returns to natal sidereal degree
+    - Varshaphal Lagna & Planetary positions
+    - Moving Muntha calculation
+    - 5 Office Bearers (Panchadhikaris) & Varsheshwara (Year Lord)
+    - Major Sahams (Punya, Vidya, Karma)
+    """
+    target_year = req.target_year or datetime.now().year
+    return calculate_varshaphal(req.dob, target_year, req.lat, req.lon, req.timezone)
+
+@app.post("/api/astrology/multi-method-comparison")
+def get_multi_method_comparison(req: MultiMethodRequest):
+    """
+    Phase 7 Explainable Multi-Method Astrological Comparison:
+    Synthesizes and compares findings across Parashari, Jaimini, KP, and Tajika.
+    Discloses points of agreement, points of divergence, technical rationale, and limitations.
+    """
+    # 1. Parashari
+    d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+    signs = [
+        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+    ]
+    moon_sign_idx = signs.index(d1["planets"]["Moon"]["sign"])
+    moon_abs_deg = (moon_sign_idx * 30.0) + d1["planets"]["Moon"]["degree"]
+    dashas = calculate_vimshottari_dasha(moon_abs_deg, datetime.fromisoformat(req.dob))
+
+    # 2. Jaimini
+    jaimini = analyze_jaimini_system(d1["planets"], d1["lagna"]["sign"])
+
+    # 3. KP
+    kp = calculate_kp_chart(req.dob, req.lat, req.lon, req.timezone)
+
+    # 4. Tajika
+    target_year = req.target_year or datetime.now().year
+    tajika = calculate_varshaphal(req.dob, target_year, req.lat, req.lon, req.timezone)
+
+    return build_multi_method_comparison(d1, dashas, jaimini, kp, tajika)
 
 if __name__ == "__main__":
     import uvicorn

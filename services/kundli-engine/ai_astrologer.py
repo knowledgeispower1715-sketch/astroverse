@@ -466,10 +466,21 @@ def generate_structured_prediction(
             "is_manglik": is_manglik
         },
         "sections": {
+            "executive_summary": overall.split(". ")[0] + "." if ". " in overall else overall,
             "overall_outlook": overall,
+            "supportive_themes": supportive,
             "supportive_developments": supportive,
             "challenges_and_cautions": challenges,
+            "key_time_windows": windows,
             "relevant_time_windows": windows,
+            "relevant_chart_facts": {
+                "lagna": f"{lagna} ({round(lagna_deg, 2)}°)",
+                "moon": f"{moon_sign} ({moon_nak})",
+                "active_dasha": f"{active_maha} Mahadasha / {active_antar} Antardasha",
+                "saturn_transit": sadesati,
+                "current_interval_lord": hora_planet
+            },
+            "applicable_traditional_rules": why,
             "why_this_applies": why,
             "practical_reflection": reflection,
             "limitations": limitations
