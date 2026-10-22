@@ -348,6 +348,52 @@ def match_kundli_36_gunas(boy_moon_deg: float, girl_moon_deg: float):
         }
     }
 
+# ==================== 12-KUTA DIAGNOSTIC COMPATIBILITY EXTENSIONS ====================
+
+RAJJU_DATA: Dict[str, Tuple[List[int], str]] = {
+    "Siras (Head)": ([4, 13, 22], "Adverse to longevity of husband"),
+    "Kantha (Neck)": ([3, 5, 12, 14, 21, 23], "Adverse to longevity of wife"),
+    "Udara (Stomach)": ([2, 6, 11, 15, 20, 24], "Loss or affliction to progeny/children"),
+    "Kati (Waist)": ([1, 7, 10, 16, 19, 25], "Poverty and financial instability"),
+    "Pada (Feet)": ([0, 8, 9, 17, 18, 26], "Endless wandering and instability in dwelling")
+}
+
+def get_rajju(nak_idx: int) -> Tuple[str, str]:
+    """Determines Rajju group (cord) and its classical affliction meaning."""
+    for group_name, (naks, aff) in RAJJU_DATA.items():
+        if nak_idx in naks:
+            return group_name, aff
+    return "Unknown", "General compatibility"
+
+VEDHA_AFFLICTION_PAIRS = {
+    (0, 17), (1, 16), (2, 15), (3, 14), (4, 22), (5, 21), (6, 20),
+    (7, 19), (8, 18), (9, 26), (10, 25), (11, 24), (12, 23)
+}
+
+def check_vedha_kuta(boy_nak: int, girl_nak: int) -> Tuple[bool, str]:
+    """Identifies mutually conflicting (Vedha) constellation pairs."""
+    pair = (min(boy_nak, girl_nak), max(boy_nak, girl_nak))
+    if pair in VEDHA_AFFLICTION_PAIRS:
+        return True, f"Vedha Dosha present: {NAKSHATRAS[boy_nak]} and {NAKSHATRAS[girl_nak]} form a mutually afflicted constellation pair."
+    return False, f"Favorable: {NAKSHATRAS[boy_nak]} and {NAKSHATRAS[girl_nak]} are non-conflicting constellations."
+
+def check_mahendra_kuta(boy_nak: int, girl_nak: int) -> Tuple[bool, int, str]:
+    """Mahendra Kuta: Count from girl's nakshatra to boy's nakshatra promotes welfare and progeny."""
+    count = ((boy_nak - girl_nak) % 27) + 1
+    is_auspicious = count in [4, 7, 10, 13, 16, 19, 22, 25]
+    if is_auspicious:
+        return True, count, f"Auspicious (Count {count}): Promotes enduring marital welfare, deep bonding, and longevity of progeny."
+    return False, count, f"Neutral (Count {count}): Mahendra blessing is not active, standard Ashtakoota rules apply."
+
+def check_stree_deergha_kuta(boy_nak: int, girl_nak: int) -> Tuple[bool, int, str]:
+    """Stree Deergha Kuta: Boy's constellation should preferably be beyond 9 (or >= 15) from girl's."""
+    count = ((boy_nak - girl_nak) % 27) + 1
+    if count >= 15:
+        return True, count, f"Highly Auspicious (Count {count} >= 15): Strong Stree Deergha confirms marital endurance and prosperity."
+    elif count >= 9:
+        return True, count, f"Favorable (Count {count} >= 9): Standard Stree Deergha requirement satisfied."
+    return False, count, f"Below Threshold (Count {count} < 9): Proximity of nakshatras; requires supportive Graha Maitri and Bhakoot."
+
 def calculate_full_kundli_milan(boy_profile: Dict[str, Any], girl_profile: Dict[str, Any]) -> Dict[str, Any]:
     """
     Comprehensive Dual-Profile Kundli Milan:
@@ -558,6 +604,57 @@ def calculate_full_kundli_milan(boy_profile: Dict[str, Any], girl_profile: Dict[
         }
     }
 
+    # Extended 12-Kuta Diagnostic Assessments (VedAstro / BV Raman Classical System)
+    boy_rajju_grp, boy_rajju_aff = get_rajju(boy_nak_idx)
+    girl_rajju_grp, girl_rajju_aff = get_rajju(girl_nak_idx)
+    has_rajju_dosha = (boy_rajju_grp == girl_rajju_grp)
+    has_mahendra, mahendra_dist, mahendra_desc = check_mahendra_kuta(boy_nak_idx, girl_nak_idx)
+    
+    rajju_cancelled = False
+    if has_rajju_dosha:
+        if maitri_pts >= 3.0 and (bhakoot_pts >= 7.0 or bhakoot_cancelled) and tara_pts >= 1.5:
+            rajju_cancelled = True
+            rajju_desc = f"Theoretical Rajju Dosha in {boy_rajju_grp} cord, but mitigated by strong Graha Maitri ({maitri_pts}/5), Bhakoot alignment, and favorable Tara."
+        else:
+            rajju_desc = f"Rajju Dosha active: Both partners belong to {boy_rajju_grp} cord. Classical implication: {boy_rajju_aff}."
+    else:
+        rajju_desc = f"Favorable: Boy belongs to {boy_rajju_grp} and Girl belongs to {girl_rajju_grp} cord (different cords confirm marital longevity)."
+
+    has_vedha, vedha_desc = check_vedha_kuta(boy_nak_idx, girl_nak_idx)
+    has_stree_deergha, stree_dist, stree_desc = check_stree_deergha_kuta(boy_nak_idx, girl_nak_idx)
+
+    diagnostic_12_kutas = {
+        "rajju": {
+            "name": "Rajju Kuta (Marital Cord & Longevity of Union)",
+            "boy_attribute": boy_rajju_grp,
+            "girl_attribute": girl_rajju_grp,
+            "has_dosha": has_rajju_dosha,
+            "is_cancelled": rajju_cancelled,
+            "is_favorable": (not has_rajju_dosha) or rajju_cancelled,
+            "description": rajju_desc
+        },
+        "vedha": {
+            "name": "Vedha Kuta (Constellation Affliction Discord)",
+            "boy_attribute": NAKSHATRAS[boy_nak_idx],
+            "girl_attribute": NAKSHATRAS[girl_nak_idx],
+            "has_dosha": has_vedha,
+            "is_favorable": not has_vedha,
+            "description": vedha_desc
+        },
+        "mahendra": {
+            "name": "Mahendra Kuta (Progeny & Enduring Prosperity)",
+            "distance": mahendra_dist,
+            "is_favorable": has_mahendra,
+            "description": mahendra_desc
+        },
+        "stree_deergha": {
+            "name": "Stree Deergha (Husband Longevity & Spatial Harmony)",
+            "distance": stree_dist,
+            "is_favorable": has_stree_deergha,
+            "description": stree_desc
+        }
+    }
+
     # 3. Supplementary Full Kundli Compatibility Report
     # A. 7th House and 7th Lord Analysis
     b_lagna_idx = SIGNS.index(boy_kundli["lagna"]["sign"])
@@ -725,7 +822,9 @@ def calculate_full_kundli_milan(boy_profile: Dict[str, Any], girl_profile: Dict[
         "recommendation": recommendation,
         "ashtakoota_breakdown": kootas_breakdown,
         "breakdown": kootas_breakdown,
+        "extended_12_kutas": diagnostic_12_kutas,
         "supplementary_compatibility_report": {
+            "extended_12_kutas": diagnostic_12_kutas,
             "seventh_house_analysis": seventh_house_summary,
             "navamsha_d9_analysis": navamsha_summary,
             "manglik_dosha_analysis": manglik_summary,

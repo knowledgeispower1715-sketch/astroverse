@@ -15,7 +15,20 @@ from divisional_charts import (
     calculate_navamsha,
     calculate_dashamsha,
     calculate_moon_chart,
-    calculate_chalit_chart
+    calculate_chalit_chart,
+    calculate_hora,
+    calculate_drekkana,
+    calculate_saptamsha,
+    calculate_dwadashamsha,
+    calculate_shashtyamsha,
+    calculate_all_vargas
+)
+from ashtakavarga_engine import calculate_ashtakavarga
+from timing_tools import (
+    calculate_tarabala,
+    calculate_chandrabala,
+    get_ghataka_chakra,
+    evaluate_transit_timing
 )
 from doshas_and_remedies import analyze_doshas_and_remedies
 from matchmaking import match_kundli_36_gunas, calculate_full_kundli_milan
@@ -114,6 +127,13 @@ class TajikaRequest(BirthDetails):
 
 class MultiMethodRequest(BirthDetails):
     target_year: Optional[int] = Field(None, description="Target year for annual comparison, e.g. 2026")
+
+class TimingEvaluationRequest(BaseModel):
+    birth_details: BirthDetails
+    target_time: str = Field(..., description="Target ISO datetime to evaluate for Muhurta, e.g. '2026-10-25T10:30:00'")
+    target_lat: float = Field(28.6139, ge=-90.0, le=90.0)
+    target_lon: float = Field(77.2090, ge=-180.0, le=180.0)
+    target_timezone: str = Field("Asia/Kolkata", description="Target IANA Timezone")
 
 @app.get("/api/health")
 def health_check():
@@ -256,12 +276,13 @@ def get_complete_kundli(req: BirthDetails):
     """
     Computes full Vedic profile:
     - D1 Lagna Chart
-    - D9 Navamsha Chart
-    - D10 Dashamsha Career Chart
+    - All Divisional Charts (D1, D2 Hora, D3 Drekkana, D7 Saptamsha, D9 Navamsha, D10 Dashamsha, D12, D60)
+    - Parashari Ashtakavarga (Bhinnashtakavarga & Sarvashtakavarga 337 bindus)
     - Moon Chart (Chandra Lagna)
     - Bhava Chalit Chart
     - Complete Vimshottari Dasha with Antardashas
     - Advanced Manglik, Kaal Sarp & Shani Sade Sati analysis
+    - Ghataka Chakra personalized timing factors
     """
     d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
     lagna_total_deg = d1["lagna"]["total_degree"]
@@ -270,6 +291,8 @@ def get_complete_kundli(req: BirthDetails):
     d10 = calculate_dashamsha(d1["planets"], lagna_total_deg)
     moon_chart = calculate_moon_chart(d1["planets"])
     chalit = calculate_chalit_chart(d1["planets"], lagna_total_deg)
+    all_vargas = calculate_all_vargas(d1["planets"], lagna_total_deg)
+    ashtakavarga = calculate_ashtakavarga(d1["planets"], d1["lagna"]["sign"])
 
     SIGNS = [
         "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -282,18 +305,77 @@ def get_complete_kundli(req: BirthDetails):
     doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
     yogas = detect_classical_yogas(d1["planets"], d1["lagna"]["sign"])
     shadbala = calculate_shadbala(d1["planets"], d1["lagna"]["sign"])
+    ghataka = get_ghataka_chakra(moon_sign_idx)
 
     return {
         "d1_rashi_chart": d1,
         "d9_navamsha_chart": d9,
         "d10_dashamsha_chart": d10,
+        "all_vargas": all_vargas,
+        "ashtakavarga": ashtakavarga,
         "moon_chart": moon_chart,
         "chalit_chart": chalit,
         "vimshottari_dasha": dashas,
         "doshas_and_remedies": doshas,
         "yogas": yogas,
-        "shadbala": shadbala
+        "shadbala": shadbala,
+        "ghataka_chakra": ghataka
     }
+
+@app.post("/api/kundli/ashtakavarga")
+def get_ashtakavarga_endpoint(req: BirthDetails):
+    """Calculates classical Parashari Bhinnashtakavarga and Sarvashtakavarga (337 bindus)."""
+    d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+    return calculate_ashtakavarga(d1["planets"], d1["lagna"]["sign"])
+
+@app.post("/api/kundli/vargas")
+def get_vargas_endpoint(req: BirthDetails):
+    """Calculates all 8 foundational classical divisional charts (D1, D2, D3, D7, D9, D10, D12, D60)."""
+    d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+    return calculate_all_vargas(d1["planets"], d1["lagna"]["total_degree"])
+
+@app.post("/api/timing/evaluate")
+def evaluate_timing_endpoint(req: TimingEvaluationRequest):
+    """
+    Evaluates personal transit timing / Muhurta window uniting:
+    - Tarabala (9-fold Star strength across 3 cycles)
+    - Chandrabala (Lunar transit strength relative to Janma Rasi)
+    - Ghataka Chakra (Affliction checks on Moon sign, Tithi group, Weekday, Nakshatra, Lagna)
+    """
+    # 1. Native birth chart
+    b_d1 = calculate_kundli(req.birth_details.dob, req.birth_details.lat, req.birth_details.lon, req.birth_details.timezone)
+    SIGNS = [
+        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+    ]
+    b_moon_sign_idx = SIGNS.index(b_d1["planets"]["Moon"]["sign"])
+    b_moon_deg = (b_moon_sign_idx * 30.0) + b_d1["planets"]["Moon"]["degree"]
+    b_nak_idx = int(b_moon_deg / (360.0 / 27.0)) % 27
+
+    # 2. Transit instant chart
+    t_date_str = req.target_time.split("T")[0]
+    t_d1 = calculate_kundli(req.target_time, req.target_lat, req.target_lon, req.target_timezone)
+    t_panchang = calculate_full_panchang(t_date_str, req.target_lat, req.target_lon, req.target_timezone)
+    
+    t_moon_sign_idx = SIGNS.index(t_d1["planets"]["Moon"]["sign"])
+    t_moon_deg = (t_moon_sign_idx * 30.0) + t_d1["planets"]["Moon"]["degree"]
+    t_nak_idx = int(t_moon_deg / (360.0 / 27.0)) % 27
+    t_lagna_idx = SIGNS.index(t_d1["lagna"]["sign"])
+    
+    # Weekday: Sunday=0 ... Saturday=6
+    t_dt = datetime.fromisoformat(req.target_time)
+    t_weekday = (t_dt.weekday() + 1) % 7 # Python weekday() Mon=0...Sun=6 -> Sun=0...Sat=6
+    t_tithi_num = t_panchang.get("tithi", {}).get("number", 1)
+
+    return evaluate_transit_timing(
+        birth_rasi_idx=b_moon_sign_idx,
+        birth_nak_idx=b_nak_idx,
+        transit_rasi_idx=t_moon_sign_idx,
+        transit_nak_idx=t_nak_idx,
+        transit_tithi_num=t_tithi_num,
+        transit_weekday_idx=t_weekday,
+        transit_lagna_idx=t_lagna_idx
+    )
 
 @app.get("/api/hourly-predictions")
 @app.get("/api/hora")
