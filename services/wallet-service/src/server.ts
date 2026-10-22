@@ -347,14 +347,31 @@ app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
 // POST /api/auth/register-password
 app.post('/api/auth/register-password', async (req: Request, res: Response) => {
   const { email, password, displayName, phone, otp } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Email and password are required.' });
+  if (!password) {
+    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Password is required.' });
   }
 
-  const cleanEmail = String(email).trim().toLowerCase();
+  const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+  const cleanPhone = phone ? String(phone).trim() : null;
+
+  if (!cleanEmail && !cleanPhone) {
+    return res.status(400).json({
+      error: 'FIELDS_REQUIRED',
+      message: 'At least an email address or mobile phone number is required.'
+    });
+  }
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(cleanEmail)) {
+  if (cleanEmail && !emailRegex.test(cleanEmail)) {
     return res.status(400).json({ error: 'INVALID_EMAIL_FORMAT', message: 'Please provide a valid email address.' });
+  }
+
+  const phoneRegex = /^\+?[0-9]{10,15}$/;
+  if (cleanPhone) {
+    const digitsOnly = cleanPhone.replace(/[\s\-\(\)]/g, '');
+    if (!phoneRegex.test(digitsOnly)) {
+      return res.status(400).json({ error: 'INVALID_PHONE_FORMAT', message: 'Please provide a valid 10-15 digit phone number.' });
+    }
   }
 
   if (typeof password !== 'string' || password.length < 8 || !/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
@@ -370,7 +387,13 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
   }
 
   try {
-    let existing = await db.findUserByEmail(cleanEmail);
+    let existing: UserRecord | null = null;
+    if (cleanEmail) {
+      existing = await db.findUserByEmail(cleanEmail);
+    }
+    if (!existing && cleanPhone) {
+      existing = await db.findUserByPhone(cleanPhone);
+    }
 
     if (existing) {
       if (existing.status !== AccountStatus.ACTIVE) {
@@ -381,22 +404,24 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
       }
 
       if (existing.passwordHash) {
+        const errCode = (cleanEmail && existing.email === cleanEmail) ? 'EMAIL_ALREADY_EXISTS' : 'ACCOUNT_ALREADY_EXISTS';
         return res.status(409).json({
-          error: 'EMAIL_ALREADY_EXISTS',
-          message: 'An account with this email already exists. Please log in.'
+          error: errCode,
+          message: 'An account with this email or phone already exists. Please log in.'
         });
       }
 
       // Existing account without password (OTP-only registration)
-      // Strictly require a fresh, single-use, server-verified OTP challenge bound to this email.
+      // Strictly require a fresh, single-use, server-verified OTP challenge bound to this identifier
+      const challengeTarget = cleanEmail || cleanPhone!;
       if (!otp) {
         return res.status(401).json({
           error: 'VERIFICATION_REQUIRED',
-          message: 'Account ownership verification required. Please provide a valid OTP sent to your email to attach a password to this account.'
+          message: 'Account ownership verification required. Please provide a valid OTP sent to your device to attach a password to this account.'
         });
       }
 
-      const record = otpStore.get(cleanEmail);
+      const record = otpStore.get(challengeTarget);
       if (!record || record.expiresAt < Date.now()) {
         return res.status(401).json({
           error: 'INVALID_OR_EXPIRED_OTP',
@@ -406,7 +431,7 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
 
       record.attempts += 1;
       if (record.attempts > 5) {
-        otpStore.delete(cleanEmail);
+        otpStore.delete(challengeTarget);
         return res.status(429).json({
           error: 'TOO_MANY_ATTEMPTS',
           message: 'Too many incorrect attempts. This code has been invalidated. Please request a new code.'
@@ -421,7 +446,7 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
       }
 
       // Single-use eviction to prevent replay attacks
-      otpStore.delete(cleanEmail);
+      otpStore.delete(challengeTarget);
 
       const salt = crypto.randomBytes(16).toString('hex');
       const hash = hashPassword(password, salt);
@@ -429,7 +454,8 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
       const user = await db.updateUser(existing.id, {
         passwordHash: hash,
         passwordSalt: salt,
-        emailVerified: true,
+        emailVerified: cleanEmail ? true : existing.emailVerified,
+        phoneVerified: cleanPhone ? true : existing.phoneVerified,
         displayName: displayName ? String(displayName).trim() : existing.displayName,
         lastLoginAt: new Date().toISOString()
       });
@@ -452,7 +478,7 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
         targetType: 'USER',
         targetId: user.id,
         ipAddress: clientIp,
-        metadata: { email: cleanEmail }
+        metadata: { identifier: challengeTarget }
       });
 
       return res.json({
@@ -464,27 +490,34 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
 
     // Genuinely new account
     let emailVerified = false;
+    let phoneVerified = false;
+    const challengeTarget = cleanEmail || cleanPhone!;
     if (otp) {
-      const record = otpStore.get(cleanEmail);
+      const record = otpStore.get(challengeTarget);
       if (!record || record.expiresAt < Date.now() || record.otp !== String(otp).trim()) {
         return res.status(401).json({
           error: 'INVALID_OR_EXPIRED_OTP',
           message: 'Incorrect or expired verification code.'
         });
       }
-      emailVerified = true;
-      otpStore.delete(cleanEmail);
+      if (cleanEmail) emailVerified = true;
+      if (cleanPhone) phoneVerified = true;
+      otpStore.delete(challengeTarget);
     }
 
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = hashPassword(password, salt);
 
+    const defaultName = displayName
+      ? String(displayName).trim()
+      : (cleanEmail ? cleanEmail.split('@')[0] : (cleanPhone ? `User_${cleanPhone.slice(-4)}` : 'Seeker'));
+
     const user = await db.createUser({
       email: cleanEmail,
-      phone: phone ? String(phone).trim() : null,
-      phoneVerified: false,
-      emailVerified: emailVerified,
-      displayName: displayName ? String(displayName).trim() : cleanEmail.split('@')[0],
+      phone: cleanPhone,
+      phoneVerified,
+      emailVerified,
+      displayName: defaultName,
       passwordHash: hash,
       passwordSalt: salt,
       role: Role.USER,
@@ -510,7 +543,7 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
       targetType: 'USER',
       targetId: user.id,
       ipAddress: clientIp,
-      metadata: { email: cleanEmail, emailVerified }
+      metadata: { email: cleanEmail, phone: cleanPhone, emailVerified, phoneVerified }
     });
 
     return res.json({
@@ -885,6 +918,84 @@ app.delete('/api/user/account', authenticate, async (req: AuthenticatedRequest, 
     res.json({ status: 'DELETED', message: 'Your account and all associated profiles have been permanently removed.' });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/user/migrate-guest (Import locally stored guest profiles into authenticated account)
+app.post('/api/user/migrate-guest', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const sessionUser = req.user!;
+  const { profiles } = req.body;
+
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    return res.status(400).json({
+      error: 'INVALID_PAYLOAD',
+      message: 'profiles array is required and must not be empty.'
+    });
+  }
+
+  try {
+    const imported: any[] = [];
+    const skipped: any[] = [];
+    const existingProfiles = await db.getProfilesByUserId(sessionUser.id);
+
+    for (const p of profiles) {
+      if (!p.profileName || !p.dateOfBirth || !p.timeOfBirth || !p.birthplaceName ||
+          !Number.isFinite(Number(p.latitude)) || !Number.isFinite(Number(p.longitude))) {
+        skipped.push({ profileName: p.profileName || 'Unknown', reason: 'MISSING_OR_INVALID_COORDINATES' });
+        continue;
+      }
+
+      const numLat = Number(p.latitude);
+      const numLon = Number(p.longitude);
+      const trimmedName = String(p.profileName).trim();
+
+      // Idempotency: skip if profile with same name, DOB, and coordinates already exists
+      const duplicate = existingProfiles.find(ep =>
+        ep.profileName.toLowerCase() === trimmedName.toLowerCase() &&
+        ep.dateOfBirth === p.dateOfBirth &&
+        Math.abs(ep.latitude - numLat) < 0.001 &&
+        Math.abs(ep.longitude - numLon) < 0.001
+      );
+
+      if (duplicate) {
+        skipped.push({ profileName: trimmedName, reason: 'ALREADY_EXISTS', existingId: duplicate.id });
+        continue;
+      }
+
+      const created = await db.createProfile({
+        userId: sessionUser.id,
+        profileName: trimmedName,
+        relationship: p.relationship || 'Self',
+        dateOfBirth: p.dateOfBirth,
+        timeOfBirth: p.timeOfBirth,
+        birthplaceName: String(p.birthplaceName).trim(),
+        latitude: numLat,
+        longitude: numLon,
+        resolvedTimezone: p.resolvedTimezone || 'Asia/Kolkata'
+      });
+
+      imported.push(created);
+      existingProfiles.push(created);
+    }
+
+    await db.recordAuditEvent({
+      userId: sessionUser.id,
+      action: 'GUEST_PROFILES_MIGRATED',
+      targetType: 'USER',
+      targetId: sessionUser.id,
+      ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1',
+      metadata: { importedCount: imported.length, skippedCount: skipped.length }
+    });
+
+    return res.json({
+      status: 'MIGRATED',
+      importedCount: imported.length,
+      skippedCount: skipped.length,
+      importedProfiles: imported,
+      skipped
+    });
+  } catch (err: any) {
+    return handleServiceError(res, err);
   }
 });
 
@@ -1698,20 +1809,23 @@ app.get('/api/health', (_req: Request, res: Response) => {
     service: 'astroverse-wallet-auth-gateway',
     version: '2.5.0',
     persistence: pStatus,
+    guestModeAvailable: true,
     timestamp: new Date().toISOString()
   });
 });
 
 app.get('/api/ready', (_req: Request, res: Response) => {
   const pStatus = db.getPersistenceStatus();
-  if ((process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !pStatus.durable) {
+  if (pStatus.isProduction && !pStatus.durable) {
     return res.status(503).json({
       status: 'NOT_READY',
       error: 'DATABASE_CONFIGURATION_REQUIRED',
-      message: 'Production deployment requires DATABASE_URL environment variable for durable PostgreSQL persistence.'
+      message: 'Production deployment requires DATABASE_URL environment variable for durable PostgreSQL persistence.',
+      durable: false,
+      guestModeAvailable: true
     });
   }
-  return res.json({ status: 'READY', persistence: pStatus.mode });
+  return res.json({ status: 'READY', persistence: pStatus.mode, guestModeAvailable: true });
 });
 
 const PORT = process.env.PORT || 5000;

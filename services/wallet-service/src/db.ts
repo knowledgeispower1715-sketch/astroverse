@@ -259,7 +259,8 @@ class ResilientDatabase {
   }
 
   assertDurableStorage(): void {
-    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
+    const isProd = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
     if (isProd && !this.isPostgresAvailable) {
       throw new Error(
         'DURABLE_STORAGE_REQUIRED: Production environment requires a configured and connected PostgreSQL database (DATABASE_URL). Ephemeral storage fallback is strictly disabled in production.'
@@ -268,13 +269,15 @@ class ResilientDatabase {
   }
 
   getPersistenceStatus() {
-    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
+    const isProd = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
     return {
       durable: this.isPostgresAvailable,
-      mode: this.isPostgresAvailable ? 'POSTGRES_PRISMA' : (isProd ? 'UNCONFIGURED_PRODUCTION' : 'LOCAL_DEVELOPMENT_FILE'),
+      mode: this.isPostgresAvailable ? 'POSTGRES_PRISMA' : (isVercelPreview ? 'PREVIEW_EPHEMERAL_MODE' : (isProd ? 'UNCONFIGURED_PRODUCTION' : 'LOCAL_DEVELOPMENT_FILE')),
       databaseConfigured: Boolean(process.env.DATABASE_URL),
       connected: this.isPostgresAvailable,
-      isProduction: isProd
+      isProduction: isProd,
+      isPreview: isVercelPreview
     };
   }
 

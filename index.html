@@ -4475,6 +4475,30 @@
         </button>
       </div>
 
+      <!-- Service Readiness & Storage Status Bar -->
+      <div id="auth-modal-status-bar" style="background: rgba(11, 15, 25, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 7px 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 11px;">
+        <div id="auth-status-pill" style="display: flex; align-items: center; gap: 6px; color: #94A3B8;">
+          <span style="width: 7px; height: 7px; border-radius: 50%; background: #64748B; display: inline-block;"></span>
+          <span id="auth-status-text">Checking cloud auth connectivity...</span>
+        </div>
+        <button type="button" onclick="checkAuthServiceReadiness(true)" style="background: none; border: none; color: #F59E0B; cursor: pointer; font-size: 11px; display: flex; align-items: center; gap: 4px; padding: 2px 6px;">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh
+        </button>
+      </div>
+
+      <!-- Cloud Database Notice (Visible when DATABASE_NOT_READY) -->
+      <div id="auth-db-notice" style="display: none; margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); font-size: 12px; color: #FDE68A; line-height: 1.5;">
+        <div style="font-weight: 700; color: #F59E0B; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Cloud Database Setup Pending
+        </div>
+        <span>Production cloud storage requires a connected PostgreSQL database (<code style="background: rgba(0,0,0,0.35); padding: 1px 5px; border-radius: 4px; color: #FCD34D;">DATABASE_URL</code>). You can use <strong>Continue as Guest</strong> to immediately access all Vedic calculations and save charts locally on this device.</span>
+        <div style="margin-top: 8px;">
+          <button type="button" class="btn-gold-primary" style="padding: 5px 12px; font-size: 11px; width: 100%; justify-content: center;" onclick="continueAsGuest()">
+            <i class="fa-solid fa-compass"></i> Continue as Guest (Full Calculations Enabled)
+          </button>
+        </div>
+      </div>
+
       <!-- Tab Switcher (3 Tabs: Mobile OTP, Password Sign In, New Registration) -->
       <div class="auth-modal-tabs" role="tablist">
         <button class="auth-modal-tab active" id="modal-tab-otp" role="tab" aria-selected="true" onclick="switchAuthModalTab('otp')">
@@ -4590,6 +4614,42 @@
         </button>
       </div>
 
+      <!-- Guest Mode & Local Workspace Action -->
+      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 8px; align-items: center;">
+        <button type="button" class="btn-outline-secondary" style="width: 100%; justify-content: center; min-height: 42px; color: #F8FAFC; border-color: rgba(255, 255, 255, 0.2); font-size: 13px; font-weight: 600;" onclick="continueAsGuest()">
+          <i class="fa-solid fa-compass"></i> Continue as Guest (Local Workspace)
+        </button>
+        <span style="font-size: 11px; color: #64748B; text-align: center;">
+          Access full Kundli, Horas, Panchang &amp; remedies saved locally on this device.
+        </span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: GUEST WORKSPACE IMPORT PROMPT ==================== -->
+  <div id="modal-guest-import-dialog" class="modal-backdrop-wrap" role="dialog" aria-modal="true" style="display: none; align-items: center; justify-content: center; z-index: 10450;">
+    <div class="auth-modal-card" style="max-width: 440px;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); color: #F59E0B; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+        </div>
+        <div>
+          <h3 style="font-size: 16px; font-weight: 800; color: #F8FAFC; margin: 0;">Import Guest Profiles</h3>
+          <span style="font-size: 12px; color: #94A3B8;">Preserve your local work in your new account</span>
+        </div>
+      </div>
+      <p id="guest-import-desc" style="font-size: 13px; color: #CBD5E1; line-height: 1.5; margin-bottom: 16px;">
+        We found birth profiles and calculations from your guest session. Would you like to import them to your account now?
+      </p>
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn-outline-secondary" style="flex: 1; justify-content: center; min-height: 40px; color: #94A3B8; border-color: #334155;" onclick="skipGuestImport()">
+          Keep Local Only
+        </button>
+        <button type="button" class="btn-gold-primary" id="btn-confirm-guest-import" style="flex: 2; justify-content: center; min-height: 40px;" onclick="executeGuestImport()">
+          <i class="fa-solid fa-arrow-down-to-bracket"></i> Import to Account
+        </button>
+      </div>
     </div>
   </div>
 
@@ -5087,10 +5147,88 @@
     }
 
     function getAuthBase() {
-      if (window.location.origin && window.location.origin !== 'null' && !window.location.protocol.startsWith('file')) {
-        return '';
+      // 1. Explicit runtime configuration if defined
+      if (window.__ASTRO_CONFIG__ && window.__ASTRO_CONFIG__.apiBaseUrl) {
+        return window.__ASTRO_CONFIG__.apiBaseUrl.replace(/\/+$/, '');
       }
-      return 'http://localhost:5000';
+
+      // 2. Developer override (validated HTTPS or localhost only)
+      try {
+        const customUrl = localStorage.getItem('astro_custom_backend_url');
+        if (customUrl) {
+          const parsed = new URL(customUrl);
+          const isLocal = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+          const isSecure = parsed.protocol === 'https:';
+          if (isLocal || isSecure) {
+            return customUrl.replace(/\/+$/, '');
+          }
+        }
+      } catch (_) {}
+
+      // 3. Local development origin
+      if (window.location.protocol.startsWith('file') ||
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:5000';
+      }
+
+      // 4. Production web origin (same-origin relative /api routes)
+      return '';
+    }
+
+    let authReadinessCache = { status: null, timestamp: 0, data: null };
+
+    async function checkAuthServiceReadiness(forceRefresh = false) {
+      const now = Date.now();
+      if (!forceRefresh && authReadinessCache.status && (now - authReadinessCache.timestamp < 30000)) {
+        updateAuthModalStatusUI(authReadinessCache);
+        return authReadinessCache;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/ready`, {
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' }
+        });
+        clearTimeout(timeoutId);
+
+        let data = null;
+        try { data = await res.json(); } catch (_) {}
+
+        if (res.status === 200) {
+          authReadinessCache = { status: 'AUTH_SERVICE_READY', timestamp: now, data };
+        } else if (res.status === 503 && data && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {
+          authReadinessCache = { status: 'DATABASE_NOT_READY', timestamp: now, data };
+        } else {
+          authReadinessCache = { status: 'AUTH_SERVICE_UNAVAILABLE', timestamp: now, data };
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        authReadinessCache = { status: 'AUTH_SERVICE_UNAVAILABLE', timestamp: now, data: null, error: err.message };
+      }
+
+      updateAuthModalStatusUI(authReadinessCache);
+      return authReadinessCache;
+    }
+
+    function updateAuthModalStatusUI(readiness) {
+      const pill = document.getElementById('auth-status-pill');
+      const noticeEl = document.getElementById('auth-db-notice');
+      if (!pill) return;
+
+      if (readiness.status === 'AUTH_SERVICE_READY') {
+        pill.innerHTML = '<span style="width: 7px; height: 7px; border-radius: 50%; background: #10B981; display: inline-block;"></span> <span id="auth-status-text" style="color: #34D399; font-weight: 600;">Cloud Auth Online</span>';
+        if (noticeEl) noticeEl.style.display = 'none';
+      } else if (readiness.status === 'DATABASE_NOT_READY') {
+        pill.innerHTML = '<span style="width: 7px; height: 7px; border-radius: 50%; background: #F59E0B; display: inline-block;"></span> <span id="auth-status-text" style="color: #FBBF24; font-weight: 600;">Database Setup Pending</span>';
+        if (noticeEl) noticeEl.style.display = 'block';
+      } else {
+        pill.innerHTML = '<span style="width: 7px; height: 7px; border-radius: 50%; background: #64748B; display: inline-block;"></span> <span id="auth-status-text" style="color: #94A3B8; font-weight: 600;">Guest Mode Active</span>';
+        if (noticeEl) noticeEl.style.display = 'none';
+      }
     }
 
     function getKundliBase() {
@@ -7238,18 +7376,13 @@
     window.addEventListener('hashchange', handleHashRoute);
 
 
-        function openSaveProfileModal() {
-      if (!currentUserSession) {
-        showToast("Please sign in first to save birth profiles.", "info");
-        openAuthModal();
-        return;
-      }
+    function openSaveProfileModal() {
       document.getElementById('modal-save-profile').style.display = 'flex';
       if (currentCalculatedChart) {
-        document.getElementById('p-name').value = currentCalculatedChart.name;
-        document.getElementById('p-dob').value = document.getElementById('input-k-dob').value;
-        document.getElementById('p-tob').value = document.getElementById('input-k-tob').value;
-        document.getElementById('p-city').value = document.getElementById('input-k-city-search').value;
+        document.getElementById('p-name').value = currentCalculatedChart.name || '';
+        document.getElementById('p-dob').value = document.getElementById('input-k-dob')?.value || '';
+        document.getElementById('p-tob').value = document.getElementById('input-k-tob')?.value || '';
+        document.getElementById('p-city').value = document.getElementById('input-k-city-search')?.value || '';
       }
     }
 
@@ -7272,8 +7405,21 @@
       }
 
       if (!currentUserSession) {
-        showToast("Please sign in first to save birth profiles.", "info");
-        openAuthModal();
+        // Save to isolated local guest workspace
+        const savedGuest = saveGuestProfile({
+          profileName: name,
+          relationship: rel,
+          dateOfBirth: dob,
+          timeOfBirth: tob,
+          birthplaceName: city,
+          latitude: lat,
+          longitude: lon
+        });
+        savedUserProfiles.unshift({ id: savedGuest.id, name, rel, dob, tob, city, lat, lon, isGuest: true });
+        localStorage.setItem('astro_saved_profiles', JSON.stringify(savedUserProfiles));
+        renderSavedProfilesList();
+        closeSaveProfileModal();
+        showToast(`Profile for ${name} (${rel}) saved to device guest workspace! Sign in anytime to sync to cloud.`, "success");
         return;
       }
 
@@ -7795,6 +7941,59 @@
     let modalOtpCountdownInterval = null;
     let activeModalOtpPhone = '';
 
+    const GUEST_WORKSPACE_KEY = 'astro_guest_workspace_v1';
+
+    function getGuestWorkspace() {
+      try {
+        const raw = localStorage.getItem(GUEST_WORKSPACE_KEY);
+        if (!raw) return { version: 1, profiles: [], calculations: [], notes: [] };
+        const parsed = JSON.parse(raw);
+        if (!parsed.profiles) parsed.profiles = [];
+        return parsed;
+      } catch (_) {
+        return { version: 1, profiles: [], calculations: [], notes: [] };
+      }
+    }
+
+    function saveGuestProfile(profile) {
+      const ws = getGuestWorkspace();
+      const id = 'guest_prof_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const newProfile = {
+        id,
+        profileName: profile.profileName || profile.name || 'Self',
+        relationship: profile.relationship || 'Self',
+        dateOfBirth: profile.dateOfBirth || profile.dob,
+        timeOfBirth: profile.timeOfBirth || profile.tob || '12:00',
+        birthplaceName: profile.birthplaceName || profile.city || 'Birthplace',
+        latitude: Number(profile.latitude ?? profile.lat),
+        longitude: Number(profile.longitude ?? profile.lon),
+        resolvedTimezone: profile.resolvedTimezone || profile.tz || 'Asia/Kolkata',
+        createdAt: new Date().toISOString()
+      };
+      // Prevent duplicates in guest workspace
+      const exists = ws.profiles.find(p => p.profileName === newProfile.profileName && p.dateOfBirth === newProfile.dateOfBirth);
+      if (!exists) {
+        ws.profiles.push(newProfile);
+        localStorage.setItem(GUEST_WORKSPACE_KEY, JSON.stringify(ws));
+      }
+      return newProfile;
+    }
+
+    function clearGuestWorkspace() {
+      if (confirm("Are you sure you want to clear your local guest workspace? This will remove all charts and profiles stored on this device.")) {
+        localStorage.removeItem(GUEST_WORKSPACE_KEY);
+        showToast("Local guest workspace cleared.", "info");
+        renderSavedProfilesList();
+      }
+    }
+
+    function continueAsGuest() {
+      saveCurrentGuestState();
+      closeAuthModal();
+      showToast("Browsing in Guest Mode. All Vedic calculations and charts are active on this device.", "info");
+      updateUserSessionUI();
+    }
+
     function saveCurrentGuestState() {
       const name = document.getElementById('input-k-name')?.value?.trim();
       const dob = document.getElementById('input-k-dob')?.value;
@@ -7816,39 +8015,89 @@
           lon,
           tz
         };
+        saveGuestProfile({
+          profileName: name || 'Self',
+          relationship: 'Self',
+          dateOfBirth: dob,
+          timeOfBirth: tob,
+          birthplaceName: city || 'Current Location',
+          latitude: lat,
+          longitude: lon,
+          resolvedTimezone: tz
+        });
       }
     }
 
     async function linkPendingGuestProfileToUser(user, sessionToken) {
-      if (!window.pendingGuestProfile) return;
-      const gp = window.pendingGuestProfile;
-      if (!gp.dob || !Number.isFinite(gp.lat) || !Number.isFinite(gp.lon)) return;
+      // 1. Gather all local guest profiles
+      const ws = getGuestWorkspace();
+      const profilesToMigrate = [...ws.profiles];
+
+      if (window.pendingGuestProfile) {
+        const gp = window.pendingGuestProfile;
+        if (gp.dob && Number.isFinite(gp.lat) && Number.isFinite(gp.lon)) {
+          const alreadyInList = profilesToMigrate.some(p => p.dateOfBirth === gp.dob && p.profileName === gp.name);
+          if (!alreadyInList) {
+            profilesToMigrate.push({
+              profileName: gp.name || 'Self',
+              relationship: 'Self',
+              dateOfBirth: gp.dob,
+              timeOfBirth: gp.tob || '12:00',
+              birthplaceName: gp.city || 'Birthplace',
+              latitude: gp.lat,
+              longitude: gp.lon,
+              resolvedTimezone: gp.tz || 'Asia/Kolkata'
+            });
+          }
+        }
+      }
+
+      if (profilesToMigrate.length === 0) return;
 
       try {
-        const res = await fetch(`${getAuthBase()}/api/profiles`, {
+        const res = await fetch(`${getAuthBase()}/api/user/migrate-guest`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${sessionToken}`
           },
-          body: JSON.stringify({
-            userId: user.id,
-            profileName: gp.name || 'Self',
-            relationship: 'Self',
-            dateOfBirth: gp.dob,
-            timeOfBirth: gp.tob || '12:00',
-            birthplaceName: gp.city || 'Birthplace',
-            latitude: gp.lat,
-            longitude: gp.lon,
-            resolvedTimezone: gp.tz || 'Asia/Kolkata'
-          })
+          body: JSON.stringify({ profiles: profilesToMigrate })
         });
         if (res.ok) {
+          const result = await res.json();
           window.pendingGuestProfile = null;
+          localStorage.removeItem(GUEST_WORKSPACE_KEY);
+          if (result.importedCount > 0) {
+            showToast(`Migrated ${result.importedCount} guest profile(s) to your cloud account!`, "success");
+          }
           await syncProfilesFromBackend(user.id);
+        } else {
+          // Fallback to single profile endpoint if migrate endpoint unavailable
+          if (window.pendingGuestProfile) {
+            const gp = window.pendingGuestProfile;
+            await fetch(`${getAuthBase()}/api/profiles`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionToken}`
+              },
+              body: JSON.stringify({
+                userId: user.id,
+                profileName: gp.name || 'Self',
+                relationship: 'Self',
+                dateOfBirth: gp.dob,
+                timeOfBirth: gp.tob || '12:00',
+                birthplaceName: gp.city || 'Birthplace',
+                latitude: gp.lat,
+                longitude: gp.lon,
+                resolvedTimezone: gp.tz || 'Asia/Kolkata'
+              })
+            }).catch(() => {});
+            window.pendingGuestProfile = null;
+          }
         }
       } catch (err) {
-        console.warn("Could not automatically link guest profile to account:", err);
+        console.warn("Could not automatically migrate guest profiles to account:", err);
       }
     }
 
@@ -7868,6 +8117,7 @@
       if (modal) {
         modal.style.display = 'flex';
         switchAuthModalTab(defaultTab);
+        checkAuthServiceReadiness();
       }
     }
 
@@ -7987,8 +8237,22 @@
           showToast(data.message || 'Failed to send OTP.', 'error');
         }
       } catch (err) {
-        if (errEl) { errEl.textContent = 'Authentication service offline.'; errEl.style.display = 'block'; }
-        showToast('Authentication service offline.', 'error');
+        if (errEl) {
+          errEl.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; color: #FCA5A5; margin-top: 6px;">
+              <strong style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <i class="fa-solid fa-wifi"></i> Authentication Service Offline
+              </strong>
+              <span>Cannot connect to authentication service. You can continue calculating charts in local Guest Mode.</span>
+              <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
+                <button type="button" class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px; color: #CBD5E1; border-color: #64748B;" onclick="checkAuthServiceReadiness(true)">Check Connection</button>
+              </div>
+            </div>
+          `;
+          errEl.style.display = 'block';
+        }
+        showToast('Authentication server unavailable.', 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Verification Code'; }
       }
@@ -8038,11 +8302,41 @@
           closeAuthModal();
           showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
         } else {
-          if (errEl) { errEl.textContent = data.message || 'Invalid or expired code.'; errEl.style.display = 'block'; }
-          showToast(data.message || 'Invalid or expired OTP.', 'error');
+          if (res.status === 503 && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {
+            errEl.innerHTML = `
+              <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 10px; border-radius: 8px; color: #FDE68A; margin-top: 6px;">
+                <strong style="color: #F59E0B; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <i class="fa-solid fa-database"></i> Database Connection Required
+                </strong>
+                <span>Cloud account persistence requires a PostgreSQL database (<code>DATABASE_URL</code>). You can continue exploring in Guest Mode.</span>
+                <div style="margin-top: 8px;">
+                  <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
+                </div>
+              </div>
+            `;
+            errEl.style.display = 'block';
+            showToast("Production requires connected PostgreSQL database. Guest Mode is available.", "warning");
+          } else {
+            if (errEl) { errEl.textContent = data.message || 'Invalid or expired code.'; errEl.style.display = 'block'; }
+            showToast(data.message || 'Invalid or expired OTP.', 'error');
+          }
         }
       } catch (err) {
-        if (errEl) { errEl.textContent = 'Server connection error.'; errEl.style.display = 'block'; }
+        if (errEl) {
+          errEl.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; color: #FCA5A5; margin-top: 6px;">
+              <strong style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <i class="fa-solid fa-wifi"></i> Server Connection Offline
+              </strong>
+              <span>Cannot reach authentication server. You can explore all features in Guest Mode.</span>
+              <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
+                <button type="button" class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px; color: #CBD5E1; border-color: #64748B;" onclick="checkAuthServiceReadiness(true)">Check Connection</button>
+              </div>
+            </div>
+          `;
+          errEl.style.display = 'block';
+        }
         showToast('Authentication server unavailable.', 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Verify &amp; Sign In'; }
@@ -8098,11 +8392,41 @@
           closeAuthModal();
           showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
         } else {
-          if (errEl) { errEl.textContent = data.message || 'Invalid credentials.'; errEl.style.display = 'block'; }
-          showToast(data.message || 'Invalid credentials.', 'error');
+          if (res.status === 503 && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {
+            errEl.innerHTML = `
+              <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 10px; border-radius: 8px; color: #FDE68A; margin-top: 6px;">
+                <strong style="color: #F59E0B; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <i class="fa-solid fa-database"></i> Database Connection Required
+                </strong>
+                <span>Cloud account persistence requires a connected PostgreSQL database (<code>DATABASE_URL</code>). You can continue exploring in Guest Mode.</span>
+                <div style="margin-top: 8px;">
+                  <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
+                </div>
+              </div>
+            `;
+            errEl.style.display = 'block';
+            showToast("Production requires connected PostgreSQL database. Guest Mode is available.", "warning");
+          } else {
+            if (errEl) { errEl.textContent = data.message || 'Invalid credentials.'; errEl.style.display = 'block'; }
+            showToast(data.message || 'Invalid credentials.', 'error');
+          }
         }
       } catch (err) {
-        if (errEl) { errEl.textContent = 'Server connection error.'; errEl.style.display = 'block'; }
+        if (errEl) {
+          errEl.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; color: #FCA5A5; margin-top: 6px;">
+              <strong style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <i class="fa-solid fa-wifi"></i> Server Connection Offline
+              </strong>
+              <span>Cannot connect to authentication server. You can explore all Vedic calculations in Guest Mode.</span>
+              <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
+                <button type="button" class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px; color: #CBD5E1; border-color: #64748B;" onclick="checkAuthServiceReadiness(true)">Check Connection</button>
+              </div>
+            </div>
+          `;
+          errEl.style.display = 'block';
+        }
         showToast('Authentication server unavailable.', 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Account'; }
@@ -8121,12 +8445,12 @@
         if (errEl) { errEl.textContent = 'Please enter your full name.'; errEl.style.display = 'block'; }
         return;
       }
-      if (!phone) {
-        if (errEl) { errEl.textContent = 'Please enter your mobile phone number.'; errEl.style.display = 'block'; }
+      if (!phone && !email) {
+        if (errEl) { errEl.textContent = 'Please enter either a mobile phone number or email address.'; errEl.style.display = 'block'; }
         return;
       }
       if (!password || password.length < 8) {
-        if (errEl) { errEl.textContent = 'Password must be at least 8 characters long.'; errEl.style.display = 'block'; }
+        if (errEl) { errEl.textContent = 'Password must be at least 8 characters long and contain numbers and letters.'; errEl.style.display = 'block'; }
         return;
       }
 
@@ -8137,7 +8461,7 @@
         const res = await fetch(`${getAuthBase()}/api/auth/register-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, email: email || undefined, password })
+          body: JSON.stringify({ displayName: name, phone: phone || undefined, email: email || undefined, password })
         });
         const data = await res.json();
         if (res.ok) {
@@ -8146,7 +8470,7 @@
           currentUserSession = {
             id: u.id,
             name: u.displayName || name,
-            identifier: u.email || u.phone || phone,
+            identifier: u.email || u.phone || phone || email,
             email: u.email,
             phone: u.phone,
             role: u.role,
@@ -8164,11 +8488,42 @@
           closeAuthModal();
           showToast(`Welcome, ${name}! Your account has been registered.`, 'success');
         } else {
-          if (errEl) { errEl.textContent = data.message || 'Registration failed.'; errEl.style.display = 'block'; }
-          showToast(data.message || 'Registration failed.', 'error');
+          if (res.status === 503 && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {
+            errEl.innerHTML = `
+              <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 12px; border-radius: 8px; color: #FDE68A; margin-top: 6px;">
+                <strong style="color: #F59E0B; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <i class="fa-solid fa-database"></i> Cloud Database Connection Pending
+                </strong>
+                <span>Production account persistence requires a connected PostgreSQL database (<code>DATABASE_URL</code>). You can continue exploring with all calculations enabled in Guest Mode.</span>
+                <div style="margin-top: 10px; display: flex; gap: 8px;">
+                  <button type="button" class="btn-gold-primary" style="padding: 6px 12px; font-size: 12px;" onclick="continueAsGuest()">Continue as Guest</button>
+                  <button type="button" class="btn-outline-secondary" style="padding: 6px 12px; font-size: 12px; color: #CBD5E1; border-color: #64748B;" onclick="handleModalRegister()">Retry</button>
+                </div>
+              </div>
+            `;
+            errEl.style.display = 'block';
+            showToast("Production requires connected PostgreSQL database. Guest Mode is available.", "warning");
+          } else {
+            if (errEl) { errEl.textContent = data.message || 'Registration failed.'; errEl.style.display = 'block'; }
+            showToast(data.message || 'Registration failed.', 'error');
+          }
         }
       } catch (err) {
-        if (errEl) { errEl.textContent = 'Server connection error.'; errEl.style.display = 'block'; }
+        if (errEl) {
+          errEl.innerHTML = `
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; color: #FCA5A5; margin-top: 6px;">
+              <strong style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <i class="fa-solid fa-wifi"></i> Authentication Service Offline
+              </strong>
+              <span>Cannot connect to authentication service. You can continue calculating charts in local Guest Mode.</span>
+              <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
+                <button type="button" class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px; color: #CBD5E1; border-color: #64748B;" onclick="checkAuthServiceReadiness(true)">Check Connection</button>
+              </div>
+            </div>
+          `;
+          errEl.style.display = 'block';
+        }
         showToast('Authentication server unavailable.', 'error');
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-user-check"></i> Complete Registration'; }

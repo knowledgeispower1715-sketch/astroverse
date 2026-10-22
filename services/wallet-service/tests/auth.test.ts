@@ -1368,6 +1368,119 @@ async function runAuthTestSuite() {
       }
     });
 
+    // 29. Phone-only registration & Guest Migration tests
+    await test('POST /api/auth/register-password rejects payload with neither email nor phone', async () => {
+      const res = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { password: 'StrongPassword123' }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'FIELDS_REQUIRED');
+    });
+
+    const phoneOnlyNum = `+9199${Math.floor(10000000 + Math.random() * 90000000)}`;
+    let phoneOnlyToken = '';
+    await test('POST /api/auth/register-password succeeds with phone-only registration', async () => {
+      const res = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: {
+          phone: phoneOnlyNum,
+          password: 'SecurePassword123!',
+          displayName: 'Phone User'
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'AUTHENTICATED');
+      assert.strictEqual(res.data.user.phone, phoneOnlyNum);
+      assert.strictEqual(typeof res.data.sessionToken, 'string');
+      phoneOnlyToken = res.data.sessionToken;
+    });
+
+    await test('POST /api/user/migrate-guest rejects unauthenticated requests with HTTP 401', async () => {
+      const res = await request('/api/user/migrate-guest', {
+        method: 'POST',
+        body: { profiles: [{ profileName: 'Guest 1', dateOfBirth: '1990-01-01', timeOfBirth: '10:00', birthplaceName: 'Delhi', latitude: 28.61, longitude: 77.20 }] }
+      });
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.data.error, 'UNAUTHORIZED');
+    });
+
+    await test('POST /api/user/migrate-guest rejects empty profiles array with HTTP 400', async () => {
+      const res = await request('/api/user/migrate-guest', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${phoneOnlyToken}` },
+        body: { profiles: [] }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INVALID_PAYLOAD');
+    });
+
+    await test('POST /api/user/migrate-guest successfully migrates valid guest profiles idempotently', async () => {
+      const guestProfilesPayload = [
+        {
+          profileName: 'Self Chart',
+          relationship: 'Self',
+          dateOfBirth: '1995-05-15',
+          timeOfBirth: '14:30',
+          birthplaceName: 'Varanasi',
+          latitude: 25.3176,
+          longitude: 82.9739,
+          resolvedTimezone: 'Asia/Kolkata'
+        },
+        {
+          profileName: 'Partner Chart',
+          relationship: 'Spouse',
+          dateOfBirth: '1997-08-20',
+          timeOfBirth: '08:15',
+          birthplaceName: 'Mumbai',
+          latitude: 19.0760,
+          longitude: 72.8777,
+          resolvedTimezone: 'Asia/Kolkata'
+        }
+      ];
+
+      // First migration: should import both
+      const res1 = await request('/api/user/migrate-guest', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${phoneOnlyToken}` },
+        body: { profiles: guestProfilesPayload }
+      });
+      assert.strictEqual(res1.status, 200);
+      assert.strictEqual(res1.data.status, 'MIGRATED');
+      assert.strictEqual(res1.data.importedCount, 2);
+      assert.strictEqual(res1.data.skippedCount, 0);
+
+      // Duplicate migration retry: should be idempotent and skip already imported profiles
+      const res2 = await request('/api/user/migrate-guest', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${phoneOnlyToken}` },
+        body: { profiles: guestProfilesPayload }
+      });
+      assert.strictEqual(res2.status, 200);
+      assert.strictEqual(res2.data.status, 'MIGRATED');
+      assert.strictEqual(res2.data.importedCount, 0);
+      assert.strictEqual(res2.data.skippedCount, 2);
+    });
+
+    await test('Preview mode allows ephemeral storage when VERCEL_ENV=preview', async () => {
+      const origVercelEnv = process.env.VERCEL_ENV;
+      const origEnv = process.env.NODE_ENV;
+      try {
+        process.env.NODE_ENV = 'production';
+        process.env.VERCEL_ENV = 'preview';
+
+        // Direct method call should not throw when VERCEL_ENV=preview
+        assert.doesNotThrow(() => db.assertDurableStorage());
+
+        const pStatus = db.getPersistenceStatus();
+        assert.strictEqual(pStatus.isPreview, true);
+        assert.strictEqual(pStatus.mode, 'PREVIEW_EPHEMERAL_MODE');
+      } finally {
+        process.env.NODE_ENV = origEnv;
+        process.env.VERCEL_ENV = origVercelEnv;
+      }
+    });
+
   } finally {
     server.close();
   }
