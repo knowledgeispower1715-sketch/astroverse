@@ -124,6 +124,14 @@ def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
+@app.get("/api/ready")
+def ready_check():
+    return {
+        "status": "READY",
+        "service": "kundli-engine",
+        "ephemeris": "Swiss Ephemeris 2.10.3.2"
+    }
+
 @app.get("/api/admin/health")
 def admin_health_check():
     """
