@@ -82,6 +82,39 @@ def generate_astrological_reading(
         persona_display = "Acharya Devratan (AI Astrologer)"
         persona_title = "Career Architecture, Dhana Yogas & Parashari Strategy"
 
+    # Check chart presence
+    has_chart = bool(kundli and isinstance(kundli, dict) and "lagna" in kundli and "planets" in kundli)
+
+    # Classify conversational scope and route non-astrological or specialized conceptual inquiries
+    from chat_orchestrator import (
+        classify_user_query,
+        generate_scope_grounded_response,
+        SCOPE_OUT_OF_SCOPE,
+        SCOPE_HIGH_STAKES_REQUIRING_LIMITATION,
+        SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY,
+        SCOPE_ASTROLOGY_CONCEPTUAL
+    )
+    classification = classify_user_query(user_query, session_history=session_history, has_chart=has_chart)
+    scope = classification.get("scope")
+
+    if scope in [
+        SCOPE_OUT_OF_SCOPE,
+        SCOPE_HIGH_STAKES_REQUIRING_LIMITATION,
+        SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY,
+        SCOPE_ASTROLOGY_CONCEPTUAL
+    ]:
+        grounded_res = generate_scope_grounded_response(
+            classification=classification,
+            query=user_query,
+            kundli=kundli,
+            dasha=dasha,
+            doshas=doshas,
+            astrologer_name=astrologer_name
+        )
+        grounded_res["astrologer_name"] = persona_display
+        grounded_res["scope"] = scope
+        return grounded_res
+
     # Analyze conversation history for context continuity
     prior_user_topics = []
     if session_history and isinstance(session_history, list):
@@ -253,86 +286,36 @@ def generate_astrological_reading(
                 "interpretation": "Karmic discipline cycle requiring patience and structured routine."
             })
 
-    # Assemble Related Insights (Planetary Insight Cards)
+    # Assemble Related Insights (Planetary Insight Cards strictly from computed chart coordinates)
     related_insights: List[Dict[str, Any]] = []
     if has_chart:
         planets = kundli.get("planets", {})
+
+        def _add_planet_insight(p_name: str, significance: str):
+            p = planets.get(p_name)
+            if p and isinstance(p, dict) and p.get("sign") and p.get("house") is not None:
+                deg_val = p.get("degree")
+                deg_str = f"{float(deg_val):.2f}°" if deg_val is not None else ""
+                related_insights.append({
+                    "planet": p_name,
+                    "sign": p["sign"],
+                    "house": p["house"],
+                    "degree": deg_str,
+                    "significance": significance
+                })
+
         if intent in ["career", "timing", "greeting", "general"]:
-            jup = planets.get("Jupiter", {})
-            sat = planets.get("Saturn", {})
-            if jup:
-                related_insights.append({
-                    "planet": "Jupiter",
-                    "sign": jup.get("sign", "Taurus"),
-                    "house": jup.get("house", 9),
-                    "degree": f"{float(jup.get('degree', 12.5)):.2f}°",
-                    "significance": "Natural Karaka of wisdom, expansion, and institutional recognition."
-                })
-            if sat:
-                related_insights.append({
-                    "planet": "Saturn",
-                    "sign": sat.get("sign", "Aquarius"),
-                    "house": sat.get("house", 10),
-                    "degree": f"{float(sat.get('degree', 8.2)):.2f}°",
-                    "significance": "Lord of discipline, perseverance, and sustainable professional structures."
-                })
+            _add_planet_insight("Jupiter", "Natural Karaka of wisdom, expansion, and institutional recognition.")
+            _add_planet_insight("Saturn", "Lord of discipline, perseverance, and sustainable professional structures.")
         elif intent == "marriage":
-            ven = planets.get("Venus", {})
-            jup = planets.get("Jupiter", {})
-            if ven:
-                related_insights.append({
-                    "planet": "Venus",
-                    "sign": ven.get("sign", "Libra"),
-                    "house": ven.get("house", 7),
-                    "degree": f"{float(ven.get('degree', 15.4)):.2f}°",
-                    "significance": "Significator of marital harmony, emotional aesthetics, and partnership diplomacy."
-                })
-            if jup:
-                related_insights.append({
-                    "planet": "Jupiter",
-                    "sign": jup.get("sign", "Taurus"),
-                    "house": jup.get("house", 9),
-                    "degree": f"{float(jup.get('degree', 12.5)):.2f}°",
-                    "significance": "Protector of marital ethics, family blessings, and long-term stability."
-                })
+            _add_planet_insight("Venus", "Significator of marital harmony, emotional aesthetics, and partnership diplomacy.")
+            _add_planet_insight("Jupiter", "Protector of marital ethics, family blessings, and long-term stability.")
         elif intent in ["wealth", "finance"]:
-            mer = planets.get("Mercury", {})
-            jup = planets.get("Jupiter", {})
-            if mer:
-                related_insights.append({
-                    "planet": "Mercury",
-                    "sign": mer.get("sign", "Gemini"),
-                    "house": mer.get("house", 2),
-                    "degree": f"{float(mer.get('degree', 18.1)):.2f}°",
-                    "significance": "Commercial acumen, analytical trade, and liquid capital liquidity."
-                })
-            if jup:
-                related_insights.append({
-                    "planet": "Jupiter",
-                    "sign": jup.get("sign", "Taurus"),
-                    "house": jup.get("house", 11),
-                    "degree": f"{float(jup.get('degree', 12.5)):.2f}°",
-                    "significance": "Dhana Karaka conferring compounded gains and philanthropic balance."
-                })
+            _add_planet_insight("Mercury", "Commercial acumen, analytical trade, and liquid capital liquidity.")
+            _add_planet_insight("Jupiter", "Dhana Karaka conferring compounded gains and philanthropic balance.")
         elif intent in ["remedy", "health"]:
-            sat = planets.get("Saturn", {})
-            sun = planets.get("Sun", {})
-            if sat:
-                related_insights.append({
-                    "planet": "Saturn",
-                    "sign": sat.get("sign", "Aquarius"),
-                    "house": sat.get("house", 8),
-                    "degree": f"{float(sat.get('degree', 8.2)):.2f}°",
-                    "significance": "Karmic balancing agent; pacified by humility, service, and disciplined dawn mantras."
-                })
-            if sun:
-                related_insights.append({
-                    "planet": "Sun",
-                    "sign": sun.get("sign", "Leo"),
-                    "house": sun.get("house", 1),
-                    "degree": f"{float(sun.get('degree', 20.0)):.2f}°",
-                    "significance": "Source of vital prana and physical resilience; strengthened through solar dawn rituals."
-                })
+            _add_planet_insight("Saturn", "Karmic balancing agent; pacified by humility, service, and disciplined dawn mantras.")
+            _add_planet_insight("Sun", "Source of vital prana and physical resilience; strengthened through solar dawn rituals.")
 
     # Prepare Remedy Card if applicable
     remedy_card: Optional[Dict[str, str]] = None
@@ -673,6 +656,7 @@ def generate_astrological_reading(
         "query": user_query,
         "category": intent,
         "intent": intent,
+        "scope": scope,
         "astrologer_name": persona_display,
         "persona_id": persona_id,
         "message": body_md,

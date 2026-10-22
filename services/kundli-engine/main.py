@@ -490,6 +490,19 @@ def get_hourly_predictions(
         **horas_data
     }
 
+@app.get("/api/ai-astrologer/tools")
+def get_ai_astrologer_tools():
+    """
+    Returns the central catalog of verified astrology tools
+    registered in AstroVerse's calculation method registry.
+    """
+    from tools_registry import list_registered_tools
+    return {
+        "status": "success",
+        "count": len(list_registered_tools()),
+        "tools": list_registered_tools()
+    }
+
 @app.post("/api/ai-astrologer/ask")
 def ask_ai_astrologer(req: AIQuestionRequest):
     """
@@ -507,7 +520,13 @@ def ask_ai_astrologer(req: AIQuestionRequest):
         moon_sign_idx = SIGNS.index(d1["planets"]["Moon"]["sign"])
         moon_abs_deg = (moon_sign_idx * 30.0) + d1["planets"]["Moon"]["degree"]
 
-        dashas = calculate_vimshottari_dasha(moon_abs_deg, datetime.fromisoformat(req.dob))
+        try:
+            dt_clean = req.dob.replace("Z", "+00:00") if "Z" in req.dob else req.dob
+            b_dt = datetime.fromisoformat(dt_clean)
+        except Exception:
+            b_dt = datetime.now()
+
+        dashas = calculate_vimshottari_dasha(moon_abs_deg, b_dt)
         doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
 
         reading = generate_astrological_reading(

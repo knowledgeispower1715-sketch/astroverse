@@ -1722,10 +1722,12 @@
       font-size: 13.5px;
       line-height: 1.65;
       color: #1E293B;
-      max-width: 90%;
+      max-width: 92%;
+      box-sizing: border-box;
       align-self: flex-start;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-      word-break: break-word;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
     .chat-bubble-agent h4 {
       margin: 12px 0 6px 0;
@@ -1772,10 +1774,15 @@
       padding: 11px 16px;
       font-size: 13.5px;
       line-height: 1.55;
-      max-width: 82%;
+      display: inline-block;
+      width: fit-content;
+      min-width: fit-content;
+      max-width: 85%;
+      box-sizing: border-box;
       align-self: flex-end;
       box-shadow: 0 2px 8px rgba(76, 5, 25, 0.25);
-      word-break: break-word;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
     .chat-msg-meta {
       display: flex;
@@ -1841,6 +1848,9 @@
       align-items: center;
       gap: 8px;
       font-size: 12px;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
     }
     .chat-remedy-card {
       background: #F0FDF4;
@@ -1850,6 +1860,9 @@
       margin-top: 10px;
       font-size: 12px;
       color: #14532D;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
     }
     .chat-remedy-card h5 {
       margin: 0 0 6px 0;
@@ -5087,7 +5100,7 @@
       </div>
 
       <!-- Chat Message Area -->
-      <div id="ai-chat-messages-container" style="flex: 1; min-height: 280px; overflow-y: auto; padding: 18px 20px; background: #FAF9F6; display: flex; flex-direction: column; gap: 14px; position: relative;">
+      <div id="ai-chat-messages-container" style="flex: 1; min-height: 280px; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 18px 20px; background: #FAF9F6; display: flex; flex-direction: column; gap: 14px; position: relative;">
         <!-- Message bubbles injected here -->
       </div>
 
@@ -8250,6 +8263,7 @@
 
       if (msg.role === 'user') {
         bubbleWrap.style.alignSelf = 'flex-end';
+        bubbleWrap.style.width = 'fit-content';
         bubbleWrap.style.maxWidth = '85%';
 
         const bubble = document.createElement('div');
@@ -8266,6 +8280,7 @@
         bubbleWrap.appendChild(meta);
       } else {
         bubbleWrap.style.alignSelf = 'flex-start';
+        bubbleWrap.style.width = '100%';
         bubbleWrap.style.maxWidth = '92%';
 
         const bubble = document.createElement('div');
@@ -8648,6 +8663,62 @@
         return priorHistoryTexts.some(t => words.some(w => t.includes(w)));
       }
 
+      // Scope Boundaries Check: Out of Scope (Coding, cooking, sports, non-astrological)
+      const isOutOfScope = /\b(write|create|code|program|build|debug)\s+(me\s+)?(a\s+)?(python|javascript|java|c\+\+|html|css|sql|rust|php|bash|react|script|app|game|bot)\b/i.test(q) ||
+        /\b(recipe|how to cook|bake|ingredients for|chocolate cake|pasta|pizza)\b/i.test(q) ||
+        /\b(who won|score of|world cup|cricket match|football match)\b/i.test(q) ||
+        /\b(fix my (car|plumbing|toilet|laptop|wifi|printer))\b/i.test(q);
+
+      if (isOutOfScope) {
+        const salutation = isSunita ? 'Namaste!' : (isRaghavendra ? 'Om Namah Shivaya!' : 'Pranam!');
+        const outMsg = `${salutation} I am ${personaDisplay}.\n\n### Domain Scope Notice\nMy expertise is dedicated specifically to classical Vedic Jyotish (Parashari, Jaimini, and traditional astronomical calculations). I cannot write computer code, provide cooking recipes, answer sports scores, or perform general technical tasks.\n\n### How I Can Guide You\nI am ready to examine your Vedic astrological questions, including:\n- **Career & Authority:** 10th House analysis, D10 Dashamsha, and promotion timing.\n- **Relationships & Synastry:** 7th House Kalatra evaluation and D9 Navamsha dynamics.\n- **Dhana Yogas & Prosperity:** 2nd and 11th House financial compounding.\n- **Karmic Timing & Remedies:** Active Vimshottari Dasha subperiods and traditional mantras.\n\nPlease let me know how you would like to explore your astrological path.`;
+        return {
+          intent: 'out_of_scope',
+          message: outMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: [
+            "Analyze my 10th House of Career & promotion timing",
+            "What does my chart reveal regarding Dhana Yogas?",
+            "Which upcoming transit supports my career path?",
+            "What Vedic remedies strengthen workplace leadership?"
+          ],
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      // Conceptual Astrological Learning Check
+      const isConceptual = /\bwhat is (ashtakavarga|shadbala|vimshottari|navamsha|dashamsha|panchang|d9|d10|lagna|bhava|trikona|kendra|raja yoga|dhana yoga|sade sati|manglik|kaal sarp)\b/i.test(q) ||
+        /\bhow does (ashtakavarga|shadbala|vimshottari|dasha|retrograde|gochara|transit) work\b/i.test(q) ||
+        /\bdifference between (d1 and d9|parashari and jaimini|rashi and navamsha|sayana and nirayana|tropical and sidereal|bav and sav)\b/i.test(q);
+
+      if (isConceptual) {
+        const salutation = isSunita ? 'Namaste!' : (isRaghavendra ? 'Om Namah Shivaya!' : 'Pranam!');
+        let conceptText = '';
+        if (/ashtakavarga/i.test(q)) {
+          conceptText = `### The Ashtakavarga System in Parashari Jyotish\n**Ashtakavarga** ('Eight-Fold Division') is an objective quantitative evaluation tool in Vedic astrology. Synthesized by Sage Parashara, it measures the inherent benefic strength of each of the 12 signs by aggregating auspicious dots (*Bindus*) contributed by 7 physical Grahas plus the Ascendant (Lagna).\n\n#### Key Components\n1. **Bhinnashtakavarga (BAV):** The individual Ashtakavarga table for each specific planet (0 to 8 points per sign).\n2. **Sarvashtakavarga (SAV):** The composite sum of all 8 contributors across each sign (totaling 337 Bindus). Signs with **28 or more Bindus** are considered strong and supportive of positive transit outcomes.\n\n#### Transits (Gochara) & Ashtakavarga\nEven a malefic like Saturn confers productive results when transiting a house blessed with high SAV Bindus (e.g. 30+ Bindus), whereas Jupiter may struggle in a sign with depleted Bindus.`;
+        } else if (/d9|navamsha/i.test(q)) {
+          conceptText = `### The D9 Navamsha Divisional Chart\nIn Vedic astrology, the **D9 Navamsha** is the companion confirmation chart to the D1 Rashi chart. Each zodiac sign (30°) is divided into 9 harmonic segments of 3°20' (one Nakshatra Pada).\n\n#### Core Functions\n1. **Confirming Planetary Dignity (*Phala*):** Verifies whether a planet's D1 promise is supported in inner spiritual reality.\n2. **Marital Synastry & Partner Destiny:** Governs the inner psychological nature of the spouse and marital covenant.\n3. **Second Half of Life (Dharma):** Reflects consciousness maturation after age 32–36.`;
+        } else {
+          conceptText = `### Classical Vedic Astrological Principles\nIn the classical tradition of Sage Parashara (*Brihat Parashara Hora Shastra*), astrological interpretation relies on three synchronized pillars:\n1. **Bhava (House Geometries):** The 12 houses map the entirety of human existence.\n2. **Graha (Planetary Archetypes):** The 9 celestial lenses that focus karmic potentials through dignity and aspects.\n3. **Dasha (Karmic Timing):** The Vimshottari cycle that unlocks specific natal potentials when their allotted season arrives.`;
+        }
+        return {
+          intent: 'conceptual',
+          message: `${salutation} I am ${personaDisplay}.\n\n${conceptText}\n\nWould you like to examine how these principles apply directly to your personal chart coordinates?`,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: [
+            "Calculate my personal Ashtakavarga Bindu scores",
+            "How does my D9 Navamsha modify my Lagna promises?",
+            "What are my strongest planets according to Shadbala?",
+            "Explain the active Vimshottari Dasha for my chart"
+          ],
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
       // Intent detection
       const isGreeting = (q.startsWith('hi') || q.startsWith('hello') || q.startsWith('namaste') || q.startsWith('pranam') || q === 'hey') && q.split(' ').length <= 4;
       let isCareer = q.includes('career') || q.includes('job') || q.includes('promot') || q.includes('business') || q.includes('10th') || q.includes('work') || q.includes('office') || q.includes('transfer');
@@ -8703,13 +8774,30 @@
 
       // Personalized Mode with Calculated Chart
       const lagna = chart.lagnaSign || 'Aries';
-      const moon = chart.moonSign || 'Taurus';
-      const nak = chart.nakName || 'Krittika';
+      const moon = chart.moonSign || 'Moon';
+      const nak = chart.nakName || 'Nakshatra';
       const fd = chart.fullData;
       const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
       const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
       const sadesati = fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis";
       const manglik = fd?.doshas_and_remedies?.manglik?.verdict || "No Manglik Dosha Present";
+
+      // Extract real planetary placements from calculated chart (no hardcoded Taurus defaults)
+      const planetsObj = fd?.d1?.planets || fd?.planets || {};
+      function getPlanetCard(pName, fallbackSig) {
+        const p = planetsObj[pName];
+        if (p && p.sign && p.house !== undefined) {
+          const degStr = typeof p.degree === 'number' ? `${p.degree.toFixed(2)}°` : (p.degree ? `${p.degree}°` : '');
+          return {
+            planet: pName,
+            sign: p.sign,
+            house: p.house,
+            degree: degStr,
+            significance: fallbackSig
+          };
+        }
+        return null;
+      }
 
       let message = '';
       let suggested = [];
@@ -8718,7 +8806,7 @@
 
       if (intent === 'greeting') {
         if (isSunita) {
-          message = `Namaste! I am ${personaDisplay}.\n\nI have connected to your natal chart: **${lagna} Lagna**, Moon in **${moon}** (${nak} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n### Relational & Emotional Geometry\nYour 7th House of partnership is energized, and your emotional perception is anchored in lunar ${moon}. Whether you are seeking guidance on romantic timing, partner compatibility, marital harmony, or emotional healing, I am here to explore your chart with empathy and respect.\n\nWhat relationship inquiry or milestone would you like to illuminate today?`;
+          message = `Namaste! I am ${personaDisplay}.\n\nI have connected to your natal chart: **${lagna} Lagna**, Moon in **${moon}** (${nak} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n### Relational & Emotional Geometry\nYour 7th House of partnership is illuminated under ${lagna} Lagna, and your emotional perception is anchored in lunar ${moon}. Whether you are seeking guidance on romantic timing, partner compatibility, marital harmony, or emotional healing, I am here to explore your chart with empathy and respect.\n\nWhat relationship inquiry or milestone would you like to illuminate today?`;
           suggested = [
             "When is an auspicious timing window for marriage?",
             "What does my 7th house say about my partner?",
@@ -8734,7 +8822,7 @@
             "Explain traditional practices for mental peace"
           ];
         } else {
-          message = `Pranam! I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagna} Lagna**, **${moon} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**.\n\n### Strategic Career & Life Architecture\nYour 10th House of career authority is energized. Under your active ${dashaMaha} cycle, the celestial geometry supports deliberate professional positioning, institutional leadership, and structured long-term wealth compounding.\n\nWhat strategic milestone, career transition, or financial objective would you like to examine?`;
+          message = `Pranam! I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagna} Lagna**, **${moon} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**.\n\n### Strategic Career & Life Architecture\nYour professional authority is energized under your ${lagna} Lagna. Under your active ${dashaMaha} cycle, the celestial geometry supports deliberate professional positioning, institutional leadership, and structured long-term wealth compounding.\n\nWhat strategic milestone, career transition, or financial objective would you like to examine?`;
           suggested = [
             "Analyze my 10th House of Career & promotion timing",
             "What does my chart reveal regarding Dhana Yogas?",
@@ -8742,22 +8830,22 @@
             "How should I navigate current professional stress?"
           ];
         }
+        const jupCard = getPlanetCard('Jupiter', 'Guiding benefic influence.');
+        if (jupCard) relatedInsights.push(jupCard);
       } else if (intent === 'career') {
         if (isSunita) {
-          message = `Namaste! I am ${personaDisplay}.\n\nAnalyzing your professional path through an empathetic and Jaimini lens for **${lagna} Lagna**:\n\n### Astrological Diagnosis\nYour 10th House of career is guided under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. With your Moon in ${moon} (${nak} Nakshatra), your intuitive intelligence and interpersonal diplomacy are your greatest professional assets. Roles requiring stakeholder alignment, mentorship, and thoughtful communication will bring the highest satisfaction.\n\n### Timing & Workplace Harmony\nTransiting benefics aspecting your professional houses indicate an opening window over the next 3 to 6 months for expanded responsibility. Maintain gentle, transparent communication during high-stakes dialogues.\n\n### Practical Reflection\nEnsure work ambitions do not drain your personal vitality. Sustainable success requires a calm, centered spirit.`;
+          message = `Namaste! I am ${personaDisplay}.\n\nAnalyzing your professional path through an empathetic and Jaimini lens for **${lagna} Lagna**:\n\n### Astrological Diagnosis\nYour professional direction is guided under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. With your Moon in ${moon} (${nak} Nakshatra), your intuitive intelligence and interpersonal diplomacy are your greatest professional assets. Roles requiring stakeholder alignment, mentorship, and thoughtful communication will bring the highest satisfaction.\n\n### Timing & Workplace Harmony\nTransiting benefics aspecting your professional houses indicate an opening window over the next 3 to 6 months for expanded responsibility. Maintain gentle, transparent communication during high-stakes dialogues.\n\n### Practical Reflection\nEnsure work ambitions do not drain your personal vitality. Sustainable success requires a calm, centered spirit.`;
         } else if (isRaghavendra) {
           message = `Om Namah Shivaya! I am ${personaDisplay}.\n\nAccording to classical Parashari Jyotish for **${lagna} Lagna**:\n\n### Scriptural Evaluation of the 10th House (Karma Bhava)\nSage Parashara states that the 10th house governs *Kirti* (reputation) and *Pratishtha* (authority). In your chart, your active Dasha lord **${dashaMaha}** commands current professional karma.\n\n### Remedial Harmonization for Workplace Obstacles\nIf you experience bureaucratic friction: Recite the **Aditya Hridaya Stotra** every Sunday at dawn and offer clean water to Surya Deva. For your ${dashaMaha} cycle, chanting the **Vishnu Sahasranama** clears hidden impediments.\n\n### Karmic Boundaries\nAstrology identifies auspicious timing, but righteous diligence (*Purushartha*) remains the supreme prerequisite for enduring success.`;
         } else {
-          message = `Pranam! I am ${personaDisplay}.\n\nAnalyzing the executive trajectory of your **${lagna} Lagna**:\n\n### Professional Diagnosis & 10th House Axis\nYour 10th House of professional authority is strongly energized under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. In Parashari doctrine, this planetary combination acts as an institutional accelerator, activating opportunities for public leadership, team expansion, and structured organizational elevation.\n\n### Strategic Milestones & Execution Timing\n1. **Next 60–90 Days:** High-visibility window. Initiate salary reviews, major project proposals, and executive stakeholder alignment.\n2. **Leadership Posture:** Maintain composed, analytical demeanor during high-pressure meetings. Your {lagna} Lagna commands respect when decisions are data-driven.\n3. **Risk Management:** Consolidate your core deliverables before pursuing lateral transitions.\n\n### Practical Reflection\nAlign your high-stakes negotiations with planetary Horas governed by functional benefics for optimum clarity.`;
+          message = `Pranam! I am ${personaDisplay}.\n\nAnalyzing the executive trajectory of your **${lagna} Lagna**:\n\n### Professional Diagnosis & House Axis\nYour professional authority is strongly energized under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. In Parashari doctrine, this planetary combination acts as an institutional accelerator, activating opportunities for public leadership, team expansion, and structured organizational elevation.\n\n### Strategic Milestones & Execution Timing\n1. **Next 60–90 Days:** High-visibility window. Initiate salary reviews, major project proposals, and executive stakeholder alignment.\n2. **Leadership Posture:** Maintain composed, analytical demeanor during high-pressure meetings. Your ${lagna} Lagna commands respect when decisions are data-driven.\n3. **Risk Management:** Consolidate your core deliverables before pursuing lateral transitions.\n\n### Practical Reflection\nAlign your high-stakes negotiations with planetary Horas governed by functional benefics for optimum clarity.`;
         }
 
-        relatedInsights.push({
-          planet: 'Jupiter',
-          sign: 'Taurus',
-          house: 10,
-          degree: '12.45°',
-          significance: 'Natural Karaka of wisdom and expansion activating career elevation.'
-        });
+        const jupCard = getPlanetCard('Jupiter', 'Natural Karaka of wisdom and expansion activating career elevation.');
+        const satCard = getPlanetCard('Saturn', 'Lord of discipline, perseverance, and sustainable professional structures.');
+        if (jupCard) relatedInsights.push(jupCard);
+        if (satCard) relatedInsights.push(satCard);
+
         suggested = [
           "How does my 10th house lord influence promotion timing?",
           "Which upcoming transit supports a career switch?",
@@ -8787,13 +8875,11 @@
           message = `Pranam! I am ${personaDisplay}.\n\nEvaluating relationship stability and marriage timing for **${lagna} Lagna**:\n\n### 7th House & Partnership Analysis\nYour 7th House of Kalatra is reviewed under active **${dashaMaha}-${dashaAntar}** Dasha. Marital status verification reflects: **${manglik}**. Planetary transits create a structured, supportive window over the next 6 to 12 months for formalizing alliances or stabilizing long-term commitments.\n\n### Strategic Relationship Principles\nApproach partnerships with the same diligence as long-term covenants: prioritize shared financial values, emotional integrity, and mutual respect.`;
         }
 
-        relatedInsights.push({
-          planet: 'Venus',
-          sign: 'Libra',
-          house: 7,
-          degree: '15.20°',
-          significance: 'Significator of marital harmony, aesthetic connection, and partnership diplomacy.'
-        });
+        const venCard = getPlanetCard('Venus', 'Significator of marital harmony, aesthetic connection, and partnership diplomacy.');
+        const jupCard = getPlanetCard('Jupiter', 'Protector of marital ethics, family blessings, and long-term stability.');
+        if (venCard) relatedInsights.push(venCard);
+        if (jupCard) relatedInsights.push(jupCard);
+
         suggested = [
           "What does my 7th house reveal about partner compatibility?",
           "How does the D9 Navamsha chart modify relationship timing?",
@@ -8802,13 +8888,12 @@
         ];
       } else if (intent === 'wealth') {
         message = `Pranam! I am ${personaDisplay}.\n\nAnalyzing wealth accumulation, Dhana Yogas, and liquidity for **${lagna} Lagna**:\n\n### Dhana Yogas & Wealth Axis (2nd & 11th Houses)\nIn your chart, the 2nd House of liquid wealth and the 11th House of recurring gains are energized by your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. This planetary configuration activates auspicious wealth combinations, indicating sustained compounding potential when capital is deployed with disciplined patience.\n\n### Strategic Financial Directives\n1. **Capital Allocation:** Favor proven index equity, debt instruments, and stable tangible assets over speculative trends.\n2. **Speculative Cautions:** Avoid high-leverage intraday trading during localized Rahu Kaal or volatile lunar aspects.\n3. **Long-Term Compounding:** The ${dashaMaha} planetary vibration supports asset accumulation for family security.\n\n*Disclaimer: Astrological analysis reflects planetary timing indicators; it does not constitute registered financial advice.*`;
-        relatedInsights.push({
-          planet: 'Mercury',
-          sign: 'Gemini',
-          house: 11,
-          degree: '18.10°',
-          significance: 'Commercial acumen, analytical trade, and liquid capital liquidity.'
-        });
+
+        const merCard = getPlanetCard('Mercury', 'Commercial acumen, analytical trade, and liquid capital liquidity.');
+        const jupCard = getPlanetCard('Jupiter', 'Dhana Karaka conferring compounded gains and philanthropic balance.');
+        if (merCard) relatedInsights.push(merCard);
+        if (jupCard) relatedInsights.push(jupCard);
+
         suggested = [
           "Which planets form auspicious Dhana Yogas in my chart?",
           "What does my 2nd and 11th house axis indicate for capital growth?",
@@ -8816,7 +8901,7 @@
           "What traditional remedies support ethical prosperity?"
         ];
       } else if (intent === 'remedy') {
-        message = `Om Namah Shivaya! I am ${personaDisplay}.\n\nExamining classical Vedic remedial harmonization for **${lagna} Lagna**:\n\n### Planetary Evaluation & Saturn Transit\nYour chart is navigating **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**, with Saturn in **${sadesati}**.\n\n### Prescribed Classical Remedies\n- **Maha Mrityunjaya Mantra:** Chanting 108 times at sunrise pacifies malefic transit friction and restores physical and mental vitality.\n- **Saturnian Discipline:** On Saturdays, light a pure sesame or mustard oil lamp under a Peepal tree and practice selfless charity toward those in need.\n- **Gemstone Guidance:** Always fortify your functional Lagna and Trikona lords (such as Yellow Sapphire or Emerald) only after verifying natal house lordships.\n\n### Ethical Scriptural Principle\nTraditional remedies are cultural and spiritual practices intended to cultivate inner peace, discipline, and humility. They are not transactional commercial guarantees.`;
+        message = `Om Namah Shivaya! I am ${personaDisplay}.\n\nExamining classical Vedic remedial harmonization for **${lagna} Lagna**:\n\n### Planetary Evaluation & Saturn Transit\nYour chart is navigating **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**, with Saturn in **${sadesati}**.\n\n### Prescribed Classical Remedies\n- **Maha Mrityunjaya Mantra:** Chanting 108 times at sunrise pacifies malefic transit friction and restores physical and mental vitality.\n- **Saturnian Discipline:** On Saturdays, light a pure sesame or mustard oil lamp under a Peepal tree and practice selfless charity toward those in need.\n- **Gemstone Guidance:** Always fortify your functional Lagna and Trikona lords only after verifying natal house lordships.\n\n### Ethical Scriptural Principle\nTraditional remedies are cultural and spiritual practices intended to cultivate inner peace, discipline, and humility. They are not transactional commercial guarantees.`;
         remedyCard = {
           title: "Classical Parashari Remedial Discipline",
           mantra: "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe Sugandhim Pushtivardhanam Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat (108 times at sunrise)",
@@ -8824,6 +8909,12 @@
           charity_practice: "Light a pure sesame oil lamp under a Peepal tree on Saturdays; feed cows with green fodder",
           disclaimer: "Vedic remedies are sacred traditional disciplines for mental peace; they carry no commercial guarantees."
         };
+
+        const satCard = getPlanetCard('Saturn', 'Karmic balancing agent; pacified by humility, service, and disciplined dawn mantras.');
+        const sunCard = getPlanetCard('Sun', 'Source of vital prana and physical resilience; strengthened through solar dawn rituals.');
+        if (satCard) relatedInsights.push(satCard);
+        if (sunCard) relatedInsights.push(sunCard);
+
         suggested = [
           "What is the classical scriptural basis for this mantra?",
           "How can I pacify Saturn's transit without expensive stones?",
@@ -8848,6 +8939,8 @@
         ];
       } else {
         message = `Pranam! I am ${personaDisplay}.\n\nComprehensive Vedic astrological analysis for **${lagna} Lagna** and **${moon} Moon**:\n\n### Natal Constitution & Life Themes\nWith ${lagna} Lagna and Moon in ${moon} (${nak} Nakshatra), your chart reflects intellectual depth and resilience. Your active **${dashaMaha}-${dashaAntar}** Dasha period emphasizes purpose, structured growth, and character maturation.\n\n### Planetary Climate & Advice\nSaturn in ${sadesati} teaches patience and long-term discipline. By maintaining composed focus and balanced daily routines, you navigate this period with graceful resilience.`;
+        const jupCard = getPlanetCard('Jupiter', 'Guiding benefic influence.');
+        if (jupCard) relatedInsights.push(jupCard);
         suggested = [
           "Analyze my career trajectory and promotion timing.",
           "When does my chart indicate relationship consolidation?",
@@ -8925,10 +9018,20 @@
         }));
 
         const authBase = getAuthBase();
+        let formattedDob = null;
+        if (currentCalculatedChart && currentCalculatedChart.dob) {
+          if (currentCalculatedChart.dob.includes('T')) {
+            formattedDob = currentCalculatedChart.dob;
+          } else {
+            const tobVal = currentCalculatedChart.tob || '12:00';
+            formattedDob = `${currentCalculatedChart.dob}T${tobVal.length === 5 ? tobVal + ':00' : tobVal}`;
+          }
+        }
+
         const payload = {
           category: "general",
           question: text,
-          dob: currentCalculatedChart?.dob || null,
+          dob: formattedDob,
           lat: currentCalculatedChart?.lat || null,
           lon: currentCalculatedChart?.lon || null,
           timezone: currentCalculatedChart?.timezone || "Asia/Kolkata",

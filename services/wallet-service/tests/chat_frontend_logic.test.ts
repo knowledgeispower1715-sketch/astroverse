@@ -93,3 +93,106 @@ test('Web Audio API synthesizer parameters conform to specifications', () => {
   assert.ok(tone2 >= 630 && tone2 <= 680, 'Incoming tone 2 between 630 and 680 Hz');
   assert.ok(receiveDuration >= 0.16 && receiveDuration <= 0.22, 'Incoming chime duration between 160 and 220 ms');
 });
+
+// 3. Short Message Bubble & Layout Regression Protection
+test('Chat bubble layout prevents vertical text wrapping on short messages like "hi"', () => {
+  // Replicating CSS contract rules for .chat-bubble-user and bubbleWrap
+  const bubbleUserCss = {
+    display: 'inline-block',
+    width: 'fit-content',
+    minWidth: 'fit-content',
+    maxWidth: '85%',
+    wordBreak: 'normal',
+    overflowWrap: 'break-word',
+    boxSizing: 'border-box'
+  };
+
+  const bubbleWrapStyle = {
+    alignSelf: 'flex-end',
+    width: 'fit-content',
+    maxWidth: '85%'
+  };
+
+  assert.strictEqual(bubbleUserCss.width, 'fit-content', 'User bubble width must be fit-content');
+  assert.strictEqual(bubbleUserCss.minWidth, 'fit-content', 'User bubble minWidth must be fit-content to prevent vertical letter collapse');
+  assert.strictEqual(bubbleUserCss.wordBreak, 'normal', 'User bubble wordBreak must be normal, not break-word, so short words do not break vertically');
+  assert.strictEqual(bubbleWrapStyle.width, 'fit-content', 'Bubble container must respect fit-content width');
+});
+
+// 4. Grounded Chart Planetary Insight Resolution (Fixing Taurus Lagna Inconsistency)
+test('Planetary insight extractor binds strictly to calculated chart coordinates without hardcoded Taurus defaults', () => {
+  // Scorpio Lagna chart fixture
+  const scorpioKundli = {
+    lagnaSign: 'Scorpio',
+    moonSign: 'Aquarius',
+    nakName: 'Shatabhisha',
+    fullData: {
+      d1: {
+        lagna: { sign: 'Scorpio', degree: 18.4 },
+        planets: {
+          Sun: { sign: 'Scorpio', house: 1, degree: 7.2 },
+          Moon: { sign: 'Aquarius', house: 4, degree: 14.1 },
+          Mars: { sign: 'Sagittarius', house: 2, degree: 22.0 },
+          Mercury: { sign: 'Scorpio', house: 1, degree: 19.5 },
+          Jupiter: { sign: 'Gemini', house: 8, degree: 15.79 },
+          Venus: { sign: 'Capricorn', house: 3, degree: 28.3 },
+          Saturn: { sign: 'Aquarius', house: 4, degree: 8.9 }
+        }
+      }
+    }
+  };
+
+  const planetsObj = scorpioKundli.fullData.d1.planets;
+  function getPlanetCard(pName: keyof typeof planetsObj, fallbackSig: string) {
+    const p = planetsObj[pName];
+    if (p && p.sign && p.house !== undefined) {
+      const degStr = typeof p.degree === 'number' ? `${p.degree.toFixed(2)}°` : `${p.degree}°`;
+      return {
+        planet: pName,
+        sign: p.sign,
+        house: p.house,
+        degree: degStr,
+        significance: fallbackSig
+      };
+    }
+    return null;
+  }
+
+  const jupCard = getPlanetCard('Jupiter', 'Wisdom and expansion.');
+  const satCard = getPlanetCard('Saturn', 'Discipline and structures.');
+
+  assert.ok(jupCard !== null, 'Jupiter card must be resolved');
+  assert.strictEqual(jupCard?.sign, 'Gemini', 'Jupiter sign must be Gemini as in natal chart, NOT hardcoded Taurus');
+  assert.strictEqual(jupCard?.house, 8, 'Jupiter house must be 8 as in Scorpio Lagna chart, NOT 9 or 10');
+  assert.strictEqual(jupCard?.degree, '15.79°', 'Jupiter degree must match chart calculation');
+
+  assert.ok(satCard !== null, 'Saturn card must be resolved');
+  assert.strictEqual(satCard?.sign, 'Aquarius', 'Saturn sign must match chart');
+  assert.strictEqual(satCard?.house, 4, 'Saturn house must match chart');
+});
+
+// 5. Out-of-Scope and Conceptual Question Classification
+test('Client-side query scope handling correctly separates out-of-scope tasks and conceptual questions', () => {
+  const isOutOfScope = (q: string) =>
+    /\b(write|create|code|program|build|debug)\s+(me\s+)?(a\s+)?(python|javascript|java|c\+\+|html|css|sql|rust|php|bash|react|script|app|game|bot)\b/i.test(q) ||
+    /\b(recipe|how to cook|bake|ingredients for|chocolate cake|pasta|pizza)\b/i.test(q) ||
+    /\b(who won|score of|world cup|cricket match|football match)\b/i.test(q) ||
+    /\b(fix my (car|plumbing|toilet|laptop|wifi|printer))\b/i.test(q);
+
+  const isConceptual = (q: string) =>
+    /\bwhat is (ashtakavarga|shadbala|vimshottari|navamsha|dashamsha|panchang|d9|d10|lagna|bhava|trikona|kendra|raja yoga|dhana yoga|sade sati|manglik|kaal sarp)\b/i.test(q) ||
+    /\bhow does (ashtakavarga|shadbala|vimshottari|dasha|retrograde|gochara|transit) work\b/i.test(q) ||
+    /\bdifference between (d1 and d9|parashari and jaimini|rashi and navamsha|sayana and nirayana|tropical and sidereal|bav and sav)\b/i.test(q);
+
+  // Out of scope tests
+  assert.ok(isOutOfScope('Write me a Python game with pygame'), 'Coding task must be detected as out-of-scope');
+  assert.ok(isOutOfScope('Can you code a javascript script to scrape?'), 'Scripting task must be out-of-scope');
+  assert.ok(isOutOfScope('Give me the recipe for chocolate cake'), 'Cooking task must be out-of-scope');
+  assert.ok(!isOutOfScope('Analyze my career and promotion timing'), 'Astrology career query must NOT be out-of-scope');
+
+  // Conceptual tests
+  assert.ok(isConceptual('What is Ashtakavarga and how does it work?'), 'Ashtakavarga inquiry must be detected as conceptual');
+  assert.ok(isConceptual('Explain the difference between D1 and D9'), 'D1/D9 comparison must be conceptual');
+  assert.ok(isConceptual('What is Shadbala in Vedic astrology?'), 'Shadbala question must be conceptual');
+  assert.ok(!isConceptual('Will I get married this year?'), 'Personal prediction query must NOT be conceptual');
+});

@@ -170,3 +170,177 @@ def test_ai_astrologer_api_endpoint():
     assert len(data["chartEvidence"]) > 0
     assert len(data["suggestedQuestions"]) >= 3
     assert data["status"] == "completed"
+
+# ==============================================================================
+# TEST GROUP A: Scorpio Lagna Chart Context Preservation (Fix Taurus Inconsistency)
+# ==============================================================================
+
+SCORPIO_KUNDLI = {
+    "lagna": {"sign": "Scorpio", "degree": 18.4},
+    "planets": {
+        "Sun": {"sign": "Scorpio", "degree": 7.2, "house": 1, "nakshatra": "Anuradha"},
+        "Moon": {"sign": "Aquarius", "degree": 14.1, "house": 4, "nakshatra": "Shatabhisha"},
+        "Mars": {"sign": "Sagittarius", "degree": 22.0, "house": 2, "nakshatra": "Purva Ashadha"},
+        "Mercury": {"sign": "Scorpio", "degree": 19.5, "house": 1, "nakshatra": "Jyeshtha"},
+        "Jupiter": {"sign": "Gemini", "degree": 15.79, "house": 8, "nakshatra": "Ardra"},
+        "Venus": {"sign": "Capricorn", "degree": 28.3, "house": 3, "nakshatra": "Dhanishta"},
+        "Saturn": {"sign": "Aquarius", "degree": 8.9, "house": 4, "nakshatra": "Shatabhisha"}
+    }
+}
+
+def test_ai_consultation_scorpio_lagna_planetary_insight_binding():
+    """Verify that a Scorpio Lagna chart binds to actual Gemini Jupiter and NEVER defaults to Taurus."""
+    reading = generate_astrological_reading(
+        category="career",
+        user_query="How will my career progress this year?",
+        kundli=SCORPIO_KUNDLI,
+        dasha=SAMPLE_DASHA,
+        doshas=SAMPLE_DOSHAS,
+        astrologer_name="Acharya Devratan"
+    )
+    assert reading["status"] == "completed"
+    assert "Scorpio Lagna" in reading["message"]
+    assert "Taurus Lagna" not in reading["message"]
+
+    # Verify Planetary Insight Cards
+    insights = reading.get("relatedInsights", [])
+    assert len(insights) >= 2, "Must contain at least 2 planetary insight cards"
+
+    jup_card = next((c for c in insights if c["planet"] == "Jupiter"), None)
+    sat_card = next((c for c in insights if c["planet"] == "Saturn"), None)
+
+    assert jup_card is not None, "Jupiter card must be generated"
+    assert jup_card["sign"] == "Gemini", f"Expected Jupiter in Gemini from natal chart, got {jup_card['sign']}"
+    assert jup_card["sign"] != "Taurus", "Jupiter sign must NOT default to Taurus"
+    assert jup_card["house"] == 8, f"Expected Jupiter in House 8, got {jup_card['house']}"
+    assert "15.79" in jup_card["degree"]
+
+    assert sat_card is not None, "Saturn card must be generated"
+    assert sat_card["sign"] == "Aquarius"
+    assert sat_card["house"] == 4
+
+# ==============================================================================
+# TEST GROUP B: Out-of-Scope and Safety Boundary Refusal
+# ==============================================================================
+
+def test_ai_consultation_out_of_scope_coding_refusal():
+    """Verify non-astrological programming requests are politely declined without hallucinating astrology."""
+    coding_query = "Write me a Python script to scrape website data"
+    reading = generate_astrological_reading(
+        category="general",
+        user_query=coding_query,
+        kundli=SCORPIO_KUNDLI,
+        dasha=SAMPLE_DASHA,
+        doshas=SAMPLE_DOSHAS,
+        astrologer_name="Acharya Devratan"
+    )
+    assert reading["status"] == "completed"
+    assert reading["scope"] == "OUT_OF_SCOPE"
+    assert "Domain Scope Notice" in reading["message"]
+    assert "cannot write programming code" in reading["message"].lower() or "vedic" in reading["message"].lower()
+    assert reading["chartEvidence"] == []
+    assert reading["relatedInsights"] == []
+    assert len(reading["suggestedQuestions"]) >= 3
+
+def test_ai_consultation_out_of_scope_cooking_refusal():
+    """Verify culinary recipes are politely declined."""
+    cooking_query = "Give me the recipe and ingredients for chocolate chip cookies"
+    reading = generate_astrological_reading(
+        category="general",
+        user_query=cooking_query,
+        kundli=SAMPLE_KUNDLI,
+        dasha=SAMPLE_DASHA,
+        doshas=SAMPLE_DOSHAS,
+        astrologer_name="Dr. Sunita Shastri"
+    )
+    assert reading["scope"] == "OUT_OF_SCOPE"
+    assert "cannot write programming code, provide culinary recipes" in reading["message"] or "Domain Scope Notice" in reading["message"]
+
+def test_ai_consultation_high_stakes_safety_boundary():
+    """Verify medical emergencies or suicidal queries trigger compassionate safety boundary."""
+    crisis_query = "Should I stop taking my chemotherapy pills?"
+    reading = generate_astrological_reading(
+        category="health",
+        user_query=crisis_query,
+        kundli=SAMPLE_KUNDLI,
+        dasha=SAMPLE_DASHA,
+        doshas=SAMPLE_DOSHAS,
+        astrologer_name="Pandit Raghavendra"
+    )
+    assert reading["scope"] == "HIGH_STAKES_REQUIRING_LIMITATION"
+    assert "Safety Advisory" in reading["message"]
+    assert "never a substitute for licensed medical care" in reading["message"].lower()
+    assert reading["remedyCard"] is not None
+
+# ==============================================================================
+# TEST GROUP C: Conceptual Astrological Queries
+# ==============================================================================
+
+def test_ai_consultation_conceptual_ashtakavarga():
+    """Verify conceptual question on Ashtakavarga returns authoritative shastric exposition."""
+    query = "What is Ashtakavarga and how does it work?"
+    reading = generate_astrological_reading(
+        category="general",
+        user_query=query,
+        kundli=None,  # No personal chart needed for conceptual questions
+        dasha=None,
+        doshas=None,
+        astrologer_name="Acharya Devratan"
+    )
+    assert reading["status"] == "completed"
+    assert reading["scope"] == "ASTROLOGY_CONCEPTUAL"
+    assert "Ashtakavarga" in reading["message"]
+    assert "Bhinnashtakavarga" in reading["message"]
+    assert "Sarvashtakavarga" in reading["message"]
+    assert "Bindus" in reading["message"]
+
+def test_ai_consultation_conceptual_d9_navamsha():
+    """Verify conceptual question on D9 Navamsha returns harmonic explanation."""
+    query = "Explain the difference between D1 and D9 Navamsha chart"
+    reading = generate_astrological_reading(
+        category="general",
+        user_query=query,
+        kundli=None,
+        dasha=None,
+        doshas=None,
+        astrologer_name="Dr. Sunita Shastri"
+    )
+    assert reading["scope"] == "ASTROLOGY_CONCEPTUAL"
+    assert "D9 Navamsha" in reading["message"]
+    assert "3°20'" in reading["message"] or "divisional" in reading["message"].lower()
+
+# ==============================================================================
+# TEST GROUP D: Central Tool Registry & Discovery Endpoints
+# ==============================================================================
+
+def test_tools_registry_listing_and_execution():
+    """Verify central tool registry catalog and safe tool execution."""
+    from tools_registry import list_registered_tools, execute_tool
+
+    tools = list_registered_tools()
+    assert len(tools) >= 12
+    tool_ids = [t["id"] for t in tools]
+    assert "calculate_kundli_d1" in tool_ids
+    assert "calculate_navamsha_d9" in tool_ids
+    assert "calculate_vimshottari_dasha" in tool_ids
+    assert "calculate_ashtakavarga" in tool_ids
+    assert "calculate_horas_24h" in tool_ids
+
+    # Execute a tool safely
+    hora_res = execute_tool("calculate_horas_24h", lat=28.6139, lon=77.2090)
+    assert hora_res["status"] == "success"
+    assert "result" in hora_res
+
+    # Missing parameters should return structured error, not crash
+    missing_res = execute_tool("calculate_kundli_d1")
+    assert missing_res["status"] == "error"
+    assert "Missing required parameter" in missing_res["error"]
+
+def test_api_tools_catalog_endpoint():
+    """Verify GET /api/ai-astrologer/tools returns full tool catalog."""
+    res = client.get("/api/ai-astrologer/tools")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert data["count"] >= 12
+    assert len(data["tools"]) == data["count"]
