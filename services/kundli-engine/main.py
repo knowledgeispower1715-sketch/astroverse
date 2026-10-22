@@ -96,6 +96,7 @@ class AIQuestionRequest(BaseModel):
     timezone: str = "Asia/Kolkata"
     time_horizon: str = Field("daily", description="hourly, daily, weekly, monthly, yearly, mahadasha")
     astrologer_name: Optional[str] = Field(None, description="Astrologer persona name")
+    session_history: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Recent conversation turns")
 
 class PartnerBirthProfile(BaseModel):
     name: Optional[str] = "Partner"
@@ -492,8 +493,9 @@ def get_hourly_predictions(
 @app.post("/api/ai-astrologer/ask")
 def ask_ai_astrologer(req: AIQuestionRequest):
     """
-    AI Astrologer Guru (Section 7):
-    Personalization-gated reading grounded in calculated birth chart, active dasha, and transits.
+    AI Astrologer Guru:
+    Personalization-gated reading grounded in calculated birth chart, active dasha, and transits,
+    with multi-turn context awareness, intent classification, and structured insights.
     """
     if req.dob and req.lat is not None and req.lon is not None:
         # Personalized calculation-grounded path
@@ -515,29 +517,46 @@ def ask_ai_astrologer(req: AIQuestionRequest):
             dasha=dashas,
             doshas=doshas,
             time_horizon=req.time_horizon,
-            astrologer_name=req.astrologer_name
+            astrologer_name=req.astrologer_name,
+            session_history=req.session_history
         )
         return {
             "mode": "PERSONALIZED_CHART_GROUNDED",
             "profile_loaded": True,
-            "category": req.category,
-            "reading": reading
+            "category": reading.get("intent", req.category),
+            "reading": reading,
+            "message": reading.get("message", reading.get("reading", "")),
+            "intent": reading.get("intent", req.category),
+            "chartEvidence": reading.get("chartEvidence", []),
+            "relatedInsights": reading.get("relatedInsights", []),
+            "suggestedQuestions": reading.get("suggestedQuestions", []),
+            "remedyCard": reading.get("remedyCard"),
+            "status": "completed"
         }
     else:
-        # General astrological guidance path (clearly labeled as unpersonalized)
-        general_reading = {
-            "executive_summary": "General Vedic Transit Guidance (No Birth Chart Loaded)",
-            "analysis": f"Regarding your question about {req.category}: In universal planetary transit analysis, Saturn transiting sidereal Pisces advises steadfast discipline, while Jupiter in Gemini supports structured intellectual communications. For personal house lordship and Dasha timing, please calculate or select your Janam Kundli.",
-            "career_guidance": "Focus on high-leverage execution during Mercury and Jupiter Horas of the day.",
-            "remedial_measures": "Chant the Gayatri Mantra or Aditya Hridaya Stotra at sunrise for mental clarity.",
-            "time_horizon": req.time_horizon,
-            "disclaimer": "This is a general transit interpretation. Save your birth profile to unlock 100% chart-grounded Parashari analysis."
-        }
+        # General astrological guidance path (clearly labeled as unpersonalized universal transit mode)
+        reading = generate_astrological_reading(
+            category=req.category,
+            user_query=req.question,
+            kundli=None,
+            dasha=None,
+            doshas=None,
+            time_horizon=req.time_horizon,
+            astrologer_name=req.astrologer_name,
+            session_history=req.session_history
+        )
         return {
             "mode": "GENERAL_TRANSIT_UNPERSONALIZED",
             "profile_loaded": False,
-            "category": req.category,
-            "reading": general_reading
+            "category": reading.get("intent", req.category),
+            "reading": reading,
+            "message": reading.get("message", reading.get("reading", "")),
+            "intent": reading.get("intent", req.category),
+            "chartEvidence": reading.get("chartEvidence", []),
+            "relatedInsights": reading.get("relatedInsights", []),
+            "suggestedQuestions": reading.get("suggestedQuestions", []),
+            "remedyCard": reading.get("remedyCard"),
+            "status": "completed"
         }
 
 @app.post("/api/predictions/generate")

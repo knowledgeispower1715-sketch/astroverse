@@ -1571,45 +1571,326 @@
       margin: 18px 0;
       box-shadow: 0 4px 14px rgba(217, 119, 6, 0.09);
     }
-    .consultation-chip-btn {
+    /* ==================== AI ASTROLOGER CHAT & CONSULTATION STYLES ==================== */
+    body.consultation-modal-open {
+      overflow: hidden !important;
+    }
+    .badge-ai-persona {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      letter-spacing: 0.02em;
+    }
+    .chat-header-icon-btn {
+      background: rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+    .chat-header-icon-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: #F59E0B;
+      color: #F59E0B;
+    }
+    .chat-header-icon-btn:focus-visible {
+      outline: 2px solid #F59E0B;
+      outline-offset: 2px;
+    }
+    .chat-options-dropdown-wrap {
+      position: relative;
+      display: inline-block;
+    }
+    .chat-options-menu {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 6px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+      z-index: 10600;
+      min-width: 175px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .chat-options-menu button {
+      background: none;
+      border: none;
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s ease;
+      width: 100%;
+    }
+    .chat-options-menu button:hover {
       background: #F1F5F9;
+      color: var(--vedic-maroon);
+    }
+    .chat-pill-action-btn {
+      background: #FEF3C7;
+      border: 1px solid #F59E0B;
+      color: #92400E;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 6px;
+      transition: all 0.15s ease;
+    }
+    .chat-pill-action-btn:hover {
+      background: #FDE68A;
+      color: var(--vedic-maroon);
+    }
+    .chat-jump-latest-btn {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1E293B;
+      color: #FFFFFF;
+      border: 1px solid #475569;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      cursor: pointer;
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .chat-jump-latest-btn:hover {
+      background: var(--vedic-maroon);
+      border-color: #F59E0B;
+    }
+    .consultation-chip-btn {
+      background: #F8FAFC;
       border: 1px solid #CBD5E1;
       border-radius: 16px;
-      padding: 5px 12px;
+      padding: 6px 12px;
       font-size: 11px;
       font-weight: 600;
       color: #334155;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      touch-action: manipulation;
     }
     .consultation-chip-btn:hover {
       background: #FEF3C7;
       border-color: #F59E0B;
       color: var(--vedic-maroon);
+      transform: translateY(-1px);
     }
     .chat-bubble-agent {
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
-      border-radius: 14px 14px 14px 2px;
-      padding: 12px 16px;
-      font-size: 13px;
-      line-height: 1.6;
+      border-radius: 16px 16px 16px 4px;
+      padding: 14px 18px;
+      font-size: 13.5px;
+      line-height: 1.65;
       color: #1E293B;
-      max-width: 88%;
+      max-width: 90%;
       align-self: flex-start;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      word-break: break-word;
+    }
+    .chat-bubble-agent h4 {
+      margin: 12px 0 6px 0;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--vedic-maroon);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chat-bubble-agent h4:first-child {
+      margin-top: 0;
+    }
+    .chat-bubble-agent p {
+      margin: 0 0 8px 0;
+    }
+    .chat-bubble-agent p:last-child {
+      margin-bottom: 0;
+    }
+    .chat-bubble-agent ul, .chat-bubble-agent ol {
+      margin: 4px 0 8px 20px;
+      padding: 0;
+    }
+    .chat-bubble-agent li {
+      margin-bottom: 4px;
+    }
+    .chat-bubble-agent blockquote {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: #FEF3C7;
+      border-left: 3px solid #D97706;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #92400E;
+    }
+    .chat-bubble-agent strong {
+      color: #0F172A;
+      font-weight: 700;
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, var(--vedic-maroon), var(--deep-maroon));
+      background: linear-gradient(135deg, #7F1D1D 0%, #4C0519 100%);
       color: #FFFFFF;
-      border-radius: 14px 14px 2px 14px;
-      padding: 10px 16px;
-      font-size: 13px;
-      line-height: 1.5;
+      border-radius: 16px 16px 4px 16px;
+      padding: 11px 16px;
+      font-size: 13.5px;
+      line-height: 1.55;
       max-width: 82%;
       align-self: flex-end;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      box-shadow: 0 2px 8px rgba(76, 5, 25, 0.25);
+      word-break: break-word;
+    }
+    .chat-msg-meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      font-size: 10px;
+      margin-top: 4px;
+      opacity: 0.85;
+      user-select: none;
+    }
+    .chat-msg-meta-agent {
+      justify-content: flex-start;
+      color: #64748B;
+      font-size: 10px;
+      margin-top: 6px;
+    }
+    .typing-bubble {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px 14px 14px 4px;
+      padding: 10px 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      font-size: 12px;
+      color: #64748B;
+    }
+    .typing-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      background: #D97706;
+      border-radius: 50%;
+      display: inline-block;
+      animation: typingBounce 1.4s infinite ease-in-out both;
+    }
+    .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typingBounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1.1); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .typing-dots span {
+        animation: none;
+        opacity: 0.8;
+      }
+    }
+    .chat-insight-card {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .chat-remedy-card {
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #14532D;
+    }
+    .chat-remedy-card h5 {
+      margin: 0 0 6px 0;
+      font-size: 13px;
+      font-weight: 800;
+      color: #166534;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chat-inline-chart-prompt {
+      background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+      border: 1px solid #F59E0B;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 10px 0;
+      color: #78350F;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    @media (max-width: 680px) {
+      #modal-ai-consultation {
+        padding: 0 !important;
+      }
+      #modal-ai-consultation .modal-dialog-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+      }
+      .chat-bubble-agent {
+        max-width: 95%;
+      }
+      .chat-bubble-user {
+        max-width: 90%;
+      }
     }
 
 
@@ -4746,74 +5027,94 @@
   </div>
 
   <!-- ==================== MODAL: INTERACTIVE AI ASTROLOGER CONSULTATION ROOM ==================== -->
-  <div id="modal-ai-consultation" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10500;">
-    <div class="modal-dialog-card" style="max-width: 680px; width: 95%; max-height: 92vh; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+  <div id="modal-ai-consultation" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10500;" onclick="handleConsultationBackdropClick(event)">
+    <div class="modal-dialog-card" style="max-width: 820px; width: 95%; height: 86vh; max-height: 850px; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 18px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1);">
 
       <!-- Header -->
-      <div style="background: linear-gradient(135deg, #4C0519 0%, #1E1B4B 100%); color: #FFFFFF; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 42px; height: 42px; font-size: 18px; margin: 0; border: 2px solid #F59E0B;">
+      <div style="background: linear-gradient(135deg, #4C0519 0%, #1E1B4B 100%); color: #FFFFFF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.2);">
+        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 44px; height: 44px; font-size: 19px; margin: 0; border: 2px solid #F59E0B; flex-shrink: 0;">
             <i class="fa-solid fa-user-astronaut"></i>
           </div>
-          <div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <h3 id="ai-chat-astrologer-name" style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0;">Acharya Devratan</h3>
-              <span class="badge-grounded" style="font-size: 10px; padding: 2px 6px; background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #059669;">
-                <span class="status-dot-online"></span> Verified Vedic Master
+          <div style="min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <h3 id="ai-chat-astrologer-name" style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; letter-spacing: -0.01em;">Acharya Devratan</h3>
+              <span class="badge-ai-persona" id="ai-chat-persona-badge">
+                <i class="fa-solid fa-microchip"></i> AI Consultation Persona
               </span>
             </div>
-            <div id="ai-chat-specialty" style="font-size: 11px; color: #CBD5E1;">Vedic Astrology &amp; Career Specialist</div>
+            <div id="ai-chat-specialty" style="font-size: 11.5px; color: #CBD5E1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px;">Brihat Parashara Hora &amp; Career Architecture</div>
           </div>
         </div>
 
         <!-- Session Controls -->
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <button onclick="closeConsultationModal()" style="background: rgba(255, 255, 255, 0.15); color: #FFFFFF; border: 1px solid rgba(255, 255, 255, 0.3); padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-xmark"></i> Close
+        <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <!-- Audio Toggle -->
+          <button id="ai-chat-sound-toggle" class="chat-header-icon-btn" aria-pressed="false" title="Toggle audio notification chime" onclick="toggleChatAudio()">
+            <span id="ai-chat-sound-icon">🔇</span>
+          </button>
+
+          <!-- Chat Options Menu -->
+          <div class="chat-options-dropdown-wrap">
+            <button id="ai-chat-options-btn" class="chat-header-icon-btn" aria-expanded="false" title="Consultation options" onclick="toggleChatOptionsMenu()">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+            <div id="ai-chat-options-menu" class="chat-options-menu" style="display: none;">
+              <button onclick="copyChatTranscript()"><i class="fa-solid fa-copy"></i> Copy Transcript</button>
+              <button onclick="exportChatTranscript()"><i class="fa-solid fa-download"></i> Export Transcript</button>
+              <button onclick="confirmClearChat()" style="color: #DC2626;"><i class="fa-solid fa-trash-can"></i> Clear Chat</button>
+            </div>
+          </div>
+
+          <!-- Close Modal -->
+          <button onclick="closeConsultationModal()" class="chat-header-icon-btn" title="Close consultation">
+            <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
       </div>
 
       <!-- Context Bar (User Chart Grounding) -->
-      <div id="ai-chat-context-bar" style="background: #FFFBEB; border-bottom: 1px solid #FEF3C7; padding: 8px 16px; font-size: 11px; color: #92400E; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
-        <div id="ai-chat-chart-pill">
+      <div id="ai-chat-context-bar" style="background: #FFFBEB; border-bottom: 1px solid #FEF3C7; padding: 8px 18px; font-size: 11.5px; color: #92400E; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div id="ai-chat-chart-pill" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <i class="fa-solid fa-certificate" style="color: #D97706;"></i> <strong>Grounded Chart:</strong> <span id="ai-chat-chart-details">Loading active Kundli...</span>
+          <button id="ai-chat-load-chart-btn" class="chat-pill-action-btn" onclick="openLoadChartForChat()" style="display: none;">
+            <i class="fa-solid fa-plus"></i> Personalize with Kundli
+          </button>
         </div>
-        <div style="color: #64748B;">
-          Wallet: <strong id="ai-chat-wallet-balance" style="color: #059669;">₹0.00</strong> (<span id="ai-chat-rate-disp">₹25/min</span>)
+        <div id="ai-chat-billing-pill" style="font-size: 11px; color: #047857; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+          <i class="fa-solid fa-sparkles" style="color: #D97706;"></i> <span>Free AI Guidance Preview</span>
         </div>
       </div>
 
       <!-- Chat Message Area -->
-      <div id="ai-chat-messages-container" style="flex: 1; min-height: 280px; max-height: 48vh; overflow-y: auto; padding: 16px; background: #F8FAFC; display: flex; flex-direction: column; gap: 12px;">
+      <div id="ai-chat-messages-container" style="flex: 1; min-height: 280px; overflow-y: auto; padding: 18px 20px; background: #FAF9F6; display: flex; flex-direction: column; gap: 14px; position: relative;">
         <!-- Message bubbles injected here -->
       </div>
 
-      <!-- Typing Indicator -->
-      <div id="ai-chat-typing-indicator" style="display: none; padding: 6px 18px; font-size: 11px; color: #64748B; font-style: italic; background: #F8FAFC;">
-        <span id="ai-chat-typing-name">Acharya</span> is consulting your planetary houses...
+      <!-- Floating Jump to Latest Button -->
+      <div style="position: relative; width: 100%; height: 0;">
+        <button id="ai-chat-scroll-bottom-btn" class="chat-jump-latest-btn" onclick="scrollChatToBottom(true)" style="display: none;">
+          <i class="fa-solid fa-arrow-down"></i> Jump to latest
+        </button>
       </div>
 
-      <!-- Quick Consultation Chips -->
-      <div style="background: #FFFFFF; border-top: 1px solid #E2E8F0; padding: 8px 14px; display: flex; gap: 6px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;">
-        <button class="consultation-chip-btn" onclick="sendAiConsultationPrompt('Analyze my 10th House of Career &amp; promotion timing')">
-          <i class="fa-solid fa-briefcase"></i> Career Outlook
-        </button>
-        <button class="consultation-chip-btn" onclick="sendAiConsultationPrompt('When will I find marital harmony or marriage timing?')">
-          <i class="fa-solid fa-heart"></i> Marriage Timing
-        </button>
-        <button class="consultation-chip-btn" onclick="sendAiConsultationPrompt('What does my chart say about wealth accumulation and Dhana Yogas?')">
-          <i class="fa-solid fa-coins"></i> Wealth &amp; Finance
-        </button>
-        <button class="consultation-chip-btn" onclick="sendAiConsultationPrompt('What gemstones and Vedic remedies should I follow?')">
-          <i class="fa-solid fa-gem"></i> Gemstone &amp; Remedies
-        </button>
+      <!-- Typing Indicator -->
+      <div id="ai-chat-typing-indicator" style="display: none; padding: 8px 20px; background: #FAF9F6; border-top: 1px solid #F1F5F9;">
+        <div class="typing-bubble">
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+          <span><strong id="ai-chat-typing-name">Acharya</strong> is <span id="ai-chat-typing-status">consulting your planetary houses...</span></span>
+        </div>
+      </div>
+
+      <!-- Quick Context-Aware Consultation Chips -->
+      <div id="ai-chat-chips-container" style="background: #FFFFFF; border-top: 1px solid #E2E8F0; padding: 10px 16px; display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch;">
+        <!-- Dynamic chips injected here -->
       </div>
 
       <!-- Input Bar -->
-      <div style="background: #FFFFFF; border-top: 1px solid #E2E8F0; padding: 12px 16px; display: flex; gap: 10px; align-items: center;">
-        <input type="text" id="ai-chat-user-input" class="form-input-text" placeholder="Ask anything about your life, career, marriage, remedies..." style="margin: 0; flex: 1;" onkeydown="handleAiChatKey(event)">
-        <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px;" onclick="sendAiUserChatMessage()">
+      <div id="ai-chat-composer" style="background: #FFFFFF; border-top: 1px solid #E2E8F0; padding: 12px 18px; display: flex; gap: 10px; align-items: center;">
+        <input type="text" id="ai-chat-user-input" class="form-input-text" placeholder="Ask anything about your life, career, marriage, remedies..." style="margin: 0; flex: 1; padding: 11px 16px; font-size: 13.5px; border-radius: 10px;" onkeydown="handleAiChatKey(event)" aria-label="Message your Vedic astrologer">
+        <button class="btn-gold-primary" style="padding: 11px 20px; font-size: 13px; border-radius: 10px;" onclick="sendAiUserChatMessage()">
           <i class="fa-solid fa-paper-plane"></i> Send
         </button>
       </div>
@@ -7688,192 +7989,1046 @@
     // ==================== INTERACTIVE AI ASTROLOGER AGENT CONSULTATION ====================
     let activeConsultationSession = null;
     let consultationTimerInterval = null;
+    let chatAudioContext = null;
 
-    function startConsultationSession(astroName, rate) {
-      if (currentWalletBalance < rate) {
-        showToast(`Your wallet balance (₹${currentWalletBalance.toFixed(2)}) is low. Please recharge at least ₹${rate} for consultation.`, "info");
+    // Web Audio API Synthesizer (Dependency-Free, Resilient, Accessible)
+    function getChatAudioContext() {
+      if (typeof window === 'undefined') return null;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      if (!chatAudioContext || chatAudioContext.state === 'closed') {
+        try {
+          chatAudioContext = new AudioContextClass();
+        } catch (e) {
+          return null;
+        }
+      }
+      if (chatAudioContext && chatAudioContext.state === 'suspended') {
+        chatAudioContext.resume().catch(() => {});
+      }
+      return chatAudioContext;
+    }
+
+    // Required Public Interface: playChatSound(type)
+    function playChatSound(type) {
+      try {
+        const soundPref = localStorage.getItem('astro_chat_sound');
+        if (soundPref !== 'on') return;
+        if (typeof document !== 'undefined' && document.hidden) return;
+
+        const ctx = getChatAudioContext();
+        if (!ctx) return;
+
+        const now = ctx.currentTime;
+
+        if (type === 'send') {
+          // Outgoing Messenger Pop (~820 Hz, sine wave, duration ~40 ms, fast attack, rapid exponential decay)
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(820, now);
+          osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.12, now + 0.004);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.045);
+        } else if (type === 'receive') {
+          // Incoming Warm Notification Chime (two tones ~523 Hz & ~659 Hz, combined duration ~180 ms)
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gain1 = ctx.createGain();
+          const gain2 = ctx.createGain();
+
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(523.25, now);
+          gain1.gain.setValueAtTime(0.001, now);
+          gain1.gain.linearRampToValueAtTime(0.12, now + 0.015);
+          gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(659.25, now + 0.06);
+          gain2.gain.setValueAtTime(0.001, now + 0.06);
+          gain2.gain.linearRampToValueAtTime(0.10, now + 0.08);
+          gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.20);
+
+          osc1.connect(gain1);
+          gain1.connect(ctx.destination);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+
+          osc1.start(now);
+          osc1.stop(now + 0.17);
+          osc2.start(now + 0.06);
+          osc2.stop(now + 0.22);
+        }
+      } catch (e) {
+        // Sound failure must never impede consultation functionality
+      }
+    }
+
+    function initChatAudioPreference() {
+      const soundPref = localStorage.getItem('astro_chat_sound') || 'off';
+      updateSoundToggleUI(soundPref);
+    }
+
+    function updateSoundToggleUI(state) {
+      const toggleBtn = document.getElementById('ai-chat-sound-toggle');
+      const soundIcon = document.getElementById('ai-chat-sound-icon');
+      if (!toggleBtn || !soundIcon) return;
+      if (state === 'on') {
+        toggleBtn.setAttribute('aria-pressed', 'true');
+        toggleBtn.title = 'Audio notifications enabled (click to mute)';
+        soundIcon.textContent = '🔊';
+      } else {
+        toggleBtn.setAttribute('aria-pressed', 'false');
+        toggleBtn.title = 'Audio notifications muted (click to enable)';
+        soundIcon.textContent = '🔇';
+      }
+    }
+
+    function toggleChatAudio() {
+      const current = localStorage.getItem('astro_chat_sound') || 'off';
+      const next = current === 'on' ? 'off' : 'on';
+      try {
+        localStorage.setItem('astro_chat_sound', next);
+      } catch (e) {}
+      updateSoundToggleUI(next);
+      if (next === 'on') {
+        getChatAudioContext();
+        showToast('Consultation chime audio enabled.', 'info');
+      } else {
+        showToast('Consultation chime muted.', 'info');
+      }
+    }
+
+    function toggleChatOptionsMenu() {
+      const menu = document.getElementById('ai-chat-options-menu');
+      const btn = document.getElementById('ai-chat-options-btn');
+      if (!menu) return;
+      const isHidden = menu.style.display === 'none' || !menu.style.display;
+      menu.style.display = isHidden ? 'flex' : 'none';
+      if (btn) btn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+    }
+
+    // Close options menu when clicking outside
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('ai-chat-options-menu');
+      const btn = document.getElementById('ai-chat-options-btn');
+      if (menu && menu.style.display === 'flex' && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.style.display = 'none';
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    function formatMessageTime(isoString) {
+      try {
+        const d = isoString ? new Date(isoString) : new Date();
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        return 'Now';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderSafeMarkdown(text) {
+      if (!text) return '';
+      let safe = escapeHtml(text);
+
+      // Headings
+      safe = safe.replace(/^###\s+(.+)$/gm, '<h4><i class="fa-solid fa-scroll" style="color: #D97706; font-size: 11px;"></i> $1</h4>');
+      safe = safe.replace(/^##\s+(.+)$/gm, '<h4>$1</h4>');
+
+      // Blockquotes
+      safe = safe.replace(/^(?:>|&gt;)\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+
+      // Bold & Italic
+      safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      safe = safe.replace(/\*([^\*]+?)\*/g, '<em>$1</em>');
+
+      // Bullet lists
+      safe = safe.replace(/(?:^|\n)[-\*]\s+(.+)/g, (match, item) => {
+        return `\n<ul><li>${item}</li></ul>`;
+      });
+      safe = safe.replace(/<\/ul>\s*\n*<ul>/g, '');
+
+      // Numbered lists
+      safe = safe.replace(/(?:^|\n)\d+\.\s+(.+)/g, (match, item) => {
+        return `\n<ol><li>${item}</li></ol>`;
+      });
+      safe = safe.replace(/<\/ol>\s*\n*<ol>/g, '');
+
+      // Paragraphs
+      const paragraphs = safe.split(/\n{2,}/);
+      return paragraphs.map(p => {
+        const trimmed = p.trim();
+        if (!trimmed) return '';
+        if (trimmed.startsWith('<h4>') || trimmed.startsWith('<ul>') || trimmed.startsWith('<ol>') || trimmed.startsWith('<blockquote>')) {
+          return trimmed;
+        }
+        return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
+      }).join('');
+    }
+
+    function getChatStorageKey(personaId) {
+      const userPart = currentSessionToken ? (currentUserProfile?.id || 'auth_user') : 'guest';
+      return `astro_chat_history_v1_${personaId}_${userPart}`;
+    }
+
+    function loadPersonaChatHistory(personaId) {
+      try {
+        const key = getChatStorageKey(personaId);
+        const raw = localStorage.getItem(key);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed.slice(-50) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function savePersonaChatHistory(personaId, messages) {
+      try {
+        const key = getChatStorageKey(personaId);
+        const trimmed = messages.slice(-50);
+        localStorage.setItem(key, JSON.stringify(trimmed));
+      } catch (e) {}
+    }
+
+    function scrollChatToBottom(smooth = false) {
+      const msgBox = document.getElementById('ai-chat-messages-container');
+      if (!msgBox) return;
+      if (smooth) {
+        msgBox.scrollTo({ top: msgBox.scrollHeight, behavior: 'smooth' });
+      } else {
+        msgBox.scrollTop = msgBox.scrollHeight;
+      }
+      const jumpBtn = document.getElementById('ai-chat-scroll-bottom-btn');
+      if (jumpBtn) jumpBtn.style.display = 'none';
+    }
+
+    function setupChatScrollListener() {
+      const msgBox = document.getElementById('ai-chat-messages-container');
+      const jumpBtn = document.getElementById('ai-chat-scroll-bottom-btn');
+      if (!msgBox || !jumpBtn) return;
+      msgBox.addEventListener('scroll', () => {
+        const distFromBottom = msgBox.scrollHeight - msgBox.scrollTop - msgBox.clientHeight;
+        if (distFromBottom > 150) {
+          jumpBtn.style.display = 'inline-flex';
+        } else {
+          jumpBtn.style.display = 'none';
+        }
+      });
+    }
+
+    function renderMessageBubble(msg) {
+      const msgBox = document.getElementById('ai-chat-messages-container');
+      if (!msgBox) return;
+
+      const bubbleWrap = document.createElement('div');
+      bubbleWrap.style.display = 'flex';
+      bubbleWrap.style.flexDirection = 'column';
+      bubbleWrap.style.gap = '2px';
+      bubbleWrap.setAttribute('data-msg-id', msg.id);
+
+      const timeFormatted = formatMessageTime(msg.timestamp);
+
+      if (msg.role === 'user') {
+        bubbleWrap.style.alignSelf = 'flex-end';
+        bubbleWrap.style.maxWidth = '85%';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble-user';
+        bubble.textContent = msg.content;
+
+        const meta = document.createElement('div');
+        meta.className = 'chat-msg-meta';
+        const statusIcon = msg.status === 'completed' ? '✓✓' : (msg.status === 'sent' ? '✓' : '•');
+        const statusTitle = msg.status === 'completed' ? 'Processed with chart context' : 'Sent to astrologer';
+        meta.innerHTML = `<time datetime="${msg.timestamp}">${timeFormatted}</time> <span title="${statusTitle}" style="font-weight: 700; color: #FDE68A;">${statusIcon}</span>`;
+
+        bubbleWrap.appendChild(bubble);
+        bubbleWrap.appendChild(meta);
+      } else {
+        bubbleWrap.style.alignSelf = 'flex-start';
+        bubbleWrap.style.maxWidth = '92%';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble-agent';
+        bubble.innerHTML = renderSafeMarkdown(msg.content);
+
+        // Planetary Insight Cards
+        if (Array.isArray(msg.relatedInsights) && msg.relatedInsights.length > 0) {
+          msg.relatedInsights.forEach(ins => {
+            const card = document.createElement('div');
+            card.className = 'chat-insight-card';
+            card.innerHTML = `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #FDE68A; color: #78350F; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px;">
+                  ${ins.planet ? ins.planet.substring(0, 2) : 'Gr'}
+                </div>
+                <div>
+                  <strong style="color: #1E293B;">${escapeHtml(ins.planet)}</strong> in ${escapeHtml(ins.sign)} (House ${ins.house || '?'}) &bull; <span style="color: #64748B;">${escapeHtml(ins.degree || '')}</span>
+                  <div style="font-size: 11px; color: #78350F; margin-top: 2px;">${escapeHtml(ins.significance || '')}</div>
+                </div>
+              </div>
+              <button class="chat-pill-action-btn" onclick="inspectPlanetInKundli('${escapeHtml(ins.planet)}')">
+                <i class="fa-solid fa-chart-pie"></i> Inspect
+              </button>
+            `;
+            bubble.appendChild(card);
+          });
+        }
+
+        // Remedy Card
+        if (msg.remedyCard && typeof msg.remedyCard === 'object') {
+          const rem = msg.remedyCard;
+          const remEl = document.createElement('div');
+          remEl.className = 'chat-remedy-card';
+          remEl.innerHTML = `
+            <h5><i class="fa-solid fa-gem" style="color: #16A34A;"></i> ${escapeHtml(rem.title || 'Vedic Remedial Guidance')}</h5>
+            ${rem.mantra ? `<p style="margin: 4px 0;"><strong>Mantra:</strong> ${escapeHtml(rem.mantra)}</p>` : ''}
+            ${rem.gemstone_note ? `<p style="margin: 4px 0;"><strong>Gemstone Note:</strong> ${escapeHtml(rem.gemstone_note)}</p>` : ''}
+            ${rem.charity_practice ? `<p style="margin: 4px 0;"><strong>Traditional Practice:</strong> ${escapeHtml(rem.charity_practice)}</p>` : ''}
+            <div style="font-size: 10.5px; color: #166534; font-style: italic; margin-top: 6px; border-top: 1px dashed #BBF7D0; padding-top: 4px;">
+              ${escapeHtml(rem.disclaimer || 'Traditional cultural and mindfulness practice.')}
+            </div>
+          `;
+          bubble.appendChild(remEl);
+        }
+
+        const meta = document.createElement('div');
+        meta.className = 'chat-msg-meta chat-msg-meta-agent';
+        meta.innerHTML = `<time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>Chart-Grounded</span>`;
+
+        bubbleWrap.appendChild(bubble);
+        bubbleWrap.appendChild(meta);
       }
 
-      const astroIds = {
-        'Acharya Devratan': 'astro_001',
-        'Dr. Sunita Shastri': 'astro_003',
-        'Pandit Raghavendra': 'astro_002'
+      msgBox.appendChild(bubbleWrap);
+    }
+
+    function renderDynamicChips(chipSuggestions) {
+      const container = document.getElementById('ai-chat-chips-container');
+      if (!container) return;
+      container.innerHTML = '';
+      if (!Array.isArray(chipSuggestions) || chipSuggestions.length === 0) return;
+
+      chipSuggestions.slice(0, 4).forEach(text => {
+        const btn = document.createElement('button');
+        btn.className = 'consultation-chip-btn';
+        btn.innerHTML = `<i class="fa-solid fa-sparkles" style="color: #D97706; font-size: 10px;"></i> ${escapeHtml(text)}`;
+        btn.onclick = () => sendAiConsultationPrompt(text);
+        container.appendChild(btn);
+      });
+    }
+
+    function inspectPlanetInKundli(planetName) {
+      closeConsultationModal();
+      switchNavSection('kundli');
+      showToast(`Viewing natal Kundli for ${planetName}...`, 'info');
+    }
+
+    function openLoadChartForChat() {
+      closeConsultationModal();
+      switchNavSection('kundli');
+      const nameInp = document.getElementById('k-name');
+      if (nameInp) nameInp.focus();
+      showToast('Please enter birth details and calculate your Janam Kundli to ground this consultation.', 'info');
+    }
+
+    function copyChatTranscript() {
+      const menu = document.getElementById('ai-chat-options-menu');
+      if (menu) menu.style.display = 'none';
+      if (!activeConsultationSession || !activeConsultationSession.messages || activeConsultationSession.messages.length === 0) {
+        showToast('No consultation messages to copy.', 'info');
+        return;
+      }
+      const persona = activeConsultationSession.astrologerName;
+      let transcript = `ASTROVERSE AI ASTROLOGER CONSULTATION TRANSCRIPT\nPersona: ${persona}\nDate: ${new Date().toLocaleString()}\n`;
+      if (currentCalculatedChart) {
+        transcript += `Grounded Natal Chart: ${currentCalculatedChart.name || 'Seeker'} (${currentCalculatedChart.lagnaSign} Lagna, Moon in ${currentCalculatedChart.moonSign})\n`;
+      }
+      transcript += `------------------------------------------------------------\n\n`;
+
+      activeConsultationSession.messages.forEach(m => {
+        const sender = m.role === 'user' ? 'You' : persona;
+        const timeStr = formatMessageTime(m.timestamp);
+        transcript += `[${timeStr}] ${sender}:\n${m.content}\n\n`;
+      });
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(transcript).then(() => {
+          showToast('Transcript copied to clipboard!', 'success');
+        }).catch(() => {
+          fallbackCopyText(transcript);
+        });
+      } else {
+        fallbackCopyText(transcript);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Transcript copied to clipboard!', 'success');
+      } catch (e) {
+        showToast('Could not copy to clipboard automatically.', 'error');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function exportChatTranscript() {
+      const menu = document.getElementById('ai-chat-options-menu');
+      if (menu) menu.style.display = 'none';
+      if (!activeConsultationSession || !activeConsultationSession.messages || activeConsultationSession.messages.length === 0) {
+        showToast('No consultation messages to export.', 'info');
+        return;
+      }
+      const persona = activeConsultationSession.astrologerName;
+      let transcript = `ASTROVERSE AI ASTROLOGER CONSULTATION TRANSCRIPT\nPersona: ${persona}\nExported: ${new Date().toISOString()}\n`;
+      if (currentCalculatedChart) {
+        transcript += `Chart: ${currentCalculatedChart.name || 'Seeker'} (${currentCalculatedChart.lagnaSign} Lagna, Moon in ${currentCalculatedChart.moonSign})\n`;
+      }
+      transcript += `============================================================\n\n`;
+
+      activeConsultationSession.messages.forEach(m => {
+        const sender = m.role === 'user' ? 'USER' : persona.toUpperCase();
+        const timeStr = formatMessageTime(m.timestamp);
+        transcript += `[${timeStr}] ${sender}:\n${m.content}\n\n`;
+      });
+
+      const blob = new Blob([transcript], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const cleanName = persona.replace(/[^a-zA-Z0-9]/g, '_');
+      a.href = url;
+      a.download = `AstroVerse_${cleanName}_Consultation_${new Date().toISOString().slice(0, 10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Transcript downloaded.', 'success');
+    }
+
+    function confirmClearChat() {
+      const menu = document.getElementById('ai-chat-options-menu');
+      if (menu) menu.style.display = 'none';
+      if (!activeConsultationSession) return;
+      if (!confirm(`Are you sure you want to clear your consultation history with ${activeConsultationSession.astrologerName}? This cannot be undone.`)) {
+        return;
+      }
+      activeConsultationSession.messages = [];
+      savePersonaChatHistory(activeConsultationSession.personaId, []);
+      const msgBox = document.getElementById('ai-chat-messages-container');
+      if (msgBox) msgBox.innerHTML = '';
+      renderInitialGreetingForPersona(activeConsultationSession.astrologerName, activeConsultationSession.personaId);
+      showToast('Chat history cleared.', 'info');
+    }
+
+    function handleConsultationBackdropClick(event) {
+      if (event.target && event.target.id === 'modal-ai-consultation') {
+        closeConsultationModal();
+      }
+    }
+
+    function renderInitialGreetingForPersona(astroName, personaId) {
+      const d = currentCalculatedChart;
+      let welcomeText = '';
+      let initialChips = [];
+
+      if (d) {
+        const fd = d.fullData;
+        const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
+        const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
+
+        if (personaId === 'dr-sunita-shastri') {
+          welcomeText = `Namaste! I am Dr. Sunita Shastri (AI Astrologer).\n\nI have connected to your natal chart: **${d.lagnaSign} Lagna**, Moon in **${d.moonSign}** (${d.nakName} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n### Relational & Emotional Focus\nIn your 7th house geometry and D9 Navamsha chart, planetary transits are supportive. Whether you seek clarity on romantic timing, partner compatibility, or relationship harmony, I am here to explore your chart with mindful empathy.\n\nWhat relationship inquiry is on your heart today?`;
+          initialChips = [
+            "When is an auspicious timing window for marriage?",
+            "What does my 7th house say about my partner?",
+            "How does D9 Navamsha support relationship harmony?",
+            "What remedies bring peace in partnerships?"
+          ];
+        } else if (personaId === 'pandit-raghavendra') {
+          welcomeText = `Om Namah Shivaya! I am Pandit Raghavendra (AI Astrologer).\n\nExamining your **${d.lagnaSign} Lagna** and **${d.moonSign}** Moon under active **${dashaMaha}-${dashaAntar} Dasha** cycle.\n\n### Classical Scriptural Guidance\nIn Parashari Shastra, challenging transits provide an opportunity for spiritual fortification. I evaluate planetary doshas, gemstone compatibility, and traditional Vedic remedies.\n\nWhat challenge or karmic timing inquiry would you like to resolve today?`;
+          initialChips = [
+            "What classical remedies are prescribed for my active Dasha?",
+            "Evaluate my Sade Sati and Saturn transit status",
+            "Which gemstone fortifies my functional Lagna Lord?",
+            "Explain traditional practices for mental peace"
+          ];
+        } else {
+          welcomeText = `Pranam! I am Acharya Devratan (AI Astrologer).\n\nI have analyzed your calculated chart: **${d.lagnaSign} Lagna**, 10th House of Career, and **${dashaMaha}-${dashaAntar} Dasha**.\n\n### Strategic Career & Life Architecture\nAuspicious planetary combinations are active for professional elevation, leadership visibility, and disciplined wealth compounding.\n\nWhat strategic milestone or career transition would you like to examine?`;
+          initialChips = [
+            "Analyze my 10th House of Career & promotion timing",
+            "What does my chart reveal regarding Dhana Yogas?",
+            "Which upcoming transit supports career acceleration?",
+            "How should I navigate current professional stress?"
+          ];
+        }
+      } else {
+        welcomeText = `Pranam! I am ${astroName} (AI Astrologer).\n\n### Universal Celestial Guidance\nOperating in universal transit mode as no natal birth chart is loaded yet. I am ready to guide you based on current planetary Horas and universal transits.\n\n> **Unlock 100% Personal Analysis:** Calculate your Janam Kundli in the Kundli section to ground your consultation with exact Lagna degrees, Moon sign, and Vimshottari Dasha.\n\nWhat question is on your mind today?`;
+        initialChips = [
+          "Explain today's universal planetary Horas",
+          "What general transit energies are active this week?",
+          "How can I personalize this consultation with my Kundli?",
+          "What are the classical principles of Parashari Jyotish?"
+        ];
+      }
+
+      const welcomeMsg = {
+        id: 'msg_w_' + Date.now(),
+        role: 'assistant',
+        content: welcomeText,
+        timestamp: new Date().toISOString(),
+        status: 'completed',
+        personaId: personaId
       };
 
-      const specialties = {
-        'Acharya Devratan': 'Vedic Astrology, Prashna Kundli, Vastu & Career',
-        'Dr. Sunita Shastri': 'Jaimini Astrology, Career & Marriage Specialist',
-        'Pandit Raghavendra': 'Parashari System, Wealth & Stock Market Yogas'
+      activeConsultationSession.messages.push(welcomeMsg);
+      savePersonaChatHistory(personaId, activeConsultationSession.messages);
+      renderMessageBubble(welcomeMsg);
+      renderDynamicChips(initialChips);
+    }
+
+    function startConsultationSession(astroName, rate) {
+      const astroMap = {
+        'Acharya Devratan': {
+          id: 'acharya-devratan',
+          specialty: 'Brihat Parashara Hora & Career Architecture',
+          avatar: '<i class="fa-solid fa-user-astronaut"></i>'
+        },
+        'Dr. Sunita Shastri': {
+          id: 'dr-sunita-shastri',
+          specialty: 'Jaimini Astrology & Relationship Synastry',
+          avatar: '<i class="fa-solid fa-user-graduate"></i>'
+        },
+        'Pandit Raghavendra': {
+          id: 'pandit-raghavendra',
+          specialty: 'Classical Parashari & Remedial Jyotish',
+          avatar: '<i class="fa-solid fa-user-shield"></i>'
+        }
       };
 
-      const avatars = {
-        'Acharya Devratan': '<i class="fa-solid fa-user-astronaut"></i>',
-        'Dr. Sunita Shastri': '<i class="fa-solid fa-user-graduate"></i>',
-        'Pandit Raghavendra': '<i class="fa-solid fa-user-shield"></i>'
-      };
+      const meta = astroMap[astroName] || astroMap['Acharya Devratan'];
+      const personaId = meta.id;
 
       activeConsultationSession = {
-        astrologerId: astroIds[astroName] || 'astro_001',
-        sessionId: 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        personaId: personaId,
         astrologerName: astroName,
         rate: rate,
-        specialty: specialties[astroName] || 'Vedic Astrology Specialist',
+        specialty: meta.specialty,
         startTime: Date.now(),
-        secondsElapsed: 0,
         messages: []
       };
 
-      // Populate Modal Header & Meter
+      // Header UI
       document.getElementById('ai-chat-astrologer-name').textContent = astroName;
-      document.getElementById('ai-chat-specialty').textContent = activeConsultationSession.specialty;
-      document.getElementById('ai-chat-avatar').innerHTML = avatars[astroName] || '<i class="fa-solid fa-user-astronaut"></i>';
-      document.getElementById('ai-chat-rate-disp').textContent = `₹${rate}/min`;
-      document.getElementById('ai-chat-wallet-balance').textContent = `₹${currentWalletBalance.toFixed(2)}`;
+      document.getElementById('ai-chat-specialty').textContent = meta.specialty;
+      document.getElementById('ai-chat-avatar').innerHTML = meta.avatar;
 
-      // Chart context pill
+      // Grounded Chart Pill & Context
       const chartPill = document.getElementById('ai-chat-chart-details');
+      const loadChartBtn = document.getElementById('ai-chat-load-chart-btn');
       if (currentCalculatedChart) {
         const d = currentCalculatedChart;
         const fd = d.fullData;
         const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
         const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
         chartPill.textContent = `${d.name || 'Seeker'} (${d.lagnaSign} Lagna, Moon in ${d.moonSign}, ${dashaMaha}-${dashaAntar} Dasha)`;
+        if (loadChartBtn) loadChartBtn.style.display = 'none';
       } else {
         chartPill.textContent = 'Universal Transit Mode (No natal Kundli loaded)';
+        if (loadChartBtn) loadChartBtn.style.display = 'inline-flex';
       }
 
-      // Clear previous messages and render initial welcome message
+      // Initialize Sound UI
+      initChatAudioPreference();
+      setupChatScrollListener();
+
+      // Clear container and restore historical messages or initial greeting
       const msgBox = document.getElementById('ai-chat-messages-container');
       msgBox.innerHTML = '';
 
-      let welcomeText = '';
-      if (currentCalculatedChart) {
-        const d = currentCalculatedChart;
-        const fd = d.fullData;
-        const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
-        const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
-        if (astroName.includes('Sunita')) {
-          welcomeText = `Namaste! I am Dr. Sunita Shastri. I am examining your ${d.lagnaSign} Lagna and ${d.moonSign} Moon (${d.nakName} Nakshatra) with active ${dashaMaha}-${dashaAntar} Dasha. In your relationship and 7th house geometry, planetary transits are active. What specific question on love, partnership, or family harmony can I help clarify for you?`;
-        } else if (astroName.includes('Raghavendra')) {
-          welcomeText = `Om Namah Shivaya! I am Pandit Raghavendra. Looking at your ${d.lagnaSign} chart and active ${dashaMaha}-${dashaAntar} cycle, I evaluate planetary doshas, gemstone compatibility, and traditional Vedic remedies. What challenge or karmic timing inquiry would you like to resolve today?`;
+      const savedHistory = loadPersonaChatHistory(personaId);
+      if (savedHistory && savedHistory.length > 0) {
+        activeConsultationSession.messages = savedHistory;
+        savedHistory.forEach(m => renderMessageBubble(m));
+        scrollChatToBottom(false);
+
+        // Render dynamic follow-up chips based on last assistant message
+        const lastAssistant = savedHistory.slice().reverse().find(m => m.role === 'assistant');
+        if (lastAssistant && lastAssistant.intent) {
+          const sampleReading = generateClientAstrologicalResponse(astroName, lastAssistant.content || '', savedHistory, currentCalculatedChart);
+          renderDynamicChips(sampleReading.suggestedQuestions);
         } else {
-          welcomeText = `Pranam! I am Acharya Devratan. I have analyzed your ${d.lagnaSign} Lagna, 10th House of career, and ${dashaMaha}-${dashaAntar} Dasha. Auspicious planetary combinations are active for professional elevation and financial strategy. What guidance can I offer regarding your career, investments, or life direction?`;
+          renderDynamicChips([
+            "Analyze my 10th House of Career & promotion timing",
+            "When will I find marital harmony or marriage timing?",
+            "What does my chart say about Dhana Yogas?",
+            "What gemstones and Vedic remedies should I follow?"
+          ]);
         }
       } else {
-        welcomeText = `Pranam! I am ${astroName}. Welcome to AstroVerse live consultation. I am ready to guide you based on universal celestial transits. For exact 100% personal chart insights, you can calculate your Janam Kundli in the Kundli section. What question is on your mind today?`;
+        renderInitialGreetingForPersona(astroName, personaId);
       }
 
-      appendAiMessageBubble(welcomeText);
-
+      // Lock body scroll and open modal
+      document.body.classList.add('consultation-modal-open');
       document.getElementById('modal-ai-consultation').style.display = 'flex';
+
       setTimeout(() => {
         const inp = document.getElementById('ai-chat-user-input');
         if (inp) inp.focus();
-      }, 300);
+        scrollChatToBottom(false);
+      }, 250);
     }
 
     function closeConsultationModal() {
       if (consultationTimerInterval) clearInterval(consultationTimerInterval);
+      document.body.classList.remove('consultation-modal-open');
+      const modal = document.getElementById('modal-ai-consultation');
+      if (modal) modal.style.display = 'none';
+      const menu = document.getElementById('ai-chat-options-menu');
+      if (menu) menu.style.display = 'none';
       activeConsultationSession = null;
-      document.getElementById('modal-ai-consultation').style.display = 'none';
-    }
-
-    function appendUserMessageBubble(text) {
-      const msgBox = document.getElementById('ai-chat-messages-container');
-      const div = document.createElement('div');
-      div.className = 'chat-bubble-user';
-      div.textContent = text;
-      msgBox.appendChild(div);
-      msgBox.scrollTop = msgBox.scrollHeight;
-    }
-
-    function appendAiMessageBubble(text) {
-      const msgBox = document.getElementById('ai-chat-messages-container');
-      const div = document.createElement('div');
-      div.className = 'chat-bubble-agent';
-      div.textContent = text;
-      msgBox.appendChild(div);
-      msgBox.scrollTop = msgBox.scrollHeight;
     }
 
     function sendAiConsultationPrompt(promptText) {
-      document.getElementById('ai-chat-user-input').value = promptText;
-      sendAiUserChatMessage();
-    }
-
-    function handleAiChatKey(event) {
-      if (event.key === 'Enter') {
+      const inp = document.getElementById('ai-chat-user-input');
+      if (inp) {
+        inp.value = promptText;
         sendAiUserChatMessage();
       }
     }
 
-    function sendAiUserChatMessage() {
+    function handleAiChatKey(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendAiUserChatMessage();
+      }
+    }
+
+    // Intelligent Client-Side Astrological Response Engine (Grounded, Multi-Turn, Varied)
+    function generateClientAstrologicalResponse(astroName, userQuery, history, chart) {
+      const q = (userQuery || '').toLowerCase();
+      const hasChart = !!chart;
+      const astro = (astroName || '').toLowerCase();
+
+      // Determine persona
+      const isSunita = astro.includes('sunita');
+      const isRaghavendra = astro.includes('raghavendra');
+      const personaDisplay = isSunita ? 'Dr. Sunita Shastri (AI Astrologer)' : (isRaghavendra ? 'Pandit Raghavendra (AI Astrologer)' : 'Acharya Devratan (AI Astrologer)');
+
+      // Multi-turn context resolution
+      const priorHistoryTexts = (history || []).slice(-6).filter(m => m.role === 'user').map(m => m.content.toLowerCase());
+      function priorDiscussed(...words) {
+        return priorHistoryTexts.some(t => words.some(w => t.includes(w)));
+      }
+
+      // Intent detection
+      const isGreeting = (q.startsWith('hi') || q.startsWith('hello') || q.startsWith('namaste') || q.startsWith('pranam') || q === 'hey') && q.split(' ').length <= 4;
+      let isCareer = q.includes('career') || q.includes('job') || q.includes('promot') || q.includes('business') || q.includes('10th') || q.includes('work') || q.includes('office') || q.includes('transfer');
+      let isMarriage = q.includes('marri') || q.includes('love') || q.includes('relationship') || q.includes('partner') || q.includes('spouse') || q.includes('7th') || q.includes('wedding') || q.includes('synastry');
+      let isWealth = q.includes('wealth') || q.includes('money') || q.includes('financ') || q.includes('invest') || q.includes('stock') || q.includes('dhana') || q.includes('2nd') || q.includes('11th');
+      let isRemedy = q.includes('remed') || q.includes('mantra') || q.includes('gem') || q.includes('stone') || q.includes('puja') || q.includes('dosha') || q.includes('sade') || q.includes('sati') || q.includes('pukhraj') || q.includes('ruby');
+      let isTiming = q.includes('when') || q.includes('timing') || q.includes('period') || q.includes('year') || q.includes('month') || q.includes('soon') || q.includes('dasha');
+      let isExplanation = q.includes('why') || q.includes('explain') || q.includes('logic') || q.includes('how come') || q.includes('parashar') || q.includes('scripture');
+
+      // Inherit context if follow-up is terse
+      if ((isTiming || isExplanation || q.split(' ').length <= 4) && !isGreeting && !isCareer && !isMarriage && !isWealth && !isRemedy) {
+        if (priorDiscussed('career', 'job', 'work', 'promot')) isCareer = true;
+        else if (priorDiscussed('marri', 'love', 'partner', 'spouse', 'relationship')) isMarriage = true;
+        else if (priorDiscussed('wealth', 'money', 'invest')) isWealth = true;
+        else if (priorDiscussed('remed', 'mantra', 'gem', 'dosha')) isRemedy = true;
+      }
+
+      let intent = 'general';
+      if (isGreeting) intent = 'greeting';
+      else if (isCareer) intent = 'career';
+      else if (isMarriage) intent = 'marriage';
+      else if (isWealth) intent = 'wealth';
+      else if (isRemedy) intent = 'remedy';
+      else if (isTiming) intent = 'timing';
+      else if (isExplanation) intent = 'explanation';
+
+      if (!hasChart) {
+        // Universal Transit Mode
+        let message = '';
+        if (isSunita) {
+          message = `Namaste! I am ${personaDisplay}.\n\n### Universal Relationship Transits\nIn universal transit analysis: Transiting Jupiter in Gemini and Venusian alignments foster collaborative intellectual warmth and mutual curiosity.\n\n### Mindful Relationship Guidance\nRegarding your question: When evaluating partnership dynamics, we inspect the **7th House of Kalatra** and D9 Navamsha. For universal alignment, practice transparent dialogue and gentle listening during evening Venus Horas.\n\n> **Personalize Your Guidance:** Load your Janam Kundli to evaluate exact 7th house lordships, Venus degrees, and compatibility windows.`;
+        } else if (isRaghavendra) {
+          message = `Om Namah Shivaya! I am ${personaDisplay}.\n\n### Classical Scriptural Principles\nWithout a natal chart, I evaluate today's macrocosmic planetary alignments through Brihat Parashara Hora Shastra. Saturn transits sidereal Pisces, urging patience, humility, and selfless service.\n\n### Universal Remedial Practice\nReciting the **Gayatri Mantra** at sunrise clears mental haze and cultivates sattvic clarity. Maintain disciplined daily habits and practice charity on planetary days.\n\n> **Personalize Your Guidance:** Specific gemstone prescriptions and Sade Sati timelines strictly require your birth time and coordinates. Calculate your Kundli to unlock verified analysis.`;
+        } else {
+          message = `Pranam! I am ${personaDisplay}.\n\n### Universal Strategic Transits\nOperating in universal transit mode: Macrocosmic planetary currents show Jupiter supporting structured innovation and corporate strategy.\n\n### Professional & Life Directives\nIn Parashari Jyotish, authority is governed by the **10th House of Karma** and active Vimshottari cycles. Align important negotiations with daytime Jupiter or Mercury Horas for optimal focus.\n\n> **Personalize Your Guidance:** For exact promotion milestones, salary negotiation windows, and personalized Dhana Yogas, calculate your Janam Kundli in the Kundli section.`;
+        }
+
+        return {
+          intent: intent,
+          message: message,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: [
+            "Explain today's universal planetary Horas",
+            "What general transit energies are active this week?",
+            "How can I personalize this consultation with my Kundli?",
+            "What are the classical principles of Parashari Jyotish?"
+          ],
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      // Personalized Mode with Calculated Chart
+      const lagna = chart.lagnaSign || 'Aries';
+      const moon = chart.moonSign || 'Taurus';
+      const nak = chart.nakName || 'Krittika';
+      const fd = chart.fullData;
+      const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
+      const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
+      const sadesati = fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis";
+      const manglik = fd?.doshas_and_remedies?.manglik?.verdict || "No Manglik Dosha Present";
+
+      let message = '';
+      let suggested = [];
+      let relatedInsights = [];
+      let remedyCard = null;
+
+      if (intent === 'greeting') {
+        if (isSunita) {
+          message = `Namaste! I am ${personaDisplay}.\n\nI have connected to your natal chart: **${lagna} Lagna**, Moon in **${moon}** (${nak} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n### Relational & Emotional Geometry\nYour 7th House of partnership is energized, and your emotional perception is anchored in lunar ${moon}. Whether you are seeking guidance on romantic timing, partner compatibility, marital harmony, or emotional healing, I am here to explore your chart with empathy and respect.\n\nWhat relationship inquiry or milestone would you like to illuminate today?`;
+          suggested = [
+            "When is an auspicious timing window for marriage?",
+            "What does my 7th house say about my partner?",
+            "How does D9 Navamsha support relationship harmony?",
+            "What remedies bring peace in partnerships?"
+          ];
+        } else if (isRaghavendra) {
+          message = `Om Namah Shivaya! I am ${personaDisplay}.\n\nI have reviewed your sacred natal planetary coordinates: **${lagna} Lagna** with Moon in **${moon}** (${nak} Nakshatra). You are currently navigating your **${dashaMaha}-${dashaAntar}** Dasha, with Saturn in **${sadesati}**.\n\n### Classical Shastra Foundation\nIn Brihat Parashara Hora Shastra, planetary combinations reveal karmic lessons. Classical mantras, disciplined fasting, and charity grant spiritual resilience to navigate life with wisdom.\n\nWhat karmic inquiry, remedial clarification, or traditional practice would you like to explore?`;
+          suggested = [
+            "What classical remedies are prescribed for my active Dasha?",
+            "Evaluate my Sade Sati and Saturn transit status",
+            "Which gemstone fortifies my functional Lagna Lord?",
+            "Explain traditional practices for mental peace"
+          ];
+        } else {
+          message = `Pranam! I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagna} Lagna**, **${moon} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**.\n\n### Strategic Career & Life Architecture\nYour 10th House of career authority is energized. Under your active ${dashaMaha} cycle, the celestial geometry supports deliberate professional positioning, institutional leadership, and structured long-term wealth compounding.\n\nWhat strategic milestone, career transition, or financial objective would you like to examine?`;
+          suggested = [
+            "Analyze my 10th House of Career & promotion timing",
+            "What does my chart reveal regarding Dhana Yogas?",
+            "Which upcoming transit supports career acceleration?",
+            "How should I navigate current professional stress?"
+          ];
+        }
+      } else if (intent === 'career') {
+        if (isSunita) {
+          message = `Namaste! I am ${personaDisplay}.\n\nAnalyzing your professional path through an empathetic and Jaimini lens for **${lagna} Lagna**:\n\n### Astrological Diagnosis\nYour 10th House of career is guided under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. With your Moon in ${moon} (${nak} Nakshatra), your intuitive intelligence and interpersonal diplomacy are your greatest professional assets. Roles requiring stakeholder alignment, mentorship, and thoughtful communication will bring the highest satisfaction.\n\n### Timing & Workplace Harmony\nTransiting benefics aspecting your professional houses indicate an opening window over the next 3 to 6 months for expanded responsibility. Maintain gentle, transparent communication during high-stakes dialogues.\n\n### Practical Reflection\nEnsure work ambitions do not drain your personal vitality. Sustainable success requires a calm, centered spirit.`;
+        } else if (isRaghavendra) {
+          message = `Om Namah Shivaya! I am ${personaDisplay}.\n\nAccording to classical Parashari Jyotish for **${lagna} Lagna**:\n\n### Scriptural Evaluation of the 10th House (Karma Bhava)\nSage Parashara states that the 10th house governs *Kirti* (reputation) and *Pratishtha* (authority). In your chart, your active Dasha lord **${dashaMaha}** commands current professional karma.\n\n### Remedial Harmonization for Workplace Obstacles\nIf you experience bureaucratic friction: Recite the **Aditya Hridaya Stotra** every Sunday at dawn and offer clean water to Surya Deva. For your ${dashaMaha} cycle, chanting the **Vishnu Sahasranama** clears hidden impediments.\n\n### Karmic Boundaries\nAstrology identifies auspicious timing, but righteous diligence (*Purushartha*) remains the supreme prerequisite for enduring success.`;
+        } else {
+          message = `Pranam! I am ${personaDisplay}.\n\nAnalyzing the executive trajectory of your **${lagna} Lagna**:\n\n### Professional Diagnosis & 10th House Axis\nYour 10th House of professional authority is strongly energized under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. In Parashari doctrine, this planetary combination acts as an institutional accelerator, activating opportunities for public leadership, team expansion, and structured organizational elevation.\n\n### Strategic Milestones & Execution Timing\n1. **Next 60–90 Days:** High-visibility window. Initiate salary reviews, major project proposals, and executive stakeholder alignment.\n2. **Leadership Posture:** Maintain composed, analytical demeanor during high-pressure meetings. Your {lagna} Lagna commands respect when decisions are data-driven.\n3. **Risk Management:** Consolidate your core deliverables before pursuing lateral transitions.\n\n### Practical Reflection\nAlign your high-stakes negotiations with planetary Horas governed by functional benefics for optimum clarity.`;
+        }
+
+        relatedInsights.push({
+          planet: 'Jupiter',
+          sign: 'Taurus',
+          house: 10,
+          degree: '12.45°',
+          significance: 'Natural Karaka of wisdom and expansion activating career elevation.'
+        });
+        suggested = [
+          "How does my 10th house lord influence promotion timing?",
+          "Which upcoming transit supports a career switch?",
+          "How does my active Dasha period affect professional stability?",
+          "What Vedic remedies strengthen workplace leadership?"
+        ];
+      } else if (intent === 'marriage') {
+        if (isSunita) {
+          message = `Namaste! I am ${personaDisplay}.\n\nExamining your relationship architecture through Jaimini and Parashari synastry for **${lagna} Lagna**:\n\n### Emotional & Partnership Geometry\nUnder your ${lagna} Lagna, your 7th House of partnership is illuminated. Marital verification status: **${manglik}**. Your emotional core is rooted in **${moon}** (${nak} Nakshatra), conferring deep loyalty and empathy.\n\n### D9 Navamsha & Partner Characteristics\nYour D9 Navamsha indicators point toward a companion who is intellectually mature, emotionally grounded, and shares your core values. Under active **${dashaMaha}-${dashaAntar}** Dasha, transiting benefics in Kendra houses activate an auspicious 8 to 14-month window for formalizing alliances or deepening relationship harmony.\n\n### Mindful Guidance\nCommunicate openly regarding mutual expectations. Gentle transparency during lunar transits prevents needless misunderstandings.`;
+          remedyCard = {
+            title: "Venusian Harmony & Emotional Balance",
+            mantra: "Om Kleem Shukraya Namah (Chant 108 times on Friday mornings)",
+            gemstone_note: "Natural White Zircon or Diamond set in silver (subject to Lagna dignity trial)",
+            charity_practice: "Support women's education or offer white flowers at Lakshmi temples on Fridays",
+            disclaimer: "Traditional remedial practices cultivate inner mindfulness; they do not guarantee specific interpersonal outcomes."
+          };
+        } else if (isRaghavendra) {
+          message = `Om Namah Shivaya! I am ${personaDisplay}.\n\nIn sacred classical Jyotish for **${lagna} Lagna** and **${moon} Moon**:\n\n### Scriptural Evaluation of Kalatra Bhava\nThe 7th House governs sacred marital covenants (*Vivaha Samskara*). Your marital status verification reflects: **${manglik}**. Your current cycle is guided by **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**.\n\n### Traditional Harmonization\nTo foster marital peace and attract a noble partner: Chant the **Gauri Shankar Mantra** or observe gentle fasts on Thursdays, offering yellow fruits to Vishnu and Lakshmi.\n\n### Classical Limitations\nA horoscope illuminates compatibility tendencies and timing windows; eternal marital blessing is sustained through mutual forgiveness and dharma.`;
+          remedyCard = {
+            title: "Classical Parashari Remedial Discipline",
+            mantra: "Gauri Shankar Mantra: Om Hreem Yoginim Yogini Yogeswari Yoga Bhayankari Sakala Sthavara Jangamasya Mukha Hridayam Mama Vasham Akarshaya Namah",
+            gemstone_note: "Consult Lagna Lord dignity before wearing gemstone talismans",
+            charity_practice: "Offer sweet milk or food to Brahmins on Mondays",
+            disclaimer: "Vedic remedies are sacred traditional disciplines for mental peace."
+          };
+        } else {
+          message = `Pranam! I am ${personaDisplay}.\n\nEvaluating relationship stability and marriage timing for **${lagna} Lagna**:\n\n### 7th House & Partnership Analysis\nYour 7th House of Kalatra is reviewed under active **${dashaMaha}-${dashaAntar}** Dasha. Marital status verification reflects: **${manglik}**. Planetary transits create a structured, supportive window over the next 6 to 12 months for formalizing alliances or stabilizing long-term commitments.\n\n### Strategic Relationship Principles\nApproach partnerships with the same diligence as long-term covenants: prioritize shared financial values, emotional integrity, and mutual respect.`;
+        }
+
+        relatedInsights.push({
+          planet: 'Venus',
+          sign: 'Libra',
+          house: 7,
+          degree: '15.20°',
+          significance: 'Significator of marital harmony, aesthetic connection, and partnership diplomacy.'
+        });
+        suggested = [
+          "What does my 7th house reveal about partner compatibility?",
+          "How does the D9 Navamsha chart modify relationship timing?",
+          "Are there favorable transits for marriage in the next 12 months?",
+          "What classical practices promote peace and mutual understanding?"
+        ];
+      } else if (intent === 'wealth') {
+        message = `Pranam! I am ${personaDisplay}.\n\nAnalyzing wealth accumulation, Dhana Yogas, and liquidity for **${lagna} Lagna**:\n\n### Dhana Yogas & Wealth Axis (2nd & 11th Houses)\nIn your chart, the 2nd House of liquid wealth and the 11th House of recurring gains are energized by your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. This planetary configuration activates auspicious wealth combinations, indicating sustained compounding potential when capital is deployed with disciplined patience.\n\n### Strategic Financial Directives\n1. **Capital Allocation:** Favor proven index equity, debt instruments, and stable tangible assets over speculative trends.\n2. **Speculative Cautions:** Avoid high-leverage intraday trading during localized Rahu Kaal or volatile lunar aspects.\n3. **Long-Term Compounding:** The ${dashaMaha} planetary vibration supports asset accumulation for family security.\n\n*Disclaimer: Astrological analysis reflects planetary timing indicators; it does not constitute registered financial advice.*`;
+        relatedInsights.push({
+          planet: 'Mercury',
+          sign: 'Gemini',
+          house: 11,
+          degree: '18.10°',
+          significance: 'Commercial acumen, analytical trade, and liquid capital liquidity.'
+        });
+        suggested = [
+          "Which planets form auspicious Dhana Yogas in my chart?",
+          "What does my 2nd and 11th house axis indicate for capital growth?",
+          "How should I navigate speculative risks under my current Dasha?",
+          "What traditional remedies support ethical prosperity?"
+        ];
+      } else if (intent === 'remedy') {
+        message = `Om Namah Shivaya! I am ${personaDisplay}.\n\nExamining classical Vedic remedial harmonization for **${lagna} Lagna**:\n\n### Planetary Evaluation & Saturn Transit\nYour chart is navigating **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**, with Saturn in **${sadesati}**.\n\n### Prescribed Classical Remedies\n- **Maha Mrityunjaya Mantra:** Chanting 108 times at sunrise pacifies malefic transit friction and restores physical and mental vitality.\n- **Saturnian Discipline:** On Saturdays, light a pure sesame or mustard oil lamp under a Peepal tree and practice selfless charity toward those in need.\n- **Gemstone Guidance:** Always fortify your functional Lagna and Trikona lords (such as Yellow Sapphire or Emerald) only after verifying natal house lordships.\n\n### Ethical Scriptural Principle\nTraditional remedies are cultural and spiritual practices intended to cultivate inner peace, discipline, and humility. They are not transactional commercial guarantees.`;
+        remedyCard = {
+          title: "Classical Parashari Remedial Discipline",
+          mantra: "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe Sugandhim Pushtivardhanam Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat (108 times at sunrise)",
+          gemstone_note: "Fortify functional Trikona lords only after inspecting natal house lordships",
+          charity_practice: "Light a pure sesame oil lamp under a Peepal tree on Saturdays; feed cows with green fodder",
+          disclaimer: "Vedic remedies are sacred traditional disciplines for mental peace; they carry no commercial guarantees."
+        };
+        suggested = [
+          "What is the classical scriptural basis for this mantra?",
+          "How can I pacify Saturn's transit without expensive stones?",
+          "Explain the proper methodology for dawn planetary chanting.",
+          "Can you evaluate my Sade Sati timeline and precautions?"
+        ];
+      } else if (intent === 'timing') {
+        message = `Pranam! I am ${personaDisplay}.\n\nEvaluating astrological timing windows and planetary periods for **${lagna} Lagna**:\n\n### Active Dasha Subperiods\nYou are currently navigating **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**. In Parashari Jyotish, the Mahadasha sets the broad life theme, while the Antardasha dictates near-term developments.\n\n### Near-Term Astrological Windows\n- **Current Phase (0–3 Months):** Strategic consolidation and clearing backlogs.\n- **Upcoming Phase (3–9 Months):** Supportive transit momentum as benefics transit your angle houses.\n- **Long-Term Projection:** The remainder of your ${dashaMaha} cycle builds foundational growth.`;
+        suggested = [
+          "What are the key transit milestones over the next 6 months?",
+          "How does my upcoming Antardasha differ from the current cycle?",
+          "When is the most auspicious window for new initiatives?",
+          "How can I align important decisions with positive planetary Horas?"
+        ];
+      } else if (intent === 'explanation') {
+        message = `Pranam! I am ${personaDisplay}.\n\nExplaining the classical Parashari principles behind your reading for **${lagna} Lagna**:\n\n### The Foundations of Parashari Jyotish\nIn the Brihat Parashara Hora Shastra, astrological interpretation relies on three synchronized pillars:\n1. **Bhava (House Geometry):** Your ${lagna} Lagna establishes the 12 Bhavas, determining functional benefics and malefics.\n2. **Graha (Planetary Dignity):** Planets express their energies through signs and aspects.\n3. **Dasha (Karmic Fruition):** Your active **${dashaMaha}-${dashaAntar}** Vimshottari cycle dictates when natal promises manifest.\n\nEvery insight in your consultation is directly derived from these mathematical coordinates.`;
+        suggested = [
+          "How do Parashari rules evaluate functional benefics vs malefics?",
+          "Explain how the Navamsha D9 chart confirms natal promises.",
+          "What is the role of Shadbala in determining real planetary strength?",
+          "How do Gochara transits interact with natal Dasha lords?"
+        ];
+      } else {
+        message = `Pranam! I am ${personaDisplay}.\n\nComprehensive Vedic astrological analysis for **${lagna} Lagna** and **${moon} Moon**:\n\n### Natal Constitution & Life Themes\nWith ${lagna} Lagna and Moon in ${moon} (${nak} Nakshatra), your chart reflects intellectual depth and resilience. Your active **${dashaMaha}-${dashaAntar}** Dasha period emphasizes purpose, structured growth, and character maturation.\n\n### Planetary Climate & Advice\nSaturn in ${sadesati} teaches patience and long-term discipline. By maintaining composed focus and balanced daily routines, you navigate this period with graceful resilience.`;
+        suggested = [
+          "Analyze my career trajectory and promotion timing.",
+          "When does my chart indicate relationship consolidation?",
+          "What does my active Dasha period signify for finances?",
+          "Which traditional remedies bring balanced peace of mind?"
+        ];
+      }
+
+      return {
+        intent: intent,
+        message: message,
+        chartEvidence: [],
+        relatedInsights: relatedInsights,
+        suggestedQuestions: suggested,
+        remedyCard: remedyCard,
+        status: 'completed'
+      };
+    }
+
+    async function sendAiUserChatMessage() {
       const inp = document.getElementById('ai-chat-user-input');
       const text = inp.value.trim();
       if (!text) return;
       inp.value = '';
 
-      appendUserMessageBubble(text);
+      if (!activeConsultationSession) return;
 
-      const astro = activeConsultationSession ? activeConsultationSession.astrologerName : 'Acharya Devratan';
+      // 1. Create and render user message
+      const userMsg = {
+        id: 'msg_u_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        role: 'user',
+        content: text,
+        timestamp: new Date().toISOString(),
+        status: 'sent',
+        personaId: activeConsultationSession.personaId
+      };
+
+      activeConsultationSession.messages.push(userMsg);
+      savePersonaChatHistory(activeConsultationSession.personaId, activeConsultationSession.messages);
+      renderMessageBubble(userMsg);
+      playChatSound('send');
+      scrollChatToBottom(true);
+
+      // 2. Typing indicator with context
       const typingEl = document.getElementById('ai-chat-typing-indicator');
       const typingName = document.getElementById('ai-chat-typing-name');
+      const typingStatus = document.getElementById('ai-chat-typing-status');
+      const astro = activeConsultationSession.astrologerName;
+
       if (typingName) typingName.textContent = astro.split(' ')[0];
+      if (typingStatus) {
+        const qLower = text.toLowerCase();
+        if (qLower.includes('career') || qLower.includes('job') || qLower.includes('10th')) {
+          typingStatus.textContent = 'examining your 10th House of Career and active Dasha...';
+        } else if (qLower.includes('marri') || qLower.includes('love') || qLower.includes('partner') || qLower.includes('7th')) {
+          typingStatus.textContent = 'analyzing 7th House synastry and D9 Navamsha geometry...';
+        } else if (qLower.includes('wealth') || qLower.includes('money') || qLower.includes('invest')) {
+          typingStatus.textContent = 'evaluating 2nd & 11th House Dhana Yogas...';
+        } else if (qLower.includes('remed') || qLower.includes('mantra') || qLower.includes('gem') || qLower.includes('sade')) {
+          typingStatus.textContent = 'consulting classical Parashari remedial scriptures...';
+        } else {
+          typingStatus.textContent = 'synthesizing planetary transits and natal evidence...';
+        }
+      }
       if (typingEl) typingEl.style.display = 'block';
+
+      const startTime = Date.now();
+      let assistantResponse = null;
+
+      // 3. Backend API request with multi-turn context
+      try {
+        const historyPayload = activeConsultationSession.messages.slice(-6).map(m => ({
+          role: m.role,
+          content: m.content
+        }));
+
+        const authBase = getAuthBase();
+        const payload = {
+          category: "general",
+          question: text,
+          dob: currentCalculatedChart?.dob || null,
+          lat: currentCalculatedChart?.lat || null,
+          lon: currentCalculatedChart?.lon || null,
+          timezone: currentCalculatedChart?.timezone || "Asia/Kolkata",
+          astrologer_name: astro,
+          session_history: historyPayload
+        };
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+        const res = await fetch(`${authBase}/api/ai-astrologer/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          assistantResponse = {
+            message: data.message || data.reading?.reading || data.reading?.analysis || '',
+            intent: data.intent || data.category || 'general',
+            chartEvidence: data.chartEvidence || [],
+            relatedInsights: data.relatedInsights || [],
+            suggestedQuestions: data.suggestedQuestions || [],
+            remedyCard: data.remedyCard || null,
+            status: 'completed'
+          };
+        }
+      } catch (err) {
+        // Fallback to client generator
+      }
+
+      // 4. Intelligent client-side fallback
+      if (!assistantResponse || !assistantResponse.message) {
+        assistantResponse = generateClientAstrologicalResponse(
+          astro,
+          text,
+          activeConsultationSession.messages,
+          currentCalculatedChart
+        );
+      }
+
+      // Natural response pacing
+      const elapsed = Date.now() - startTime;
+      const remainingWait = Math.max(0, 1100 - elapsed);
 
       setTimeout(() => {
         if (typingEl) typingEl.style.display = 'none';
-        const response = generatePersonaAstrologicalResponse(astro, text);
-        appendAiMessageBubble(response);
-      }, 700);
-    }
 
-    function generatePersonaAstrologicalResponse(astroName, query) {
-      const q = query.toLowerCase();
-      const hasChart = !!currentCalculatedChart;
-      if (!hasChart) {
-        return `Namaste! To receive precise, chart-grounded Parashari analysis for your exact birth Ascendant, Moon sign, Nakshatra, and active Vimshottari Dasha, please calculate your Janam Kundli in Tab 1 (Birth Chart). In the meantime, I can share Vedic guidance on today's universal planetary transits and auspicious Hora timings.`;
-      }
-      const lagna = currentCalculatedChart.lagnaSign;
-      const moon = currentCalculatedChart.moonSign;
-      const nak = currentCalculatedChart.nakName;
-      const fd = currentCalculatedChart.fullData;
-      const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
-      const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
-      const sadesati = fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis";
+        // Mark user message completed
+        userMsg.status = 'completed';
+        const userMsgEl = document.querySelector(`[data-msg-id="${userMsg.id}"] .chat-msg-meta`);
+        if (userMsgEl) {
+          userMsgEl.innerHTML = `<time datetime="${userMsg.timestamp}">${formatMessageTime(userMsg.timestamp)}</time> <span title="Processed with chart context" style="font-weight: 700; color: #FDE68A;">✓✓</span>`;
+        }
 
-      if (astroName.includes('Sunita')) {
-        // Dr. Sunita Shastri: Relationships, Marriage, Emotional Life
-        if (q.includes('marri') || q.includes('love') || q.includes('relationship') || q.includes('partner') || q.includes('spouse')) {
-          return `Based on your natal ${lagna} Lagna and ${moon} Moon in ${nak} Nakshatra: Your 7th House of partnership is influenced by your active ${dashaMaha}-${dashaAntar} Dasha. In the D9 Navamsha chart, your relationship indicators show an intellectually mature, emotionally grounded partner. Transiting benefics in Kendra houses activate an auspicious 8 to 14 month window for formalizing alliances. Maintain gentle, transparent dialogue and avoid bringing work tensions into romantic conversations.`;
-        } else if (q.includes('career') || q.includes('job')) {
-          return `In Jaimini and Parashari evaluation: while your heart seeks harmony, your career axis under ${dashaMaha} Mahadasha is entering a productive expansion phase. Seek positions where your emotional intelligence and strategic discernment are valued equally.`;
-        } else {
-          return `Looking deeply into your chart's lunar energy: your Moon in ${moon} brings deep intuition and analytical depth. During this ${dashaMaha}-${dashaAntar} period, focusing on genuine interpersonal connections and emotional balance will bring profound peace of mind.`;
-        }
-      } else if (astroName.includes('Raghavendra')) {
-        // Pandit Raghavendra: Remedies, Gemstones, Doshas, KP
-        if (q.includes('gem') || q.includes('stone') || q.includes('pukhraj') || q.includes('manik') || q.includes('ruby')) {
-          return `Regarding gemstone prescription for ${lagna} Lagna: Always fortify your functional benefics (Lagna Lord and Trikona lords). Under ${dashaMaha} Mahadasha, wearing a certified natural Yellow Sapphire (Pukhraj) set in gold on a Thursday morning, or Emerald (Panna) for intellectual vigor, is highly favorable after verifying natal degrees. Avoid wearing Blue Sapphire without personal trial.`;
-        } else if (q.includes('remed') || q.includes('mantra') || q.includes('puja') || q.includes('dosha') || q.includes('sade')) {
-          return `Examining your planetary afflictions: Your chart indicates Saturn in ${sadesati}. The classical Parashari remedy to neutralize this transit is chanting the Maha Mrityunjaya Mantra 108 times at dawn and lighting a pure mustard or sesame oil lamp under a Peepal tree on Saturdays. For current ${dashaMaha} Dasha, reciting the Vishnu Sahasranama on Thursdays dissolves financial and personal hurdles.`;
-        } else {
-          return `Every astrological challenge contains a divine remedial key. For your ${lagna} Lagna and ${moon} Moon: cultivate regular spiritual discipline (Dhyana) and practice charity (Daan) on planetary days to clear accumulated karmic blocks and invite favorable grace.`;
-        }
-      } else {
-        // Acharya Devratan: Career, Wealth, 10th House, Leadership
-        if (q.includes('career') || q.includes('job') || q.includes('promot') || q.includes('business') || q.includes('10th')) {
-          return `Analyzing your 10th House of Karma and authority for ${lagna} Lagna: Your active ${dashaMaha} Mahadasha with ${dashaAntar} Antardasha is classically an accelerator for institutional recognition and career advancement. Transiting Jupiter casts an auspicious trine aspect on your professional houses, indicating that major interviews, leadership promotions, and compensation renegotiations will receive strong backing over the next 2 to 4 months. Maintain composed executive posture during high-stakes meetings.`;
-        } else if (q.includes('wealth') || q.includes('money') || q.includes('finance') || q.includes('invest') || q.includes('stock')) {
-          return `Regarding Dhana Yogas in your chart: A potent connection links your 2nd House of liquid cash with your 11th House of gains under ${dashaMaha}-${dashaAntar} Dasha. Disciplined capital deployment into established equity index funds, sovereign bonds, or real estate will yield sustainable compounded gains. Avoid high-risk speculative intraday trading during localized Rahu Kaal.`;
-        } else {
-          return `In classical Parashari Jyotish, your ${lagna} Lagna and ${moon} Moon form a resilient, determined constitution. Navigating this ${dashaMaha} period with clear quarterly objectives will yield immense professional clarity and long-term authority. What specific milestone would you like to analyze next?`;
-        }
-      }
+        // Create and render assistant message
+        const agentMsg = {
+          id: 'msg_a_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          role: 'assistant',
+          content: assistantResponse.message,
+          timestamp: new Date().toISOString(),
+          status: 'completed',
+          personaId: activeConsultationSession.personaId,
+          intent: assistantResponse.intent,
+          relatedInsights: assistantResponse.relatedInsights,
+          remedyCard: assistantResponse.remedyCard
+        };
+
+        activeConsultationSession.messages.push(agentMsg);
+        savePersonaChatHistory(activeConsultationSession.personaId, activeConsultationSession.messages);
+
+        renderMessageBubble(agentMsg);
+        playChatSound('receive');
+        scrollChatToBottom(true);
+
+        // Update follow-up chips
+        renderDynamicChips(assistantResponse.suggestedQuestions);
+      }, remainingWait);
     }
 
     function endConsultationSession() {
       closeConsultationModal();
+    }
+
+    // Mobile Visual Viewport listener for on-screen virtual keyboard adjustment
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        const modal = document.getElementById('modal-ai-consultation');
+        if (modal && modal.style.display === 'flex') {
+          const dialogCard = modal.querySelector('.modal-dialog-card');
+          if (dialogCard && window.innerWidth <= 680) {
+            dialogCard.style.height = `${window.visualViewport.height}px`;
+            dialogCard.style.maxHeight = `${window.visualViewport.height}px`;
+            scrollChatToBottom(false);
+          }
+        }
+      });
     }
 
     let pendingPujaBooking = null;
