@@ -21,6 +21,7 @@ SIGNS = [
     "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
     "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
 ]
+ZODIAC_SIGNS = SIGNS
 
 NAKSHATRAS = [
     "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashira", "Ardra",

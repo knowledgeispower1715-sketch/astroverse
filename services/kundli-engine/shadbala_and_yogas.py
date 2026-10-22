@@ -292,3 +292,120 @@ def calculate_shadbala(planets_d1: Dict[str, Any], lagna_sign: str) -> Dict[str,
         }
 
     return shadbala_results
+
+
+def calculate_planetary_avasthas(planets_d1: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Computes classical Parashari Planetary States (Avasthas):
+    1. Baladi Avasthas (Age / Potency States): Bala, Kumara, Yuva, Vriddha, Mrita
+    2. Jagradadi Avasthas (Alertness States): Jagrat (Awake), Swapna (Dreaming), Sushupti (Asleep)
+    3. Lajjitadi Avasthas (Psychological / Emotional Disposition)
+    """
+    avastha_results = {}
+    odd_signs = {"Aries", "Gemini", "Leo", "Libra", "Sagittarius", "Aquarius"}
+    water_signs = {"Cancer", "Scorpio", "Pisces"}
+
+    for p_name, p_data in planets_d1.items():
+        if p_name in ("Rahu", "Ketu", "Ascendant"):
+            continue
+        deg = p_data.get("degree", 0.0) % 30.0
+        sign = p_data.get("sign", "Aries")
+        house = p_data.get("house", 1)
+
+        # 1. Baladi Avastha
+        is_odd = sign in odd_signs
+        if is_odd:
+            if 0.0 <= deg < 6.0:
+                baladi = "Bala (Infant - 25% Efficacy)"
+                baladi_potency = 0.25
+            elif 6.0 <= deg < 12.0:
+                baladi = "Kumara (Youth - 50% Efficacy)"
+                baladi_potency = 0.50
+            elif 12.0 <= deg < 18.0:
+                baladi = "Yuva (Adult / Prime - 100% Full Manifestation)"
+                baladi_potency = 1.00
+            elif 18.0 <= deg < 24.0:
+                baladi = "Vriddha (Elder - 20% Efficacy)"
+                baladi_potency = 0.20
+            else:
+                baladi = "Mrita (Dormant - 0% Efficacy)"
+                baladi_potency = 0.00
+        else: # Even sign reverses
+            if 0.0 <= deg < 6.0:
+                baladi = "Mrita (Dormant - 0% Efficacy)"
+                baladi_potency = 0.00
+            elif 6.0 <= deg < 12.0:
+                baladi = "Vriddha (Elder - 20% Efficacy)"
+                baladi_potency = 0.20
+            elif 12.0 <= deg < 18.0:
+                baladi = "Yuva (Adult / Prime - 100% Full Manifestation)"
+                baladi_potency = 1.00
+            elif 18.0 <= deg < 24.0:
+                baladi = "Kumara (Youth - 50% Efficacy)"
+                baladi_potency = 0.50
+            else:
+                baladi = "Bala (Infant - 25% Efficacy)"
+                baladi_potency = 0.25
+
+        # 2. Jagradadi Avastha
+        if p_name in EXALTATION and sign == EXALTATION[p_name][0]:
+            jagradadi = "Jagrat (Awake - Radiant & Fully Functional)"
+        elif p_name in OWN_SIGNS and sign in OWN_SIGNS[p_name]:
+            jagradadi = "Jagrat (Awake - In Own Domain)"
+        elif p_name in DEBILITATION_SIGNS and sign == DEBILITATION_SIGNS[p_name]:
+            jagradadi = "Sushupti (Deep Sleep - Impaired Expression)"
+        else:
+            jagradadi = "Swapna (Dreaming - Moderate / Receptive Expression)"
+
+        # 3. Lajjitadi Avastha classification
+        lajjitadi_states = []
+        if p_name in EXALTATION and sign == EXALTATION[p_name][0]:
+            lajjitadi_states.append("Garvita (Proud & Confident)")
+        if p_name in OWN_SIGNS and sign in OWN_SIGNS[p_name]:
+            lajjitadi_states.append("Mudita (Delighted & Content)")
+        if house == 5 and any(mal in planets_d1 for mal in ("Rahu", "Ketu", "Saturn", "Mars")):
+            lajjitadi_states.append("Lajjita (Humiliated / Restrained)")
+        if sign in water_signs:
+            lajjitadi_states.append("Trashita (Thirsty / Seeking Fulfillment)")
+        if not lajjitadi_states:
+            lajjitadi_states.append("Shanta (Peaceful / Neutral)")
+
+        avastha_results[p_name] = {
+            "planet": p_name,
+            "sign": sign,
+            "degree_in_sign": round(deg, 2),
+            "baladi_avastha": baladi,
+            "baladi_potency_factor": baladi_potency,
+            "jagradadi_avastha": jagradadi,
+            "lajjitadi_avasthas": lajjitadi_states
+        }
+
+    return avastha_results
+
+
+def calculate_ishta_kashta_phala(shadbala_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Computes classical Ishta Phala (Benefic Potential) and Kashta Phala (Malefic Resistance)
+    based on Dr. B.V. Raman's *Graha and Bhava Balas* (Formula combining Uchhabala and Cheshtabala).
+    Range: 0 to 60 Shashtiamsas each.
+    """
+    results = {}
+    import math
+
+    for p_name, data in shadbala_dict.items():
+        breakdown = data.get("breakdown", {})
+        uchha = breakdown.get("sthana_bala", 30.0) / 2.5 # Approximate back to 0-60 Uchhabala
+        uchha = max(0.0, min(60.0, uchha))
+        cheshta = max(0.0, min(60.0, breakdown.get("cheshta_bala", 30.0)))
+
+        ishta = round(math.sqrt(uchha * cheshta), 2)
+        kashta = round(math.sqrt((60.0 - uchha) * (60.0 - cheshta)), 2)
+
+        results[p_name] = {
+            "ishta_phala": ishta,
+            "kashta_phala": kashta,
+            "balance": round(ishta - kashta, 2),
+            "dasha_disposition": "Predominantly Auspicious / Favorable" if ishta >= kashta else "Demanding / Karmic Growth Focus"
+        }
+
+    return results

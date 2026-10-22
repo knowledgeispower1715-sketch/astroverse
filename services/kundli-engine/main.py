@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 import urllib.request
@@ -37,7 +37,18 @@ from jaimini_engine import analyze_jaimini_system
 from kp_engine import calculate_kp_chart
 from tajika_engine import calculate_varshaphal
 from panchang_engine import calculate_full_panchang
-from shadbala_and_yogas import detect_classical_yogas, calculate_shadbala
+from shadbala_and_yogas import (
+    detect_classical_yogas,
+    calculate_shadbala,
+    calculate_planetary_avasthas,
+    calculate_ishta_kashta_phala
+)
+from numerology_engine import calculate_full_numerology
+from pancha_pakshi_engine import calculate_pancha_pakshi
+from prashna_engine import evaluate_prashna
+from upagraha_engine import calculate_upagrahas
+from btr_engine import evaluate_btr_candidates
+from classical_knowledge import search_classical_knowledge, get_sloka_by_id
 from multi_method_engine import build_multi_method_comparison
 from external_api import (
     fetch_external_planets,
@@ -807,6 +818,196 @@ def get_multi_method_comparison(req: MultiMethodRequest):
     tajika = calculate_varshaphal(req.dob, target_year, req.lat, req.lon, req.timezone)
 
     return build_multi_method_comparison(d1, dashas, jaimini, kp, tajika)
+
+# ==============================================================================
+# SECTION 12 & 13: ADVANCED ASTROLOGY SUITE & EXTENDED CALCULATION APIS
+# ==============================================================================
+
+class NumerologyRequest(BaseModel):
+    name: str = Field(..., description="Full person or entity name")
+    dob: str = Field(..., description="ISO 8601 birth date, e.g. '1995-06-15'")
+
+class PanchaPakshiRequest(BaseModel):
+    nakshatra_number: Optional[int] = Field(None, ge=1, le=27, description="Birth nakshatra number (1-27)")
+    name: Optional[str] = Field(None, description="Name for phonetic first vowel fallback")
+    is_waxing: bool = Field(True, description="True for Shukla Paksha (Waxing), False for Krishna Paksha (Waning)")
+    check_time: Optional[str] = Field(None, description="ISO datetime to evaluate active yama & activity")
+    sunrise: Optional[str] = Field(None, description="Local sunrise ISO datetime")
+    sunset: Optional[str] = Field(None, description="Local sunset ISO datetime")
+    timezone: str = Field("Asia/Kolkata", description="IANA timezone")
+
+class PrashnaRequest(BaseModel):
+    question: str = Field(..., description="The horary inquiry / question")
+    category: str = Field("general", description="career, marriage, wealth, health, property, travel, lost_object")
+    query_time: str = Field(..., description="ISO datetime when question was posed")
+    lat: float = Field(..., ge=-90.0, le=90.0, description="Latitude")
+    lon: float = Field(..., ge=-180.0, le=180.0, description="Longitude")
+    timezone: str = Field("Asia/Kolkata", description="IANA timezone")
+
+class BTRRequest(BaseModel):
+    nominal_dob: str = Field(..., description="Reported ISO birth datetime")
+    lat: float = Field(..., ge=-90.0, le=90.0)
+    lon: float = Field(..., ge=-180.0, le=180.0)
+    window_minutes: int = Field(30, ge=5, le=120, description="Search window in minutes (+/-)")
+    step_minutes: int = Field(3, ge=1, le=10, description="Scan step in minutes")
+    life_events: List[Dict[str, str]] = Field([], description="List of milestone events e.g. [{'type': 'marriage', 'date': '2020-11-20'}]")
+    timezone: str = Field("Asia/Kolkata", description="IANA timezone")
+
+
+@app.post("/api/v1/astrology/numerology")
+def get_numerology(req: NumerologyRequest):
+    """
+    Computes Chaldean and Pythagorean Numerology:
+    Mulank (Psychic No), Bhagyank (Destiny/Life Path No), Namank (Name No),
+    Soul Urge No, Personality No, planetary vibrations, and compatibility.
+    """
+    try:
+        return calculate_full_numerology(name=req.name, dob_iso=req.dob)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Numerology calculation failed: {str(e)}")
+
+
+@app.get("/api/v1/astrology/numerology")
+def get_numerology_get(
+    name: str = Query(..., description="Full person or entity name"),
+    dob: str = Query(..., description="ISO 8601 birth date, e.g. '1995-06-15'")
+):
+    try:
+        return calculate_full_numerology(name=name, dob_iso=dob)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Numerology calculation failed: {str(e)}")
+
+
+@app.post("/api/v1/astrology/pancha-pakshi")
+def get_pancha_pakshi(req: PanchaPakshiRequest):
+    """
+    Computes ancient Tamil Pancha Pakshi (Five Birds) biorhythm timing:
+    Identifies birth bird, active daytime/nighttime yama, current diurnal activity,
+    strength score, and the complete 24-hour biorhythm schedule.
+    """
+    try:
+        return calculate_pancha_pakshi(
+            birth_nakshatra_num=req.nakshatra_number,
+            name=req.name,
+            is_waxing=req.is_waxing,
+            check_time_iso=req.check_time,
+            sunrise_iso=req.sunrise,
+            sunset_iso=req.sunset,
+            timezone_str=req.timezone
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Pancha Pakshi calculation failed: {str(e)}")
+
+
+@app.post("/api/v1/astrology/prashna")
+def get_prashna(req: PrashnaRequest):
+    """
+    Horary Astrology (Prashna Kundli):
+    Casts query-time chart, calculates Lagnesha (Querent) and Karyesha (Significator),
+    analyzes Tajika aspects and yogas (Ithasala, Ishrafa, Nakta, Yamaya, Kamboola),
+    and produces outcome determination with classical textual rationale.
+    """
+    try:
+        return evaluate_prashna(
+            query_text=req.question,
+            category=req.category,
+            query_datetime_iso=req.query_time,
+            lat=req.lat,
+            lon=req.lon,
+            timezone_str=req.timezone
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Prashna evaluation failed: {str(e)}")
+
+
+@app.post("/api/v1/astrology/upagrahas")
+def get_upagrahas(req: BirthDetails):
+    """
+    Calculates the 11 Classical Upagrahas (Non-Luminous Sub-Planets):
+    - 5 Sun-based: Dhuma, Vyatipaata, Parivesha, Indrachaapa, Upaketu
+    - 6 Time-based Kalavelas: Kaala, Mrityu, Arthaprahaara, Yamaghantaka, Gulika, Maandi
+    """
+    try:
+        return calculate_upagrahas(
+            dob_iso=req.dob,
+            lat=req.lat,
+            lon=req.lon,
+            timezone_str=req.timezone
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Upagrahas calculation failed: {str(e)}")
+
+
+@app.post("/api/v1/astrology/btr")
+def get_birth_time_rectification(req: BTRRequest):
+    """
+    Birth Time Rectification (BTR) Candidate Finder:
+    Scans candidate birth times across a window (+/- minutes), tracking D1, D9 Navamsa,
+    and D60 Shashtyamsha Lagna boundary shifts and dasha event alignments.
+    """
+    try:
+        return evaluate_btr_candidates(
+            nominal_dob_iso=req.nominal_dob,
+            lat=req.lat,
+            lon=req.lon,
+            window_minutes=req.window_minutes,
+            step_minutes=req.step_minutes,
+            life_events=req.life_events,
+            timezone_str=req.timezone
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"BTR evaluation failed: {str(e)}")
+
+
+@app.get("/api/v1/astrology/knowledge")
+def search_knowledge(
+    q: Optional[str] = Query(None, description="General search keyword"),
+    topic: Optional[str] = Query(None, description="Topic e.g. yoga, house, saturn, jaimini, prashna"),
+    house: Optional[int] = Query(None, ge=1, le=12, description="House number 1-12"),
+    planet: Optional[str] = Query(None, description="Planet name e.g. Jupiter, Moon, Saturn"),
+    limit: int = Query(10, ge=1, le=50)
+):
+    """
+    Searches the authentic Classical Sanskrit Astrology Knowledge Base:
+    Includes Brihat Parashara Hora Shastra, Phaladeepika, Saravali,
+    Jaimini Upadesha Sutras, and Prashna Tantra with slokas, translations, and implications.
+    """
+    try:
+        return {
+            "query": q,
+            "topic": topic,
+            "house": house,
+            "planet": planet,
+            "count": len(search_classical_knowledge(q, topic, house, planet, limit)),
+            "results": search_classical_knowledge(q, topic, house, planet, limit)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Knowledge retrieval failed: {str(e)}")
+
+
+@app.post("/api/v1/astrology/avasthas")
+def get_avasthas(req: BirthDetails):
+    """
+    Calculates Classical Planetary States (Avasthas) & Ishta/Kashta Phalas:
+    - Baladi Avasthas (Bala, Kumara, Yuva, Vriddha, Mrita)
+    - Jagradadi Avasthas (Jagrat, Swapna, Sushupti)
+    - Lajjitadi Avasthas (Garvita, Mudita, Lajjita, Trashita, Shanta)
+    - Ishta Phala & Kashta Phala ratings
+    """
+    try:
+        d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+        planets = d1.get("planets", {})
+        avasthas = calculate_planetary_avasthas(planets)
+        shadbala = calculate_shadbala(planets, d1["lagna"]["sign"])
+        ishta_kashta = calculate_ishta_kashta_phala(shadbala)
+        return {
+            "birth_details": req.model_dump() if hasattr(req, "model_dump") else req.dict(),
+            "planetary_avasthas": avasthas,
+            "ishta_kashta_phala": ishta_kashta
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Avasthas calculation failed: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn
