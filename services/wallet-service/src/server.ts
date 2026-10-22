@@ -2,6 +2,15 @@ import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { db, UserRecord, Role, AccountStatus, OrderStatus } from './db';
 import { razorpay, isRazorpayConfigured, verifyRazorpaySignature } from './razorpay';
+import {
+  SUBSCRIPTION_PLANS,
+  REPORT_CATALOGUE,
+  SubscriptionTier,
+  BillingPeriod,
+  calculateReportPrice
+} from './monetization/catalog';
+import { EntitlementManager } from './monetization/entitlements';
+import { ReportDocumentGenerator } from './monetization/reportGenerator';
 
 const app = express();
 app.use(express.json());
@@ -1135,6 +1144,56 @@ app.post('/api/reports/save', authenticate, async (req: AuthenticatedRequest, re
   }
 });
 
+// GET /api/reports/catalogue (Public catalogue of individual report products)
+app.get('/api/reports/catalogue', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    catalogue: Object.values(REPORT_CATALOGUE),
+    disclaimer: 'Personalized reports are digital publications viewable exclusively inside the private online reader.'
+  });
+});
+
+// GET /api/reports/reader/:id (Private, online-only paginated report reader)
+app.get('/api/reports/reader/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const report = await db.getSavedReportById(id);
+    if (!report) {
+      return res.status(404).json({ error: 'REPORT_NOT_FOUND', message: 'Report publication not found.' });
+    }
+
+    // Strict ownership gate
+    if (report.userId !== req.user!.id && req.user!.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: You do not own this report publication.' });
+    }
+
+    // Anti-download, anti-scraping, private reader headers
+    res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+
+    res.json({
+      success: true,
+      reportId: report.id,
+      title: report.title,
+      reportType: report.reportType,
+      createdAt: report.createdAt,
+      document: report.payload,
+      readerSettings: {
+        onlineOnly: true,
+        downloadAllowed: false,
+        printProtected: true,
+        watermarkEnabled: true,
+        disclaimer: 'Personalized private publication. Screenshots or external optical recording cannot be technically prevented.'
+      }
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to fetch report for reader');
+  }
+});
+
 app.get('/api/reports/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { userId } = req.params;
   if (req.user!.role !== Role.SUPER_ADMIN && req.user!.id !== userId) {
@@ -1850,6 +1909,368 @@ app.get('/api/admin/audit-logs', authenticate, requireAdmin(), async (req: Authe
     res.json(logs);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ==================== 7.5 MONETIZATION, SUBSCRIPTIONS & REPORT STUDIO ====================
+
+// GET /api/subscriptions/plans (Public catalogue of subscription tiers)
+app.get('/api/subscriptions/plans', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    plans: Object.values(SUBSCRIPTION_PLANS),
+    disclaimer: 'Subscription pricing is billed in Indian Rupees (INR). Daily AI consultation quotas reset at 00:00 UTC.'
+  });
+});
+
+// GET /api/entitlements/me (Authenticated user tier, profile quota, and daily AI quota)
+app.get('/api/entitlements/me', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = await db.findUserById(req.user!.id);
+    if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+
+    const profiles = await db.getProfilesByUserId(user.id);
+    const snapshot = EntitlementManager.getEntitlementSnapshot(user, profiles.length);
+    res.json(snapshot);
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to fetch entitlements');
+  }
+});
+
+// POST /api/subscriptions/create-order (Create Razorpay order for Plus/Premium subscription)
+app.post('/api/subscriptions/create-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const { tier, billingPeriod } = req.body;
+  const user = req.user!;
+
+  if (!tier || !Object.values(SubscriptionTier).includes(tier) || tier === SubscriptionTier.FREE) {
+    return res.status(400).json({
+      error: 'INVALID_TIER',
+      message: 'A valid paid subscription tier (PLUS or PREMIUM) is required.'
+    });
+  }
+
+  const period: BillingPeriod = billingPeriod === BillingPeriod.ANNUAL ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+  const plan = SUBSCRIPTION_PLANS[tier as SubscriptionTier];
+  const pricePaise = period === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
+  const priceRupees = Math.round(pricePaise / 100);
+
+  try {
+    const orderId = `sub_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    let razorpayOrderId = `order_${orderId}`;
+
+    if (isRazorpayConfigured()) {
+      const rzpOrder = await razorpay.orders.create({
+        amount: pricePaise,
+        currency: 'INR',
+        receipt: orderId,
+        notes: { userId: user.id, tier, period }
+      });
+      razorpayOrderId = rzpOrder.id;
+    }
+
+    const order = await db.createPaymentOrder({
+      userId: user.id,
+      amount: priceRupees,
+      currency: 'INR',
+      razorpayOrderId
+    });
+
+    res.json({
+      success: true,
+      orderId: order.razorpayOrderId,
+      amount: pricePaise,
+      amountPaise: pricePaise,
+      amountRupees: priceRupees,
+      tier,
+      billingPeriod: period,
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_preview_key'
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Subscription order creation failed');
+  }
+});
+
+// POST /api/subscriptions/verify-payment (Activate subscription upon verified payment)
+app.post('/api/subscriptions/verify-payment', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const { orderId, paymentId, signature, tier, billingPeriod } = req.body;
+  const user = req.user!;
+
+  if (!orderId || !paymentId || !signature) {
+    return res.status(400).json({ error: 'MISSING_PAYMENT_DETAILS', message: 'orderId, paymentId, and signature are required.' });
+  }
+
+  const isValid = verifyRazorpaySignature(orderId, paymentId, signature);
+  if (!isValid) {
+    return res.status(400).json({ error: 'INVALID_PAYMENT_SIGNATURE', message: 'Cryptographic payment signature mismatch.' });
+  }
+
+  const targetTier = (tier as SubscriptionTier) || SubscriptionTier.PLUS;
+  const period = billingPeriod === BillingPeriod.ANNUAL ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+  const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+
+  try {
+    const updatedUser = await db.updateSubscription(user.id, targetTier, period, durationDays);
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'SUBSCRIPTION_ACTIVATED',
+      targetType: 'SUBSCRIPTION',
+      targetId: `${targetTier}_${period}`,
+      metadata: {
+        tier: targetTier,
+        period,
+        durationDays,
+        expiresAt: updatedUser.subscriptionExpiresAt,
+        paymentId
+      }
+    });
+
+    res.json({
+      success: true,
+      subscriptionTier: updatedUser.subscriptionTier,
+      tier: updatedUser.subscriptionTier,
+      billingPeriod: updatedUser.subscriptionBillingPeriod,
+      subscriptionExpiresAt: updatedUser.subscriptionExpiresAt,
+      expiresAt: updatedUser.subscriptionExpiresAt,
+      subscriptionStatus: updatedUser.subscriptionStatus
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Subscription activation failed');
+  }
+});
+
+// POST /api/subscriptions/cancel (Cancel recurring auto-renewal)
+app.post('/api/subscriptions/cancel', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const updated = await db.cancelSubscription(req.user!.id);
+    res.json({
+      success: true,
+      status: updated.subscriptionStatus,
+      subscriptionStatus: updated.subscriptionStatus,
+      expiresAt: updated.subscriptionExpiresAt,
+      message: 'Subscription renewal has been cancelled. Access remains active until the expiration date.'
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Subscription cancellation failed');
+  }
+});
+
+// POST /api/reports/order (Create order for individual personalized report)
+app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const { productId, profileId, partnerProfileId, options, paymentMethod } = req.body;
+  const user = req.user!;
+
+  const product = REPORT_CATALOGUE[productId];
+  if (!product) {
+    return res.status(400).json({ error: 'INVALID_PRODUCT', message: `Product '${productId}' not found in catalogue.` });
+  }
+
+  try {
+    // Verify birth profile exists and is owned by this user
+    const profile = await db.getProfileById(profileId);
+    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Selected birth profile not found.' });
+    if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's profile." });
+    }
+
+    let partnerProfile: any = null;
+    if (partnerProfileId) {
+      partnerProfile = await db.getProfileById(partnerProfileId);
+    }
+
+    // Resolve user's effective subscription tier to apply legitimate member discounts
+    const dbUser = await db.findUserById(user.id);
+    const { tier } = EntitlementManager.resolveEffectiveTier(dbUser);
+    const pricing = calculateReportPrice(productId, tier);
+
+    // Free report product (Basic Summary)
+    if (pricing.finalPricePaise === 0) {
+      const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, { partnerProfile, ...options });
+      const saved = await db.createSavedReport({
+        userId: user.id,
+        title: product.displayName,
+        reportType: productId,
+        payload: doc
+      });
+      return res.json({
+        success: true,
+        reportId: saved.id,
+        title: saved.title,
+        reportType: saved.reportType,
+        paidAmountPaise: 0,
+        discountPercent: 0,
+        document: doc,
+        status: 'READY_FOR_READER',
+        free: true
+      });
+    }
+
+    // If user opts to pay via Wallet balance
+    if (paymentMethod && String(paymentMethod).toUpperCase() === 'WALLET') {
+      if (Number(dbUser?.walletBalance || 0) < pricing.finalPriceRupees) {
+        return res.status(400).json({
+          error: 'INSUFFICIENT_FUNDS',
+          message: `Insufficient wallet balance. This report requires ₹${pricing.finalPriceRupees.toFixed(2)}.`,
+          requiredAmount: pricing.finalPriceRupees,
+          currentBalance: dbUser?.walletBalance || 0
+        });
+      }
+
+      // Debit wallet via purchase mechanism with idempotency
+      const clientKey = `REPORT_${user.id}_${productId}_${Date.now()}`;
+      await db.bookPuja(user.id, `Report: ${product.displayName}`, pricing.finalPriceRupees, profile.id, clientKey);
+
+      // Generate canonical document
+      const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, { partnerProfile, ...options });
+      const saved = await db.createSavedReport({
+        userId: user.id,
+        title: `${product.displayName} (${profile.profileName})`,
+        reportType: productId,
+        payload: doc
+      });
+
+      return res.json({
+        success: true,
+        reportId: saved.id,
+        title: saved.title,
+        reportType: saved.reportType,
+        paidAmountPaise: pricing.finalPricePaise,
+        discountPercent: pricing.discountPercent,
+        document: doc,
+        status: 'READY_FOR_READER',
+        paidVia: 'WALLET',
+        deduction: pricing.finalPriceRupees
+      });
+    }
+
+    // Razorpay Checkout flow
+    const orderReceipt = `rep_ord_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    let razorpayOrderId = `order_${orderReceipt}`;
+
+    if (isRazorpayConfigured()) {
+      const rzpOrder = await razorpay.orders.create({
+        amount: pricing.finalPricePaise,
+        currency: 'INR',
+        receipt: orderReceipt,
+        notes: { userId: user.id, productId, profileId }
+      });
+      razorpayOrderId = rzpOrder.id;
+    }
+
+    const order = await db.createPaymentOrder({
+      userId: user.id,
+      amount: pricing.finalPriceRupees,
+      currency: 'INR',
+      razorpayOrderId
+    });
+
+    res.json({
+      orderId: order.razorpayOrderId,
+      amountPaise: pricing.finalPricePaise,
+      amountRupees: pricing.finalPriceRupees,
+      discountPercent: pricing.discountPercent,
+      productId,
+      profileId,
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_preview_key'
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Report order generation failed');
+  }
+});
+
+// POST /api/reports/verify-and-generate (Verify Razorpay payment and compile canonical document)
+app.post('/api/reports/verify-and-generate', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const { orderId, paymentId, signature, productId, profileId, partnerProfileId, options } = req.body;
+  const user = req.user!;
+
+  if (!orderId || !paymentId) {
+    return res.status(400).json({ error: 'MISSING_PAYMENT_DETAILS', message: 'orderId and paymentId are required.' });
+  }
+
+  const product = REPORT_CATALOGUE[productId];
+  if (!product) {
+    return res.status(400).json({ error: 'INVALID_PRODUCT', message: 'Product not recognized.' });
+  }
+
+  // Signature check
+  if (isRazorpayConfigured() && signature) {
+    const isValid = verifyRazorpaySignature(orderId, paymentId, signature);
+    if (!isValid) {
+      return res.status(400).json({ error: 'INVALID_SIGNATURE', message: 'Payment signature validation failed.' });
+    }
+  }
+
+  try {
+    const profile = await db.getProfileById(profileId);
+    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
+
+    let partnerProfile: any = null;
+    if (partnerProfileId) {
+      partnerProfile = await db.getProfileById(partnerProfileId);
+    }
+
+    const dbUser = await db.findUserById(user.id);
+    const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, { partnerProfile, ...options });
+
+    const saved = await db.createSavedReport({
+      userId: user.id,
+      title: `${product.displayName} (${profile.profileName})`,
+      reportType: productId,
+      payload: doc
+    });
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'REPORT_PURCHASED_AND_GENERATED',
+      targetType: 'SAVED_REPORT',
+      targetId: saved.id,
+      metadata: {
+        productId,
+        profileId,
+        orderId,
+        paymentId
+      }
+    });
+
+    res.json({
+      success: true,
+      reportId: saved.id,
+      status: 'READY_FOR_READER',
+      paidVia: 'RAZORPAY'
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Report verification and compilation failed');
+  }
+});
+
+// POST /api/ai-astrologer/consume-quota (Server-side daily question limit enforcement)
+app.post('/api/ai-astrologer/consume-quota', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = await db.findUserById(req.user!.id);
+    const { tier } = EntitlementManager.resolveEffectiveTier(user);
+    const result = EntitlementManager.consumeAiQuery(req.user!.id, tier);
+    res.json({
+      success: true,
+      usedToday: result.usedToday,
+      consumedToday: result.usedToday,
+      totalAllowed: result.totalAllowed,
+      allowedLimit: result.totalAllowed,
+      limit: result.totalAllowed,
+      remaining: result.remaining,
+      remainingToday: result.remaining
+    });
+  } catch (err: any) {
+    if (err.code === 'AI_QUOTA_EXCEEDED') {
+      return res.status(429).json({
+        error: 'DAILY_AI_QUOTA_EXCEEDED',
+        message: err.message,
+        tier: err.tier,
+        dailyLimit: err.dailyLimit,
+        allowedLimit: err.dailyLimit,
+        upgradeRequired: err.upgradeRequired
+      });
+    }
+    handleServiceError(res, err, 'Quota check failed');
   }
 });
 

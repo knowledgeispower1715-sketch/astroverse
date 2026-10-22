@@ -64,6 +64,10 @@ export interface UserRecord {
   preferredLanguage: string;
   preferredTimezone: string;
   walletBalance: number;
+  subscriptionTier?: 'FREE' | 'PLUS' | 'PREMIUM';
+  subscriptionBillingPeriod?: 'MONTHLY' | 'ANNUAL' | null;
+  subscriptionExpiresAt?: string | null;
+  subscriptionStatus?: 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'TRIAL' | 'NONE';
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -1818,6 +1822,52 @@ class ResilientDatabase {
       transactionId: ledgerId,
       pujaName: cleanPujaName
     };
+  }
+
+  async updateSubscription(
+    userId: string,
+    tier: 'FREE' | 'PLUS' | 'PREMIUM',
+    billingPeriod: 'MONTHLY' | 'ANNUAL' | null = null,
+    durationDays: number = 30
+  ): Promise<UserRecord> {
+    this.assertDurableStorage();
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    const expiresAt = tier === 'FREE'
+      ? null
+      : new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { updatedAt: new Date() }
+        });
+      } catch (err: any) {
+        console.error('[DB] updateSubscription Prisma error:', err.message);
+      }
+    }
+
+    user.subscriptionTier = tier;
+    user.subscriptionBillingPeriod = billingPeriod;
+    user.subscriptionExpiresAt = expiresAt;
+    user.subscriptionStatus = tier === 'FREE' ? 'NONE' : 'ACTIVE';
+    user.updatedAt = new Date().toISOString();
+
+    this.saveToFile();
+    return user;
+  }
+
+  async cancelSubscription(userId: string): Promise<UserRecord> {
+    this.assertDurableStorage();
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    user.subscriptionStatus = 'CANCELLED';
+    user.updatedAt = new Date().toISOString();
+    this.saveToFile();
+    return user;
   }
 
   // ==================== ASTROLOGERS ====================

@@ -2429,6 +2429,304 @@
       text-decoration: underline;
     }
 
+    /* ==================== MONETIZATION & REPORT STUDIO STYLES ==================== */
+    .pricing-grid-3col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    @media (max-width: 860px) {
+      .pricing-grid-3col {
+        grid-template-columns: 1fr;
+      }
+    }
+    .pricing-plan-card {
+      background: #FFFFFF;
+      border: 1.5px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 22px 18px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .pricing-plan-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08);
+    }
+    .pricing-plan-card.highlighted {
+      border-color: #F59E0B;
+      background: linear-gradient(180deg, #FFFDF8 0%, #FFFFFF 100%);
+      box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.15);
+    }
+    .plan-badge-top {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #D97706, #B45309);
+      color: #FFFFFF;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(180, 83, 9, 0.25);
+    }
+    .pricing-plan-name {
+      font-size: 17px;
+      font-weight: 800;
+      color: #1E1B4B;
+      margin-bottom: 4px;
+    }
+    .pricing-plan-tagline {
+      font-size: 12px;
+      color: #64748B;
+      min-height: 32px;
+      line-height: 1.35;
+      margin-bottom: 14px;
+    }
+    .pricing-price-box {
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed #E2E8F0;
+    }
+    .pricing-price-num {
+      font-size: 28px;
+      font-weight: 800;
+      color: #881337;
+    }
+    .pricing-price-period {
+      font-size: 12px;
+      color: #64748B;
+      font-weight: 600;
+    }
+    .pricing-features-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px 0;
+      font-size: 12.5px;
+      color: #334155;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .pricing-features-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.35;
+    }
+    .pricing-features-list li i {
+      color: #059669;
+      font-size: 13px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Billing period toggle */
+    .billing-toggle-wrap {
+      display: inline-flex;
+      background: #F1F5F9;
+      padding: 4px;
+      border-radius: 24px;
+      border: 1px solid #E2E8F0;
+      margin: 0 auto;
+    }
+    .billing-toggle-opt {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #64748B;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: all 0.2s;
+    }
+    .billing-toggle-opt.active {
+      background: #FFFFFF;
+      color: #0F172A;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    /* Report Catalogue Cards */
+    .report-store-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+    @media (max-width: 900px) {
+      .report-store-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 600px) {
+      .report-store-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .report-product-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .report-product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -6px rgba(0,0,0,0.08);
+      border-color: #CBD5E1;
+    }
+    .report-cat-tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #D97706;
+      background: #FEF3C7;
+      padding: 2px 8px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 8px;
+      width: fit-content;
+    }
+
+    /* Private Reader Styling */
+    .reader-modal-dialog {
+      max-width: 960px;
+      width: 95%;
+      height: 90vh;
+      max-height: 900px;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+      border-radius: 16px;
+      background: #0F172A;
+      color: #F8FAFC;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6);
+    }
+    .reader-header-bar {
+      background: linear-gradient(135deg, #2A0815 0%, #0F172A 100%);
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .reader-watermark-strip {
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 6px 16px;
+      font-size: 11px;
+      color: #94A3B8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .reader-body-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .reader-toc-drawer {
+      width: 260px;
+      background: #131B2E;
+      border-right: 1px solid #1E293B;
+      overflow-y: auto;
+      padding: 16px 12px;
+      flex-shrink: 0;
+    }
+    .reader-toc-item {
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #94A3B8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .reader-toc-item:hover, .reader-toc-item.active {
+      background: rgba(245, 158, 11, 0.12);
+      color: #F59E0B;
+      font-weight: 600;
+    }
+    .reader-content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+      background: #0B0F19;
+      position: relative;
+    }
+    .reader-watermark-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.015) 0,
+        rgba(255, 255, 255, 0.015) 100px,
+        transparent 100px,
+        transparent 200px
+      );
+      z-index: 1;
+    }
+    .reader-content-prose {
+      position: relative;
+      z-index: 2;
+      max-width: 720px;
+      margin: 0 auto;
+      line-height: 1.7;
+      color: #E2E8F0;
+      font-size: 14px;
+    }
+    .reader-chapter-card {
+      background: #131B2E;
+      border: 1px solid #23314E;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 24px;
+    }
+    .reader-chapter-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #F8FAFC;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .reader-chapter-sub {
+      font-size: 12px;
+      color: #F59E0B;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 768px) {
+      .reader-toc-drawer {
+        display: none;
+      }
+      .reader-content-scroll {
+        padding: 16px 18px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -2484,9 +2782,19 @@
       <button class="nav-link-btn" id="btn-nav-dashboard" onclick="switchNavSection('dashboard')">
         <i class="fa-solid fa-user-shield"></i> My Space
       </button>
+      <button class="nav-link-btn" id="btn-nav-reports" onclick="openReportStoreModal()" title="Personalized Vedic Reports">
+        <i class="fa-solid fa-file-invoice"></i> Reports Store
+      </button>
+      <button class="nav-link-btn" id="btn-nav-pricing" onclick="openPricingPlansModal()" style="color: #D97706; font-weight: 700;" title="AstroVerse Subscription Plans">
+        <i class="fa-solid fa-crown"></i> Plans &amp; Pricing
+      </button>
     </nav>
 
     <div class="nav-right-actions">
+      <div class="tier-chip" id="global-tier-badge" onclick="openPricingPlansModal()" title="Click to view subscription tiers" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; font-size: 12px; font-weight: 700; color: #D97706; cursor: pointer;">
+        <i class="fa-solid fa-crown"></i> <span id="global-tier-name">Essentials</span>
+      </div>
+
       <div class="wallet-chip" onclick="openWalletModal()">
         <i class="fa-solid fa-wallet" style="color: #F59E0B; font-size: 15px;"></i>
         <span>₹<strong id="global-wallet-bal">0.00</strong></span>
@@ -2543,6 +2851,12 @@
       </div>
       <div class="nav-pill" id="pill-pujas" onclick="switchNavSection('pujas')">
         <i class="fa-solid fa-fire-burner"></i> Astromall & Pujas
+      </div>
+      <div class="nav-pill" id="pill-reports-store" onclick="openReportStoreModal()" style="border-color: #D97706; color: #B45309; font-weight: 700;">
+        <i class="fa-solid fa-file-lines"></i> Personalized Reports (9 Types)
+      </div>
+      <div class="nav-pill" id="pill-pricing-plans" onclick="openPricingPlansModal()" style="border-color: #7C3AED; color: #6D28D9; font-weight: 700;">
+        <i class="fa-solid fa-gem"></i> Subscriptions &amp; Tiers
       </div>
     </div>
   </section>
@@ -5039,6 +5353,305 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL: SUBSCRIPTION PRICING PLANS ==================== -->
+  <div id="modal-pricing-plans" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10650;">
+    <div class="modal-dialog-card" style="max-width: 960px; width: 94%; max-height: 90vh; overflow-y: auto; padding: 26px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">MEMBERSHIP TIERS</span>
+            <span id="plans-current-tier-pill" style="font-size: 11px; font-weight: 700; color: #059669; background: #D1FAE5; padding: 2px 8px; border-radius: 6px;">Current: Essentials (Free)</span>
+          </div>
+          <h2 style="font-size: 22px; font-weight: 800; color: #1E1B4B; margin: 6px 0 2px;">Choose Your AstroVerse Plan</h2>
+          <p style="font-size: 13px; color: #64748B; margin: 0;">Server-grounded Parashari calculations, multi-profile management, and context-aware Vedic consultations.</p>
+        </div>
+        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 20px; color: #64748B; padding: 4px;" onclick="closePricingPlansModal()"></i>
+      </div>
+
+      <!-- Billing Cycle Switcher -->
+      <div style="text-align: center; margin: 16px 0 8px;">
+        <div class="billing-toggle-wrap">
+          <button class="billing-toggle-opt active" id="btn-billing-monthly" onclick="setBillingCycle('monthly')">Monthly Billing</button>
+          <button class="billing-toggle-opt" id="btn-billing-annual" onclick="setBillingCycle('annual')">
+            Annual Billing <span style="background: #10B981; color: #FFFFFF; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px; font-weight: 800;">SAVE ~27%</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3 Tier Grid -->
+      <div class="pricing-grid-3col">
+        <!-- Essentials (Free) -->
+        <div class="pricing-plan-card" id="plan-card-free">
+          <div class="pricing-plan-name">AstroVerse Essentials</div>
+          <div class="pricing-plan-tagline">Essential daily astrological charts and foundational self-study tools.</div>
+          <div class="pricing-price-box">
+            <span class="pricing-price-num">₹0</span>
+            <span class="pricing-price-period">/ forever</span>
+          </div>
+          <ul class="pricing-features-list">
+            <li><i class="fa-solid fa-check"></i> <strong>1 Active Birth Profile</strong></li>
+            <li><i class="fa-solid fa-check"></i> Basic Janam Kundli (D1 Rashi Chart)</li>
+            <li><i class="fa-solid fa-check"></i> Moon Sign &amp; Birth Nakshatra</li>
+            <li><i class="fa-solid fa-check"></i> Daily Vedic Panchang &amp; 24h Horas</li>
+            <li><i class="fa-solid fa-check"></i> Basic Current Vimshottari Mahadasha</li>
+            <li><i class="fa-solid fa-check"></i> <strong>3 Substantive AI Consultations / day</strong></li>
+            <li><i class="fa-solid fa-check"></i> Free Basic Summary Report</li>
+          </ul>
+          <button class="btn-outline-secondary" style="width: 100%; justify-content: center; min-height: 40px;" disabled>
+            <i class="fa-solid fa-circle-check"></i> Current Default Plan
+          </button>
+        </div>
+
+        <!-- Plus Plan -->
+        <div class="pricing-plan-card" id="plan-card-plus">
+          <div class="pricing-plan-name">AstroVerse Plus</div>
+          <div class="pricing-plan-tagline">Expanded profiles, D9/D10 harmonics, and persistent AI consultation memory.</div>
+          <div class="pricing-price-box">
+            <span class="pricing-price-num" id="plus-price-display">₹149</span>
+            <span class="pricing-price-period" id="plus-period-display">/ month</span>
+            <div id="plus-annual-subtext" style="font-size: 11px; color: #059669; font-weight: 600; display: none;">Billed annually as ₹1,299/yr (~₹108/mo)</div>
+          </div>
+          <ul class="pricing-features-list">
+            <li><i class="fa-solid fa-check"></i> <strong>Up to 3 Active Birth Profiles</strong></li>
+            <li><i class="fa-solid fa-check"></i> <strong>Navamsha (D9) &amp; Dashamsha (D10) Charts</strong></li>
+            <li><i class="fa-solid fa-check"></i> Detailed Vimshottari Antardasha Timelines</li>
+            <li><i class="fa-solid fa-check"></i> <strong>15 AI Consultations / day</strong> with context memory</li>
+            <li><i class="fa-solid fa-check"></i> Weekly &amp; Monthly Cosmic Synthesis</li>
+            <li><i class="fa-solid fa-check"></i> <strong>10% Member Discount</strong> on all individual reports</li>
+            <li><i class="fa-solid fa-check"></i> Priority calculation engine queue</li>
+          </ul>
+          <button class="btn-gold-primary" id="btn-upgrade-plus" style="width: 100%; justify-content: center; min-height: 42px;" onclick="executeSubscriptionCheckout('PLUS')">
+            <i class="fa-solid fa-bolt"></i> Upgrade to Plus
+          </button>
+        </div>
+
+        <!-- Premium Plan -->
+        <div class="pricing-plan-card highlighted" id="plan-card-premium">
+          <div class="plan-badge-top"><i class="fa-solid fa-crown"></i> MOST COMPREHENSIVE</div>
+          <div class="pricing-plan-name" style="color: #78350F;">AstroVerse Premium</div>
+          <div class="pricing-plan-tagline">Complete Shodashavarga (D1–D60), full 337-Bindu Ashtakavarga &amp; private reader.</div>
+          <div class="pricing-price-box">
+            <span class="pricing-price-num" id="premium-price-display">₹299</span>
+            <span class="pricing-price-period" id="premium-period-display">/ month</span>
+            <div id="premium-annual-subtext" style="font-size: 11px; color: #059669; font-weight: 600; display: none;">Billed annually as ₹2,499/yr (~₹208/mo)</div>
+          </div>
+          <ul class="pricing-features-list">
+            <li><i class="fa-solid fa-check"></i> <strong>Up to 5 Active Birth Profiles</strong></li>
+            <li><i class="fa-solid fa-check"></i> <strong>All 16 Shodashavarga Charts (D1 through D60)</strong></li>
+            <li><i class="fa-solid fa-check"></i> Full 337-Bindu Ashtakavarga Matrix</li>
+            <li><i class="fa-solid fa-check"></i> Detailed 6-Fold Shadbala Potencies</li>
+            <li><i class="fa-solid fa-check"></i> Muhurta, Pancha Pakshi &amp; Horary Prashna</li>
+            <li><i class="fa-solid fa-check"></i> Birth-Time Rectification (BTR) Scanning</li>
+            <li><i class="fa-solid fa-check"></i> <strong>30 AI Consultations / day</strong> with multi-turn reasoning</li>
+            <li><i class="fa-solid fa-check"></i> <strong>20% Member Discount</strong> on all individual reports</li>
+            <li><i class="fa-solid fa-check"></i> <strong>Private Online Report Reader</strong> with Watermark</li>
+          </ul>
+          <button class="btn-gold-primary" id="btn-upgrade-premium" style="width: 100%; justify-content: center; min-height: 42px; background: linear-gradient(135deg, #D97706, #78350F);" onclick="executeSubscriptionCheckout('PREMIUM')">
+            <i class="fa-solid fa-crown"></i> Upgrade to Premium
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: REPORT STUDIO & STORE ==================== -->
+  <div id="modal-report-store" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10620;">
+    <div class="modal-dialog-card" style="max-width: 980px; width: 94%; max-height: 90vh; overflow-y: auto; padding: 26px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px;">
+        <div>
+          <div style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px; display: inline-block;">DIGITAL ASTROLOGICAL PUBLICATIONS</div>
+          <h2 style="font-size: 22px; font-weight: 800; color: #1E1B4B; margin: 6px 0 2px;">AstroVerse Report Studio</h2>
+          <p style="font-size: 13px; color: #64748B; margin: 0;">Comprehensive, calculation-grounded personalized publications. Viewable securely inside our private online reader.</p>
+        </div>
+        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 20px; color: #64748B; padding: 4px;" onclick="closeReportStoreModal()"></i>
+      </div>
+
+      <!-- Member Discount Banner -->
+      <div id="report-store-member-banner" style="background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 10px; padding: 10px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; font-size: 12.5px;">
+        <div style="color: #92400E;">
+          <i class="fa-solid fa-tag"></i> <strong id="report-store-discount-label">Member Benefits Active:</strong>
+          <span id="report-store-discount-sub">Plus members enjoy 10% off; Premium members enjoy 20% off all individual publications.</span>
+        </div>
+        <button class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="openPricingPlansModal()">View Tiers</button>
+      </div>
+
+      <!-- Filter Pills -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px;">
+        <button class="nav-pill active" id="store-filter-all" onclick="filterReportCatalogue('ALL')">All Reports (9)</button>
+        <button class="nav-pill" id="store-filter-kundli" onclick="filterReportCatalogue('KUNDLI')">Life &amp; Natal Charts</button>
+        <button class="nav-pill" id="store-filter-timing" onclick="filterReportCatalogue('TIMING')">Forecasts &amp; Transits</button>
+        <button class="nav-pill" id="store-filter-relationship" onclick="filterReportCatalogue('RELATIONSHIP')">Compatibility &amp; Synastry</button>
+      </div>
+
+      <!-- Cards Grid -->
+      <div class="report-store-grid" id="report-catalogue-container">
+        <!-- Rendered dynamically by renderReportCatalogueCards() -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: 5-STEP REPORT CUSTOMIZER ==================== -->
+  <div id="modal-report-builder" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10640;">
+    <div class="modal-dialog-card" style="max-width: 600px; width: 92%; max-height: 90vh; overflow-y: auto; padding: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+        <div>
+          <span class="report-cat-tag" id="builder-cat-badge">PERSONALIZED PUBLICATION</span>
+          <h3 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;" id="builder-product-title">Customize Report</h3>
+        </div>
+        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px; color: #64748B;" onclick="closeReportBuilderModal()"></i>
+      </div>
+
+      <!-- Step Indicator -->
+      <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 11.5px; font-weight: 700; color: #64748B; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">
+        <span id="step-lbl-1" style="color: #D97706;">1. Select Profile</span>
+        <span id="step-lbl-2">2. Scope &amp; Focus</span>
+        <span id="step-lbl-3">3. Review &amp; Generate</span>
+      </div>
+
+      <!-- Step 1: Profile Selection -->
+      <div class="form-field-group">
+        <label class="form-field-label">Subject Birth Profile</label>
+        <select id="builder-profile-select" class="form-input-text" onchange="updateBuilderPriceEstimate()">
+          <!-- Populated dynamically with user's birth profiles -->
+        </select>
+        <span style="font-size: 11px; color: #64748B; margin-top: 4px; display: block;">Natal coordinates and Swiss Ephemeris longitudes will be compiled for this profile.</span>
+      </div>
+
+      <!-- Partner Profile for Kundli Milan -->
+      <div class="form-field-group" id="builder-partner-group" style="display: none;">
+        <label class="form-field-label">Partner Birth Profile (Matchmaking)</label>
+        <select id="builder-partner-select" class="form-input-text">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <!-- Step 2: Focus and Scope Options -->
+      <div class="form-field-group">
+        <label class="form-field-label">Primary Life Horizon Focus</label>
+        <select id="builder-focus-select" class="form-input-text">
+          <option value="holistic">Holistic Karmic Trajectory (General Synthesis)</option>
+          <option value="career_and_dharma">Career, Executive Authority &amp; Dhana Yogas</option>
+          <option value="marriage_and_intimacy">Matrimonial Covenants &amp; Emotional Harmony</option>
+          <option value="spiritual_and_remedial">Vedic Remedial Protocol &amp; Contemplation</option>
+        </select>
+      </div>
+
+      <div class="form-field-group">
+        <label class="form-field-label">Report Technical Depth &amp; Language</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <select id="builder-depth-select" class="form-input-text">
+            <option value="standard">Standard Parashari</option>
+            <option value="advanced">Advanced Shodashavarga (D1–D60)</option>
+          </select>
+          <select id="builder-lang-select" class="form-input-text">
+            <option value="en">English (Classical Terms)</option>
+            <option value="hi">Hindi (पारंपरिक वैदिक)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 3: Pricing & Payment Method -->
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px; margin-bottom: 18px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #64748B;">Catalogue Price:</span>
+          <strong id="builder-disp-base-price">₹199.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;" id="builder-row-discount">
+          <span style="color: #059669;" id="builder-discount-label">Member Tier Discount:</span>
+          <strong style="color: #059669;" id="builder-disp-discount">-₹0.00</strong>
+        </div>
+        <div style="border-top: 1px dashed #CBD5E1; margin: 8px 0;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 8px;">
+          <span style="font-weight: 700; color: #1E293B;">Payable Total:</span>
+          <strong style="color: #881337; font-size: 18px;" id="builder-disp-final-price">₹199.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748B;">
+          <span>Available Wallet Balance:</span>
+          <span id="builder-disp-wallet-bal">₹0.00</span>
+        </div>
+      </div>
+
+      <!-- Payment Method Selection -->
+      <div class="form-field-group" id="builder-payment-method-group">
+        <label class="form-field-label">Payment Method</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12.5px; background: #FFFFFF;">
+            <input type="radio" name="builder_pay_method" value="WALLET" checked onchange="updateBuilderPaymentUI()">
+            <span><strong>Deduct Wallet</strong></span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12.5px; background: #FFFFFF;">
+            <input type="radio" name="builder_pay_method" value="RAZORPAY" onchange="updateBuilderPaymentUI()">
+            <span><strong>UPI / NetBanking</strong></span>
+          </label>
+        </div>
+      </div>
+
+      <button class="btn-gold-primary" id="btn-builder-generate" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px; font-weight: 700;" onclick="executeGenerateReport()">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate &amp; Open in Private Reader
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: PRIVATE ONLINE-ONLY REPORT READER ==================== -->
+  <div id="modal-report-reader" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10700;">
+    <div class="reader-modal-dialog">
+      <!-- Reader Header Bar -->
+      <div class="reader-header-bar">
+        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+          <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); border: 1px solid #F59E0B; display: flex; align-items: center; justify-content: center; color: #F59E0B; font-size: 18px; flex-shrink: 0;">
+            <i class="fa-solid fa-scroll"></i>
+          </div>
+          <div style="min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h3 id="reader-doc-title" style="font-size: 16px; font-weight: 800; color: #F8FAFC; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                Complete Janam Kundli Deep Dive
+              </h3>
+              <span style="font-size: 10px; background: #059669; color: #FFFFFF; padding: 2px 6px; border-radius: 4px; font-weight: 700;">VERIFIED</span>
+            </div>
+            <div id="reader-doc-subtitle" style="font-size: 11px; color: #CBD5E1; margin-top: 1px;">
+              Native: Anand Sharma • Nirayana Lahiri Ayanamsha (Chitra Paksha) • Swiss Ephemeris
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button class="btn-outline-secondary" style="color: #F8FAFC; border-color: rgba(255,255,255,0.2); padding: 5px 12px; font-size: 12px;" onclick="closeReportReaderModal()">
+            <i class="fa-solid fa-xmark"></i> Close Reader
+          </button>
+        </div>
+      </div>
+
+      <!-- Watermark Security Warning Strip -->
+      <div class="reader-watermark-strip">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-lock" style="color: #F59E0B;"></i>
+          <span id="reader-watermark-text">Confidential Publication • Licensed Exclusively to Native</span>
+        </div>
+        <span style="font-size: 10.5px; color: #64748B;">Private Online Reader • Web DRM Enabled (Optical screen capture cannot be prevented)</span>
+      </div>
+
+      <!-- Body Layout: Table of Contents Drawer + Prose Body -->
+      <div class="reader-body-layout">
+        <!-- Sticky TOC Drawer -->
+        <div class="reader-toc-drawer">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748B; letter-spacing: 0.5px; margin-bottom: 12px; padding: 0 6px;">
+            TABLE OF CONTENTS
+          </div>
+          <div id="reader-toc-list">
+            <!-- Populated dynamically with chapter buttons -->
+          </div>
+        </div>
+
+        <!-- Scrollable Document Content -->
+        <div class="reader-content-scroll" id="reader-content-scroll-container">
+          <div class="reader-watermark-overlay"></div>
+          <div class="reader-content-prose" id="reader-prose-container">
+            <!-- Populated dynamically with full report chapters -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== MODAL: INTERACTIVE AI ASTROLOGER CONSULTATION ROOM ==================== -->
   <div id="modal-ai-consultation" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10500;" onclick="handleConsultationBackdropClick(event)">
     <div class="modal-dialog-card" style="max-width: 820px; width: 95%; height: 86vh; max-height: 850px; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 18px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1);">
@@ -7297,10 +7910,17 @@
 
         // Populate settings
         loadSettingsViewData();
+
+        // Refresh user tier entitlements
+        if (typeof fetchUserEntitlements === 'function') {
+          fetchUserEntitlements();
+        }
       } else {
         authBtnText.textContent = "Sign In";
         if (unauthBox) unauthBox.style.display = 'block';
         if (authBox) authBox.style.display = 'none';
+        const tierBadge = document.getElementById('global-tier-name');
+        if (tierBadge) tierBadge.textContent = 'Essentials';
       }
     }
 
@@ -8984,6 +9604,63 @@
       playChatSound('send');
       scrollChatToBottom(true);
 
+      // Quota Enforcement: Check daily limit before consulting engine
+      const sessionTok = currentSessionToken || localStorage.getItem('astro_session_token');
+      if (sessionTok) {
+        try {
+          const quotaCheckRes = await fetch(`${getAuthBase()}/api/ai-astrologer/consume-quota`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          if (quotaCheckRes.status === 429) {
+            const qData = await quotaCheckRes.json();
+            const limitMsg = {
+              id: 'msg_quota_' + Date.now(),
+              role: 'assistant',
+              content: `⚠️ **Daily Consultation Limit Reached**\n\nYou have used all **${qData.allowedLimit || qData.dailyLimit || 3} questions** for today on your **${qData.tier || 'Essentials'}** plan.\n\n*Quotas reset at 00:00 UTC daily.*\n\n👉 [**Upgrade Your Plan**](javascript:openPricingPlansModal()) for 15 (Plus) or 30 (Premium) daily questions and deeper astrological analysis.`,
+              timestamp: new Date().toISOString(),
+              status: 'completed',
+              personaId: activeConsultationSession.personaId
+            };
+            activeConsultationSession.messages.push(limitMsg);
+            savePersonaChatHistory(activeConsultationSession.personaId, activeConsultationSession.messages);
+            renderMessageBubble(limitMsg);
+            playChatSound('receive');
+            scrollChatToBottom(true);
+            return;
+          }
+        } catch (e) {
+          console.warn('[QUOTA] Quota verification fallback:', e);
+        }
+      } else {
+        // Guest mode daily limit (3 questions/day)
+        const todayStr = new Date().toISOString().split('T')[0];
+        let guestData = { date: todayStr, count: 0 };
+        try {
+          const stored = JSON.parse(localStorage.getItem('astro_guest_ai_quota') || '{}');
+          if (stored.date === todayStr) guestData = stored;
+        } catch (e) {}
+
+        if (guestData.count >= 3) {
+          const guestLimitMsg = {
+            id: 'msg_guest_quota_' + Date.now(),
+            role: 'assistant',
+            content: `⚠️ **Guest Daily Consultation Limit (3 Questions) Reached**\n\nYou have used your 3 free guest questions for today.\n\n👉 [**Sign In / Create Account**](javascript:openAuthModal('otp')) to save your charts, or [**View Subscription Plans**](javascript:openPricingPlansModal()) for 15 to 30 daily questions.`,
+            timestamp: new Date().toISOString(),
+            status: 'completed',
+            personaId: activeConsultationSession.personaId
+          };
+          activeConsultationSession.messages.push(guestLimitMsg);
+          savePersonaChatHistory(activeConsultationSession.personaId, activeConsultationSession.messages);
+          renderMessageBubble(guestLimitMsg);
+          playChatSound('receive');
+          scrollChatToBottom(true);
+          return;
+        }
+        guestData.count += 1;
+        localStorage.setItem('astro_guest_ai_quota', JSON.stringify(guestData));
+      }
+
       // 2. Typing indicator with context
       const typingEl = document.getElementById('ai-chat-typing-indicator');
       const typingName = document.getElementById('ai-chat-typing-name');
@@ -10276,6 +10953,707 @@
         showToast("Network error communicating with wallet service.", "error");
       }
     }
+
+    // ==================== MONETIZATION, SUBSCRIPTIONS & REPORT STUDIO CONTROLLER ====================
+
+    let currentUserEntitlements = null;
+    let currentBillingCycle = 'monthly';
+    let currentStoreCatalogue = [];
+    let activeBuilderProduct = null;
+    let activeReaderDoc = null;
+
+    async function fetchUserEntitlements() {
+      const token = currentSessionToken || localStorage.getItem('astro_session_token');
+      if (!token) {
+        currentUserEntitlements = null;
+        const tierBadge = document.getElementById('global-tier-name');
+        if (tierBadge) tierBadge.textContent = 'Essentials';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/entitlements/me`, {
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          currentUserEntitlements = await res.json();
+          const tierBadge = document.getElementById('global-tier-name');
+          if (tierBadge && currentUserEntitlements.tierDisplayName) {
+            tierBadge.textContent = currentUserEntitlements.tierDisplayName.replace('AstroVerse ', '');
+          }
+          const pill = document.getElementById('plans-current-tier-pill');
+          if (pill) {
+            pill.textContent = `Current: ${currentUserEntitlements.tierDisplayName}`;
+          }
+          const discountLabel = document.getElementById('report-store-discount-label');
+          if (discountLabel) {
+            if (currentUserEntitlements.reportDiscountPercent > 0) {
+              discountLabel.textContent = `🎉 Active Member Discount: ${currentUserEntitlements.reportDiscountPercent}% OFF Applied!`;
+            } else {
+              discountLabel.textContent = `Member Benefits Active:`;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[ENTITLEMENTS] Failed to fetch entitlements:', err);
+      }
+    }
+
+    function openPricingPlansModal(preselectedTier) {
+      const modal = document.getElementById('modal-pricing-plans');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      setBillingCycle(currentBillingCycle);
+      if (currentUserEntitlements) {
+        const tier = currentUserEntitlements.tier;
+        const plusBtn = document.getElementById('btn-upgrade-plus');
+        const premBtn = document.getElementById('btn-upgrade-premium');
+        if (tier === 'PLUS' && plusBtn) {
+          plusBtn.innerHTML = '<i class="fa-solid fa-check"></i> Current Active Plan';
+          plusBtn.disabled = true;
+          plusBtn.classList.replace('btn-gold-primary', 'btn-outline-secondary');
+        } else if (tier === 'PREMIUM') {
+          if (plusBtn) {
+            plusBtn.innerHTML = 'Included in Premium';
+            plusBtn.disabled = true;
+          }
+          if (premBtn) {
+            premBtn.innerHTML = '<i class="fa-solid fa-check"></i> Current Active Plan';
+            premBtn.disabled = true;
+            premBtn.classList.replace('btn-gold-primary', 'btn-outline-secondary');
+          }
+        }
+      }
+    }
+
+    function closePricingPlansModal() {
+      const modal = document.getElementById('modal-pricing-plans');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function setBillingCycle(cycle) {
+      currentBillingCycle = cycle;
+      const btnM = document.getElementById('btn-billing-monthly');
+      const btnA = document.getElementById('btn-billing-annual');
+      const plusPrice = document.getElementById('plus-price-display');
+      const plusSub = document.getElementById('plus-annual-subtext');
+      const premPrice = document.getElementById('premium-price-display');
+      const premSub = document.getElementById('premium-annual-subtext');
+
+      if (cycle === 'annual') {
+        if (btnM) btnM.classList.remove('active');
+        if (btnA) btnA.classList.add('active');
+        if (plusPrice) plusPrice.textContent = '₹1,299';
+        if (plusSub) plusSub.style.display = 'block';
+        if (premPrice) premPrice.textContent = '₹2,499';
+        if (premSub) premSub.style.display = 'block';
+      } else {
+        if (btnM) btnM.classList.add('active');
+        if (btnA) btnA.classList.remove('active');
+        if (plusPrice) plusPrice.textContent = '₹149';
+        if (plusSub) plusSub.style.display = 'none';
+        if (premPrice) premPrice.textContent = '₹299';
+        if (premSub) premSub.style.display = 'none';
+      }
+    }
+
+    async function executeSubscriptionCheckout(tier) {
+      const token = currentSessionToken || localStorage.getItem('astro_session_token');
+      if (!token) {
+        showToast("Please sign in or create an account to activate a subscription.", "info");
+        closePricingPlansModal();
+        openAuthModal('otp');
+        return;
+      }
+
+      try {
+        showToast("Initiating subscription checkout...", "info");
+        const res = await fetch(`${getAuthBase()}/api/subscriptions/create-order`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            tier,
+            billingPeriod: currentBillingCycle
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          showToast(errData.message || "Failed to initiate subscription order.", "error");
+          return;
+        }
+
+        const orderData = await res.json();
+
+        if (typeof Razorpay !== 'undefined') {
+          const rzpOptions = {
+            key: orderData.keyId || "rzp_test_placeholder",
+            amount: orderData.amountPaise || (tier === 'PLUS' ? 14900 : 29900),
+            currency: "INR",
+            name: "AstroVerse Vedic Platform",
+            description: `${tier} Membership (${currentBillingCycle.toUpperCase()})`,
+            order_id: orderData.orderId,
+            handler: async function (response) {
+              await verifySubscriptionPayment(orderData.orderId, response.razorpay_payment_id, response.razorpay_signature, tier);
+            },
+            prefill: {
+              name: currentUserSession?.name || "Astro Seeker",
+              email: currentUserSession?.email || "",
+              contact: currentUserSession?.phone || ""
+            },
+            theme: { color: tier === 'PREMIUM' ? "#78350F" : "#D97706" }
+          };
+          const rzpInstance = new Razorpay(rzpOptions);
+          rzpInstance.open();
+        } else {
+          // Direct fallback for preview environments
+          await verifySubscriptionPayment(orderData.orderId, `pay_sub_${Date.now()}`, "preview_signature_bypass", tier);
+        }
+      } catch (err) {
+        console.error("Subscription checkout error:", err);
+        showToast("Network error during subscription order creation.", "error");
+      }
+    }
+
+    async function verifySubscriptionPayment(orderId, paymentId, signature, tier) {
+      try {
+        const verifyRes = await fetch(`${getAuthBase()}/api/subscriptions/verify-payment`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            orderId,
+            paymentId,
+            signature,
+            tier,
+            billingPeriod: currentBillingCycle
+          })
+        });
+
+        const data = await verifyRes.json();
+        if (verifyRes.ok && data.success) {
+          showToast(`🎉 Subscription Activated! Welcome to AstroVerse ${data.subscriptionTier}!`, "success");
+          closePricingPlansModal();
+          await fetchUserEntitlements();
+          updateUserSessionUI();
+        } else {
+          showToast(data.message || "Subscription payment verification failed.", "error");
+        }
+      } catch (err) {
+        console.error("Payment verification network error:", err);
+        showToast("Network error verifying subscription payment.", "error");
+      }
+    }
+
+    // ==================== REPORT STUDIO & STORE ====================
+
+    async function openReportStoreModal(categoryFilter = 'ALL') {
+      const modal = document.getElementById('modal-report-store');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      if (!currentStoreCatalogue || currentStoreCatalogue.length === 0) {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/reports/catalogue`);
+          if (res.ok) {
+            const data = await res.json();
+            currentStoreCatalogue = data.catalogue || data.products || [];
+          }
+        } catch (e) {
+          console.warn('[REPORTS] Failed to fetch catalogue from API, using defaults:', e);
+        }
+      }
+
+      renderReportCatalogueCards(categoryFilter);
+    }
+
+    function closeReportStoreModal() {
+      const modal = document.getElementById('modal-report-store');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function filterReportCatalogue(cat) {
+      document.querySelectorAll('#modal-report-store .nav-pill').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`store-filter-${cat.toLowerCase()}`);
+      if (activeBtn) activeBtn.classList.add('active');
+      renderReportCatalogueCards(cat);
+    }
+
+    function renderReportCatalogueCards(filter = 'ALL') {
+      const container = document.getElementById('report-catalogue-container');
+      if (!container) return;
+
+      const items = currentStoreCatalogue && currentStoreCatalogue.length > 0 ? currentStoreCatalogue : [
+        {
+          productId: 'report_janam_kundli_deep_dive',
+          displayName: 'Complete Janam Kundli Deep Dive',
+          shortDescription: 'Comprehensive 25+ page life blueprint analyzing Lagna, D1–D60, Ashtakavarga, Shadbala & Dashas.',
+          pricePaise: 19900,
+          includedSections: ['Lagna Bhava', 'Shodashavarga', 'Ashtakavarga Matrix', 'Vimshottari Timeline', 'Remedial Protocol'],
+          category: 'KUNDLI'
+        },
+        {
+          productId: 'report_career_education',
+          displayName: 'Career & Education Report',
+          shortDescription: 'In-depth analysis of 10th House Karma Bhava, D10 Dashamsha, promotion timing & optimal fields.',
+          pricePaise: 14900,
+          includedSections: ['10th House Lordship', 'D10 Dashamsha', 'Dhana Financial Axes', 'Promotion Windows'],
+          category: 'KUNDLI'
+        },
+        {
+          productId: 'report_relationship_marriage',
+          displayName: 'Relationship & Marriage Report',
+          shortDescription: '7th House Kalatra evaluation, D9 Navamsha partner archetypes, Manglik check & marital harmony.',
+          pricePaise: 14900,
+          includedSections: ['7th House Kalatra', 'D9 Partner Nature', 'Manglik Auditing', 'Remedial Guidance'],
+          category: 'RELATIONSHIP'
+        },
+        {
+          productId: 'report_kundli_milan',
+          displayName: 'Detailed Kundli Milan (Matchmaking)',
+          shortDescription: 'Full 36-Guna Ashtakoota synastry matrix with cross-chart D9 Navamsha compatibility.',
+          pricePaise: 14900,
+          includedSections: ['36-Guna Matrix', '8-Kuta Scores', 'Nadi & Bhakoot Check', 'Mutual Synastry'],
+          category: 'RELATIONSHIP'
+        },
+        {
+          productId: 'report_one_month_forecast',
+          displayName: 'One-Month Personalized Forecast',
+          shortDescription: 'High-resolution 30-day forecast integrating active Vimshottari Antardasha and transits.',
+          pricePaise: 4900,
+          includedSections: ['30-Day Operational Map', 'Active Antardasha', 'Auspicious Days', 'Caution Days'],
+          category: 'TIMING'
+        },
+        {
+          productId: 'report_twelve_month_varshphal',
+          displayName: 'Twelve-Month Varshphal & Forecast',
+          shortDescription: 'Comprehensive annual roadmap analyzing all 12 upcoming calendar months individually.',
+          pricePaise: 24900,
+          includedSections: ['12 Distinct Month Chapters', 'Jupiter/Saturn Transits', 'Monthly Favorable Dates', 'Annual Remedies'],
+          category: 'TIMING'
+        },
+        {
+          productId: 'report_three_year_roadmap',
+          displayName: 'Three-Year Personal Roadmap',
+          shortDescription: 'Strategic 36-month macro horizon mapping major Dasha shifts and planetary transitions.',
+          pricePaise: 49900,
+          includedSections: ['3-Year Strategic Horizon', 'Macro Turning Points', 'Sade Sati Transitions', 'Long-term Goals'],
+          category: 'TIMING'
+        },
+        {
+          productId: 'report_bundle_kundli_varshphal',
+          displayName: 'Complete Kundli + 12-Month Forecast Bundle',
+          shortDescription: 'Best-value bundle combining the 25+ page Janam Kundli Deep Dive and 12-Month Annual Varshphal.',
+          pricePaise: 39900,
+          includedSections: ['Full Janam Kundli', '12-Month Varshphal', 'Unified Remedies', 'Digital Reader License'],
+          category: 'KUNDLI'
+        },
+        {
+          productId: 'report_basic_chart_summary',
+          displayName: 'Basic Chart Summary',
+          shortDescription: 'Foundational Ascendant, Moon sign, planetary ephemeris table and basic chart coordinates.',
+          pricePaise: 0,
+          includedSections: ['Nirayana Lagna', 'Planetary Longitudes', 'Panchang Baseline', 'Free Reader Access'],
+          category: 'KUNDLI'
+        }
+      ];
+
+      const discountPercent = currentUserEntitlements?.reportDiscountPercent || 0;
+
+      container.innerHTML = items.map(item => {
+        const itemCat = item.category || (item.productId.includes('milan') || item.productId.includes('relation') ? 'RELATIONSHIP' : (item.productId.includes('forecast') || item.productId.includes('month') || item.productId.includes('year') ? 'TIMING' : 'KUNDLI'));
+        if (filter !== 'ALL' && itemCat !== filter) return '';
+
+        const baseRupees = Math.round(item.pricePaise / 100);
+        let priceHtml = '';
+        if (item.pricePaise === 0) {
+          priceHtml = '<strong style="color: #059669; font-size: 18px;">FREE</strong>';
+        } else if (discountPercent > 0) {
+          const finalPaise = item.pricePaise - Math.round((item.pricePaise * discountPercent) / 100);
+          const finalRupees = (finalPaise / 100).toFixed(2);
+          priceHtml = `
+            <div>
+              <s style="color: #94A3B8; font-size: 13px;">₹${baseRupees}</s>
+              <strong style="color: #881337; font-size: 19px; margin-left: 6px;">₹${finalRupees}</strong>
+              <span style="background: #D1FAE5; color: #065F46; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">${discountPercent}% OFF</span>
+            </div>
+          `;
+        } else {
+          priceHtml = `<strong style="color: #881337; font-size: 19px;">₹${baseRupees}.00</strong>`;
+        }
+
+        const chaptersHtml = (item.includedSections || []).slice(0, 3).map(s =>
+          `<li style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#475569;"><i class="fa-solid fa-check" style="color:#059669; font-size:11px;"></i> ${s.replace(/_/g, ' ')}</li>`
+        ).join('');
+
+        return `
+          <div class="report-product-card">
+            <span class="report-cat-tag">${itemCat}</span>
+            <h4 style="font-size: 15.5px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">${item.displayName}</h4>
+            <p style="font-size: 12px; color: #64748B; line-height: 1.4; margin-bottom: 12px; min-height: 34px;">${item.shortDescription}</p>
+            <ul style="list-style: none; padding: 0; margin: 0 0 16px 0; display: flex; flex-direction: column; gap: 4px;">
+              ${chaptersHtml}
+            </ul>
+            <div style="margin-top: auto; padding-top: 12px; border-top: 1px dashed #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
+              ${priceHtml}
+              <button class="btn-gold-primary" style="padding: 7px 14px; font-size: 12px;" onclick="openReportBuilderModal('${item.productId}')">
+                <i class="fa-solid fa-sliders"></i> Customize
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== 5-STEP REPORT CUSTOMIZER ====================
+
+    function openReportBuilderModal(productId) {
+      activeBuilderProduct = (currentStoreCatalogue || []).find(p => p.productId === productId) || {
+        productId: productId,
+        displayName: productId.replace(/_/g, ' ').toUpperCase(),
+        pricePaise: productId === 'report_basic_chart_summary' ? 0 : 14900
+      };
+
+      const modal = document.getElementById('modal-report-builder');
+      if (!modal) return;
+
+      document.getElementById('builder-product-title').textContent = activeBuilderProduct.displayName;
+      const partnerGroup = document.getElementById('builder-partner-group');
+      if (partnerGroup) {
+        partnerGroup.style.display = (productId === 'report_kundli_milan' || productId.includes('matchmaking')) ? 'block' : 'none';
+      }
+
+      // Populate Profiles
+      const sel = document.getElementById('builder-profile-select');
+      const partnerSel = document.getElementById('builder-partner-select');
+      if (sel) {
+        sel.innerHTML = '';
+        if (currentCalculatedChart && currentCalculatedChart.name) {
+          sel.innerHTML += `<option value="current_chart" selected>${currentCalculatedChart.name} (Active Chart: ${currentCalculatedChart.dob})</option>`;
+        }
+        if (typeof currentUserProfiles !== 'undefined' && Array.isArray(currentUserProfiles)) {
+          currentUserProfiles.forEach(p => {
+            sel.innerHTML += `<option value="${p.id}">${p.profileName} (${p.dateOfBirth ? p.dateOfBirth.split('T')[0] : ''})</option>`;
+          });
+        }
+        if (sel.options.length === 0) {
+          sel.innerHTML = '<option value="default">Default Seeker Chart</option>';
+        }
+      }
+
+      if (partnerSel && typeof currentUserProfiles !== 'undefined' && Array.isArray(currentUserProfiles)) {
+        partnerSel.innerHTML = currentUserProfiles.map(p =>
+          `<option value="${p.id}">${p.profileName} (${p.relationship || 'Partner'})</option>`
+        ).join('');
+        if (partnerSel.options.length === 0) {
+          partnerSel.innerHTML = '<option value="default_partner">Partner Profile</option>';
+        }
+      }
+
+      updateBuilderPriceEstimate();
+      modal.style.display = 'flex';
+    }
+
+    function closeReportBuilderModal() {
+      const modal = document.getElementById('modal-report-builder');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function updateBuilderPriceEstimate() {
+      if (!activeBuilderProduct) return;
+      const basePaise = activeBuilderProduct.pricePaise || 0;
+      const baseRupees = (basePaise / 100).toFixed(2);
+      const discountPercent = currentUserEntitlements?.reportDiscountPercent || 0;
+      const discountPaise = Math.round((basePaise * discountPercent) / 100);
+      const finalPaise = basePaise - discountPaise;
+      const finalRupees = (finalPaise / 100).toFixed(2);
+
+      const baseEl = document.getElementById('builder-disp-base-price');
+      const discRow = document.getElementById('builder-row-discount');
+      const discEl = document.getElementById('builder-disp-discount');
+      const finalEl = document.getElementById('builder-disp-final-price');
+      const walEl = document.getElementById('builder-disp-wallet-bal');
+
+      if (baseEl) baseEl.textContent = `₹${baseRupees}`;
+      if (discRow) discRow.style.display = discountPercent > 0 ? 'flex' : 'none';
+      if (discEl) discEl.textContent = `-₹${(discountPaise / 100).toFixed(2)} (${discountPercent}%)`;
+      if (finalEl) finalEl.textContent = `₹${finalRupees}`;
+      if (walEl) walEl.textContent = `₹${currentWalletBalance.toFixed(2)}`;
+
+      const payBtn = document.getElementById('btn-builder-generate');
+      if (payBtn) {
+        if (finalPaise === 0) {
+          payBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Free Summary Publication';
+        } else {
+          payBtn.innerHTML = `<i class="fa-solid fa-lock"></i> Pay ₹${finalRupees} &amp; Generate Publication`;
+        }
+      }
+    }
+
+    function updateBuilderPaymentUI() {
+      // Handles payment toggle radio buttons
+    }
+
+    async function executeGenerateReport() {
+      const token = currentSessionToken || localStorage.getItem('astro_session_token');
+      if (!token) {
+        showToast("Please sign in to order personalized reports.", "info");
+        closeReportBuilderModal();
+        openAuthModal('otp');
+        return;
+      }
+
+      if (!activeBuilderProduct) return;
+
+      const profileSel = document.getElementById('builder-profile-select');
+      const profileId = profileSel?.value || 'default';
+      const partnerId = document.getElementById('builder-partner-select')?.value || null;
+      const focus = document.getElementById('builder-focus-select')?.value || 'holistic';
+      const depth = document.getElementById('builder-depth-select')?.value || 'advanced';
+      const lang = document.getElementById('builder-lang-select')?.value || 'en';
+
+      const payRadios = document.getElementsByName('builder_pay_method');
+      let method = 'WALLET';
+      for (const r of payRadios) {
+        if (r.checked) method = r.value;
+      }
+
+      const discountPercent = currentUserEntitlements?.reportDiscountPercent || 0;
+      const basePaise = activeBuilderProduct.pricePaise || 0;
+      const finalPaise = basePaise - Math.round((basePaise * discountPercent) / 100);
+      const finalRupees = finalPaise / 100;
+
+      if (method === 'WALLET' && finalRupees > currentWalletBalance && finalPaise > 0) {
+        showToast(`Insufficient wallet balance (₹${currentWalletBalance.toFixed(2)}). Need ₹${finalRupees.toFixed(2)}.`, "error");
+        openWalletModal();
+        return;
+      }
+
+      try {
+        showToast("Generating personalized astrological publication...", "info");
+
+        // If paying via wallet or free report:
+        const orderRes = await fetch(`${getAuthBase()}/api/reports/order`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            productId: activeBuilderProduct.productId,
+            profileId: (profileId === 'current_chart' && typeof currentUserProfiles !== 'undefined' && currentUserProfiles[0]) ? currentUserProfiles[0].id : profileId,
+            partnerProfileId: partnerId,
+            paymentMethod: method,
+            options: {
+              focusArea: focus,
+              technicalDepth: depth,
+              language: lang
+            }
+          })
+        });
+
+        const orderData = await orderRes.json();
+
+        if (orderRes.ok && orderData.document) {
+          if (orderData.paidVia === 'WALLET') {
+            currentWalletBalance = Math.max(0, currentWalletBalance - finalRupees);
+            localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+            updateUserSessionUI();
+          }
+          closeReportBuilderModal();
+          closeReportStoreModal();
+          showToast("🎉 Report compiled successfully! Opening private reader...", "success");
+          openReportReaderModal(orderData.document);
+        } else if (orderRes.ok && orderData.orderId && method === 'RAZORPAY') {
+          // Razorpay gateway flow
+          if (typeof Razorpay !== 'undefined') {
+            const rzpOptions = {
+              key: orderData.keyId || "rzp_test_placeholder",
+              amount: orderData.amountPaise || finalPaise,
+              currency: "INR",
+              name: "AstroVerse Report Studio",
+              description: activeBuilderProduct.displayName,
+              order_id: orderData.orderId,
+              handler: async function (response) {
+                await verifyReportPayment(orderData.orderId, response.razorpay_payment_id, response.razorpay_signature);
+              },
+              prefill: {
+                name: currentUserSession?.name || "Astro Seeker",
+                email: currentUserSession?.email || "",
+                contact: currentUserSession?.phone || ""
+              },
+              theme: { color: "#881337" }
+            };
+            const rzpInstance = new Razorpay(rzpOptions);
+            rzpInstance.open();
+          } else {
+            // Direct preview bypass
+            await verifyReportPayment(orderData.orderId, `pay_rep_${Date.now()}`, "sig_preview_bypass");
+          }
+        } else {
+          showToast(orderData.message || "Report generation failed. Please verify your chart details.", "error");
+        }
+      } catch (err) {
+        console.error("Report order error:", err);
+        showToast("Network error generating publication.", "error");
+      }
+    }
+
+    async function verifyReportPayment(orderId, paymentId, signature) {
+      try {
+        const verifyRes = await fetch(`${getAuthBase()}/api/reports/verify-and-generate`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            orderId,
+            paymentId,
+            signature,
+            productId: activeBuilderProduct.productId,
+            profileId: document.getElementById('builder-profile-select')?.value || 'default',
+            partnerProfileId: document.getElementById('builder-partner-select')?.value || null,
+            options: {
+              technicalDepth: document.getElementById('builder-depth-select')?.value || 'advanced',
+              language: document.getElementById('builder-lang-select')?.value || 'en'
+            }
+          })
+        });
+
+        const data = await verifyRes.json();
+        if (verifyRes.ok && data.document) {
+          closeReportBuilderModal();
+          closeReportStoreModal();
+          showToast("🎉 Payment verified and publication compiled! Opening reader...", "success");
+          openReportReaderModal(data.document);
+        } else {
+          showToast(data.message || "Payment verification failed.", "error");
+        }
+      } catch (err) {
+        console.error("Payment verification network error:", err);
+        showToast("Network error verifying report payment.", "error");
+      }
+    }
+
+    // ==================== PRIVATE ONLINE-ONLY REPORT READER ====================
+
+    function openReportReaderModal(doc) {
+      if (!doc) return;
+      activeReaderDoc = doc;
+
+      const modal = document.getElementById('modal-report-reader');
+      if (!modal) return;
+
+      document.getElementById('reader-doc-title').textContent = doc.productName || 'Personalized Astrological Publication';
+      document.getElementById('reader-doc-subtitle').textContent = `Native: ${doc.profileName} • Ayanamsha: ${doc.calculationSettings?.ayanamsha || 'Lahiri (Chitra Paksha)'} • Engine: Swiss Ephemeris`;
+      document.getElementById('reader-watermark-text').textContent = `Confidential Publication • Licensed exclusively to ${doc.watermark?.ownerName || 'Native'} (${doc.watermark?.accountHash || 'AV-USER'}) • Online Reading Mode`;
+
+      // Render Table of Contents
+      const tocList = document.getElementById('reader-toc-list');
+      if (tocList) {
+        const chapters = doc.tableOfContents || (doc.sections || []).map((s, idx) => ({
+          sectionId: s.sectionId,
+          title: s.title,
+          chapterNumber: s.chapterNumber || idx + 1
+        }));
+
+        tocList.innerHTML = chapters.map((ch, idx) => `
+          <div class="reader-toc-item ${idx === 0 ? 'active' : ''}" onclick="navigateReaderChapter('${ch.sectionId}')">
+            <i class="fa-solid fa-chevron-right" style="font-size: 10px;"></i>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ch.title}</span>
+          </div>
+        `).join('');
+      }
+
+      // Render Prose Content
+      const proseContainer = document.getElementById('reader-prose-container');
+      if (proseContainer) {
+        let contentHtml = '';
+
+        // Executive Provenance Banner
+        contentHtml += `
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; font-size: 12.5px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-certificate"></i> ASTROLOGICAL PROVENANCE &amp; CALCULATION FOUNDATIONS
+            </div>
+            <div style="color: #CBD5E1; line-height: 1.5;">
+              Calculated using high-precision planetary ephemerides (Swiss Ephemeris 2.10.03). Tropical-to-Sidereal conversion executed under Nirayana Chitra Paksha (Lahiri) Ayanamsha at exact geo-coordinates: Lat ${doc.birthCoordinates?.lat || '28.61'}, Lon ${doc.birthCoordinates?.lon || '77.20'} (${doc.birthCoordinates?.timezone || 'Asia/Kolkata'}).
+            </div>
+          </div>
+        `;
+
+        // Render each chapter
+        (doc.sections || []).forEach(sec => {
+          contentHtml += `
+            <div class="reader-chapter-card" id="${sec.sectionId}">
+              <div class="reader-chapter-title">
+                <i class="fa-solid ${sec.icon || 'fa-scroll'}" style="color: #F59E0B;"></i>
+                <span>${sec.title}</span>
+              </div>
+              <div class="reader-chapter-sub">${sec.subtitle || ''}</div>
+              <div style="line-height: 1.7; color: #CBD5E1;">
+                ${renderSafeMarkdown(sec.contentMarkdown || '')}
+              </div>
+            </div>
+          `;
+        });
+
+        // If 12-Month Varshphal, render Month Cards Grid
+        if (doc.monthlyForecasts && doc.monthlyForecasts.length > 0) {
+          contentHtml += `
+            <div class="reader-chapter-card" id="sec_monthly_grid">
+              <div class="reader-chapter-title">
+                <i class="fa-solid fa-calendar-days" style="color: #F59E0B;"></i>
+                <span>Twelve-Month Granular Forecast Matrix</span>
+              </div>
+              <div class="reader-chapter-sub">Month-by-month timing arcs and planetary transit alignments</div>
+              <div style="display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 16px;">
+          `;
+
+          doc.monthlyForecasts.forEach(m => {
+            contentHtml += `
+              <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <strong style="color: #F8FAFC; font-size: 15px;">${m.monthName}</strong>
+                  <span style="font-size: 11px; color: #F59E0B; background: rgba(245, 158, 11, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
+                    ${m.activeDasha?.maha || 'Major'} / ${m.activeDasha?.antar || 'Sub'} Dasha
+                  </span>
+                </div>
+                <div style="font-size: 12px; color: #94A3B8; margin-bottom: 8px;"><strong>Transit Highlight:</strong> ${m.transitHighlights}</div>
+                <div style="font-size: 12.5px; color: #CBD5E1; margin-bottom: 6px;"><strong>Career &amp; Purpose:</strong> ${m.careerGuidance}</div>
+                <div style="font-size: 12.5px; color: #CBD5E1; margin-bottom: 10px;"><strong>Emotional Harmony:</strong> ${m.relationshipGuidance}</div>
+                <div style="display: flex; justify-content: space-between; font-size: 11.5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+                  <span style="color: #10B981;"><strong>Auspicious Days:</strong> ${(m.favorableDates || []).join(', ')}</span>
+                  <span style="color: #F87171;"><strong>Caution Days:</strong> ${(m.cautionDates || []).join(', ')}</span>
+                </div>
+              </div>
+            `;
+          });
+
+          contentHtml += `</div></div>`;
+        }
+
+        // Ethical Disclaimer
+        contentHtml += `
+          <div style="margin-top: 32px; padding: 18px; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 11.5px; color: #64748B; text-align: center; line-height: 1.6;">
+            <strong>Classical Vedic Philosophical Notice:</strong><br>
+            ${doc.ethicalNotice || 'Astrological interpretations represent traditional symbolic wisdom and contemplative self-reflection based on classical Parashari principles. They do not constitute deterministic life predictions or medical, legal, or financial guarantees.'}
+          </div>
+        `;
+
+        proseContainer.innerHTML = contentHtml;
+      }
+
+      modal.style.display = 'flex';
+    }
+
+    function closeReportReaderModal() {
+      const modal = document.getElementById('modal-report-reader');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function navigateReaderChapter(sectionId) {
+      document.querySelectorAll('.reader-toc-item').forEach(el => el.classList.remove('active'));
+      const target = document.getElementById(sectionId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
 
     function selectGuidanceHorizon(horizon) {
       currentGuidanceHorizon = horizon;
