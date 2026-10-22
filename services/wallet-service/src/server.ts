@@ -100,6 +100,18 @@ function checkIpRateLimit(ip: string): boolean {
   return true;
 }
 
+// ==================== ERROR HANDLING HELPER ====================
+
+function handleServiceError(res: Response, err: any, defaultMsg = 'Internal Server Error') {
+  if (err?.message && err.message.includes('DURABLE_STORAGE_REQUIRED')) {
+    return res.status(503).json({
+      error: 'DATABASE_CONFIGURATION_REQUIRED',
+      message: 'Production deployment requires a connected PostgreSQL database (DATABASE_URL). Ephemeral storage fallback is strictly disabled.'
+    });
+  }
+  return res.status(500).json({ error: err?.message || defaultMsg });
+}
+
 // ==================== AUTHENTICATION MIDDLEWARE ====================
 
 export interface AuthenticatedRequest extends Request {
@@ -507,7 +519,7 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
       user: sanitizeUser(user)
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    return handleServiceError(res, err);
   }
 });
 
@@ -1189,7 +1201,7 @@ app.post('/api/wallet/create-order', authenticate, async (req: AuthenticatedRequ
       status: 'CREATED'
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to create payment order' });
+    return handleServiceError(res, error, 'Failed to create payment order');
   }
 });
 
@@ -1343,7 +1355,7 @@ app.post('/api/wallet/verify-payment', authenticate, async (req: AuthenticatedRe
       paymentId: trimmedPaymentId
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Payment verification failed' });
+    return handleServiceError(res, error, 'Payment verification failed');
   }
 });
 
@@ -1460,7 +1472,7 @@ app.post('/api/wallet/settle-consultation', authenticate, async (req: Authentica
         requiredAmount: deductionAmount
       });
     }
-    res.status(500).json({ error: error.message || 'Settlement failed' });
+    return handleServiceError(res, error, 'Settlement failed');
   }
 });
 
@@ -1506,7 +1518,7 @@ app.post('/api/wallet/unlock-report', authenticate, async (req: AuthenticatedReq
         currentBalance: user ? user.walletBalance : 0
       });
     }
-    return res.status(500).json({ error: error.message || 'Report unlock failed' });
+    return handleServiceError(res, error, 'Report unlock failed');
   }
 });
 
