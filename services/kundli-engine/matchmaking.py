@@ -734,6 +734,7 @@ def calculate_full_kundli_milan(boy_profile: Dict[str, Any], girl_profile: Dict[
         "verdict": verdict,
         "recommendation": recommendation,
         "ashtakoota_breakdown": kootas_breakdown,
+        "breakdown": kootas_breakdown,
         "supplementary_compatibility_report": {
             "seventh_house_analysis": seventh_house_summary,
             "navamsha_d9_analysis": navamsha_summary,

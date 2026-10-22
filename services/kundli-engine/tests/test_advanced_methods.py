@@ -272,3 +272,26 @@ def test_nine_section_structured_prediction_report():
         assert "supportive_developments" in sections
         assert "relevant_time_windows" in sections
         assert "why_this_applies" in sections
+
+def test_unpersonalized_general_transit_prediction():
+    """Verify that unpersonalized prediction baseline contains no fabricated Lagna, Moon, or Nakshatra."""
+    for horizon in ["hourly", "daily", "weekly", "monthly", "yearly", "mahadasha"]:
+        report = generate_structured_prediction(
+            horizon,
+            "2026-10-21",
+            kundli=None,
+            dasha=None,
+            doshas=None,
+            active_hora_planet="Mars",
+            hora_window="10:00 AM – 11:00 AM"
+        )
+        assert report["time_horizon"] == horizon
+        assert report["profile"]["is_guest"] is True
+        assert report["profile"]["lagna"] is None
+        assert report["profile"]["moon_sign"] is None
+        assert report["profile"]["moon_nakshatra"] is None
+        assert report["sections"]["relevant_chart_facts"]["lagna"] == "No Birth Chart Loaded"
+        assert report["sections"]["relevant_chart_facts"]["moon"] == "No Birth Chart Loaded"
+        assert "Rohini" not in report["sections"]["overall_outlook"]
+        assert "Aries" not in report["sections"]["overall_outlook"]
+

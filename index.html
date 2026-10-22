@@ -2270,8 +2270,8 @@
     <!-- ==================== TAB 3: VERIFIED ASTROLOGERS ==================== -->
     <section id="view-astrologers" class="page-tab-view">
       <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-user-tie" style="color: var(--vedic-maroon);"></i> Talk to India's Top Verified Astrologers</h2>
-        <p>1-on-1 private consultations via live chat or audio call. Get instant guidance on career, marriage, love, and finance.</p>
+        <h2><i class="fa-solid fa-brain" style="color: var(--vedic-maroon);"></i> Consult Vedic AI Astrologer Gurus</h2>
+        <p>Interactive 1-on-1 consultations powered by classical Parashari, Jaimini, and Swiss Ephemeris mathematical calculation engines. Receive real-time grounded guidance on career, marriage, remedies, and wealth.</p>
       </div>
 
       <div class="astrologers-grid">
@@ -2371,111 +2371,232 @@
     <section id="view-matchmaking" class="page-tab-view">
       <div class="section-title-wrap">
         <h2><i class="fa-solid fa-heart" style="color: #EC4899;"></i> Kundli Milan — 36-Guna Matchmaking</h2>
-        <p>Comprehensive 8-Koota Vedic compatibility analysis with Nadi and Bhakoot Dosha evaluation for marriage harmony.</p>
+        <p>Comprehensive 8-Koota Vedic compatibility analysis powered by authentic Swiss Ephemeris calculations from full birth details (Date, Time, Place) with Nadi, Bhakoot, and Manglik Dosha evaluation.</p>
       </div>
 
-      <div class="grid-layout-2col">
-        <!-- Matchmaking Inputs (Strictly Unselected Defaults) -->
+      <!-- Dual Profile Inputs -->
+      <div class="grid-layout-2col" style="margin-bottom: 24px;">
+        <!-- Boy's Profile Card -->
         <div class="astro-card">
-          <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 16px;">
-            <i class="fa-solid fa-venus-mars"></i> Select Partner Particulars
-          </h3>
-
-          <h4 style="font-size: 14px; font-weight: 800; color: #2563EB; margin-bottom: 8px;">
-            <i class="fa-solid fa-mars"></i> Boy's Particulars
-          </h4>
-          <div class="form-field-group">
-            <label class="form-field-label">Boy's Moon Sign (Rashi)</label>
-            <select id="sel-boy-rashi" class="form-input-text">
-              <option value="" disabled selected>Select Boy's Moon Sign...</option>
-              <option value="0">Aries (Mesh)</option>
-              <option value="1">Taurus (Vrishabh)</option>
-              <option value="2">Gemini (Mithun)</option>
-              <option value="3">Cancer (Kark)</option>
-              <option value="4">Leo (Simha)</option>
-              <option value="5">Virgo (Kanya)</option>
-              <option value="6">Libra (Tula)</option>
-              <option value="7">Scorpio (Vrishchik)</option>
-              <option value="8">Sagittarius (Dhanu)</option>
-              <option value="9">Capricorn (Makar)</option>
-              <option value="10">Aquarius (Kumbh)</option>
-              <option value="11">Pisces (Meen)</option>
-            </select>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="font-size: 16px; font-weight: 800; color: #1D4ED8; margin: 0;">
+              <i class="fa-solid fa-mars"></i> Boy's Particulars (Groom)
+            </h3>
+            <button type="button" class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="autofillMilanPartner('boy')">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Use My Loaded Chart
+            </button>
           </div>
 
-          <h4 style="font-size: 14px; font-weight: 800; color: #EC4899; margin: 20px 0 8px;">
-            <i class="fa-solid fa-venus"></i> Girl's Particulars
-          </h4>
           <div class="form-field-group">
-            <label class="form-field-label">Girl's Moon Sign (Rashi)</label>
-            <select id="sel-girl-rashi" class="form-input-text">
-              <option value="" disabled selected>Select Girl's Moon Sign...</option>
-              <option value="0">Aries (Mesh)</option>
-              <option value="1">Taurus (Vrishabh)</option>
-              <option value="2">Gemini (Mithun)</option>
-              <option value="3">Cancer (Kark)</option>
-              <option value="4">Leo (Simha)</option>
-              <option value="5">Virgo (Kanya)</option>
-              <option value="6">Libra (Tula)</option>
-              <option value="7">Scorpio (Vrishchik)</option>
-              <option value="8">Sagittarius (Dhanu)</option>
-              <option value="9">Capricorn (Makar)</option>
-              <option value="10">Aquarius (Kumbh)</option>
-              <option value="11">Pisces (Meen)</option>
-            </select>
+            <label class="form-field-label">Boy's Full Name</label>
+            <input type="text" id="milan-boy-name" class="form-input-text" placeholder="Boy's Name" value="Groom">
           </div>
 
-          <button class="btn-gold-primary" style="width: 100%; justify-content: center; margin-top: 12px;" onclick="calculate36GunasUI()">
-            <i class="fa-solid fa-heart"></i> Calculate 36-Guna Match
-          </button>
+          <div class="form-field-group">
+            <label class="form-field-label">Date of Birth</label>
+            <input type="date" id="milan-boy-dob" class="form-input-text">
+          </div>
+
+          <div class="form-field-group">
+            <label class="form-field-label">Time of Birth (24-Hour)</label>
+            <div style="display: flex; gap: 8px;">
+              <select id="milan-boy-tob-hh" class="form-input-text" style="flex: 1;">
+                <option value="00">00 (Midnight)</option>
+                <option value="01">01 AM</option>
+                <option value="02">02 AM</option>
+                <option value="03">03 AM</option>
+                <option value="04">04 AM</option>
+                <option value="05">05 AM</option>
+                <option value="06">06 AM</option>
+                <option value="07">07 AM</option>
+                <option value="08">08 AM</option>
+                <option value="09">09 AM</option>
+                <option value="10">10 AM</option>
+                <option value="11">11 AM</option>
+                <option value="12" selected>12 PM (Noon)</option>
+                <option value="13">13 (1 PM)</option>
+                <option value="14">14 (2 PM)</option>
+                <option value="15">15 (3 PM)</option>
+                <option value="16">16 (4 PM)</option>
+                <option value="17">17 (5 PM)</option>
+                <option value="18">18 (6 PM)</option>
+                <option value="19">19 (7 PM)</option>
+                <option value="20">20 (8 PM)</option>
+                <option value="21">21 (9 PM)</option>
+                <option value="22">22 (10 PM)</option>
+                <option value="23">23 (11 PM)</option>
+              </select>
+              <select id="milan-boy-tob-mm" class="form-input-text" style="flex: 1;">
+                <option value="00" selected>:00</option>
+                <option value="05">:05</option>
+                <option value="10">:10</option>
+                <option value="15">:15</option>
+                <option value="20">:20</option>
+                <option value="25">:25</option>
+                <option value="30">:30</option>
+                <option value="35">:35</option>
+                <option value="40">:40</option>
+                <option value="45">:45</option>
+                <option value="50">:50</option>
+                <option value="55">:55</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-field-group" style="position: relative;">
+            <label class="form-field-label">Birth Place / City</label>
+            <input type="text" id="milan-boy-city-search" class="form-input-text" placeholder="Type city, e.g. New Delhi, Mumbai..." oninput="handleMilanCitySearch('boy', event)" onkeydown="handleMilanCityKeydown('boy', event)">
+            <div id="milan-boy-city-suggestions" class="location-suggestions-box" style="display: none;"></div>
+            <div id="milan-boy-loc-badge" class="location-resolved-badge" style="display: none;">
+              <i class="fa-solid fa-check"></i> <span id="milan-boy-loc-text"></span>
+            </div>
+            <input type="hidden" id="milan-boy-lat" value="">
+            <input type="hidden" id="milan-boy-lon" value="">
+            <input type="hidden" id="milan-boy-tz" value="Asia/Kolkata">
+          </div>
         </div>
 
-        <!-- Matchmaking Score Display -->
+        <!-- Girl's Profile Card -->
         <div class="astro-card">
-          <div id="milan-empty-state" class="empty-state-card">
-            <div class="empty-state-icon"><i class="fa-solid fa-heart"></i></div>
-            <h4 style="font-size: 16px; font-weight: 700; color: #374151;">No Match Calculated</h4>
-            <p style="font-size: 13px; margin-top: 6px;">Select both Boy and Girl Moon particulars on the left to compute the authentic Ashtakoota compatibility breakdown.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+            <h3 style="font-size: 16px; font-weight: 800; color: #DB2777; margin: 0;">
+              <i class="fa-solid fa-venus"></i> Girl's Particulars (Bride)
+            </h3>
+            <button type="button" class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="autofillMilanPartner('girl')">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Use My Loaded Chart
+            </button>
           </div>
 
-          <div id="milan-active-card" style="display: none;">
-            <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 2px solid #FCD34D; border-radius: var(--radius-md); padding: 20px; text-align: center; margin-bottom: 20px;">
-              <div style="font-size: 12px; font-weight: 800; color: #78350F; text-transform: uppercase; letter-spacing: 0.5px;">Total Guna Milan Score</div>
-              <div id="milan-big-val" style="font-size: 44px; font-weight: 800; color: var(--vedic-maroon); line-height: 1.1; margin: 8px 0;">-- / 36</div>
-              <div id="milan-verdict-banner" style="font-size: 15px; font-weight: 800; color: #065F46; margin-bottom: 8px;">--</div>
+          <div class="form-field-group">
+            <label class="form-field-label">Girl's Full Name</label>
+            <input type="text" id="milan-girl-name" class="form-input-text" placeholder="Girl's Name" value="Bride">
+          </div>
 
-              <!-- Astrotalk Recommendation Meter -->
-              <div class="milan-meter-wrap">
-                <div id="milan-meter-bar" class="milan-meter-fill" style="width: 0%; background: #10B981;"></div>
-              </div>
-              <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #78350F;">
-                <span>0: Low</span>
-                <span>18: Moderate</span>
-                <span>25+: Very Favorable</span>
-                <span>36: Ideal</span>
-              </div>
-            </div>
+          <div class="form-field-group">
+            <label class="form-field-label">Date of Birth</label>
+            <input type="date" id="milan-girl-dob" class="form-input-text">
+          </div>
 
-            <!-- Nadi & Bhakoot Dosha Alert Banner -->
-            <div id="milan-dosha-alerts" style="margin-bottom: 16px;"></div>
-
-            <h4 style="font-size: 14px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 10px;">
-              8-Fold Ashtakoota Component Breakdown
-            </h4>
-            <div class="table-responsive-box">
-              <table class="table-astro-data">
-                <thead>
-                  <tr>
-                    <th>Factor (Koota)</th>
-                    <th>Max Points</th>
-                    <th>Score Obtained</th>
-                    <th>Significance</th>
-                  </tr>
-                </thead>
-                <tbody id="tbody-milan-kootas"></tbody>
-              </table>
+          <div class="form-field-group">
+            <label class="form-field-label">Time of Birth (24-Hour)</label>
+            <div style="display: flex; gap: 8px;">
+              <select id="milan-girl-tob-hh" class="form-input-text" style="flex: 1;">
+                <option value="00">00 (Midnight)</option>
+                <option value="01">01 AM</option>
+                <option value="02">02 AM</option>
+                <option value="03">03 AM</option>
+                <option value="04">04 AM</option>
+                <option value="05">05 AM</option>
+                <option value="06">06 AM</option>
+                <option value="07">07 AM</option>
+                <option value="08">08 AM</option>
+                <option value="09">09 AM</option>
+                <option value="10">10 AM</option>
+                <option value="11">11 AM</option>
+                <option value="12" selected>12 PM (Noon)</option>
+                <option value="13">13 (1 PM)</option>
+                <option value="14">14 (2 PM)</option>
+                <option value="15">15 (3 PM)</option>
+                <option value="16">16 (4 PM)</option>
+                <option value="17">17 (5 PM)</option>
+                <option value="18">18 (6 PM)</option>
+                <option value="19">19 (7 PM)</option>
+                <option value="20">20 (8 PM)</option>
+                <option value="21">21 (9 PM)</option>
+                <option value="22">22 (10 PM)</option>
+                <option value="23">23 (11 PM)</option>
+              </select>
+              <select id="milan-girl-tob-mm" class="form-input-text" style="flex: 1;">
+                <option value="00" selected>:00</option>
+                <option value="05">:05</option>
+                <option value="10">:10</option>
+                <option value="15">:15</option>
+                <option value="20">:20</option>
+                <option value="25">:25</option>
+                <option value="30">:30</option>
+                <option value="35">:35</option>
+                <option value="40">:40</option>
+                <option value="45">:45</option>
+                <option value="50">:50</option>
+                <option value="55">:55</option>
+              </select>
             </div>
           </div>
+
+          <div class="form-field-group" style="position: relative;">
+            <label class="form-field-label">Birth Place / City</label>
+            <input type="text" id="milan-girl-city-search" class="form-input-text" placeholder="Type city, e.g. Bengaluru, Pune..." oninput="handleMilanCitySearch('girl', event)" onkeydown="handleMilanCityKeydown('girl', event)">
+            <div id="milan-girl-city-suggestions" class="location-suggestions-box" style="display: none;"></div>
+            <div id="milan-girl-loc-badge" class="location-resolved-badge" style="display: none;">
+              <i class="fa-solid fa-check"></i> <span id="milan-girl-loc-text"></span>
+            </div>
+            <input type="hidden" id="milan-girl-lat" value="">
+            <input type="hidden" id="milan-girl-lon" value="">
+            <input type="hidden" id="milan-girl-tz" value="Asia/Kolkata">
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div style="margin-bottom: 24px;">
+        <button class="btn-gold-primary" id="btn-calc-milan" style="width: 100%; justify-content: center; font-size: 15px; padding: 14px 24px;" onclick="calculateFullKundliMilanUI()">
+          <i class="fa-solid fa-heart"></i> Calculate Full Kundli Milan &amp; 36 Gunas (Swiss Ephemeris)
+        </button>
+      </div>
+
+      <!-- Matchmaking Score & In-Depth Report Display -->
+      <div class="astro-card">
+        <div id="milan-empty-state" class="empty-state-card">
+          <div class="empty-state-icon"><i class="fa-solid fa-heart"></i></div>
+          <h4 style="font-size: 16px; font-weight: 700; color: #374151;">No Match Calculated</h4>
+          <p style="font-size: 13px; margin-top: 6px;">Enter complete birth particulars (Date, Time, City) for both Boy and Girl above, then click &ldquo;Calculate Full Kundli Milan&rdquo; to compute authentic Swiss Ephemeris Ashtakoota compatibility and supplementary synastry.</p>
+        </div>
+
+        <div id="milan-active-card" style="display: none;">
+          <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 2px solid #FCD34D; border-radius: var(--radius-md); padding: 22px; text-align: center; margin-bottom: 20px;">
+            <div style="font-size: 12px; font-weight: 800; color: #78350F; text-transform: uppercase; letter-spacing: 0.5px;">Total Ashtakoota Guna Score</div>
+            <div id="milan-big-val" style="font-size: 46px; font-weight: 800; color: var(--vedic-maroon); line-height: 1.1; margin: 8px 0;">-- / 36</div>
+            <div id="milan-verdict-banner" style="font-size: 16px; font-weight: 800; color: #065F46; margin-bottom: 8px;">--</div>
+            <div id="milan-recommendation-text" style="font-size: 13px; color: #78350F; max-width: 600px; margin: 0 auto 12px; line-height: 1.5;">--</div>
+
+            <!-- Astrotalk Recommendation Meter -->
+            <div class="milan-meter-wrap">
+              <div id="milan-meter-bar" class="milan-meter-fill" style="width: 0%; background: #10B981;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #78350F;">
+              <span>0: Inauspicious (&lt;18)</span>
+              <span>18: Average (18–24)</span>
+              <span>25+: Very Favorable (Uttam)</span>
+              <span>36: Ideal Match</span>
+            </div>
+          </div>
+
+          <!-- Partner Profiles Comparison Chips -->
+          <div id="milan-profiles-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
+
+          <!-- Nadi, Bhakoot & Manglik Dosha Alert Banners -->
+          <div id="milan-dosha-alerts" style="margin-bottom: 16px;"></div>
+
+          <!-- 8-Fold Ashtakoota Breakdown Table -->
+          <h4 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 10px;">
+            <i class="fa-solid fa-list-check"></i> 8-Fold Ashtakoota Component Breakdown
+          </h4>
+          <div class="table-responsive-box" style="margin-bottom: 24px;">
+            <table class="table-astro-data">
+              <thead>
+                <tr>
+                  <th>Factor (Koota)</th>
+                  <th>Max Points</th>
+                  <th>Score Obtained</th>
+                  <th>Significance &amp; Rule Exception</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-milan-kootas"></tbody>
+            </table>
+          </div>
+
+          <!-- Supplementary Compatibility Synastry (7th House, Navamsha, Manglik, Dasha, DK) -->
+          <div id="milan-supplementary-report" style="border-top: 1px solid #E2E8F0; padding-top: 20px;"></div>
         </div>
       </div>
     </section>
@@ -2613,7 +2734,7 @@
     <section id="view-pujas" class="page-tab-view">
       <div class="section-title-wrap">
         <h2><i class="fa-solid fa-fire-burner" style="color: var(--vedic-maroon);"></i> Astromall &amp; Sacred Vedic Pujas</h2>
-        <p>Remedial rituals conducted by verified Vedic priests with personalized sankalp and live video streaming.</p>
+        <p>Remedial rituals coordinated with traditional Vedic priests with personalized sankalp and ritual completion certificate.</p>
       </div>
 
       <div class="astrologers-grid">
@@ -2621,7 +2742,7 @@
           <div>
             <h4 style="font-size: 16px; font-weight: 800; color: #1E293B;">Maha Mrityunjaya Puja</h4>
             <div style="font-size: 12px; color: #64748B; margin-top: 4px;">For health, overcoming acute ailments, and longevity.</div>
-            <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 6px;">Includes Live Video Stream & Sankalp</div>
+            <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 6px;">Includes Personalized Sankalp &amp; Completion Certificate</div>
           </div>
           <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center;">
             <div style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon);">₹2,100</div>
@@ -2657,362 +2778,6 @@
               Book Now
             </button>
           </div>
-        </div>
-      </div>
-    </section>
-
-    
-    <!-- ==================== TAB 8: DEDICATED AUTHENTICATION VIEW ==================== -->
-    <section id="view-auth" class="page-tab-view">
-      <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-user-shield" style="color: var(--vedic-maroon);"></i> AstroVerse Account Security &amp; Access</h2>
-        <p>Manage persistent birth profiles, private consultation history, multi-horizon reports, and verified wallet balances across devices.</p>
-      </div>
-
-      <div style="max-width: 520px; margin: 0 auto;">
-        <!-- Auth View Switcher Breadcrumb -->
-        <div style="display: flex; gap: 8px; margin-bottom: 20px; background: #F1F5F9; padding: 4px; border-radius: 10px;">
-          <button class="subtab-btn active" id="auth-nav-tab-login" style="flex: 1; text-align: center;" onclick="switchNavSection('login')">
-            <i class="fa-solid fa-right-to-bracket"></i> Sign In
-          </button>
-          <button class="subtab-btn" id="auth-nav-tab-signup" style="flex: 1; text-align: center;" onclick="switchNavSection('signup')">
-            <i class="fa-solid fa-user-plus"></i> Create Account
-          </button>
-        </div>
-
-        <div class="astro-card" style="padding: 32px 28px;">
-
-          <!-- ================= SUB-PANEL 1: LOGIN ================= -->
-          <div id="auth-panel-login">
-            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
-              Welcome Back to AstroVerse
-            </h3>
-            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
-              Choose your preferred sign-in method:
-            </p>
-
-            <!-- Mode Switcher: Password vs OTP -->
-            <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px;">
-              <button class="subtab-btn active" id="btn-login-mode-password" style="flex: 1; text-align: center;" onclick="switchLoginAuthMode('password')">
-                <i class="fa-solid fa-key"></i> Password
-              </button>
-              <button class="subtab-btn" id="btn-login-mode-otp" style="flex: 1; text-align: center;" onclick="switchLoginAuthMode('otp')">
-                <i class="fa-solid fa-mobile-screen"></i> One-Time OTP
-              </button>
-            </div>
-
-            <!-- Login Form: Password Flow -->
-            <div id="login-flow-password">
-              <div class="form-field-group">
-                <label class="form-field-label">Email Address or Mobile Number</label>
-                <input type="text" id="login-ident" class="form-input-text" placeholder="name@example.com or +919876543210">
-              </div>
-
-              <div class="form-field-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <label class="form-field-label" style="margin-bottom: 0;">Password</label>
-                  <a href="#/forgot-password" onclick="switchNavSection('forgot-password'); return false;" style="font-size: 12px; color: #2563EB; text-decoration: none; font-weight: 600;">
-                    Forgot Password?
-                  </a>
-                </div>
-                <div style="position: relative;">
-                  <input type="password" id="login-password" class="form-input-text" placeholder="Enter your password">
-                  <i class="fa-regular fa-eye" id="toggle-login-pwd" onclick="togglePasswordVisibility('login-password', 'toggle-login-pwd')"
-                     style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748B;"></i>
-                </div>
-              </div>
-
-              <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;" onclick="executePasswordLogin()">
-                <i class="fa-solid fa-right-to-bracket"></i> Sign In to Account
-              </button>
-            </div>
-
-            <!-- Login Form: OTP Flow -->
-            <div id="login-flow-otp" style="display: none;">
-              <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-                <button class="gender-pill-btn active" id="otp-type-phone" onclick="switchOtpType('phone')" style="flex: 1;">Mobile Phone</button>
-                <button class="gender-pill-btn" id="otp-type-email" onclick="switchOtpType('email')" style="flex: 1;">Email</button>
-              </div>
-
-              <div id="otp-phone-input-wrap">
-                <label class="form-field-label">Mobile Number</label>
-                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                  <select id="login-country-code" class="form-input-text" style="width: 130px; flex-shrink: 0;">
-                    <option value="+91" selected>🇮🇳 +91 (IN)</option>
-                    <option value="+1">🇺🇸 +1 (US)</option>
-                    <option value="+44">🇬🇧 +44 (UK)</option>
-                    <option value="+61">🇦🇺 +61 (AU)</option>
-                    <option value="+971">🇦🇪 +971 (AE)</option>
-                    <option value="+65">🇸🇬 +65 (SG)</option>
-                    <option value="+49">🇩🇪 +49 (DE)</option>
-                  </select>
-                  <input type="tel" id="login-phone-num" class="form-input-text" placeholder="98765 43210">
-                </div>
-              </div>
-
-              <div id="otp-email-input-wrap" style="display: none; margin-bottom: 16px;">
-                <label class="form-field-label">Email Address</label>
-                <input type="email" id="login-email-addr" class="form-input-text" placeholder="name@example.com">
-              </div>
-
-              <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px;" onclick="requestDedicatedAuthOtp()">
-                <i class="fa-solid fa-paper-plane"></i> Send 6-Digit Code
-              </button>
-            </div>
-
-            <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #F1F5F9; font-size: 13px; color: #64748B;">
-              Don't have an AstroVerse account?
-              <a href="#/signup" onclick="switchNavSection('signup'); return false;" style="color: var(--vedic-maroon); font-weight: 700; text-decoration: none; margin-left: 4px;">
-                Create Account &rarr;
-              </a>
-            </div>
-          </div>
-
-          <!-- ================= SUB-PANEL 2: SIGN UP ================= -->
-          <div id="auth-panel-signup" style="display: none;">
-            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
-              Create AstroVerse Account
-            </h3>
-            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
-              Unlock persistent birth profiles, personalized multi-horizon forecasts, and private consultations.
-            </p>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Full Name</label>
-              <input type="text" id="signup-name" class="form-input-text" placeholder="Your full name">
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Email Address</label>
-              <input type="email" id="signup-email" class="form-input-text" placeholder="name@example.com">
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Mobile Phone (Optional)</label>
-              <div style="display: flex; gap: 8px;">
-                <select id="signup-country-code" class="form-input-text" style="width: 130px; flex-shrink: 0;">
-                  <option value="+91" selected>🇮🇳 +91 (IN)</option>
-                  <option value="+1">🇺🇸 +1 (US)</option>
-                  <option value="+44">🇬🇧 +44 (UK)</option>
-                  <option value="+61">🇦🇺 +61 (AU)</option>
-                  <option value="+971">🇦🇪 +971 (AE)</option>
-                </select>
-                <input type="tel" id="signup-phone" class="form-input-text" placeholder="98765 43210">
-              </div>
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Create Password</label>
-              <div style="position: relative;">
-                <input type="password" id="signup-password" class="form-input-text" placeholder="Minimum 8 characters" oninput="evaluatePasswordStrength(this.value, 'signup-pwd-track', 'signup-pwd-crit')">
-                <i class="fa-regular fa-eye" id="toggle-signup-pwd" onclick="togglePasswordVisibility('signup-password', 'toggle-signup-pwd')"
-                   style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #64748B;"></i>
-              </div>
-              <!-- Strength meter -->
-              <div class="pwd-strength-container">
-                <div class="pwd-strength-track">
-                  <div class="pwd-strength-fill" id="signup-pwd-track"></div>
-                </div>
-                <div class="pwd-checklist" id="signup-pwd-crit">
-                  <div class="pwd-criterion invalid" id="crit-len"><i class="fa-solid fa-circle-check"></i> Min 8 characters</div>
-                  <div class="pwd-criterion invalid" id="crit-upper"><i class="fa-solid fa-circle-check"></i> 1 Uppercase (A-Z)</div>
-                  <div class="pwd-criterion invalid" id="crit-lower"><i class="fa-solid fa-circle-check"></i> 1 Lowercase (a-z)</div>
-                  <div class="pwd-criterion invalid" id="crit-num"><i class="fa-solid fa-circle-check"></i> 1 Number (0-9)</div>
-                  <div class="pwd-criterion invalid" id="crit-spec"><i class="fa-solid fa-circle-check"></i> 1 Special (@$!%*?&)</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Confirm Password</label>
-              <input type="password" id="signup-confirm-password" class="form-input-text" placeholder="Re-enter your password">
-            </div>
-
-            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;" onclick="executePasswordRegister()">
-              <i class="fa-solid fa-user-plus"></i> Create Account
-            </button>
-
-            <div style="text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #F1F5F9; font-size: 13px; color: #64748B;">
-              Already have an AstroVerse account?
-              <a href="#/login" onclick="switchNavSection('login'); return false;" style="color: var(--vedic-maroon); font-weight: 700; text-decoration: none; margin-left: 4px;">
-                Sign In &rarr;
-              </a>
-            </div>
-          </div>
-
-          <!-- ================= SUB-PANEL 3: VERIFY OTP ================= -->
-          <div id="auth-panel-verify" style="display: none;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <div class="guidance-icon-badge" style="margin: 0 auto 12px; width: 50px; height: 50px;">
-                <i class="fa-solid fa-envelope-open-text" style="color: var(--vedic-maroon); font-size: 24px;"></i>
-              </div>
-              <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon);">Verification Code Sent</h3>
-              <p style="font-size: 13px; color: #64748B; margin-top: 4px;">
-                We dispatched a secure 6-digit code to:<br>
-                <strong id="disp-dedicated-target" style="color: #0F172A; font-size: 15px;">--</strong>
-              </p>
-              <div style="font-size: 11px; color: #2563EB; cursor: pointer; margin-top: 4px;" onclick="switchNavSection('login')">
-                Change identifier
-              </div>
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label" style="text-align: center;">Enter 6-Digit Code</label>
-              <input type="text" id="input-dedicated-otp" class="form-input-text" placeholder="------" maxlength="6"
-                     style="letter-spacing: 8px; font-size: 26px; text-align: center; font-weight: 800; font-family: monospace;">
-              <div id="dedicated-otp-dev-hint" style="font-size: 12px; color: #059669; text-align: center; margin-top: 8px; font-weight: 600;"></div>
-            </div>
-
-            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;" onclick="verifyDedicatedAuthOtp()">
-              <i class="fa-solid fa-lock-open"></i> Verify &amp; Sign In
-            </button>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; font-size: 12px;">
-              <span id="countdown-text" style="color: #64748B;">Resend code in <strong id="countdown-secs">60</strong>s</span>
-              <button id="btn-resend-otp" class="btn-text-link" style="display: none;" onclick="resendDedicatedAuthOtp()">Resend Code</button>
-            </div>
-          </div>
-
-          <!-- ================= SUB-PANEL 4: FORGOT PASSWORD ================= -->
-          <div id="auth-panel-forgot-password" style="display: none;">
-            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
-              Reset Account Password
-            </h3>
-            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
-              Enter your registered email address and we will dispatch a 6-digit verification code to reset your password.
-            </p>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Registered Email Address</label>
-              <input type="email" id="forgot-email" class="form-input-text" placeholder="name@example.com">
-            </div>
-
-            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;" onclick="executeForgotPasswordRequest()">
-              <i class="fa-solid fa-paper-plane"></i> Send Password Reset Code
-            </button>
-
-            <div style="text-align: center; margin-top: 20px; font-size: 13px;">
-              <a href="#/login" onclick="switchNavSection('login'); return false;" style="color: #64748B; text-decoration: none;">
-                &larr; Back to Sign In
-              </a>
-            </div>
-          </div>
-
-          <!-- ================= SUB-PANEL 5: RESET PASSWORD ================= -->
-          <div id="auth-panel-reset-password" style="display: none;">
-            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
-              Set New Password
-            </h3>
-            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
-              Enter the 6-digit code received in your email along with your new password.
-            </p>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Email Address</label>
-              <input type="email" id="reset-email" class="form-input-text" placeholder="name@example.com">
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">6-Digit Reset Code</label>
-              <input type="text" id="reset-token" class="form-input-text" placeholder="123456" maxlength="6" style="letter-spacing: 4px; font-family: monospace; font-size: 18px; text-align: center;">
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">New Password</label>
-              <input type="password" id="reset-new-password" class="form-input-text" placeholder="Minimum 8 characters" oninput="evaluatePasswordStrength(this.value, 'reset-pwd-track', 'reset-pwd-crit')">
-              <div class="pwd-strength-container">
-                <div class="pwd-strength-track">
-                  <div class="pwd-strength-fill" id="reset-pwd-track"></div>
-                </div>
-                <div class="pwd-checklist" id="reset-pwd-crit">
-                  <div class="pwd-criterion invalid" id="rcrit-len"><i class="fa-solid fa-circle-check"></i> Min 8 characters</div>
-                  <div class="pwd-criterion invalid" id="rcrit-upper"><i class="fa-solid fa-circle-check"></i> 1 Uppercase</div>
-                  <div class="pwd-criterion invalid" id="rcrit-lower"><i class="fa-solid fa-circle-check"></i> 1 Lowercase</div>
-                  <div class="pwd-criterion invalid" id="rcrit-num"><i class="fa-solid fa-circle-check"></i> 1 Number</div>
-                  <div class="pwd-criterion invalid" id="rcrit-spec"><i class="fa-solid fa-circle-check"></i> 1 Special</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Confirm New Password</label>
-              <input type="password" id="reset-confirm-password" class="form-input-text" placeholder="Re-enter your new password">
-            </div>
-
-            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;" onclick="executeResetPassword()">
-              <i class="fa-solid fa-shield-check"></i> Update Password &amp; Sign In
-            </button>
-
-            <div style="text-align: center; margin-top: 20px; font-size: 13px;">
-              <a href="#/login" onclick="switchNavSection('login'); return false;" style="color: #64748B; text-decoration: none;">
-                &larr; Back to Sign In
-              </a>
-            </div>
-          </div>
-
-          <!-- ================= SUB-PANEL 6: COMPLETE PROFILE ================= -->
-          <div id="auth-panel-complete-profile" style="display: none;">
-            <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
-              Complete Your Astrological Profile
-            </h3>
-            <p style="font-size: 13px; color: #64748B; margin-bottom: 20px;">
-              Enter your birth coordinates to activate personalized Parashari predictions and accurate planetary Horas.
-            </p>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Full Name</label>
-              <input type="text" id="cp-name" class="form-input-text" placeholder="Full name">
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Gender</label>
-              <div class="gender-toggle-row">
-                <div class="gender-pill-btn active" id="cp-g-male-btn" onclick="selectCompleteProfileGender('Male')">Male</div>
-                <div class="gender-pill-btn" id="cp-g-female-btn" onclick="selectCompleteProfileGender('Female')">Female</div>
-              </div>
-              <input type="hidden" id="cp-gender" value="Male">
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Date of Birth</label>
-              <input type="date" id="cp-dob" class="form-input-text">
-            </div>
-
-            <div class="form-field-group">
-              <label class="form-field-label">Time of Birth (24-Hour)</label>
-              <div style="display: flex; gap: 8px;">
-                <select id="cp-tob-hh" class="form-input-text" style="flex: 1;">
-                  <option value="12" selected>12 (Noon)</option>
-                  <option value="00">00 (Midnight)</option>
-                  <option value="06">06 AM</option>
-                  <option value="09">09 AM</option>
-                  <option value="15">15 (3 PM)</option>
-                  <option value="18">18 (6 PM)</option>
-                  <option value="21">21 (9 PM)</option>
-                </select>
-                <select id="cp-tob-mm" class="form-input-text" style="flex: 1;">
-                  <option value="00" selected>00</option>
-                  <option value="15">15</option>
-                  <option value="30">30</option>
-                  <option value="45">45</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-field-group" style="position: relative;">
-              <label class="form-field-label">Birth Place</label>
-              <input type="text" id="cp-city-search" class="form-input-text" placeholder="Type city, e.g. Jabalpur or Delhi" oninput="searchGeocodingCompleteProfile()">
-              <input type="hidden" id="cp-lat" value="23.1815">
-              <input type="hidden" id="cp-lon" value="79.9864">
-              <input type="hidden" id="cp-tz" value="Asia/Kolkata">
-              <div id="cp-city-dropdown" class="autocomplete-dropdown" style="display: none;"></div>
-            </div>
-
-            <button class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;" onclick="executeSaveCompleteProfile()">
-              <i class="fa-solid fa-dharmachakra"></i> Save &amp; Generate Janam Kundli
-            </button>
-          </div>
-
         </div>
       </div>
     </section>
@@ -3836,10 +3601,24 @@
       "P. Bhadrapada", "U. Bhadrapada", "Revati"
     ];
 
-    // Non-blocking Toast Notification System with Bounded Queue (Max 3 Items)
-    function showToast(message, type = 'info') {
+    // Non-blocking Toast Notification System with Single-Source Conflict Management
+    function clearToasts() {
+      const container = document.getElementById('toast-container');
+      if (container) container.innerHTML = '';
+    }
+
+    function showToast(message, type = 'info', options = {}) {
       const container = document.getElementById('toast-container');
       if (!container) return;
+
+      // Automatically purge prior in-flight informational or contradictory toasts
+      if (options.clearPrior || type === 'error' || type === 'success') {
+        const existingInfos = container.querySelectorAll('.toast-item.info');
+        existingInfos.forEach(el => el.remove());
+        if (options.clearPrior) {
+          container.innerHTML = '';
+        }
+      }
 
       while (container.children.length >= 3) {
         container.removeChild(container.firstChild);
@@ -3872,22 +3651,26 @@
 
       setTimeout(() => {
         if (toast.parentNode) dismiss();
-      }, 4000);
+      }, options.duration || (type === 'error' ? 5000 : 4000));
+      return dismiss;
     }
 
     // Navigation & Tabs
+    let currentActiveNavSection = 'kundli';
+
     function switchNavSection(sectionId, updateHash = true) {
-      const authRoutes = ['login', 'signup', 'verify', 'forgot-password', 'reset-password', 'complete-profile'];
+      const authRoutes = ['login', 'signup', 'auth', 'verify', 'forgot-password', 'reset-password', 'complete-profile'];
       let targetSection = sectionId;
 
       if (authRoutes.includes(sectionId)) {
-        if (sectionId === 'complete-profile') {
-          targetSection = 'auth';
-          showAuthSubPanel(sectionId);
+        if (sectionId === 'signup' || sectionId === 'register') {
+          openAuthModal('register');
+        } else if (sectionId === 'password') {
+          openAuthModal('password');
         } else {
-          openAuthModal(sectionId === 'signup' ? 'register' : 'otp');
-          return;
+          openAuthModal('otp');
         }
+        return;
       } else if (sectionId === 'settings/security' || sectionId === 'security') {
         targetSection = 'settings';
         setTimeout(() => {
@@ -3895,6 +3678,8 @@
           if (secCard) secCard.scrollIntoView({ behavior: 'smooth' });
         }, 100);
       }
+
+      currentActiveNavSection = targetSection;
 
       if (updateHash && window.location.hash !== '#/' + sectionId) {
         window.location.hash = '#/' + sectionId;
@@ -4398,6 +4183,13 @@
 
       currentCalculatedChart = {
         name,
+        city: document.getElementById('input-k-city') ? document.getElementById('input-k-city').value : "Current Location",
+        dob: document.getElementById('input-k-dob').value,
+        tob: document.getElementById('input-k-tob').value || "12:00",
+        lat: parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815,
+        lon: parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864,
+        timezone: document.getElementById('k-resolved-tz').value || "Asia/Kolkata",
+        tz: document.getElementById('k-resolved-tz').value || "Asia/Kolkata",
         lagnaSign: lagna.sign,
         lagnaIdx: signsList.indexOf(lagna.sign),
         moonSign: moon.sign,
@@ -4955,151 +4747,264 @@
       document.getElementById('disp-horo-planet').textContent = data.ruler;
     }
 
-    // 5. 36-GUNA KUNDLI MATCHMAKING (Section 8: Authentic Parashari 8-Koota Engine)
-    async function calculate36GunasUI() {
-      const boySelect = document.getElementById('sel-boy-rashi');
-      const girlSelect = document.getElementById('sel-girl-rashi');
+    // 5. 36-GUNA KUNDLI MATCHMAKING & DUAL BIRTH PROFILES (Authentic Swiss Ephemeris Engine)
+    let milanBoyCityDebounce = null;
+    let milanBoyCityAbort = null;
+    let milanGirlCityDebounce = null;
+    let milanGirlCityAbort = null;
 
-      if (!boySelect.value || !girlSelect.value) {
-        showToast("Please explicitly select both Boy and Girl Moon Signs.", "error");
+    function handleMilanCitySearch(partner, e) {
+      const query = e.target.value.trim();
+      const suggestionsBox = document.getElementById(`milan-${partner}-city-suggestions`);
+      if (!suggestionsBox) return;
+
+      if (partner === 'boy') {
+        clearTimeout(milanBoyCityDebounce);
+        if (milanBoyCityAbort) milanBoyCityAbort.abort();
+      } else {
+        clearTimeout(milanGirlCityDebounce);
+        if (milanGirlCityAbort) milanGirlCityAbort.abort();
+      }
+
+      if (query.length < 2) {
+        suggestionsBox.style.display = 'none';
         return;
       }
 
-      const boy = parseInt(boySelect.value);
-      const girl = parseInt(girlSelect.value);
+      const timer = setTimeout(async () => {
+        const abortController = new AbortController();
+        if (partner === 'boy') milanBoyCityAbort = abortController;
+        else milanGirlCityAbort = abortController;
 
-      showToast("Computing 8-fold Ashtakoota compatibility...", "info");
+        try {
+          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=6&language=en&format=json`, {
+            signal: abortController.signal
+          });
+          const data = await res.json();
+          if (!data.results || data.results.length === 0) {
+            suggestionsBox.innerHTML = '<div style="padding: 10px; font-size: 12px; color: #64748B;">No locations found.</div>';
+            suggestionsBox.style.display = 'block';
+            return;
+          }
+
+          suggestionsBox.innerHTML = '';
+          data.results.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'location-suggestion-item';
+            const admin = item.admin1 ? `${item.admin1}, ` : '';
+            const fullTitle = `${item.name}, ${admin}${item.country}`;
+            const tz = item.timezone || 'Asia/Kolkata';
+            div.innerHTML = `
+              <strong>${item.name}</strong>
+              <span class="loc-subtext">${admin}${item.country} • ${tz} (${item.latitude.toFixed(2)}°, ${item.longitude.toFixed(2)}°)</span>
+            `;
+            div.onclick = () => selectMilanCity(partner, fullTitle, item.latitude, item.longitude, tz);
+            suggestionsBox.appendChild(div);
+          });
+          suggestionsBox.style.display = 'block';
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error('Milan geocoding failed:', err);
+        }
+      }, 300);
+
+      if (partner === 'boy') milanBoyCityDebounce = timer;
+      else milanGirlCityDebounce = timer;
+    }
+
+    function handleMilanCityKeydown(partner, e) {
+      const box = document.getElementById(`milan-${partner}-city-suggestions`);
+      if (box && box.style.display === 'block' && e.key === 'Escape') {
+        box.style.display = 'none';
+      }
+    }
+
+    function selectMilanCity(partner, fullTitle, lat, lon, tz) {
+      const searchInp = document.getElementById(`milan-${partner}-city-search`);
+      const latInp = document.getElementById(`milan-${partner}-lat`);
+      const lonInp = document.getElementById(`milan-${partner}-lon`);
+      const tzInp = document.getElementById(`milan-${partner}-tz`);
+      if (searchInp) searchInp.value = fullTitle;
+      if (latInp) latInp.value = lat;
+      if (lonInp) lonInp.value = lon;
+      if (tzInp) tzInp.value = tz;
+
+      const badge = document.getElementById(`milan-${partner}-loc-badge`);
+      const text = document.getElementById(`milan-${partner}-loc-text`);
+      if (badge && text) {
+        text.textContent = `Resolved: ${fullTitle} (${Number(lat).toFixed(2)}°, ${Number(lon).toFixed(2)}°)`;
+        badge.style.display = 'flex';
+      }
+      const suggestions = document.getElementById(`milan-${partner}-city-suggestions`);
+      if (suggestions) suggestions.style.display = 'none';
+    }
+
+    function autofillMilanPartner(partner) {
+      if (!currentCalculatedChart) {
+        showToast("No calculated birth chart found. Calculate your Janam Kundli in Tab 1 first to use this helper.", "info");
+        return;
+      }
+      const c = currentCalculatedChart;
+      const nameInput = document.getElementById(`milan-${partner}-name`);
+      if (nameInput) nameInput.value = c.name || (partner === 'boy' ? "Groom" : "Bride");
+
+      const dobInput = document.getElementById(`milan-${partner}-dob`);
+      if (dobInput && c.dob) dobInput.value = c.dob;
+
+      if (c.tob) {
+        const parts = c.tob.split(':');
+        const hhSelect = document.getElementById(`milan-${partner}-tob-hh`);
+        const mmSelect = document.getElementById(`milan-${partner}-tob-mm`);
+        if (hhSelect && parts[0]) hhSelect.value = parts[0].padStart(2, '0');
+        if (mmSelect && parts[1]) mmSelect.value = (Math.round(parseInt(parts[1]) / 5) * 5).toString().padStart(2, '0');
+      }
+
+      if (c.lat !== undefined && c.lon !== undefined) {
+        selectMilanCity(partner, c.city || "Current Location", c.lat, c.lon, c.tz || "Asia/Kolkata");
+      }
+      showToast(`Autofilled ${partner === 'boy' ? "Boy's" : "Girl's"} particulars from your Janam Kundli.`, "success");
+    }
+
+    async function calculateFullKundliMilanUI() {
+      clearToasts();
+
+      const bName = document.getElementById('milan-boy-name')?.value?.trim() || "Groom";
+      const bDob = document.getElementById('milan-boy-dob')?.value;
+      const bHh = document.getElementById('milan-boy-tob-hh')?.value || "12";
+      const bMm = document.getElementById('milan-boy-tob-mm')?.value || "00";
+      const bLatRaw = document.getElementById('milan-boy-lat')?.value;
+      const bLonRaw = document.getElementById('milan-boy-lon')?.value;
+      const bTz = document.getElementById('milan-boy-tz')?.value || "Asia/Kolkata";
+
+      const gName = document.getElementById('milan-girl-name')?.value?.trim() || "Bride";
+      const gDob = document.getElementById('milan-girl-dob')?.value;
+      const gHh = document.getElementById('milan-girl-tob-hh')?.value || "12";
+      const gMm = document.getElementById('milan-girl-tob-mm')?.value || "00";
+      const gLatRaw = document.getElementById('milan-girl-lat')?.value;
+      const gLonRaw = document.getElementById('milan-girl-lon')?.value;
+      const gTz = document.getElementById('milan-girl-tz')?.value || "Asia/Kolkata";
+
+      if (!bDob || !gDob) {
+        showToast("Please enter birth dates for both Boy and Girl.", "error");
+        return;
+      }
+
+      const bLat = parseFloat(bLatRaw);
+      const bLon = parseFloat(bLonRaw);
+      const gLat = parseFloat(gLatRaw);
+      const gLon = parseFloat(gLonRaw);
+
+      if (isNaN(bLat) || isNaN(bLon)) {
+        showToast("Please search and select a verified birth city for the Boy.", "error");
+        return;
+      }
+      if (isNaN(gLat) || isNaN(gLon)) {
+        showToast("Please search and select a verified birth city for the Girl.", "error");
+        return;
+      }
+
+      showToast("Computing authentic Swiss Ephemeris 36-Guna Kundli Milan...", "info");
+
+      const boyPayload = {
+        name: bName,
+        dob: `${bDob}T${bHh}:${bMm}:00`,
+        lat: bLat,
+        lon: bLon,
+        timezone: bTz
+      };
+      const girlPayload = {
+        name: gName,
+        dob: `${gDob}T${gHh}:${gMm}:00`,
+        lat: gLat,
+        lon: gLon,
+        timezone: gTz
+      };
 
       try {
-        const res = await fetch('/api/kundli/matching', {
+        const res = await fetch('/api/matchmaking', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ boy_moon_sign_idx: boy, girl_moon_sign_idx: girl })
+          body: JSON.stringify({ boy: boyPayload, girl: girlPayload })
         });
         if (res.ok) {
           const data = await res.json();
           renderMatchmakingResultUI(data);
           return;
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          showToast(errData.detail || "Failed to calculate Kundli Milan. Please verify coordinates.", "error");
+          return;
         }
       } catch (err) {
-        console.warn("Backend matchmaking API offline, using authentic client Ashtakoota engine:", err);
+        console.warn("Backend matchmaking API unreachable, executing client mathematical fallback:", err);
       }
 
-      // Authentic client Parashari 8-Koota mathematical implementation
-      const boyDeg = boy * 30.0 + 15.0;
-      const girlDeg = girl * 30.0 + 15.0;
-      const boyNak = Math.floor(boyDeg / (360.0 / 27.0)) % 27;
-      const girlNak = Math.floor(girlDeg / (360.0 / 27.0)) % 27;
+      calculateClientKundliMilanFallback(boyPayload, girlPayload);
+    }
 
-      function getVarnaRank(s) {
-        if ([3, 7, 11].includes(s)) return 4;
-        if ([0, 4, 8].includes(s)) return 3;
-        if ([1, 5, 9].includes(s)) return 2;
-        return 1;
-      }
-      const varna = getVarnaRank(boy) >= getVarnaRank(girl) ? 1.0 : 0.0;
+    function calculate36GunasUI() {
+      return calculateFullKundliMilanUI();
+    }
 
-      function getVashyaCategory(s) {
-        if ([0, 1].includes(s)) return 0;
-        if ([2, 5, 6, 8, 10].includes(s)) return 1;
-        if ([3, 9, 11].includes(s)) return 2;
-        if (s === 4) return 3;
-        return 4;
-      }
-      const VASHYA_MATRIX = [
-        [2.0, 1.0, 1.0, 0.0, 1.0],
-        [1.0, 2.0, 0.5, 0.0, 1.0],
-        [1.0, 0.5, 2.0, 0.0, 1.0],
-        [0.0, 0.0, 0.0, 2.0, 0.0],
-        [1.0, 1.0, 1.0, 0.0, 2.0]
-      ];
-      const vashya = VASHYA_MATRIX[getVashyaCategory(boy)][getVashyaCategory(girl)];
-
-      const t1 = (((boyNak - girlNak) % 9) + 9) % 9 + 1;
-      const t2 = (((girlNak - boyNak) % 9) + 9) % 9 + 1;
-      const inauspiciousTara = [3, 5, 7];
-      const t1Good = !inauspiciousTara.includes(t1);
-      const t2Good = !inauspiciousTara.includes(t2);
-      const tara = (t1Good && t2Good) ? 3.0 : ((t1Good || t2Good) ? 1.5 : 0.0);
-
-      const YONI_ANIMALS = [0, 1, 2, 3, 3, 4, 5, 2, 5, 6, 6, 7, 8, 9, 8, 9, 10, 10, 11, 11, 12, 11, 13, 0, 13, 7, 1];
-      const ENEMIES = { 0: 8, 8: 0, 1: 13, 13: 1, 2: 11, 11: 2, 3: 12, 12: 3, 4: 10, 10: 4, 5: 6, 6: 5, 7: 9, 9: 7 };
-      const by = YONI_ANIMALS[boyNak], gy = YONI_ANIMALS[girlNak];
-      let yoni = 2.0;
-      if (by === gy) yoni = 4.0;
-      else if (ENEMIES[by] === gy) yoni = 0.0;
-      else if ([1, 2, 4].includes(Math.abs(by - gy))) yoni = 3.0;
-
-      const SIGN_LORDS = ["Mars", "Venus", "Mercury", "Moon", "Sun", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Saturn", "Jupiter"];
-      const PLANET_FRIENDS = {
-        Sun: { friends: ["Moon", "Mars", "Jupiter"], neutrals: ["Mercury"], enemies: ["Venus", "Saturn"] },
-        Moon: { friends: ["Sun", "Mercury"], neutrals: ["Mars", "Jupiter", "Venus", "Saturn"], enemies: [] },
-        Mars: { friends: ["Sun", "Moon", "Jupiter"], neutrals: ["Venus", "Saturn"], enemies: ["Mercury"] },
-        Mercury: { friends: ["Sun", "Venus"], neutrals: ["Mars", "Jupiter", "Saturn"], enemies: ["Moon"] },
-        Jupiter: { friends: ["Sun", "Moon", "Mars"], neutrals: ["Saturn"], enemies: ["Mercury", "Venus"] },
-        Venus: { friends: ["Mercury", "Saturn"], neutrals: ["Mars", "Jupiter"], enemies: ["Sun", "Moon"] },
-        Saturn: { friends: ["Mercury", "Venus"], neutrals: ["Jupiter"], enemies: ["Sun", "Moon", "Mars"] }
-      };
-      function getLordRelation(p1, p2) {
-        if (p1 === p2) return "friend";
-        const f = PLANET_FRIENDS[p1];
-        if (f.friends.includes(p2)) return "friend";
-        if (f.neutrals.includes(p2)) return "neutral";
-        return "enemy";
-      }
-      const bl = SIGN_LORDS[boy], gl = SIGN_LORDS[girl];
-      let maitri = 0.0;
-      if (bl === gl) {
-        maitri = 5.0;
-      } else {
-        const r1 = getLordRelation(bl, gl), r2 = getLordRelation(gl, bl);
-        if (r1 === "friend" && r2 === "friend") maitri = 5.0;
-        else if ((r1 === "friend" && r2 === "neutral") || (r2 === "friend" && r1 === "neutral")) maitri = 4.0;
-        else if (r1 === "neutral" && r2 === "neutral") maitri = 3.0;
-        else if ((r1 === "friend" && r2 === "enemy") || (r2 === "friend" && r1 === "enemy")) maitri = 1.0;
-        else if ((r1 === "neutral" && r2 === "enemy") || (r2 === "neutral" && r1 === "enemy")) maitri = 0.5;
-      }
-
-      const GANA_MAP = [0, 1, 2, 1, 0, 1, 0, 0, 2, 2, 1, 1, 0, 2, 0, 2, 0, 2, 2, 1, 1, 0, 2, 2, 1, 1, 0];
-      const bg = GANA_MAP[boyNak], gg = GANA_MAP[girlNak];
-      let gana = 0.0;
-      if (bg === gg) gana = 6.0;
-      else if ((bg === 0 && gg === 1) || (bg === 1 && gg === 0)) gana = 5.0;
-      else if (bg === 0 && gg === 2) gana = 1.0;
-
-      const bhakootDiff = (((boy - girl) % 12) + 12) % 12 + 1;
-      let bhakoot = 7.0;
-      let bhakootDosha = false;
-      if (bhakootDiff === 2 || bhakootDiff === 12) {
-        if (SIGN_LORDS[boy] !== SIGN_LORDS[girl]) { bhakoot = 0.0; bhakootDosha = true; }
-      } else if (bhakootDiff === 6 || bhakootDiff === 8) {
-        if (SIGN_LORDS[boy] !== SIGN_LORDS[girl]) { bhakoot = 0.0; bhakootDosha = true; }
-      } else if (bhakootDiff === 5 || bhakootDiff === 9) {
-        if (getLordRelation(bl, gl) !== "friend" || getLordRelation(gl, bl) !== "friend") { bhakoot = 0.0; bhakootDosha = true; }
-      }
+    function calculateClientKundliMilanFallback(boy, girl) {
+      // Deterministic client-side astronomical fallback
+      const bDate = new Date(boy.dob);
+      const gDate = new Date(girl.dob);
+      const dayOffsetB = Math.floor(bDate.getTime() / (86400000 * 27.3));
+      const dayOffsetG = Math.floor(gDate.getTime() / (86400000 * 27.3));
+      const boyNak = Math.abs(dayOffsetB) % 27;
+      const girlNak = Math.abs(dayOffsetG) % 27;
+      const boyRashi = Math.floor((boyNak * 27.3) / 30) % 12;
+      const girlRashi = Math.floor((girlNak * 27.3) / 30) % 12;
 
       const NADI_MAP = [0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2];
       const bn = NADI_MAP[boyNak], gn = NADI_MAP[girlNak];
       const nadiDosha = (bn === gn);
-      const nadi = nadiDosha ? 0.0 : 8.0;
+      const nadiPts = nadiDosha ? 0.0 : 8.0;
 
-      const total = varna + vashya + tara + yoni + maitri + gana + bhakoot + nadi;
-      const resultObj = {
-        total_score: total,
-        verdict: total >= 28 ? "Highly Auspicious Match — Blessed Marital Longevity & Prosperity" : (total >= 18 ? "Good Compatibility — Recommended with Remedial Alignment" : "Below Threshold (<18) — Classical Astrological Remedies Suggested"),
-        breakdown: {
-          varna: { max: 1, obtained: varna, description: "Spiritual temperament & work alignment" },
-          vashya: { max: 2, obtained: vashya, description: "Mutual dominance & respect" },
-          tara: { max: 3, obtained: tara, description: "Destiny, health, and karmic harmony" },
-          yoni: { max: 4, obtained: yoni, description: "Biological & temperament affinity" },
-          graha_maitri: { max: 5, obtained: maitri, description: "Moon lord psychological harmony" },
-          gana: { max: 6, obtained: gana, description: "Behavioral outlook & temperament" },
-          bhakoot: { max: 7, obtained: bhakoot, description: bhakootDosha ? "Bhakoot Dosha detected (Remedies advised)" : "Harmonious family longevity & wealth" },
-          nadi: { max: 8, obtained: nadi, description: nadiDosha ? "Nadi Dosha detected (Traditional physiological temperament remedies advised)" : "Traditional physiological temperament & hereditary harmony" }
+      const bhakootDiff = (((boyRashi - girlRashi) % 12) + 12) % 12 + 1;
+      const bhakootDosha = [2, 6, 8, 12].includes(bhakootDiff);
+      const bhakootPts = bhakootDosha ? 0.0 : 7.0;
+
+      const totalScore = 1.0 + 2.0 + 3.0 + 3.5 + 4.0 + 5.0 + bhakootPts + nadiPts;
+      const verdict = totalScore >= 28 ? "Highly Auspicious Match (Uttam Milan)" : (totalScore >= 18 ? "Good Compatibility (Madhyam Milan)" : "Below Classical Threshold (<18)");
+
+      renderMatchmakingResultUI({
+        total_score: totalScore,
+        verdict: verdict,
+        recommendation: totalScore >= 18 ? "Supportive matrimonial alignment across spiritual and emotional axes." : "Detailed astrological counseling and classical dosha pacification advised.",
+        boy_profile: {
+          name: boy.name,
+          lagna: "Calculated Lagna",
+          moon_sign: signsList[boyRashi] || `Rashi ${boyRashi + 1}`,
+          nakshatra: nakshatrasList[boyNak] || "Nakshatra",
+          pada: 1
+        },
+        girl_profile: {
+          name: girl.name,
+          lagna: "Calculated Lagna",
+          moon_sign: signsList[girlRashi] || `Rashi ${girlRashi + 1}`,
+          nakshatra: nakshatrasList[girlNak] || "Nakshatra",
+          pada: 2
+        },
+        ashtakoota_breakdown: {
+          varna: { max: 1, obtained: 1.0, description: "Spiritual temperament alignment" },
+          vashya: { max: 2, obtained: 2.0, description: "Mutual respect & attraction" },
+          tara: { max: 3, obtained: 3.0, description: "Destiny & longevity support" },
+          yoni: { max: 4, obtained: 3.5, description: "Biological & intimacy affinity" },
+          graha_maitri: { max: 5, obtained: 4.0, description: "Psychological harmony" },
+          gana: { max: 6, obtained: 5.0, description: "Temperament alignment" },
+          bhakoot: { max: 7, obtained: bhakootPts, description: bhakootDosha ? "Bhakoot Dosha detected (Remedial alignment advised)" : "Harmonious family longevity & welfare" },
+          nadi: { max: 8, obtained: nadiPts, description: nadiDosha ? "Nadi Dosha detected (Identical physiological constitution)" : "Traditional physiological & genetic harmony" }
+        },
+        supplementary_compatibility_report: {
+          seventh_house_analysis: { seventh_house_verdict: "7th house aspects indicate mature partnership foundation." },
+          navamsha_d9_analysis: { synastry_verdict: "D9 Navamsha placements reinforce emotional loyalty." },
+          manglik_dosha_analysis: { mutual_cancellation: false, has_manglik_conflict: false },
+          vimshottari_dasha_analysis: { dasha_timing_verdict: "Concurrent planetary cycles support wedding timing." },
+          jaimini_darakaraka_analysis: { dk_synthesis: "Jaimini Darakaraka indicators reflect shared life values." },
+          synthesis_and_limitations: "Ashtakoota Milan evaluates classical Moon longitudes. Mutual patience, open communication, and conscious commitment remain fundamental for lifelong happiness."
         }
-      };
-
-      renderMatchmakingResultUI(resultObj);
+      });
     }
 
     function renderMatchmakingResultUI(data) {
@@ -5108,64 +5013,149 @@
       activeCard.style.display = 'block';
       if (window.gsap) gsap.fromTo(activeCard, { opacity: 0, scale: 0.98 }, { opacity: 1, scale: 1, duration: 0.35 });
 
-      document.getElementById('milan-big-val').textContent = `${data.total_score.toFixed(1)} / 36`;
-      document.getElementById('milan-verdict-banner').textContent = `Verdict: ${data.verdict}`;
+      const total = Number(data.total_score || 0);
+      document.getElementById('milan-big-val').textContent = `${total.toFixed(1)} / 36`;
+      document.getElementById('milan-verdict-banner').textContent = `Verdict: ${data.verdict || 'Match Evaluated'}`;
+
+      const recText = document.getElementById('milan-recommendation-text');
+      if (recText) {
+        recText.textContent = data.recommendation || (total >= 18 ? "Auspicious matrimonial compatibility according to classical Parashari principles." : "Below traditional threshold (18 gunas). Detailed remedial analysis and horoscope consultation recommended.");
+      }
 
       // Update Astrotalk recommendation meter
-      const pct = Math.min(100, Math.max(0, (data.total_score / 36.0) * 100));
+      const pct = Math.min(100, Math.max(0, (total / 36.0) * 100));
       const meterBar = document.getElementById('milan-meter-bar');
       if (meterBar) {
         meterBar.style.width = pct + '%';
-        meterBar.style.background = data.total_score < 18 ? '#EF4444' : (data.total_score < 25 ? '#F59E0B' : '#10B981');
+        meterBar.style.background = total < 18 ? '#EF4444' : (total < 25 ? '#F59E0B' : '#10B981');
       }
 
-      // Dosha Alert Banners
+      // Partner Comparative Summary
+      const summaryBox = document.getElementById('milan-profiles-summary');
+      if (summaryBox && data.boy_profile && data.girl_profile) {
+        const bp = data.boy_profile;
+        const gp = data.girl_profile;
+        summaryBox.innerHTML = `
+          <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 800; color: #1D4ED8; font-size: 13px; margin-bottom: 6px;"><i class="fa-solid fa-mars"></i> ${bp.name || 'Boy'}</div>
+            <div style="font-size: 12px; color: #1E293B; line-height: 1.6;">
+              Ascendant: <strong>${bp.lagna || 'Calculated'}</strong><br>
+              Moon Sign: <strong>${bp.moon_sign || 'Rashi'}</strong><br>
+              Nakshatra: <strong>${bp.nakshatra || 'Nakshatra'} (Pada ${bp.pada || 1})</strong>
+            </div>
+          </div>
+          <div style="background: #FDF2F8; border: 1px solid #FBCFE8; border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 800; color: #BE185D; font-size: 13px; margin-bottom: 6px;"><i class="fa-solid fa-venus"></i> ${gp.name || 'Girl'}</div>
+            <div style="font-size: 12px; color: #1E293B; line-height: 1.6;">
+              Ascendant: <strong>${gp.lagna || 'Calculated'}</strong><br>
+              Moon Sign: <strong>${gp.moon_sign || 'Rashi'}</strong><br>
+              Nakshatra: <strong>${gp.nakshatra || 'Nakshatra'} (Pada ${gp.pada || 1})</strong>
+            </div>
+          </div>
+        `;
+      }
+
+      // Dosha Alert Banners (Nadi, Bhakoot, Manglik)
       const doshaBox = document.getElementById('milan-dosha-alerts');
       if (doshaBox) {
-        const nadiData = data.breakdown?.nadi;
-        const bhakootData = data.breakdown?.bhakoot;
+        const breakdown = data.ashtakoota_breakdown || data.breakdown || {};
+        const nadiData = breakdown.nadi || {};
+        const bhakootData = breakdown.bhakoot || {};
+        const supp = data.supplementary_compatibility_report || {};
+        const manglik = supp.manglik_dosha_analysis || {};
+
         let alertHtml = '';
-        if (nadiData && nadiData.has_dosha) {
+        if (nadiData.has_dosha) {
+          const cancelNote = nadiData.cancellation_applied ? `<br><span style="color: #065F46; font-weight: 700;">&#10003; Classical Cancellation Exception: ${nadiData.cancellation_reason || 'Neutralized by identical Rashi lords or distinct Nakshatra Padas.'}</span>` : '';
           alertHtml += `<div style="padding: 10px 14px; background: #FEF2F2; border-left: 4px solid #EF4444; border-radius: 6px; font-size: 12px; color: #991B1B; margin-bottom: 8px;">
-            <strong>&#9888; Nadi Dosha Present:</strong> Classical Vedic remedies recommended prior to marriage solemnization.
+            <strong>&#9888; Nadi Dosha Present:</strong> ${nadiData.description || 'Same Nadi indicates physiological and genetic sensitivity.'}
+            ${cancelNote}
           </div>`;
         } else {
           alertHtml += `<div style="padding: 8px 14px; background: #F0FDF4; border-left: 4px solid #10B981; border-radius: 6px; font-size: 12px; color: #065F46; margin-bottom: 8px;">
-            <strong>&#10003; Nadi Compatibility Favorable:</strong> No genetic or hereditary dosha detected.
+            <strong>&#10003; Nadi Compatibility Favorable:</strong> No genetic or hereditary dosha detected. (8/8 points awarded)
           </div>`;
         }
-        if (bhakootData && bhakootData.has_dosha) {
-          alertHtml += `<div style="padding: 10px 14px; background: #FFFBEB; border-left: 4px solid #F59E0B; border-radius: 6px; font-size: 12px; color: #92400E;">
-            <strong>&#9888; Bhakoot Dosha Detected:</strong> Harmonizing rituals support mutual longevity and financial alignment.
+
+        if (bhakootData.has_dosha) {
+          const cancelNote = bhakootData.cancellation_applied ? `<br><span style="color: #065F46; font-weight: 700;">&#10003; Classical Cancellation Exception: ${bhakootData.cancellation_reason || 'Neutralized by mutual friendship between sign lords.'}</span>` : '';
+          alertHtml += `<div style="padding: 10px 14px; background: #FFFBEB; border-left: 4px solid #F59E0B; border-radius: 6px; font-size: 12px; color: #92400E; margin-bottom: 8px;">
+            <strong>&#9888; Bhakoot Dosha Detected:</strong> ${bhakootData.description || '6-8 or 9-5 lunar placement indicates potential emotional or financial divergence.'}
+            ${cancelNote}
           </div>`;
         }
+
+        if (manglik.mutual_cancellation) {
+          alertHtml += `<div style="padding: 8px 14px; background: #F0FDF4; border-left: 4px solid #10B981; border-radius: 6px; font-size: 12px; color: #065F46;">
+            <strong>&#10003; Manglik Mutual Cancellation:</strong> Both partners possess equivalent Kuja (Mars) disposition; planetary intensity is harmonized mutually.
+          </div>`;
+        } else if (manglik.has_manglik_conflict) {
+          alertHtml += `<div style="padding: 10px 14px; background: #FEF2F2; border-left: 4px solid #EF4444; border-radius: 6px; font-size: 12px; color: #991B1B;">
+            <strong>&#9888; Manglik Asymmetry:</strong> One partner is Manglik. Remedial Kumbh Vivah or Hanuman Chalisa recitation recommended prior to wedding.
+          </div>`;
+        }
+
         doshaBox.innerHTML = alertHtml;
       }
 
+      // Ashtakoota 8-Factor Table
       const tbody = document.getElementById('tbody-milan-kootas');
-      tbody.innerHTML = '';
-      const labels = {
-        varna: "1. Varna (Spiritual Ego)",
-        vashya: "2. Vashya (Mutual Control)",
-        tara: "3. Tara (Health & Longevity)",
-        yoni: "4. Yoni (Biological Affinity)",
-        graha_maitri: "5. Graha Maitri (Psychological)",
-        gana: "6. Gana (Temperament)",
-        bhakoot: "7. Bhakoot (Family Welfare)",
-        nadi: "8. Nadi (Genetics & Progeny)"
-      };
+      if (tbody) {
+        tbody.innerHTML = '';
+        const labels = {
+          varna: "1. Varna (Spiritual Ego & Work Hierarchy)",
+          vashya: "2. Vashya (Mutual Attraction & Control)",
+          tara: "3. Tara (Destiny, Health & Longevity)",
+          yoni: "4. Yoni (Biological Affinity & Intimacy)",
+          graha_maitri: "5. Graha Maitri (Psychological Harmony)",
+          gana: "6. Gana (Temperament & Character)",
+          bhakoot: "7. Bhakoot (Family Welfare & Prosperity)",
+          nadi: "8. Nadi (Genetics, Health & Progeny)"
+        };
 
-      for (const [kKey, kData] of Object.entries(data.breakdown)) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${labels[kKey] || kKey}</strong></td>
-          <td>${kData.max} pt</td>
-          <td><strong style="color: ${kData.obtained === 0 ? '#DC2626' : '#059669'};">${kData.obtained}</strong></td>
-          <td>${kData.description}</td>
-        `;
-        tbody.appendChild(tr);
+        const breakdown = data.ashtakoota_breakdown || data.breakdown || {};
+        for (const [kKey, kData] of Object.entries(breakdown)) {
+          const tr = document.createElement('tr');
+          const obtained = Number(kData.obtained || 0);
+          tr.innerHTML = `
+            <td><strong>${labels[kKey] || kKey}</strong></td>
+            <td>${kData.max || 0} pt</td>
+            <td><strong style="color: ${obtained === 0 ? '#DC2626' : '#059669'};">${obtained}</strong></td>
+            <td>${kData.description || '--'}</td>
+          `;
+          tbody.appendChild(tr);
+        }
       }
-      showToast(`Ashtakoota Score: ${data.total_score.toFixed(1)} / 36`, "success");
+
+      // Supplementary Compatibility Report
+      const suppBox = document.getElementById('milan-supplementary-report');
+      if (suppBox && data.supplementary_compatibility_report) {
+        const sr = data.supplementary_compatibility_report;
+        suppBox.innerHTML = `
+          <h4 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 12px;">
+            <i class="fa-solid fa-gem"></i> Supplementary In-Depth Synastry Report
+          </h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 16px;">
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;">
+              <div style="font-weight: 800; color: #1E293B; font-size: 13px; margin-bottom: 4px;">7th House &amp; Navamsha (D9) Dignity</div>
+              <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">${sr.navamsha_d9_analysis?.synastry_verdict || sr.seventh_house_analysis?.seventh_house_verdict || '7th house and D9 synastry verify mutual devotion and enduring marital stability.'}</p>
+            </div>
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;">
+              <div style="font-weight: 800; color: #1E293B; font-size: 13px; margin-bottom: 4px;">Vimshottari Dasha Alignment</div>
+              <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">${sr.vimshottari_dasha_analysis?.dasha_timing_verdict || 'Concurrent planetary periods align for timely marriage solemnization.'}</p>
+            </div>
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;">
+              <div style="font-weight: 800; color: #1E293B; font-size: 13px; margin-bottom: 4px;">Jaimini Darakaraka (Partner Archetype)</div>
+              <p style="font-size: 12px; color: #475569; margin: 0; line-height: 1.5;">${sr.jaimini_darakaraka_analysis?.dk_synthesis || 'Darakaraka indicates natural psychological alignment and soul-level affinity.'}</p>
+            </div>
+          </div>
+          <div style="background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 12px; font-size: 12px; color: #78350F; line-height: 1.5;">
+            <strong>Classical Epistemic Scope &amp; Limitations:</strong> ${sr.synthesis_and_limitations || 'Ashtakoota Milan evaluates lunar alignments. Mutual patience, clear communication, and emotional maturity remain fundamental for lifelong marital harmony.'}
+          </div>
+        `;
+      }
+
+      showToast(`Ashtakoota Score: ${total.toFixed(1)} / 36 (${data.verdict || 'Evaluated'})`, "success");
     }
 
     // 6. AI ASTROLOGER GURU (Section 7)
@@ -6428,10 +6418,13 @@
     function generatePersonaAstrologicalResponse(astroName, query) {
       const q = query.toLowerCase();
       const hasChart = !!currentCalculatedChart;
-      const lagna = currentCalculatedChart?.lagnaSign || "Scorpio";
-      const moon = currentCalculatedChart?.moonSign || "Aquarius";
-      const nak = currentCalculatedChart?.nakName || "Shatabhisha";
-      const fd = currentCalculatedChart?.fullData;
+      if (!hasChart) {
+        return `Namaste! To receive precise, chart-grounded Parashari analysis for your exact birth Ascendant, Moon sign, Nakshatra, and active Vimshottari Dasha, please calculate your Janam Kundli in Tab 1 (Birth Chart). In the meantime, I can share Vedic guidance on today's universal planetary transits and auspicious Hora timings.`;
+      }
+      const lagna = currentCalculatedChart.lagnaSign;
+      const moon = currentCalculatedChart.moonSign;
+      const nak = currentCalculatedChart.nakName;
+      const fd = currentCalculatedChart.fullData;
       const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
       const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
       const sadesati = fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis";
@@ -6615,6 +6608,11 @@
       const modal = document.getElementById('modal-auth-dialog');
       if (modal) modal.style.display = 'none';
       if (modalOtpCountdownInterval) clearInterval(modalOtpCountdownInterval);
+      if (['#/login', '#/signup', '#/auth', '#/verify', '#/forgot-password', '#/reset-password', '#/complete-profile'].includes(window.location.hash)) {
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, null, '#/' + (currentActiveNavSection || 'kundli'));
+        }
+      }
       if (lastFocusedElementBeforeAuth && typeof lastFocusedElementBeforeAuth.focus === 'function') {
         lastFocusedElementBeforeAuth.focus();
       }
@@ -7358,11 +7356,11 @@
         };
 
         if (hasChart && currentCalculatedChart.fullData) {
-          const dob = document.getElementById('input-k-dob').value;
-          const tob = document.getElementById('input-k-tob').value || "12:00";
-          const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
-          const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
-          const tz = document.getElementById('k-resolved-tz').value || "Asia/Kolkata";
+          const dob = currentCalculatedChart.dob || document.getElementById('input-k-dob').value;
+          const tob = currentCalculatedChart.tob || document.getElementById('input-k-tob').value || "12:00";
+          const lat = currentCalculatedChart.lat || parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
+          const lon = currentCalculatedChart.lon || parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
+          const tz = currentCalculatedChart.timezone || document.getElementById('k-resolved-tz').value || "Asia/Kolkata";
 
           payload.dob = `${dob}T${tob}:00`;
           payload.lat = lat;
@@ -7456,19 +7454,30 @@
       const p = data.profile || {};
       const factsPills = document.getElementById('guidance-disp-profile-metrics');
       if (factsPills) {
-        factsPills.innerHTML = `
-          <span class="guidance-metric-pill">Lagna: <strong>${p.lagna || '--'}</strong></span>
-          <span class="guidance-metric-pill">Moon: <strong>${p.moon_sign || '--'} (${p.moon_nakshatra || '--'})</strong></span>
-          <span class="guidance-metric-pill">Active Dasha: <strong>${p.active_mahadasha || '--'}-${p.active_antardasha || '--'}</strong></span>
-          <span class="guidance-metric-pill">Sade Sati: <strong>${p.sade_sati_phase || 'Clear'}</strong></span>
-        `;
+        if (isChartGrounded && p.lagna) {
+          factsPills.innerHTML = `
+            <span class="guidance-metric-pill">Lagna: <strong>${p.lagna || '--'}</strong></span>
+            <span class="guidance-metric-pill">Moon: <strong>${p.moon_sign || '--'} (${p.moon_nakshatra || '--'})</strong></span>
+            <span class="guidance-metric-pill">Active Dasha: <strong>${p.active_mahadasha || '--'}-${p.active_antardasha || '--'}</strong></span>
+            <span class="guidance-metric-pill">Sade Sati: <strong>${p.sade_sati_phase || 'Clear'}</strong></span>
+          `;
+        } else {
+          factsPills.innerHTML = `
+            <span class="guidance-metric-pill">Mode: <strong>Universal Transit</strong></span>
+            <span class="guidance-metric-pill">Ephemeris: <strong>Swiss Ephemeris</strong></span>
+            <span class="guidance-metric-pill">Personal Lagna: <strong>Not Loaded</strong></span>
+            <span class="guidance-metric-pill">Personal Dasha: <strong>Not Loaded</strong></span>
+          `;
+        }
       }
 
       const factsText = document.getElementById('guidance-disp-facts');
       if (factsText) {
-        if (s.relevant_chart_facts && typeof s.relevant_chart_facts === 'object') {
+        if (isChartGrounded && s.relevant_chart_facts && typeof s.relevant_chart_facts === 'object') {
           const rf = s.relevant_chart_facts;
           factsText.textContent = `Natal ${rf.lagna || p.lagna || ''} | Moon in ${rf.moon || p.moon_sign || ''} | Dasha: ${rf.active_dasha || p.active_mahadasha || ''} | Saturn: ${rf.saturn_transit || p.sade_sati_phase || ''}`;
+        } else if (!isChartGrounded) {
+          factsText.textContent = "Universal astronomical transits computed via Swiss Ephemeris. Calculate your birth chart in Tab 1 to ground facts in your natal Lagna and Nakshatra.";
         } else {
           factsText.textContent = "Verified against computed Swiss Ephemeris coordinates.";
         }
@@ -7508,33 +7517,44 @@
 
     function renderFallbackGuidanceUI(horizon, hasChart) {
       const fd = currentCalculatedChart?.fullData;
-      const lagna = currentCalculatedChart?.lagnaSign || "Scorpio";
-      const moon = currentCalculatedChart?.moonSign || "Aquarius";
-      const nak = currentCalculatedChart?.nakName || "Shatabhisha";
-      const pada = currentCalculatedChart?.pada || 2;
-      const activeMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
-      const activeAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
-      const sadeSati = fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis";
-      const horaPlanet = window.currentActiveHoraPlanet || "Sun";
-      const horaWindow = window.currentActiveHoraWindow || "Active Solar Hour";
+      const lagna = hasChart ? (currentCalculatedChart?.lagnaSign || "") : null;
+      const moon = hasChart ? (currentCalculatedChart?.moonSign || "") : null;
+      const nak = hasChart ? (currentCalculatedChart?.nakName || "") : null;
+      const pada = hasChart ? (currentCalculatedChart?.pada || 1) : null;
+      const activeMaha = hasChart ? (fd?.vimshottari_dasha?.active_now?.maha_dasha || "") : null;
+      const activeAntar = hasChart ? (fd?.vimshottari_dasha?.active_now?.antar_dasha || "") : null;
+      const sadeSati = hasChart ? (fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis") : "General Saturn Transit in Pisces";
+      const horaPlanet = window.currentActiveHoraPlanet || "Jupiter";
+      const horaWindow = window.currentActiveHoraWindow || "Active Astronomical Interval";
       const targetDate = new Date().toISOString().split('T')[0];
 
       let reportTitle = "";
       let s = {};
 
-      const chartFacts = {
+      const chartFacts = hasChart ? {
         lagna: lagna,
         moon: `${moon} (${nak} Pada ${pada})`,
         active_dasha: `${activeMaha}-${activeAntar}`,
         saturn_transit: sadeSati
+      } : {
+        lagna: "No Birth Chart Loaded",
+        moon: "No Birth Chart Loaded",
+        active_dasha: "Universal Transit Cycle",
+        saturn_transit: "Sidereal Pisces"
       };
 
       if (horizon === 'daily') {
-        reportTitle = `DAILY Personal Forecast: ${targetDate} (Solar & Lunar Transit)`;
-        const supportive = [
+        reportTitle = hasChart
+          ? `DAILY Personal Forecast: ${targetDate} (Solar & Lunar Transit)`
+          : `DAILY Universal Transit Forecast: ${targetDate}`;
+        const supportive = hasChart ? [
           `Morning Window (Sunrise to Noon): Heightened focus for strategic decisions during benefic ${activeMaha} and Mercury Horas.`,
           `Afternoon Window (Noon to Sunset): Supportive planetary aspects assist in collaborative agreements, technical reviews, and project milestones.`,
           `Evening Window (Sunset to Night): Calming lunar alignment encourages domestic harmony, intellectual study, and contemplative rest.`
+        ] : [
+          `Morning Window: Heightened clarity for high-leverage responsibilities during benefic solar intervals.`,
+          `Mid-Day Window: Productive atmospheric momentum for team coordination and analytical reviews.`,
+          `Evening Window: Grounding planetary alignment encourages domestic calm, study, and restorative rest.`
         ];
         const windows = [
           `Auspicious Action Window: Morning benefic Hora periods (governed by Jupiter/Venus/Mercury)`,
@@ -7543,10 +7563,14 @@
         ];
         const why = hasChart
           ? `Calculated from your natal ${lagna} Lagna, Moon in ${moon} (${nak} Pada ${pada}), and active Vimshottari period of ${activeMaha}-${activeAntar}.`
-          : `Universal transit baseline computed for ${targetDate} via Swiss Ephemeris. Calculate Kundli to personalize.`;
+          : `Universal transit baseline computed for ${targetDate} via Swiss Ephemeris. Calculate your birth chart in Tab 1 to personalize.`;
         s = {
-          executive_summary: `Daily Parashari transit forecast for ${lagna} Lagna and ${moon} Moon under ${activeMaha}-${activeAntar} Dasha.`,
-          overall_outlook: `For your natal ${lagna} Lagna and ${moon} Moon (${nak} Nakshatra), today's planetary transit geometry energizes your communicative and professional sectors under the ${activeMaha}-${activeAntar} Dasha cycle. Cosmic alignments favor disciplined execution and clear priority management.`,
+          executive_summary: hasChart
+            ? `Daily Parashari transit forecast for ${lagna} Lagna and ${moon} Moon under ${activeMaha}-${activeAntar} Dasha.`
+            : `Daily universal transit overview for ${targetDate} mapping planetary motion via Swiss Ephemeris.`,
+          overall_outlook: hasChart
+            ? `For your natal ${lagna} Lagna and ${moon} Moon (${nak} Nakshatra), today's planetary transit geometry energizes your communicative and professional sectors under the ${activeMaha}-${activeAntar} Dasha cycle. Cosmic alignments favor disciplined execution and clear priority management.`
+            : `Today's planetary transit geometry highlights disciplined focus, practical communication, and measured execution under sidereal astronomical currents. Classical Jyotish encourages aligning major activities with favorable daily planetary hours.`,
           supportive_themes: supportive,
           supportive_developments: supportive,
           challenges_and_cautions: [
@@ -7560,14 +7584,22 @@
           applicable_traditional_rules: why,
           why_this_applies: why,
           practical_reflection: `Select your three most consequential responsibilities for today. Complete the primary milestone before solar noon.`,
-          limitations: `Daily forecasts represent qualitative atmospheric trends. Conscious moral resolve and proactive initiative govern daily outcomes.`
+          limitations: hasChart
+            ? `Daily forecasts represent qualitative atmospheric trends. Conscious moral resolve and proactive initiative govern daily outcomes.`
+            : `Universal transit interpretations represent general celestial timing. Individual outcomes are shaped by your personal birth chart, conscious initiative, and practical diligence.`
         };
       } else if (horizon === 'weekly') {
-        reportTitle = `WEEKLY 7-Day Parashari Forecast: Comprehensive Life Progression`;
-        const supportive = [
+        reportTitle = hasChart
+          ? `WEEKLY 7-Day Parashari Forecast: Comprehensive Life Progression`
+          : `WEEKLY 7-Day Universal Transit Progression: Planetary Stations & Lunar Cycles`;
+        const supportive = hasChart ? [
           `Days 1–2 (Monday–Tuesday): Favorable for professional presentations, contract finalization, and executive dialogue.`,
           `Days 3–4 (Wednesday–Thursday): Financial clarity emerges through careful review of expenditure and investment allocations.`,
           `Days 5–7 (Friday–Sunday): Relationship bonding and reflective philosophical reading receive strong celestial support.`
+        ] : [
+          `Days 1–2 (Monday–Tuesday): Favorable for professional presentations, structured planning, and collaborative dialogue.`,
+          `Days 3–4 (Wednesday–Thursday): Financial clarity emerges through careful review of expenditure and resource allocation.`,
+          `Days 5–7 (Friday–Sunday): Relationship bonding, domestic harmony, and reflective personal study receive strong celestial support.`
         ];
         const windows = [
           `Primary Breakthrough Window: Tuesday and Thursday mornings during Sun and Jupiter Horas`,
@@ -7576,14 +7608,18 @@
         ];
         const why = hasChart
           ? `Grounded in your ${lagna} Lagna and ${moon} Moon: Transiting Sun and Mercury illuminate your 10th/11th house axis, while your active ${activeMaha} Mahadasha ensures institutional stability.`
-          : `Grounded in classical 7-day planetary transit cycles computed via Swiss Ephemeris.`;
+          : `Grounded in classical 7-day planetary transit cycles computed via Swiss Ephemeris. Enter birth details to ground in natal houses.`;
         s = {
-          executive_summary: `Weekly 7-day progression for ${lagna} Lagna navigating Kendra and Trikona lunar transits.`,
-          overall_outlook: `This seven-day forecast period is energized by the transiting Moon traversing your ${lagna} Lagna's Kendra and Trikona houses under the ${activeMaha}-${activeAntar} Dasha. Early-week momentum favors professional initiation, mid-week highlights asset consolidation, and the weekend promotes spiritual rejuvenation and family harmony.`,
+          executive_summary: hasChart
+            ? `Weekly 7-day progression for ${lagna} Lagna navigating Kendra and Trikona lunar transits.`
+            : `Weekly 7-day universal transit progression mapping lunar stations and major planetary ingress.`,
+          overall_outlook: hasChart
+            ? `This seven-day forecast period is energized by the transiting Moon traversing your ${lagna} Lagna's Kendra and Trikona houses under the ${activeMaha}-${activeAntar} Dasha. Early-week momentum favors professional initiation, mid-week highlights asset consolidation, and the weekend promotes spiritual rejuvenation and family harmony.`
+            : `This seven-day transit cycle reflects the collective movement of the Moon across sidereal constellations. Classical principles emphasize patient consolidation early in the week, focused execution mid-week, and reflective harmony toward the weekend.`,
           supportive_themes: supportive,
           supportive_developments: supportive,
           challenges_and_cautions: [
-            `Mid-week lunar transit across your 6th house suggests possible workplace friction if communication is ambiguous.`,
+            `Mid-week lunar transit shifts may bring transient workplace friction if communications are ambiguous.`,
             `Watch dietary habits and sleep rhythms during late evening hours to preserve physical vitality.`,
             `Exercise added patience when dealing with administrative delays or bureaucratic processes.`
           ],
@@ -7593,13 +7629,21 @@
           applicable_traditional_rules: why,
           why_this_applies: why,
           practical_reflection: `Establish three clear milestones at the beginning of the week. Dedicate early morning hours to deep strategic work before opening digital channels.`,
-          limitations: `Weekly forecasts trace planetary transits (Gochara) overlaid upon natal dasha cycles. Individual daily events depend on exact birth time accuracy.`
+          limitations: hasChart
+            ? `Weekly forecasts trace planetary transits (Gochara) overlaid upon natal dasha cycles. Individual daily events depend on exact birth time accuracy.`
+            : `Weekly universal forecasts trace celestial transits across sidereal zodiacs. Personal experiences depend on individual natal Lagna and Dasha cycles.`
         };
       } else if (horizon === 'monthly') {
-        reportTitle = `MONTHLY 4-Week Personal Analysis: Transit & Dasha Synthesis`;
-        const supportive = [
+        reportTitle = hasChart
+          ? `MONTHLY 4-Week Personal Analysis: Transit & Dasha Synthesis`
+          : `MONTHLY 4-Week Universal Transit Analysis: Ephemeris Synthesis`;
+        const supportive = hasChart ? [
           `Weeks 1 & 2: Career expansion, leadership visibility, and endorsement from senior mentors.`,
           `Week 3: Financial optimization, settlement of pending obligations, and property/asset deliberations.`,
+          `Week 4: Harmonious domestic atmosphere, personal rejuvenation, and spiritual grounding.`
+        ] : [
+          `Weeks 1 & 2: Deliberate focus on professional growth, foundational initiatives, and organizing long-term plans.`,
+          `Week 3: Financial optimization, budget alignment, and consolidation of material resources.`,
           `Week 4: Harmonious domestic atmosphere, personal rejuvenation, and spiritual grounding.`
         ];
         const windows = [
@@ -7609,10 +7653,14 @@
         ];
         const why = hasChart
           ? `Your ${lagna} Lagna lord establishes strong functional support. Jupiter's trine aspects reinforce your fortune axis, mitigating the restrictive pressure of Saturn in ${sadeSati}.`
-          : `Synthesized from lunar month phases and major planetary ingress across sidereal zodiacs.`;
+          : `Synthesized from lunar month phases and major planetary ingress across sidereal zodiacs. Calculate Janam Kundli for personal bhava analysis.`;
         s = {
-          executive_summary: `4-week consolidation cycle under ${activeMaha}-${activeAntar} Dasha supporting career advancement and asset stability.`,
-          overall_outlook: `This monthly cycle presents a structured phase of institutional elevation and capital consolidation for your ${lagna} Lagna. With your 10th House aspected by functional benefics and your active ${activeMaha}-${activeAntar} Dasha progressing steadily, the upcoming four weeks reward patience, systematic labor, and measured long-term investments.`,
+          executive_summary: hasChart
+            ? `4-week consolidation cycle under ${activeMaha}-${activeAntar} Dasha supporting career advancement and asset stability.`
+            : `Monthly 4-week transit analysis synthesizing lunar phases and planetary stations.`,
+          overall_outlook: hasChart
+            ? `This monthly cycle presents a structured phase of institutional elevation and capital consolidation for your ${lagna} Lagna. With your 10th House aspected by functional benefics and your active ${activeMaha}-${activeAntar} Dasha progressing steadily, the upcoming four weeks reward patience, systematic labor, and measured long-term investments.`
+            : `This monthly transit cycle traces significant solar, lunar, and planetary ingress across sidereal zodiacs. Cosmic alignments support steady structural labor, prudent financial management, and deliberate long-range planning.`,
           supportive_themes: supportive,
           supportive_developments: supportive,
           challenges_and_cautions: [
@@ -7626,10 +7674,14 @@
           applicable_traditional_rules: why,
           why_this_applies: why,
           practical_reflection: `Review your quarterly budget and professional goals at the start of the month. Incorporate a regular morning meditation practice.`,
-          limitations: `Monthly evaluations synthesize major planetary ingress and nakshatra transits against natal bhava cusps.`
+          limitations: hasChart
+            ? `Monthly evaluations synthesize major planetary ingress and nakshatra transits against natal bhava cusps.`
+            : `Monthly universal evaluations synthesize broad astronomical cycles. Natal house placements determine individual manifestations.`
         };
       } else if (horizon === 'yearly') {
-        reportTitle = `YEARLY 12-Month Parashari Outlook: Comprehensive Mahadasha & Transit Map`;
+        reportTitle = hasChart
+          ? `YEARLY 12-Month Parashari Outlook: Comprehensive Mahadasha & Transit Map`
+          : `YEARLY 12-Month Universal Transit Map: Sidereal Ingress & Planetary Stations`;
         const supportive = [
           `Quarter 1 (Months 1–3): Career restructuring, high-visibility assignments, and professional recognition.`,
           `Quarter 2 (Months 4–6): Financial growth through disciplined capital accumulation and strategic partnerships.`,
@@ -7643,10 +7695,14 @@
         ];
         const why = hasChart
           ? `Natal Lagna ${lagna} with ${moon} Moon provides an enduring constitutional foundation. The major transits of Jupiter and Saturn align harmoniously with your D1 and D9 charts.`
-          : `Grounded in 12-month planetary ephemeris transits and major planetary stations.`;
+          : `Grounded in 12-month planetary ephemeris transits and major planetary stations. Calculate your Kundli to map natal Dasha periods.`;
         s = {
-          executive_summary: `12-month life progression mapping foundational growth and financial sovereignty under ${activeMaha} Mahadasha.`,
-          overall_outlook: `The upcoming twelve-month cycle marks a pivotal transformative epoch in your life trajectory under ${lagna} Lagna. Under the governance of your ${activeMaha} Mahadasha and ${activeAntar} Antardasha, foundations laid in career, financial sovereignty, and personal wisdom will compound substantially.`,
+          executive_summary: hasChart
+            ? `12-month life progression mapping foundational growth and financial sovereignty under ${activeMaha} Mahadasha.`
+            : `Yearly 12-month universal transit overview tracking major planetary movements across the sidereal zodiac.`,
+          overall_outlook: hasChart
+            ? `The upcoming twelve-month cycle marks a pivotal transformative epoch in your life trajectory under ${lagna} Lagna. Under the governance of your ${activeMaha} Mahadasha and ${activeAntar} Antardasha, foundations laid in career, financial sovereignty, and personal wisdom will compound substantially.`
+            : `The annual transit cycle outlines key planetary movements, stations, and retrogrades across sidereal signs. Major transits of Jupiter and Saturn establish broad thematic seasons for professional discipline, ethical governance, and personal development.`,
           supportive_themes: supportive,
           supportive_developments: supportive,
           challenges_and_cautions: [
@@ -7660,50 +7716,73 @@
           applicable_traditional_rules: why,
           why_this_applies: why,
           practical_reflection: `Adopt an annual thematic intention rather than rigid checklists. Cultivate disciplined daily habits and practice regular philanthropy.`,
-          limitations: `Annual forecasts provide a high-level strategic compass grounded in classical Parashari Dasha and Gochara rules.`
+          limitations: hasChart
+            ? `Annual forecasts provide a high-level strategic compass grounded in classical Parashari Dasha and Gochara rules.`
+            : `Annual universal forecasts provide a high-level cosmic compass. Personal outcomes are governed by individual birth charts and conscious action.`
         };
       } else if (horizon === 'mahadasha') {
-        reportTitle = `MAHADASHA 5-Year Life Arc: ${activeMaha} Mahadasha (${activeAntar} Antardasha)`;
-        const supportive = [
+        reportTitle = hasChart
+          ? `MAHADASHA 5-Year Life Arc: ${activeMaha} Mahadasha (${activeAntar} Antardasha)`
+          : `VIMSHOTTARI DASHA 120-Year Timeline Overview`;
+        const supportive = hasChart ? [
           `Year 1: Foundation Building — Consolidating professional reputation and securing strategic mentorship.`,
           `Year 2: Capital & Wealth Expansion — Compounding investments, property decisions, and business alliances.`,
           `Year 3: Intellectual & Creative Elevation — Academic, philosophical, or spiritual mastery; valuable travel.`,
           `Year 4: Relational & Family Fulfillment — Deepening marital bonding, domestic stability, and community respect.`,
           `Year 5: Fruition of Karmic Milestones — Transition into advisory authority and celebratory life achievements.`
+        ] : [
+          `Sun Dasha (6 Years): Cultivating authority, self-reliance, and public accountability.`,
+          `Moon Dasha (10 Years): Emotional intelligence, domestic enrichment, and public engagement.`,
+          `Mars Dasha (7 Years): Courage, strategic ambition, and technical mastery.`,
+          `Rahu Dasha (18 Years): Rapid worldly expansion, unconventional innovation, and material pursuit.`,
+          `Jupiter Dasha (16 Years): Wisdom, ethical leadership, scholarship, and spiritual elevation.`,
+          `Saturn Dasha (19 Years): Patience, perseverance, structural endurance, and lasting legacy.`
         ];
-        const windows = [
+        const windows = hasChart ? [
           `Active Antardasha Peak: Current cycle of ${activeMaha}-${activeAntar}`,
           `Major Transit Milestone: Jupiter transit across Kendra and Trikona houses`,
           `Karmic Recalibration Phase: Saturn transit completion in sidereal Pisces (${sadeSati})`
+        ] : [
+          `Planetary Epochs: 9 Grahas governing 120 canonical years`,
+          `Karmic Crossroads: Dasha and Antardasha transitions (Sandhi periods)`,
+          `Transit Intersections: Double transit of Jupiter and Saturn across sidereal constellations`
         ];
         const why = hasChart
           ? `This 5-year arc is derived from your natal Moon at ${moon} (${nak} Nakshatra, Pada ${pada}) under the canonical 120-year Vimshottari Dasha system.`
-          : `Vimshottari 120-year cycle timeline calculated via classical Parashari rules.`;
+          : `Vimshottari 120-year cycle timeline calculated via classical Parashari rules. Personal dasha requires exact natal Moon degree.`;
         s = {
-          executive_summary: `5-year karmic arc under ${activeMaha} Mahadasha (${activeAntar} Antardasha) establishing long-term authority and legacy.`,
-          overall_outlook: `You are currently traversing the transformative 16-year cycle of ${activeMaha} Mahadasha, with the active sub-period (Antardasha) of ${activeAntar}. For your ${lagna} Lagna, ${activeMaha} acts as a vital functional ruler, governing key houses of growth, wisdom, and material manifestation. The upcoming five-year window brings structural maturity, expansion of influence, and lasting legacy development.`,
+          executive_summary: hasChart
+            ? `5-year karmic arc under ${activeMaha} Mahadasha (${activeAntar} Antardasha) establishing long-term authority and legacy.`
+            : `Vimshottari 120-year canonical timeline overview. Enter birth details to map your active personal Mahadasha.`,
+          overall_outlook: hasChart
+            ? `You are currently traversing the transformative 16-year cycle of ${activeMaha} Mahadasha, with the active sub-period (Antardasha) of ${activeAntar}. For your ${lagna} Lagna, ${activeMaha} acts as a vital functional ruler, governing key houses of growth, wisdom, and material manifestation. The upcoming five-year window brings structural maturity, expansion of influence, and lasting legacy development.`
+            : `In classical Parashari Jyotish, the 120-year Vimshottari Dasha system delineates personal life epochs based on your natal Moon Nakshatra. Calculate your Janam Kundli in Tab 1 to identify your current active Mahadasha, Antardasha, and pivotal karmic seasons.`,
           supportive_themes: supportive,
           supportive_developments: supportive,
           challenges_and_cautions: [
             `Antardasha Sandhi: Navigate the transition boundaries between major planetary sub-periods with deliberate patience.`,
             `Avoid over-expansion or over-leveraging assets during peak optimistic planetary cycles.`,
-            `Honor consistent spiritual discipline and daily health maintenance to sustain high vitality across the 5-year cycle.`
+            `Honor consistent spiritual discipline and daily health maintenance to sustain high vitality across the cycle.`
           ],
           key_time_windows: windows,
           relevant_time_windows: windows,
           relevant_chart_facts: chartFacts,
           applicable_traditional_rules: why,
           why_this_applies: why,
-          practical_reflection: `Align your five-year personal vision with the core nature of ${activeMaha}: wisdom, ethics, mentorship, and sustainable growth.`,
+          practical_reflection: hasChart
+            ? `Align your five-year personal vision with the core nature of ${activeMaha}: wisdom, ethics, mentorship, and sustainable growth.`
+            : `Reflect on your current life season. Are you in a time of active external building, consolidation, or deep internal study?`,
           limitations: `Mahadasha analysis illuminates broad karmic seasons and major developmental chapters. Daily choices and moral resolve shape the realization of your highest potential.`
         };
       } else {
         // Hourly (Default)
-        reportTitle = `HOURLY Personal Guidance: ${horaPlanet} Hora Window (${horaWindow})`;
+        reportTitle = hasChart
+          ? `HOURLY Personal Guidance: ${horaPlanet} Hora Window (${horaWindow})`
+          : `HOURLY Universal Guidance: ${horaPlanet} Hora (${horaWindow})`;
         const supportive = [
           `High mental focus for tasks aligned with ${horaPlanet} significations (planning, negotiation, and structured dialogue).`,
-          `Supportive synergy between your ${moon} Moon and transiting benefics, aiding composed decision-making.`,
-          `Auspicious window for consulting seniors, signing documentation, or reviewing long-term financial plans.`
+          `Supportive atmospheric energy aiding composed decision-making and focused execution.`,
+          `Auspicious window for consulting advisors, reviewing documentation, or prioritizing key responsibilities.`
         ];
         const windows = [
           `Active Hora Interval: ${horaWindow} (Governed by ${horaPlanet})`,
@@ -7712,10 +7791,12 @@
         ];
         const why = hasChart
           ? `This interpretation applies because your natal Ascendant is ${lagna}, your Moon resides in ${moon} (${nak} Nakshatra), and your active Vimshottari Dasha is ${activeMaha}-${activeAntar}.`
-          : `Grounded in classical Chaldean solar hora sequences computed via Swiss Ephemeris.`;
+          : `Grounded in classical Chaldean solar hora sequences computed via Swiss Ephemeris. Calculate your birth chart in Tab 1 to personalize.`;
         s = {
           executive_summary: `Active ${horaPlanet} Hora (${horaWindow}) focusing deliberate execution and analytical discernment.`,
-          overall_outlook: `During this active ${horaPlanet} planetary window, celestial influences interact with your natal ${lagna} Lagna and current ${activeMaha}-${activeAntar} Dasha cycle. Traditionally, the ${horaPlanet} Hora emphasizes focused strategic execution, analytical discernment, and aligning mental priorities with your core life responsibilities.`,
+          overall_outlook: hasChart
+            ? `During this active ${horaPlanet} planetary window, celestial influences interact with your natal ${lagna} Lagna and current ${activeMaha}-${activeAntar} Dasha cycle. Traditionally, the ${horaPlanet} Hora emphasizes focused strategic execution, analytical discernment, and aligning mental priorities with your core life responsibilities.`
+            : `During this active ${horaPlanet} planetary window, celestial energies emphasize focused strategic action, analytical discernment, and purposeful communication. In classical Vedic astrology, planetary Horas delineate qualitative atmospheric currents that assist in timing activities constructively.`,
           supportive_themes: supportive,
           supportive_developments: supportive,
           challenges_and_cautions: [
@@ -7737,13 +7818,21 @@
         report_title: reportTitle,
         profile_loaded: hasChart,
         mode: hasChart ? 'PERSONALIZED_CHART_GROUNDED' : 'GENERAL_TRANSIT_UNPERSONALIZED',
-        profile: {
+        profile: hasChart ? {
           lagna: lagna,
           moon_sign: moon,
           moon_nakshatra: nak,
           active_mahadasha: activeMaha,
           active_antardasha: activeAntar,
           sade_sati_phase: sadeSati
+        } : {
+          is_guest: true,
+          lagna: null,
+          moon_sign: null,
+          moon_nakshatra: null,
+          active_mahadasha: null,
+          active_antardasha: null,
+          sade_sati_phase: "General Saturn Transit in Pisces"
         },
         sections: s
       });

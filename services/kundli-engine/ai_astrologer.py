@@ -165,13 +165,214 @@ def generate_astrological_reading(
 def generate_structured_prediction(
     horizon: str,
     target_date_str: str,
-    kundli: Dict[str, Any],
-    dasha: Dict[str, Any],
-    doshas: Dict[str, Any],
+    kundli: Optional[Dict[str, Any]] = None,
+    dasha: Optional[Dict[str, Any]] = None,
+    doshas: Optional[Dict[str, Any]] = None,
     active_hora_planet: Optional[str] = None,
     hora_window: Optional[str] = None,
     category: str = "general"
 ) -> Dict[str, Any]:
+    hora_planet = active_hora_planet or "Jupiter"
+    time_window_str = hora_window or "Current Astronomical Interval"
+    horizon_lower = horizon.lower()
+
+    if not kundli:
+        # Canonical unpersonalized general transit guidance (no fabricated Lagna or Moon)
+        if horizon_lower == "hourly":
+            report_title = f"Hourly Universal Guidance: {hora_planet} Hora ({time_window_str})"
+            overall = (
+                f"During this universal {hora_planet} Hora, celestial energies emphasize focused strategic action, "
+                f"analytical discernment, and purposeful communication. In classical Vedic astrology, planetary Horas "
+                f"delineate qualitative atmospheric currents that assist in timing activities constructively."
+            )
+            supportive = [
+                f"Enhanced mental focus for initiatives aligned with {hora_planet} significations (planning, negotiation, and structured organization).",
+                "Constructive window for reviewing analytical projects, composing important messages, or taking structured breaks.",
+                "Favorable planetary window for thoughtful deliberation and disciplined execution."
+            ]
+            challenges = [
+                "Avoid hasty, reactive conclusions during transitions between diurnal Hora intervals.",
+                "Maintain emotional poise during high-stakes discussions to mitigate transitory astral tension.",
+                "Prevent mental exhaustion by taking intentional 5-minute pauses between major tasks."
+            ]
+            windows = [
+                f"Active Hora Interval: {time_window_str} (Governed by {hora_planet})",
+                "Recommended Focus Window: Peak middle 30 minutes of the active Hora for vital communications",
+                "Cautionary Window: Exercise added diligence during localized daily Rahu Kaal intervals"
+            ]
+            why = (
+                f"This guidance reflects the universal qualities of the active {hora_planet} Hora as calculated via Swiss Ephemeris. "
+                "To receive 100% chart-grounded interpretations derived from your personal Ascendant, Moon sign, and Vimshottari Dasha, "
+                "calculate your Janam Kundli in Tab 1."
+            )
+            reflection = f"Choose one primary priority during this {hora_planet} hour. Complete it with deliberate care before taking on secondary obligations."
+            limitations = "Universal transit interpretations represent general celestial timing. Individual outcomes are shaped by your personal birth chart, conscious initiative, and practical diligence."
+
+        elif horizon_lower == "daily":
+            report_title = f"Daily Universal Transit Forecast: {target_date_str}"
+            overall = (
+                f"Today's planetary transit geometry highlights disciplined focus, practical communication, and measured execution "
+                f"under sidereal astronomical currents. Classical Jyotish encourages aligning major activities with favorable daily planetary hours."
+            )
+            supportive = [
+                "Morning: Heightened clarity for high-leverage responsibilities during benefic solar intervals.",
+                "Mid-Day: Productive atmospheric momentum for team coordination and analytical reviews.",
+                "Evening: Grounding planetary alignment encourages domestic calm, study, and restorative rest."
+            ]
+            challenges = [
+                "Avoid signing high-stakes speculative agreements during the localized daily Rahu Kaal window.",
+                "Maintain hydration and mindful pacing to preserve physical vitality throughout the afternoon.",
+                "Keep key expectations and agreements clearly documented in writing."
+            ]
+            windows = [
+                "Auspicious Action Window: Morning benefic Hora intervals (governed by Jupiter/Venus/Mercury)",
+                "Mid-Day Peak Focus: Abhijit Muhurta (~11:45 AM - 12:35 PM local solar window)",
+                "Cautionary Period: Daily localized Rahu Kaal interval"
+            ]
+            why = "Derived from universal Gochara planetary transits computed via Swiss Ephemeris. Calculate your Janam Kundli in Tab 1 to see how these transits specifically aspect your natal houses."
+            reflection = "Focus on your three core responsibilities for today. Finish the most demanding task during peak morning hours."
+            limitations = "General transit overviews describe ambient celestial conditions. Exact personal impacts depend on your unique birth chart."
+
+        elif horizon_lower == "weekly":
+            report_title = f"Weekly Universal Transit Progression: 7-Day Cycle ({target_date_str})"
+            overall = "This seven-day transit cycle traces lunar movements across the zodiac, emphasizing professional consolidation early in the week and personal harmony toward the weekend."
+            supportive = [
+                "Days 1–3: Strong momentum for executive communications, project scheduling, and structured work.",
+                "Days 4–5: Clarification of financial budgets, resource planning, and methodical audits.",
+                "Days 6–7: Favorable planetary aspects for domestic stability, relaxation, and philosophical reflection."
+            ]
+            challenges = [
+                "Mid-week lunar transit shifts may bring temporary communication misunderstandings if requirements are vague.",
+                "Avoid unnecessary late-night screen fatigue to protect sleep quality.",
+                "Practice patience when interacting with institutional or bureaucratic procedures."
+            ]
+            windows = [
+                "Strategic Breakthrough Window: Tuesday and Thursday mornings during Sun and Jupiter Horas",
+                "Cautionary Window: Wednesday afternoon during localized Rahu Kaal",
+                "Social Harmony Window: Friday evening during Venus Hora"
+            ]
+            why = "Grounded in universal 7-day Gochara transit cycles computed via Swiss Ephemeris. Generate your Janam Kundli to ground this in your natal houses."
+            reflection = "Set three clear priorities for the week. Review them daily to ensure sustained focus."
+            limitations = "Weekly transit progressions provide a general compass. Personal manifestation depends on natal planetary dignity and dasha cycles."
+
+        elif horizon_lower == "monthly":
+            report_title = f"Monthly Universal Transit Overview: {target_date_str}"
+            overall = "This monthly lunar cycle brings focus to methodical progress, institutional stability, and capital preservation across sidereal transits."
+            supportive = [
+                "Weeks 1 & 2: Waxing Moon supports initiating new ventures, professional visibility, and strategic alliances.",
+                "Week 3: Consolidation of assets, budget review, and settlement of obligations.",
+                "Week 4: Reflective introspection, conclusion of legacy tasks, and domestic rejuvenation."
+            ]
+            challenges = [
+                "Avoid overextending commitments or taking speculative financial risks during planetary transitions.",
+                "Maintain healthy dietary and rest habits to sustain stamina across the 4-week cycle.",
+                "Ensure critical agreements are documented clearly in writing."
+            ]
+            windows = [
+                "Shukla Paksha (Waxing Moon): Auspicious for launching new initiatives",
+                "Purnima (Full Moon): Peak emotional clarity and social engagement",
+                "Krishna Paksha (Waning Moon): Optimal for audit, review, and completion"
+            ]
+            why = "Derived from monthly planetary ingress and solar-lunar cycles via Swiss Ephemeris. Enter birth details to unlock your natal house analysis."
+            reflection = "Conduct a monthly audit of your key goals and financial plans. Cultivate quiet morning contemplation."
+            limitations = "Monthly planetary transits indicate broad environmental seasons. Personal life events depend upon natal chart placements."
+
+        elif horizon_lower in ["mahadasha", "5year", "five_year"]:
+            report_title = "Vimshottari Mahadasha Overview (Requires Birth Chart)"
+            overall = "Vimshottari Dasha is an intensely personalized 120-year karmic timeline derived from the exact degree of your natal Moon at the moment of birth. Without a calculated birth chart, personal Dasha periods cannot be inferred."
+            supportive = [
+                "Enter your date, time, and city of birth in Tab 1 to calculate your active Mahadasha.",
+                "Discover which planetary ruler currently governs your career, relationships, and life progression.",
+                "Unlock sub-period (Antardasha) timings to understand current life seasons."
+            ]
+            challenges = [
+                "Do not rely on generic horoscope Dasha predictions that ignore your actual birth degrees.",
+                "Birth time accuracy is vital for precise Dasha start and end dates."
+            ]
+            windows = [
+                "Step 1: Open Tab 1 (Birth Chart)",
+                "Step 2: Enter exact birth time and location",
+                "Step 3: View full 120-year Vimshottari timeline"
+            ]
+            why = "Vimshottari Dasha calculations require exact natal Moon longitude down to minutes of arc."
+            reflection = "Accurate self-knowledge begins with authentic astronomical coordinates. Calculate your chart to discover your personal timeline."
+            limitations = "Dasha timelines cannot be computed without verified birth details."
+
+        else:
+            report_title = "Yearly Universal Transit Outlook: 12-Month Astronomical Cycle"
+            overall = (
+                "The upcoming twelve-month cycle is governed by the major sidereal transits of Jupiter and Saturn. "
+                "Jupiter's movements bring themes of wisdom, mentorship, and structural expansion, while Saturn's transit "
+                "through sidereal Pisces demands steady discipline, ethical responsibility, and long-term consolidation."
+            )
+            supportive = [
+                "Quarter 1: Restructuring long-term plans, establishing professional consistency, and building reputation.",
+                "Quarter 2: Financial prudence, capital compounding, and prudent investments.",
+                "Quarter 3: Intellectual growth, philosophical studies, and constructive mentorship.",
+                "Quarter 4: Domestic stability, familial celebration, and annual reflection."
+            ]
+            challenges = [
+                "Avoid impatient shortcuts when navigating slow-moving Saturnian transit lessons.",
+                "Maintain healthy work-life balance to avoid cumulative fatigue.",
+                "Guard against speculative euphoria during volatile planetary alignments."
+            ]
+            windows = [
+                "Post-Equinox Window: Favorable for strategic career planning and long-term projects",
+                "Mid-Year Auspicious Phase: Favorable for financial audits and foundational agreements",
+                "Year-End Reflection: Ideal for annual review, charitable deeds (Daan), and spiritual grounding"
+            ]
+            why = "Calculated from authoritative Swiss Ephemeris planetary ephemerides for major outer planet transits (Jupiter, Saturn, Rahu-Ketu). Calculate your Janam Kundli in Tab 1 to see exact natal house activations."
+            reflection = "Adopt an annual theme centered on consistency, ethical duty (Dharma), and mindful stewardship of your time and resources."
+            limitations = "Yearly transit outlooks outline broad collective astrological seasons. Personal life trajectory requires a personalized Janam Kundli with exact birth coordinates."
+
+        return {
+            "report_title": report_title,
+            "time_horizon": horizon_lower,
+            "target_date": target_date_str,
+            "profile": {
+                "name": "Guest Seeker",
+                "is_guest": True,
+                "lagna": None,
+                "lagna_degree": None,
+                "moon_sign": None,
+                "moon_nakshatra": None,
+                "sun_sign": None,
+                "active_mahadasha": None,
+                "active_antardasha": None,
+                "sade_sati_phase": "General Transit",
+                "is_manglik": False
+            },
+            "sections": {
+                "executive_summary": overall.split(". ")[0] + "." if ". " in overall else overall,
+                "overall_outlook": overall,
+                "supportive_themes": supportive,
+                "supportive_developments": supportive,
+                "challenges_and_cautions": challenges,
+                "key_time_windows": windows,
+                "relevant_time_windows": windows,
+                "relevant_chart_facts": {
+                    "lagna": "No Birth Chart Loaded",
+                    "moon": "No Birth Chart Loaded",
+                    "active_dasha": "Calculate Janam Kundli to unlock Dasha",
+                    "saturn_transit": "Sidereal Pisces (Universal Transit)",
+                    "current_interval_lord": hora_planet
+                },
+                "applicable_traditional_rules": why,
+                "why_this_applies": why,
+                "practical_reflection": reflection,
+                "limitations": limitations
+            },
+            "timing_metadata": {
+                "active_hora_planet": hora_planet,
+                "hora_window": time_window_str,
+                "calculation_engine": "SwissEphemeris_v2.10_Lahiri",
+                "interpretation_standard": "Parashari_Jyotish_Canonical_v2"
+            }
+        }
+
+    # Natal chart is provided: extract authoritative positions
+    dasha = dasha or {}
+    doshas = doshas or {}
     lagna = kundli["lagna"]["sign"]
     lagna_deg = kundli["lagna"]["degree"]
     moon_sign = kundli["planets"]["Moon"]["sign"]
@@ -187,11 +388,6 @@ def generate_structured_prediction(
 
     h10_planets = [p for p, d in planets.items() if d.get("house") == 10]
     h10_occ = f"occupied by {', '.join(h10_planets)}" if h10_planets else "aspected by your Lagna lord"
-
-    hora_planet = active_hora_planet or "Jupiter"
-    time_window_str = hora_window or "Current Astronomical Interval"
-
-    horizon_lower = horizon.lower()
 
     if horizon_lower == "hourly":
         report_title = f"Hourly Personal Guidance: {hora_planet} Hora ({time_window_str})"

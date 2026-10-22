@@ -445,33 +445,13 @@ def generate_prediction_endpoint(req: PredictionRequest):
         result["profile_loaded"] = True
         return result
     else:
-        # Fallback for guest users without birth profile
-        default_kundli = {
-            "profile_name": "Guest Seeker",
-            "lagna": {"sign": "Aries", "degree": 15.0},
-            "planets": {
-                "Moon": {"sign": "Taurus", "nakshatra": "Rohini", "degree": 10.0, "house": 2},
-                "Sun": {"sign": "Libra", "nakshatra": "Swati", "degree": 5.0, "house": 7},
-                "Jupiter": {"sign": "Gemini", "degree": 18.0, "house": 3},
-                "Saturn": {"sign": "Pisces", "degree": 22.0, "house": 12}
-            }
-        }
-        default_dasha = {
-            "active_now": {
-                "maha_dasha": "Jupiter",
-                "antar_dasha": "Saturn"
-            }
-        }
-        default_doshas = {
-            "sade_sati": {"phase": "Generic Transit"},
-            "manglik": {"is_manglik": False}
-        }
+        # Canonical unpersonalized transit baseline for guest users without birth profile
         result = generate_structured_prediction(
             horizon=req.horizon,
             target_date_str=target_date_str,
-            kundli=default_kundli,
-            dasha=default_dasha,
-            doshas=default_doshas,
+            kundli=None,
+            dasha=None,
+            doshas=None,
             active_hora_planet=req.active_hora_planet,
             hora_window=req.hora_window,
             category=req.category
@@ -480,7 +460,7 @@ def generate_prediction_endpoint(req: PredictionRequest):
         result["profile_loaded"] = False
         result["sections"]["limitations"] = (
             "This prediction is an unpersonalized transit baseline because no birth chart was loaded. "
-            "Sign in and calculate your Janam Kundli to unlock 100% chart-grounded Parashari predictions."
+            "Enter your birth details or sign in to calculate your Janam Kundli for 100% chart-grounded Parashari predictions."
         )
         return result
 
