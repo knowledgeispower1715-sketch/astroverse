@@ -106,10 +106,10 @@ Razorpay powers wallet recharges and direct puja bookings:
 
 ### 4.1 FreeAstroAPI Integration
 * **Base URL**: `https://api.freeastroapi.com`
-* **API Key Header**: `x-api-key: 12071790da65abba270ffcaa7192ff8cd42fd16e3cb30d06603981dcd97d76a4`
+* **API Key Header**: `x-api-key: <CONFIGURED_IN_SERVER_ENV>`
 * Environment:
   ```env
-  FREE_ASTRO_API_KEY=12071790da65abba270ffcaa7192ff8cd42fd16e3cb30d06603981dcd97d76a4
+  FREE_ASTRO_API_KEY=your_free_astro_api_key_here
   ```
 
 ### 4.2 Prokerala Astrology API
@@ -117,8 +117,8 @@ Razorpay powers wallet recharges and direct puja bookings:
 * **OAuth 2.0 Token Endpoint**: `https://api.prokerala.com/token`
 * Environment:
   ```env
-  PROKERALA_CLIENT_ID=7de1d01f-b937-403c-9513-bc58439a586e
-  PROKERALA_CLIENT_SECRET=UI9qcVviX9S16T2j31PqUP7ri1uzDxizYoxveIll
+  PROKERALA_CLIENT_ID=your_prokerala_client_id_here
+  PROKERALA_CLIENT_SECRET=your_prokerala_client_secret_here
   ```
 
 ---

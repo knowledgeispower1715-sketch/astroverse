@@ -1139,6 +1139,235 @@ async function runAuthTestSuite() {
       assert.strictEqual(typeof res.data.persistence.durable, 'boolean');
     });
 
+    // ===============================================================
+    // 16. ACCOUNT LINKING & PASSWORD REGISTRATION SECURITY INVARIANTS
+    // ===============================================================
+
+    await test('POST /api/auth/register-password: New account without OTP has emailVerified: false', async () => {
+      const newEmail = `unverified_${Date.now()}@example.com`;
+      const res = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: newEmail, password: 'SecurePassword123' }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'AUTHENTICATED');
+      assert.strictEqual(res.data.user.emailVerified, false);
+    });
+
+    let otpUserEmail = `otp_user_${Date.now()}@example.com`;
+    let otpUserCode = '';
+
+    await test('Setup OTP-only account for linking security tests', async () => {
+      const reqRes = await request('/api/auth/request-otp', {
+        method: 'POST',
+        body: { identifier: otpUserEmail }
+      });
+      assert.strictEqual(reqRes.status, 200);
+      otpUserCode = reqRes.data.devPreviewOtp;
+
+      const verifyRes = await request('/api/auth/verify-otp', {
+        method: 'POST',
+        body: { identifier: otpUserEmail, otp: otpUserCode }
+      });
+      assert.strictEqual(verifyRes.status, 200);
+      assert.strictEqual(verifyRes.data.user.emailVerified, true);
+    });
+
+    await test('POST /api/auth/register-password: Existing OTP-only account rejects password setting without OTP (401 VERIFICATION_REQUIRED)', async () => {
+      const res = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: otpUserEmail, password: 'NewPassword123' }
+      });
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.data.error, 'VERIFICATION_REQUIRED');
+    });
+
+    await test('POST /api/auth/register-password: Existing OTP-only account rejects invalid OTP (401 INVALID_OR_EXPIRED_OTP)', async () => {
+      const res = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: otpUserEmail, password: 'NewPassword123', otp: '999999' }
+      });
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.data.error, 'INVALID_OR_EXPIRED_OTP');
+    });
+
+    let freshOtpCode = '';
+    await test('Request fresh OTP challenge for account linking', async () => {
+      // Need a new email or wait for cooldown; use a fresh email to test linking
+      const linkEmail = `linking_target_${Date.now()}@example.com`;
+      const reqRes = await request('/api/auth/request-otp', {
+        method: 'POST',
+        body: { identifier: linkEmail }
+      });
+      assert.strictEqual(reqRes.status, 200);
+      const code = reqRes.data.devPreviewOtp;
+
+      // Verify and create OTP account
+      await request('/api/auth/verify-otp', {
+        method: 'POST',
+        body: { identifier: linkEmail, otp: code }
+      });
+
+      // Need to dispatch a fresh OTP for password linking
+      // Since cooldown is 60s, dispatch to another fresh user
+      const linkingEmail2 = `linking_direct_${Date.now()}@example.com`;
+      const reqRes2 = await request('/api/auth/request-otp', {
+        method: 'POST',
+        body: { identifier: linkingEmail2 }
+      });
+      assert.strictEqual(reqRes2.status, 200);
+      const freshOtp = reqRes2.data.devPreviewOtp;
+
+      // First create user as OTP user
+      const user = await db.createUser({
+        email: linkingEmail2,
+        emailVerified: true,
+        role: Role.USER,
+        status: AccountStatus.ACTIVE
+      });
+      assert.ok(user.id);
+
+      // Now link password with valid OTP
+      const linkRes = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: linkingEmail2, password: 'LinkedPassword123', otp: freshOtp }
+      });
+      assert.strictEqual(linkRes.status, 200);
+      assert.strictEqual(linkRes.data.status, 'AUTHENTICATED');
+      assert.strictEqual(linkRes.data.user.emailVerified, true);
+
+      // Replay attempt with same OTP must be rejected (single-use eviction)
+      // And because password is now set, it rejects with EMAIL_ALREADY_EXISTS (409)
+      const replayRes = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: linkingEmail2, password: 'AnotherPassword123', otp: freshOtp }
+      });
+      assert.strictEqual(replayRes.status, 409);
+      assert.strictEqual(replayRes.data.error, 'EMAIL_ALREADY_EXISTS');
+    });
+
+    await test('POST /api/auth/register-password: Suspended account rejects registration with HTTP 403 ACCOUNT_INACTIVE', async () => {
+      const suspendedEmail = `suspended_${Date.now()}@example.com`;
+      await db.createUser({
+        email: suspendedEmail,
+        status: AccountStatus.SUSPENDED,
+        role: Role.USER
+      });
+
+      const res = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: suspendedEmail, password: 'Password123' }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'ACCOUNT_INACTIVE');
+    });
+
+    // ===============================================================
+    // 17. SERVER-ENFORCED PREMIUM REPORT ENTITLEMENTS & UNLOCK
+    // ===============================================================
+
+    let unlockTestUserToken = '';
+    let unlockTestUserId = '';
+
+    await test('Setup user with funds for report unlock testing', async () => {
+      const email = `unlock_tester_${Date.now()}@example.com`;
+      const regRes = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email, password: 'SecurePassword123' }
+      });
+      assert.strictEqual(regRes.status, 200);
+      unlockTestUserToken = regRes.data.sessionToken;
+      unlockTestUserId = regRes.data.user.id;
+
+      // Direct balance credit in test mode for testing
+      await db.updateUser(unlockTestUserId, { walletBalance: 100.00 });
+    });
+
+    await test('POST /api/wallet/unlock-report rejects unauthenticated request with HTTP 401', async () => {
+      const res = await request('/api/wallet/unlock-report', {
+        method: 'POST',
+        body: { reportType: 'YEARLY_PREDICTION_2025' }
+      });
+      assert.strictEqual(res.status, 401);
+    });
+
+    await test('POST /api/wallet/unlock-report rejects missing reportType with HTTP 400', async () => {
+      const res = await request('/api/wallet/unlock-report', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${unlockTestUserToken}` },
+        body: {}
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'REPORT_TYPE_REQUIRED');
+    });
+
+    await test('POST /api/wallet/unlock-report rejects when wallet balance is insufficient with HTTP 400 INSUFFICIENT_FUNDS', async () => {
+      // Empty user
+      const brokeEmail = `broke_${Date.now()}@example.com`;
+      const regRes = await request('/api/auth/register-password', {
+        method: 'POST',
+        body: { email: brokeEmail, password: 'SecurePassword123' }
+      });
+      const brokeToken = regRes.data.sessionToken;
+
+      const res = await request('/api/wallet/unlock-report', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${brokeToken}` },
+        body: { reportType: 'YEARLY_PREDICTION_2025' }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INSUFFICIENT_FUNDS');
+      assert.strictEqual(res.data.requiredAmount, 49.00);
+    });
+
+    await test('POST /api/wallet/unlock-report debits ₹49.00 and returns unlocked: true', async () => {
+      const res = await request('/api/wallet/unlock-report', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${unlockTestUserToken}` },
+        body: { reportType: 'YEARLY_PREDICTION_2025', referenceId: 'profile_001' }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.unlocked, true);
+      assert.strictEqual(res.data.deduction, 49.00);
+      assert.strictEqual(res.data.newBalance, 51.00);
+    });
+
+    await test('POST /api/wallet/unlock-report is idempotent: duplicate unlock does not deduct again', async () => {
+      const res = await request('/api/wallet/unlock-report', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${unlockTestUserToken}` },
+        body: { reportType: 'YEARLY_PREDICTION_2025', referenceId: 'profile_001' }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.unlocked, true);
+      assert.strictEqual(res.data.alreadyUnlocked, true);
+      assert.strictEqual(res.data.deduction, 0);
+      assert.strictEqual(res.data.newBalance, 51.00);
+    });
+
+    await test('Production fail-closed check: assertDurableStorage and /api/ready reject ephemeral mode', async () => {
+      const origEnv = process.env.NODE_ENV;
+      const origVercel = process.env.VERCEL;
+      try {
+        process.env.NODE_ENV = 'production';
+        process.env.VERCEL = '1';
+
+        // Direct method call should throw
+        assert.throws(
+          () => db.assertDurableStorage(),
+          /DURABLE_STORAGE_REQUIRED/
+        );
+
+        // /api/ready must return 503
+        const readyRes = await request('/api/ready');
+        assert.strictEqual(readyRes.status, 503);
+        assert.strictEqual(readyRes.data.error, 'DATABASE_CONFIGURATION_REQUIRED');
+      } finally {
+        process.env.NODE_ENV = origEnv;
+        process.env.VERCEL = origVercel;
+      }
+    });
+
   } finally {
     server.close();
   }

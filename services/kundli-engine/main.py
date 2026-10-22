@@ -35,6 +35,7 @@ from external_api import (
     get_api_key
 )
 from prokerala_api import (
+    get_client_credentials,
     get_access_token,
     get_prokerala_planet_position,
     get_prokerala_kundli,
@@ -76,7 +77,17 @@ class PartnerBirthProfile(BaseModel):
     dob: str = Field(..., description="ISO 8601 birth datetime, e.g. '1995-06-15T10:30:00'")
     lat: float = Field(..., ge=-90.0, le=90.0, description="Latitude")
     lon: float = Field(..., ge=-180.0, le=180.0, description="Longitude")
-    timezone: str = Field("Asia/Kolkata", description="IANA Timezone Identifier")
+    timezone: str = Field(..., description="IANA Timezone Identifier, e.g. 'Asia/Kolkata'")
+
+class AuthoritativeMatchmakingRequest(BaseModel):
+    boy: PartnerBirthProfile = Field(..., description="Full groom birth profile")
+    girl: PartnerBirthProfile = Field(..., description="Full bride birth profile")
+
+class PreliminaryMatchRequest(BaseModel):
+    boy_moon_sign_idx: Optional[int] = Field(None, ge=0, le=11)
+    girl_moon_sign_idx: Optional[int] = Field(None, ge=0, le=11)
+    boy_moon_degree: Optional[float] = None
+    girl_moon_degree: Optional[float] = None
 
 class MatchmakingRequest(BaseModel):
     boy: Optional[PartnerBirthProfile] = None
@@ -121,15 +132,16 @@ def admin_health_check():
     """
     # 1. Test FreeAstrologyAPI connectivity
     api_key_configured = bool(get_api_key())
-    external_api_status = "UNKNOWN"
-    try:
-        ext_res = fetch_external_planets(2026, 1, 1, 12, 0, 0, 28.6139, 77.2090, 5.5)
-        if ext_res.get("statusCode") == 200:
-            external_api_status = "HEALTHY"
-        else:
-            external_api_status = f"DEGRADED_{ext_res.get('error', 'ERR')}"
-    except Exception as e:
-        external_api_status = f"FAILED_{str(e)[:30]}"
+    external_api_status = "UNCONFIGURED_MISSING_API_KEY" if not api_key_configured else "UNKNOWN"
+    if api_key_configured:
+        try:
+            ext_res = fetch_external_planets(2026, 1, 1, 12, 0, 0, 28.6139, 77.2090, 5.5)
+            if ext_res.get("statusCode") == 200:
+                external_api_status = "HEALTHY"
+            else:
+                external_api_status = f"DEGRADED_{ext_res.get('error', 'ERR')}"
+        except Exception as e:
+            external_api_status = f"FAILED_{str(e)[:30]}"
 
     # 2. Test Swiss Ephemeris native calculations
     swe_status = "HEALTHY"
@@ -150,15 +162,17 @@ def admin_health_check():
         geo_status = f"DEGRADED_{str(e)[:30]}"
 
     # 4. Prokerala API status
-    prokerala_status = "UNKNOWN"
-    try:
-        token = get_access_token()
-        if token and len(token) > 10:
-            prokerala_status = "HEALTHY"
-        else:
-            prokerala_status = "NO_TOKEN"
-    except Exception as e:
-        prokerala_status = f"FAILED_{str(e)[:30]}"
+    prokerala_cid, prokerala_csec = get_client_credentials()
+    prokerala_status = "UNCONFIGURED_MISSING_CREDENTIALS" if (not prokerala_cid or not prokerala_csec) else "UNKNOWN"
+    if prokerala_cid and prokerala_csec:
+        try:
+            token = get_access_token()
+            if token and len(token) > 10:
+                prokerala_status = "HEALTHY"
+            else:
+                prokerala_status = "NO_TOKEN"
+        except Exception as e:
+            prokerala_status = f"FAILED_{str(e)[:30]}"
 
     return {
         "status": "OPERATIONAL",
@@ -467,35 +481,50 @@ def generate_prediction_endpoint(req: PredictionRequest):
 
 @app.post("/api/matchmaking")
 @app.post("/api/kundli/matching")
-def get_matchmaking(req: MatchmakingRequest):
+def get_matchmaking(req: AuthoritativeMatchmakingRequest):
     """
-    Ashtakoota 36-Guna Matchmaking:
-    Supports full dual birth profiles with independent Swiss Ephemeris calculations,
-    or legacy Moon degree/sign inputs.
+    Authoritative Ashtakoota 36-Guna Kundli Milan:
+    Requires complete dual birth profiles (dob, lat, lon, timezone) for groom and bride.
+    Computes authentic Swiss Ephemeris 8-Kootas, classical dosha exceptions, and synastry.
+    For ungrounded preliminary sign-only estimates, use POST /api/matchmaking/preliminary-estimate.
     """
-    if req.boy and req.girl:
-        return calculate_full_kundli_milan(req.boy.dict(), req.girl.dict())
+    try:
+        boy_dict = req.boy.model_dump() if hasattr(req.boy, "model_dump") else req.boy.dict()
+        girl_dict = req.girl.model_dump() if hasattr(req.girl, "model_dump") else req.girl.dict()
+        return calculate_full_kundli_milan(boy_dict, girl_dict)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
+@app.post("/api/matchmaking/preliminary-estimate")
+def get_preliminary_matchmaking(req: PreliminaryMatchRequest):
+    """
+    Preliminary / Legacy Moon Sign or Degree Approximation:
+    Only provides an approximate preliminary indicator. Explicitly discloses limitations.
+    """
     if req.boy_moon_degree is not None and req.girl_moon_degree is not None:
         boy_deg = req.boy_moon_degree
         girl_deg = req.girl_moon_degree
     elif req.boy_moon_sign_idx is not None and req.girl_moon_sign_idx is not None:
-        # Midpoint of sign (15 degrees into sign)
         boy_deg = (req.boy_moon_sign_idx * 30.0) + 15.0
         girl_deg = (req.girl_moon_sign_idx * 30.0) + 15.0
     else:
         raise HTTPException(
             status_code=400,
-            detail="Either complete birth profiles for boy and girl or moon particulars must be provided."
+            detail="Preliminary matchmaking requires either boy_moon_sign_idx and girl_moon_sign_idx (0-11) or boy_moon_degree and girl_moon_degree."
         )
 
-    return match_kundli_36_gunas(boy_deg, girl_deg)
+    result = match_kundli_36_gunas(boy_deg, girl_deg)
+    result["is_preliminary_estimate"] = True
+    result["method"] = "SIGN_DEGREE_PRELIMINARY_APPROXIMATION"
+    result["warning"] = "This is an ungrounded preliminary sign/degree approximation. Authoritative compatibility with dosha cancellations and full synastry requires dual birth profiles at POST /api/matchmaking."
+    return result
 
 @app.post("/api/external-kundli")
 def get_external_kundli(req: BirthDetails):
     """
     FreeAstroAPI Integration:
     Queries third-party ephemeris and returns planetary coordinates alongside SVG chart URLs.
+    Fails closed when credentials are missing or external provider fails.
     """
     dt = datetime.fromisoformat(req.dob)
 
@@ -504,6 +533,14 @@ def get_external_kundli(req: BirthDetails):
         hour=dt.hour, minute=dt.minute,
         lat=req.lat, lng=req.lon, tz_str=req.timezone
     )
+    if isinstance(chart_data, dict) and chart_data.get("error"):
+        status_code = chart_data.get("statusCode", 503)
+        if not isinstance(status_code, int) or status_code < 400 or status_code > 599:
+            status_code = 503
+        raise HTTPException(
+            status_code=status_code,
+            detail=chart_data.get("message", "External astrology provider request failed.")
+        )
 
     svg_data = fetch_external_visual_chart(
         year=dt.year, month=dt.month, day=dt.day,

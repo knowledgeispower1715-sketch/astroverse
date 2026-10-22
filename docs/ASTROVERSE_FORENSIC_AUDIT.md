@@ -125,7 +125,7 @@ The Astroverse application has been audited across all frontend controllers, cal
 ### Defect 8: FreeAstrologyAPI Integration & External Verification Boundary
 * **Severity**: HIGH (User Request Requirement)
 * **Files Involved**: `services/kundli-engine/external_api.py`, `services/kundli-engine/main.py`
-* **Observed Defect**: FreeAstrologyAPI key was provided (`TlI51pEPIW3hTnSI8ogDTR66j48B5D278ZH7Gbkh`) but not yet integrated into the calculation engine for external planetary coordinates and chart URLs.
+* **Observed Defect**: FreeAstrologyAPI key was provided via server environment configuration but not yet integrated into the calculation engine for external planetary coordinates and chart URLs.
 * **Remediation**:
   - Implement `services/kundli-engine/external_api.py` connecting to `https://json.freeastrologyapi.com/planets`, `planets/extended`, and `horoscope-chart-url`.
   - Build hybrid failover: Query FreeAstrologyAPI when online; cross-verify and failover to Swiss Ephemeris (`pyswisseph`) for complete offline reliability.
@@ -135,7 +135,7 @@ The Astroverse application has been audited across all frontend controllers, cal
 
 ## 3. Corrective Action Roadmap
 
-1. **Step 2**: Implement `services/kundli-engine/external_api.py` with FreeAstrologyAPI integration (`TlI51pEPIW3hTnSI8ogDTR66j48B5D278ZH7Gbkh`) and test live connectivity.
+1. **Step 2**: Implement `services/kundli-engine/external_api.py` with FreeAstrologyAPI integration (via environment configuration) and test live connectivity.
 2. **Step 3**: Rebuild `services/kundli-engine/hora_engine.py` using Swiss Ephemeris `swe.rise_trans` for true astronomical sunrise, sunset, and next sunrise with unequal 24-hour Horas, Chaldean planetary ruler order, and Rahu Kaal.
 3. **Step 4**: Update `services/kundli-engine/main.py` with location endpoints, admin health monitoring, external API routes, and live Hora calculation.
 4. **Step 5**: Rebuild `index.html`:

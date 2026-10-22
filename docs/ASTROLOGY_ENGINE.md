@@ -9,7 +9,7 @@ flowchart TD
     Request["Birth Input: Date, Time, Lat, Lon, IANA Timezone"] --> Engine["Astroverse Calculation Controller (main.py)"]
     
     Engine --> SwissEph["Authoritative Engine: Swiss Ephemeris (pyswisseph)<br/>SE_SIDM_LAHIRI Nirayana Zodiac"]
-    Engine --> FreeAstro["External Ephemeris Verifier: FreeAstrologyAPI<br/>(API Key: TlI51pEPIW3hTnSI8ogDTR66j48B5D278ZH7Gbkh)"]
+    Engine --> FreeAstro["External Ephemeris Verifier: FreeAstrologyAPI<br/>(API Key: Configured in Server Env)"]
     
     SwissEph --> D1["D1 Rashi & Lagna Calculation"]
     SwissEph --> Vargas["Divisional Charts: D9 Navamsha & D10 Dashamsha"]
@@ -35,7 +35,7 @@ flowchart TD
 
 ### 2.2 FreeAstrologyAPI Integration (`services/kundli-engine/external_api.py`)
 * **Endpoint Base**: `https://json.freeastrologyapi.com`
-* **Configured Key**: `TlI51pEPIW3hTnSI8ogDTR66j48B5D278ZH7Gbkh`
+* **Configured Key**: Server-side environment variable `FREE_ASTRO_API_KEY` (or `FREE_ASTROLOGY_API_KEY`)
 * **Integrated Endpoints**:
   - `POST /planets`: Returns external planetary coordinates, houses, and signs.
   - `POST /planets/extended`: Provides extended dignities and planetary metrics.

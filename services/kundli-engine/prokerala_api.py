@@ -14,23 +14,23 @@ from typing import Dict, Any, Optional
 PROKERALA_TOKEN_URL = "https://api.prokerala.com/token"
 PROKERALA_API_BASE = "https://api.prokerala.com/v2/astrology"
 
-DEFAULT_CLIENT_ID = "7de1d01f-b937-403c-9513-bc58439a586e"
-DEFAULT_CLIENT_SECRET = "UI9qcVviX9S16T2j31PqUP7ri1uzDxizYoxveIll"
-
 # In-memory OAuth token cache
 _cached_token: Optional[str] = None
 _token_expires_at: float = 0.0
 
-def get_client_credentials() -> tuple[str, str]:
-    """Retrieves Prokerala Client ID and Client Secret from server environment."""
-    client_id = os.environ.get("PROKERALA_CLIENT_ID") or DEFAULT_CLIENT_ID
-    client_secret = os.environ.get("PROKERALA_CLIENT_SECRET") or DEFAULT_CLIENT_SECRET
-    return client_id, client_secret
+def get_client_credentials() -> tuple[Optional[str], Optional[str]]:
+    """Retrieves Prokerala Client ID and Client Secret strictly from server environment."""
+    client_id = os.environ.get("PROKERALA_CLIENT_ID")
+    client_secret = os.environ.get("PROKERALA_CLIENT_SECRET")
+    cid = client_id.strip() if client_id and client_id.strip() else None
+    csec = client_secret.strip() if client_secret and client_secret.strip() else None
+    return cid, csec
 
 def get_access_token() -> str:
     """
     Retrieves or refreshes OAuth 2.0 Bearer token using client_credentials grant.
     Caches token in-memory until expiration.
+    Fails closed with a clear configuration error if credentials are absent.
     """
     global _cached_token, _token_expires_at
 
@@ -39,6 +39,11 @@ def get_access_token() -> str:
         return _cached_token
 
     client_id, client_secret = get_client_credentials()
+    if not client_id or not client_secret:
+        raise RuntimeError(
+            "Prokerala API credentials are not configured. Set PROKERALA_CLIENT_ID and PROKERALA_CLIENT_SECRET in server environment."
+        )
+
     data = urllib.parse.urlencode({
         "grant_type": "client_credentials",
         "client_id": client_id,

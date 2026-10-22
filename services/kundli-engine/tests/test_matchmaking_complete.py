@@ -151,3 +151,74 @@ def test_profile_validation_rejects_malformed_inputs():
     }
     with pytest.raises(ValueError, match="datetime"):
         calculate_full_kundli_milan(invalid_boy_dob, valid_boy)
+
+    # Missing timezone
+    missing_tz = {
+        "dob": "1994-04-12T06:30:00",
+        "lat": 28.6139,
+        "lon": 77.2090
+    }
+    with pytest.raises(ValueError, match="timezone"):
+        calculate_full_kundli_milan(missing_tz, valid_boy)
+
+    # Invalid timezone string
+    invalid_tz = {
+        "dob": "1994-04-12T06:30:00",
+        "lat": 28.6139,
+        "lon": 77.2090,
+        "timezone": "Mars/Phobos"
+    }
+    with pytest.raises(ValueError, match="timezone"):
+        calculate_full_kundli_milan(invalid_tz, valid_boy)
+
+def test_api_matchmaking_authoritative_vs_preliminary():
+    """Verify HTTP endpoint contracts for authoritative milan and preliminary estimate."""
+    from fastapi.testclient import TestClient
+    client = TestClient(app)
+
+    valid_boy = {
+        "name": "Aarav",
+        "dob": "1994-04-12T06:30:00",
+        "lat": 28.6139,
+        "lon": 77.2090,
+        "timezone": "Asia/Kolkata"
+    }
+    valid_girl = {
+        "name": "Priya",
+        "dob": "1996-09-24T14:45:00",
+        "lat": 19.0760,
+        "lon": 72.8777,
+        "timezone": "Asia/Kolkata"
+    }
+
+    # Authoritative endpoint requires full dual profiles
+    res_auth = client.post("/api/matchmaking", json={"boy": valid_boy, "girl": valid_girl})
+    assert res_auth.status_code == 200
+    data = res_auth.json()
+    assert data["status"] == "SUCCESS"
+    assert data["method"] == "DUAL_PROFILE_EPHEMERIS_ASHTAKOOTA"
+    assert "ashtakoota_breakdown" in data
+    assert "supplementary_compatibility_report" in data
+
+    # Authoritative endpoint rejects sign-only inputs with 422
+    res_sign_rejected = client.post("/api/matchmaking", json={"boy_moon_sign_idx": 0, "girl_moon_sign_idx": 4})
+    assert res_sign_rejected.status_code == 422
+
+    # Authoritative endpoint rejects missing timezone with 422
+    boy_no_tz = dict(valid_boy)
+    del boy_no_tz["timezone"]
+    res_no_tz = client.post("/api/matchmaking", json={"boy": boy_no_tz, "girl": valid_girl})
+    assert res_no_tz.status_code == 422
+
+    # Authoritative endpoint rejects invalid timezone with 422
+    boy_bad_tz = dict(valid_boy, timezone="Invalid/Timezone")
+    res_bad_tz = client.post("/api/matchmaking", json={"boy": boy_bad_tz, "girl": valid_girl})
+    assert res_bad_tz.status_code == 422
+
+    # Preliminary estimate endpoint accepts sign-only inputs and returns preliminary disclosures
+    res_prelim = client.post("/api/matchmaking/preliminary-estimate", json={"boy_moon_sign_idx": 0, "girl_moon_sign_idx": 4})
+    assert res_prelim.status_code == 200
+    prelim_data = res_prelim.json()
+    assert prelim_data["is_preliminary_estimate"] is True
+    assert "preliminary" in prelim_data["warning"].lower()
+    assert 0.0 <= prelim_data["total_score"] <= 36.0

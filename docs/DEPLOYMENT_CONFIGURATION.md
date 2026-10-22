@@ -137,7 +137,7 @@ docker compose ps
 Configure the following variables in production (see `.env.example`):
 
 1. **Kundli Engine**:
-   - `FREE_ASTROLOGY_API_KEY`: `TlI51pEPIW3hTnSI8ogDTR66j48B5D278ZH7Gbkh`
+   - `FREE_ASTROLOGY_API_KEY`: `<CONFIGURED_IN_SERVER_SECRET_MANAGER>`
    - `OPENAI_API_KEY`: External LLM provider key (optional fallback enabled)
    - `PORT`: `8000`
 2. **Wallet & Auth Gateway**:

@@ -7,20 +7,7 @@ Ashtakoota 36-Guna Kundli Matchmaking Engine (Parashari System):
 5. Graha Maitri (5 Points): Psychological friendship & mental wave
 6. Gana (6 Points): Temperament (Deva, Manushya, Rakshasa)
 7. Bhakoot (7 Points): Family welfare, emotional bonding & progeny
-8. Nadi (8 Points): Genetic compatibility & health
-Total = 36 Gunas (18+ considered acceptable, 28+ highly auspicious)
-"""
-
-"""
-Ashtakoota 36-Guna Kundli Matchmaking Engine (Parashari System):
-1. Varna (1 Point): Spiritual ego and work inclination
-2. Vashya (2 Points): Mutual dominance & respect
-3. Tara (3 Points): Destiny, health & longevity
-4. Yoni (4 Points): Biological & sexual affinity
-5. Graha Maitri (5 Points): Psychological friendship & mental wave
-6. Gana (6 Points): Temperament (Deva, Manushya, Rakshasa)
-7. Bhakoot (7 Points): Family welfare, emotional bonding & progeny
-8. Nadi (8 Points): Genetic compatibility & health
+8. Nadi (8 Points): Ayurvedic constitution (Vata, Pitta, Kapha) and vital physiological compatibility
 Total = 36 Gunas (18+ considered acceptable, 28+ highly auspicious)
 """
 
@@ -317,7 +304,7 @@ def calculate_nadi_with_exceptions(
         else:
             return 8.0, False, True, f"Mitigated: Same Nakshatra ({NAKSHATRAS[boy_nak]}) with different Padas ({boy_pada} vs {girl_pada})."
 
-    return 0.0, True, False, f"Active {NADI_NAMES[bn]} Nadi Dosha present without classical exemption."
+    return 0.0, True, False, f"Active {NADI_NAMES[bn]} Nadi Dosha present without classical exemption (classical Parashari and Muhurta Chintamani conventions applied)."
 
 def match_kundli_36_gunas(boy_moon_deg: float, girl_moon_deg: float):
     boy_sign = int(boy_moon_deg / 30.0) % 12
@@ -357,7 +344,7 @@ def match_kundli_36_gunas(boy_moon_deg: float, girl_moon_deg: float):
             "graha_maitri": {"obtained": maitri, "max": 5, "description": "Psychological friendship & intellect"},
             "gana": {"obtained": gana, "max": 6, "description": "Behavioral temperament & social outlook"},
             "bhakoot": {"obtained": bhakoot, "max": 7, "description": "Family welfare & emotional bonding", "has_dosha": bhakoot == 0},
-            "nadi": {"obtained": nadi, "max": 8, "description": "Traditional physiological temperament & hereditary harmony", "has_dosha": has_nadi_dosha}
+            "nadi": {"obtained": nadi, "max": 8, "description": "Traditional Ayurvedic constitution (Vata, Pitta, Kapha) & bio-energetic alignment", "has_dosha": has_nadi_dosha}
         }
     }
 
@@ -401,12 +388,15 @@ def calculate_full_kundli_milan(boy_profile: Dict[str, Any], girl_profile: Dict[
         if lon is None or not (-180.0 <= float(lon) <= 180.0):
             raise ValueError(f"Invalid {label} longitude '{lon}'. Must be between -180.0 and 180.0.")
 
-        tz_str = p.get("timezone", "Asia/Kolkata")
+        tz_str = p.get("timezone")
+        if not tz_str or not isinstance(tz_str, str) or not tz_str.strip():
+            raise ValueError(f"{label} timezone is required (e.g. 'Asia/Kolkata', 'America/New_York').")
+        tz_str = tz_str.strip()
         if ZoneInfo is not None:
             try:
                 ZoneInfo(tz_str)
             except Exception:
-                tz_str = "Asia/Kolkata"
+                raise ValueError(f"Invalid {label} timezone '{tz_str}'. A valid IANA timezone identifier is required.")
         return clean_dob, dt, float(lat), float(lon), tz_str, p.get("name", label)
 
     b_dob_str, b_dt, b_lat, b_lon, b_tz, b_name = _validate_profile(boy_profile, "Boy")
@@ -556,12 +546,12 @@ def calculate_full_kundli_milan(boy_profile: Dict[str, Any], girl_profile: Dict[
             "is_cancelled": bhakoot_cancelled
         },
         "nadi": {
-            "name": "8. Nadi (Genetic Temperament & Hereditary Harmony)",
+            "name": "8. Nadi (Ayurvedic Constitution & Vital Energy Harmony)",
             "obtained": nadi_pts,
             "max": 8.0,
             "boy_attribute": f"{NADI_NAMES[NADI_MAP[boy_nak_idx]]} (Pada {boy_pada})",
             "girl_attribute": f"{NADI_NAMES[NADI_MAP[girl_nak_idx]]} (Pada {girl_pada})",
-            "rule": "Adi (Vata), Madhya (Pitta), and Antya (Kapha) must differ to avoid genetic dosha. Classical exemptions annul dosha if signs differ, nakshatras differ, or padas differ.",
+            "rule": "Adi (Vata), Madhya (Pitta), and Antya (Kapha) Ayurvedic doshas must differ to maintain elemental balance. Classical Parashari and Muhurta Chintamani exemptions annul dosha if signs differ, nakshatras differ, or padas differ.",
             "description": nadi_reason or f"Favorable Nadi distinction ({NADI_NAMES[NADI_MAP[boy_nak_idx]]} vs {NADI_NAMES[NADI_MAP[girl_nak_idx]]})",
             "has_dosha": has_nadi_dosha,
             "is_cancelled": nadi_cancelled

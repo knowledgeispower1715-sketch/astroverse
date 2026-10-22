@@ -156,7 +156,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - FREE_ASTROLOGY_API_KEY=TlI51pEPIW3hTnSI8ogDTR66j48B5D278ZH7Gbkh
+      - FREE_ASTROLOGY_API_KEY=${FREE_ASTROLOGY_API_KEY}
 
   wallet-service:
     build:

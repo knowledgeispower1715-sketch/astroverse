@@ -204,6 +204,9 @@ def test_doshas():
 def test_external_api():
     # 1. Native FreeAstroAPI /api/v2/vedic/chart verification
     chart = fetch_external_vedic_chart(1995, 6, 15, 10, 30, city="New Delhi", lat=28.6139, lng=77.2090)
+    if isinstance(chart, dict) and chart.get("error") == "CONFIG_ERROR_MISSING_API_KEY":
+        print("[SKIP] test_external_api: FreeAstroAPI credentials not configured in environment")
+        return
     if isinstance(chart, dict) and ("rate_limit_exceeded" in str(chart) or chart.get("error") == "HTTP_429"):
         print("[SKIP] test_external_api: FreeAstroAPI daily tier limit reached (429)")
         return
@@ -213,22 +216,22 @@ def test_external_api():
 
     # 2. Native FreeAstroAPI /api/v2/vedic/visual/chart verification
     svg = fetch_external_visual_chart(1995, 6, 15, 10, 30, city="New Delhi", lat=28.6139, lng=77.2090)
-    if isinstance(svg, dict) and ("rate_limit_exceeded" in str(svg) or svg.get("error") == "HTTP_429"):
-        print("[SKIP] test_external_api: FreeAstroAPI daily tier limit reached (429)")
+    if isinstance(svg, dict) and (svg.get("error") == "CONFIG_ERROR_MISSING_API_KEY" or "rate_limit_exceeded" in str(svg) or svg.get("error") == "HTTP_429"):
+        print("[SKIP] test_external_api: FreeAstroAPI unconfigured or daily tier limit reached (429)")
         return
     assert isinstance(svg, str) and "<svg" in svg, "Expected SVG XML string from visual chart endpoint"
 
     # 3. Compatibility Adapters
     res = fetch_external_planets(1995, 6, 15, 10, 30, 0, 28.6139, 77.2090, 5.5)
-    if res.get("statusCode") == 500 and "429" in str(res.get("details", "")):
-        print("[SKIP] test_external_api: FreeAstroAPI daily tier limit reached (429)")
+    if res.get("error") == "CONFIG_ERROR_MISSING_API_KEY" or (res.get("statusCode") == 500 and "429" in str(res.get("details", ""))):
+        print("[SKIP] test_external_api: FreeAstroAPI unconfigured or daily tier limit reached (429)")
         return
     assert res.get("statusCode") == 200
     assert len(res.get("output", [])) > 0
     
     chart_res = fetch_external_chart_url(1995, 6, 15, 10, 30, 0, 28.6139, 77.2090, 5.5)
-    if chart_res.get("statusCode") == 500 and "429" in str(chart_res.get("details", "")):
-        print("[SKIP] test_external_api: FreeAstroAPI daily tier limit reached (429)")
+    if chart_res.get("error") == "CONFIG_ERROR_MISSING_API_KEY" or (chart_res.get("statusCode") == 500 and "429" in str(chart_res.get("details", ""))):
+        print("[SKIP] test_external_api: FreeAstroAPI unconfigured or daily tier limit reached (429)")
         return
     assert chart_res.get("statusCode") == 200
     assert "<svg" in chart_res.get("svg", "")

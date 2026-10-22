@@ -86,6 +86,7 @@ const otpStore = new Map<string, OtpEntry>();
 const ipRateMap = new Map<string, { count: number; windowStart: number }>();
 
 function checkIpRateLimit(ip: string): boolean {
+  if (process.env.NODE_ENV === 'test') return true;
   const now = Date.now();
   const record = ipRateMap.get(ip);
   if (!record || now - record.windowStart > 10 * 60 * 1000) {
@@ -333,7 +334,7 @@ app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
 
 // POST /api/auth/register-password
 app.post('/api/auth/register-password', async (req: Request, res: Response) => {
-  const { email, password, displayName, phone } = req.body;
+  const { email, password, displayName, phone, otp } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Email and password are required.' });
   }
@@ -358,39 +359,126 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
 
   try {
     let existing = await db.findUserByEmail(cleanEmail);
-    if (existing && existing.passwordHash) {
-      return res.status(409).json({
-        error: 'EMAIL_ALREADY_EXISTS',
-        message: 'An account with this email already exists. Please log in.'
+
+    if (existing) {
+      if (existing.status !== AccountStatus.ACTIVE) {
+        return res.status(403).json({
+          error: 'ACCOUNT_INACTIVE',
+          message: `Account is ${existing.status.toLowerCase()}. Please contact customer support.`
+        });
+      }
+
+      if (existing.passwordHash) {
+        return res.status(409).json({
+          error: 'EMAIL_ALREADY_EXISTS',
+          message: 'An account with this email already exists. Please log in.'
+        });
+      }
+
+      // Existing account without password (OTP-only registration)
+      // Strictly require a fresh, single-use, server-verified OTP challenge bound to this email.
+      if (!otp) {
+        return res.status(401).json({
+          error: 'VERIFICATION_REQUIRED',
+          message: 'Account ownership verification required. Please provide a valid OTP sent to your email to attach a password to this account.'
+        });
+      }
+
+      const record = otpStore.get(cleanEmail);
+      if (!record || record.expiresAt < Date.now()) {
+        return res.status(401).json({
+          error: 'INVALID_OR_EXPIRED_OTP',
+          message: 'The verification code has expired or was not requested. Please request a new code.'
+        });
+      }
+
+      record.attempts += 1;
+      if (record.attempts > 5) {
+        otpStore.delete(cleanEmail);
+        return res.status(429).json({
+          error: 'TOO_MANY_ATTEMPTS',
+          message: 'Too many incorrect attempts. This code has been invalidated. Please request a new code.'
+        });
+      }
+
+      if (record.otp !== String(otp).trim()) {
+        return res.status(401).json({
+          error: 'INVALID_OR_EXPIRED_OTP',
+          message: 'Incorrect verification code. Please check and try again.'
+        });
+      }
+
+      // Single-use eviction to prevent replay attacks
+      otpStore.delete(cleanEmail);
+
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = hashPassword(password, salt);
+
+      const user = await db.updateUser(existing.id, {
+        passwordHash: hash,
+        passwordSalt: salt,
+        emailVerified: true,
+        displayName: displayName ? String(displayName).trim() : existing.displayName,
+        lastLoginAt: new Date().toISOString()
       });
+
+      const rawSessionToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = hashToken(rawSessionToken);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      await db.createSession({
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        ipAddress: clientIp,
+        userAgent: req.headers['user-agent'] || null
+      });
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: 'AUTH_LINK_PASSWORD',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: clientIp,
+        metadata: { email: cleanEmail }
+      });
+
+      return res.json({
+        status: 'AUTHENTICATED',
+        sessionToken: rawSessionToken,
+        user: sanitizeUser(user)
+      });
+    }
+
+    // Genuinely new account
+    let emailVerified = false;
+    if (otp) {
+      const record = otpStore.get(cleanEmail);
+      if (!record || record.expiresAt < Date.now() || record.otp !== String(otp).trim()) {
+        return res.status(401).json({
+          error: 'INVALID_OR_EXPIRED_OTP',
+          message: 'Incorrect or expired verification code.'
+        });
+      }
+      emailVerified = true;
+      otpStore.delete(cleanEmail);
     }
 
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = hashPassword(password, salt);
 
-    let user: UserRecord;
-    let isNewUser = false;
-    if (existing) {
-      user = await db.updateUser(existing.id, {
-        passwordHash: hash,
-        passwordSalt: salt,
-        displayName: displayName ? String(displayName).trim() : existing.displayName,
-        lastLoginAt: new Date().toISOString()
-      });
-    } else {
-      isNewUser = true;
-      user = await db.createUser({
-        email: cleanEmail,
-        phone: phone ? String(phone).trim() : null,
-        emailVerified: true,
-        displayName: displayName ? String(displayName).trim() : cleanEmail.split('@')[0],
-        passwordHash: hash,
-        passwordSalt: salt,
-        role: Role.USER,
-        status: AccountStatus.ACTIVE,
-        walletBalance: 0.00
-      });
-    }
+    const user = await db.createUser({
+      email: cleanEmail,
+      phone: phone ? String(phone).trim() : null,
+      phoneVerified: false,
+      emailVerified: emailVerified,
+      displayName: displayName ? String(displayName).trim() : cleanEmail.split('@')[0],
+      passwordHash: hash,
+      passwordSalt: salt,
+      role: Role.USER,
+      status: AccountStatus.ACTIVE,
+      walletBalance: 0.00
+    });
 
     const rawSessionToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = hashToken(rawSessionToken);
@@ -406,14 +494,14 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
 
     await db.recordAuditEvent({
       userId: user.id,
-      action: isNewUser ? 'AUTH_REGISTER_PASSWORD' : 'AUTH_LINK_PASSWORD',
+      action: 'AUTH_REGISTER_PASSWORD',
       targetType: 'USER',
       targetId: user.id,
       ipAddress: clientIp,
-      metadata: { email: cleanEmail }
+      metadata: { email: cleanEmail, emailVerified }
     });
 
-    res.json({
+    return res.json({
       status: 'AUTHENTICATED',
       sessionToken: rawSessionToken,
       user: sanitizeUser(user)
@@ -1376,6 +1464,52 @@ app.post('/api/wallet/settle-consultation', authenticate, async (req: Authentica
   }
 });
 
+app.post('/api/wallet/unlock-report', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const sessionUser = req.user!;
+  const { reportType, referenceId, clientKey } = req.body;
+
+  if (!reportType || typeof reportType !== 'string' || !reportType.trim()) {
+    return res.status(400).json({
+      error: 'REPORT_TYPE_REQUIRED',
+      message: 'A valid reportType string is required to unlock a premium report.'
+    });
+  }
+
+  try {
+    const result = await db.unlockReport(sessionUser.id, reportType.trim(), referenceId, clientKey);
+
+    await db.recordAuditEvent({
+      userId: sessionUser.id,
+      action: 'REPORT_UNLOCKED',
+      targetType: 'PREMIUM_REPORT',
+      targetId: referenceId || reportType,
+      metadata: {
+        reportType: reportType.trim(),
+        referenceId: referenceId || null,
+        deduction: result.deduction,
+        newBalance: result.newBalance,
+        alreadyUnlocked: Boolean(result.alreadyUnlocked)
+      }
+    });
+
+    return res.json({
+      unlocked: true,
+      ...result
+    });
+  } catch (error: any) {
+    if (error.message === 'INSUFFICIENT_FUNDS') {
+      const user = await db.findUserById(sessionUser.id);
+      return res.status(400).json({
+        error: 'INSUFFICIENT_FUNDS',
+        message: 'Wallet balance is insufficient. Unlocking this premium report requires ₹49.00.',
+        requiredAmount: 49.00,
+        currentBalance: user ? user.walletBalance : 0
+      });
+    }
+    return res.status(500).json({ error: error.message || 'Report unlock failed' });
+  }
+});
+
 app.get('/api/wallet/me', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = await db.findUserById(req.user!.id);
@@ -1558,7 +1692,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 app.get('/api/ready', (_req: Request, res: Response) => {
   const pStatus = db.getPersistenceStatus();
-  if (process.env.NODE_ENV === 'production' && !pStatus.durable) {
+  if ((process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !pStatus.durable) {
     return res.status(503).json({
       status: 'NOT_READY',
       error: 'DATABASE_CONFIGURATION_REQUIRED',

@@ -19,13 +19,15 @@ from typing import Dict, Any, List, Optional, Union
 # Server-side environment key precedence:
 # 1. FREE_ASTRO_API_KEY (Official FreeAstroAPI env variable)
 # 2. FREE_ASTROLOGY_API_KEY (Backward-compatible fallback)
-# 3. Default active user key provided for development
-DEFAULT_API_KEY = "12071790da65abba270ffcaa7192ff8cd42fd16e3cb30d06603981dcd97d76a4"
+# Credentials must strictly be supplied via server-side environment variables.
 API_BASE_URL = "https://api.freeastroapi.com"
 
-def get_api_key() -> str:
-    """Retrieves FreeAstroAPI key strictly from server environment."""
-    return os.environ.get("FREE_ASTRO_API_KEY") or os.environ.get("FREE_ASTROLOGY_API_KEY") or DEFAULT_API_KEY
+def get_api_key() -> Optional[str]:
+    """Retrieves FreeAstroAPI key strictly from server environment variables."""
+    key = os.environ.get("FREE_ASTRO_API_KEY") or os.environ.get("FREE_ASTROLOGY_API_KEY")
+    if key and key.strip():
+        return key.strip()
+    return None
 
 def _make_api_request(
     endpoint: str,
@@ -38,7 +40,17 @@ def _make_api_request(
     Executes an authenticated HTTP POST request to FreeAstroAPI.
     x-api-key header is passed strictly server-side.
     Automatically handles 1 req/sec rate limits (HTTP 429) via exponential jitter backoff.
+    Fails closed with CONFIG_ERROR_MISSING_API_KEY if credentials are not configured.
     """
+    api_key = get_api_key()
+    if not api_key:
+        return {
+            "error": "CONFIG_ERROR_MISSING_API_KEY",
+            "statusCode": 503,
+            "message": "FreeAstroAPI credentials are not configured. Set FREE_ASTRO_API_KEY in server environment.",
+            "endpoint": endpoint
+        }
+
     if endpoint.startswith("/"):
         url = f"{API_BASE_URL}{endpoint}"
     else:
@@ -47,7 +59,7 @@ def _make_api_request(
     data_bytes = json.dumps(payload).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
-        "x-api-key": get_api_key(),
+        "x-api-key": api_key,
         "User-Agent": "Astroverse-Backend/2.0"
     }
 

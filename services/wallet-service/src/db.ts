@@ -181,6 +181,20 @@ interface DatabaseSchema {
 }
 
 function resolveDbPaths(): { dataDir: string; dbFile: string } {
+  if (process.env.NODE_ENV === 'test') {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const os = require('os');
+    const tmpDir = path.join(os.tmpdir(), 'astroverse_test_data');
+    try {
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+      return { dataDir: tmpDir, dbFile: path.join(tmpDir, `astroverse_test_db_${process.pid}.json`) };
+    } catch {
+      // Fall through
+    }
+  }
+
   if (process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME) {
     const tmpDir = path.join('/tmp', 'astroverse_data');
     try {
@@ -244,12 +258,23 @@ class ResilientDatabase {
     }
   }
 
+  assertDurableStorage(): void {
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    if (isProd && !this.isPostgresAvailable) {
+      throw new Error(
+        'DURABLE_STORAGE_REQUIRED: Production environment requires a configured and connected PostgreSQL database (DATABASE_URL). Ephemeral storage fallback is strictly disabled in production.'
+      );
+    }
+  }
+
   getPersistenceStatus() {
+    const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
     return {
       durable: this.isPostgresAvailable,
-      mode: this.isPostgresAvailable ? 'POSTGRES_PRISMA' : (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1' ? 'UNCONFIGURED_PRODUCTION' : 'LOCAL_DEVELOPMENT_FILE'),
+      mode: this.isPostgresAvailable ? 'POSTGRES_PRISMA' : (isProd ? 'UNCONFIGURED_PRODUCTION' : 'LOCAL_DEVELOPMENT_FILE'),
       databaseConfigured: Boolean(process.env.DATABASE_URL),
-      connected: this.isPostgresAvailable
+      connected: this.isPostgresAvailable,
+      isProduction: isProd
     };
   }
 
@@ -264,15 +289,56 @@ class ResilientDatabase {
       passwordHash: u.passwordHash,
       passwordSalt: u.passwordSalt,
       resetTokenHash: u.resetTokenHash,
-      resetTokenExpiresAt: u.resetTokenExpiresAt ? u.resetTokenExpiresAt.toISOString() : null,
+      resetTokenExpiresAt: u.resetTokenExpiresAt ? (typeof u.resetTokenExpiresAt === 'string' ? u.resetTokenExpiresAt : u.resetTokenExpiresAt.toISOString()) : null,
       role: u.role,
       status: u.status,
       preferredLanguage: u.preferredLanguage,
       preferredTimezone: u.preferredTimezone,
       walletBalance: Number(u.walletBalance),
-      lastLoginAt: u.lastLoginAt ? u.lastLoginAt.toISOString() : null,
-      createdAt: u.createdAt.toISOString(),
-      updatedAt: u.updatedAt.toISOString()
+      lastLoginAt: u.lastLoginAt ? (typeof u.lastLoginAt === 'string' ? u.lastLoginAt : u.lastLoginAt.toISOString()) : null,
+      createdAt: typeof u.createdAt === 'string' ? u.createdAt : u.createdAt.toISOString(),
+      updatedAt: typeof u.updatedAt === 'string' ? u.updatedAt : u.updatedAt.toISOString()
+    };
+  }
+
+  private mapPrismaSession(s: any): UserSessionRecord {
+    return {
+      id: s.id,
+      userId: s.userId,
+      tokenHash: s.tokenHash,
+      expiresAt: typeof s.expiresAt === 'string' ? s.expiresAt : s.expiresAt.toISOString(),
+      ipAddress: s.ipAddress || null,
+      userAgent: s.userAgent || null,
+      createdAt: typeof s.createdAt === 'string' ? s.createdAt : s.createdAt.toISOString()
+    };
+  }
+
+  private mapPrismaProfile(p: any): BirthProfileRecord {
+    return {
+      id: p.id,
+      userId: p.userId,
+      profileName: p.profileName,
+      relationship: p.relationship,
+      dateOfBirth: typeof p.dateOfBirth === 'string' ? p.dateOfBirth : p.dateOfBirth.toISOString().split('T')[0],
+      timeOfBirth: p.timeOfBirth,
+      birthTimeKnown: p.birthTimeKnown,
+      birthplaceName: p.birthplaceName,
+      latitude: Number(p.latitude),
+      longitude: Number(p.longitude),
+      resolvedTimezone: p.resolvedTimezone,
+      createdAt: typeof p.createdAt === 'string' ? p.createdAt : p.createdAt.toISOString(),
+      updatedAt: typeof p.updatedAt === 'string' ? p.updatedAt : p.updatedAt.toISOString()
+    };
+  }
+
+  private mapPrismaReport(r: any): SavedReportRecord {
+    return {
+      id: r.id,
+      userId: r.userId,
+      title: r.title,
+      reportType: r.reportType,
+      payload: r.payload,
+      createdAt: typeof r.createdAt === 'string' ? r.createdAt : r.createdAt.toISOString()
     };
   }
 
@@ -285,8 +351,8 @@ class ResilientDatabase {
       razorpayOrderId: o.razorpayOrderId,
       razorpayPaymentId: o.razorpayPaymentId,
       status: o.status,
-      createdAt: o.createdAt.toISOString(),
-      updatedAt: o.updatedAt.toISOString()
+      createdAt: typeof o.createdAt === 'string' ? o.createdAt : o.createdAt.toISOString(),
+      updatedAt: typeof o.updatedAt === 'string' ? o.updatedAt : o.updatedAt.toISOString()
     };
   }
 
@@ -430,10 +496,34 @@ class ResilientDatabase {
   // ==================== USERS & AUTH ====================
 
   async findUserById(id: string): Promise<UserRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const u = await this.prisma.user.findUnique({ where: { id } });
+        return u ? this.mapPrismaUser(u) : null;
+      } catch (err: any) {
+        console.error('[DB] findUserById Prisma error:', err?.message || err);
+      }
+    }
     return this.data.users.find(u => u.id === id) || null;
   }
 
   async findUserByIdentifier(identifier: string): Promise<UserRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const clean = identifier.trim().toLowerCase();
+        const u = await this.prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: { equals: clean, mode: 'insensitive' } },
+              { phone: identifier }
+            ]
+          }
+        });
+        return u ? this.mapPrismaUser(u) : null;
+      } catch (err: any) {
+        console.error('[DB] findUserByIdentifier Prisma error:', err?.message || err);
+      }
+    }
     const clean = identifier.trim().toLowerCase();
     return this.data.users.find(u => 
       (u.email && u.email.toLowerCase() === clean) || 
@@ -442,11 +532,30 @@ class ResilientDatabase {
   }
 
   async findUserByPhone(phone: string): Promise<UserRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const u = await this.prisma.user.findFirst({ where: { phone } });
+        return u ? this.mapPrismaUser(u) : null;
+      } catch (err: any) {
+        console.error('[DB] findUserByPhone Prisma error:', err?.message || err);
+      }
+    }
     const digits = phone.replace(/[\s\-\(\)\+]/g, '');
     return this.data.users.find(u => u.phone && u.phone.replace(/[\s\-\(\)\+]/g, '') === digits) || null;
   }
 
   async findUserByEmail(email: string): Promise<UserRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const clean = email.trim().toLowerCase();
+        const u = await this.prisma.user.findFirst({
+          where: { email: { equals: clean, mode: 'insensitive' } }
+        });
+        return u ? this.mapPrismaUser(u) : null;
+      } catch (err: any) {
+        console.error('[DB] findUserByEmail Prisma error:', err?.message || err);
+      }
+    }
     const clean = email.trim().toLowerCase();
     return this.data.users.find(u => u.email && u.email.toLowerCase() === clean) || null;
   }
@@ -465,6 +574,36 @@ class ResilientDatabase {
     preferredTimezone?: string;
     walletBalance?: number;
   }): Promise<UserRecord> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const u = await this.prisma.user.create({
+          data: {
+            phone: userData.phone || null,
+            email: userData.email ? userData.email.trim().toLowerCase() : null,
+            phoneVerified: userData.phoneVerified || false,
+            emailVerified: userData.emailVerified || false,
+            displayName: userData.displayName || (userData.email ? userData.email.split('@')[0] : `User_${userData.phone?.slice(-4) || 'Astro'}`),
+            passwordHash: userData.passwordHash || null,
+            passwordSalt: userData.passwordSalt || null,
+            role: userData.role || Role.USER,
+            status: userData.status || AccountStatus.ACTIVE,
+            preferredLanguage: userData.preferredLanguage || 'en',
+            preferredTimezone: userData.preferredTimezone || 'Asia/Kolkata',
+            walletBalance: userData.walletBalance != null ? userData.walletBalance : 0.00,
+            lastLoginAt: new Date()
+          }
+        });
+        const mapped = this.mapPrismaUser(u);
+        this.data.users.push(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] createUser Prisma error:', err?.message || err);
+        throw err;
+      }
+    }
+
     const now = new Date().toISOString();
     const newUser: UserRecord = {
       id: 'usr_' + crypto.randomBytes(8).toString('hex'),
@@ -492,6 +631,34 @@ class ResilientDatabase {
   }
 
   async updateUser(id: string, updates: Partial<UserRecord>): Promise<UserRecord> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const dataToUpdate: any = { ...updates };
+        delete dataToUpdate.id;
+        delete dataToUpdate.createdAt;
+        delete dataToUpdate.updatedAt;
+        if (dataToUpdate.lastLoginAt && typeof dataToUpdate.lastLoginAt === 'string') {
+          dataToUpdate.lastLoginAt = new Date(dataToUpdate.lastLoginAt);
+        }
+        if (dataToUpdate.resetTokenExpiresAt && typeof dataToUpdate.resetTokenExpiresAt === 'string') {
+          dataToUpdate.resetTokenExpiresAt = new Date(dataToUpdate.resetTokenExpiresAt);
+        }
+        const u = await this.prisma.user.update({
+          where: { id },
+          data: dataToUpdate
+        });
+        const mapped = this.mapPrismaUser(u);
+        const idx = this.data.users.findIndex(x => x.id === id);
+        if (idx !== -1) this.data.users[idx] = mapped;
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] updateUser Prisma error:', err?.message || err);
+        throw err;
+      }
+    }
+
     const idx = this.data.users.findIndex(u => u.id === id);
     if (idx === -1) throw new Error('USER_NOT_FOUND');
     const updated = {
@@ -505,6 +672,23 @@ class ResilientDatabase {
   }
 
   async deleteUser(id: string): Promise<boolean> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.user.delete({ where: { id } });
+        const idx = this.data.users.findIndex(u => u.id === id);
+        if (idx !== -1) this.data.users.splice(idx, 1);
+        this.data.sessions = this.data.sessions.filter(s => s.userId !== id);
+        this.data.birthProfiles = this.data.birthProfiles.filter(p => p.userId !== id);
+        this.data.savedReports = this.data.savedReports.filter(r => r.userId !== id);
+        return true;
+      } catch (err: any) {
+        console.error('[DB] deleteUser Prisma error:', err?.message || err);
+        return false;
+      }
+    }
+
     const idx = this.data.users.findIndex(u => u.id === id);
     if (idx === -1) return false;
     this.data.users.splice(idx, 1);
@@ -523,6 +707,34 @@ class ResilientDatabase {
     page?: number;
     limit?: number;
   }): Promise<{ users: UserRecord[]; total: number; page: number; limit: number }> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const where: any = {};
+        if (options?.role && options.role !== 'ALL') where.role = options.role;
+        if (options?.status && options.status !== 'ALL') where.status = options.status;
+        if (options?.search) {
+          where.OR = [
+            { displayName: { contains: options.search, mode: 'insensitive' } },
+            { email: { contains: options.search, mode: 'insensitive' } },
+            { phone: { contains: options.search } }
+          ];
+        }
+        const total = await this.prisma.user.count({ where });
+        const page = Math.max(1, options?.page || 1);
+        const limit = Math.max(1, options?.limit || 20);
+        const skip = (page - 1) * limit;
+        const rows = await this.prisma.user.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' }
+        });
+        return { users: rows.map((r: any) => this.mapPrismaUser(r)), total, page, limit };
+      } catch (err: any) {
+        console.error('[DB] listUsers Prisma error:', err?.message || err);
+      }
+    }
+
     let result = [...this.data.users];
     if (options?.role && options.role !== 'ALL') {
       result = result.filter(u => u.role === options.role);
@@ -556,6 +768,28 @@ class ResilientDatabase {
     ipAddress?: string | null;
     userAgent?: string | null;
   }): Promise<UserSessionRecord> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const s = await this.prisma.userSession.create({
+          data: {
+            userId: sessionData.userId,
+            tokenHash: sessionData.tokenHash,
+            expiresAt: sessionData.expiresAt,
+            ipAddress: sessionData.ipAddress || null,
+            userAgent: sessionData.userAgent || null
+          }
+        });
+        const mapped = this.mapPrismaSession(s);
+        this.data.sessions.push(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] createSession Prisma error:', err?.message || err);
+        throw err;
+      }
+    }
+
     const session: UserSessionRecord = {
       id: 'sess_' + crypto.randomBytes(8).toString('hex'),
       userId: sessionData.userId,
@@ -571,6 +805,22 @@ class ResilientDatabase {
   }
 
   async findSessionByTokenHash(tokenHash: string): Promise<UserSessionRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const s = await this.prisma.userSession.findUnique({
+          where: { tokenHash }
+        });
+        if (!s) return null;
+        if (new Date(s.expiresAt).getTime() < Date.now()) {
+          await this.deleteSession(tokenHash);
+          return null;
+        }
+        return this.mapPrismaSession(s);
+      } catch (err: any) {
+        console.error('[DB] findSessionByTokenHash Prisma error:', err?.message || err);
+      }
+    }
+
     const s = this.data.sessions.find(x => x.tokenHash === tokenHash);
     if (!s) return null;
     if (new Date(s.expiresAt).getTime() < Date.now()) {
@@ -581,11 +831,31 @@ class ResilientDatabase {
   }
 
   async deleteSession(tokenHash: string): Promise<void> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.userSession.deleteMany({ where: { tokenHash } });
+      } catch (err: any) {
+        console.error('[DB] deleteSession Prisma error:', err?.message || err);
+      }
+    }
+
     this.data.sessions = this.data.sessions.filter(s => s.tokenHash !== tokenHash);
     this.saveToFile();
   }
 
   async deleteUserSessions(userId: string): Promise<void> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.userSession.deleteMany({ where: { userId } });
+      } catch (err: any) {
+        console.error('[DB] deleteUserSessions Prisma error:', err?.message || err);
+      }
+    }
+
     this.data.sessions = this.data.sessions.filter(s => s.userId !== userId);
     this.saveToFile();
   }
@@ -600,6 +870,37 @@ class ResilientDatabase {
     metadata?: any;
     ipAddress?: string | null;
   }): Promise<AuditEventRecord> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const a = await this.prisma.auditEvent.create({
+          data: {
+            userId: event.userId || null,
+            action: event.action,
+            targetType: event.targetType || null,
+            targetId: event.targetId || null,
+            metadata: event.metadata || null,
+            ipAddress: event.ipAddress || null
+          }
+        });
+        const mapped: AuditEventRecord = {
+          id: a.id,
+          userId: a.userId,
+          action: a.action,
+          targetType: a.targetType,
+          targetId: a.targetId,
+          metadata: a.metadata,
+          ipAddress: a.ipAddress,
+          createdAt: a.createdAt.toISOString()
+        };
+        this.data.auditEvents.unshift(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] recordAuditEvent Prisma error:', err?.message || err);
+      }
+    }
+
     const record: AuditEventRecord = {
       id: 'aud_' + crypto.randomBytes(8).toString('hex'),
       userId: event.userId || null,
@@ -625,6 +926,39 @@ class ResilientDatabase {
     page?: number;
     limit?: number;
   }): Promise<{ events: AuditEventRecord[]; total: number }> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const where: any = {};
+        if (options?.userId) where.userId = options.userId;
+        if (options?.action) where.action = options.action;
+        const total = await this.prisma.auditEvent.count({ where });
+        const page = Math.max(1, options?.page || 1);
+        const limit = Math.max(1, options?.limit || 50);
+        const skip = (page - 1) * limit;
+        const rows = await this.prisma.auditEvent.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' }
+        });
+        return {
+          events: rows.map((a: any) => ({
+            id: a.id,
+            userId: a.userId,
+            action: a.action,
+            targetType: a.targetType,
+            targetId: a.targetId,
+            metadata: a.metadata,
+            ipAddress: a.ipAddress,
+            createdAt: a.createdAt.toISOString()
+          })),
+          total
+        };
+      } catch (err: any) {
+        console.error('[DB] listAuditEvents Prisma error:', err?.message || err);
+      }
+    }
+
     let result = [...this.data.auditEvents];
     if (options?.userId) {
       result = result.filter(e => e.userId === options.userId);
@@ -652,6 +986,45 @@ class ResilientDatabase {
     longitude: number;
     resolvedTimezone?: string;
   }): Promise<BirthProfileRecord> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const trimmedName = data.profileName.trim();
+        const existing = await this.prisma.birthProfile.findFirst({
+          where: {
+            userId: data.userId,
+            profileName: trimmedName,
+            timeOfBirth: data.timeOfBirth
+          }
+        });
+        if (existing) {
+          return this.mapPrismaProfile(existing);
+        }
+
+        const created = await this.prisma.birthProfile.create({
+          data: {
+            userId: data.userId,
+            profileName: trimmedName,
+            relationship: data.relationship || 'Self',
+            dateOfBirth: new Date(data.dateOfBirth),
+            timeOfBirth: data.timeOfBirth,
+            birthTimeKnown: true,
+            birthplaceName: data.birthplaceName.trim(),
+            latitude: Number(data.latitude),
+            longitude: Number(data.longitude),
+            resolvedTimezone: data.resolvedTimezone || 'Asia/Kolkata'
+          }
+        });
+        const mapped = this.mapPrismaProfile(created);
+        this.data.birthProfiles.unshift(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] createProfile Prisma error:', err?.message || err);
+        throw err;
+      }
+    }
+
     const trimmedName = data.profileName.trim();
     // Atomic uniqueness and idempotency check (prevents concurrency race conditions)
     const existing = this.data.birthProfiles.find(p =>
@@ -688,14 +1061,59 @@ class ResilientDatabase {
   }
 
   async getProfilesByUserId(userId: string): Promise<BirthProfileRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const list = await this.prisma.birthProfile.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' }
+        });
+        return list.map((p: any) => this.mapPrismaProfile(p));
+      } catch (err: any) {
+        console.error('[DB] getProfilesByUserId Prisma error:', err?.message || err);
+      }
+    }
     return this.data.birthProfiles.filter(p => p.userId === userId);
   }
 
   async getProfileById(id: string): Promise<BirthProfileRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const p = await this.prisma.birthProfile.findUnique({ where: { id } });
+        return p ? this.mapPrismaProfile(p) : null;
+      } catch (err: any) {
+        console.error('[DB] getProfileById Prisma error:', err?.message || err);
+      }
+    }
     return this.data.birthProfiles.find(p => p.id === id) || null;
   }
 
   async updateProfile(id: string, updates: Partial<BirthProfileRecord>): Promise<BirthProfileRecord> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const dataToUpdate: any = { ...updates };
+        delete dataToUpdate.id;
+        delete dataToUpdate.userId;
+        delete dataToUpdate.createdAt;
+        delete dataToUpdate.updatedAt;
+        if (dataToUpdate.dateOfBirth && typeof dataToUpdate.dateOfBirth === 'string') {
+          dataToUpdate.dateOfBirth = new Date(dataToUpdate.dateOfBirth);
+        }
+        const updated = await this.prisma.birthProfile.update({
+          where: { id },
+          data: dataToUpdate
+        });
+        const mapped = this.mapPrismaProfile(updated);
+        const idx = this.data.birthProfiles.findIndex(p => p.id === id);
+        if (idx !== -1) this.data.birthProfiles[idx] = mapped;
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] updateProfile Prisma error:', err?.message || err);
+        throw err;
+      }
+    }
+
     const idx = this.data.birthProfiles.findIndex(p => p.id === id);
     if (idx === -1) throw new Error('PROFILE_NOT_FOUND');
     const updated = {
@@ -709,6 +1127,20 @@ class ResilientDatabase {
   }
 
   async deleteProfile(id: string): Promise<boolean> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.birthProfile.delete({ where: { id } });
+        const idx = this.data.birthProfiles.findIndex(p => p.id === id);
+        if (idx !== -1) this.data.birthProfiles.splice(idx, 1);
+        return true;
+      } catch (err: any) {
+        console.error('[DB] deleteProfile Prisma error:', err?.message || err);
+        return false;
+      }
+    }
+
     const idx = this.data.birthProfiles.findIndex(p => p.id === id);
     if (idx === -1) return false;
     this.data.birthProfiles.splice(idx, 1);
@@ -724,6 +1156,27 @@ class ResilientDatabase {
     reportType: string;
     payload: any;
   }): Promise<SavedReportRecord> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const created = await this.prisma.savedReport.create({
+          data: {
+            userId: data.userId,
+            title: data.title,
+            reportType: data.reportType,
+            payload: data.payload
+          }
+        });
+        const mapped = this.mapPrismaReport(created);
+        this.data.savedReports.unshift(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] createSavedReport Prisma error:', err?.message || err);
+        throw err;
+      }
+    }
+
     const report: SavedReportRecord = {
       id: 'rep_' + crypto.randomBytes(8).toString('hex'),
       userId: data.userId,
@@ -738,14 +1191,47 @@ class ResilientDatabase {
   }
 
   async getSavedReportsByUserId(userId: string): Promise<SavedReportRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const list = await this.prisma.savedReport.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' }
+        });
+        return list.map((r: any) => this.mapPrismaReport(r));
+      } catch (err: any) {
+        console.error('[DB] getSavedReportsByUserId Prisma error:', err?.message || err);
+      }
+    }
     return this.data.savedReports.filter(r => r.userId === userId);
   }
 
   async getSavedReportById(id: string): Promise<SavedReportRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const r = await this.prisma.savedReport.findUnique({ where: { id } });
+        return r ? this.mapPrismaReport(r) : null;
+      } catch (err: any) {
+        console.error('[DB] getSavedReportById Prisma error:', err?.message || err);
+      }
+    }
     return this.data.savedReports.find(r => r.id === id) || null;
   }
 
   async deleteSavedReport(id: string): Promise<boolean> {
+    this.assertDurableStorage();
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.savedReport.delete({ where: { id } });
+        const idx = this.data.savedReports.findIndex(r => r.id === id);
+        if (idx !== -1) this.data.savedReports.splice(idx, 1);
+        return true;
+      } catch (err: any) {
+        console.error('[DB] deleteSavedReport Prisma error:', err?.message || err);
+        return false;
+      }
+    }
+
     const idx = this.data.savedReports.findIndex(r => r.id === id);
     if (idx === -1) return false;
     this.data.savedReports.splice(idx, 1);
@@ -772,6 +1258,7 @@ class ResilientDatabase {
   }
 
   async rechargeWallet(userId: string, amount: number, paymentId: string, orderId: string): Promise<UserRecord> {
+    this.assertDurableStorage();
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
@@ -884,6 +1371,7 @@ class ResilientDatabase {
   }
 
   async settleConsultation(userId: string, astrologerId: string, sessionId: string, totalDeduction: number) {
+    this.assertDurableStorage();
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
@@ -1074,6 +1562,7 @@ class ResilientDatabase {
     currency?: string;
     razorpayOrderId: string;
   }): Promise<PaymentOrderRecord> {
+    this.assertDurableStorage();
     const existing = this.data.paymentOrders.find(o => o.razorpayOrderId === data.razorpayOrderId);
     if (existing) return existing;
 
@@ -1112,6 +1601,111 @@ class ResilientDatabase {
     this.data.paymentOrders.unshift(order);
     this.saveToFile();
     return order;
+  }
+
+  async unlockReport(userId: string, reportType: string, referenceId?: string, clientKey?: string): Promise<{
+    success: boolean;
+    alreadyUnlocked?: boolean;
+    newBalance: number;
+    deduction: number;
+    transactionId: string;
+  }> {
+    this.assertDurableStorage();
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    const UNLOCK_FEE = 49.00;
+    const ref = referenceId || 'default';
+    const idemKey = clientKey || `UNLOCK_${userId}_${reportType}_${ref}`;
+
+    // Idempotency check: has this report already been unlocked?
+    const existing = this.data.walletLedgers.find(
+      l => l.idempotencyKey === idemKey || (l.referenceId === idemKey && l.entryType === EntryType.STORE_PURCHASE)
+    );
+    if (existing) {
+      return {
+        success: true,
+        alreadyUnlocked: true,
+        newBalance: user.walletBalance,
+        deduction: 0,
+        transactionId: existing.id
+      };
+    }
+
+    if (user.walletBalance < UNLOCK_FEE) {
+      throw new Error('INSUFFICIENT_FUNDS');
+    }
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgResult = await this.prisma.$transaction(async (tx: any) => {
+          const pgUser = await tx.user.findUnique({ where: { id: userId } });
+          if (!pgUser) throw new Error('USER_NOT_FOUND');
+          if (Number(pgUser.walletBalance) < UNLOCK_FEE) throw new Error('INSUFFICIENT_FUNDS');
+
+          const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: { walletBalance: { decrement: UNLOCK_FEE } }
+          });
+
+          const ledger = await tx.walletLedger.create({
+            data: {
+              userId,
+              amount: -UNLOCK_FEE,
+              entryType: EntryType.STORE_PURCHASE,
+              idempotencyKey: idemKey,
+              referenceId: ref,
+              description: `Unlock Premium Report: ${reportType}`
+            }
+          });
+
+          return {
+            success: true,
+            newBalance: Number(updatedUser.walletBalance),
+            deduction: UNLOCK_FEE,
+            transactionId: ledger.id
+          };
+        });
+
+        user.walletBalance = pgResult.newBalance;
+        return pgResult;
+      } catch (err: any) {
+        if (err.message?.includes('Unique constraint failed') && err.message?.includes('idempotencyKey')) {
+          return {
+            success: true,
+            alreadyUnlocked: true,
+            newBalance: user.walletBalance,
+            deduction: 0,
+            transactionId: idemKey
+          };
+        }
+        throw err;
+      }
+    }
+
+    user.walletBalance = Math.round((user.walletBalance - UNLOCK_FEE) * 100) / 100;
+    user.updatedAt = new Date().toISOString();
+
+    const ledgerId = 'led_' + crypto.randomBytes(8).toString('hex');
+    this.data.walletLedgers.unshift({
+      id: ledgerId,
+      userId,
+      astrologerId: null,
+      amount: -UNLOCK_FEE,
+      entryType: EntryType.STORE_PURCHASE,
+      idempotencyKey: idemKey,
+      referenceId: ref,
+      description: `Unlock Premium Report: ${reportType}`,
+      createdAt: new Date().toISOString()
+    });
+
+    this.saveToFile();
+    return {
+      success: true,
+      newBalance: user.walletBalance,
+      deduction: UNLOCK_FEE,
+      transactionId: ledgerId
+    };
   }
 
   // ==================== ASTROLOGERS ====================

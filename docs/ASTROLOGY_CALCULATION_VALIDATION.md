@@ -12,7 +12,7 @@
 
 Astroverse utilizes a dual-engine architecture to guarantee both extreme precision and unbroken offline availability:
 1. **Primary Backend Engine**: Swiss Ephemeris (`pyswisseph 2.10.3.2`), the gold standard in modern astrometry, utilizing compressed JPL planetary ephemeris tables (`swe.set_sid_mode(swe.SIDM_LAHIRI)`).
-2. **External Verification Provider**: FreeAstrologyAPI (`https://json.freeastrologyapi.com`), queried via live API key (`TlI51pEPIW3hTnSI8ogDTR66j48B5D278ZH7Gbkh`) to cross-validate coordinates and generate native SVG charts.
+2. **External Verification Provider**: FreeAstrologyAPI (`https://json.freeastrologyapi.com`), queried via server environment key (`FREE_ASTROLOGY_API_KEY`) to cross-validate coordinates and generate native SVG charts.
 3. **Client Mathematical Engine**: Built-in Meeus/Lahiri analytical engine embedded in `index.html` (`calculateClientKundli`), ensuring that even when running standalone or offline, calculations never fall back to dummy modulo placeholders.
 
 ---
