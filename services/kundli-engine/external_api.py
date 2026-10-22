@@ -16,6 +16,15 @@ import urllib.request
 import urllib.error
 from typing import Dict, Any, List, Optional, Union
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    _module_env = os.path.join(os.path.dirname(__file__), ".env")
+    if os.path.exists(_module_env):
+        load_dotenv(_module_env)
+except ImportError:
+    pass
+
 # Server-side environment key precedence:
 # 1. FREE_ASTRO_API_KEY (Official FreeAstroAPI env variable)
 # 2. FREE_ASTROLOGY_API_KEY (Backward-compatible fallback)
@@ -98,6 +107,35 @@ def _make_api_request(
                 "message": str(e),
                 "endpoint": endpoint
             }
+
+def fetch_external_natal_calculate(
+    year: int, month: int, day: int,
+    hour: int, minute: int,
+    city: str = "New Delhi",
+    lat: float = 28.6139,
+    lng: float = 77.2090,
+    tz_str: str = "Asia/Kolkata",
+    time_known: bool = True
+) -> Dict[str, Any]:
+    """
+    Minimal / Western Natal calculation endpoint from FreeAstroAPI:
+    POST /api/v1/natal/calculate
+    Documentation: https://www.freeastroapi.com/llms.txt
+    Returns: { subject, planets, aspects, aspects_summary, confidence, houses, angles, angles_details }
+    """
+    payload = {
+        "year": year,
+        "month": month,
+        "day": day,
+        "hour": hour,
+        "minute": minute,
+        "city": city,
+        "lat": lat,
+        "lng": lng,
+        "tz_str": tz_str,
+        "time_known": time_known
+    }
+    return _make_api_request("/api/v1/natal/calculate", payload)
 
 def fetch_external_vedic_chart(
     year: int, month: int, day: int,

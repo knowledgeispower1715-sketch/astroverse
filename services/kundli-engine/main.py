@@ -32,6 +32,7 @@ from external_api import (
     fetch_external_navamsa,
     fetch_external_vedic_chart,
     fetch_external_visual_chart,
+    fetch_external_natal_calculate,
     get_api_key
 )
 from prokerala_api import (
@@ -561,6 +562,35 @@ def get_external_kundli(req: BirthDetails):
         "provider": "FreeAstroAPI",
         "chart": chart_data,
         "svg": svg_data
+    }
+
+@app.post("/api/external/natal")
+@app.post("/api/external-natal")
+def get_external_natal(req: BirthDetails):
+    """
+    FreeAstroAPI Minimal Natal Endpoint:
+    POST /api/v1/natal/calculate
+    Documentation: https://www.freeastroapi.com/llms.txt
+    Fails closed when credentials are missing or external provider fails.
+    """
+    dt = datetime.fromisoformat(req.dob)
+    natal_data = fetch_external_natal_calculate(
+        year=dt.year, month=dt.month, day=dt.day,
+        hour=dt.hour, minute=dt.minute,
+        lat=req.lat, lng=req.lon, tz_str=req.timezone
+    )
+    if isinstance(natal_data, dict) and natal_data.get("error"):
+        status_code = natal_data.get("statusCode", 503)
+        if not isinstance(status_code, int) or status_code < 400 or status_code > 599:
+            status_code = 503
+        raise HTTPException(
+            status_code=status_code,
+            detail=natal_data.get("message", "External astrology provider request failed.")
+        )
+    return {
+        "provider": "FreeAstroAPI",
+        "endpoint": "/api/v1/natal/calculate",
+        "data": natal_data
     }
 
 # ==================== PROKERALA API V2 ENDPOINTS ====================
