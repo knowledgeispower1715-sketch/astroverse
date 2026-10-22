@@ -1345,6 +1345,82 @@ async function runAuthTestSuite() {
       assert.strictEqual(res.data.newBalance, 51.00);
     });
 
+    // E. Vedic Puja Booking Tests
+    await test('POST /api/wallet/book-puja rejects unauthenticated request with HTTP 401', async () => {
+      const res = await request('/api/wallet/book-puja', {
+        method: 'POST',
+        body: { pujaName: 'Maha Mrityunjaya Puja', amount: 2100 }
+      });
+      assert.strictEqual(res.status, 401);
+    });
+
+    await test('POST /api/wallet/book-puja rejects missing pujaName with HTTP 400', async () => {
+      const res = await request('/api/wallet/book-puja', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${unlockTestUserToken}` },
+        body: { amount: 2100 }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'PUJA_NAME_REQUIRED');
+    });
+
+    await test('POST /api/wallet/book-puja rejects non-positive amount with HTTP 400', async () => {
+      const res = await request('/api/wallet/book-puja', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${unlockTestUserToken}` },
+        body: { pujaName: 'Shani Shanti Puja', amount: -100 }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INVALID_AMOUNT');
+    });
+
+    await test('POST /api/wallet/book-puja rejects insufficient funds with HTTP 400 INSUFFICIENT_FUNDS', async () => {
+      // User only has 51.00 balance left
+      const res = await request('/api/wallet/book-puja', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${unlockTestUserToken}` },
+        body: { pujaName: 'Maha Mrityunjaya Puja', amount: 2100 }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INSUFFICIENT_FUNDS');
+      assert.strictEqual(res.data.requiredAmount, 2100);
+    });
+
+    await test('POST /api/wallet/book-puja successfully books puja and debits wallet', async () => {
+      // Book a puja within the 51.00 balance (e.g. 25.00 mini-sankalp)
+      const res = await request('/api/wallet/book-puja', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${unlockTestUserToken}` },
+        body: {
+          pujaName: 'Navagraha Shanti Archana',
+          amount: 25.00,
+          clientKey: 'PUJA_TEST_001'
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.booked, true);
+      assert.strictEqual(res.data.deduction, 25.00);
+      assert.strictEqual(res.data.newBalance, 26.00);
+      assert.strictEqual(res.data.pujaName, 'Navagraha Shanti Archana');
+    });
+
+    await test('POST /api/wallet/book-puja is idempotent: duplicate clientKey does not double-debit', async () => {
+      const res = await request('/api/wallet/book-puja', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${unlockTestUserToken}` },
+        body: {
+          pujaName: 'Navagraha Shanti Archana',
+          amount: 25.00,
+          clientKey: 'PUJA_TEST_001'
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.booked, true);
+      assert.strictEqual(res.data.alreadyBooked, true);
+      assert.strictEqual(res.data.deduction, 0);
+      assert.strictEqual(res.data.newBalance, 26.00);
+    });
+
     await test('Production fail-closed check: assertDurableStorage and /api/ready reject ephemeral mode', async () => {
       const origEnv = process.env.NODE_ENV;
       const origVercel = process.env.VERCEL;

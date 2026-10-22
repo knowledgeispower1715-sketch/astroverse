@@ -1633,6 +1633,60 @@ app.post('/api/wallet/unlock-report', authenticate, async (req: AuthenticatedReq
   }
 });
 
+app.post(['/api/wallet/book-puja', '/api/pujas/book'], authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const sessionUser = req.user!;
+  const { pujaName, amount, referenceId, clientKey } = req.body;
+
+  if (!pujaName || typeof pujaName !== 'string' || !pujaName.trim()) {
+    return res.status(400).json({
+      error: 'PUJA_NAME_REQUIRED',
+      message: 'A valid pujaName string is required to book a puja.'
+    });
+  }
+
+  const amt = Number(amount);
+  if (!Number.isFinite(amt) || amt <= 0) {
+    return res.status(400).json({
+      error: 'INVALID_AMOUNT',
+      message: 'A valid positive amount is required to book a puja.'
+    });
+  }
+
+  try {
+    const result = await db.bookPuja(sessionUser.id, pujaName.trim(), amt, referenceId, clientKey);
+
+    await db.recordAuditEvent({
+      userId: sessionUser.id,
+      action: 'PUJA_BOOKED',
+      targetType: 'PUJA_SERVICE',
+      targetId: referenceId || pujaName.trim(),
+      metadata: {
+        pujaName: pujaName.trim(),
+        amount: amt,
+        deduction: result.deduction,
+        newBalance: result.newBalance,
+        alreadyBooked: Boolean(result.alreadyBooked)
+      }
+    });
+
+    return res.json({
+      booked: true,
+      ...result
+    });
+  } catch (error: any) {
+    if (error.message === 'INSUFFICIENT_FUNDS') {
+      const user = await db.findUserById(sessionUser.id);
+      return res.status(400).json({
+        error: 'INSUFFICIENT_FUNDS',
+        message: `Wallet balance is insufficient. Booking ${pujaName} requires ₹${amt.toFixed(2)}.`,
+        requiredAmount: amt,
+        currentBalance: user ? user.walletBalance : 0
+      });
+    }
+    return handleServiceError(res, error, 'Puja booking failed');
+  }
+});
+
 app.get('/api/wallet/me', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = await db.findUserById(req.user!.id);

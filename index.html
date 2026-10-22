@@ -9136,26 +9136,63 @@
 
     let pendingPujaBooking = null;
 
-    function bookPuja(pujaName, amt) {
-      if (currentWalletBalance >= amt) {
-        currentWalletBalance -= amt;
-        localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-        updateUserSessionUI();
-        showToast(`Booking Confirmed for ${pujaName}! Priest assigned & Sankalp registered.`, "success");
+    async function bookPuja(pujaName, amt) {
+      if (!currentSessionToken) {
+        showToast("Please sign in to book a Vedic Puja.", "info");
+        openAuthModal('otp');
         return;
       }
 
-      // Shortfall arithmetic (Puja fee minus available wallet balance)
-      const shortfall = amt - currentWalletBalance;
-      pendingPujaBooking = { pujaName, amt, shortfall };
+      if (currentWalletBalance < amt) {
+        // Shortfall arithmetic (Puja fee minus available wallet balance)
+        const shortfall = amt - currentWalletBalance;
+        pendingPujaBooking = { pujaName, amt, shortfall };
 
-      document.getElementById('disp-puja-name').textContent = pujaName;
-      document.getElementById('disp-puja-fee').textContent = `₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-      document.getElementById('disp-puja-curr-bal').textContent = `₹${currentWalletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-      document.getElementById('disp-puja-shortfall').textContent = `₹${shortfall.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-      document.getElementById('btn-puja-recharge-confirm').innerHTML = `<i class="fa-solid fa-bolt"></i> Add ₹${Math.ceil(shortfall)} Shortfall & Confirm Booking`;
+        document.getElementById('disp-puja-name').textContent = pujaName;
+        document.getElementById('disp-puja-fee').textContent = `₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+        document.getElementById('disp-puja-curr-bal').textContent = `₹${currentWalletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+        document.getElementById('disp-puja-shortfall').textContent = `₹${shortfall.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+        document.getElementById('btn-puja-recharge-confirm').innerHTML = `<i class="fa-solid fa-bolt"></i> Add ₹${Math.ceil(shortfall)} Shortfall & Confirm Booking`;
 
-      document.getElementById('modal-puja-shortfall').style.display = 'flex';
+        document.getElementById('modal-puja-shortfall').style.display = 'flex';
+        return;
+      }
+
+      // Server-authoritative booking with double-entry ledger
+      try {
+        const authBase = getAuthBase();
+        const res = await fetch(`${authBase}/api/wallet/book-puja`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentSessionToken}`
+          },
+          body: JSON.stringify({
+            pujaName,
+            amount: amt,
+            clientKey: `PUJA_REQ_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.booked) {
+          currentWalletBalance = Number(data.newBalance);
+          updateUserSessionUI();
+          showToast(`Booking Confirmed for ${pujaName}! Priest assigned & Sankalp registered.`, "success");
+        } else if (data.error === 'INSUFFICIENT_FUNDS') {
+          const shortfall = amt - currentWalletBalance;
+          pendingPujaBooking = { pujaName, amt, shortfall };
+          document.getElementById('disp-puja-name').textContent = pujaName;
+          document.getElementById('disp-puja-fee').textContent = `₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+          document.getElementById('disp-puja-curr-bal').textContent = `₹${currentWalletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+          document.getElementById('disp-puja-shortfall').textContent = `₹${shortfall.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+          document.getElementById('modal-puja-shortfall').style.display = 'flex';
+        } else {
+          showToast(data.message || "Failed to book puja. Please try again.", "error");
+        }
+      } catch (err) {
+        showToast("Network error communicating with wallet service. Please check connection.", "error");
+      }
     }
 
     function closePujaShortfallModal() {

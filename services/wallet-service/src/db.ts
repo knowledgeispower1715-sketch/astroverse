@@ -1711,6 +1711,115 @@ class ResilientDatabase {
     };
   }
 
+  async bookPuja(userId: string, pujaName: string, amount: number, referenceId?: string, clientKey?: string) {
+    this.assertDurableStorage();
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      throw new Error('INVALID_AMOUNT');
+    }
+
+    const cleanPujaName = (pujaName || '').trim();
+    if (!cleanPujaName) {
+      throw new Error('PUJA_NAME_REQUIRED');
+    }
+
+    const ref = referenceId || `puja_${Date.now()}`;
+    const idemKey = clientKey || `PUJA_${userId}_${cleanPujaName.replace(/\s+/g, '_')}_${ref}`;
+
+    // Enforce idempotency
+    const existing = this.data.walletLedgers.find(l => l.idempotencyKey === idemKey);
+    if (existing) {
+      return {
+        success: true,
+        alreadyBooked: true,
+        newBalance: user.walletBalance,
+        deduction: 0,
+        transactionId: existing.id,
+        pujaName: cleanPujaName
+      };
+    }
+
+    if (user.walletBalance < amount) {
+      throw new Error('INSUFFICIENT_FUNDS');
+    }
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgResult = await this.prisma.$transaction(async (tx: any) => {
+          const pgUser = await tx.user.findUnique({ where: { id: userId } });
+          if (!pgUser) throw new Error('USER_NOT_FOUND');
+          if (Number(pgUser.walletBalance) < amount) throw new Error('INSUFFICIENT_FUNDS');
+
+          const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: { walletBalance: { decrement: amount } }
+          });
+
+          const ledger = await tx.walletLedger.create({
+            data: {
+              userId,
+              amount: -amount,
+              entryType: EntryType.STORE_PURCHASE,
+              idempotencyKey: idemKey,
+              referenceId: ref,
+              description: `Vedic Puja Booking: ${cleanPujaName}`
+            }
+          });
+
+          return {
+            success: true,
+            newBalance: Number(updatedUser.walletBalance),
+            deduction: amount,
+            transactionId: ledger.id,
+            pujaName: cleanPujaName
+          };
+        });
+
+        user.walletBalance = pgResult.newBalance;
+        return pgResult;
+      } catch (err: any) {
+        if (err.message?.includes('Unique constraint failed') && err.message?.includes('idempotencyKey')) {
+          return {
+            success: true,
+            alreadyBooked: true,
+            newBalance: user.walletBalance,
+            deduction: 0,
+            transactionId: idemKey,
+            pujaName: cleanPujaName
+          };
+        }
+        throw err;
+      }
+    }
+
+    user.walletBalance = Math.round((user.walletBalance - amount) * 100) / 100;
+    user.updatedAt = new Date().toISOString();
+
+    const ledgerId = 'led_' + crypto.randomBytes(8).toString('hex');
+    this.data.walletLedgers.unshift({
+      id: ledgerId,
+      userId,
+      astrologerId: null,
+      amount: -amount,
+      entryType: EntryType.STORE_PURCHASE,
+      idempotencyKey: idemKey,
+      referenceId: ref,
+      description: `Vedic Puja Booking: ${cleanPujaName}`,
+      createdAt: new Date().toISOString()
+    });
+
+    this.saveToFile();
+    return {
+      success: true,
+      newBalance: user.walletBalance,
+      deduction: amount,
+      transactionId: ledgerId,
+      pujaName: cleanPujaName
+    };
+  }
+
   // ==================== ASTROLOGERS ====================
 
   async findAstrologerById(id: string): Promise<AstrologerRecord | null> {
