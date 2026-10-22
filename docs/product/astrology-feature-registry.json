@@ -1,0 +1,135 @@
+{
+  "schema_version": "1.0.0",
+  "platform": "AstroVerse Vedic Astrology Platform",
+  "updated_at": "2026-10-22T12:46:54.200707+00:00",
+  "feature_domains": [
+    {
+      "id": "planetary_calculations",
+      "name": "Planetary Positions & Astronomical Properties",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/kundli",
+      "description": "Calculates high-precision Sayana & Nirayana planetary longitudes, speeds, retrograde motions, combustion statuses, nakshatra & pada placements, and planetary dignities."
+    },
+    {
+      "id": "houses_and_bhava",
+      "name": "Bhava Chalit & House Systems",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/kundli",
+      "description": "Ascendant and 12-house cusps calculated via Sripathi, Whole Sign, and Placidus conventions with house lords, planets in houses, and bhava sandhis."
+    },
+    {
+      "id": "divisional_charts",
+      "name": "Shodashavarga Divisional Charts (D1\u2013D60)",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/vargas",
+      "description": "Complete 16 divisional harmonic charts from D1 Rasi, D9 Navamsha, D10 Dashamsha to D60 Shashtyamsha with exact mathematical odd/even sign transitions."
+    },
+    {
+      "id": "dasha_systems",
+      "name": "Vimshottari & Chara Dasha Timing",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/dasha",
+      "description": "Hierarchical Vimshottari Dasha (Mahadasha, Antardasha/Bhukti, Pratyantardasha) and Jaimini Chara Dasa with planetary dasha balance at birth."
+    },
+    {
+      "id": "ashtakavarga",
+      "name": "Parashari Ashtakavarga & Transit Analysis",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/ashtakavarga",
+      "description": "Bhinnashtakavarga (BAV), Sarvashtakavarga (SAV - 337 bindus), Prastaraka grids, Gochara Kakshas, and transit bindu evaluations."
+    },
+    {
+      "id": "shadbala_strengths",
+      "name": "Shadbala & Bhavabala Planetary Strengths",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/shadbala",
+      "description": "Six-fold planetary strength calculation (Sthana, Dig, Kala, Chesta, Naisargika, Drik Bala), Ishta/Kashta Phala, and Bhava Bala ratings."
+    },
+    {
+      "id": "matchmaking_kutas",
+      "name": "12-Kutas & Ashtakuta Matchmaking (Kundli Milan)",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/matchmaking",
+      "description": "Comprehensive marriage compatibility analysis with 36-point Ashtakuta, 12-Kutas, Manglik Dosha, Nadi Dosha, Bhakoot Dosha, and classical cancellation rules."
+    },
+    {
+      "id": "panchang_calendar",
+      "name": "Vedic Panchang & Astronomical Calendar",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/panchang",
+      "description": "Daily Tithi, Vara, Nakshatra, Yoga, Karana, Rahu Kaalam, Yamaganda, Gulika Kaalam, Abhijit Muhurta, Disha Shool, and Chandramana lunar months."
+    },
+    {
+      "id": "muhurta_finder",
+      "name": "Muhurta & Electional Timing",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/muhurta",
+      "description": "Auspicious timing calculations including Choghadiya, Gowri Panchangam, planetary horas, Tarabala (9 Taras), Chandrabala, and Panchaka Dosha evaluation."
+    },
+    {
+      "id": "horary_prashna",
+      "name": "Horary Astrology (Prashna Kundli)",
+      "tier": "premium",
+      "status": "operational",
+      "api_endpoint": "/api/v1/astrology/prashna",
+      "description": "Query-time horary chart casting, analysis of querent (Lagnesha) and significator (Karyesha), Tajika yogas (Ithasala, Ishrafa, Nakta, Yamaya), and outcome determination."
+    },
+    {
+      "id": "numerology_suite",
+      "name": "Vedic & Chaldean Numerology Suite",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/v1/astrology/numerology",
+      "description": "Birth / Psychic Number (Mulank), Destiny / Life Path Number (Bhagyank), Name Number (Namank via Chaldean and Pythagorean systems), and planetary vibration harmony."
+    },
+    {
+      "id": "pancha_pakshi",
+      "name": "Pancha Pakshi (Five Birds) Bio-Rhythm Timing",
+      "tier": "premium",
+      "status": "operational",
+      "api_endpoint": "/api/v1/astrology/pancha-pakshi",
+      "description": "Ancient Tamil bio-rhythm astrology: Birth bird assignment, waxing/waning moon cycles, 5 daily and nightly Yamas, and current activity strengths (Ruling, Eating, Walking, Sleeping, Dying)."
+    },
+    {
+      "id": "upagrahas_subplanets",
+      "name": "Upagrahas & Non-Luminous Sub-planets",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/v1/astrology/upagrahas",
+      "description": "Sun-based Upagrahas (Dhuma, Vyatipaata, Parivesha, Indrachaapa, Upaketu) and Time-based Upagrahas (Kaala, Mrityu, Arthaprahaara, Yamaghantaka, Gulika, Maandi)."
+    },
+    {
+      "id": "birth_time_rectification",
+      "name": "Birth Time Rectification (BTR) Candidate Finder",
+      "tier": "premium",
+      "status": "operational",
+      "api_endpoint": "/api/v1/astrology/btr",
+      "description": "Systematic candidate time window search evaluating D1, D9, and D60 Lagna transition boundaries, Moon nakshatra shifts, and life event dasha alignments."
+    },
+    {
+      "id": "classical_knowledge_layer",
+      "name": "Classical Sanskrit Astrology Knowledge Base",
+      "tier": "free",
+      "status": "operational",
+      "api_endpoint": "/api/v1/astrology/knowledge",
+      "description": "Searchable repository of classical principles, rules, and sloka references from Brihat Parashara Hora Shastra, Phaladeepika, Saravali, and Jaimini Upadesha Sutras."
+    },
+    {
+      "id": "ai_astrologer_consultation",
+      "name": "Explainable AI Astrologer Consultations",
+      "tier": "premium",
+      "status": "operational",
+      "api_endpoint": "/api/ai-consultation",
+      "description": "Multi-horizon explainable consultations translating complex planetary positions into actionable guidance, grounded in classical Vedic principles without fatalistic claims."
+    }
+  ]
+}
