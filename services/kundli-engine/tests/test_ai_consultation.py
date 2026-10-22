@@ -315,16 +315,48 @@ def test_ai_consultation_conceptual_d9_navamsha():
 
 def test_tools_registry_listing_and_execution():
     """Verify central tool registry catalog and safe tool execution."""
-    from tools_registry import list_registered_tools, execute_tool
+    from tools_registry import list_registered_tools, execute_tool, ALL_VALIDATION_STATUSES
 
     tools = list_registered_tools()
-    assert len(tools) >= 12
-    tool_ids = [t["id"] for t in tools]
-    assert "calculate_kundli_d1" in tool_ids
-    assert "calculate_navamsha_d9" in tool_ids
-    assert "calculate_vimshottari_dasha" in tool_ids
-    assert "calculate_ashtakavarga" in tool_ids
-    assert "calculate_horas_24h" in tool_ids
+    assert len(tools) == 20
+    tool_ids = [t["toolId"] for t in tools]
+    expected_tools = [
+        "planet_longitude",
+        "calculate_kundli_d1",
+        "calculate_navamsha_d9",
+        "calculate_dashamsha_d10",
+        "calculate_all_vargas",
+        "calculate_vimshottari_dasha",
+        "calculate_ashtakavarga",
+        "calculate_shadbala",
+        "identify_planetary_yogas",
+        "analyze_doshas_and_remedies",
+        "calculate_horas_24h",
+        "calculate_panchang",
+        "match_kundli_36_gunas",
+        "search_classical_knowledge",
+        "calculate_upagrahas",
+        "calculate_numerology",
+        "calculate_pancha_pakshi",
+        "evaluate_prashna",
+        "calculate_avasthas",
+        "evaluate_btr_candidates"
+    ]
+    for tid in expected_tools:
+        assert tid in tool_ids, f"Expected {tid} to be registered in tool catalog"
+
+    # Verify standard schema conformance on all 20 tools
+    required_keys = [
+        "toolId", "displayName", "category", "description",
+        "inputSchema", "outputSchema", "requiredContext", "calculationMethod",
+        "engineVersion", "provenance", "validationStatus", "availability",
+        "limitations"
+    ]
+    for t in tools:
+        for k in required_keys:
+            assert k in t, f"Tool {t.get('toolId')} missing required key {k}"
+        assert t["validationStatus"] in ALL_VALIDATION_STATUSES, f"Tool {t['toolId']} has invalid validationStatus: {t['validationStatus']}"
+        assert t["availability"] in ["enabled", "restricted", "disabled"]
 
     # Execute a tool safely
     hora_res = execute_tool("calculate_horas_24h", lat=28.6139, lon=77.2090)
@@ -336,11 +368,83 @@ def test_tools_registry_listing_and_execution():
     assert missing_res["status"] == "error"
     assert "Missing required parameter" in missing_res["error"]
 
+def test_tools_registry_native_tools_execution():
+    """Verify safe execution of newly registered native calculation tools."""
+    from tools_registry import execute_tool
+
+    # 1. Planetary longitude
+    p_res = execute_tool("planet_longitude", dob_iso="1995-10-24T12:00:00", lat=28.6139, lon=77.2090, planet_name="Sun")
+    assert p_res["status"] == "success"
+    assert "sign" in p_res["result"]
+    assert "degree" in p_res["result"]
+
+    # 2. Numerology
+    num_res = execute_tool("calculate_numerology", dob="1995-10-24", name="Arjun")
+    assert num_res["status"] == "success"
+    assert "destiny_number" in num_res["result"]
+
+    # 3. Pancha Pakshi
+    pp_res = execute_tool("calculate_pancha_pakshi", birth_nakshatra_num=1)
+    assert pp_res["status"] == "success"
+    assert "birth_bird" in pp_res["result"]
+
+    # 4. Prashna Tantra
+    prashna_res = execute_tool("evaluate_prashna", query_text="Will my venture succeed?", lat=28.6139, lon=77.2090)
+    assert prashna_res["status"] == "success"
+    assert "verdict" in prashna_res["result"] or "horary_chart_details" in prashna_res["result"]
+
+    # 5. Planetary Avasthas
+    avasthas_res = execute_tool("calculate_avasthas", planets=SAMPLE_KUNDLI["planets"])
+    assert avasthas_res["status"] == "success"
+    assert "Sun" in avasthas_res["result"]
+
+    # 6. Upagrahas
+    upagraha_res = execute_tool("calculate_upagrahas", dob_iso="1995-10-24T12:00:00", lat=28.6139, lon=77.2090)
+    assert upagraha_res["status"] == "success"
+    assert "all_upagrahas" in upagraha_res["result"]
+
+    # 7. Birth-Time Rectification (BTR)
+    btr_res = execute_tool("evaluate_btr_candidates", nominal_dob_iso="1995-10-24T12:00:00", lat=28.6139, lon=77.2090)
+    assert btr_res["status"] == "success"
+    assert "candidate_results" in btr_res["result"] or "best_fit_candidate" in btr_res["result"]
+
+def test_ai_consultation_unsupported_divination_refusal():
+    """Verify non-Vedic divination systems (Tarot, Western Tropical, BaZi) are refused with Vedic alternatives."""
+    reading = generate_astrological_reading(
+        category="general",
+        user_query="Can you give me a 3-card Tarot reading for my relationship?",
+        kundli=SAMPLE_KUNDLI,
+        dasha=SAMPLE_DASHA,
+        doshas=SAMPLE_DOSHAS,
+        astrologer_name="Acharya Devratan"
+    )
+    assert reading["status"] == "completed"
+    assert reading["scope"] == "UNSUPPORTED_ASTROLOGY_CAPABILITY"
+    assert "Vedic Sidereal (Nirayana) Jyotish" in reading["message"]
+    assert "Tarot" in reading["message"]
+    assert "D9 Navamsha" in reading["message"]
+
+def test_ai_consultation_missing_inputs_universal_mode():
+    """Verify personal question without chart enters universal transit mode."""
+    reading = generate_astrological_reading(
+        category="career",
+        user_query="Will I get promoted in my job soon?",
+        kundli=None,
+        dasha=None,
+        doshas=None,
+        astrologer_name="Dr. Sunita Shastri"
+    )
+    assert reading["status"] == "completed"
+    assert reading["scope"] in ["ASTROLOGY_WITH_MISSING_INPUTS", "ASTROLOGY_IN_SCOPE"]
+    assert "transit" in reading["message"].lower() or "universal" in reading["message"].lower()
+    assert "Janam Kundli" in reading["message"] or "Ascendant" in reading["message"]
+    assert reading["chartEvidence"] == []
+
 def test_api_tools_catalog_endpoint():
     """Verify GET /api/ai-astrologer/tools returns full tool catalog."""
     res = client.get("/api/ai-astrologer/tools")
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "success"
-    assert data["count"] >= 12
-    assert len(data["tools"]) == data["count"]
+    assert data["count"] == 20
+    assert len(data["tools"]) == 20
