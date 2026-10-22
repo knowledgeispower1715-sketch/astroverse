@@ -325,14 +325,24 @@ def get_complete_kundli(req: BirthDetails):
 @app.post("/api/kundli/ashtakavarga")
 def get_ashtakavarga_endpoint(req: BirthDetails):
     """Calculates classical Parashari Bhinnashtakavarga and Sarvashtakavarga (337 bindus)."""
-    d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
-    return calculate_ashtakavarga(d1["planets"], d1["lagna"]["sign"])
+    try:
+        d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+        return calculate_ashtakavarga(d1["planets"], d1["lagna"]["sign"])
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/kundli/vargas")
 def get_vargas_endpoint(req: BirthDetails):
     """Calculates all 8 foundational classical divisional charts (D1, D2, D3, D7, D9, D10, D12, D60)."""
-    d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
-    return calculate_all_vargas(d1["planets"], d1["lagna"]["total_degree"])
+    try:
+        d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+        return calculate_all_vargas(d1["planets"], d1["lagna"]["total_degree"])
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/timing/evaluate")
 def evaluate_timing_endpoint(req: TimingEvaluationRequest):
@@ -342,40 +352,46 @@ def evaluate_timing_endpoint(req: TimingEvaluationRequest):
     - Chandrabala (Lunar transit strength relative to Janma Rasi)
     - Ghataka Chakra (Affliction checks on Moon sign, Tithi group, Weekday, Nakshatra, Lagna)
     """
-    # 1. Native birth chart
-    b_d1 = calculate_kundli(req.birth_details.dob, req.birth_details.lat, req.birth_details.lon, req.birth_details.timezone)
-    SIGNS = [
-        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
-        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
-    ]
-    b_moon_sign_idx = SIGNS.index(b_d1["planets"]["Moon"]["sign"])
-    b_moon_deg = (b_moon_sign_idx * 30.0) + b_d1["planets"]["Moon"]["degree"]
-    b_nak_idx = int(b_moon_deg / (360.0 / 27.0)) % 27
+    try:
+        # 1. Native birth chart
+        b_d1 = calculate_kundli(req.birth_details.dob, req.birth_details.lat, req.birth_details.lon, req.birth_details.timezone)
+        SIGNS = [
+            "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+            "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+        ]
+        b_moon_sign_idx = SIGNS.index(b_d1["planets"]["Moon"]["sign"])
+        b_moon_deg = (b_moon_sign_idx * 30.0) + b_d1["planets"]["Moon"]["degree"]
+        b_nak_idx = int(b_moon_deg / (360.0 / 27.0)) % 27
 
-    # 2. Transit instant chart
-    t_date_str = req.target_time.split("T")[0]
-    t_d1 = calculate_kundli(req.target_time, req.target_lat, req.target_lon, req.target_timezone)
-    t_panchang = calculate_full_panchang(t_date_str, req.target_lat, req.target_lon, req.target_timezone)
-    
-    t_moon_sign_idx = SIGNS.index(t_d1["planets"]["Moon"]["sign"])
-    t_moon_deg = (t_moon_sign_idx * 30.0) + t_d1["planets"]["Moon"]["degree"]
-    t_nak_idx = int(t_moon_deg / (360.0 / 27.0)) % 27
-    t_lagna_idx = SIGNS.index(t_d1["lagna"]["sign"])
-    
-    # Weekday: Sunday=0 ... Saturday=6
-    t_dt = datetime.fromisoformat(req.target_time)
-    t_weekday = (t_dt.weekday() + 1) % 7 # Python weekday() Mon=0...Sun=6 -> Sun=0...Sat=6
-    t_tithi_num = t_panchang.get("tithi", {}).get("number", 1)
+        # 2. Transit instant chart
+        clean_target_time = req.target_time.replace("Z", "").replace(" ", "T")
+        t_date_str = clean_target_time.split("T")[0]
+        t_d1 = calculate_kundli(clean_target_time, req.target_lat, req.target_lon, req.target_timezone)
+        t_panchang = calculate_full_panchang(t_date_str, req.target_lat, req.target_lon, req.target_timezone)
+        
+        t_moon_sign_idx = SIGNS.index(t_d1["planets"]["Moon"]["sign"])
+        t_moon_deg = (t_moon_sign_idx * 30.0) + t_d1["planets"]["Moon"]["degree"]
+        t_nak_idx = int(t_moon_deg / (360.0 / 27.0)) % 27
+        t_lagna_idx = SIGNS.index(t_d1["lagna"]["sign"])
+        
+        # Weekday: Sunday=0 ... Saturday=6
+        t_dt = datetime.fromisoformat(clean_target_time)
+        t_weekday = (t_dt.weekday() + 1) % 7 # Python weekday() Mon=0...Sun=6 -> Sun=0...Sat=6
+        t_tithi_num = t_panchang.get("tithi", {}).get("number", 1)
 
-    return evaluate_transit_timing(
-        birth_rasi_idx=b_moon_sign_idx,
-        birth_nak_idx=b_nak_idx,
-        transit_rasi_idx=t_moon_sign_idx,
-        transit_nak_idx=t_nak_idx,
-        transit_tithi_num=t_tithi_num,
-        transit_weekday_idx=t_weekday,
-        transit_lagna_idx=t_lagna_idx
-    )
+        return evaluate_transit_timing(
+            birth_rasi_idx=b_moon_sign_idx,
+            birth_nak_idx=b_nak_idx,
+            transit_rasi_idx=t_moon_sign_idx,
+            transit_nak_idx=t_nak_idx,
+            transit_tithi_num=t_tithi_num,
+            transit_weekday_idx=t_weekday,
+            transit_lagna_idx=t_lagna_idx
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/hourly-predictions")
 @app.get("/api/hora")

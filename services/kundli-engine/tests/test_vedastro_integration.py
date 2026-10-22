@@ -281,3 +281,13 @@ def test_fastapi_endpoints():
     assert "chandrabala" in body_tm
     assert "ghataka_chakra" in body_tm
     assert "overall_quality" in body_tm
+
+    # 5. Error handling and fail-closed validation tests
+    res_bad_time = client.post("/api/timing/evaluate", json={**timing_payload, "target_time": "invalid-time-format"})
+    assert res_bad_time.status_code == 422
+
+    res_empty_av = client.post("/api/kundli/ashtakavarga", json={})
+    assert res_empty_av.status_code == 422
+
+    res_empty_vg = client.post("/api/kundli/vargas", json={})
+    assert res_empty_vg.status_code == 422
