@@ -315,6 +315,61 @@ async function runMonetizationTestSuite() {
       assert.strictEqual(res.data.error, 'FORBIDDEN');
     });
 
+    await test('Generating report with cross-user partnerProfileId is strictly rejected with HTTP 403', async () => {
+      // User B attempts to sneak User A's profile as partnerProfileId
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_kundli_milan',
+          profileId: profileB.id,
+          partnerProfileId: profileA.id,
+          paymentMethod: 'wallet'
+        }
+      });
+      assert.strictEqual(res.status, 403);
+      assert.strictEqual(res.data.error, 'FORBIDDEN');
+      assert(res.data.message.includes('partner profile'));
+    });
+
+    await test('Inline profileData with out-of-bounds coordinates is rejected with HTTP 400 INVALID_COORDINATES', async () => {
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_basic_chart_summary',
+          profileData: {
+            profileName: 'Invalid Coords Test',
+            dateOfBirth: '1990-05-15',
+            timeOfBirth: '14:30',
+            latitude: 95.5, // Invalid: > 90
+            longitude: 77.2
+          }
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INVALID_COORDINATES');
+    });
+
+    await test('Inline profileData with invalid date or time format is rejected with HTTP 400 INVALID_BIRTH_DATA', async () => {
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_basic_chart_summary',
+          profileData: {
+            profileName: 'Invalid Dob Test',
+            dateOfBirth: 'not-a-valid-date',
+            timeOfBirth: '25:99', // Invalid hour
+            latitude: 28.61,
+            longitude: 77.2
+          }
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INVALID_BIRTH_DATA');
+    });
+
     let freeReportId = '';
     await test('Free report (report_basic_chart_summary) generates immediately at 0 paise and returns canonical structure', async () => {
       const res = await request('/api/reports/order', {
@@ -351,7 +406,7 @@ async function runMonetizationTestSuite() {
     await db.rechargeWallet(userA.id, 250.0, 'pay_test_topup_123', 'order_test_topup_123');
 
     let paidReportId = '';
-    await test('Wallet report purchase applies 10% Plus member discount, debits wallet, and creates ledger entry', async () => {
+    await test('Wallet report purchase applies 10% Plus member discount, debits wallet, and creates ledger entry with proper Report description', async () => {
       const res = await request('/api/reports/order', {
         method: 'POST',
         headers: { Authorization: `Bearer ${tokenA}` },
@@ -376,6 +431,27 @@ async function runMonetizationTestSuite() {
         headers: { Authorization: `Bearer ${tokenA}` }
       });
       assert.strictEqual(walletRes.data.balance, 70.9);
+
+      // Verify ledger description starts with 'Report Purchase:' instead of 'Vedic Puja Booking:'
+      const latestEntry = walletRes.data.statement[0];
+      assert(latestEntry.description.startsWith('Report Purchase:'), `Expected 'Report Purchase:' but got '${latestEntry.description}'`);
+      assert(!latestEntry.description.includes('Vedic Puja Booking'), 'Ledger entry must not be mislabeled as Puja Booking');
+    });
+
+    await test('Kundli Milan report generates comprehensive 4-chapter synastry including Ashtakoota and 12-Kuta diagnostics', async () => {
+      const fullUser = await db.findUserById(userA.id);
+      const milanDoc = await ReportDocumentGenerator.generateReport(
+        'report_kundli_milan',
+        fullUser,
+        profileA,
+        { partnerProfile: profileA }
+      );
+      assert.strictEqual(milanDoc.productId, 'report_kundli_milan');
+      assert.strictEqual(milanDoc.sections.length, 4);
+      assert.strictEqual(milanDoc.sections[0].sectionId, 'sec_ashtakoota_synastry');
+      assert.strictEqual(milanDoc.sections[1].sectionId, 'sec_navamsha_synastry');
+      assert.strictEqual(milanDoc.sections[2].sectionId, 'sec_manglik_synastry');
+      assert.strictEqual(milanDoc.sections[3].sectionId, 'sec_12_kuta_diagnostics');
     });
 
     // -------------------------------------------------------------------------

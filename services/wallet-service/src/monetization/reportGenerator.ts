@@ -444,6 +444,9 @@ The Navamsha is the definitive Vedic chart for matrimonial harmony. The sign and
   }
 
   private static buildMatchmakingSections(profileA: any, profileB: any, coords: any): ReportChapterSection[] {
+    const pAName = profileA?.profileName || 'Partner A';
+    const pBName = profileB?.profileName || 'Partner B';
+
     return [
       {
         sectionId: 'sec_ashtakoota_synastry',
@@ -451,14 +454,62 @@ The Navamsha is the definitive Vedic chart for matrimonial harmony. The sign and
         title: 'Ashtakoota 36-Guna Synastry Matrix',
         subtitle: 'Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot & Nadi (36 Points)',
         icon: 'fa-scale-balanced',
-        contentMarkdown: `### Ashtakoota Compatibility Evaluation
-Evaluating energetic compatibility between **${profileA?.profileName || 'Partner A'}** and **${profileB?.profileName || 'Partner B'}**.
+        contentMarkdown: `### Classical Parashari Ashtakoota Compatibility Evaluation
+Evaluating authoritative lunar synastry between **${pAName}** and **${pBName}**.
 
-- **Total Score:** Calculated across all 8 classical Kutas out of 36 points.
-- **Thresholds:**
-  - **28–36 Points:** Excellent compatibility; highly supportive of mutual growth.
-  - **18–27 Points:** Average to Good compatibility; auspicious with mutual understanding.
-  - **Below 18 Points:** Requires careful counseling and traditional remedial pacification.`
+- **Classical 36-Guna Framework:**
+  1. **Varna (1 Pt):** Spiritual ego, work ethics, and natural hierarchy.
+  2. **Vashya (2 Pts):** Mutual magnetic attraction and emotional dominance balance.
+  3. **Tara (3 Pts):** Health, longevity, and destiny alignment derived from Janma Nakshatras.
+  4. **Yoni (4 Pts):** Biological, sexual, and instinctual compatibility across 14 animal archetypes.
+  5. **Graha Maitri (5 Pts):** Intellectual companionship and planetary friendship of Moon sign lords.
+  6. **Gana (6 Pts):** Temperament and social disposition (Deva, Manushya, Rakshasa).
+  7. **Bhakoot (7 Pts):** Emotional bonding, familial prosperity, and relative Moon distance.
+  8. **Nadi (8 Pts):** Ayurvedic genetic compatibility and nervous system harmony (Adi, Madhya, Antya).
+
+- **Classical Threshold Guidelines:**
+  - **28–36 Points:** Exceptional harmony; deeply supportive of mutual spiritual and material growth.
+  - **18–27 Points:** Good compatibility; above the classical auspicious threshold. Minor differences are easily balanced.
+  - **Below 18 Points:** Requires comprehensive astrological evaluation of 7th house lords, D9 Navamsha, and mutual Dasha periods.`
+      },
+      {
+        sectionId: 'sec_navamsha_synastry',
+        chapterNumber: 2,
+        title: 'D9 Navamsha Harmonic Synastry',
+        subtitle: 'Subconscious Temperament, Inner Values & Matrimonial Longevity',
+        icon: 'fa-ring',
+        contentMarkdown: `### D9 Navamsha Harmonic Confirmation
+While the Rashi (D1) chart indicates physical life circumstances, the **D9 Navamsha** reveals the enduring spiritual essence and inner matrimonial disposition:
+
+- **7th House of Navamsha:** Evaluates the subtle psychological temperament of the partner.
+- **Navamsha Lagna Compatibility:** Mutual placement of the D9 Ascendant lords confirms whether long-term shared living deepens intimacy or breeds unspoken distance.
+- **Venus & Jupiter Dignity:** Venus governs relational grace and physical intimacy, while Jupiter blesses the union with moral respect and domestic auspiciousness.`
+      },
+      {
+        sectionId: 'sec_manglik_synastry',
+        chapterNumber: 3,
+        title: 'Kuja Dosha (Manglik) & Planetary Balance',
+        subtitle: 'Mars Placement in 1st, 2nd, 4th, 7th, 8th & 12th Bhavas & Cancellation Rules',
+        icon: 'fa-fire-flame-curved',
+        contentMarkdown: `### Kuja Dosha (Manglik Analysis)
+Mars represents fiery drive, passion, and personal will. When Mars occupies sensitive matrimonial houses (1st, 2nd, 4th, 7th, 8th, or 12th from Lagna or Moon), its dynamic intensity must be matched or neutralized:
+
+- **Mutual Mars Balance:** When both charts possess complementary Martian strength, the intense energy is mutually channeled into constructive enterprise rather than conflict.
+- **Classical Cancellations:** Mars in own sign (Aries/Scorpio), exaltation (Capricorn), debilitation (Cancer), or aspected by benefics like Jupiter significantly mitigates classical Kuja Dosha.`
+      },
+      {
+        sectionId: 'sec_12_kuta_diagnostics',
+        chapterNumber: 4,
+        title: 'Regional 12-Kuta Extended Diagnostics',
+        subtitle: 'Mahendra, Stree-Deergha, Rajju & Vedha Qualitative Assessments',
+        icon: 'fa-shield-heart',
+        contentMarkdown: `### Extended Diagnostic Kutas (South Indian & Regional Traditions)
+In addition to the 8 Parashari Kutas, classical regional traditions evaluate four supplementary diagnostic dimensions:
+
+1. **Mahendra Kuta:** Evaluates lineage continuity, material prosperity, and mutual blessing.
+2. **Stree Deergha:** Nakshatra distance from bride to groom promoting longevity of marital covenants.
+3. **Rajju Kuta:** The matrimonial cord (Head, Neck, Navel, Thigh, Foot) indicating health and vital longevity.
+4. **Vedha Kuta:** Astrological constellation affliction checks ensuring harmonious cosmic vibrations between birth stars.`
       }
     ];
   }

@@ -1824,6 +1824,111 @@ class ResilientDatabase {
     };
   }
 
+  async purchaseReport(userId: string, reportTitle: string, amount: number, profileId?: string, clientKey?: string) {
+    this.assertDurableStorage();
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      throw new Error('INVALID_AMOUNT');
+    }
+
+    const cleanTitle = (reportTitle || 'Personalized Astrological Report').trim();
+    const ref = profileId || `rep_${Date.now()}`;
+    const idemKey = clientKey || `REPORT_${userId}_${cleanTitle.replace(/\s+/g, '_')}_${ref}`;
+
+    // Enforce idempotency
+    const existing = this.data.walletLedgers.find(l => l.idempotencyKey === idemKey);
+    if (existing) {
+      return {
+        success: true,
+        alreadyPurchased: true,
+        newBalance: user.walletBalance,
+        deduction: 0,
+        transactionId: existing.id,
+        reportTitle: cleanTitle
+      };
+    }
+
+    if (user.walletBalance < amount) {
+      throw new Error('INSUFFICIENT_FUNDS');
+    }
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgResult = await this.prisma.$transaction(async (tx: any) => {
+          const pgUser = await tx.user.findUnique({ where: { id: userId } });
+          if (!pgUser) throw new Error('USER_NOT_FOUND');
+          if (Number(pgUser.walletBalance) < amount) throw new Error('INSUFFICIENT_FUNDS');
+
+          const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: { walletBalance: { decrement: amount } }
+          });
+
+          const ledger = await tx.walletLedger.create({
+            data: {
+              userId,
+              amount: -amount,
+              entryType: EntryType.STORE_PURCHASE,
+              idempotencyKey: idemKey,
+              referenceId: ref,
+              description: `Report Purchase: ${cleanTitle}`
+            }
+          });
+
+          return {
+            success: true,
+            newBalance: Number(updatedUser.walletBalance),
+            deduction: amount,
+            transactionId: ledger.id,
+            reportTitle: cleanTitle
+          };
+        });
+
+        user.walletBalance = pgResult.newBalance;
+        return pgResult;
+      } catch (err: any) {
+        if (err.message?.includes('Unique constraint failed') && err.message?.includes('idempotencyKey')) {
+          return {
+            success: true,
+            alreadyPurchased: true,
+            newBalance: user.walletBalance,
+            deduction: 0,
+            transactionId: idemKey,
+            reportTitle: cleanTitle
+          };
+        }
+        throw err;
+      }
+    }
+
+    user.walletBalance = Math.round((user.walletBalance - amount) * 100) / 100;
+    user.updatedAt = new Date().toISOString();
+
+    const ledgerId = 'led_' + crypto.randomBytes(8).toString('hex');
+    this.data.walletLedgers.unshift({
+      id: ledgerId,
+      userId,
+      astrologerId: null,
+      amount: -amount,
+      entryType: EntryType.STORE_PURCHASE,
+      idempotencyKey: idemKey,
+      referenceId: ref,
+      description: `Report Purchase: ${cleanTitle}`,
+      createdAt: new Date().toISOString()
+    });
+
+    this.saveToFile();
+    return {
+      success: true,
+      newBalance: user.walletBalance,
+      deduction: amount,
+      transactionId: ledgerId,
+      reportTitle: cleanTitle
+    };
+  }
+
   async updateSubscription(
     userId: string,
     tier: 'FREE' | 'PLUS' | 'PREMIUM',

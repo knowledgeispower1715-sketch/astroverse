@@ -2055,6 +2055,52 @@ app.post('/api/subscriptions/cancel', authenticate, async (req: AuthenticatedReq
   }
 });
 
+// Helper to validate and normalize inline birth profile payloads with strict coordinate and format bounds
+function validateProfileInputData(pd: any): { error?: string; message?: string; cleanData?: any } {
+  if (!pd || typeof pd !== 'object') {
+    return { error: 'INVALID_PROFILE_DATA', message: 'Profile data must be an object.' };
+  }
+  const latRaw = pd.latitude ?? pd.lat;
+  const lonRaw = pd.longitude ?? pd.lon;
+  if (latRaw !== undefined) {
+    const lat = Number(latRaw);
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+      return { error: 'INVALID_COORDINATES', message: 'Latitude must be a valid number between -90 and 90.' };
+    }
+  }
+  if (lonRaw !== undefined) {
+    const lon = Number(lonRaw);
+    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
+      return { error: 'INVALID_COORDINATES', message: 'Longitude must be a valid number between -180 and 180.' };
+    }
+  }
+  const dob = pd.dateOfBirth || pd.dob;
+  if (dob) {
+    const parsedDob = Date.parse(dob);
+    if (isNaN(parsedDob)) {
+      return { error: 'INVALID_BIRTH_DATA', message: 'Date of birth must be a valid parseable date string (YYYY-MM-DD).' };
+    }
+  }
+  const tob = pd.timeOfBirth || pd.tob;
+  if (tob) {
+    if (!/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(String(tob).trim())) {
+      return { error: 'INVALID_BIRTH_DATA', message: 'Time of birth must be in valid HH:MM 24-hour format.' };
+    }
+  }
+  return {
+    cleanData: {
+      profileName: pd.profileName || pd.name || 'Primary Profile',
+      relationship: pd.relationship || 'Self',
+      dateOfBirth: dob || '1995-01-01',
+      timeOfBirth: tob || '12:00',
+      birthplaceName: pd.birthplaceName || pd.city || 'New Delhi, India',
+      latitude: Number(latRaw ?? 28.6139),
+      longitude: Number(lonRaw ?? 77.2090),
+      resolvedTimezone: pd.resolvedTimezone || pd.timezone || 'Asia/Kolkata'
+    }
+  };
+}
+
 // POST /api/reports/order (Create order for individual personalized report)
 app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { productId, profileId, partnerProfileId, options, paymentMethod } = req.body;
@@ -2070,17 +2116,14 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
     let profile = await db.getProfileById(profileId);
     if (!profile) {
       if (req.body.profileData && typeof req.body.profileData === 'object') {
-        const pd = req.body.profileData;
+        const pValidation = validateProfileInputData(req.body.profileData);
+        if (pValidation.error) {
+          return res.status(400).json({ error: pValidation.error, message: pValidation.message });
+        }
         profile = await db.createProfile({
           userId: user.id,
-          profileName: pd.profileName || pd.name || user.displayName || 'Primary Profile',
-          relationship: pd.relationship || 'Self',
-          dateOfBirth: pd.dateOfBirth || pd.dob || '1995-01-01',
-          timeOfBirth: pd.timeOfBirth || pd.tob || '12:00',
-          birthplaceName: pd.birthplaceName || pd.city || 'New Delhi, India',
-          latitude: Number(pd.latitude || pd.lat || 28.6139),
-          longitude: Number(pd.longitude || pd.lon || 77.2090),
-          resolvedTimezone: pd.resolvedTimezone || pd.timezone || 'Asia/Kolkata'
+          ...pValidation.cleanData,
+          profileName: pValidation.cleanData.profileName || user.displayName || 'Primary Profile'
         });
       } else {
         const userProfiles = await db.getProfilesByUserId(user.id);
@@ -2098,6 +2141,21 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
     let partnerProfile: any = null;
     if (partnerProfileId && partnerProfileId !== 'default_partner' && partnerProfileId !== 'none') {
       partnerProfile = await db.getProfileById(partnerProfileId);
+      if (!partnerProfile) {
+        return res.status(404).json({ error: 'PARTNER_PROFILE_NOT_FOUND', message: 'Selected partner profile not found.' });
+      }
+      if (partnerProfile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's partner profile." });
+      }
+    } else if (req.body.partnerProfileData && typeof req.body.partnerProfileData === 'object') {
+      const pValidation = validateProfileInputData(req.body.partnerProfileData);
+      if (pValidation.error) {
+        return res.status(400).json({ error: pValidation.error, message: pValidation.message });
+      }
+      partnerProfile = await db.createProfile({
+        userId: user.id,
+        ...pValidation.cleanData
+      });
     }
 
     // Resolve user's effective subscription tier to apply legitimate member discounts
@@ -2138,9 +2196,9 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
         });
       }
 
-      // Debit wallet via purchase mechanism with idempotency
+      // Debit wallet via dedicated purchaseReport mechanism with idempotency
       const clientKey = `REPORT_${user.id}_${productId}_${Date.now()}`;
-      await db.bookPuja(user.id, `Report: ${product.displayName}`, pricing.finalPriceRupees, profile.id, clientKey);
+      await db.purchaseReport(user.id, product.displayName, pricing.finalPriceRupees, profile.id, clientKey);
 
       // Generate canonical document
       const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, { partnerProfile, ...options });
@@ -2226,17 +2284,14 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
     let profile = await db.getProfileById(profileId);
     if (!profile) {
       if (req.body.profileData && typeof req.body.profileData === 'object') {
-        const pd = req.body.profileData;
+        const pValidation = validateProfileInputData(req.body.profileData);
+        if (pValidation.error) {
+          return res.status(400).json({ error: pValidation.error, message: pValidation.message });
+        }
         profile = await db.createProfile({
           userId: user.id,
-          profileName: pd.profileName || pd.name || user.displayName || 'Primary Profile',
-          relationship: pd.relationship || 'Self',
-          dateOfBirth: pd.dateOfBirth || pd.dob || '1995-01-01',
-          timeOfBirth: pd.timeOfBirth || pd.tob || '12:00',
-          birthplaceName: pd.birthplaceName || pd.city || 'New Delhi, India',
-          latitude: Number(pd.latitude || pd.lat || 28.6139),
-          longitude: Number(pd.longitude || pd.lon || 77.2090),
-          resolvedTimezone: pd.resolvedTimezone || pd.timezone || 'Asia/Kolkata'
+          ...pValidation.cleanData,
+          profileName: pValidation.cleanData.profileName || user.displayName || 'Primary Profile'
         });
       } else {
         const userProfiles = await db.getProfilesByUserId(user.id);
@@ -2254,6 +2309,21 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
     let partnerProfile: any = null;
     if (partnerProfileId && partnerProfileId !== 'default_partner' && partnerProfileId !== 'none') {
       partnerProfile = await db.getProfileById(partnerProfileId);
+      if (!partnerProfile) {
+        return res.status(404).json({ error: 'PARTNER_PROFILE_NOT_FOUND', message: 'Selected partner profile not found.' });
+      }
+      if (partnerProfile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's partner profile." });
+      }
+    } else if (req.body.partnerProfileData && typeof req.body.partnerProfileData === 'object') {
+      const pValidation = validateProfileInputData(req.body.partnerProfileData);
+      if (pValidation.error) {
+        return res.status(400).json({ error: pValidation.error, message: pValidation.message });
+      }
+      partnerProfile = await db.createProfile({
+        userId: user.id,
+        ...pValidation.cleanData
+      });
     }
 
     const dbUser = await db.findUserById(user.id);

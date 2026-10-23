@@ -2800,6 +2800,13 @@
     }
 
     /* Print and PDF Template Geometry */
+    #astroverse-pdf-document-template {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      width: 210mm;
+      pointer-events: none;
+    }
     @media print {
       body * {
         visibility: hidden;
@@ -2808,9 +2815,9 @@
         visibility: visible;
       }
       #astroverse-pdf-document-template {
-        position: absolute;
-        left: 0;
-        top: 0;
+        position: static;
+        left: auto;
+        top: auto;
         width: 100%;
         display: block !important;
       }
@@ -12367,24 +12374,38 @@
         }
       }
 
-      if (typeof html2pdf !== 'undefined') {
+      // Ensure all custom fonts (Noto Sans Devanagari, Plus Jakarta Sans, Cinzel) are fully rendered
+      if (document.fonts && document.fonts.ready) {
         try {
-          const opt = {
-            margin: 0,
-            filename: `${nativeName.replace(/[^a-zA-Z0-9]/g, '_')}_AstroVerse_Report.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-          };
-          await html2pdf().set(opt).from(container).save();
-          showToast("🎉 PDF downloaded successfully!", "success");
-        } catch (e) {
-          console.warn("html2pdf export failed, activating browser print fallback:", e);
+          await document.fonts.ready;
+        } catch (_) {}
+      }
+
+      try {
+        if (typeof html2pdf !== 'undefined') {
+          try {
+            const opt = {
+              margin: 0,
+              filename: `${nativeName.replace(/[^a-zA-Z0-9]/g, '_')}_AstroVerse_Report.pdf`,
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+              pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+            await html2pdf().set(opt).from(container).save();
+            showToast("🎉 PDF downloaded successfully!", "success");
+          } catch (e) {
+            console.warn("html2pdf export failed, activating browser print fallback:", e);
+            window.print();
+          }
+        } else {
           window.print();
         }
-      } else {
-        window.print();
+      } finally {
+        // Clear container DOM to free memory
+        setTimeout(() => {
+          if (container) container.innerHTML = '';
+        }, 1500);
       }
     }
 
@@ -12620,6 +12641,9 @@
     }
 
     function setAppLanguage(lang) {
+      if (AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
+        AstroVerseVoiceEngine.stop();
+      }
       currentLanguage = lang;
       localStorage.setItem('astroverse_lang', lang);
       const dict = ASTROVERSE_I18N[lang] || ASTROVERSE_I18N.en;
@@ -12683,6 +12707,18 @@
       if (AstroVerseVoiceEngine) AstroVerseVoiceEngine.init();
       if (currentLanguage === 'hi') {
         setTimeout(() => setAppLanguage('hi'), 200);
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
+        AstroVerseVoiceEngine.stop();
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
+        AstroVerseVoiceEngine.stop();
       }
     });
 

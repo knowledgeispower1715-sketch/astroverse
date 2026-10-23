@@ -83,3 +83,7 @@ website/.i18n-*/
 .env.*
 !.env.example
 
+# Model weights and deep-learning artifacts (never commit)
+*.pth
+gfpgan/
+
