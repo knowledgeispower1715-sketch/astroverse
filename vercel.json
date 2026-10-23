@@ -87,6 +87,12 @@
       }
     },
     {
+      "source": "/api/demo/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/astrologers(.*)",
       "destination": {
         "service": "wallet-service"
