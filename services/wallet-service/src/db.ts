@@ -22,7 +22,23 @@ export enum EntryType {
   ASTROLOGER_CREDIT = 'ASTROLOGER_CREDIT',
   PLATFORM_COMMISSION = 'PLATFORM_COMMISSION',
   PUJA_BOOKING = 'PUJA_BOOKING',
-  STORE_PURCHASE = 'STORE_PURCHASE'
+  STORE_PURCHASE = 'STORE_PURCHASE',
+  DEMO_CREDIT = 'DEMO_CREDIT',
+  DEMO_REPORT_PURCHASE = 'DEMO_REPORT_PURCHASE',
+  DEMO_SUBSCRIPTION = 'DEMO_SUBSCRIPTION',
+  DEMO_REVERSAL = 'DEMO_REVERSAL'
+}
+
+export function isDemoModeActive(): boolean {
+  // Fail-closed security rule: Production environment strictly forbids demo money operations
+  if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production' && process.env.DEMO_MODE !== 'true') {
+    return false;
+  }
+  // Explicitly enabled via DEMO_MODE=true or running in test/development/preview
+  return process.env.DEMO_MODE === 'true' || 
+         process.env.NODE_ENV === 'test' || 
+         process.env.NODE_ENV === 'development' || 
+         process.env.VERCEL_ENV === 'preview';
 }
 
 export enum OrderStatus {
@@ -64,6 +80,8 @@ export interface UserRecord {
   preferredLanguage: string;
   preferredTimezone: string;
   walletBalance: number;
+  demoWalletBalance?: number;
+  simulatedSubscriptionTier?: 'FREE' | 'PLUS' | 'PREMIUM' | null;
   subscriptionTier?: 'FREE' | 'PLUS' | 'PREMIUM';
   subscriptionBillingPeriod?: 'MONTHLY' | 'ANNUAL' | null;
   subscriptionExpiresAt?: string | null;
@@ -145,6 +163,7 @@ export interface WalletLedgerRecord {
   idempotencyKey: string;
   referenceId: string | null;
   description: string | null;
+  isDemo?: boolean;
   createdAt: string;
 }
 
@@ -1926,6 +1945,163 @@ class ResilientDatabase {
       deduction: amount,
       transactionId: ledgerId,
       reportTitle: cleanTitle
+    };
+  }
+
+  // ============================================================================
+  // DEMO MODE ISOLATED FINANCIAL OPERATIONS (SIMULATION ONLY - NO REAL MONEY)
+  // ============================================================================
+
+  async addDemoCredits(userId: string, amount: number) {
+    if (!isDemoModeActive()) {
+      throw new Error('DEMO_MODE_DISABLED');
+    }
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0 || amount > 10000) {
+      throw new Error('INVALID_DEMO_AMOUNT');
+    }
+
+    // Isolate demo wallet balance: real walletBalance is completely untouched!
+    user.demoWalletBalance = Math.round(((user.demoWalletBalance || 0) + amount) * 100) / 100;
+    user.updatedAt = new Date().toISOString();
+
+    const ledgerId = 'demo_led_' + crypto.randomBytes(8).toString('hex');
+    const idemKey = `DEMO_CREDIT_${userId}_${amount}_${Date.now()}`;
+    this.data.walletLedgers.unshift({
+      id: ledgerId,
+      userId,
+      astrologerId: null,
+      amount,
+      entryType: EntryType.DEMO_CREDIT,
+      idempotencyKey: idemKey,
+      referenceId: `demo_cred_${Date.now()}`,
+      description: `[DEMO SIMULATION] Added ₹${amount.toFixed(2)} Test Credits (No Cash Value)`,
+      isDemo: true,
+      createdAt: new Date().toISOString()
+    });
+
+    this.saveToFile();
+    return {
+      success: true,
+      newDemoBalance: user.demoWalletBalance,
+      addedAmount: amount,
+      transactionId: ledgerId,
+      isDemo: true
+    };
+  }
+
+  async purchaseReportWithDemo(userId: string, reportTitle: string, amount: number, profileId?: string, clientKey?: string) {
+    if (!isDemoModeActive()) {
+      throw new Error('DEMO_MODE_DISABLED');
+    }
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      throw new Error('INVALID_AMOUNT');
+    }
+
+    const cleanTitle = (reportTitle || 'Personalized Astrological Report').trim();
+    const ref = profileId || `demo_rep_${Date.now()}`;
+    const idemKey = clientKey || `DEMO_REPORT_${userId}_${cleanTitle.replace(/\s+/g, '_')}_${ref}`;
+
+    // Enforce idempotency
+    const existing = this.data.walletLedgers.find(l => l.idempotencyKey === idemKey);
+    if (existing) {
+      return {
+        success: true,
+        alreadyPurchased: true,
+        newDemoBalance: user.demoWalletBalance || 0,
+        deduction: 0,
+        transactionId: existing.id,
+        reportTitle: cleanTitle,
+        isDemo: true
+      };
+    }
+
+    const curDemoBal = user.demoWalletBalance || 0;
+    if (curDemoBal < amount) {
+      throw new Error('INSUFFICIENT_FUNDS');
+    }
+
+    // Deduct demo balance only; real walletBalance remains completely untouched!
+    user.demoWalletBalance = Math.round((curDemoBal - amount) * 100) / 100;
+    user.updatedAt = new Date().toISOString();
+
+    const ledgerId = 'demo_led_' + crypto.randomBytes(8).toString('hex');
+    this.data.walletLedgers.unshift({
+      id: ledgerId,
+      userId,
+      astrologerId: null,
+      amount: -amount,
+      entryType: EntryType.DEMO_REPORT_PURCHASE,
+      idempotencyKey: idemKey,
+      referenceId: ref,
+      description: `[DEMO SIMULATION] Report Purchase: ${cleanTitle}`,
+      isDemo: true,
+      createdAt: new Date().toISOString()
+    });
+
+    this.saveToFile();
+    return {
+      success: true,
+      newDemoBalance: user.demoWalletBalance,
+      deduction: amount,
+      transactionId: ledgerId,
+      reportTitle: cleanTitle,
+      isDemo: true
+    };
+  }
+
+  async resetDemoWallet(userId: string) {
+    if (!isDemoModeActive()) {
+      throw new Error('DEMO_MODE_DISABLED');
+    }
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    user.demoWalletBalance = 0.00;
+    user.updatedAt = new Date().toISOString();
+
+    const ledgerId = 'demo_led_' + crypto.randomBytes(8).toString('hex');
+    this.data.walletLedgers.unshift({
+      id: ledgerId,
+      userId,
+      astrologerId: null,
+      amount: 0,
+      entryType: EntryType.DEMO_REVERSAL,
+      idempotencyKey: `DEMO_RESET_${userId}_${Date.now()}`,
+      referenceId: `reset_${Date.now()}`,
+      description: `[DEMO SIMULATION] Reset Demo Wallet Balance to ₹0.00`,
+      isDemo: true,
+      createdAt: new Date().toISOString()
+    });
+
+    this.saveToFile();
+    return {
+      success: true,
+      newDemoBalance: 0.00,
+      isDemo: true
+    };
+  }
+
+  async setSimulatedTier(userId: string, tier: 'FREE' | 'PLUS' | 'PREMIUM') {
+    if (!isDemoModeActive()) {
+      throw new Error('DEMO_MODE_DISABLED');
+    }
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    user.simulatedSubscriptionTier = tier;
+    user.updatedAt = new Date().toISOString();
+    this.saveToFile();
+    return {
+      success: true,
+      userId: user.id,
+      simulatedTier: tier,
+      isDemo: true
     };
   }
 

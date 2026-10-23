@@ -47,6 +47,23 @@ export class EntitlementManager {
       };
     }
 
+    // Support simulated subscription tier in non-production demo mode
+    const isDemo = process.env.DEMO_MODE === 'true' || 
+                   process.env.NODE_ENV === 'test' || 
+                   process.env.NODE_ENV === 'development' || 
+                   process.env.VERCEL_ENV === 'preview';
+    if (isDemo && user.simulatedSubscriptionTier) {
+      const simTier = user.simulatedSubscriptionTier as SubscriptionTier;
+      if (SUBSCRIPTION_PLANS[simTier]) {
+        return {
+          tier: simTier,
+          status: 'ACTIVE',
+          expiresAt: new Date(Date.now() + 86400000 * 30).toISOString(),
+          billingPeriod: 'MONTHLY'
+        };
+      }
+    }
+
     const tier = (user.subscriptionTier as SubscriptionTier) || SubscriptionTier.FREE;
     if (tier === SubscriptionTier.FREE) {
       return {

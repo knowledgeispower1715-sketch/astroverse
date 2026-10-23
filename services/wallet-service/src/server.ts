@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { db, UserRecord, Role, AccountStatus, OrderStatus } from './db';
+import { db, UserRecord, Role, AccountStatus, OrderStatus, isDemoModeActive } from './db';
 import { razorpay, isRazorpayConfigured, verifyRazorpaySignature } from './razorpay';
 import {
   SUBSCRIPTION_PLANS,
@@ -1751,9 +1751,96 @@ app.get('/api/wallet/me', authenticate, async (req: AuthenticatedRequest, res: R
     const user = await db.findUserById(req.user!.id);
     if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
     const statement = await db.getWalletStatement(user.id);
-    res.json({ balance: user.walletBalance, statement });
+    res.json({
+      balance: user.walletBalance,
+      demoBalance: user.demoWalletBalance || 0,
+      isDemoMode: isDemoModeActive(),
+      statement
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ==============================================================================
+// DEMO MODE ENDPOINTS (CONTROLLED NON-PRODUCTION TEST CREDITS ONLY)
+// ==============================================================================
+
+// GET /api/demo/status - check if demo mode is enabled in the current runtime environment
+app.get('/api/demo/status', (req: Request, res: Response) => {
+  res.json({
+    demoModeActive: isDemoModeActive(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// POST /api/demo/credit - issue controlled demo credits to authenticated test account
+app.post('/api/demo/credit', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  if (!isDemoModeActive()) {
+    return res.status(403).json({
+      error: 'DEMO_MODE_DISABLED',
+      message: 'Demo credit issuance is strictly disabled in production.'
+    });
+  }
+
+  const { amount } = req.body;
+  const validAmounts = [100, 500, 1000];
+  const numAmount = Number(amount);
+
+  if (!Number.isFinite(numAmount) || !validAmounts.includes(numAmount)) {
+    return res.status(400).json({
+      error: 'INVALID_DEMO_AMOUNT',
+      message: 'Demo credit amount must be exactly 100, 500, or 1000.'
+    });
+  }
+
+  try {
+    const result = await db.addDemoCredits(req.user!.id, numAmount);
+    res.json(result);
+  } catch (err: any) {
+    handleServiceError(res, err, 'Demo credit issuance failed');
+  }
+});
+
+// POST /api/demo/reset - reset demo wallet balance to 0.00
+app.post('/api/demo/reset', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  if (!isDemoModeActive()) {
+    return res.status(403).json({
+      error: 'DEMO_MODE_DISABLED',
+      message: 'Demo wallet reset is strictly disabled in production.'
+    });
+  }
+
+  try {
+    const result = await db.resetDemoWallet(req.user!.id);
+    res.json(result);
+  } catch (err: any) {
+    handleServiceError(res, err, 'Demo wallet reset failed');
+  }
+});
+
+// POST /api/demo/set-tier - simulate subscription tier for entitlement testing
+app.post('/api/demo/set-tier', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  if (!isDemoModeActive()) {
+    return res.status(403).json({
+      error: 'DEMO_MODE_DISABLED',
+      message: 'Simulated subscription setting is strictly disabled in production.'
+    });
+  }
+
+  const { tier } = req.body;
+  if (!['FREE', 'PLUS', 'PREMIUM'].includes(String(tier).toUpperCase())) {
+    return res.status(400).json({
+      error: 'INVALID_TIER',
+      message: 'Simulated tier must be FREE, PLUS, or PREMIUM.'
+    });
+  }
+
+  try {
+    const result = await db.setSimulatedTier(req.user!.id, String(tier).toUpperCase() as any);
+    res.json(result);
+  } catch (err: any) {
+    handleServiceError(res, err, 'Simulated tier update failed');
   }
 });
 
@@ -2197,7 +2284,7 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
       }
 
       // Debit wallet via dedicated purchaseReport mechanism with idempotency
-      const clientKey = `REPORT_${user.id}_${productId}_${Date.now()}`;
+      const clientKey = req.body.clientKey || `REPORT_${user.id}_${productId}_${Date.now()}`;
       await db.purchaseReport(user.id, product.displayName, pricing.finalPriceRupees, profile.id, clientKey);
 
       // Generate canonical document
@@ -2220,6 +2307,58 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
         status: 'READY_FOR_READER',
         paidVia: 'WALLET',
         deduction: pricing.finalPriceRupees
+      });
+    }
+
+    // If user opts to pay via DEMO Mode wallet balance (Non-production testing only)
+    if (paymentMethod && (String(paymentMethod).toUpperCase() === 'DEMO_WALLET' || String(paymentMethod).toUpperCase() === 'DEMO')) {
+      if (!isDemoModeActive()) {
+        return res.status(403).json({
+          error: 'DEMO_MODE_DISABLED',
+          message: 'Demo purchases are strictly forbidden in production.'
+        });
+      }
+
+      if (Number(dbUser?.demoWalletBalance || 0) < pricing.finalPriceRupees) {
+        return res.status(400).json({
+          error: 'INSUFFICIENT_FUNDS',
+          message: `Insufficient demo wallet balance. This report requires ₹${pricing.finalPriceRupees.toFixed(2)} in demo credits.`,
+          requiredAmount: pricing.finalPriceRupees,
+          currentBalance: dbUser?.demoWalletBalance || 0,
+          isDemo: true
+        });
+      }
+
+      // Debit demo balance exclusively via purchaseReportWithDemo
+      const clientKey = req.body.clientKey || `DEMO_REPORT_${user.id}_${productId}_${Date.now()}`;
+      const demoResult = await db.purchaseReportWithDemo(user.id, product.displayName, pricing.finalPriceRupees, profile.id, clientKey);
+
+      // Generate canonical document with demo notice watermark
+      const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, {
+        partnerProfile,
+        isDemoPurchase: true,
+        ...options
+      });
+      const saved = await db.createSavedReport({
+        userId: user.id,
+        title: `[DEMO] ${product.displayName} (${profile.profileName})`,
+        reportType: productId,
+        payload: doc
+      });
+
+      return res.json({
+        success: true,
+        reportId: saved.id,
+        title: saved.title,
+        reportType: saved.reportType,
+        paidAmountPaise: pricing.finalPricePaise,
+        discountPercent: pricing.discountPercent,
+        document: doc,
+        status: 'READY_FOR_READER',
+        paidVia: 'DEMO_WALLET',
+        deduction: pricing.finalPriceRupees,
+        newDemoBalance: demoResult.newDemoBalance,
+        isDemo: true
       });
     }
 

@@ -575,6 +575,239 @@ async function runMonetizationTestSuite() {
       assert.strictEqual(qA1.data.remainingToday, 14);
     });
 
+    // -------------------------------------------------------------------------
+    // 7. Controlled Demo Mode & Isolated Test Credit Operations
+    // -------------------------------------------------------------------------
+    await test('GET /api/demo/status confirms demo mode active in non-production test environment', async () => {
+      const res = await request('/api/demo/status');
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.demoModeActive, true);
+    });
+
+    await test('POST /api/demo/credit rejects unauthenticated requests with HTTP 401', async () => {
+      const res = await request('/api/demo/credit', {
+        method: 'POST',
+        body: { amount: 500 }
+      });
+      assert.strictEqual(res.status, 401);
+    });
+
+    await test('POST /api/demo/credit rejects invalid demo amounts with HTTP 400', async () => {
+      const res = await request('/api/demo/credit', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: { amount: 250 } // only 100, 500, 1000 allowed
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INVALID_DEMO_AMOUNT');
+    });
+
+    await test('POST /api/demo/credit credits demoWalletBalance without modifying real walletBalance', async () => {
+      const initialWallet = await request('/api/wallet/me', {
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+      const realBalBefore = initialWallet.data.balance;
+
+      const res = await request('/api/demo/credit', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: { amount: 500 }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.success, true);
+      assert.strictEqual(res.data.addedAmount, 500);
+      assert.strictEqual(res.data.newDemoBalance, 500);
+      assert.strictEqual(res.data.isDemo, true);
+
+      // Verify real balance was completely untouched
+      const afterWallet = await request('/api/wallet/me', {
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+      assert.strictEqual(afterWallet.data.balance, realBalBefore);
+      assert.strictEqual(afterWallet.data.demoBalance, 500);
+      assert.strictEqual(afterWallet.data.isDemoMode, true);
+    });
+
+    await test('Demo report purchase fails with HTTP 400 when demo balance is insufficient', async () => {
+      // User B has ₹500 demo credits. Attempt to buy bundle costing ₹399 * 2 = insufficient if price was ₹600, or reset first:
+      await request('/api/demo/reset', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_janam_kundli_deep_dive',
+          profileId: profileB.id,
+          paymentMethod: 'DEMO_WALLET'
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INSUFFICIENT_FUNDS');
+      assert.strictEqual(res.data.isDemo, true);
+    });
+
+    let demoReportId = '';
+    await test('Demo report purchase succeeds, debits demo balance, leaves real wallet intact, and stamps demo watermark', async () => {
+      // Add ₹500 demo credits
+      await request('/api/demo/credit', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: { amount: 500 }
+      });
+
+      // report_janam_kundli_deep_dive is ₹199
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_janam_kundli_deep_dive',
+          profileId: profileB.id,
+          paymentMethod: 'DEMO_WALLET'
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.success, true);
+      assert.strictEqual(res.data.paidVia, 'DEMO_WALLET');
+      assert.strictEqual(res.data.deduction, 199);
+      assert.strictEqual(res.data.newDemoBalance, 301);
+      assert.strictEqual(res.data.isDemo, true);
+      assert(res.data.reportId);
+      demoReportId = res.data.reportId;
+
+      const doc = res.data.document;
+      assert.strictEqual(doc.watermark.isDemo, true);
+      assert(doc.watermark.documentVerificationHash.startsWith('DEMO-'), 'Watermark must indicate DEMO mode');
+      assert(doc.watermark.ownerName.includes('[DEMO TEST]'));
+
+      // Verify real wallet statement has no leakage of real debit
+      const walletRes = await request('/api/wallet/me', {
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+      assert.strictEqual(walletRes.data.demoBalance, 301);
+      const demoLedger = walletRes.data.statement.find((s: any) => s.entryType === 'DEMO_REPORT_PURCHASE');
+      assert(demoLedger, 'Must log DEMO_REPORT_PURCHASE in statement');
+      assert(demoLedger.description.includes('[DEMO SIMULATION]'));
+    });
+
+    await test('POST /api/demo/set-tier simulates Plus subscription and applies 10% discount to demo purchases', async () => {
+      const tierRes = await request('/api/demo/set-tier', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: { tier: 'PLUS' }
+      });
+      assert.strictEqual(tierRes.status, 200);
+      assert.strictEqual(tierRes.data.simulatedTier, 'PLUS');
+
+      // Purchase another report: report_career_education is ₹149. With Plus 10% discount: 13410 paise = ₹134.10
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_career_education',
+          profileId: profileB.id,
+          paymentMethod: 'DEMO_WALLET'
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.paidAmountPaise, 13410);
+      assert.strictEqual(res.data.discountPercent, 10);
+      assert.strictEqual(res.data.deduction, 134.10);
+    });
+
+    await test('Duplicate demo purchase with identical clientKey is idempotent', async () => {
+      const fixedKey = `DEMO_KEY_IDEMPOTENT_${Date.now()}`;
+      // Add credits first
+      await request('/api/demo/credit', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: { amount: 1000 }
+      });
+
+      const res1 = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_career_education',
+          profileId: profileB.id,
+          paymentMethod: 'DEMO_WALLET',
+          clientKey: fixedKey
+        }
+      });
+      assert.strictEqual(res1.status, 200);
+      const balAfterFirst = res1.data.newDemoBalance;
+
+      // Duplicate request with same clientKey
+      const res2 = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_career_education',
+          profileId: profileB.id,
+          paymentMethod: 'DEMO_WALLET',
+          clientKey: fixedKey
+        }
+      });
+      assert.strictEqual(res2.status, 200);
+      // Balance must NOT be deducted again
+      const currentWallet = await request('/api/wallet/me', {
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+      assert.strictEqual(currentWallet.data.demoBalance, balAfterFirst);
+    });
+
+    await test('POST /api/demo/reset sets demo balance to 0 and records DEMO_REVERSAL', async () => {
+      const res = await request('/api/demo/reset', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.newDemoBalance, 0);
+
+      const walletRes = await request('/api/wallet/me', {
+        headers: { Authorization: `Bearer ${tokenB}` }
+      });
+      assert.strictEqual(walletRes.data.demoBalance, 0);
+    });
+
+    await test('Production fail-closed guard: demo operations are blocked when simulated production environment is set', async () => {
+      const prevNodeEnv = process.env.NODE_ENV;
+      const prevVercelEnv = process.env.VERCEL_ENV;
+      const prevDemoMode = process.env.DEMO_MODE;
+
+      try {
+        process.env.NODE_ENV = 'production';
+        process.env.VERCEL_ENV = 'production';
+        delete process.env.DEMO_MODE;
+
+        const creditRes = await request('/api/demo/credit', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenB}` },
+          body: { amount: 500 }
+        });
+        assert.strictEqual(creditRes.status, 403);
+        assert.strictEqual(creditRes.data.error, 'DEMO_MODE_DISABLED');
+
+        const orderRes = await request('/api/reports/order', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenB}` },
+          body: {
+            productId: 'report_janam_kundli_deep_dive',
+            profileId: profileB.id,
+            paymentMethod: 'DEMO_WALLET'
+          }
+        });
+        assert.strictEqual(orderRes.status, 403);
+        assert.strictEqual(orderRes.data.error, 'DEMO_MODE_DISABLED');
+      } finally {
+        process.env.NODE_ENV = prevNodeEnv;
+        if (prevVercelEnv) process.env.VERCEL_ENV = prevVercelEnv; else delete process.env.VERCEL_ENV;
+        if (prevDemoMode) process.env.DEMO_MODE = prevDemoMode; else delete process.env.DEMO_MODE;
+      }
+    });
+
   } finally {
     server.close();
   }

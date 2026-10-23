@@ -87,3 +87,9 @@ website/.i18n-*/
 *.pth
 gfpgan/
 
+# Local testing screenshots and caches
+docs/screenshots/
+*.png
+!website/public/assets/social-card.png
+
+

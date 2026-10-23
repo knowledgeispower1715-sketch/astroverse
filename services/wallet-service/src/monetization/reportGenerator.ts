@@ -61,6 +61,7 @@ export interface CanonicalReportDocument {
     maskedEmail: string;
     accountHash: string;
     documentVerificationHash: string;
+    isDemo?: boolean;
   };
   tableOfContents: { sectionId: string; title: string; chapterNumber: number }[];
   sections: ReportChapterSection[];
@@ -81,6 +82,7 @@ export class ReportDocumentGenerator {
       technicalDepth?: 'standard' | 'advanced';
       partnerProfile?: any;
       calcData?: any;
+      isDemoPurchase?: boolean;
     } = {}
   ): Promise<CanonicalReportDocument> {
     const product = REPORT_CATALOGUE[productId];
@@ -108,11 +110,13 @@ export class ReportDocumentGenerator {
       ? `${emailParts[0][0]}***${emailParts[0].slice(-1)}@${emailParts[1]}` 
       : `u***@${emailParts[1]}`;
 
+    const isDemo = Boolean(options.isDemoPurchase);
     const watermark = {
-      ownerName: user?.displayName || profile?.profileName || 'Valued Seeker',
+      ownerName: isDemo ? `[DEMO TEST] ${user?.displayName || profile?.profileName || 'Valued Seeker'}` : (user?.displayName || profile?.profileName || 'Valued Seeker'),
       maskedEmail,
       accountHash: `AV-${(user?.id || 'GUEST').substring(0, 8).toUpperCase()}`,
-      documentVerificationHash: `AUTH-${Buffer.from(reportId + nowIso).toString('hex').substring(0, 16).toUpperCase()}`
+      documentVerificationHash: `${isDemo ? 'DEMO' : 'AUTH'}-${Buffer.from(reportId + nowIso).toString('hex').substring(0, 16).toUpperCase()}`,
+      isDemo
     };
 
     // Synthesize sections based on product type
@@ -561,6 +565,17 @@ Integrates current planetary transits with your active Vimshottari Antardasha to
 - **Date & Place of Birth:** ${coords.dob} (${coords.place})
 - **Ascendant:** Nirayana Sidereal Lagna calculated via Swiss Ephemeris.
 - **Full Analysis:** To explore the 16 Divisional Vargas, 337-Bindu Ashtakavarga, and Month-by-Month forecasts, explore our premium publication catalogue.`
+      },
+      {
+        sectionId: 'sec_basic_planetary_overview',
+        chapterNumber: 2,
+        title: 'Planetary Highlights & Contemplative Guidance',
+        subtitle: 'Core Graha Archetypes & Foundational Orientation',
+        icon: 'fa-sun',
+        contentMarkdown: `### Core Astrological Archetypes
+- **Surya (Sun):** Vitality, creative purpose, and conscious self-expression.
+- **Chandra (Moon):** Mind (*Manas*), emotional temperament, and instinctual response patterns.
+- **Lagna (Ascendant):** Sets the physical blueprint, temperament, and primary trajectory of worldly action.`
       }
     ];
   }

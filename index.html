@@ -1554,6 +1554,208 @@
     }
 
 
+    /* ==================== RESPONSIVE DESIGN SYSTEM & MOBILE DRAWER ==================== */
+    html, body {
+      max-width: 100vw;
+      overflow-x: hidden !important;
+      position: relative;
+    }
+
+    /* Mobile Menu Hamburger Button */
+    .mobile-menu-btn {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: var(--av-radius-md, 8px);
+      background: var(--av-color-surface-warm, #FFFDF9);
+      border: 1px solid var(--av-color-border, #E8DED5);
+      color: var(--av-color-maroon-950, #4C0519);
+      font-size: 16px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+    .mobile-menu-btn:hover {
+      background: #FFFBEB;
+      border-color: #F59E0B;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-menu-btn {
+        display: inline-flex !important;
+      }
+      .nav-links-row {
+        display: none !important;
+      }
+      .active-profile-pill {
+        display: none !important;
+      }
+      body {
+        padding-bottom: 70px !important;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .tier-chip {
+        display: none !important;
+      }
+      .promo-ticker {
+        font-size: 11px !important;
+        padding: 5px 8px !important;
+      }
+    }
+
+    /* Mobile Slide-Over Drawer */
+    .mobile-nav-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 10500;
+    }
+    .mobile-nav-backdrop.open {
+      display: block !important;
+    }
+
+    .mobile-nav-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: min(320px, 86vw);
+      background: #FFFFFF;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+      z-index: 10510;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 14px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    .mobile-nav-drawer.open {
+      transform: translateX(0) !important;
+    }
+    .mobile-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--av-color-border, #E8DED5);
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    .mobile-drawer-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--av-color-border, #E8DED5);
+      background: var(--av-color-surface-warm, #FFFDF9);
+      color: var(--av-color-maroon-950, #4C0519);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    .mobile-drawer-profile-card {
+      background: #FFFDF8;
+      border: 1px solid #FCD34D;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      cursor: pointer;
+    }
+    .mobile-drawer-nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .mobile-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--av-color-ink, #24151B);
+      font-size: 13.5px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      width: 100%;
+    }
+    .mobile-nav-item:hover, .mobile-nav-item:focus {
+      background: var(--av-color-surface-soft, #F5F0E8);
+    }
+    .mobile-nav-item.active {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--av-color-maroon-950, #881337);
+      font-weight: 700;
+    }
+    .mobile-nav-item i {
+      width: 20px;
+      text-align: center;
+      color: #B45309;
+      font-size: 14px;
+    }
+    .mobile-drawer-demo-box {
+      margin-top: 16px;
+      background: #FEF3C7;
+      border: 1px dashed #D97706;
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .btn-demo-quick {
+      background: #D97706;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-demo-quick:hover {
+      background: #B45309;
+    }
+
+    /* Universal Responsive Form & Input Rules */
+    @media (max-width: 640px) {
+      .form-input-text, .form-input-select, select, input[type="text"], input[type="date"], input[type="time"] {
+        font-size: 16px !important;
+        min-height: 44px !important;
+        box-sizing: border-box !important;
+      }
+      .grid-2col, .grid-3col, .kundli-form-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    /* Universal Responsive Modal Rules */
+    .modal-dialog-card, .auth-modal-card, .reader-modal-dialog, .tool-modal-box {
+      max-width: min(94vw, 840px) !important;
+      max-height: calc(100dvh - 32px) !important;
+      box-sizing: border-box !important;
+      overflow-y: auto !important;
+    }
+
+    /* Responsive Table Wrap */
+    .table-responsive-container {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      margin-bottom: 14px !important;
+    }
+
     /* ==================== AI ASTROLOGER & PAYWALL STYLES ==================== */
     .guidance-deep-sections-wrap.is-locked {
       filter: blur(5px);
@@ -2801,11 +3003,14 @@
 
     /* Print and PDF Template Geometry */
     #astroverse-pdf-document-template {
-      position: absolute;
-      left: -9999px;
+      position: fixed;
       top: 0;
+      left: 0;
       width: 210mm;
+      z-index: -99999;
+      opacity: 1;
       pointer-events: none;
+      background: #FFFFFF;
     }
     @media print {
       body * {
@@ -2863,6 +3068,9 @@
 
   <!-- Main Navigation Header -->
   <header class="main-navbar">
+    <button class="mobile-menu-btn" id="btn-mobile-menu" onclick="toggleMobileNavDrawer()" aria-label="Open Navigation Menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
     <div class="brand-logo-wrap" onclick="switchNavSection('overview')">
       <i class="fa-solid fa-om brand-icon"></i>
       <div>
@@ -2932,6 +3140,92 @@
       </button>
     </div>
   </header>
+
+  <!-- Mobile Navigation Backdrop & Drawer -->
+  <div id="mobile-nav-backdrop" class="mobile-nav-backdrop" onclick="closeMobileNavDrawer()"></div>
+  <aside id="mobile-nav-drawer" class="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+    <div class="mobile-drawer-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-om" style="font-size: 22px; color: #D97706;"></i>
+        <strong style="font-size: 16px; color: #4C0519; font-family: var(--av-font-serif, serif);">ASTROVERSE</strong>
+      </div>
+      <button class="mobile-drawer-close" onclick="closeMobileNavDrawer()" aria-label="Close Navigation Menu">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Active Profile Card in Drawer -->
+    <div class="mobile-drawer-profile-card" onclick="closeMobileNavDrawer(); switchNavSection('kundli');">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <span style="font-size: 11px; font-weight: 700; color: #B45309; text-transform: uppercase;">
+          <i class="fa-solid fa-circle-user"></i> Active Profile
+        </span>
+        <span id="mobile-drawer-tier-badge" style="font-size: 10px; background: #FEF3C7; color: #92400E; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Essentials</span>
+      </div>
+      <div id="mobile-drawer-profile-name" style="font-size: 13px; font-weight: 700; color: #1E1B4B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        No Chart Loaded
+      </div>
+      <div id="mobile-drawer-profile-details" style="font-size: 11px; color: #64748B;">
+        Tap to enter birth details or switch
+      </div>
+    </div>
+
+    <!-- Navigation Items -->
+    <div class="mobile-drawer-nav-list">
+      <button class="mobile-nav-item" id="mob-nav-overview" onclick="mobileNavNavigate('overview')">
+        <i class="fa-solid fa-house"></i> <span>Overview</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-kundli" onclick="mobileNavNavigate('kundli')">
+        <i class="fa-solid fa-dharmachakra"></i> <span>My Janam Kundli</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-horas" onclick="mobileNavNavigate('horas')">
+        <i class="fa-solid fa-clock"></i> <span>Today &amp; Solar Horas</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-matchmaking" onclick="mobileNavNavigate('matchmaking')">
+        <i class="fa-solid fa-heart"></i> <span>Kundli Milan (Compatibility)</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-astrologers" onclick="mobileNavNavigate('astrologers')">
+        <i class="fa-solid fa-user-tie"></i> <span>AI Astrologer Consultation</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-horoscope" onclick="mobileNavNavigate('horoscope')">
+        <i class="fa-solid fa-star-and-crescent"></i> <span>Daily Horoscope</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-tools" onclick="mobileNavNavigate('tools')">
+        <i class="fa-solid fa-toolbox"></i> <span>Vedic Tools Directory</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-reports" onclick="closeMobileNavDrawer(); openReportStoreModal()">
+        <i class="fa-solid fa-file-invoice" style="color: #059669;"></i> <span>Personalized Reports Store</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-pricing" onclick="closeMobileNavDrawer(); openPricingPlansModal()">
+        <i class="fa-solid fa-crown" style="color: #D97706;"></i> <span>Plans &amp; Subscriptions</span>
+      </button>
+      <button class="mobile-nav-item" id="mob-nav-dashboard" onclick="mobileNavNavigate('dashboard')">
+        <i class="fa-solid fa-user-shield"></i> <span>My Space / Dashboard</span>
+      </button>
+    </div>
+
+    <!-- Quick Wallet / Demo Section in Drawer -->
+    <div class="mobile-drawer-demo-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 700; color: #92400E;">Demo Wallet Balance</span>
+        <strong id="mob-drawer-demo-bal" style="font-size: 13px; color: #B45309;">₹0.00</strong>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button type="button" class="btn-demo-quick" style="flex: 1;" onclick="addDemoCreditsFromUI(500)">+₹500 Demo</button>
+        <button type="button" class="btn-demo-quick" style="flex: 1; background: #4C0519;" onclick="closeMobileNavDrawer(); openWalletModal()">Recharge / Wallet</button>
+      </div>
+    </div>
+
+    <!-- Footer Controls in Drawer: Language & Auth -->
+    <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #E2E8F0; display: flex; gap: 8px;">
+      <button type="button" class="lang-toggle-pill" onclick="toggleAppLanguage()" style="flex: 1; justify-content: center; height: 38px;">
+        <i class="fa-solid fa-language"></i> <span id="mob-drawer-lang-label">हिंदी</span>
+      </button>
+      <button type="button" class="btn-auth-trigger" id="mob-drawer-auth-btn" onclick="closeMobileNavDrawer(); handleAuthButtonClick()" style="flex: 1; justify-content: center; height: 38px;">
+        <i class="fa-solid fa-right-to-bracket"></i> <span id="mob-drawer-auth-text">Sign In</span>
+      </button>
+    </div>
+  </aside>
 
   <!-- Hero Banner -->
   <section class="hero-banner-sec" id="main-hero-banner">
@@ -5170,6 +5464,43 @@
       <button class="btn-outline-secondary" style="width: 100%; justify-content: center;" onclick="closeWalletModal()">
         Cancel
       </button>
+
+      <!-- Demo Mode Testing Panel -->
+      <div id="wallet-demo-mode-panel" style="background: #FEF3C7; border: 1.5px dashed #D97706; border-radius: 10px; padding: 14px; margin-top: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-flask" style="color: #B45309;"></i>
+            <strong style="color: #92400E; font-size: 13px;">QA DEMO ENVIRONMENT ACTIVE</strong>
+          </div>
+          <span style="font-size: 10px; background: #D97706; color: #FFF; font-weight: 700; padding: 2px 6px; border-radius: 4px;">NO REAL CHARGES</span>
+        </div>
+        <p style="font-size: 11.5px; color: #78350F; margin: 0 0 10px; line-height: 1.4;">
+          Test simulated credits, report purchases, and tier entitlements safely without payment gateways or bank accounts.
+        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.7); border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; font-size: 12px;">
+          <span style="color: #92400E; font-weight: 600;">Demo Wallet Balance:</span>
+          <strong id="demo-wallet-bal-display" style="color: #B45309; font-size: 14px;">₹0.00</strong>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;">
+          <button type="button" class="btn-demo-quick" onclick="addDemoCreditsFromUI(100)">+₹100 Demo</button>
+          <button type="button" class="btn-demo-quick" onclick="addDemoCreditsFromUI(500)">+₹500 Demo</button>
+          <button type="button" class="btn-demo-quick" onclick="addDemoCreditsFromUI(1000)">+₹1,000 Demo</button>
+        </div>
+        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+          <button type="button" style="flex: 1; background: #FFFFFF; border: 1px solid #D97706; color: #B45309; border-radius: 6px; padding: 6px; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="resetDemoWalletFromUI()">
+            <i class="fa-solid fa-rotate-left"></i> Reset Demo Wallet
+          </button>
+        </div>
+        <!-- Tier Simulation Controls -->
+        <div style="border-top: 1px dashed #F59E0B; padding-top: 8px; margin-top: 6px;">
+          <div style="font-size: 11px; font-weight: 700; color: #92400E; margin-bottom: 6px;">Simulate Subscription Tier:</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+            <button type="button" style="background: #FFF; border: 1px solid #CBD5E1; color: #475569; border-radius: 4px; padding: 5px; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="simulateTierFromUI('FREE')">Free (0%)</button>
+            <button type="button" style="background: #FFF; border: 1px solid #F59E0B; color: #D97706; border-radius: 4px; padding: 5px; font-size: 11px; font-weight: 700; cursor: pointer;" onclick="simulateTierFromUI('PLUS')">Plus (10%)</button>
+            <button type="button" style="background: #FFF; border: 1px solid #881337; color: #881337; border-radius: 4px; padding: 5px; font-size: 11px; font-weight: 700; cursor: pointer;" onclick="simulateTierFromUI('PREMIUM')">Premium (20%)</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -5730,15 +6061,15 @@
           <strong style="color: #881337; font-size: 18px;" id="builder-disp-final-price">₹199.00</strong>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748B;">
-          <span>Available Wallet Balance:</span>
-          <span id="builder-disp-wallet-bal">₹0.00</span>
+          <span id="builder-disp-bal-label">Demo Balance Available:</span>
+          <span id="builder-disp-wallet-bal" style="font-weight: 700; color: #B45309;">₹0.00</span>
         </div>
         <!-- Insufficient Balance Notification Box -->
         <div id="builder-insufficient-bal-box" style="display: none; margin-top: 10px; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #991B1B;">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <span id="builder-insufficient-text">Insufficient wallet balance.</span>
-            <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="promptRechargeForReport()">
-              <i class="fa-solid fa-wallet"></i> Recharge &amp; Continue
+            <span id="builder-insufficient-text">Insufficient balance.</span>
+            <button type="button" class="btn-gold-primary" id="btn-builder-shortfall-action" style="padding: 4px 10px; font-size: 11px;" onclick="promptRechargeForReport()">
+              <i class="fa-solid fa-wallet"></i> Top Up Balance
             </button>
           </div>
         </div>
@@ -5747,12 +6078,16 @@
       <!-- Payment Method Selection -->
       <div class="form-field-group" id="builder-payment-method-group">
         <label class="form-field-label">Payment Method</label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-          <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12.5px; background: #FFFFFF;">
-            <input type="radio" name="builder_pay_method" value="WALLET" checked onchange="updateBuilderPaymentUI()">
-            <span><strong>Deduct Wallet</strong></span>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+          <label style="display: flex; align-items: center; gap: 8px; border: 1.5px solid #F59E0B; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; background: #FFFDF8;">
+            <input type="radio" name="builder_pay_method" value="DEMO_WALLET" checked onchange="updateBuilderPaymentUI()">
+            <span><strong style="color: #B45309;">Demo Wallet</strong><br><small style="color: #D97706;" id="builder-demo-bal-sub">₹0.00</small></span>
           </label>
-          <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12.5px; background: #FFFFFF;">
+          <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; background: #FFFFFF;">
+            <input type="radio" name="builder_pay_method" value="WALLET" onchange="updateBuilderPaymentUI()">
+            <span><strong>Real Wallet</strong><br><small style="color: #64748B;">₹<span id="builder-real-bal-sub">0.00</span></small></span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; background: #FFFFFF;">
             <input type="radio" name="builder_pay_method" value="RAZORPAY" onchange="updateBuilderPaymentUI()">
             <span><strong>UPI / NetBanking</strong></span>
           </label>
@@ -5953,6 +6288,7 @@
     // 1. GLOBAL STATE & SESSION (Section 10: Guest default with ₹0.00 balance)
     let currentUserSession = JSON.parse(localStorage.getItem('astro_user_session') || 'null');
     let currentWalletBalance = parseFloat(localStorage.getItem('astro_wallet_bal') || '0.00');
+    let currentDemoWalletBalance = parseFloat(localStorage.getItem('astro_demo_wallet_bal') || '0.00');
     let savedUserProfiles = JSON.parse(localStorage.getItem('astro_saved_profiles') || '[]');
     let currentCalculatedChart = null;
 
@@ -6089,9 +6425,180 @@
       if (pill) pill.classList.add('active');
       const mobBtn = document.getElementById('mob-dock-' + targetSection);
       if (mobBtn) mobBtn.classList.add('active');
+      document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+      const drawerItem = document.getElementById('mob-nav-' + targetSection);
+      if (drawerItem) drawerItem.classList.add('active');
 
       if (targetSection === 'horas') loadHourlyHorasUI();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Mobile Drawer Navigation Controllers
+    function toggleMobileNavDrawer() {
+      const drawer = document.getElementById('mobile-nav-drawer');
+      const backdrop = document.getElementById('mobile-nav-backdrop');
+      if (!drawer) return;
+      const isOpen = drawer.classList.contains('open');
+      if (isOpen) {
+        closeMobileNavDrawer();
+      } else {
+        drawer.classList.add('open');
+        if (backdrop) backdrop.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        updateMobileDrawerUI();
+      }
+    }
+
+    function closeMobileNavDrawer() {
+      const drawer = document.getElementById('mobile-nav-drawer');
+      const backdrop = document.getElementById('mobile-nav-backdrop');
+      if (drawer) drawer.classList.remove('open');
+      if (backdrop) backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function mobileNavNavigate(section) {
+      closeMobileNavDrawer();
+      switchNavSection(section);
+    }
+
+    function updateMobileDrawerUI() {
+      const nameEl = document.getElementById('mobile-drawer-profile-name');
+      const detEl = document.getElementById('mobile-drawer-profile-details');
+      const tierEl = document.getElementById('mobile-drawer-tier-badge');
+      const balEl = document.getElementById('mob-drawer-demo-bal');
+      const authText = document.getElementById('mob-drawer-auth-text');
+
+      if (currentCalculatedChart) {
+        if (nameEl) nameEl.textContent = currentCalculatedChart.name || 'Primary Seeker';
+        if (detEl) detEl.textContent = `${currentCalculatedChart.dob || ''} • ${currentCalculatedChart.city || ''}`;
+      } else if (savedUserProfiles && savedUserProfiles.length > 0) {
+        if (nameEl) nameEl.textContent = savedUserProfiles[0].name || savedUserProfiles[0].profileName || 'Seeker';
+        if (detEl) detEl.textContent = `${savedUserProfiles[0].dob || savedUserProfiles[0].dateOfBirth || ''} • ${savedUserProfiles[0].city || savedUserProfiles[0].birthplaceName || ''}`;
+      } else {
+        if (nameEl) nameEl.textContent = 'No Chart Loaded';
+        if (detEl) detEl.textContent = 'Tap to enter birth details or switch';
+      }
+
+      if (tierEl && currentUserEntitlements?.tier) {
+        const t = currentUserEntitlements.tier;
+        tierEl.textContent = t.charAt(0) + t.slice(1).toLowerCase();
+      }
+
+      if (balEl) {
+        balEl.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
+      }
+
+      if (authText) {
+        authText.textContent = currentUserSession ? 'Account' : 'Sign In';
+      }
+    }
+
+    // Demo Mode & Testing Money Controllers
+    function updateDemoWalletDisplay() {
+      const dispEl = document.getElementById('demo-wallet-bal-display');
+      if (dispEl) dispEl.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
+      const builderSub = document.getElementById('builder-demo-bal-sub');
+      if (builderSub) builderSub.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
+      const mobBal = document.getElementById('mob-drawer-demo-bal');
+      if (mobBal) mobBal.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
+    }
+
+    async function addDemoCreditsFromUI(rupees) {
+      const paise = Math.round(rupees * 100);
+      try {
+        const headers = getAuthHeaders();
+        headers['Content-Type'] = 'application/json';
+        const res = await fetch(`${getAuthBase()}/api/demo/credit`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ amountPaise: paise })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          currentDemoWalletBalance = parseFloat(data.demoBalance);
+        } else {
+          currentDemoWalletBalance += rupees;
+        }
+      } catch (err) {
+        currentDemoWalletBalance += rupees;
+      }
+      localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+      updateDemoWalletDisplay();
+      showToast(`🎉 Credited ₹${rupees} demo money! Demo balance: ₹${currentDemoWalletBalance.toFixed(2)}`, "success");
+      updateBuilderPriceEstimate();
+    }
+
+    async function resetDemoWalletFromUI() {
+      try {
+        const headers = getAuthHeaders();
+        await fetch(`${getAuthBase()}/api/demo/reset`, {
+          method: 'POST',
+          headers: headers
+        });
+      } catch (_) {}
+      currentDemoWalletBalance = 0.00;
+      localStorage.setItem('astro_demo_wallet_bal', '0.00');
+      updateDemoWalletDisplay();
+      showToast("Demo wallet balance reset to ₹0.00", "info");
+      updateBuilderPriceEstimate();
+    }
+
+    async function simulateTierFromUI(tier) {
+      try {
+        const headers = getAuthHeaders();
+        headers['Content-Type'] = 'application/json';
+        const res = await fetch(`${getAuthBase()}/api/demo/set-tier`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ tier })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          currentUserEntitlements = {
+            tier: data.tier,
+            reportDiscountPercent: data.reportDiscountPercent,
+            unlimitedReports: data.unlimitedReports,
+            canOrderAnyReport: true,
+            canOrderBundle: true,
+            canReadOnlineReports: true,
+            features: []
+          };
+          const tierBadge = document.getElementById('global-tier-name');
+          if (tierBadge) {
+            tierBadge.textContent = data.tier === 'FREE' ? 'Essentials' : (data.tier.charAt(0) + data.tier.slice(1).toLowerCase());
+          }
+          const drawerTier = document.getElementById('mobile-drawer-tier-badge');
+          if (drawerTier) {
+            drawerTier.textContent = data.tier === 'FREE' ? 'Essentials' : (data.tier.charAt(0) + data.tier.slice(1).toLowerCase());
+          }
+          showToast(`🎉 Subscription tier simulated to ${data.tier}! (${data.reportDiscountPercent}% discount applied)`, "success");
+          updateBuilderPriceEstimate();
+          return;
+        }
+      } catch (_) {}
+
+      // Fallback
+      const discounts = { FREE: 0, PLUS: 10, PREMIUM: 20 };
+      currentUserEntitlements = {
+        tier: tier,
+        reportDiscountPercent: discounts[tier] || 0,
+        unlimitedReports: tier === 'PREMIUM',
+        canOrderAnyReport: true,
+        canOrderBundle: true,
+        canReadOnlineReports: true,
+        features: []
+      };
+      const tierBadge = document.getElementById('global-tier-name');
+      if (tierBadge) {
+        tierBadge.textContent = tier === 'FREE' ? 'Essentials' : (tier.charAt(0) + tier.slice(1).toLowerCase());
+      }
+      const drawerTier = document.getElementById('mobile-drawer-tier-badge');
+      if (drawerTier) {
+        drawerTier.textContent = tier === 'FREE' ? 'Essentials' : (tier.charAt(0) + tier.slice(1).toLowerCase());
+      }
+      showToast(`🎉 Simulating ${tier} tier (${discounts[tier]}% discount)`, "success");
+      updateBuilderPriceEstimate();
     }
 
     // Gender Toggle (Section 2: Starts Unselected)
@@ -8079,13 +8586,28 @@
           currentWalletBalance = parseFloat(u.walletBalance || 0.00);
           localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
           localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+          try {
+            const walRes = await fetch(`${getAuthBase()}/api/wallet/me`, { headers: getAuthHeaders() });
+            if (walRes.ok) {
+              const walData = await walRes.json();
+              if (walData.demoBalance !== undefined) {
+                currentDemoWalletBalance = parseFloat(walData.demoBalance);
+                localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+              }
+            }
+          } catch (_) {}
           updateUserSessionUI();
+          updateDemoWalletDisplay();
         } else if (res.status === 401 || res.status === 403) {
           executeSignOut(false);
         }
       } catch (err) {
         console.warn("[SESSION] Offline validation fallback:", err);
       }
+    }
+
+    async function validateSessionWithBackend() {
+      return await validateStoredSession();
     }
 
     // Update UI Elements with Session State
@@ -8708,6 +9230,7 @@
 
     function openWalletModal() {
       selectWalletRechargePack(250, 35);
+      updateDemoWalletDisplay();
       document.getElementById('modal-wallet').style.display = 'flex';
     }
     function closeWalletModal() {
@@ -10112,6 +10635,7 @@
     // Initialization on Page Load
     window.addEventListener('DOMContentLoaded', async () => {
       updateUserSessionUI();
+      updateDemoWalletDisplay();
       renderSavedProfilesList();
       selectHoroscopeSign('Aries');
       loadHourlyHorasUI();
@@ -11710,36 +12234,82 @@
       const discEl = document.getElementById('builder-disp-discount');
       const finalEl = document.getElementById('builder-disp-final-price');
       const walEl = document.getElementById('builder-disp-wallet-bal');
+      const balLabel = document.getElementById('builder-disp-bal-label');
       const insuffBox = document.getElementById('builder-insufficient-bal-box');
       const insuffText = document.getElementById('builder-insufficient-text');
+      const shortfallBtn = document.getElementById('btn-builder-shortfall-action');
+      const demoSub = document.getElementById('builder-demo-bal-sub');
+      const realSub = document.getElementById('builder-real-bal-sub');
+
+      if (demoSub) demoSub.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
+      if (realSub) realSub.textContent = currentWalletBalance.toFixed(2);
 
       if (baseEl) baseEl.textContent = `₹${baseRupees}`;
       if (discRow) discRow.style.display = discountPercent > 0 ? 'flex' : 'none';
       if (discEl) discEl.textContent = `-₹${(discountPaise / 100).toFixed(2)} (${discountPercent}%)`;
       if (finalEl) finalEl.textContent = `₹${finalRupees}`;
-      if (walEl) walEl.textContent = `₹${currentWalletBalance.toFixed(2)}`;
 
       const payRadios = document.getElementsByName('builder_pay_method');
-      let method = 'WALLET';
+      let method = 'DEMO_WALLET';
       for (const r of payRadios) {
         if (r.checked) method = r.value;
       }
 
-      if (insuffBox) {
-        if (method === 'WALLET' && Number(finalRupees) > currentWalletBalance && finalPaise > 0) {
-          insuffBox.style.display = 'block';
-          if (insuffText) {
-            insuffText.textContent = `Insufficient wallet balance (₹${currentWalletBalance.toFixed(2)}). Need ₹${finalRupees}.`;
-          }
-        } else {
-          insuffBox.style.display = 'none';
+      if (method === 'DEMO_WALLET') {
+        if (balLabel) balLabel.textContent = 'Demo Balance Available:';
+        if (walEl) {
+          walEl.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
+          walEl.style.color = '#B45309';
         }
+        if (insuffBox) {
+          if (Number(finalRupees) > currentDemoWalletBalance && finalPaise > 0) {
+            insuffBox.style.display = 'block';
+            if (insuffText) {
+              insuffText.textContent = `Insufficient demo balance (₹${currentDemoWalletBalance.toFixed(2)}). Need ₹${finalRupees}.`;
+            }
+            if (shortfallBtn) {
+              shortfallBtn.innerHTML = '<i class="fa-solid fa-flask"></i> + Add ₹500 Demo Credit';
+              shortfallBtn.onclick = () => addDemoCreditsFromUI(500);
+            }
+          } else {
+            insuffBox.style.display = 'none';
+          }
+        }
+      } else if (method === 'WALLET') {
+        if (balLabel) balLabel.textContent = 'Available Real Wallet:';
+        if (walEl) {
+          walEl.textContent = `₹${currentWalletBalance.toFixed(2)}`;
+          walEl.style.color = '#1E293B';
+        }
+        if (insuffBox) {
+          if (Number(finalRupees) > currentWalletBalance && finalPaise > 0) {
+            insuffBox.style.display = 'block';
+            if (insuffText) {
+              insuffText.textContent = `Insufficient wallet balance (₹${currentWalletBalance.toFixed(2)}). Need ₹${finalRupees}.`;
+            }
+            if (shortfallBtn) {
+              shortfallBtn.innerHTML = '<i class="fa-solid fa-wallet"></i> Recharge &amp; Continue';
+              shortfallBtn.onclick = promptRechargeForReport;
+            }
+          } else {
+            insuffBox.style.display = 'none';
+          }
+        }
+      } else {
+        if (balLabel) balLabel.textContent = 'Gateway Settlement:';
+        if (walEl) {
+          walEl.textContent = `₹${finalRupees}`;
+          walEl.style.color = '#1E293B';
+        }
+        if (insuffBox) insuffBox.style.display = 'none';
       }
 
       const payBtn = document.getElementById('btn-builder-generate');
       if (payBtn) {
         if (finalPaise === 0) {
           payBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Free Summary Publication';
+        } else if (method === 'DEMO_WALLET') {
+          payBtn.innerHTML = `<i class="fa-solid fa-flask"></i> Order with Demo Money (₹${finalRupees}) &amp; Read`;
         } else {
           payBtn.innerHTML = `<i class="fa-solid fa-lock"></i> Pay ₹${finalRupees} &amp; Generate Publication`;
         }
@@ -11773,7 +12343,7 @@
       const lang = document.getElementById('builder-lang-select')?.value || 'en';
 
       const payRadios = document.getElementsByName('builder_pay_method');
-      let method = 'WALLET';
+      let method = 'DEMO_WALLET';
       for (const r of payRadios) {
         if (r.checked) method = r.value;
       }
@@ -11782,6 +12352,12 @@
       const basePaise = activeBuilderProduct.pricePaise || 0;
       const finalPaise = basePaise - Math.round((basePaise * discountPercent) / 100);
       const finalRupees = finalPaise / 100;
+
+      if (method === 'DEMO_WALLET' && finalRupees > currentDemoWalletBalance && finalPaise > 0) {
+        showToast(`Insufficient demo balance (₹${currentDemoWalletBalance.toFixed(2)}). Need ₹${finalRupees.toFixed(2)}. Adding demo credits...`, "info");
+        await addDemoCreditsFromUI(500);
+        return;
+      }
 
       if (method === 'WALLET' && finalRupees > currentWalletBalance && finalPaise > 0) {
         showToast(`Insufficient wallet balance (₹${currentWalletBalance.toFixed(2)}). Need ₹${finalRupees.toFixed(2)}.`, "error");
@@ -11850,7 +12426,11 @@
         const orderData = await orderRes.json();
 
         if (orderData.document) {
-          if (orderData.paidVia === 'WALLET') {
+          if (orderData.paidVia === 'DEMO_WALLET' || method === 'DEMO_WALLET') {
+            currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
+            localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+            updateDemoWalletDisplay();
+          } else if (orderData.paidVia === 'WALLET') {
             currentWalletBalance = Math.max(0, currentWalletBalance - finalRupees);
             localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
             updateUserSessionUI();
@@ -12381,31 +12961,52 @@
         } catch (_) {}
       }
 
+      // Allow a brief tick for SVG rendering, table bounds, and fonts to settle in the DOM
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      if (!container || !container.children || container.children.length === 0) {
+        showToast("Error: Document content is empty. PDF generation cancelled.", "error");
+        return;
+      }
+
       try {
         if (typeof html2pdf !== 'undefined') {
-          try {
-            const opt = {
-              margin: 0,
-              filename: `${nativeName.replace(/[^a-zA-Z0-9]/g, '_')}_AstroVerse_Report.pdf`,
-              image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
-              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-              pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-            };
-            await html2pdf().set(opt).from(container).save();
-            showToast("🎉 PDF downloaded successfully!", "success");
-          } catch (e) {
-            console.warn("html2pdf export failed, activating browser print fallback:", e);
-            window.print();
-          }
+          const opt = {
+            margin: 0,
+            filename: `${nativeName.replace(/[^a-zA-Z0-9]/g, '_')}_AstroVerse_Report.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+              scale: 2,
+              useCORS: true,
+              letterRendering: true,
+              logging: false,
+              scrollX: 0,
+              scrollY: 0,
+              x: 0,
+              y: 0,
+              windowWidth: 794
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          };
+          await html2pdf().set(opt).from(container).save();
+          showToast("🎉 PDF downloaded successfully!", "success");
         } else {
           window.print();
         }
+      } catch (e) {
+        console.error("PDF export generation failed:", e);
+        showToast("PDF generation failed. Activating browser print fallback...", "warning");
+        try {
+          window.print();
+        } catch (printErr) {
+          showToast("Print fallback failed. Please check browser permissions.", "error");
+        }
       } finally {
-        // Clear container DOM to free memory
-        setTimeout(() => {
-          if (container) container.innerHTML = '';
-        }, 1500);
+        // Clean up container DOM safely after export completes
+        if (container) {
+          container.innerHTML = '';
+        }
       }
     }
 
