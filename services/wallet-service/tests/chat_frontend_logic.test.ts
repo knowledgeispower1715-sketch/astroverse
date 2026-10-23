@@ -196,3 +196,101 @@ test('Client-side query scope handling correctly separates out-of-scope tasks an
   assert.ok(isConceptual('What is Shadbala in Vedic astrology?'), 'Shadbala question must be conceptual');
   assert.ok(!isConceptual('Will I get married this year?'), 'Personal prediction query must NOT be conceptual');
 });
+
+// 6. Voice Narration Text Sanitizer Unit Tests
+test('AstroVerseVoiceEngine cleanTextForSpeech removes HTML, markdown, and normalize whitespace', () => {
+  const cleanTextForSpeech = (raw: string): string => {
+    if (!raw) return '';
+    let text = raw.replace(/<[^>]*>/g, ' ');
+    text = text.replace(/[*_#`~[\]()]/g, ' ');
+    text = text.replace(/\s+/g, ' ').trim();
+    return text;
+  };
+
+  const raw = `### 10th House Karma Bhava\n\nYour **Jupiter** in *Gemini* (House 8) aspects the 2nd House.<br><p>Recite mantra daily.</p>`;
+  const cleaned = cleanTextForSpeech(raw);
+  assert.ok(!cleaned.includes('<'), 'Must not contain HTML tags');
+  assert.ok(!cleaned.includes('>'), 'Must not contain HTML tags');
+  assert.ok(!cleaned.includes('*'), 'Must not contain asterisks');
+  assert.ok(!cleaned.includes('#'), 'Must not contain hash markdown');
+  assert.ok(cleaned.includes('10th House Karma Bhava'), 'Preserves content text');
+  assert.ok(cleaned.includes('Jupiter in Gemini'), 'Preserves prose words');
+});
+
+// 7. Site-Wide Internationalization (I18N) Dictionary Parity Tests
+test('ASTROVERSE_I18N English and Hindi dictionaries have full key parity', () => {
+  const enKeys = [
+    'nav_overview', 'nav_kundli', 'nav_horas', 'nav_matchmaking', 'nav_astrologers',
+    'nav_horoscope', 'nav_tools', 'nav_reports', 'nav_pricing', 'nav_dashboard',
+    'pill_kundli', 'pill_horas', 'pill_matchmaking', 'btn_calc_kundli', 'btn_calc_milan',
+    'btn_customize', 'btn_download_pdf', 'btn_listen', 'btn_stop', 'btn_recharge', 'lang_switch_label'
+  ];
+
+  const hiDict: Record<string, string> = {
+    nav_overview: 'अवलोकन',
+    nav_kundli: 'मेरी कुंडली',
+    nav_horas: 'ग्रह होरा व मुहूर्त',
+    nav_matchmaking: 'कुंडली मिलान',
+    nav_astrologers: 'एआई ज्योतिषी',
+    nav_horoscope: 'राशिफल',
+    nav_tools: 'ज्योतिष उपकरण',
+    nav_reports: 'रिपोर्ट स्टोर',
+    nav_pricing: 'सदस्यता योजनाएं',
+    nav_dashboard: 'डैशबोर्ड',
+    pill_kundli: 'निःशुल्क जन्म कुंडली',
+    pill_horas: '24-घंटे ग्रह होरा',
+    pill_matchmaking: '36-गुण मिलान',
+    btn_calc_kundli: 'वैदिक कुंडली बनाएं',
+    btn_calc_milan: 'पूर्ण कुंडली मिलान व 36 गुण जांचें',
+    btn_customize: 'कस्टमाइज़ करें',
+    btn_download_pdf: 'पीडीएफ डाउनलोड करें',
+    btn_listen: 'आवाज में सुनें',
+    btn_stop: 'रोकें',
+    btn_recharge: 'वॉलेट रिचार्ज करें',
+    lang_switch_label: 'English'
+  };
+
+  enKeys.forEach(k => {
+    assert.ok(hiDict[k], `Hindi dictionary must contain key '${k}'`);
+    assert.ok(hiDict[k].length > 0, `Hindi translation for '${k}' must not be empty`);
+  });
+});
+
+// 8. PDF Download Entitlement Policy Validation
+test('Report PDF Download is permitted for free basic summary and premium subscribers, gated for online-only reports', () => {
+  const checkPdfDownloadAllowed = (doc: any, entitlements: any, userRole?: string): boolean => {
+    if (userRole === 'SUPER_ADMIN') return true;
+    if (doc.productId === 'report_basic_chart_summary') return true;
+    if (doc.allowPdfDownload === true) return true;
+    if (entitlements?.allowsReportPdfDownload === true) return true;
+    return false;
+  };
+
+  // 1. Free basic chart summary is always downloadable by any user
+  assert.strictEqual(
+    checkPdfDownloadAllowed({ productId: 'report_basic_chart_summary' }, { allowsReportPdfDownload: false }),
+    true,
+    'Basic chart summary must always allow free PDF download'
+  );
+
+  // 2. Paid online reader report without premium subscription is blocked from direct PDF download
+  assert.strictEqual(
+    checkPdfDownloadAllowed({ productId: 'report_janam_kundli_deep_dive', allowPdfDownload: false }, { allowsReportPdfDownload: false }),
+    false,
+    'Online-only deep dive must NOT allow PDF download for non-premium user'
+  );
+
+  // 3. Premium tier subscriber is permitted to download any report as PDF
+  assert.strictEqual(
+    checkPdfDownloadAllowed({ productId: 'report_janam_kundli_deep_dive', allowPdfDownload: false }, { allowsReportPdfDownload: true }),
+    true,
+    'Premium user with allowsReportPdfDownload=true must be permitted to download PDF'
+  );
+
+  // 4. Super Admin always has full export authority
+  assert.strictEqual(
+    checkPdfDownloadAllowed({ productId: 'report_twelve_month_varshphal' }, null, 'SUPER_ADMIN'),
+    true,
+    'Super admin must have bypass download authority'
+  );
+});

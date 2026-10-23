@@ -8,11 +8,12 @@
   <!-- Typography & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <!-- Animation Library -->
+  <!-- Animation & PDF Generation Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
     :root {
@@ -2727,6 +2728,119 @@
       }
     }
 
+    /* Language Toggle Pill */
+    .lang-toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--av-color-surface);
+      border: 1px solid var(--av-color-border-strong);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--av-color-maroon-800);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .lang-toggle-pill:hover {
+      background: var(--av-color-surface-soft);
+      border-color: var(--av-color-saffron);
+      color: var(--av-color-maroon-950);
+    }
+
+    /* Voice Narration Audio Buttons */
+    .btn-voice-listen {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      border-radius: 16px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #92400E;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .btn-voice-listen:hover {
+      background: #FDE68A;
+      color: #78350F;
+      transform: translateY(-1px);
+    }
+    .btn-voice-listen.speaking {
+      background: #DC2626;
+      border-color: #B91C1C;
+      color: #FFFFFF;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+    }
+    .btn-voice-listen.speaking:hover {
+      background: #B91C1C;
+    }
+    .voice-wave-anim {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      height: 12px;
+    }
+    .voice-wave-bar {
+      width: 2px;
+      height: 100%;
+      background: currentColor;
+      border-radius: 1px;
+      animation: voiceWave 0.8s ease-in-out infinite alternate;
+    }
+    .voice-wave-bar:nth-child(2) { animation-delay: 0.2s; }
+    .voice-wave-bar:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes voiceWave {
+      0% { height: 3px; }
+      100% { height: 12px; }
+    }
+
+    /* Print and PDF Template Geometry */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #astroverse-pdf-document-template, #astroverse-pdf-document-template * {
+        visibility: visible;
+      }
+      #astroverse-pdf-document-template {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: block !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+    .pdf-a4-page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 16mm 15mm;
+      margin: 0 auto;
+      background: #FFFFFF;
+      box-sizing: border-box;
+      position: relative;
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', Inter, sans-serif;
+      color: #1E293B;
+      page-break-after: always;
+      break-after: page;
+    }
+    .pdf-cover-page {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 3px double #C6A15B;
+      box-shadow: inset 0 0 0 4px #881337;
+      padding: 20mm 18mm;
+      background: radial-gradient(circle at top right, #FFFDF8, #FFF7ED);
+    }
+
   </style>
 </head>
 <body>
@@ -2791,6 +2905,11 @@
     </nav>
 
     <div class="nav-right-actions">
+      <!-- Language Toggle Pill -->
+      <button class="lang-toggle-pill" id="global-lang-btn" onclick="toggleAppLanguage()" title="Switch Language / भाषा बदलें" aria-label="Toggle language between English and Hindi">
+        <i class="fa-solid fa-language"></i> <span id="global-lang-label">हिंदी</span>
+      </button>
+
       <div class="tier-chip" id="global-tier-badge" onclick="openPricingPlansModal()" title="Click to view subscription tiers" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; font-size: 12px; font-weight: 700; color: #D97706; cursor: pointer;">
         <i class="fa-solid fa-crown"></i> <span id="global-tier-name">Essentials</span>
       </div>
@@ -3314,7 +3433,7 @@
             </div>
           </div>
 
-          <button class="btn-gold-primary" style="width: 100%; justify-content: center;" onclick="generateUserKundli()">
+          <button class="btn-gold-primary" id="btn-generate-kundli" style="width: 100%; justify-content: center;" onclick="generateUserKundli()">
             <i class="fa-solid fa-sparkles"></i> Calculate Vedic Kundli
           </button>
         </div>
@@ -3340,6 +3459,20 @@
               <button class="kw-subnav-btn" id="btn-kw-dashas" onclick="switchKundliTab('dashas')"><i class="fa-solid fa-timeline"></i> Dasha &amp; Transits</button>
               <button class="kw-subnav-btn" id="btn-kw-yogas" onclick="switchKundliTab('yogas')"><i class="fa-solid fa-certificate"></i> Yogas &amp; Doshas</button>
               <button class="kw-subnav-btn" id="btn-kw-upagrahas" onclick="switchKundliTab('upagrahas')"><i class="fa-solid fa-moon"></i> Upagrahas</button>
+            </div>
+
+            <!-- Action Bar for Kundli Result: PDF & Voice Narration -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding: 10px 14px; background: #FFFDF8; border: 1px solid #FDE68A; border-radius: 10px; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="btn-voice-listen" id="btn-voice-kundli" onclick="toggleKundliVoiceNarration(this)" title="Listen to chart overview in audio">
+                  <i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen Summary</span>
+                </button>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="btn-gold-primary" id="btn-download-kundli-pdf" style="padding: 5px 12px; font-size: 12px;" onclick="downloadKundliBasicPdf()" title="Download Printable Kundli Summary PDF">
+                  <i class="fa-solid fa-file-pdf"></i> Download Kundli PDF
+                </button>
+              </div>
             </div>
 
             <!-- PANE 1: OVERVIEW -->
@@ -4085,6 +4218,12 @@
               <span>18: Average (18–24)</span>
               <span>25+: Very Favorable (Uttam)</span>
               <span>36: Ideal Match</span>
+            </div>
+
+            <div style="display: flex; justify-content: center; margin-top: 14px;">
+              <button class="btn-voice-listen" id="btn-voice-milan" onclick="toggleMilanVoiceNarration(this)" title="Listen to compatibility verdict">
+                <i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen Compatibility Analysis</span>
+              </button>
             </div>
           </div>
 
@@ -5491,8 +5630,9 @@
   </div>
 
   <!-- ==================== MODAL: 5-STEP REPORT CUSTOMIZER ==================== -->
+  <!-- ==================== MODAL: 5-STEP REPORT CUSTOMIZATION BUILDER ==================== -->
   <div id="modal-report-builder" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10640;">
-    <div class="modal-dialog-card" style="max-width: 600px; width: 92%; max-height: 90vh; overflow-y: auto; padding: 24px;">
+    <div class="modal-dialog-card" style="max-width: 640px; width: 92%; max-height: 90vh; overflow-y: auto; padding: 24px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
         <div>
           <span class="report-cat-tag" id="builder-cat-badge">PERSONALIZED PUBLICATION</span>
@@ -5501,57 +5641,74 @@
         <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px; color: #64748B;" onclick="closeReportBuilderModal()"></i>
       </div>
 
-      <!-- Step Indicator -->
-      <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 11.5px; font-weight: 700; color: #64748B; border-bottom: 1px solid #F1F5F9; padding-bottom: 8px;">
-        <span id="step-lbl-1" style="color: #D97706;">1. Select Profile</span>
-        <span id="step-lbl-2">2. Scope &amp; Focus</span>
-        <span id="step-lbl-3">3. Review &amp; Generate</span>
+      <!-- Step Indicator (5 Steps) -->
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 18px; font-size: 11px; font-weight: 700; color: #64748B; text-align: center;">
+        <span id="step-lbl-1" style="color: #D97706; border-bottom: 2px solid #D97706; padding-bottom: 4px;">1. Profile</span>
+        <span id="step-lbl-2" style="border-bottom: 2px solid transparent; padding-bottom: 4px;">2. Chapters</span>
+        <span id="step-lbl-3" style="border-bottom: 2px solid transparent; padding-bottom: 4px;">3. Focus</span>
+        <span id="step-lbl-4" style="border-bottom: 2px solid transparent; padding-bottom: 4px;">4. Depth</span>
+        <span id="step-lbl-5" style="border-bottom: 2px solid transparent; padding-bottom: 4px;">5. Review</span>
       </div>
 
       <!-- Step 1: Profile Selection -->
       <div class="form-field-group">
-        <label class="form-field-label">Subject Birth Profile</label>
-        <select id="builder-profile-select" class="form-input-text" onchange="updateBuilderPriceEstimate()">
-          <!-- Populated dynamically with user's birth profiles -->
+        <label class="form-field-label">1. Subject Birth Profile</label>
+        <select id="builder-profile-select" class="form-input-text" onchange="onBuilderProfileChanged()">
+          <!-- Populated dynamically with saved profiles & active chart -->
         </select>
-        <span style="font-size: 11px; color: #64748B; margin-top: 4px; display: block;">Natal coordinates and Swiss Ephemeris longitudes will be compiled for this profile.</span>
+        <!-- Live Profile Preview Card -->
+        <div id="builder-profile-preview" style="margin-top: 8px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #78350F;">
+          <!-- Live details rendered here -->
+        </div>
       </div>
 
       <!-- Partner Profile for Kundli Milan -->
       <div class="form-field-group" id="builder-partner-group" style="display: none;">
         <label class="form-field-label">Partner Birth Profile (Matchmaking)</label>
-        <select id="builder-partner-select" class="form-input-text">
+        <select id="builder-partner-select" class="form-input-text" onchange="onBuilderPartnerChanged()">
           <!-- Populated dynamically -->
         </select>
+        <div id="builder-partner-preview" style="margin-top: 8px; background: #FDF2F8; border: 1px solid #FBCFE8; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #9D174D;"></div>
       </div>
 
-      <!-- Step 2: Focus and Scope Options -->
+      <!-- Step 2: Included Chapters & Astrological Scope -->
       <div class="form-field-group">
-        <label class="form-field-label">Primary Life Horizon Focus</label>
+        <label class="form-field-label">2. Astrological Chapters &amp; Analysis Scope</label>
+        <div id="builder-chapters-container" style="display: flex; flex-direction: column; gap: 6px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 14px;">
+          <!-- Dynamically populated checkboxes based on product -->
+        </div>
+      </div>
+
+      <!-- Step 3: Life Horizon Focus Area -->
+      <div class="form-field-group">
+        <label class="form-field-label">3. Primary Life Horizon Focus</label>
         <select id="builder-focus-select" class="form-input-text">
-          <option value="holistic">Holistic Karmic Trajectory (General Synthesis)</option>
-          <option value="career_and_dharma">Career, Executive Authority &amp; Dhana Yogas</option>
-          <option value="marriage_and_intimacy">Matrimonial Covenants &amp; Emotional Harmony</option>
-          <option value="spiritual_and_remedial">Vedic Remedial Protocol &amp; Contemplation</option>
+          <option value="holistic">Holistic Karmic Trajectory (Complete Life Synthesis)</option>
+          <option value="career_and_dharma">Career, Executive Authority &amp; Dhana Yogas (10th Bhava)</option>
+          <option value="wealth_and_finances">Wealth Accumulation, Assets &amp; Dhana Axes (2nd &amp; 11th Bhava)</option>
+          <option value="marriage_and_intimacy">Matrimonial Covenants &amp; Emotional Harmony (7th Bhava)</option>
+          <option value="spiritual_and_remedial">Spiritual Awakening, Moksha &amp; Remedial Protocol (9th &amp; 12th Bhava)</option>
         </select>
       </div>
 
+      <!-- Step 4: Technical Depth & Language -->
       <div class="form-field-group">
-        <label class="form-field-label">Report Technical Depth &amp; Language</label>
+        <label class="form-field-label">4. Report Technical Depth &amp; Language</label>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <select id="builder-depth-select" class="form-input-text">
-            <option value="standard">Standard Parashari</option>
-            <option value="advanced">Advanced Shodashavarga (D1–D60)</option>
+            <option value="standard">Standard Parashari (Lagna &amp; Navamsha)</option>
+            <option value="advanced" selected>Advanced Shodashavarga (D1–D60 &amp; Ashtakavarga)</option>
           </select>
           <select id="builder-lang-select" class="form-input-text">
-            <option value="en">English (Classical Terms)</option>
-            <option value="hi">Hindi (पारंपरिक वैदिक)</option>
+            <option value="en" selected>English (Classical Shastra Terms)</option>
+            <option value="hi">हिंदी (पारंपरिक संस्कृत व वैदिक व्याख्या)</option>
           </select>
         </div>
       </div>
 
-      <!-- Step 3: Pricing & Payment Method -->
-      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px; margin-bottom: 18px; font-size: 13px;">
+      <!-- Step 5: Pricing & Payment Method -->
+      <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px; margin-bottom: 14px; font-size: 13px;">
+        <div style="font-weight: 800; color: #1E1B4B; margin-bottom: 8px; font-size: 12px; text-transform: uppercase;">5. Authoritative Price &amp; Settlement</div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
           <span style="color: #64748B;">Catalogue Price:</span>
           <strong id="builder-disp-base-price">₹199.00</strong>
@@ -5568,6 +5725,15 @@
         <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748B;">
           <span>Available Wallet Balance:</span>
           <span id="builder-disp-wallet-bal">₹0.00</span>
+        </div>
+        <!-- Insufficient Balance Notification Box -->
+        <div id="builder-insufficient-bal-box" style="display: none; margin-top: 10px; background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #991B1B;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <span id="builder-insufficient-text">Insufficient wallet balance.</span>
+            <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="promptRechargeForReport()">
+              <i class="fa-solid fa-wallet"></i> Recharge &amp; Continue
+            </button>
+          </div>
         </div>
       </div>
 
@@ -5614,6 +5780,9 @@
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
+          <button class="btn-gold-primary" id="btn-reader-download-pdf" style="padding: 5px 12px; font-size: 12px;" onclick="triggerReaderPdfDownload()">
+            <i class="fa-solid fa-file-pdf"></i> Download PDF
+          </button>
           <button class="btn-outline-secondary" style="color: #F8FAFC; border-color: rgba(255,255,255,0.2); padding: 5px 12px; font-size: 12px;" onclick="closeReportReaderModal()">
             <i class="fa-solid fa-xmark"></i> Close Reader
           </button>
@@ -7849,6 +8018,35 @@
       switchNavSection('kundli');
     }
 
+    function handleAuthExpired(pendingAction = null) {
+      if (pendingAction) {
+        window.pendingActionAfterAuth = pendingAction;
+      }
+      executeSignOut(false);
+      showToast("Your session has expired. Please sign in to continue.", "info");
+      openAuthModal('otp');
+    }
+
+    function resumePendingActionAfterAuth() {
+      if (!window.pendingActionAfterAuth) return;
+      const pending = window.pendingActionAfterAuth;
+      window.pendingActionAfterAuth = null;
+      if (pending.type === 'report_order') {
+        showToast("Resuming your report customization...", "info");
+        setTimeout(() => {
+          openReportBuilderModal(pending.productId);
+        }, 600);
+      } else if (pending.type === 'recharge') {
+        showToast("Resuming your wallet recharge...", "info");
+        setTimeout(() => {
+          openWalletModal();
+          if (pending.pack) {
+            selectWalletRechargePack(pending.pack.base, pending.pack.bonus);
+          }
+        }, 600);
+      }
+    }
+
     // Validate stored session with server on startup
     async function validateStoredSession() {
       if (!currentSessionToken) return;
@@ -8556,6 +8754,10 @@
 
         if (!orderRes.ok) {
           const errData = await orderRes.json().catch(() => ({}));
+          if (orderRes.status === 401) {
+            handleAuthExpired({ type: 'recharge', pack: selectedRechargePack });
+            return;
+          }
           showToast(errData.message || "Failed to create payment order. Gateway unavailable.", "error");
           return;
         }
@@ -8609,6 +8811,15 @@
         updateUserSessionUI();
         closeWalletModal();
         showToast(`Wallet recharged successfully! ₹${verifyData.newBalance.toFixed(2)} current balance.`, "success");
+
+        if (window.pendingReportOrder) {
+          const pending = window.pendingReportOrder;
+          window.pendingReportOrder = null;
+          showToast("Wallet credited! Returning to report customization...", "info");
+          setTimeout(() => {
+            openReportBuilderModal(pending.productId);
+          }, 600);
+        }
       } catch (e) {
         showToast("Error verifying payment with server.", "error");
       }
@@ -8949,7 +9160,7 @@
 
         const meta = document.createElement('div');
         meta.className = 'chat-msg-meta chat-msg-meta-agent';
-        meta.innerHTML = `<time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>Chart-Grounded</span>`;
+        meta.innerHTML = `<time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>Chart-Grounded</span> <button class="btn-voice-listen" style="padding: 2px 8px; font-size: 10px; margin-left: 8px;" onclick="toggleChatVoiceNarration('${msg.id}', this)"><i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen</span></button>`;
 
         bubbleWrap.appendChild(bubble);
         bubbleWrap.appendChild(meta);
@@ -10273,6 +10484,7 @@
           updateUserSessionUI();
           closeAuthModal();
           showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
+          resumePendingActionAfterAuth();
         } else {
           if (res.status === 503 && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {
             errEl.innerHTML = `
@@ -10363,6 +10575,7 @@
           updateUserSessionUI();
           closeAuthModal();
           showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
+          resumePendingActionAfterAuth();
         } else {
           if (res.status === 503 && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {
             errEl.innerHTML = `
@@ -10459,6 +10672,7 @@
           updateUserSessionUI();
           closeAuthModal();
           showToast(`Welcome, ${name}! Your account has been registered.`, 'success');
+          resumePendingActionAfterAuth();
         } else {
           if (res.status === 503 && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {
             errEl.innerHTML = `
@@ -11304,13 +11518,14 @@
       }).join('');
     }
 
-    // ==================== 5-STEP REPORT CUSTOMIZER ====================
+    // ==================== 5-STEP REPORT CUSTOMIZER & MONETIZATION ====================
 
     function openReportBuilderModal(productId) {
       activeBuilderProduct = (currentStoreCatalogue || []).find(p => p.productId === productId) || {
         productId: productId,
         displayName: productId.replace(/_/g, ' ').toUpperCase(),
-        pricePaise: productId === 'report_basic_chart_summary' ? 0 : 14900
+        pricePaise: productId === 'report_basic_chart_summary' ? 0 : 14900,
+        includedSections: ['Lagna Bhava', 'Shodashavarga', 'Ashtakavarga Matrix', 'Vimshottari Timeline', 'Remedial Protocol']
       };
 
       const modal = document.getElementById('modal-report-builder');
@@ -11319,10 +11534,10 @@
       document.getElementById('builder-product-title').textContent = activeBuilderProduct.displayName;
       const partnerGroup = document.getElementById('builder-partner-group');
       if (partnerGroup) {
-        partnerGroup.style.display = (productId === 'report_kundli_milan' || productId.includes('matchmaking')) ? 'block' : 'none';
+        partnerGroup.style.display = (productId === 'report_kundli_milan' || productId.includes('matchmaking') || productId.includes('relationship')) ? 'block' : 'none';
       }
 
-      // Populate Profiles
+      // 1. Populate Subject Profiles
       const sel = document.getElementById('builder-profile-select');
       const partnerSel = document.getElementById('builder-partner-select');
       if (sel) {
@@ -11330,9 +11545,10 @@
         if (currentCalculatedChart && currentCalculatedChart.name) {
           sel.innerHTML += `<option value="current_chart" selected>${currentCalculatedChart.name} (Active Chart: ${currentCalculatedChart.dob})</option>`;
         }
-        if (typeof currentUserProfiles !== 'undefined' && Array.isArray(currentUserProfiles)) {
-          currentUserProfiles.forEach(p => {
-            sel.innerHTML += `<option value="${p.id}">${p.profileName} (${p.dateOfBirth ? p.dateOfBirth.split('T')[0] : ''})</option>`;
+        if (savedUserProfiles && Array.isArray(savedUserProfiles) && savedUserProfiles.length > 0) {
+          savedUserProfiles.forEach(p => {
+            const isSel = (!currentCalculatedChart || !currentCalculatedChart.name) && sel.options.length === 0;
+            sel.innerHTML += `<option value="${p.id}" ${isSel ? 'selected' : ''}>${p.name} (${p.rel || 'Self'} • ${p.dob || ''})</option>`;
           });
         }
         if (sel.options.length === 0) {
@@ -11340,13 +11556,37 @@
         }
       }
 
-      if (partnerSel && typeof currentUserProfiles !== 'undefined' && Array.isArray(currentUserProfiles)) {
-        partnerSel.innerHTML = currentUserProfiles.map(p =>
-          `<option value="${p.id}">${p.profileName} (${p.relationship || 'Partner'})</option>`
-        ).join('');
+      // Partner profile (for Kundli Milan)
+      if (partnerSel) {
+        partnerSel.innerHTML = '';
+        if (savedUserProfiles && Array.isArray(savedUserProfiles) && savedUserProfiles.length > 0) {
+          partnerSel.innerHTML = savedUserProfiles.map(p =>
+            `<option value="${p.id}">${p.name} (${p.rel || 'Partner'})</option>`
+          ).join('');
+        }
         if (partnerSel.options.length === 0) {
           partnerSel.innerHTML = '<option value="default_partner">Partner Profile</option>';
         }
+      }
+
+      // 2. Populate Step 2: Included Chapters Checkboxes
+      const chapContainer = document.getElementById('builder-chapters-container');
+      if (chapContainer) {
+        const sections = activeBuilderProduct.includedSections || [
+          'Lagna & Ascendant Analysis', 'D9 Navamsha & Soul Purpose', 'Ashtakavarga Strength Matrix',
+          'Vimshottari Dasha Horizons', 'Vedic Remedial Protocol'
+        ];
+        chapContainer.innerHTML = sections.map(sec => `
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #334155; cursor: pointer;">
+            <input type="checkbox" name="builder_chapter_cb" value="${sec}" checked>
+            <span><i class="fa-solid fa-check" style="color: #059669; font-size: 11px;"></i> ${sec.replace(/_/g, ' ')}</span>
+          </label>
+        `).join('');
+      }
+
+      onBuilderProfileChanged();
+      if (partnerGroup && partnerGroup.style.display !== 'none') {
+        onBuilderPartnerChanged();
       }
 
       updateBuilderPriceEstimate();
@@ -11356,6 +11596,97 @@
     function closeReportBuilderModal() {
       const modal = document.getElementById('modal-report-builder');
       if (modal) modal.style.display = 'none';
+    }
+
+    function onBuilderProfileChanged() {
+      const sel = document.getElementById('builder-profile-select');
+      const preview = document.getElementById('builder-profile-preview');
+      if (!sel || !preview) return;
+
+      const val = sel.value;
+      let p = null;
+      if (val === 'current_chart') {
+        p = currentCalculatedChart ? {
+          name: currentCalculatedChart.name,
+          rel: 'Active Chart',
+          dob: currentCalculatedChart.dob,
+          tob: currentCalculatedChart.tob,
+          city: currentCalculatedChart.city,
+          lat: currentCalculatedChart.lat,
+          lon: currentCalculatedChart.lon,
+          isApproximate: currentCalculatedChart.isUnknownTime
+        } : null;
+      } else {
+        p = (savedUserProfiles || []).find(x => String(x.id) === String(val));
+      }
+
+      if (p) {
+        preview.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong><i class="fa-solid fa-user-check" style="color: #059669;"></i> ${escapeHtml(p.name || 'Seeker')}</strong>
+            <span style="font-size: 11px; background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">${escapeHtml(p.rel || 'Self')}</span>
+          </div>
+          <div style="font-size: 11.5px; color: #64748B; line-height: 1.4;">
+            <span>DOB: <strong>${p.dob || '--'}</strong> ${p.tob ? '• TOB: <strong>' + p.tob + '</strong>' : ''}</span><br>
+            <span>Birthplace: <strong>${escapeHtml(p.city || 'Coordinates Provided')}</strong></span> &bull; 
+            <span>Geo: Lat <strong>${Number(p.lat || 28.61).toFixed(2)}°</strong>, Lon <strong>${Number(p.lon || 77.20).toFixed(2)}°</strong></span>
+            ${p.isApproximate ? '<br><span style="color:#D97706; font-size:10.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Approximate/Solar time used</span>' : ''}
+          </div>
+        `;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+
+      updateBuilderPriceEstimate();
+    }
+
+    function onBuilderPartnerChanged() {
+      const sel = document.getElementById('builder-partner-select');
+      const preview = document.getElementById('builder-partner-preview');
+      if (!sel || !preview) return;
+
+      const p = (savedUserProfiles || []).find(x => String(x.id) === String(sel.value));
+      if (p) {
+        preview.innerHTML = `
+          <div style="font-weight: 700; color: #9D174D;"><i class="fa-solid fa-heart"></i> Partner: ${escapeHtml(p.name)} (${escapeHtml(p.rel || 'Partner')})</div>
+          <div style="font-size: 11px; color: #831843;">DOB: ${p.dob} ${p.tob ? '• TOB: ' + p.tob : ''} • ${escapeHtml(p.city || '')}</div>
+        `;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    }
+
+    function promptRechargeForReport() {
+      if (!activeBuilderProduct) return;
+      const basePaise = activeBuilderProduct.pricePaise || 0;
+      const discountPercent = currentUserEntitlements?.reportDiscountPercent || 0;
+      const finalPaise = basePaise - Math.round((basePaise * discountPercent) / 100);
+      const finalRupees = finalPaise / 100;
+      const deficit = Math.max(0, finalRupees - currentWalletBalance);
+
+      window.pendingReportOrder = {
+        productId: activeBuilderProduct.productId,
+        profileId: document.getElementById('builder-profile-select')?.value,
+        partnerProfileId: document.getElementById('builder-partner-select')?.value,
+        focus: document.getElementById('builder-focus-select')?.value,
+        depth: document.getElementById('builder-depth-select')?.value,
+        lang: document.getElementById('builder-lang-select')?.value
+      };
+
+      closeReportBuilderModal();
+      openWalletModal();
+      if (deficit <= 100) {
+        selectWalletRechargePack(100, 0);
+      } else if (deficit <= 250) {
+        selectWalletRechargePack(250, 25);
+      } else if (deficit <= 500) {
+        selectWalletRechargePack(500, 75);
+      } else {
+        selectWalletRechargePack(1000, 200);
+      }
+      showToast(`Please top up ₹${deficit.toFixed(2)} to complete your report order.`, "info");
     }
 
     function updateBuilderPriceEstimate() {
@@ -11372,12 +11703,31 @@
       const discEl = document.getElementById('builder-disp-discount');
       const finalEl = document.getElementById('builder-disp-final-price');
       const walEl = document.getElementById('builder-disp-wallet-bal');
+      const insuffBox = document.getElementById('builder-insufficient-bal-box');
+      const insuffText = document.getElementById('builder-insufficient-text');
 
       if (baseEl) baseEl.textContent = `₹${baseRupees}`;
       if (discRow) discRow.style.display = discountPercent > 0 ? 'flex' : 'none';
       if (discEl) discEl.textContent = `-₹${(discountPaise / 100).toFixed(2)} (${discountPercent}%)`;
       if (finalEl) finalEl.textContent = `₹${finalRupees}`;
       if (walEl) walEl.textContent = `₹${currentWalletBalance.toFixed(2)}`;
+
+      const payRadios = document.getElementsByName('builder_pay_method');
+      let method = 'WALLET';
+      for (const r of payRadios) {
+        if (r.checked) method = r.value;
+      }
+
+      if (insuffBox) {
+        if (method === 'WALLET' && Number(finalRupees) > currentWalletBalance && finalPaise > 0) {
+          insuffBox.style.display = 'block';
+          if (insuffText) {
+            insuffText.textContent = `Insufficient wallet balance (₹${currentWalletBalance.toFixed(2)}). Need ₹${finalRupees}.`;
+          }
+        } else {
+          insuffBox.style.display = 'none';
+        }
+      }
 
       const payBtn = document.getElementById('btn-builder-generate');
       if (payBtn) {
@@ -11390,13 +11740,17 @@
     }
 
     function updateBuilderPaymentUI() {
-      // Handles payment toggle radio buttons
+      updateBuilderPriceEstimate();
     }
 
     async function executeGenerateReport() {
       const token = currentSessionToken || localStorage.getItem('astro_session_token');
       if (!token) {
         showToast("Please sign in to order personalized reports.", "info");
+        window.pendingActionAfterAuth = {
+          type: 'report_order',
+          productId: activeBuilderProduct ? activeBuilderProduct.productId : 'report_janam_kundli_deep_dive'
+        };
         closeReportBuilderModal();
         openAuthModal('otp');
         return;
@@ -11405,7 +11759,7 @@
       if (!activeBuilderProduct) return;
 
       const profileSel = document.getElementById('builder-profile-select');
-      const profileId = profileSel?.value || 'default';
+      let profileId = profileSel?.value || 'default';
       const partnerId = document.getElementById('builder-partner-select')?.value || null;
       const focus = document.getElementById('builder-focus-select')?.value || 'holistic';
       const depth = document.getElementById('builder-depth-select')?.value || 'advanced';
@@ -11424,20 +11778,45 @@
 
       if (method === 'WALLET' && finalRupees > currentWalletBalance && finalPaise > 0) {
         showToast(`Insufficient wallet balance (₹${currentWalletBalance.toFixed(2)}). Need ₹${finalRupees.toFixed(2)}.`, "error");
-        openWalletModal();
+        promptRechargeForReport();
         return;
+      }
+
+      // Prepare profile payload
+      let resolvedProfileId = profileId;
+      let profileData = null;
+
+      if (profileId === 'current_chart') {
+        if (savedUserProfiles && savedUserProfiles.length > 0) {
+          resolvedProfileId = savedUserProfiles[0].id;
+        } else if (currentCalculatedChart) {
+          profileData = {
+            profileName: currentCalculatedChart.name || 'Primary Seeker',
+            relationship: 'Self',
+            dateOfBirth: currentCalculatedChart.dob,
+            timeOfBirth: currentCalculatedChart.tob || '12:00',
+            birthplaceName: currentCalculatedChart.city || 'New Delhi, India',
+            latitude: currentCalculatedChart.lat || 28.6139,
+            longitude: currentCalculatedChart.lon || 77.2090,
+            resolvedTimezone: currentCalculatedChart.timezone || 'Asia/Kolkata'
+          };
+        }
+      } else if (profileId === 'default') {
+        if (savedUserProfiles && savedUserProfiles.length > 0) {
+          resolvedProfileId = savedUserProfiles[0].id;
+        }
       }
 
       try {
         showToast("Generating personalized astrological publication...", "info");
 
-        // If paying via wallet or free report:
         const orderRes = await fetch(`${getAuthBase()}/api/reports/order`, {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
             productId: activeBuilderProduct.productId,
-            profileId: (profileId === 'current_chart' && typeof currentUserProfiles !== 'undefined' && currentUserProfiles[0]) ? currentUserProfiles[0].id : profileId,
+            profileId: resolvedProfileId,
+            profileData: profileData,
             partnerProfileId: partnerId,
             paymentMethod: method,
             options: {
@@ -11448,9 +11827,22 @@
           })
         });
 
+        if (!orderRes.ok) {
+          const errData = await orderRes.json().catch(() => ({}));
+          if (orderRes.status === 401) {
+            handleAuthExpired({
+              type: 'report_order',
+              productId: activeBuilderProduct.productId
+            });
+            return;
+          }
+          showToast(errData.message || "Report generation failed. Please verify your chart details.", "error");
+          return;
+        }
+
         const orderData = await orderRes.json();
 
-        if (orderRes.ok && orderData.document) {
+        if (orderData.document) {
           if (orderData.paidVia === 'WALLET') {
             currentWalletBalance = Math.max(0, currentWalletBalance - finalRupees);
             localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
@@ -11460,8 +11852,7 @@
           closeReportStoreModal();
           showToast("🎉 Report compiled successfully! Opening private reader...", "success");
           openReportReaderModal(orderData.document);
-        } else if (orderRes.ok && orderData.orderId && method === 'RAZORPAY') {
-          // Razorpay gateway flow
+        } else if (orderData.orderId && method === 'RAZORPAY') {
           if (typeof Razorpay !== 'undefined') {
             const rzpOptions = {
               key: orderData.keyId || "rzp_test_placeholder",
@@ -11471,7 +11862,7 @@
               description: activeBuilderProduct.displayName,
               order_id: orderData.orderId,
               handler: async function (response) {
-                await verifyReportPayment(orderData.orderId, response.razorpay_payment_id, response.razorpay_signature);
+                await verifyReportPayment(orderData.orderId, response.razorpay_payment_id, response.razorpay_signature, resolvedProfileId, profileData);
               },
               prefill: {
                 name: currentUserSession?.name || "Astro Seeker",
@@ -11483,11 +11874,10 @@
             const rzpInstance = new Razorpay(rzpOptions);
             rzpInstance.open();
           } else {
-            // Direct preview bypass
-            await verifyReportPayment(orderData.orderId, `pay_rep_${Date.now()}`, "sig_preview_bypass");
+            await verifyReportPayment(orderData.orderId, `pay_rep_${Date.now()}`, "sig_preview_bypass", resolvedProfileId, profileData);
           }
         } else {
-          showToast(orderData.message || "Report generation failed. Please verify your chart details.", "error");
+          showToast(orderData.message || "Report generation failed.", "error");
         }
       } catch (err) {
         console.error("Report order error:", err);
@@ -11495,7 +11885,7 @@
       }
     }
 
-    async function verifyReportPayment(orderId, paymentId, signature) {
+    async function verifyReportPayment(orderId, paymentId, signature, resolvedProfileId = null, profileData = null) {
       try {
         const verifyRes = await fetch(`${getAuthBase()}/api/reports/verify-and-generate`, {
           method: 'POST',
@@ -11505,7 +11895,8 @@
             paymentId,
             signature,
             productId: activeBuilderProduct.productId,
-            profileId: document.getElementById('builder-profile-select')?.value || 'default',
+            profileId: resolvedProfileId || document.getElementById('builder-profile-select')?.value || 'default',
+            profileData: profileData,
             partnerProfileId: document.getElementById('builder-partner-select')?.value || null,
             options: {
               technicalDepth: document.getElementById('builder-depth-select')?.value || 'advanced',
@@ -11514,8 +11905,21 @@
           })
         });
 
+        if (!verifyRes.ok) {
+          const errData = await verifyRes.json().catch(() => ({}));
+          if (verifyRes.status === 401) {
+            handleAuthExpired({
+              type: 'report_order',
+              productId: activeBuilderProduct.productId
+            });
+            return;
+          }
+          showToast(errData.message || "Payment verification failed.", "error");
+          return;
+        }
+
         const data = await verifyRes.json();
-        if (verifyRes.ok && data.document) {
+        if (data.document) {
           closeReportBuilderModal();
           closeReportStoreModal();
           showToast("🎉 Payment verified and publication compiled! Opening reader...", "success");
@@ -11580,12 +11984,17 @@
         (doc.sections || []).forEach(sec => {
           contentHtml += `
             <div class="reader-chapter-card" id="${sec.sectionId}">
-              <div class="reader-chapter-title">
-                <i class="fa-solid ${sec.icon || 'fa-scroll'}" style="color: #F59E0B;"></i>
-                <span>${sec.title}</span>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div class="reader-chapter-title" style="margin: 0;">
+                  <i class="fa-solid ${sec.icon || 'fa-scroll'}" style="color: #F59E0B;"></i>
+                  <span>${sec.title}</span>
+                </div>
+                <button class="btn-voice-listen" onclick="toggleChapterVoiceNarration('${sec.sectionId}', this)" title="Listen to this chapter in audio">
+                  <i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">${currentLanguage === 'hi' ? 'आवाज में सुनें' : 'Listen'}</span>
+                </button>
               </div>
               <div class="reader-chapter-sub">${sec.subtitle || ''}</div>
-              <div style="line-height: 1.7; color: #CBD5E1;">
+              <div class="reader-chapter-prose-text" style="line-height: 1.7; color: #CBD5E1;">
                 ${renderSafeMarkdown(sec.contentMarkdown || '')}
               </div>
             </div>
@@ -11644,6 +12053,9 @@
     function closeReportReaderModal() {
       const modal = document.getElementById('modal-report-reader');
       if (modal) modal.style.display = 'none';
+      if (AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
+        AstroVerseVoiceEngine.stop();
+      }
     }
 
     function navigateReaderChapter(sectionId) {
@@ -11653,6 +12065,626 @@
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
+
+    // ==============================================================================
+    // PDF GENERATION & EXPORT ENGINE
+    // ==============================================================================
+
+    function triggerReaderPdfDownload() {
+      if (!activeReaderDoc) return;
+      const isAllowed = activeReaderDoc.productId === 'report_basic_chart_summary' || 
+                        activeReaderDoc.allowPdfDownload === true || 
+                        Boolean(currentUserEntitlements?.allowsReportPdfDownload) || 
+                        (currentUserSession && currentUserSession.role === 'SUPER_ADMIN');
+
+      if (!isAllowed) {
+        showToast("📄 PDF Download is an exclusive Premium privilege. You can read your full report anytime in this reader!", "info");
+        openPricingPlansModal();
+        return;
+      }
+
+      generateAndDownloadReportPdf(activeReaderDoc);
+    }
+
+    function downloadKundliBasicPdf() {
+      if (!currentCalculatedChart) {
+        showToast("Please calculate a birth chart first.", "error");
+        return;
+      }
+      generateAndDownloadReportPdf(currentCalculatedChart, `${currentCalculatedChart.name || 'Seeker'} - Janam Kundli Summary`);
+    }
+
+    function generateSvgKundliDiamondPdf(d1) {
+      if (!d1 || !d1.lagna) {
+        return `<div style="text-align:center; padding: 20px; color:#64748B;">Chart coordinates calculated</div>`;
+      }
+      const lagnaSign = d1.lagna.sign;
+      const lIdx = signsList.indexOf(lagnaSign);
+      const signs = [];
+      for (let h = 1; h <= 12; h++) {
+        signs[h] = ((lIdx + (h - 1)) % 12) + 1;
+      }
+      const housePlanets = {};
+      for (let h = 1; h <= 12; h++) housePlanets[h] = [];
+      if (d1.planets) {
+        for (const [pName, pData] of Object.entries(d1.planets)) {
+          if (housePlanets[pData.house]) {
+            housePlanets[pData.house].push(pName.substring(0, 2));
+          }
+        }
+      }
+
+      return `
+        <svg width="280" height="280" viewBox="0 0 280 280" style="background:#FFFDF8; border: 2px solid #881337; border-radius: 4px;">
+          <!-- Outer boundary -->
+          <rect x="0" y="0" width="280" height="280" fill="none" stroke="#881337" stroke-width="2"/>
+          <!-- Diagonal crosses -->
+          <line x1="0" y1="0" x2="280" y2="280" stroke="#881337" stroke-width="1.5"/>
+          <line x1="280" y1="0" x2="0" y2="280" stroke="#881337" stroke-width="1.5"/>
+          <!-- Inner diamond -->
+          <polygon points="140,0 280,140 140,280 0,140" fill="none" stroke="#881337" stroke-width="1.5"/>
+
+          <!-- House 1 (Top Center) -->
+          <text x="140" y="90" text-anchor="middle" font-size="11" font-weight="700" fill="#B45309">${signs[1]}</text>
+          <text x="140" y="110" text-anchor="middle" font-size="10" font-weight="700" fill="#1E1B4B">${housePlanets[1].join(' ')}</text>
+
+          <!-- House 2 (Top Left) -->
+          <text x="80" y="45" text-anchor="middle" font-size="10" font-weight="700" fill="#B45309">${signs[2]}</text>
+          <text x="70" y="65" text-anchor="middle" font-size="9" font-weight="700" fill="#1E1B4B">${housePlanets[2].join(' ')}</text>
+
+          <!-- House 3 (Left Top) -->
+          <text x="45" y="80" text-anchor="middle" font-size="10" font-weight="700" fill="#B45309">${signs[3]}</text>
+          <text x="45" y="100" text-anchor="middle" font-size="9" font-weight="700" fill="#1E1B4B">${housePlanets[3].join(' ')}</text>
+
+          <!-- House 4 (Center Left) -->
+          <text x="90" y="140" text-anchor="middle" font-size="11" font-weight="700" fill="#B45309">${signs[4]}</text>
+          <text x="90" y="160" text-anchor="middle" font-size="10" font-weight="700" fill="#1E1B4B">${housePlanets[4].join(' ')}</text>
+
+          <!-- House 5 (Left Bottom) -->
+          <text x="45" y="200" text-anchor="middle" font-size="10" font-weight="700" fill="#B45309">${signs[5]}</text>
+          <text x="45" y="220" text-anchor="middle" font-size="9" font-weight="700" fill="#1E1B4B">${housePlanets[5].join(' ')}</text>
+
+          <!-- House 6 (Bottom Left) -->
+          <text x="80" y="240" text-anchor="middle" font-size="10" font-weight="700" fill="#B45309">${signs[6]}</text>
+          <text x="70" y="255" text-anchor="middle" font-size="9" font-weight="700" fill="#1E1B4B">${housePlanets[6].join(' ')}</text>
+
+          <!-- House 7 (Bottom Center) -->
+          <text x="140" y="195" text-anchor="middle" font-size="11" font-weight="700" fill="#B45309">${signs[7]}</text>
+          <text x="140" y="215" text-anchor="middle" font-size="10" font-weight="700" fill="#1E1B4B">${housePlanets[7].join(' ')}</text>
+
+          <!-- House 8 (Bottom Right) -->
+          <text x="200" y="240" text-anchor="middle" font-size="10" font-weight="700" fill="#B45309">${signs[8]}</text>
+          <text x="210" y="255" text-anchor="middle" font-size="9" font-weight="700" fill="#1E1B4B">${housePlanets[8].join(' ')}</text>
+
+          <!-- House 9 (Right Bottom) -->
+          <text x="235" y="200" text-anchor="middle" font-size="10" font-weight="700" fill="#B45309">${signs[9]}</text>
+          <text x="235" y="220" text-anchor="middle" font-size="9" font-weight="700" fill="#1E1B4B">${housePlanets[9].join(' ')}</text>
+
+          <!-- House 10 (Center Right) -->
+          <text x="190" y="140" text-anchor="middle" font-size="11" font-weight="700" fill="#B45309">${signs[10]}</text>
+          <text x="190" y="160" text-anchor="middle" font-size="10" font-weight="700" fill="#1E1B4B">${housePlanets[10].join(' ')}</text>
+
+          <!-- House 11 (Right Top) -->
+          <text x="235" y="80" text-anchor="middle" font-size="10" font-weight="700" fill="#B45309">${signs[11]}</text>
+          <text x="235" y="100" text-anchor="middle" font-size="9" font-weight="700" fill="#1E1B4B">${housePlanets[11].join(' ')}</text>
+
+          <!-- House 12 (Top Right) -->
+          <text x="200" y="45" text-anchor="middle" font-size="10" font-weight="700" fill="#B45309">${signs[12]}</text>
+          <text x="210" y="65" text-anchor="middle" font-size="9" font-weight="700" fill="#1E1B4B">${housePlanets[12].join(' ')}</text>
+        </svg>
+      `;
+    }
+
+    async function generateAndDownloadReportPdf(docOrChart, customTitle = null) {
+      showToast("Rendering publication into printable high-resolution PDF...", "info");
+
+      let isDoc = docOrChart && docOrChart.sections && Array.isArray(docOrChart.sections);
+      let title = customTitle || (isDoc ? docOrChart.productName : "Janam Kundli Basic Summary Report");
+      let nativeName = isDoc ? (docOrChart.profileName || docOrChart.watermark?.ownerName || 'Seeker') : (docOrChart?.name || 'Seeker');
+      let dob = isDoc ? (docOrChart.birthCoordinates?.dob || '') : (docOrChart?.dob || '');
+      let tob = isDoc ? (docOrChart.birthCoordinates?.tob || '') : (docOrChart?.tob || '');
+      let place = isDoc ? (docOrChart.birthCoordinates?.place || '') : (docOrChart?.city || 'India');
+      let lat = isDoc ? docOrChart.birthCoordinates?.lat : docOrChart?.lat;
+      let lon = isDoc ? docOrChart.birthCoordinates?.lon : docOrChart?.lon;
+      let tz = isDoc ? docOrChart.birthCoordinates?.timezone : docOrChart?.timezone;
+      let hash = isDoc ? (docOrChart.watermark?.documentVerificationHash || `AUTH-${Date.now()}`) : `AUTH-KUNDLI-${Date.now()}`;
+      let ayanamsha = isDoc ? (docOrChart.calculationSettings?.ayanamsha || 'Nirayana Lahiri (Chitra Paksha)') : 'Nirayana Lahiri (Chitra Paksha)';
+
+      let container = document.getElementById('astroverse-pdf-document-template');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'astroverse-pdf-document-template';
+        document.body.appendChild(container);
+      }
+      container.innerHTML = '';
+
+      // 1. COVER PAGE
+      const coverPage = document.createElement('div');
+      coverPage.className = 'pdf-a4-page pdf-cover-page';
+      coverPage.innerHTML = `
+        <div style="text-align: center; border-bottom: 2px solid #881337; padding-bottom: 16px;">
+          <div style="font-size: 26px; font-weight: 800; color: #881337; letter-spacing: 2px; text-transform: uppercase;">ASTROVERSE</div>
+          <div style="font-size: 11px; letter-spacing: 1px; color: #B45309; font-weight: 700; text-transform: uppercase;">Classical Parashari Vedic Astrology &amp; Computational Ephemeris</div>
+        </div>
+
+        <div style="text-align: center; margin: 40px 0;">
+          <div style="width: 70px; height: 70px; margin: 0 auto 16px; border-radius: 50%; border: 2px solid #F59E0B; background: #FFFDF8; display: flex; align-items: center; justify-content: center; font-size: 32px; color: #881337;">
+            🕉
+          </div>
+          <h1 style="font-size: 24px; font-weight: 800; color: #1E1B4B; margin: 0 0 8px; font-family: 'Cinzel', serif;">${escapeHtml(title)}</h1>
+          <div style="font-size: 13px; color: #64748B; font-weight: 600;">Personalized Life Blueprint &amp; Astronomical Planetary Coordinates</div>
+        </div>
+
+        <div style="background: rgba(254, 243, 199, 0.4); border: 1px solid #FCD34D; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+          <div style="font-size: 11px; font-weight: 800; color: #92400E; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Native Birth Particulars &amp; Planetary Epoch</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px;">
+            <div><strong>Native Name:</strong> ${escapeHtml(nativeName)}</div>
+            <div><strong>Date of Birth:</strong> ${escapeHtml(dob)}</div>
+            <div><strong>Time of Birth:</strong> ${escapeHtml(tob)} (24-Hour)</div>
+            <div><strong>Birthplace:</strong> ${escapeHtml(place)}</div>
+            <div><strong>Geo Coordinates:</strong> Lat ${lat || '28.61'}, Lon ${lon || '77.20'}</div>
+            <div><strong>Calculation Ayanamsha:</strong> ${escapeHtml(ayanamsha)}</div>
+            <div><strong>Timezone:</strong> ${escapeHtml(tz || 'Asia/Kolkata')}</div>
+            <div><strong>Ephemeris Engine:</strong> Swiss Ephemeris 2.10.03</div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px dashed #CBD5E1; padding-top: 16px; display: flex; justify-content: space-between; font-size: 10.5px; color: #64748B;">
+          <div>Verification Hash: <code>${hash}</code></div>
+          <div>Confidential &bull; AstroVerse Digital Archive</div>
+        </div>
+      `;
+      container.appendChild(coverPage);
+
+      // 2. PAGE 2: CHARTS & PLANETARY TABLE
+      const chartPage = document.createElement('div');
+      chartPage.className = 'pdf-a4-page';
+
+      const chartData = (isDoc && docOrChart.chartSnippet) || currentCalculatedChart?.fullData;
+      const d1 = chartData?.d1_rashi_chart;
+      let planetsRows = '';
+      if (d1 && d1.planets) {
+        for (const [pName, pData] of Object.entries(d1.planets)) {
+          planetsRows += `
+            <tr style="border-bottom: 1px solid #E2E8F0; font-size: 11px;">
+              <td style="padding: 6px 8px; font-weight: 700; color: #881337;">${pName}</td>
+              <td style="padding: 6px 8px;">${pData.sign}</td>
+              <td style="padding: 6px 8px;">${pData.degree ? pData.degree.toFixed(2) + '°' : '--'}</td>
+              <td style="padding: 6px 8px;">${pData.nakshatra || '--'} (${pData.pada || 1})</td>
+              <td style="padding: 6px 8px;">House ${pData.house || '--'}</td>
+              <td style="padding: 6px 8px; font-size: 10px; color: ${pData.is_retrograde ? '#DC2626' : '#059669'}; font-weight: 700;">${pData.is_retrograde ? 'Retrograde (R)' : 'Direct'}</td>
+            </tr>
+          `;
+        }
+      }
+
+      const svgChartHtml = generateSvgKundliDiamondPdf(d1);
+
+      chartPage.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 16px; font-size: 10.5px; color: #64748B;">
+          <span>AstroVerse &bull; ${escapeHtml(title)}</span>
+          <span>Native: ${escapeHtml(nativeName)}</span>
+        </div>
+
+        <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 0 0 12px;">1. Classical Nirayana Rashi Kundli (D1)</h2>
+        <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+          ${svgChartHtml}
+        </div>
+
+        <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 16px 0 10px;">2. Sidereal Planetary Ephemeris Positions</h2>
+        <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 20px;">
+          <thead>
+            <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1; font-size: 11px; color: #475569;">
+              <th style="padding: 8px;">Planet</th>
+              <th style="padding: 8px;">Rashi (Sign)</th>
+              <th style="padding: 8px;">Longitude</th>
+              <th style="padding: 8px;">Nakshatra</th>
+              <th style="padding: 8px;">Bhava</th>
+              <th style="padding: 8px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${planetsRows}
+          </tbody>
+        </table>
+
+        <div style="position: absolute; bottom: 15mm; left: 15mm; right: 15mm; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+          <span>Nirayana Chitra Paksha Lahiri Ayanamsha</span>
+          <span>Page 2</span>
+        </div>
+      `;
+      container.appendChild(chartPage);
+
+      // 3. CHAPTER SECTIONS
+      if (isDoc && docOrChart.sections && docOrChart.sections.length > 0) {
+        let pageNum = 3;
+        docOrChart.sections.forEach((sec, idx) => {
+          const secPage = document.createElement('div');
+          secPage.className = 'pdf-a4-page';
+          secPage.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 16px; font-size: 10.5px; color: #64748B;">
+              <span>AstroVerse &bull; ${escapeHtml(title)}</span>
+              <span>Chapter ${sec.chapterNumber || idx + 1}</span>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+              <h2 style="font-size: 17px; font-weight: 800; color: #881337; margin: 0 0 4px;">${escapeHtml(sec.title)}</h2>
+              <div style="font-size: 12px; color: #64748B; font-weight: 600;">${escapeHtml(sec.subtitle || '')}</div>
+            </div>
+
+            <div style="font-size: 12px; line-height: 1.7; color: #334155; margin-bottom: 20px;">
+              ${renderSafeMarkdown(sec.contentMarkdown || '')}
+            </div>
+
+            ${sec.methodologyNote ? `
+              <div style="background: #F8FAFC; border-left: 3px solid #D97706; padding: 10px 14px; margin-top: 16px; font-size: 11px; color: #475569;">
+                <strong>Methodology &amp; Shastra Context:</strong> ${escapeHtml(sec.methodologyNote)}
+              </div>
+            ` : ''}
+
+            <div style="position: absolute; bottom: 15mm; left: 15mm; right: 15mm; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+              <span>Licensed exclusively to ${escapeHtml(nativeName)} (${hash.substring(0, 12)})</span>
+              <span>Page ${pageNum++}</span>
+            </div>
+          `;
+          container.appendChild(secPage);
+        });
+
+        // 12-Month Calendar
+        if (docOrChart.monthlyForecasts && docOrChart.monthlyForecasts.length > 0) {
+          const monthPage = document.createElement('div');
+          monthPage.className = 'pdf-a4-page';
+          let monthRows = '';
+          docOrChart.monthlyForecasts.forEach(m => {
+            monthRows += `
+              <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: #FFFDF8;">
+                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; color: #881337;">
+                  <span>${escapeHtml(m.monthName)}</span>
+                  <span style="font-size: 11px; color: #D97706;">${escapeHtml(m.activeDasha?.maha || '')} / ${escapeHtml(m.activeDasha?.antar || '')}</span>
+                </div>
+                <div style="font-size: 11px; color: #334155; margin: 3px 0;"><strong>Transit Highlight:</strong> ${escapeHtml(m.transitHighlights)}</div>
+                <div style="font-size: 11px; color: #475569;"><strong>Career &amp; Purpose:</strong> ${escapeHtml(m.careerGuidance)}</div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #E2E8F0;">
+                  <span style="color: #059669;"><strong>Favorable:</strong> ${(m.favorableDates || []).join(', ')}</span>
+                  <span style="color: #DC2626;"><strong>Caution:</strong> ${(m.cautionDates || []).join(', ')}</span>
+                </div>
+              </div>
+            `;
+          });
+
+          monthPage.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 16px; font-size: 10.5px; color: #64748B;">
+              <span>AstroVerse &bull; ${escapeHtml(title)}</span>
+              <span>Twelve-Month Timing Roadmap</span>
+            </div>
+            <h2 style="font-size: 17px; font-weight: 800; color: #881337; margin: 0 0 10px;">Twelve-Month Transit &amp; Dasha Calendar</h2>
+            <div>${monthRows}</div>
+            <div style="position: absolute; bottom: 15mm; left: 15mm; right: 15mm; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+              <span>Page ${pageNum++}</span>
+            </div>
+          `;
+          container.appendChild(monthPage);
+        }
+      }
+
+      if (typeof html2pdf !== 'undefined') {
+        try {
+          const opt = {
+            margin: 0,
+            filename: `${nativeName.replace(/[^a-zA-Z0-9]/g, '_')}_AstroVerse_Report.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+          };
+          await html2pdf().set(opt).from(container).save();
+          showToast("🎉 PDF downloaded successfully!", "success");
+        } catch (e) {
+          console.warn("html2pdf export failed, activating browser print fallback:", e);
+          window.print();
+        }
+      } else {
+        window.print();
+      }
+    }
+
+    // ==============================================================================
+    // WEB SPEECH NARRATION AUDIO ENGINE
+    // ==============================================================================
+
+    const AstroVerseVoiceEngine = {
+      currentUtterance: null,
+      activeButton: null,
+      isSpeaking: false,
+      voices: [],
+
+      init() {
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+        const populate = () => {
+          this.voices = window.speechSynthesis.getVoices() || [];
+        };
+        populate();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+          window.speechSynthesis.onvoiceschanged = populate;
+        }
+      },
+
+      getBestVoice(lang = 'en') {
+        if (!this.voices || this.voices.length === 0) {
+          this.voices = window.speechSynthesis.getVoices() || [];
+        }
+        const isHindi = lang === 'hi' || currentLanguage === 'hi';
+        if (isHindi) {
+          const hiVoice = this.voices.find(v => v.lang && (v.lang.includes('hi') || v.lang.includes('hi-IN') || v.lang.includes('hi_IN')));
+          if (hiVoice) return hiVoice;
+        }
+        const enInVoice = this.voices.find(v => v.lang && (v.lang.includes('en-IN') || v.lang.includes('en_IN')));
+        if (enInVoice) return enInVoice;
+        const enVoice = this.voices.find(v => v.lang && v.lang.startsWith('en'));
+        return enVoice || this.voices[0] || null;
+      },
+
+      cleanTextForSpeech(raw) {
+        if (!raw) return '';
+        let text = raw.replace(/<[^>]*>/g, ' ');
+        text = text.replace(/[*_#`~[\]()]/g, ' ');
+        text = text.replace(/\s+/g, ' ').trim();
+        return text;
+      },
+
+      speakText(text, btnEl, lang = null) {
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+          showToast("Speech synthesis is not supported in this browser.", "info");
+          return;
+        }
+
+        if (this.isSpeaking && this.activeButton === btnEl) {
+          this.stop();
+          return;
+        }
+
+        if (this.isSpeaking) {
+          this.stop();
+        }
+
+        const clean = this.cleanTextForSpeech(text);
+        if (!clean) return;
+
+        const detectedLang = lang || (currentLanguage === 'hi' ? 'hi' : (clean.match(/[\u0900-\u097F]/) ? 'hi' : 'en'));
+        const voice = this.getBestVoice(detectedLang);
+
+        const sentences = clean.match(/[^.!?।\n]+[.!?।\n]+/g) || [clean];
+        const chunks = [];
+        let curChunk = '';
+        for (const s of sentences) {
+          if ((curChunk + s).length > 200) {
+            if (curChunk) chunks.push(curChunk.trim());
+            curChunk = s;
+          } else {
+            curChunk += ' ' + s;
+          }
+        }
+        if (curChunk.trim()) chunks.push(curChunk.trim());
+
+        this.isSpeaking = true;
+        this.activeButton = btnEl;
+        if (btnEl) {
+          btnEl.classList.add('speaking');
+          btnEl.innerHTML = `<span class="voice-wave-anim"><span class="voice-wave-bar"></span><span class="voice-wave-bar"></span><span class="voice-wave-bar"></span></span> ${detectedLang === 'hi' ? 'रोकें' : 'Stop'}`;
+        }
+
+        let chunkIndex = 0;
+        const playNext = () => {
+          if (!this.isSpeaking || chunkIndex >= chunks.length) {
+            this.stop();
+            return;
+          }
+          const u = new SpeechSynthesisUtterance(chunks[chunkIndex]);
+          if (voice) u.voice = voice;
+          u.rate = detectedLang === 'hi' ? 0.90 : 0.92;
+          u.pitch = 0.98;
+          u.volume = 1.0;
+          u.lang = detectedLang === 'hi' ? 'hi-IN' : 'en-IN';
+
+          u.onend = () => {
+            chunkIndex++;
+            playNext();
+          };
+          u.onerror = () => {
+            this.stop();
+          };
+          this.currentUtterance = u;
+          window.speechSynthesis.speak(u);
+        };
+
+        playNext();
+      },
+
+      stop() {
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+        this.isSpeaking = false;
+        if (this.activeButton) {
+          this.activeButton.classList.remove('speaking');
+          this.activeButton.innerHTML = `<i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">${currentLanguage === 'hi' ? 'आवाज में सुनें' : 'Listen'}</span>`;
+          this.activeButton = null;
+        }
+        this.currentUtterance = null;
+      }
+    };
+
+    function toggleKundliVoiceNarration(btnEl) {
+      if (!currentCalculatedChart) {
+        showToast("Please calculate a Kundli first.", "info");
+        return;
+      }
+      const c = currentCalculatedChart;
+      let text = '';
+      if (currentLanguage === 'hi') {
+        text = `जातक ${c.name} की जन्म कुंडली का सारांश। लग्न ${c.lagnaSign} है, चंद्र राशि ${c.moonSign} है, और जन्म नक्षत्र ${c.nakName} है। सूर्य ${c.sunSign} राशि में स्थित है। यह वैदिक कुंडली जीवन में निरंतर संकल्प, बौद्धिक सामर्थ्य और सफलता का संकेत देती है।`;
+      } else {
+        text = `Astrological overview for ${c.name}. Calculated Ascendant is ${c.lagnaSign}, Moon sign is ${c.moonSign} in ${c.nakName} Nakshatra, and Sun is in ${c.sunSign}. This celestial alignment indicates focused determination and steady progress across key life horizons.`;
+      }
+      AstroVerseVoiceEngine.speakText(text, btnEl);
+    }
+
+    function toggleMilanVoiceNarration(btnEl) {
+      const bigVal = document.getElementById('milan-big-val')?.innerText || '';
+      const verdict = document.getElementById('milan-verdict-banner')?.innerText || '';
+      const rec = document.getElementById('milan-recommendation-text')?.innerText || '';
+      let text = '';
+      if (currentLanguage === 'hi') {
+        text = `कुंडली मिलान परिणाम। कुल अष्टकूट गुण स्कोर छत्तीस में से ${bigVal} है। निर्णय: ${verdict}। विश्लेषण: ${rec}`;
+      } else {
+        text = `Kundli Milan Ashtakoota compatibility analysis. Total score is ${bigVal} out of thirty-six. Classical verdict: ${verdict}. Astrological assessment: ${rec}`;
+      }
+      AstroVerseVoiceEngine.speakText(text, btnEl);
+    }
+
+    function toggleChatVoiceNarration(msgId, btnEl) {
+      const wrap = document.querySelector(`[data-msg-id="${msgId}"]`);
+      if (!wrap) return;
+      const bubble = wrap.querySelector('.chat-bubble-agent');
+      if (!bubble) return;
+      const text = bubble.innerText;
+      AstroVerseVoiceEngine.speakText(text, btnEl);
+    }
+
+    function toggleChapterVoiceNarration(sectionId, btnEl) {
+      const card = document.getElementById(sectionId);
+      if (!card) return;
+      const title = card.querySelector('.reader-chapter-title')?.innerText || '';
+      const prose = card.querySelector('.reader-chapter-prose-text')?.innerText || '';
+      const fullText = `${title}. ${prose}`;
+      AstroVerseVoiceEngine.speakText(fullText, btnEl);
+    }
+
+    // ==============================================================================
+    // SITE-WIDE LOCALIZATION & INTERNATIONALIZATION (ENGLISH & HINDI)
+    // ==============================================================================
+    let currentLanguage = localStorage.getItem('astroverse_lang') || 'en';
+
+    const ASTROVERSE_I18N = {
+      en: {
+        nav_overview: 'Overview',
+        nav_kundli: 'My Kundli',
+        nav_horas: 'Today & Timing',
+        nav_matchmaking: 'Compatibility',
+        nav_astrologers: 'AI Astrologer',
+        nav_horoscope: 'Horoscope',
+        nav_tools: 'Tools Directory',
+        nav_reports: 'Reports Store',
+        nav_pricing: 'Plans & Pricing',
+        nav_dashboard: 'My Space',
+        pill_kundli: 'Free Janam Kundli',
+        pill_horas: '24-Hour Planetary Horas',
+        pill_matchmaking: '36-Guna Kundli Milan',
+        btn_calc_kundli: 'Calculate Vedic Kundli',
+        btn_calc_milan: 'Calculate Full Kundli Milan & 36 Gunas',
+        btn_customize: 'Customize',
+        btn_download_pdf: 'Download PDF',
+        btn_listen: 'Listen',
+        btn_stop: 'Stop',
+        btn_recharge: 'Recharge Wallet',
+        lang_switch_label: 'हिंदी'
+      },
+      hi: {
+        nav_overview: 'अवलोकन',
+        nav_kundli: 'मेरी कुंडली',
+        nav_horas: 'ग्रह होरा व मुहूर्त',
+        nav_matchmaking: 'कुंडली मिलान',
+        nav_astrologers: 'एआई ज्योतिषी',
+        nav_horoscope: 'राशिफल',
+        nav_tools: 'ज्योतिष उपकरण',
+        nav_reports: 'रिपोर्ट स्टोर',
+        nav_pricing: 'सदस्यता योजनाएं',
+        nav_dashboard: 'डैशबोर्ड',
+        pill_kundli: 'निःशुल्क जन्म कुंडली',
+        pill_horas: '24-घंटे ग्रह होरा',
+        pill_matchmaking: '36-गुण मिलान',
+        btn_calc_kundli: 'वैदिक कुंडली बनाएं',
+        btn_calc_milan: 'पूर्ण कुंडली मिलान व 36 गुण जांचें',
+        btn_customize: 'कस्टमाइज़ करें',
+        btn_download_pdf: 'पीडीएफ डाउनलोड करें',
+        btn_listen: 'आवाज में सुनें',
+        btn_stop: 'रोकें',
+        btn_recharge: 'वॉलेट रिचार्ज करें',
+        lang_switch_label: 'English'
+      }
+    };
+
+    function toggleAppLanguage() {
+      const next = currentLanguage === 'en' ? 'hi' : 'en';
+      setAppLanguage(next);
+    }
+
+    function setAppLanguage(lang) {
+      currentLanguage = lang;
+      localStorage.setItem('astroverse_lang', lang);
+      const dict = ASTROVERSE_I18N[lang] || ASTROVERSE_I18N.en;
+
+      // Update Header Toggle Button Label
+      const langLbl = document.getElementById('global-lang-label');
+      if (langLbl) {
+        langLbl.textContent = dict.lang_switch_label;
+      }
+
+      // Update Navigation Links
+      const btnNavOverview = document.getElementById('btn-nav-overview');
+      if (btnNavOverview) btnNavOverview.innerHTML = `<i class="fa-solid fa-house"></i> ${dict.nav_overview}`;
+      const btnNavKundli = document.getElementById('btn-nav-kundli');
+      if (btnNavKundli) btnNavKundli.innerHTML = `<i class="fa-solid fa-dharmachakra"></i> ${dict.nav_kundli}`;
+      const btnNavHoras = document.getElementById('btn-nav-horas');
+      if (btnNavHoras) btnNavHoras.innerHTML = `<i class="fa-solid fa-clock"></i> ${dict.nav_horas}`;
+      const btnNavMilan = document.getElementById('btn-nav-matchmaking');
+      if (btnNavMilan) btnNavMilan.innerHTML = `<i class="fa-solid fa-heart"></i> ${dict.nav_matchmaking}`;
+      const btnNavAstro = document.getElementById('btn-nav-astrologers');
+      if (btnNavAstro) btnNavAstro.innerHTML = `<i class="fa-solid fa-user-tie"></i> ${dict.nav_astrologers}`;
+      const btnNavHoroscope = document.getElementById('btn-nav-horoscope');
+      if (btnNavHoroscope) btnNavHoroscope.innerHTML = `<i class="fa-solid fa-star-and-crescent"></i> ${dict.nav_horoscope}`;
+      const btnNavTools = document.getElementById('btn-nav-tools');
+      if (btnNavTools) btnNavTools.innerHTML = `<i class="fa-solid fa-toolbox"></i> ${dict.nav_tools}`;
+      const btnNavReports = document.getElementById('btn-nav-reports');
+      if (btnNavReports) btnNavReports.innerHTML = `<i class="fa-solid fa-file-invoice"></i> ${dict.nav_reports}`;
+      const btnNavPricing = document.getElementById('btn-nav-pricing');
+      if (btnNavPricing) btnNavPricing.innerHTML = `<i class="fa-solid fa-crown"></i> ${dict.nav_pricing}`;
+      const btnNavDash = document.getElementById('btn-nav-dashboard');
+      if (btnNavDash) btnNavDash.innerHTML = `<i class="fa-solid fa-user-shield"></i> ${dict.nav_dashboard}`;
+
+      // Update Hero Pills
+      const pillKundli = document.getElementById('pill-kundli');
+      if (pillKundli) pillKundli.innerHTML = `<i class="fa-solid fa-dharmachakra"></i> ${dict.pill_kundli}`;
+      const pillHoras = document.getElementById('pill-horas');
+      if (pillHoras) pillHoras.innerHTML = `<i class="fa-solid fa-clock"></i> ${dict.pill_horas}`;
+      const pillMilan = document.getElementById('pill-matchmaking');
+      if (pillMilan) pillMilan.innerHTML = `<i class="fa-solid fa-heart"></i> ${dict.pill_matchmaking}`;
+
+      // Update Main Action Buttons
+      const btnKundli = document.getElementById('btn-generate-kundli');
+      if (btnKundli) btnKundli.innerHTML = `<i class="fa-solid fa-sparkles"></i> ${dict.btn_calc_kundli}`;
+      const btnMilan = document.getElementById('btn-calc-milan');
+      if (btnMilan) btnMilan.innerHTML = `<i class="fa-solid fa-heart"></i> ${dict.btn_calc_milan}`;
+
+      // Update Voice Listen Buttons
+      document.querySelectorAll('.btn-voice-listen:not(.speaking) .voice-btn-text').forEach(el => {
+        el.textContent = dict.btn_listen;
+      });
+
+      // Update Report Builder Language select if present
+      const bLang = document.getElementById('builder-lang-select');
+      if (bLang) bLang.value = lang;
+
+      showToast(lang === 'hi' ? 'भाषा बदलकर हिंदी कर दी गई है।' : 'Language switched to English.', 'info');
+    }
+
+    // Initialize engines on DOM ready
+    window.addEventListener('DOMContentLoaded', () => {
+      if (AstroVerseVoiceEngine) AstroVerseVoiceEngine.init();
+      if (currentLanguage === 'hi') {
+        setTimeout(() => setAppLanguage('hi'), 200);
+      }
+    });
 
 
     function selectGuidanceHorizon(horizon) {

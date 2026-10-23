@@ -2067,14 +2067,36 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
 
   try {
     // Verify birth profile exists and is owned by this user
-    const profile = await db.getProfileById(profileId);
-    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Selected birth profile not found.' });
+    let profile = await db.getProfileById(profileId);
+    if (!profile) {
+      if (req.body.profileData && typeof req.body.profileData === 'object') {
+        const pd = req.body.profileData;
+        profile = await db.createProfile({
+          userId: user.id,
+          profileName: pd.profileName || pd.name || user.displayName || 'Primary Profile',
+          relationship: pd.relationship || 'Self',
+          dateOfBirth: pd.dateOfBirth || pd.dob || '1995-01-01',
+          timeOfBirth: pd.timeOfBirth || pd.tob || '12:00',
+          birthplaceName: pd.birthplaceName || pd.city || 'New Delhi, India',
+          latitude: Number(pd.latitude || pd.lat || 28.6139),
+          longitude: Number(pd.longitude || pd.lon || 77.2090),
+          resolvedTimezone: pd.resolvedTimezone || pd.timezone || 'Asia/Kolkata'
+        });
+      } else {
+        const userProfiles = await db.getProfilesByUserId(user.id);
+        if (userProfiles && userProfiles.length > 0) {
+          profile = userProfiles[0];
+        } else {
+          return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Selected birth profile not found.' });
+        }
+      }
+    }
     if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
       return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's profile." });
     }
 
     let partnerProfile: any = null;
-    if (partnerProfileId) {
+    if (partnerProfileId && partnerProfileId !== 'default_partner' && partnerProfileId !== 'none') {
       partnerProfile = await db.getProfileById(partnerProfileId);
     }
 
@@ -2201,11 +2223,36 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
   }
 
   try {
-    const profile = await db.getProfileById(profileId);
-    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
+    let profile = await db.getProfileById(profileId);
+    if (!profile) {
+      if (req.body.profileData && typeof req.body.profileData === 'object') {
+        const pd = req.body.profileData;
+        profile = await db.createProfile({
+          userId: user.id,
+          profileName: pd.profileName || pd.name || user.displayName || 'Primary Profile',
+          relationship: pd.relationship || 'Self',
+          dateOfBirth: pd.dateOfBirth || pd.dob || '1995-01-01',
+          timeOfBirth: pd.timeOfBirth || pd.tob || '12:00',
+          birthplaceName: pd.birthplaceName || pd.city || 'New Delhi, India',
+          latitude: Number(pd.latitude || pd.lat || 28.6139),
+          longitude: Number(pd.longitude || pd.lon || 77.2090),
+          resolvedTimezone: pd.resolvedTimezone || pd.timezone || 'Asia/Kolkata'
+        });
+      } else {
+        const userProfiles = await db.getProfilesByUserId(user.id);
+        if (userProfiles && userProfiles.length > 0) {
+          profile = userProfiles[0];
+        } else {
+          return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
+        }
+      }
+    }
+    if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's profile." });
+    }
 
     let partnerProfile: any = null;
-    if (partnerProfileId) {
+    if (partnerProfileId && partnerProfileId !== 'default_partner' && partnerProfileId !== 'none') {
       partnerProfile = await db.getProfileById(partnerProfileId);
     }
 

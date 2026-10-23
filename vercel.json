@@ -75,6 +75,18 @@
       }
     },
     {
+      "source": "/api/subscriptions/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/entitlements/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/astrologers(.*)",
       "destination": {
         "service": "wallet-service"
