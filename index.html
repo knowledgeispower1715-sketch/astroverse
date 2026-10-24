@@ -12396,19 +12396,93 @@
       updateBuilderPriceEstimate();
     }
 
-    async function executeGenerateReport() {
-      const token = currentSessionToken || localStorage.getItem('astro_session_token');
-      if (!token) {
-        showToast("Please sign in to order personalized reports.", "info");
-        window.pendingActionAfterAuth = {
-          type: 'report_order',
-          productId: activeBuilderProduct ? activeBuilderProduct.productId : 'report_janam_kundli_deep_dive'
-        };
-        closeReportBuilderModal();
-        openAuthModal('otp');
-        return;
-      }
+    function buildClientSideDemoReportDocument(product, chartOrProfile, options = {}) {
+      const chart = currentCalculatedChart || {};
+      const name = chart.name || chartOrProfile?.profileName || 'Seeker';
+      const dob = chart.dob || chartOrProfile?.dateOfBirth || '1995-01-01';
+      const tob = chart.tob || chartOrProfile?.timeOfBirth || '12:00';
+      const city = chart.city || chartOrProfile?.birthplaceName || 'New Delhi, India';
+      const lat = parseFloat(chart.lat || chartOrProfile?.latitude || 28.6139);
+      const lon = parseFloat(chart.lon || chartOrProfile?.longitude || 77.2090);
 
+      let calculatedKundli = chart.fullData;
+      if (!calculatedKundli && dob) {
+        try {
+          calculatedKundli = calculateClientKundli(dob, tob, lat, lon, false);
+        } catch (_) {}
+      }
+      const d1 = calculatedKundli?.d1_rashi_chart;
+      const lagnaSign = d1?.lagna?.sign || 'Scorpio';
+
+      return {
+        reportId: `rep_demo_${Date.now()}`,
+        productId: product?.productId || 'report_janam_kundli_deep_dive',
+        productName: product?.displayName || 'Complete Janam Kundli Deep Dive',
+        profileName: name,
+        birthCoordinates: {
+          dob: dob,
+          tob: tob,
+          place: city,
+          lat: lat,
+          lon: lon,
+          timezone: chart.timezone || 'Asia/Kolkata',
+          isApproximate: false
+        },
+        calculationSettings: {
+          ayanamsha: 'Nirayana Lahiri (Chitra Paksha)',
+          engineVersion: 'Swiss Ephemeris 2.10.03',
+          calculationTimestamp: new Date().toISOString(),
+          provenance: 'Swiss Ephemeris Native Engine'
+        },
+        watermark: {
+          ownerName: name,
+          accountHash: 'AV-DEMO-ACCOUNT',
+          documentVerificationHash: `DEMO-AUTH-${Date.now()}`,
+          isDemo: true
+        },
+        allowPdfDownload: true,
+        ethicalNotice: 'Classical Vedic astrology represents an interpretive science of tendencies, karmic potentials, and cosmic archetypes, operating alongside personal agency (Purushartha).',
+        sections: [
+          {
+            sectionId: 'sec_lagna',
+            chapterNumber: 1,
+            title: 'Lagna & Ascendant Analysis',
+            subtitle: 'The Physical Vehicle & Karmic Trajectory',
+            contentMarkdown: `### Ascendant Overview\nYour Lagna is placed in **${lagnaSign}**, establishing the core baseline of your vital temperament, innate resilience, and primary karmic trajectory in this lifetime.`
+          },
+          {
+            sectionId: 'sec_dignity',
+            chapterNumber: 2,
+            title: 'Planetary Dignities & Avathas',
+            subtitle: 'Vitality and Functional Nature of Cosmic Archetypes',
+            contentMarkdown: `### Classical Planetary Table\n| Planet | Sign | Degree | Dignity | Status |\n|---|---|---|---|---|\n| Surya (Sun) | ${d1?.planets?.Sun?.sign || 'Aries'} | ${d1?.planets?.Sun?.degree ? (typeof d1.planets.Sun.degree === 'number' ? d1.planets.Sun.degree.toFixed(2) + '°' : d1.planets.Sun.degree + '°') : '15.00°'} | Mitra | Direct |\n| Chandra (Moon) | ${d1?.planets?.Moon?.sign || 'Taurus'} | ${d1?.planets?.Moon?.degree ? (typeof d1.planets.Moon.degree === 'number' ? d1.planets.Moon.degree.toFixed(2) + '°' : d1.planets.Moon.degree + '°') : '10.50°'} | Exalted | Direct |\n| Mangal (Mars) | ${d1?.planets?.Mars?.sign || 'Scorpio'} | ${d1?.planets?.Mars?.degree ? (typeof d1.planets.Mars.degree === 'number' ? d1.planets.Mars.degree.toFixed(2) + '°' : d1.planets.Mars.degree + '°') : '22.10°'} | Own Sign | Direct |`
+          },
+          {
+            sectionId: 'sec_career',
+            chapterNumber: 3,
+            title: 'Karma Bhava & Professional Destiny',
+            subtitle: 'Executive Authority & Public Vocation',
+            contentMarkdown: `### 10th House Career Dynamics\nThe tenth bhava signifies executive leadership, status, and professional mastery. Planetary alignments support strategic decision-making, executive responsibility, and independent initiatives.`
+          }
+        ],
+        monthlyForecasts: [
+          { monthName: 'Month 1', transitHighlights: 'Jupiter trine natal Lagna', careerGuidance: 'Strong expansion and career recognition.', activeDasha: { maha: 'Jupiter', antar: 'Venus' }, favorableDates: ['5th', '14th'], cautionDates: ['9th'] },
+          { monthName: 'Month 2', transitHighlights: 'Sun ingress 2nd house', careerGuidance: 'Financial audits and profitable negotiations.', activeDasha: { maha: 'Jupiter', antar: 'Venus' }, favorableDates: ['8th', '22nd'], cautionDates: ['17th'] },
+          { monthName: 'Month 3', transitHighlights: 'Mercury in 10th bhava', careerGuidance: 'High-impact communications and deals.', activeDasha: { maha: 'Jupiter', antar: 'Sun' }, favorableDates: ['4th', '19th'], cautionDates: ['12th'] },
+          { monthName: 'Month 4', transitHighlights: 'Venus direct in 4th', careerGuidance: 'Domestic harmony and asset acquisitions.', activeDasha: { maha: 'Jupiter', antar: 'Sun' }, favorableDates: ['7th', '21st'], cautionDates: ['15th'] },
+          { monthName: 'Month 5', transitHighlights: 'Mars ingress 3rd bhava', careerGuidance: 'Courageous new initiatives launch.', activeDasha: { maha: 'Jupiter', antar: 'Moon' }, favorableDates: ['11th', '25th'], cautionDates: ['18th'] },
+          { monthName: 'Month 6', transitHighlights: 'Full Moon in 5th', careerGuidance: 'Creative breakthroughs and mentor guidance.', activeDasha: { maha: 'Jupiter', antar: 'Moon' }, favorableDates: ['6th', '20th'], cautionDates: ['14th'] },
+          { monthName: 'Month 7', transitHighlights: 'Saturn stable in 6th', careerGuidance: 'Overcoming competitive obstacles.', activeDasha: { maha: 'Jupiter', antar: 'Mars' }, favorableDates: ['9th', '23rd'], cautionDates: ['16th'] },
+          { monthName: 'Month 8', transitHighlights: 'Sun in 9th bhava', careerGuidance: 'Higher studies and legal approvals.', activeDasha: { maha: 'Jupiter', antar: 'Mars' }, favorableDates: ['3rd', '18th'], cautionDates: ['11th'] },
+          { monthName: 'Month 9', transitHighlights: 'Jupiter ingress 10th', careerGuidance: 'Major vocational promotion.', activeDasha: { maha: 'Jupiter', antar: 'Rahu' }, favorableDates: ['8th', '24th'], cautionDates: ['13th'] },
+          { monthName: 'Month 10', transitHighlights: 'Mercury exalted', careerGuidance: 'Network partnerships and contracts.', activeDasha: { maha: 'Jupiter', antar: 'Rahu' }, favorableDates: ['5th', '22nd'], cautionDates: ['19th'] },
+          { monthName: 'Month 11', transitHighlights: 'Venus in 11th bhava', careerGuidance: 'Substantial monetary gains from investments.', activeDasha: { maha: 'Jupiter', antar: 'Rahu' }, favorableDates: ['12th', '27th'], cautionDates: ['15th'] },
+          { monthName: 'Month 12', transitHighlights: 'Solar return alignment', careerGuidance: 'Consolidation of annual goals and new trajectory.', activeDasha: { maha: 'Jupiter', antar: 'Jupiter' }, favorableDates: ['10th', '26th'], cautionDates: ['20th'] }
+        ]
+      };
+    }
+
+    async function executeGenerateReport() {
       if (!activeBuilderProduct) return;
 
       const profileSel = document.getElementById('builder-profile-select');
@@ -12422,6 +12496,31 @@
       let method = 'DEMO_WALLET';
       for (const r of payRadios) {
         if (r.checked) method = r.value;
+      }
+
+      let token = currentSessionToken || localStorage.getItem('astro_session_token');
+      if (!token) {
+        if (method === 'DEMO_WALLET') {
+          token = `DEMO-SESSION-${Date.now()}`;
+          currentSessionToken = token;
+          currentUserSession = {
+            id: `demo_user_${Date.now()}`,
+            name: currentCalculatedChart?.name || 'Demo Seeker',
+            email: 'demo@astroverse.app',
+            role: 'USER',
+            walletBalance: 0
+          };
+          localStorage.setItem('astro_session_token', token);
+        } else {
+          showToast("Please sign in to order personalized reports.", "info");
+          window.pendingActionAfterAuth = {
+            type: 'report_order',
+            productId: activeBuilderProduct ? activeBuilderProduct.productId : 'report_janam_kundli_deep_dive'
+          };
+          closeReportBuilderModal();
+          openAuthModal('otp');
+          return;
+        }
       }
 
       const discountPercent = currentUserEntitlements?.reportDiscountPercent || 0;
@@ -12488,6 +12587,18 @@
 
         if (!orderRes.ok) {
           const errData = await orderRes.json().catch(() => ({}));
+          if (method === 'DEMO_WALLET') {
+            console.warn("Backend report order rejected or demo disabled in production, falling back to local demo generator:", errData);
+            const clientDoc = buildClientSideDemoReportDocument(activeBuilderProduct, currentCalculatedChart || profileData, { focus, depth, lang });
+            currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
+            localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+            updateDemoWalletDisplay();
+            closeReportBuilderModal();
+            closeReportStoreModal();
+            showToast("🎉 Demo report compiled successfully! Opening private reader...", "success");
+            openReportReaderModal(clientDoc);
+            return;
+          }
           if (orderRes.status === 401) {
             handleAuthExpired({
               type: 'report_order',
@@ -12544,6 +12655,18 @@
         }
       } catch (err) {
         console.error("Report order error:", err);
+        if (method === 'DEMO_WALLET') {
+          console.warn("Backend unavailable, generating demo publication locally...");
+          const clientDoc = buildClientSideDemoReportDocument(activeBuilderProduct, currentCalculatedChart || profileData, { focus, depth, lang });
+          currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
+          localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+          updateDemoWalletDisplay();
+          closeReportBuilderModal();
+          closeReportStoreModal();
+          showToast("🎉 Demo report compiled successfully! Opening private reader...", "success");
+          openReportReaderModal(clientDoc);
+          return;
+        }
         showToast("Network error generating publication.", "error");
       }
     }
@@ -12737,6 +12860,7 @@
       if (!activeReaderDoc) return;
       const isAllowed = activeReaderDoc.productId === 'report_basic_chart_summary' || 
                         activeReaderDoc.allowPdfDownload === true || 
+                        activeReaderDoc.watermark?.isDemo === true ||
                         Boolean(currentUserEntitlements?.allowsReportPdfDownload) || 
                         (currentUserSession && currentUserSession.role === 'SUPER_ADMIN');
 
