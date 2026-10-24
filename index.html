@@ -161,8 +161,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 24px;
-      max-width: 1320px;
+      padding: 10px 20px;
+      max-width: 100%;
+      width: 100%;
+      box-sizing: border-box;
       margin: 0 auto;
     }
     .brand-logo-wrap {
@@ -171,6 +173,7 @@
       gap: 10px;
       text-decoration: none;
       cursor: pointer;
+      flex-shrink: 0;
     }
     .brand-icon {
       font-size: 24px;
@@ -178,7 +181,7 @@
     }
     .brand-title {
       font-family: 'Cinzel', serif;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: 800;
       color: var(--vedic-maroon);
       letter-spacing: 0.5px;
@@ -196,21 +199,24 @@
     .nav-links-row {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 3px;
+      flex-shrink: 1;
+      min-width: 0;
     }
     .nav-link-btn {
       background: transparent;
       border: none;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: #475569;
-      padding: 8px 14px;
+      padding: 6px 10px;
       border-radius: var(--radius-md);
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
+      white-space: nowrap;
     }
     .nav-link-btn:hover {
       background: #F1F5F9;
@@ -225,21 +231,23 @@
     .nav-right-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      flex-shrink: 0;
     }
     .wallet-chip {
       background: #FFFBEB;
       border: 1px solid #FCD34D;
-      padding: 6px 14px;
+      padding: 6px 12px;
       border-radius: var(--radius-full);
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
+      gap: 6px;
+      font-size: 12.5px;
       font-weight: 700;
       color: #78350F;
       cursor: pointer;
       transition: all 0.2s;
+      flex-shrink: 0;
     }
     .wallet-chip:hover {
       background: #FEF3C7;
@@ -261,15 +269,17 @@
       background: var(--vedic-maroon);
       color: white;
       border: none;
-      padding: 8px 18px;
+      padding: 7px 16px;
       border-radius: var(--radius-md);
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .btn-auth-trigger:hover {
       background: var(--deep-maroon);
@@ -379,6 +389,16 @@
       gap: 24px;
       align-items: start;
     }
+    .grid-layout-2col > *,
+    #kundli-result-panel,
+    #kundli-active-content,
+    .kundli-workspace-subnav,
+    .kw-tab-pane,
+    .table-responsive-box {
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
     @media (max-width: 980px) {
       .grid-layout-2col { grid-template-columns: 1fr; }
     }
@@ -408,11 +428,12 @@
       padding: 10px 14px;
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
-      font-size: 14px;
+      font-size: 16px;
       font-family: inherit;
       color: #0F172A;
       background: #FFFFFF;
       transition: all 0.2s;
+      box-sizing: border-box;
     }
     .form-input-text:focus {
       outline: none;
@@ -886,6 +907,7 @@
       flex-direction: column;
       gap: 12px;
       pointer-events: none;
+      max-width: calc(100vw - 32px);
     }
     .toast-item {
       pointer-events: auto;
@@ -900,18 +922,18 @@
       font-size: 13.5px;
       font-weight: 600;
       color: #F8FAFC;
-      min-width: 300px;
-      max-width: 480px;
+      min-width: 280px;
+      max-width: 460px;
       line-height: 1.4;
-      animation: slideInRight 0.25s ease forwards;
+      animation: toastFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
     .toast-item.success { border-left: 5px solid #10B981; }
     .toast-item.error { border-left: 5px solid #EF4444; }
     .toast-item.info { border-left: 5px solid #38BDF8; }
     .toast-item.warning { border-left: 5px solid #F59E0B; }
-    @keyframes slideInRight {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+    @keyframes toastFadeIn {
+      from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     /* Modals */
@@ -1391,167 +1413,30 @@
       }
     }
 
-    /* Small Tablet & Smartphone Breakpoint (< 768px) */
-    @media (max-width: 768px) {
-      .page-main-container {
-        padding: 0 14px !important;
-        margin: 16px auto 60px !important;
+    /* Desktop Compact Breakpoint (< 1400px) */
+    @media (max-width: 1400px) {
+      .active-profile-pill {
+        display: none !important;
       }
-      .grid-layout-2col {
-        grid-template-columns: 1fr !important;
-        gap: 16px !important;
+      .nav-links-row {
+        gap: 2px !important;
       }
-      .guidance-2col-grid {
-        grid-template-columns: 1fr !important;
-      }
-      .astrologers-grid {
-        grid-template-columns: 1fr !important;
-      }
-      .special-periods-grid {
-        grid-template-columns: 1fr !important;
-      }
-      .grid-hourly-timeline {
-        grid-template-columns: 1fr !important;
-      }
-      .category-pills-bar {
-        display: flex !important;
-        overflow-x: auto !important;
-        white-space: nowrap !important;
-        flex-wrap: nowrap !important;
-        justify-content: flex-start !important;
-        padding: 4px 6px 10px !important;
-        -webkit-overflow-scrolling: touch;
-        gap: 8px !important;
-        margin-top: 14px !important;
-      }
-      .nav-pill {
-        flex-shrink: 0 !important;
-        font-size: 12px !important;
-        padding: 6px 14px !important;
-      }
-      .hero-title {
-        font-size: 24px !important;
-      }
-      .hero-subtitle {
-        font-size: 13px !important;
-      }
-      .hero-stats-panel {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 8px !important;
-        border-radius: 12px !important;
-        padding: 10px 14px !important;
-        width: 100% !important;
-      }
-      .hero-stat-item {
-        justify-content: center !important;
-        font-size: 12px !important;
+      .nav-link-btn {
+        padding: 6px 8px !important;
+        font-size: 11.5px !important;
       }
     }
 
-    /* Ultra-compact Smartphone Breakpoint (< 480px) */
-    @media (max-width: 480px) {
-      .main-navbar, .main-header {
-        padding: 8px 10px !important;
+    /* Tablet Landscape & Medium Screen Breakpoint (< 1100px) */
+    @media (max-width: 1100px) {
+      .mobile-menu-btn {
+        display: inline-flex !important;
       }
-      .nav-right-actions {
-        gap: 6px !important;
-      }
-      .brand-logo-wrap {
-        gap: 6px !important;
-      }
-      .brand-title {
-        font-size: 15px !important;
-      }
-      .brand-tag {
+      .nav-links-row {
         display: none !important;
       }
-      .wallet-chip {
-        padding: 4px 8px !important;
-        font-size: 11px !important;
-        gap: 4px !important;
-      }
-      .btn-auth-trigger {
-        padding: 5px 8px !important;
-        font-size: 11px !important;
-        gap: 4px !important;
-      }
-      .astro-card {
-        padding: 16px 12px !important;
-        border-radius: 12px !important;
-      }
-      .featured-guidance-card {
-        padding: 14px 10px !important;
-        border-radius: 12px !important;
-        margin-bottom: 18px !important;
-      }
-      .guidance-header-bar {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 10px !important;
-      }
-      .hora-countdown-chip {
-        width: 100% !important;
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        padding: 8px 12px !important;
-      }
-      .horizon-switcher-row {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        padding: 6px !important;
-      }
-      .horizon-btn-group {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        width: 100% !important;
-        gap: 6px !important;
-      }
-      .horizon-btn {
-        justify-content: center !important;
-        padding: 7px 4px !important;
-        font-size: 11px !important;
-      }
-      .panchang-grid-boxes {
-        grid-template-columns: 1fr 1fr !important;
-        gap: 8px !important;
-      }
-      .panchang-box {
-        padding: 10px 8px !important;
-      }
-      .panchang-lbl {
-        font-size: 10px !important;
-      }
-      .panchang-val {
-        font-size: 13px !important;
-      }
-      .form-input-text {
-        font-size: 13px !important;
-        padding: 8px 10px !important;
-      }
-    }
-    @media (max-width: 340px) {
-      .main-navbar, .main-header {
-        padding: 6px 6px !important;
-      }
-      .brand-title {
-        font-size: 13px !important;
-        letter-spacing: 0px !important;
-      }
-      .brand-icon {
-        font-size: 16px !important;
-      }
-      .wallet-chip {
-        padding: 3px 5px !important;
-        font-size: 10px !important;
-      }
-      .wallet-add-btn {
+      .active-profile-pill {
         display: none !important;
-      }
-      .btn-auth-trigger {
-        padding: 4px 6px !important;
-        font-size: 10px !important;
       }
     }
 
@@ -1584,30 +1469,7 @@
       border-color: #F59E0B;
     }
 
-    @media (max-width: 768px) {
-      .mobile-menu-btn {
-        display: inline-flex !important;
-      }
-      .nav-links-row {
-        display: none !important;
-      }
-      .active-profile-pill {
-        display: none !important;
-      }
-      body {
-        padding-bottom: 70px !important;
-      }
-    }
 
-    @media (max-width: 540px) {
-      .tier-chip {
-        display: none !important;
-      }
-      .promo-ticker {
-        font-size: 11px !important;
-        padding: 5px 8px !important;
-      }
-    }
 
     /* Mobile Slide-Over Drawer */
     .mobile-nav-backdrop {
@@ -1728,15 +1590,457 @@
       background: #B45309;
     }
 
-    /* Universal Responsive Form & Input Rules */
-    @media (max-width: 640px) {
-      .form-input-text, .form-input-select, select, input[type="text"], input[type="date"], input[type="time"] {
+    /* ==================== UNIFIED RESPONSIVE SYSTEM (TABLET & MOBILE) ==================== */
+
+    /* Small Tablet & Mobile Breakpoint (<= 768px) */
+    @media (max-width: 768px) {
+      .page-main-container {
+        padding: 0 12px !important;
+        margin: 16px auto 60px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .main-navbar, .main-header {
+        padding: 8px 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+      .mobile-menu-btn {
+        display: inline-flex !important;
+        width: 36px !important;
+        height: 36px !important;
+        flex-shrink: 0 !important;
+      }
+      .nav-links-row {
+        display: none !important;
+      }
+      .active-profile-pill {
+        display: none !important;
+      }
+      .brand-logo-wrap {
+        gap: 6px !important;
+        flex-shrink: 1 !important;
+        min-width: 0 !important;
+      }
+      .brand-icon {
+        font-size: 20px !important;
+        flex-shrink: 0 !important;
+      }
+      .brand-title {
+        font-size: 16px !important;
+        letter-spacing: 0px !important;
+        white-space: nowrap !important;
+      }
+      .brand-tag {
+        display: none !important;
+      }
+      .nav-right-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-shrink: 0 !important;
+      }
+      .tier-chip {
+        display: none !important;
+      }
+      .wallet-chip {
+        padding: 5px 8px !important;
+        font-size: 11.5px !important;
+        gap: 4px !important;
+        flex-shrink: 0 !important;
+        min-height: 34px !important;
+      }
+      .wallet-add-btn {
+        display: none !important;
+      }
+      .btn-auth-trigger {
+        padding: 6px 12px !important;
+        font-size: 11.5px !important;
+        gap: 4px !important;
+        flex-shrink: 0 !important;
+        min-height: 34px !important;
+        white-space: nowrap !important;
+      }
+      .lang-toggle-pill {
+        padding: 5px 8px !important;
+        font-size: 11.5px !important;
+        flex-shrink: 0 !important;
+        min-height: 34px !important;
+      }
+      .grid-layout-2col, .grid-2col, .grid-3col, .kundli-form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        min-width: 0 !important;
+      }
+      .grid-layout-2col > *,
+      #kundli-result-panel,
+      #kundli-active-content,
+      .kundli-workspace-subnav,
+      .kw-tab-pane,
+      .table-responsive-box {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .guidance-2col-grid, .astrologers-grid, .special-periods-grid, .grid-hourly-timeline {
+        grid-template-columns: 1fr !important;
+      }
+      .ashtaka-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 6px !important;
+      }
+      .category-pills-bar {
+        display: flex !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        flex-wrap: nowrap !important;
+        justify-content: flex-start !important;
+        padding: 4px 6px 10px !important;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px !important;
+        margin-top: 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .nav-pill {
+        flex-shrink: 0 !important;
+        font-size: 12px !important;
+        padding: 6px 14px !important;
+      }
+      .hero-title {
+        font-size: 24px !important;
+      }
+      .hero-subtitle {
+        font-size: 13px !important;
+      }
+      .hero-stats-panel {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        border-radius: 12px !important;
+        padding: 10px 14px !important;
+        width: 100% !important;
+      }
+      .hero-stat-item {
+        justify-content: center !important;
+        font-size: 12px !important;
+      }
+      .astro-card {
+        padding: 16px 14px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .onboarding-hero-card, #kundli-onboarding-card {
+        padding: 16px 14px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .onboarding-hero-card > div > div, #kundli-onboarding-card > div > div {
+        min-width: 0 !important;
+        width: 100% !important;
+      }
+      .form-field-group {
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .form-input-text, .form-input-select, select, input[type="text"], input[type="date"], input[type="time"], input[type="number"], input[type="tel"], input[type="email"], input[type="password"] {
         font-size: 16px !important;
         min-height: 44px !important;
         box-sizing: border-box !important;
+        min-width: 0 !important;
+        width: 100% !important;
       }
-      .grid-2col, .grid-3col, .kundli-form-grid {
-        grid-template-columns: 1fr !important;
+      #btn-generate-kundli, .kundli-calc-btn, .btn-gold-primary {
+        font-size: 16px !important;
+        min-height: 46px !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      #time-picker-24h-wrap {
+        display: flex !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        align-items: center !important;
+      }
+      #time-picker-24h-wrap select {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        font-size: 16px !important;
+      }
+      .gender-toggle-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .gender-pill-btn {
+        min-height: 44px !important;
+        font-size: 14px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      .location-search-wrap {
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .location-input-styled {
+        font-size: 16px !important;
+        min-height: 44px !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+      }
+      .location-suggestions-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .auth-modal-card {
+        padding: 16px 14px !important;
+        max-width: calc(100vw - 20px) !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .auth-modal-tabs {
+        gap: 4px !important;
+        padding: 3px !important;
+      }
+      .auth-modal-tab {
+        font-size: 12px !important;
+        padding: 8px 4px !important;
+        gap: 4px !important;
+        min-height: 40px !important;
+      }
+      #modal-otp-country-code {
+        width: 76px !important;
+        flex-shrink: 0 !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+      }
+      #modal-otp-phone {
+        min-width: 0 !important;
+        font-size: 16px !important;
+        min-height: 44px !important;
+      }
+      .toast-container {
+        top: 12px !important;
+        right: 12px !important;
+        left: 12px !important;
+        max-width: calc(100vw - 24px) !important;
+        align-items: center !important;
+      }
+      .toast-item {
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 10px 14px !important;
+        font-size: 12px !important;
+        box-sizing: border-box !important;
+        animation: fadeInDown 0.25s ease forwards !important;
+      }
+      body {
+        padding-bottom: 70px !important;
+      }
+    }
+    @keyframes fadeInDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Small Tablet / Phablet Breakpoint (<= 540px) */
+    @media (max-width: 540px) {
+      .promo-ticker {
+        font-size: 11px !important;
+        padding: 5px 8px !important;
+      }
+    }
+
+    /* Smartphone Breakpoint (<= 480px) */
+    @media (max-width: 480px) {
+      .main-navbar, .main-header {
+        padding: 6px 8px !important;
+      }
+      .mobile-menu-btn {
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 14px !important;
+      }
+      .brand-icon {
+        font-size: 18px !important;
+      }
+      .brand-title {
+        font-size: 14px !important;
+      }
+      .nav-right-actions {
+        gap: 4px !important;
+      }
+      .wallet-chip {
+        padding: 4px 7px !important;
+        font-size: 11px !important;
+        min-height: 32px !important;
+      }
+      .btn-auth-trigger {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        min-height: 32px !important;
+      }
+      .lang-toggle-pill {
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+        min-height: 32px !important;
+      }
+      .astro-card {
+        padding: 14px 10px !important;
+        border-radius: 12px !important;
+      }
+      .featured-guidance-card {
+        padding: 14px 10px !important;
+        border-radius: 12px !important;
+        margin-bottom: 18px !important;
+      }
+      .guidance-header-bar {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      .hora-countdown-chip {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 12px !important;
+      }
+      .horizon-switcher-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 6px !important;
+      }
+      .horizon-btn-group {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        width: 100% !important;
+        gap: 6px !important;
+      }
+      .horizon-btn {
+        justify-content: center !important;
+        padding: 7px 4px !important;
+        font-size: 11px !important;
+      }
+      .panchang-grid-boxes {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+      }
+      .panchang-box {
+        padding: 10px 8px !important;
+      }
+    }
+
+    /* Small Smartphone Breakpoint (<= 360px) */
+    @media (max-width: 360px) {
+      .main-navbar, .main-header {
+        padding: 5px 6px !important;
+      }
+      .mobile-menu-btn {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 13px !important;
+      }
+      .brand-icon {
+        font-size: 16px !important;
+      }
+      .brand-title {
+        font-size: 13px !important;
+        letter-spacing: 0px !important;
+      }
+      .nav-right-actions {
+        gap: 3px !important;
+      }
+      .wallet-chip {
+        padding: 3px 5px !important;
+        font-size: 10px !important;
+        min-height: 30px !important;
+      }
+      .btn-auth-trigger {
+        padding: 4px 6px !important;
+        font-size: 10px !important;
+        min-height: 30px !important;
+      }
+      .lang-toggle-pill {
+        padding: 3px 5px !important;
+        font-size: 10px !important;
+        min-height: 30px !important;
+      }
+      .auth-modal-card {
+        padding: 12px 8px !important;
+        max-width: calc(100vw - 12px) !important;
+      }
+      .auth-modal-tab {
+        font-size: 11px !important;
+        padding: 6px 2px !important;
+      }
+      #modal-otp-country-code {
+        width: 68px !important;
+        font-size: 12.5px !important;
+      }
+      .ashtaka-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
+      }
+    }
+
+    /* Ultra-compact Smartphone Breakpoint (<= 320px) */
+    @media (max-width: 320px) {
+      .main-navbar, .main-header {
+        padding: 4px 4px !important;
+      }
+      .mobile-menu-btn {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 12px !important;
+      }
+      .brand-title {
+        font-size: 11px !important;
+      }
+      .brand-icon {
+        font-size: 14px !important;
+      }
+      .nav-right-actions {
+        gap: 2px !important;
+      }
+      .btn-auth-trigger {
+        padding: 3px 4px !important;
+        font-size: 9px !important;
+        min-height: 28px !important;
+      }
+      .wallet-chip {
+        padding: 3px 4px !important;
+        font-size: 9px !important;
+        min-height: 28px !important;
+      }
+      .lang-toggle-pill {
+        padding: 3px 4px !important;
+        font-size: 9px !important;
+        min-height: 28px !important;
+      }
+      .auth-modal-card {
+        padding: 10px 6px !important;
+      }
+      .auth-modal-tab {
+        font-size: 10px !important;
+        padding: 5px 1px !important;
       }
     }
 
@@ -2393,13 +2697,15 @@
       box-shadow: var(--av-shadow-drawer);
       z-index: 1001;
       transform: translateX(100%);
-      transition: transform var(--av-duration-normal) var(--av-easing-standard);
+      transition: transform var(--av-duration-normal) var(--av-easing-standard), visibility var(--av-duration-normal);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      visibility: hidden;
     }
     .av-slide-drawer.open {
       transform: translateX(0);
+      visibility: visible;
     }
     .av-drawer-header {
       padding: 18px 24px;
@@ -3800,7 +4106,7 @@
             </div>
           </div>
 
-          <button class="btn-gold-primary" id="btn-generate-kundli" style="width: 100%; justify-content: center;" onclick="generateUserKundli()">
+          <button class="btn-gold-primary" id="btn-generate-kundli" style="width: 100%; justify-content: center; font-size: 16px; min-height: 46px;" onclick="generateUserKundli()">
             <i class="fa-solid fa-sparkles"></i> Calculate Vedic Kundli
           </button>
         </div>
@@ -5335,61 +5641,7 @@
       </div>
     </section>
 
-    <!-- ==================== SECTION: AI ASTROLOGER GURU ==================== -->
-    <section style="margin-top: 48px;">
-      <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--saffron-orange);"></i> AI Astrologer Guru & Parashari Intelligence</h2>
-        <p>Conversational Vedic analysis grounded in your calculated 10th house, active Vimshottari Dasha, and current transits.</p>
-      </div>
 
-      <div class="astro-card">
-        <!-- Personalization Gate Banner -->
-        <div id="ai-personalization-gate" style="margin-bottom: 20px; padding: 14px 18px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <i class="fa-solid fa-circle-info" style="color: #D97706; font-size: 18px;"></i>
-            <div>
-              <strong id="ai-gate-title" style="font-size: 13px; color: #78350F;">No Birth Chart Loaded in Context</strong>
-              <div id="ai-gate-desc" style="font-size: 12px; color: #92400E;">Calculate your Janam Kundli above to unlock Parashari natal analysis. Currently providing universal transit guidance.</div>
-            </div>
-          </div>
-          <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px;" onclick="switchNavSection('kundli')">Load / Calculate Chart</button>
-        </div>
-
-        <!-- Quick Question Topic Pills -->
-        <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
-          <button class="subtab-btn active" onclick="askAiQuestionTopic('career')">💼 Career & Leadership</button>
-          <button class="subtab-btn" onclick="askAiQuestionTopic('marriage')">💍 Marriage & Compatibility</button>
-          <button class="subtab-btn" onclick="askAiQuestionTopic('wealth')">💰 Wealth & Dhana Yogas</button>
-          <button class="subtab-btn" onclick="askAiQuestionTopic('health')">🌿 Health & Vitality</button>
-        </div>
-
-        <!-- Custom Prompt Input -->
-        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-          <input type="text" id="input-ai-user-query" class="form-input-text" placeholder="Ask Guru any specific question (e.g. When will my promotion manifest?)" onkeydown="handleAiEnter(event)">
-          <button class="btn-gold-primary" onclick="askAiCustomQuery()">
-            <i class="fa-solid fa-paper-plane"></i> Ask
-          </button>
-        </div>
-
-        <!-- Response Display Box -->
-        <div id="ai-response-box" style="display: none; padding: 20px; background: #FAF9F6; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h4 id="ai-resp-title" style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon);">Vedic Astrological Counsel</h4>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span id="ai-resp-mode-badge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; background: #FEF3C7; color: #92400E;">Universal Transit Guidance (General)</span>
-              <button class="voice-readout-pill" onclick="speakAiReading()" id="btn-ai-tts" style="background: #EEF2FF; border: 1px solid #C7D2FE; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #3730A3; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                <i class="fa-solid fa-volume-high"></i> <span id="tts-label">Listen</span>
-              </button>
-            </div>
-          </div>
-          <p id="ai-resp-body" style="font-size: 14px; color: #334155; line-height: 1.7; margin-bottom: 14px;">--</p>
-          <div style="padding: 12px; background: #FFFBEB; border-left: 3px solid var(--saffron-orange); border-radius: 4px;">
-            <strong style="font-size: 12px; color: #78350F; text-transform: uppercase;">Prescribed Vedic Remedy:</strong>
-            <p id="ai-resp-remedy" style="font-size: 12px; color: #92400E; margin-top: 2px;">--</p>
-          </div>
-        </div>
-      </div>
-    </section>
 
   </main>
 
@@ -6485,9 +6737,9 @@
 
       const dismiss = () => {
         toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        toast.style.transition = 'all 0.25s ease';
-        setTimeout(() => toast.remove(), 250);
+        toast.style.transform = 'translateY(-8px) scale(0.97)';
+        toast.style.transition = 'all 0.2s ease';
+        setTimeout(() => toast.remove(), 220);
       };
 
       const dismissBtn = toast.querySelector('.toast-dismiss-btn');
@@ -7438,12 +7690,6 @@
         document.getElementById('pill-sadesati-verdict').style.color = doshas.sade_sati.is_active ? "#92400E" : "#047857";
         document.getElementById('desc-sadesati-text').textContent = doshas.sade_sati.description || "Saturn transit is favorable.";
       }
-
-      // Update AI Guru Gate Banner
-      document.getElementById('ai-gate-title').textContent = `Chart Loaded: ${name} (${lagna.sign} Lagna, Moon in ${moon.sign})`;
-      document.getElementById('ai-gate-desc').textContent = `10th House, active Dasha, and transit alignments are active for personalized Parashari consultation.`;
-      document.getElementById('ai-personalization-gate').style.background = "#ECFDF5";
-      document.getElementById('ai-personalization-gate').style.borderColor = "#A7F3D0";
     }
 
     function switchKundliSubChart(type) {
@@ -8313,137 +8559,7 @@
       showToast(`Ashtakoota Score: ${total.toFixed(1)} / 36 (${data.verdict || 'Evaluated'})`, "success");
     }
 
-    // 6. AI ASTROLOGER GURU (Section 7)
-    let activeAiReadingText = "";
 
-    async function askAiQuestionTopic(cat) {
-      const box = document.getElementById('ai-response-box');
-      box.style.display = 'block';
-      if (window.gsap) gsap.fromTo(box, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35 });
-
-      // First attempt live backend calculation-grounded query
-      const dobVal = document.getElementById('input-k-dob').value;
-      const tobVal = document.getElementById('input-k-tob').value || '12:00';
-      const latVal = parseFloat(document.getElementById('k-resolved-lat').value);
-      const lonVal = parseFloat(document.getElementById('k-resolved-lon').value);
-
-      if (currentCalculatedChart && dobVal && !isNaN(latVal) && !isNaN(lonVal)) {
-        try {
-          const res = await fetch(`${getKundliBase()}/api/ai-astrologer/ask`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              category: cat,
-              question: `Vedic consultation on ${cat} for birth chart ${dobVal}T${tobVal}.`,
-              dob: `${dobVal}T${tobVal}:00`,
-              lat: latVal,
-              lon: lonVal,
-              timezone: 'Asia/Kolkata',
-              time_horizon: 'daily'
-            })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const r = data.reading;
-            document.getElementById('ai-resp-mode-badge').textContent = "Parashari Natal Analysis (Verified Lagna & Dasha)";
-            document.getElementById('ai-resp-mode-badge').style.background = "#ECFDF5";
-            document.getElementById('ai-resp-mode-badge').style.color = "#047857";
-            document.getElementById('ai-resp-title').textContent = r.executive_summary || `${cat.toUpperCase()} Consultation`;
-            activeAiReadingText = `${r.analysis} ${r.career_guidance || ''} ${r.remedial_measures ? 'Remedy: ' + r.remedial_measures : ''}`;
-            document.getElementById('ai-resp-body').textContent = activeAiReadingText;
-            document.getElementById('ai-resp-remedy').textContent = r.remedial_measures || "Chant the Gayatri Mantra.";
-            return;
-          }
-        } catch (e) {
-          console.warn("Backend AI query offline, using client interpretation engine:", e);
-        }
-      }
-
-      if (currentCalculatedChart) {
-        // Personal Chart-Grounded Consultation
-        document.getElementById('ai-resp-mode-badge').textContent = "Parashari Natal Analysis (Verified Lagna & Dasha)";
-        document.getElementById('ai-resp-mode-badge').style.background = "#ECFDF5";
-        document.getElementById('ai-resp-mode-badge').style.color = "#047857";
-
-        if (cat === 'career') {
-          document.getElementById('ai-resp-title').textContent = "Career & Professional Elevation Analysis";
-          activeAiReadingText = `Your calculated Lagna is ${currentCalculatedChart.lagnaSign} and Moon is in ${currentCalculatedChart.moonSign} (${currentCalculatedChart.nakName} Nakshatra, Pada ${currentCalculatedChart.pada}). Your 10th House of profession receives the expansive aspect of Jupiter. Coupled with your active Dasha period, this signals strong promotion opportunities, executive recognition, and salary expansion over the upcoming cycles. Recite Aditya Hridaya Stotra on Sundays.`;
-          document.getElementById('ai-resp-body').textContent = activeAiReadingText;
-          document.getElementById('ai-resp-remedy').textContent = "Recite Aditya Hridaya Stotra on Sundays and offer water to the rising Sun.";
-        } else if (cat === 'marriage') {
-          document.getElementById('ai-resp-title').textContent = "Marriage & Relationship Guidance";
-          activeAiReadingText = `Your 7th House from ${currentCalculatedChart.lagnaSign} Lagna indicates an intellectually aligned and supportive partner. Current transit of Venus supports relationship consolidation. Auspicious alliance window opens over the next 12 months.`;
-          document.getElementById('ai-resp-body').textContent = activeAiReadingText;
-          document.getElementById('ai-resp-remedy').textContent = "Observe fast on Thursdays and donate yellow sweets to Vishnu temples.";
-        } else if (cat === 'wealth') {
-          document.getElementById('ai-resp-title').textContent = "Wealth Accumulation & Dhana Yogas";
-          activeAiReadingText = `A potent Dhana Yoga connects your 2nd House of liquid cash and 11th House of recurring gains. Real estate and disciplined investments compound significantly during the upcoming Jupiter transit.`;
-          document.getElementById('ai-resp-body').textContent = activeAiReadingText;
-          document.getElementById('ai-resp-remedy').textContent = "Light a pure cow ghee lamp in front of Goddess Lakshmi on Friday evenings.";
-        } else {
-          document.getElementById('ai-resp-title').textContent = "Health, Vitality & Recovery";
-          activeAiReadingText = `Your Lagna Lord establishes strong natural immunity. Maintain balanced nutrition during Shani transit to safeguard against digestive sensitivity and stress.`;
-          document.getElementById('ai-resp-body').textContent = activeAiReadingText;
-          document.getElementById('ai-resp-remedy').textContent = "Chant Maha Mrityunjaya Mantra 108 times daily at sunrise.";
-        }
-      } else {
-        // Universal Transit Reading (Clearly labeled)
-        document.getElementById('ai-resp-mode-badge').textContent = "Universal Transit Guidance (General)";
-        document.getElementById('ai-resp-mode-badge').style.background = "#FEF3C7";
-        document.getElementById('ai-resp-mode-badge').style.color = "#92400E";
-
-        document.getElementById('ai-resp-title').textContent = `Universal Guidance: ${cat.toUpperCase()}`;
-        activeAiReadingText = `Notice: No personal birth chart is loaded. In general celestial transits, Saturn in Pisces encourages disciplined restructuring, while Jupiter supports educational initiatives. To reveal your personal 10th house, Dasha period, and Lagna lordship, calculate your Janam Kundli above.`;
-        document.getElementById('ai-resp-body').textContent = activeAiReadingText;
-        document.getElementById('ai-resp-remedy').textContent = "Chant the Gayatri Mantra 11 times at sunrise for universal clarity.";
-      }
-    }
-
-    function askAiCustomQuery() {
-      const q = document.getElementById('input-ai-user-query').value.trim();
-      if (!q) { showToast("Please type a question for Guru.", "error"); return; }
-      askAiQuestionTopic('career');
-      document.getElementById('ai-resp-title').textContent = `Consultation: ${q}`;
-      if (currentCalculatedChart) {
-        activeAiReadingText = `Analyzing '${q}' against your ${currentCalculatedChart.lagnaSign} Lagna and planetary transits: Vedic configurations confirm strong alignment for positive breakthroughs. Focus on decisive action during auspicious Hora windows.`;
-      } else {
-        activeAiReadingText = `Analyzing '${q}' in universal transit context: Favorable breakthroughs occur through disciplined planning. Calculate your Janam Kundli above for exact personal timing.`;
-      }
-      document.getElementById('ai-resp-body').textContent = activeAiReadingText;
-    }
-
-    function handleAiEnter(e) {
-      if (e.key === 'Enter') askAiCustomQuery();
-    }
-
-    // Text-to-Speech Voice Readout
-    let isSpeaking = false;
-    function speakAiReading() {
-      if (!('speechSynthesis' in window)) {
-        showToast("Speech synthesis is not supported in this browser.", "error");
-        return;
-      }
-
-      if (isSpeaking) {
-        window.speechSynthesis.cancel();
-        isSpeaking = false;
-        document.getElementById('tts-label').textContent = "Listen";
-        return;
-      }
-
-      if (!activeAiReadingText) return;
-      const utterance = new SpeechSynthesisUtterance(activeAiReadingText);
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      utterance.onend = () => {
-        isSpeaking = false;
-        document.getElementById('tts-label').textContent = "Listen";
-      };
-
-      window.speechSynthesis.speak(utterance);
-      isSpeaking = true;
-      document.getElementById('tts-label').textContent = "Stop";
-    }
 
     // 7. AUTHENTICATION, SETTINGS & ADMIN CONTROLLER (Sections 4, 10 & 11)
     let currentSessionToken = localStorage.getItem('astro_session_token') || '';
