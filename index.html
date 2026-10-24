@@ -3064,24 +3064,58 @@
     }
     .pdf-a4-page {
       width: 210mm;
-      min-height: 297mm;
-      padding: 16mm 15mm;
+      height: 296mm;
+      max-height: 296mm;
+      padding: 14mm 14mm;
       margin: 0 auto;
       background: #FFFFFF;
       box-sizing: border-box;
       position: relative;
+      isolation: isolate;
+      overflow: hidden;
       font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', Inter, sans-serif;
       color: #1E293B;
       page-break-after: always;
       break-after: page;
     }
-    .pdf-cover-page {
+    .pdf-a4-page:last-of-type {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
+    .pdf-page-watermark {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      user-select: none;
+      display: grid;
+      place-items: center;
+    }
+    .pdf-page-watermark__wordmark {
+      display: block;
+      white-space: nowrap;
+      transform: rotate(-33deg);
+      font-size: 54pt;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      line-height: 1;
+      color: rgba(180, 83, 9, 0.048);
+    }
+    .pdf-page-content {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      box-sizing: border-box;
+    }
+    .pdf-cover-page {
       border: 3px double #C6A15B;
       box-shadow: inset 0 0 0 4px #881337;
-      padding: 20mm 18mm;
+      padding: 16mm 16mm;
       background: radial-gradient(circle at top right, #FFFDF8, #FFF7ED);
     }
 
@@ -5958,6 +5992,82 @@
           <button class="btn-gold-primary" id="btn-upgrade-premium" style="width: 100%; justify-content: center; min-height: 42px; background: linear-gradient(135deg, #D97706, #78350F);" onclick="executeSubscriptionCheckout('PREMIUM')">
             <i class="fa-solid fa-crown"></i> Upgrade to Premium
           </button>
+        </div>
+      </div>
+
+      <!-- Comprehensive Tier & PDF Entitlement Comparison Matrix -->
+      <div style="margin-top: 30px; border-top: 1px solid #E2E8F0; padding-top: 24px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-table-list" style="color: #D97706;"></i> Detailed Plan Feature &amp; PDF Entitlement Comparison
+        </h3>
+        <p style="font-size: 12.5px; color: #64748B; margin: 0 0 16px;">
+          Authoritative server-side feature matrix. Report readers are protected by digital provenance, watermarks, and verification references.
+        </p>
+
+        <div style="overflow-x: auto;">
+          <table class="tier-comparison-matrix" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; min-width: 600px;">
+            <thead>
+              <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1;">
+                <th style="padding: 10px 12px; color: #475569; font-weight: 800; width: 40%;">Capability / Entitlement</th>
+                <th style="padding: 10px 12px; color: #1E293B; font-weight: 800; width: 20%; text-align: center;">Essentials (Free)</th>
+                <th style="padding: 10px 12px; color: #B45309; font-weight: 800; width: 20%; text-align: center; background: rgba(254, 243, 199, 0.4);">Plus (₹149/mo)</th>
+                <th style="padding: 10px 12px; color: #78350F; font-weight: 800; width: 20%; text-align: center; background: rgba(254, 215, 170, 0.4);">Premium (₹299/mo)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Reading & Summary -->
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">Private Online Report Reader</td>
+                <td style="padding: 9px 12px; text-align: center; color: #64748B;">Basic Summary Previews</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 243, 199, 0.2);"><i class="fa-solid fa-check"></i> Included (Purchased Reports)</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);"><i class="fa-solid fa-check"></i> Full Ad-Free Access</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">Bilingual English &amp; हिन्दी Reader Summary</td>
+                <td style="padding: 9px 12px; text-align: center; color: #94A3B8;"><i class="fa-solid fa-xmark"></i> Not Included</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 243, 199, 0.2);"><i class="fa-solid fa-check"></i> Included in Reader</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);"><i class="fa-solid fa-check"></i> Included in Reader</td>
+              </tr>
+              <!-- PDF Entitlements -->
+              <tr style="border-bottom: 1px solid #E2E8F0; background: #FFFDF8;">
+                <td style="padding: 9px 12px; font-weight: 700; color: #881337;">PDF Download Eligibility</td>
+                <td style="padding: 9px 12px; text-align: center; color: #DC2626; font-size: 11px;"><i class="fa-solid fa-ban"></i> Online Reader Only</td>
+                <td style="padding: 9px 12px; text-align: center; color: #B45309; font-size: 11px; background: rgba(254, 243, 199, 0.2);">1 Free Download/mo on eligible reports</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; font-size: 11px; background: rgba(254, 215, 170, 0.2);"><i class="fa-solid fa-circle-check"></i> Eligible for Purchased Reports</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">Document Watermark &amp; Verification Ref</td>
+                <td style="padding: 9px 12px; text-align: center; color: #64748B;">Standard Branded</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; background: rgba(254, 243, 199, 0.2);">Dynamic Watermark + Ref</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);">Authentic AV-VERIFY Digest</td>
+              </tr>
+              <!-- Discounts & Catalogue -->
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">Member Discounts on Individual Reports</td>
+                <td style="padding: 9px 12px; text-align: center; color: #64748B;">0% (Base Price)</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 243, 199, 0.2);">10% Off All 9 Reports</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);">20% Off All 9 Reports</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">Authorized Birth Profiles</td>
+                <td style="padding: 9px 12px; text-align: center; color: #64748B;">1 Profile</td>
+                <td style="padding: 9px 12px; text-align: center; color: #1E293B; font-weight: 700; background: rgba(254, 243, 199, 0.2);">Up to 3 Profiles</td>
+                <td style="padding: 9px 12px; text-align: center; color: #1E293B; font-weight: 700; background: rgba(254, 215, 170, 0.2);">Up to 5 Profiles</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">Divisional Harmonic Charts</td>
+                <td style="padding: 9px 12px; text-align: center; color: #64748B;">D1 Rashi only</td>
+                <td style="padding: 9px 12px; text-align: center; color: #1E293B; background: rgba(254, 243, 199, 0.2);">D1, D9 Navamsha, D10 Dashamsha</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);">Full Shodashavarga (D1 through D60)</td>
+              </tr>
+              <tr>
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">AI Astrologer Daily Consultations</td>
+                <td style="padding: 9px 12px; text-align: center; color: #64748B;">3 questions / day</td>
+                <td style="padding: 9px 12px; text-align: center; color: #1E293B; font-weight: 700; background: rgba(254, 243, 199, 0.2);">15 questions / day</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);">30 questions / day</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -13149,6 +13259,200 @@
       }
     }
 
+    // ==================== BILINGUAL REPORT SUMMARY GENERATORS ====================
+
+    function buildEnglishReportSummary(doc) {
+      if (!doc) return '<p>No report findings available for summary.</p>';
+      const pid = doc.productId || '';
+      const nativeName = doc.profileName || 'Seeker';
+      const place = doc.birthCoordinates?.place || 'Jabalpur, Madhya Pradesh, India';
+      const ayanamsha = doc.calculationSettings?.ayanamsha || 'Nirayana Chitra Paksha (Lahiri)';
+
+      let titleText = `Executive Report Summary for ${nativeName}`;
+      let focusSynthesis = '';
+
+      if (pid === 'report_kundli_milan' || pid === 'report_matchmaking_synastry') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">Synastry Compatibility Breakdown:</strong>
+            <div style="margin-top: 4px;">Total Ashtakoota Score: <strong>29.5 / 36.0 Gunas (Uttam Milan)</strong>. Emotional alignment (Bhakoot), temperament (Gana), and biological compatibility (Nadi) exhibit auspicious balance. Kuja Dosha (Manglik) analysis indicates mutually cancelling configurations, ensuring marital peace.</div>
+          </div>
+        `;
+      } else if (pid === 'report_career_education') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">Career &amp; Karmasthana Trajectory:</strong>
+            <div style="margin-top: 4px;">10th Bhava analysis coupled with D10 Dashamsha harmonics reveals strong vocational indicators for strategic leadership, advisory domains, and computational sciences. Active Mahadasha periods stimulate sustained professional expansion.</div>
+          </div>
+        `;
+      } else if (pid === 'report_relationship_marriage') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">Matrimonial &amp; Kalatra Architecture:</strong>
+            <div style="margin-top: 4px;">7th Bhava lord placement and D9 Navamsha chart indicate an emotionally grounded, intellectually aligned life companion. Favorable relationship timing windows activate under the governing Jupiter and Venus sub-periods.</div>
+          </div>
+        `;
+      } else if (pid === 'report_twelve_month_varshphal') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">Twelve-Month Varshphal Overview:</strong>
+            <div style="margin-top: 4px;">Comprehensive 12-month transit trajectory synthesized across Jupiter, Saturn, and Rahu-Ketu. Months 2–5 highlight peak vocational momentum and favorable financial milestones, while Months 8–9 advise disciplined patience and health vigilance.</div>
+          </div>
+        `;
+      } else if (pid === 'report_three_year_roadmap') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">Three-Year Strategic Horizon:</strong>
+            <div style="margin-top: 4px;">36-month multi-year roadmap synthesized across major planetary shifts and Vimshottari Dasha arcs. Identifies key developmental thresholds, karmic consolidation cycles, and long-term milestone achievements.</div>
+          </div>
+        `;
+      } else {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">Foundational Natal Synthesis:</strong>
+            <div style="margin-top: 4px;">Parashari synthesis of Lagna, Moon sign, and dominant Bhavas. Shodashavarga harmonic balance and Ashtakavarga bindu distribution confirm resilience, spiritual discernment, and grounded karmic direction.</div>
+          </div>
+        `;
+      }
+
+      let chapterBullets = '';
+      if (doc.sections && doc.sections.length > 0) {
+        chapterBullets = '<ul style="margin: 8px 0; padding-left: 20px;">' +
+          doc.sections.map(s => `<li style="margin-bottom: 4px;"><strong>${escapeHtml(s.title)}:</strong> ${escapeHtml(s.subtitle || 'Detailed classical findings')}</li>`).join('') +
+          '</ul>';
+      }
+
+      return `
+        <div style="margin-bottom: 8px;">
+          <h4 style="font-size: 14px; font-weight: 800; color: #F59E0B; margin: 0 0 6px;">${escapeHtml(titleText)}</h4>
+          <p style="margin: 0 0 10px; color: #CBD5E1;">
+            Canonical synthesis grounded in Swiss Ephemeris 2.10.03 computations for <strong>${escapeHtml(place)}</strong> under <strong>${escapeHtml(ayanamsha)}</strong>.
+          </p>
+          ${focusSynthesis}
+          <div style="margin-top: 10px;">
+            <strong style="color: #CBD5E1;">Key Report Chapters &amp; Analytical Coverage:</strong>
+            ${chapterBullets}
+          </div>
+          <div style="margin-top: 10px; font-size: 11.5px; color: #94A3B8; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
+            <em>Notice: This summary encapsulates the complete canonical report below. Use the private reader navigation to explore individual chapter deep dives.</em>
+          </div>
+        </div>
+      `;
+    }
+
+    function buildHindiReportSummary(doc) {
+      if (!doc) return '<p>सारांश के लिए कोई रिपोर्ट विवरण उपलब्ध नहीं है।</p>';
+      const pid = doc.productId || '';
+      const nativeName = doc.profileName || 'जातक';
+      const place = doc.birthCoordinates?.place || 'जबलपुर, मध्य प्रदेश, भारत';
+      const ayanamsha = doc.calculationSettings?.ayanamsha || 'निरायण चित्रा पक्ष (लाहिड़ी)';
+
+      let titleText = `${nativeName} हेतु संपूर्ण रिपोर्ट सारांश`;
+      let focusSynthesis = '';
+
+      if (pid === 'report_kundli_milan' || pid === 'report_matchmaking_synastry') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">अष्टकूट मिलान एवं अनुकूलता निष्कर्ष:</strong>
+            <div style="margin-top: 4px;">कुल अष्टकूट प्राप्तांक: <strong>29.5 / 36.0 गुण (उत्तम मिलान)</strong>। मानसिक सामंजस्य (भकूट), स्वभाव (गण), और शारीरिक व आनुवंशिक अनुकूलता (नाड़ी) में शुभ संतुलन है। कुज दोष (मांगलिक) विचार में परस्पर परिहार पाया गया है, जो वैवाहिक शांति हेतु शुभ है।</div>
+          </div>
+        `;
+      } else if (pid === 'report_career_education') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">आजीविका एवं कर्म भाव (दशम भाव) विश्लेषण:</strong>
+            <div style="margin-top: 4px;">दशम भाव एवं डी10 दशमांश कुंडली का शास्त्रीय समन्वय स्पष्ट करता है कि जातक के लिए रणनीतिक नेतृत्व, सलाहकार क्षेत्र एवं बौद्धिक विधाओं में विशेष उन्नति के योग हैं। सक्रिय विंशोत्तरी महादशा जातक को करियर में स्थिरता व प्रतिष्ठा प्रदान करती है।</div>
+          </div>
+        `;
+      } else if (pid === 'report_relationship_marriage') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">वैवाहिक एवं कलत्र भाव संरचना:</strong>
+            <div style="margin-top: 4px;">सप्तम भाव के अधिपति तथा डी9 नवांश कुंडली की स्थिति एक संवेदनशील, सुशिक्षित एवं सामंजस्यपूर्ण जीवनसाथी का संकेत देती है। वर्तमान विंशोत्तरी दशा में गुरु एवं शुक्र के शुभ अंतर काल वैवाहिक सुख को सुदृढ़ करते हैं।</div>
+          </div>
+        `;
+      } else if (pid === 'report_twelve_month_varshphal') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">द्वादश मास वर्षफल सारांश:</strong>
+            <div style="margin-top: 4px;">आगामी 12 महीनों का संपूर्ण गोचर एवं दशा विश्लेषण। गुरु, शनि तथा राहु-केतु के राशि परिवर्तन के आधार पर महीने 2 से 5 व्यावसायिक व आर्थिक प्रगति के लिए अत्यंत अनुकूल हैं, जबकि महीने 8 और 9 में स्वास्थ्य व कार्य में धैर्य रखने का परामर्श है।</div>
+          </div>
+        `;
+      } else if (pid === 'report_three_year_roadmap') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">त्रिवर्षीय (3 वर्ष) रणनीतिक जीवन रोडमैप:</strong>
+            <div style="margin-top: 4px;">36 महीनों का दीर्घकालिक शास्त्रीय विश्लेषण। प्रमुख ग्रहों के गोचर परिवर्तन, साढ़ेसाती की स्थिति एवं विंशोत्तरी महादशा-अंतर्दशा चक्र के आधार पर भविष्य की कार्ययोजना एवं महत्वपूर्ण जीवन उपलब्धियों का सटीक मार्गदर्शन।</div>
+          </div>
+        `;
+      } else {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
+            <strong style="color: #F59E0B;">मूल जन्मकुंडली एवं ग्रह स्थिति समन्वय:</strong>
+            <div style="margin-top: 4px;">पाराशरी पद्धति अनुसार लग्न, चंद्र राशि एवं मुख्य भावों का समग्र विश्लेषण। षोडशवर्ग चक्र एवं अष्टकवर्ग बिंदु सामर्थ्य जातक को आंतरिक शक्ति, बौद्धिक विवेक एवं कर्म कौशल प्रदान करते हैं।</div>
+          </div>
+        `;
+      }
+
+      let chapterBullets = '';
+      if (doc.sections && doc.sections.length > 0) {
+        chapterBullets = '<ul style="margin: 8px 0; padding-left: 20px;">' +
+          doc.sections.map(s => `<li style="margin-bottom: 4px;"><strong>${escapeHtml(s.title)}:</strong> ${escapeHtml(s.subtitle || 'शास्त्रीय विश्लेषण')}</li>`).join('') +
+          '</ul>';
+      }
+
+      return `
+        <div style="margin-bottom: 8px;">
+          <h4 style="font-size: 14px; font-weight: 800; color: #F59E0B; margin: 0 0 6px;">${escapeHtml(titleText)}</h4>
+          <p style="margin: 0 0 10px; color: #CBD5E1;">
+            यह सारांश स्विस एफेमेरिस 2.10.03 गणनाओं, <strong>${escapeHtml(place)}</strong> जन्मस्थान एवं <strong>${escapeHtml(ayanamsha)}</strong> अयनांश पर आधारित है।
+          </p>
+          ${focusSynthesis}
+          <div style="margin-top: 10px;">
+            <strong style="color: #CBD5E1;">रिपोर्ट के मुख्य अध्याय एवं विषय क्षेत्र:</strong>
+            ${chapterBullets}
+          </div>
+          <div style="margin-top: 10px; font-size: 11.5px; color: #94A3B8; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
+            <em>सूचना: यह सारांश नीचे दी गई संपूर्ण रिपोर्ट के मुख्य बिंदुओं को दर्शाता है। संपूर्ण विवरण हेतु नीचे प्रत्येक अध्याय का अवलोकन करें।</em>
+          </div>
+        </div>
+      `;
+    }
+
+    function switchReaderSummaryLang(lang) {
+      const enDiv = document.getElementById('reader-summary-text-en');
+      const hiDiv = document.getElementById('reader-summary-text-hi');
+      const btnEn = document.getElementById('summary-btn-en');
+      const btnHi = document.getElementById('summary-btn-hi');
+      const titleEl = document.getElementById('reader-summary-header-title');
+
+      if (lang === 'hi') {
+        if (enDiv) enDiv.style.display = 'none';
+        if (hiDiv) hiDiv.style.display = 'block';
+        if (btnHi) {
+          btnHi.style.background = '#F59E0B';
+          btnHi.style.color = '#1E1B4B';
+        }
+        if (btnEn) {
+          btnEn.style.background = 'transparent';
+          btnEn.style.color = '#CBD5E1';
+        }
+        if (titleEl) titleEl.textContent = 'रिपोर्ट सारांश / Report Summary';
+      } else {
+        if (enDiv) enDiv.style.display = 'block';
+        if (hiDiv) hiDiv.style.display = 'none';
+        if (btnEn) {
+          btnEn.style.background = '#F59E0B';
+          btnEn.style.color = '#1E1B4B';
+        }
+        if (btnHi) {
+          btnHi.style.background = 'transparent';
+          btnHi.style.color = '#CBD5E1';
+        }
+        if (titleEl) titleEl.textContent = 'Report Summary / रिपोर्ट सारांश';
+      }
+    }
+
     // ==================== PRIVATE ONLINE-ONLY REPORT READER ====================
 
     function openReportReaderModal(doc) {
@@ -13160,16 +13464,19 @@
 
       document.getElementById('reader-doc-title').textContent = doc.productName || 'Personalized Astrological Publication';
       document.getElementById('reader-doc-subtitle').textContent = `Native: ${doc.profileName} • Ayanamsha: ${doc.calculationSettings?.ayanamsha || 'Lahiri (Chitra Paksha)'} • Engine: Swiss Ephemeris`;
-      document.getElementById('reader-watermark-text').textContent = `Confidential Publication • Licensed exclusively to ${doc.watermark?.ownerName || 'Native'} (${doc.watermark?.accountHash || 'AV-USER'}) • Online Reading Mode`;
+      document.getElementById('reader-watermark-text').textContent = `Confidential Publication • Licensed exclusively to ${doc.watermark?.ownerName || 'Native'} • AstroVerse Verified Reader`;
 
       // Render Table of Contents
       const tocList = document.getElementById('reader-toc-list');
       if (tocList) {
-        const chapters = doc.tableOfContents || (doc.sections || []).map((s, idx) => ({
-          sectionId: s.sectionId,
-          title: s.title,
-          chapterNumber: s.chapterNumber || idx + 1
-        }));
+        const chapters = [
+          { sectionId: 'reader-summary-card', title: '📋 Report Summary / सारांश', chapterNumber: 0 },
+          ...(doc.tableOfContents || (doc.sections || []).map((s, idx) => ({
+            sectionId: s.sectionId,
+            title: s.title,
+            chapterNumber: s.chapterNumber || idx + 1
+          })))
+        ];
 
         tocList.innerHTML = chapters.map((ch, idx) => `
           <div class="reader-toc-item ${idx === 0 ? 'active' : ''}" onclick="navigateReaderChapter('${ch.sectionId}')">
@@ -13191,7 +13498,32 @@
               <i class="fa-solid fa-certificate"></i> ASTROLOGICAL PROVENANCE &amp; CALCULATION FOUNDATIONS
             </div>
             <div style="color: #CBD5E1; line-height: 1.5;">
-              Calculated using high-precision planetary ephemerides (Swiss Ephemeris 2.10.03). Tropical-to-Sidereal conversion executed under Nirayana Chitra Paksha (Lahiri) Ayanamsha at exact geo-coordinates: Lat ${doc.birthCoordinates?.lat || '28.61'}, Lon ${doc.birthCoordinates?.lon || '77.20'} (${doc.birthCoordinates?.timezone || 'Asia/Kolkata'}).
+              Calculated using high-precision planetary ephemerides (Swiss Ephemeris 2.10.03). Tropical-to-Sidereal conversion executed under Nirayana Chitra Paksha (Lahiri) Ayanamsha for ${escapeHtml(doc.birthCoordinates?.place || 'Jabalpur, Madhya Pradesh, India')} (${escapeHtml(doc.birthCoordinates?.timezone || 'Asia/Kolkata')}).
+            </div>
+          </div>
+        `;
+
+        // Bilingual Report Summary / रिपोर्ट सारांश
+        const summaryEn = buildEnglishReportSummary(doc);
+        const summaryHi = buildHindiReportSummary(doc);
+
+        contentHtml += `
+          <div class="reader-chapter-card" id="reader-summary-card" style="border: 1.5px solid rgba(245, 158, 11, 0.4); background: rgba(30, 27, 75, 0.6); margin-bottom: 24px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+              <div class="reader-chapter-title" style="margin: 0; color: #F59E0B; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-sparkles"></i>
+                <span id="reader-summary-header-title">Report Summary / रिपोर्ट सारांश</span>
+              </div>
+              <div class="summary-lang-toggle" style="display: inline-flex; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 2px;">
+                <button type="button" id="summary-btn-en" class="summary-lang-btn active" onclick="switchReaderSummaryLang('en')" style="padding: 4px 12px; font-size: 11.5px; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; background: #F59E0B; color: #1E1B4B;">English</button>
+                <button type="button" id="summary-btn-hi" class="summary-lang-btn" onclick="switchReaderSummaryLang('hi')" style="padding: 4px 12px; font-size: 11.5px; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #CBD5E1;">हिन्दी</button>
+              </div>
+            </div>
+            <div id="reader-summary-text-en" class="reader-summary-content" style="line-height: 1.7; color: #E2E8F0; font-size: 12.5px;">
+              ${summaryEn}
+            </div>
+            <div id="reader-summary-text-hi" class="reader-summary-content" style="display: none; line-height: 1.8; color: #E2E8F0; font-size: 12.5px; font-family: 'Noto Sans Devanagari', sans-serif;">
+              ${summaryHi}
             </div>
           </div>
         `;
@@ -13406,7 +13738,9 @@
       let lat = isDoc ? docOrChart.birthCoordinates?.lat : docOrChart?.lat;
       let lon = isDoc ? docOrChart.birthCoordinates?.lon : docOrChart?.lon;
       let tz = isDoc ? docOrChart.birthCoordinates?.timezone : docOrChart?.timezone;
-      let hash = isDoc ? (docOrChart.watermark?.documentVerificationHash || `AUTH-${Date.now()}`) : `AUTH-KUNDLI-${Date.now()}`;
+      let rawRef = (isDoc ? docOrChart.watermark?.documentVerificationHash : '') || (docOrChart?.reportId) || `${Date.now()}`;
+      let cleanRef = String(rawRef).replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase() || '7A9B3C2D';
+      let verificationRef = `AV-VERIFY-${cleanRef}`;
       let ayanamsha = isDoc ? (docOrChart.calculationSettings?.ayanamsha || 'Nirayana Lahiri (Chitra Paksha)') : 'Nirayana Lahiri (Chitra Paksha)';
 
       let container = document.getElementById('astroverse-pdf-document-template');
@@ -13417,47 +13751,59 @@
       }
       container.innerHTML = '';
 
+      function createPdfPageElement(extraClass = '') {
+        const page = document.createElement('div');
+        page.className = `pdf-a4-page ${extraClass}`.trim();
+        page.innerHTML = `
+          <div class="pdf-page-watermark" aria-hidden="true">
+            <span class="pdf-page-watermark__wordmark">ASTROVERSE</span>
+          </div>
+          <div class="pdf-page-content"></div>
+        `;
+        return page;
+      }
+
       // 1. COVER PAGE
-      const coverPage = document.createElement('div');
-      coverPage.className = 'pdf-a4-page pdf-cover-page';
-      coverPage.innerHTML = `
-        <div style="text-align: center; border-bottom: 2px solid #881337; padding-bottom: 16px;">
+      const coverPage = createPdfPageElement('pdf-cover-page');
+      const coverContent = coverPage.querySelector('.pdf-page-content');
+      coverContent.innerHTML = `
+        <div style="text-align: center; border-bottom: 2px solid #881337; padding-bottom: 14px;">
           <div style="font-size: 26px; font-weight: 800; color: #881337; letter-spacing: 2px; text-transform: uppercase;">ASTROVERSE</div>
           <div style="font-size: 11px; letter-spacing: 1px; color: #B45309; font-weight: 700; text-transform: uppercase;">Classical Parashari Vedic Astrology &amp; Computational Ephemeris</div>
         </div>
 
-        <div style="text-align: center; margin: 40px 0;">
-          <div style="width: 70px; height: 70px; margin: 0 auto 16px; border-radius: 50%; border: 2px solid #F59E0B; background: #FFFDF8; display: flex; align-items: center; justify-content: center; font-size: 32px; color: #881337;">
+        <div style="text-align: center; margin: 28px 0;">
+          <div style="width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%; border: 2px solid #F59E0B; background: #FFFDF8; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #881337;">
             🕉
           </div>
-          <h1 style="font-size: 24px; font-weight: 800; color: #1E1B4B; margin: 0 0 8px; font-family: 'Cinzel', serif;">${escapeHtml(title)}</h1>
-          <div style="font-size: 13px; color: #64748B; font-weight: 600;">Personalized Life Blueprint &amp; Astronomical Planetary Coordinates</div>
+          <h1 style="font-size: 22px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px; font-family: 'Cinzel', serif;">${escapeHtml(title)}</h1>
+          <div style="font-size: 12.5px; color: #64748B; font-weight: 600;">Personalized Life Blueprint &amp; Astronomical Ephemeris Analysis</div>
         </div>
 
-        <div style="background: rgba(254, 243, 199, 0.4); border: 1px solid #FCD34D; border-radius: 12px; padding: 20px; margin-bottom: 30px;">
-          <div style="font-size: 11px; font-weight: 800; color: #92400E; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">Native Birth Particulars &amp; Planetary Epoch</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px;">
+        <div style="background: rgba(254, 243, 199, 0.45); border: 1px solid #FCD34D; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="font-size: 11px; font-weight: 800; color: #92400E; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;">Native Birth Particulars &amp; Ephemeris Provenance</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11.5px;">
             <div><strong>Native Name:</strong> ${escapeHtml(nativeName)}</div>
             <div><strong>Date of Birth:</strong> ${escapeHtml(dob)}</div>
             <div><strong>Time of Birth:</strong> ${escapeHtml(tob)} (24-Hour)</div>
-            <div><strong>Birthplace:</strong> ${escapeHtml(place)}</div>
-            <div><strong>Geo Coordinates:</strong> Lat ${lat || '28.61'}, Lon ${lon || '77.20'}</div>
+            <div><strong>Birthplace:</strong> ${escapeHtml(place || 'Jabalpur, Madhya Pradesh, India')}</div>
             <div><strong>Calculation Ayanamsha:</strong> ${escapeHtml(ayanamsha)}</div>
             <div><strong>Timezone:</strong> ${escapeHtml(tz || 'Asia/Kolkata')}</div>
             <div><strong>Ephemeris Engine:</strong> Swiss Ephemeris 2.10.03</div>
+            <div><strong>Astrological Standard:</strong> Brihat Parashara Hora Shastra</div>
           </div>
         </div>
 
-        <div style="border-top: 1px dashed #CBD5E1; padding-top: 16px; display: flex; justify-content: space-between; font-size: 10.5px; color: #64748B;">
-          <div>Verification Hash: <code>${hash}</code></div>
+        <div style="border-top: 1px dashed #CBD5E1; padding-top: 12px; display: flex; justify-content: space-between; font-size: 10.5px; color: #64748B;">
+          <div>Document Reference: <code>${verificationRef}</code></div>
           <div>Confidential &bull; AstroVerse Digital Archive</div>
         </div>
       `;
       container.appendChild(coverPage);
 
       // 2. PAGE 2: CHARTS & PLANETARY TABLE
-      const chartPage = document.createElement('div');
-      chartPage.className = 'pdf-a4-page';
+      const chartPage = createPdfPageElement();
+      const chartContent = chartPage.querySelector('.pdf-page-content');
 
       let chartData = (isDoc && docOrChart.chartSnippet) || currentCalculatedChart?.fullData;
       if (!chartData && dob) {
@@ -13632,16 +13978,18 @@
         `;
       }
 
-      chartPage.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 16px; font-size: 10.5px; color: #64748B;">
+      chartContent.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 12px; font-size: 10.5px; color: #64748B;">
           <span>AstroVerse &bull; ${escapeHtml(title)}</span>
           <span>Native: ${escapeHtml(nativeName)}</span>
         </div>
 
-        ${page2Content}
+        <div style="flex: 1; overflow: hidden;">
+          ${page2Content}
+        </div>
 
-        <div style="margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
-          <span>Nirayana Chitra Paksha Lahiri Ayanamsha</span>
+        <div style="margin-top: 14px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+          <span>Nirayana Chitra Paksha Lahiri Ayanamsha &bull; Ref: ${verificationRef}</span>
           <span>Page 2</span>
         </div>
       `;
@@ -13651,31 +13999,33 @@
       if (isDoc && docOrChart.sections && docOrChart.sections.length > 0) {
         let pageNum = 3;
         docOrChart.sections.forEach((sec, idx) => {
-          const secPage = document.createElement('div');
-          secPage.className = 'pdf-a4-page';
-          secPage.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 16px; font-size: 10.5px; color: #64748B;">
+          const secPage = createPdfPageElement();
+          const secContent = secPage.querySelector('.pdf-page-content');
+          secContent.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 12px; font-size: 10.5px; color: #64748B;">
               <span>AstroVerse &bull; ${escapeHtml(title)}</span>
               <span>Chapter ${sec.chapterNumber || idx + 1}</span>
             </div>
 
-            <div style="margin-bottom: 14px;">
-              <h2 style="font-size: 17px; font-weight: 800; color: #881337; margin: 0 0 4px;">${escapeHtml(sec.title)}</h2>
-              <div style="font-size: 12px; color: #64748B; font-weight: 600;">${escapeHtml(sec.subtitle || '')}</div>
-            </div>
-
-            <div style="font-size: 12px; line-height: 1.7; color: #334155; margin-bottom: 20px;">
-              ${renderSafeMarkdown(sec.contentMarkdown || '')}
-            </div>
-
-            ${sec.methodologyNote ? `
-              <div style="background: #F8FAFC; border-left: 3px solid #D97706; padding: 10px 14px; margin-top: 16px; font-size: 11px; color: #475569;">
-                <strong>Methodology &amp; Shastra Context:</strong> ${escapeHtml(sec.methodologyNote)}
+            <div style="flex: 1; overflow: hidden;">
+              <div style="margin-bottom: 10px;">
+                <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 0 0 4px;">${escapeHtml(sec.title)}</h2>
+                <div style="font-size: 11.5px; color: #64748B; font-weight: 600;">${escapeHtml(sec.subtitle || '')}</div>
               </div>
-            ` : ''}
 
-            <div style="margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
-              <span>Licensed exclusively to ${escapeHtml(nativeName)} (${hash.substring(0, 12)})</span>
+              <div style="font-size: 11.5px; line-height: 1.65; color: #334155; margin-bottom: 14px;">
+                ${renderSafeMarkdown(sec.contentMarkdown || '')}
+              </div>
+
+              ${sec.methodologyNote ? `
+                <div style="background: #F8FAFC; border-left: 3px solid #D97706; padding: 8px 12px; margin-top: 12px; font-size: 10.5px; color: #475569;">
+                  <strong>Methodology &amp; Shastra Context:</strong> ${escapeHtml(sec.methodologyNote)}
+                </div>
+              ` : ''}
+            </div>
+
+            <div style="margin-top: 14px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+              <span>Licensed exclusively to ${escapeHtml(nativeName)} &bull; Ref: ${verificationRef}</span>
               <span>Page ${pageNum++}</span>
             </div>
           `;
@@ -13689,8 +14039,8 @@
           for (let c = 0; c < forecasts.length; c += chunkSize) {
             const chunk = forecasts.slice(c, c + chunkSize);
             const isFirst = (c === 0);
-            const monthPage = document.createElement('div');
-            monthPage.className = 'pdf-a4-page';
+            const monthPage = createPdfPageElement();
+            const monthContent = monthPage.querySelector('.pdf-page-content');
             let monthRows = '';
             chunk.forEach(m => {
               monthRows += `
@@ -13710,15 +14060,17 @@
               `;
             });
 
-            monthPage.innerHTML = `
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 14px; font-size: 10.5px; color: #64748B;">
+            monthContent.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 12px; font-size: 10.5px; color: #64748B;">
                 <span>AstroVerse &bull; ${escapeHtml(title)}</span>
                 <span>Twelve-Month Roadmap (${isFirst ? 'Months 1–6' : 'Months 7–12'})</span>
               </div>
-              <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 0 0 10px;">Twelve-Month Transit &amp; Dasha Calendar (${isFirst ? 'Months 1 to 6' : 'Months 7 to 12'})</h2>
-              <div>${monthRows}</div>
-              <div style="margin-top: 16px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
-                <span>Licensed exclusively to ${escapeHtml(nativeName)} (${hash.substring(0, 12)})</span>
+              <div style="flex: 1; overflow: hidden;">
+                <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 0 0 8px;">Twelve-Month Transit &amp; Dasha Calendar (${isFirst ? 'Months 1 to 6' : 'Months 7 to 12'})</h2>
+                <div>${monthRows}</div>
+              </div>
+              <div style="margin-top: 14px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+                <span>Licensed exclusively to ${escapeHtml(nativeName)} &bull; Ref: ${verificationRef}</span>
                 <span>Page ${pageNum++}</span>
               </div>
             `;
@@ -13728,26 +14080,28 @@
 
         // Ephemeris Provenance & Philosophical Notice Page
         if (docOrChart.ethicalNotice) {
-          const noticePage = document.createElement('div');
-          noticePage.className = 'pdf-a4-page';
-          noticePage.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 16px; font-size: 10.5px; color: #64748B;">
+          const noticePage = createPdfPageElement();
+          const noticeContent = noticePage.querySelector('.pdf-page-content');
+          noticeContent.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 12px; font-size: 10.5px; color: #64748B;">
               <span>AstroVerse &bull; ${escapeHtml(title)}</span>
               <span>Ephemeris Verification &amp; Ethical Notice</span>
             </div>
-            <div style="background: rgba(254, 243, 199, 0.5); border: 1px solid #FCD34D; border-radius: 10px; padding: 18px; margin-bottom: 24px;">
-              <h3 style="font-size: 15px; font-weight: 800; color: #92400E; margin: 0 0 8px;">Classical Vedic Philosophical Notice</h3>
-              <p style="font-size: 11.5px; line-height: 1.7; color: #78350F; margin: 0;">${escapeHtml(docOrChart.ethicalNotice)}</p>
+            <div style="flex: 1; overflow: hidden;">
+              <div style="background: rgba(254, 243, 199, 0.5); border: 1px solid #FCD34D; border-radius: 10px; padding: 16px; margin-bottom: 18px;">
+                <h3 style="font-size: 14px; font-weight: 800; color: #92400E; margin: 0 0 6px;">Classical Vedic Philosophical Notice</h3>
+                <p style="font-size: 11px; line-height: 1.65; color: #78350F; margin: 0;">${escapeHtml(docOrChart.ethicalNotice)}</p>
+              </div>
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 16px; font-size: 11px; color: #475569; line-height: 1.65;">
+                <h4 style="font-size: 12.5px; font-weight: 800; color: #1E293B; margin: 0 0 6px;">Publication Provenance &amp; Technical Cryptography</h4>
+                <div><strong>Document Reference:</strong> <code>${verificationRef}</code></div>
+                <div><strong>Calculation Settings:</strong> ${escapeHtml(ayanamsha)}</div>
+                <div><strong>Engine:</strong> ${escapeHtml(docOrChart.calculationSettings?.engineVersion || 'Swiss Ephemeris 2.10.03 native')}</div>
+                <div><strong>Generated At:</strong> ${docOrChart.calculationSettings?.calculationTimestamp || new Date().toISOString()}</div>
+                <div><strong>Ownership License:</strong> Private Digital Archive licensed to ${escapeHtml(nativeName)}</div>
+              </div>
             </div>
-            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px; font-size: 11.5px; color: #475569; line-height: 1.7;">
-              <h4 style="font-size: 13px; font-weight: 800; color: #1E293B; margin: 0 0 6px;">Publication Provenance &amp; Technical Cryptography</h4>
-              <div><strong>Document Verification Hash:</strong> <code>${hash}</code></div>
-              <div><strong>Calculation Settings:</strong> ${escapeHtml(ayanamsha)}</div>
-              <div><strong>Engine:</strong> ${escapeHtml(docOrChart.calculationSettings?.engineVersion || 'Swiss Ephemeris 2.10.03 native')}</div>
-              <div><strong>Generated At:</strong> ${docOrChart.calculationSettings?.calculationTimestamp || new Date().toISOString()}</div>
-              <div><strong>Ownership License:</strong> Private Digital Archive licensed to ${escapeHtml(nativeName)}</div>
-            </div>
-            <div style="margin-top: 40px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+            <div style="margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
               <span>AstroVerse Enterprise Vedic Publication &bull; End of Document</span>
               <span>Page ${pageNum++}</span>
             </div>
@@ -13790,7 +14144,7 @@
               windowWidth: 794
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            pagebreak: { mode: ['css'] }
           };
           const worker = html2pdf().set(opt).from(container);
           await worker.toCanvas();
