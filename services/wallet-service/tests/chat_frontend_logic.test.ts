@@ -15,6 +15,31 @@ function escapeHtml(str: string): string {
 function renderSafeMarkdown(text: string): string {
   if (!text) return '';
   let safe = escapeHtml(text);
+
+  // Parse markdown tables before paragraph splitting
+  safe = safe.replace(/((?:^|\n)(?:[ \t]*\|[^\n]+\|[ \t]*(?:\r?\n|$))+)/g, (match) => {
+    const lines = match.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) return match;
+    let headerRow = '';
+    const bodyRows = [];
+    let isFirstRow = true;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\|(?:\s*:?-+:?\s*\|)+$/.test(line)) {
+        continue;
+      }
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      if (isFirstRow) {
+        headerRow = `<tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1;">${cells.map(c => `<th style="padding: 8px 10px; font-weight: 700; color: #475569; font-size: 11px;">${c}</th>`).join('')}</tr>`;
+        isFirstRow = false;
+      } else {
+        bodyRows.push(`<tr style="border-bottom: 1px solid #E2E8F0;">${cells.map(c => `<td style="padding: 6px 10px; font-size: 11px; color: #334155;">${c}</td>`).join('')}</tr>`);
+      }
+    }
+    return `\n<table style="width: 100%; border-collapse: collapse; margin: 12px 0;"><thead>${headerRow}</thead><tbody>${bodyRows.join('')}</tbody></table>\n`;
+  });
+
   safe = safe.replace(/^###\s+(.+)$/gm, '<h4><i class="fa-solid fa-scroll" style="color: #D97706; font-size: 11px;"></i> $1</h4>');
   safe = safe.replace(/^##\s+(.+)$/gm, '<h4>$1</h4>');
   safe = safe.replace(/^(?:>|&gt;)\s+(.+)$/gm, '<blockquote>$1</blockquote>');
@@ -28,7 +53,7 @@ function renderSafeMarkdown(text: string): string {
   return paragraphs.map(p => {
     const trimmed = p.trim();
     if (!trimmed) return '';
-    if (trimmed.startsWith('<h4>') || trimmed.startsWith('<ul>') || trimmed.startsWith('<ol>') || trimmed.startsWith('<blockquote>')) {
+    if (trimmed.startsWith('<h4>') || trimmed.startsWith('<ul>') || trimmed.startsWith('<ol>') || trimmed.startsWith('<blockquote>') || trimmed.startsWith('<table')) {
       return trimmed;
     }
     return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
@@ -59,6 +84,17 @@ test('renderSafeMarkdown parses headings, blockquotes, and lists', () => {
   assert.ok(rendered.includes('<blockquote>Traditional Jyotish Rule</blockquote>'), 'Must contain blockquote');
   assert.ok(rendered.includes('<ul><li>Point 1</li><li>Point 2</li></ul>'), 'Must merge contiguous bullet list');
   assert.ok(rendered.includes('<ol><li>First</li><li>Second</li></ol>'), 'Must merge contiguous numbered list');
+});
+
+test('renderSafeMarkdown parses markdown tables into styled HTML tables with headers and rows', () => {
+  const mdTable = `### Planetary Longitudes\n\n| Planet | Sign | Degree |\n| :--- | :--- | :--- |\n| **Sun** | Leo | 15.20° |\n| **Moon** | Aquarius | 22.45° |`;
+  const rendered = renderSafeMarkdown(mdTable);
+  assert.ok(rendered.includes('<table style="width: 100%'), 'Must contain styled table tag');
+  assert.ok(rendered.includes('Planet</th>'), 'Must contain Planet header cell');
+  assert.ok(rendered.includes('Sign</th>'), 'Must contain Sign header cell');
+  assert.ok(rendered.includes('<strong>Sun</strong></td>'), 'Must parse bold inside table cell');
+  assert.ok(rendered.includes('Leo</td>'), 'Must contain Leo cell');
+  assert.ok(rendered.includes('15.20°</td>'), 'Must contain degree cell');
 });
 
 test('getChatStorageKey cleanly isolates personas and guest vs authenticated namespaces', () => {
@@ -195,6 +231,28 @@ test('Client-side query scope handling correctly separates out-of-scope tasks an
   assert.ok(isConceptual('Explain the difference between D1 and D9'), 'D1/D9 comparison must be conceptual');
   assert.ok(isConceptual('What is Shadbala in Vedic astrology?'), 'Shadbala question must be conceptual');
   assert.ok(!isConceptual('Will I get married this year?'), 'Personal prediction query must NOT be conceptual');
+});
+
+// 5b. App Wallet Balance Separation (Scenario 9 vs Scenario 7)
+test('App wallet balance inquiries are strictly separated from astrological wealth questions', () => {
+  const isAppWalletQuery = (q: string) =>
+    /\b(wallet\s+balance|demo\s+credit|app\s+balance|account\s+balance|wallet\s+money|how\s+much\s+(?:money|balance|credit)\s+(?:do\s+i\s+have|in\s+my\s+wallet|is\s+in\s+my\s+wallet|remains|left)|check\s+(?:my\s+)?wallet|my\s+wallet\s+balance)\b/i.test(q);
+
+  const isAstrologicalWealth = (q: string) =>
+    !isAppWalletQuery(q) && (/\b(wealth|financ|invest|stock|dhana|2nd\s+house|11th\s+house|rich|fortune)\b/i.test(q) || (/\bmoney\b/i.test(q) && !isAppWalletQuery(q)));
+
+  // Scenario 9: Explicit wallet inquiries
+  assert.ok(isAppWalletQuery('What is my wallet balance?'), 'Must recognize wallet balance query');
+  assert.ok(isAppWalletQuery('How much demo credit remains?'), 'Must recognize demo credit inquiry');
+  assert.ok(isAppWalletQuery('How much money do I have in my wallet?'), 'Must recognize wallet money query');
+  assert.ok(isAppWalletQuery('Check my wallet'), 'Must recognize check wallet prompt');
+  assert.ok(!isAstrologicalWealth('What is my wallet balance?'), 'Scenario 9 must NOT be classified as astrological wealth');
+
+  // Scenario 7: Astrological wealth inquiries (no wallet contamination)
+  assert.ok(isAstrologicalWealth('What does my chart say about wealth?'), 'Must recognize wealth astrology query');
+  assert.ok(isAstrologicalWealth('Which planets form Dhana Yogas in my chart?'), 'Must recognize Dhana Yoga query');
+  assert.ok(isAstrologicalWealth('Will I make money in stock investing?'), 'Must recognize financial prospects query');
+  assert.ok(!isAppWalletQuery('What does my chart say about wealth?'), 'Scenario 7 must NOT be classified as app wallet query');
 });
 
 // 6. Voice Narration Text Sanitizer Unit Tests

@@ -92,7 +92,8 @@ def generate_astrological_reading(
         SCOPE_OUT_OF_SCOPE,
         SCOPE_HIGH_STAKES_REQUIRING_LIMITATION,
         SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY,
-        SCOPE_ASTROLOGY_CONCEPTUAL
+        SCOPE_ASTROLOGY_CONCEPTUAL,
+        SCOPE_APP_WALLET
     )
     classification = classify_user_query(user_query, session_history=session_history, has_chart=has_chart)
     scope = classification.get("scope")
@@ -101,7 +102,8 @@ def generate_astrological_reading(
         SCOPE_OUT_OF_SCOPE,
         SCOPE_HIGH_STAKES_REQUIRING_LIMITATION,
         SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY,
-        SCOPE_ASTROLOGY_CONCEPTUAL
+        SCOPE_ASTROLOGY_CONCEPTUAL,
+        SCOPE_APP_WALLET
     ]:
         grounded_res = generate_scope_grounded_response(
             classification=classification,

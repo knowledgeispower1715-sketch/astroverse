@@ -43,8 +43,10 @@ def test_prokerala_planet_positions():
     lat, lon = 23.1815, 79.9864
     try:
         res = get_prokerala_planet_position(dt, lat, lon)
-        if res.get("status") == "error" and ("credit balance" in str(res.get("message", "")) or res.get("statusCode") == 403):
-            pytest.skip(f"Prokerala API account credit exhausted: {res.get('message')}")
+        if res.get("status") == "error":
+            msg = str(res.get("message", ""))
+            if "credit balance" in msg or res.get("statusCode") == 403 or "timed out" in msg.lower():
+                pytest.skip(f"Prokerala API unavailable or timed out: {msg}")
         assert res.get("status") == "ok", f"Expected ok status, got: {res}"
         planets = res.get("data", {}).get("planet_position", [])
         assert len(planets) >= 7, f"Expected at least 7 planets, got: {len(planets)}"
@@ -72,8 +74,10 @@ def test_prokerala_kundli():
     lat, lon = 23.1815, 79.9864
     try:
         res = get_prokerala_kundli(dt, lat, lon)
-        if res.get("status") == "error" and ("credit balance" in str(res.get("message", "")) or res.get("statusCode") == 403):
-            pytest.skip(f"Prokerala API account credit exhausted: {res.get('message')}")
+        if res.get("status") == "error":
+            msg = str(res.get("message", ""))
+            if "credit balance" in msg or res.get("statusCode") == 403 or "timed out" in msg.lower():
+                pytest.skip(f"Prokerala API unavailable or timed out: {msg}")
         assert res.get("status") == "ok", f"Expected ok status, got: {res}"
         nak = res.get("data", {}).get("nakshatra_details", {}).get("nakshatra", {})
         assert nak.get("name") == "Shatabhisha", f"Expected Shatabhisha, got: {nak.get('name')}"

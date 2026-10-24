@@ -22,6 +22,7 @@ SCOPE_CLARIFICATION_REQUIRED = "CLARIFICATION_REQUIRED"
 SCOPE_OUT_OF_SCOPE = "OUT_OF_SCOPE"
 SCOPE_HIGH_STAKES_REQUIRING_LIMITATION = "HIGH_STAKES_REQUIRING_LIMITATION"
 SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY = "UNSUPPORTED_ASTROLOGY_CAPABILITY"
+SCOPE_APP_WALLET = "APP_WALLET"
 
 ALL_SCOPES = [
     SCOPE_ASTROLOGY_IN_SCOPE,
@@ -32,7 +33,8 @@ ALL_SCOPES = [
     SCOPE_CLARIFICATION_REQUIRED,
     SCOPE_OUT_OF_SCOPE,
     SCOPE_HIGH_STAKES_REQUIRING_LIMITATION,
-    SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY
+    SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY,
+    SCOPE_APP_WALLET
 ]
 
 # Patterns for High Stakes Safety Boundaries
@@ -88,6 +90,14 @@ FOLLOW_UP_PATTERNS = [
     r"^(any remedies for this\??|what should i do about that\??)[\s\.\!\?]*$"
 ]
 
+# Patterns for Application Wallet Inquiries (Scenario 9: Distinct from Astrological Wealth)
+APP_WALLET_PATTERNS = [
+    r"\b(wallet\s+balance|demo\s+credit|app\s+balance|account\s+balance|wallet\s+money)\b",
+    r"\bhow\s+much\s+(?:money|balance|credit)\s+(?:do\s+i\s+have|in\s+my\s+wallet|is\s+in\s+my\s+wallet|remains|left)\b",
+    r"\bcheck\s+(?:my\s+)?wallet\b",
+    r"\bmy\s+wallet\s+balance\b"
+]
+
 def classify_user_query(
     query: str,
     session_history: Optional[List[Dict[str, Any]]] = None,
@@ -141,6 +151,15 @@ def classify_user_query(
                 "scope": SCOPE_SOCIAL_CONVERSATION,
                 "intent": "greeting",
                 "reason": "Courteous greeting or social salutation."
+            }
+
+    # 4b. Application Wallet & Account Balance Inquiries (Scenario 9)
+    for pat in APP_WALLET_PATTERNS:
+        if re.search(pat, q_lower):
+            return {
+                "scope": SCOPE_APP_WALLET,
+                "intent": "app_wallet",
+                "reason": "Query inquires about AstroVerse application wallet balance and account credits."
             }
 
     # 5. Follow-Up Requiring Conversational Context
@@ -208,7 +227,7 @@ def _determine_astrological_intent(q: str) -> str:
         return "career"
     elif any(w in q for w in ["marri", "love", "spouse", "partner", "relationship", "divorce", "7th", "husband", "wife", "synastry", "match"]):
         return "marriage"
-    elif any(w in q for w in ["wealth", "money", "finance", "invest", "property", "rich", "2nd house", "11th house", "dhana", "asset"]):
+    elif any(w in q for w in ["wealth", "money", "finance", "invest", "property", "rich", "2nd house", "11th house", "dhana", "asset"]) and not any(re.search(pat, q) for pat in APP_WALLET_PATTERNS):
         return "wealth"
     elif any(w in q for w in ["health", "disease", "illness", "vitality", "operation", "6th house", "8th house", "recovery", "diet"]):
         return "health"
@@ -459,6 +478,33 @@ def generate_scope_grounded_response(
                 "How does my D9 Navamsha modify my Lagna promises?",
                 "What are my strongest planets according to Shadbala?",
                 "Explain the active Vimshottari Dasha for my chart"
+            ],
+            "remedyCard": None
+        }
+
+    # 4b. APPLICATION WALLET & ACCOUNT INQUIRY (Scenario 9)
+    if scope == SCOPE_APP_WALLET:
+        message = (
+            f"{greeting_salutation} I am {persona_display}.\n\n"
+            f"### AstroVerse Account & Wallet Balance\n"
+            f"You can view your real account balance, review past transaction ledger entries, or top up test credits directly in the **Wallet Section**.\n\n"
+            f"- **Live Account Ledger:** Real money wallet balance and recharge statements.\n"
+            f"- **Demo Credit Wallet:** Sandbox credits for testing and previewing full astrological reports.\n\n"
+            f"To access your wallet, click the Wallet balance chip in the top navigation bar or visit your Account Dashboard.\n\n"
+            f"If you have an astrological question regarding financial prospects or wealth compounding in your birth chart (2nd House of liquid wealth, 11th House of gains, or Jupiter's aspect), feel free to ask!"
+        )
+        return {
+            "status": "completed",
+            "scope": scope,
+            "intent": intent,
+            "message": message,
+            "chartEvidence": [],
+            "relatedInsights": [],
+            "suggestedQuestions": [
+                "Which planets form Dhana Yogas in my chart?",
+                "Analyze my 2nd and 11th house financial axis",
+                "How do I add demo credits for testing?",
+                "What are the subscription benefits for AI chat?"
             ],
             "remedyCard": None
         }

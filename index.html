@@ -2926,7 +2926,26 @@
         display: none;
       }
       .reader-content-scroll {
-        padding: 16px 18px;
+        padding: 16px 14px;
+      }
+      .reader-header-bar {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        padding: 10px 14px !important;
+      }
+      .reader-header-bar > div:last-child {
+        display: flex !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+        gap: 8px !important;
+      }
+      #modal-report-builder .modal-dialog-card {
+        padding: 16px 14px !important;
+        width: 95% !important;
+      }
+      #builder-payment-method-group > div {
+        grid-template-columns: 1fr !important;
       }
     }
 
@@ -3011,6 +3030,17 @@
       opacity: 1;
       pointer-events: none;
       background: #FFFFFF;
+    }
+    .html2pdf__container #astroverse-pdf-document-template,
+    .html2pdf__container > * {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      z-index: auto !important;
+      display: block !important;
+      height: auto !important;
+      opacity: 1 !important;
+      visibility: visible !important;
     }
     @media print {
       body * {
@@ -4253,9 +4283,9 @@
             </div>
           </div>
           <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon);">₹25<span style="font-size: 12px; font-weight: 500; color: #64748B;">/min</span></div>
+            <div style="font-size: 13px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Acharya Devratan', 25)">
+              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Acharya Devratan', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
@@ -4280,9 +4310,9 @@
             </div>
           </div>
           <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon);">₹20<span style="font-size: 12px; font-weight: 500; color: #64748B;">/min</span></div>
+            <div style="font-size: 13px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Dr. Sunita Shastri', 20)">
+              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Dr. Sunita Shastri', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
@@ -4307,9 +4337,9 @@
             </div>
           </div>
           <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon);">₹35<span style="font-size: 12px; font-weight: 500; color: #64748B;">/min</span></div>
+            <div style="font-size: 13px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Pandit Raghavendra', 35)">
+              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Pandit Raghavendra', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
@@ -9524,6 +9554,30 @@
       if (!text) return '';
       let safe = escapeHtml(text);
 
+      // Markdown Tables
+      safe = safe.replace(/((?:^|\n)(?:[ \t]*\|[^\n]+\|[ \t]*(?:\r?\n|$))+)/g, (match) => {
+        const lines = match.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        if (lines.length < 2) return match;
+        let headerRow = '';
+        const bodyRows = [];
+        let isFirstRow = true;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (/^\|(?:\s*:?-+:?\s*\|)+$/.test(line)) {
+            continue;
+          }
+          const cells = line.split('|').slice(1, -1).map(c => c.trim());
+          if (isFirstRow) {
+            headerRow = `<tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1;">${cells.map(c => `<th style="padding: 8px 10px; font-weight: 700; color: #475569; font-size: 11px;">${c}</th>`).join('')}</tr>`;
+            isFirstRow = false;
+          } else {
+            bodyRows.push(`<tr style="border-bottom: 1px solid #E2E8F0;">${cells.map(c => `<td style="padding: 6px 10px; font-size: 11px; color: #334155;">${c}</td>`).join('')}</tr>`);
+          }
+        }
+        return `\n<table style="width: 100%; border-collapse: collapse; margin: 12px 0;"><thead>${headerRow}</thead><tbody>${bodyRows.join('')}</tbody></table>\n`;
+      });
+
       // Headings
       safe = safe.replace(/^###\s+(.+)$/gm, '<h4><i class="fa-solid fa-scroll" style="color: #D97706; font-size: 11px;"></i> $1</h4>');
       safe = safe.replace(/^##\s+(.+)$/gm, '<h4>$1</h4>');
@@ -9552,7 +9606,7 @@
       return paragraphs.map(p => {
         const trimmed = p.trim();
         if (!trimmed) return '';
-        if (trimmed.startsWith('<h4>') || trimmed.startsWith('<ul>') || trimmed.startsWith('<ol>') || trimmed.startsWith('<blockquote>')) {
+        if (trimmed.startsWith('<h4>') || trimmed.startsWith('<ul>') || trimmed.startsWith('<ol>') || trimmed.startsWith('<blockquote>') || trimmed.startsWith('<table')) {
           return trimmed;
         }
         return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
@@ -10080,11 +10134,33 @@
         };
       }
 
+      // App Wallet & Account Balance Inquiries (Scenario 9: Strictly Separated from Astrological Wealth)
+      const isAppWalletQuery = /\b(wallet\s+balance|demo\s+credit|app\s+balance|account\s+balance|wallet\s+money|how\s+much\s+(?:money|balance|credit)\s+(?:do\s+i\s+have|in\s+my\s+wallet|is\s+in\s+my\s+wallet|remains|left)|check\s+(?:my\s+)?wallet|my\s+wallet\s+balance)\b/i.test(q);
+
+      if (isAppWalletQuery) {
+        const salutation = isSunita ? 'Namaste!' : (isRaghavendra ? 'Om Namah Shivaya!' : 'Pranam!');
+        const balMsg = `${salutation} Here is your current AstroVerse account balance:\n\n### Account & Wallet Balance\n- **Live Wallet Balance:** ₹${currentWalletBalance.toFixed(2)}\n- **Demo Mode Balance:** ₹${currentDemoWalletBalance.toFixed(2)}\n\nYou can view past transactions, recharge, or top up test credits anytime in the [**Wallet Section**](javascript:openWalletModal()).\n\nIf you have astrological questions regarding wealth potentials or financial transits (Dhana Yogas, 2nd & 11th houses), feel free to ask!`;
+        return {
+          intent: 'app_wallet',
+          message: balMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: [
+            "Which planets form Dhana Yogas in my chart?",
+            "Analyze my 2nd and 11th house financial axis",
+            "How do I add demo credits for testing?",
+            "What are the subscription benefits for AI chat?"
+          ],
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
       // Intent detection
       const isGreeting = (q.startsWith('hi') || q.startsWith('hello') || q.startsWith('namaste') || q.startsWith('pranam') || q === 'hey') && q.split(' ').length <= 4;
       let isCareer = q.includes('career') || q.includes('job') || q.includes('promot') || q.includes('business') || q.includes('10th') || q.includes('work') || q.includes('office') || q.includes('transfer');
       let isMarriage = q.includes('marri') || q.includes('love') || q.includes('relationship') || q.includes('partner') || q.includes('spouse') || q.includes('7th') || q.includes('wedding') || q.includes('synastry');
-      let isWealth = q.includes('wealth') || q.includes('money') || q.includes('financ') || q.includes('invest') || q.includes('stock') || q.includes('dhana') || q.includes('2nd') || q.includes('11th');
+      let isWealth = !isAppWalletQuery && (q.includes('wealth') || q.includes('money') || q.includes('financ') || q.includes('invest') || q.includes('stock') || q.includes('dhana') || q.includes('2nd') || q.includes('11th'));
       let isRemedy = q.includes('remed') || q.includes('mantra') || q.includes('gem') || q.includes('stone') || q.includes('puja') || q.includes('dosha') || q.includes('sade') || q.includes('sati') || q.includes('pukhraj') || q.includes('ruby');
       let isTiming = q.includes('when') || q.includes('timing') || q.includes('period') || q.includes('year') || q.includes('month') || q.includes('soon') || q.includes('dasha');
       let isExplanation = q.includes('why') || q.includes('explain') || q.includes('logic') || q.includes('how come') || q.includes('parashar') || q.includes('scripture');
@@ -12827,7 +12903,15 @@
       const chartPage = document.createElement('div');
       chartPage.className = 'pdf-a4-page';
 
-      const chartData = (isDoc && docOrChart.chartSnippet) || currentCalculatedChart?.fullData;
+      let chartData = (isDoc && docOrChart.chartSnippet) || currentCalculatedChart?.fullData;
+      if (!chartData && dob) {
+        try {
+          const isUnk = isDoc ? Boolean(docOrChart.birthCoordinates?.isApproximate) : Boolean(docOrChart?.isUnknownTime);
+          chartData = calculateClientKundli(dob, tob, parseFloat(lat) || 28.6139, parseFloat(lon) || 77.2090, isUnk);
+        } catch (calcErr) {
+          console.warn("Client fallback chart calculation failed:", calcErr);
+        }
+      }
       const d1 = chartData?.d1_rashi_chart;
       let planetsRows = '';
       if (d1 && d1.planets) {
@@ -12836,7 +12920,7 @@
             <tr style="border-bottom: 1px solid #E2E8F0; font-size: 11px;">
               <td style="padding: 6px 8px; font-weight: 700; color: #881337;">${pName}</td>
               <td style="padding: 6px 8px;">${pData.sign}</td>
-              <td style="padding: 6px 8px;">${pData.degree ? pData.degree.toFixed(2) + '°' : '--'}</td>
+              <td style="padding: 6px 8px;">${pData.degree ? (typeof pData.degree === 'number' ? pData.degree.toFixed(2) + '°' : pData.degree + '°') : '--'}</td>
               <td style="padding: 6px 8px;">${pData.nakshatra || '--'} (${pData.pada || 1})</td>
               <td style="padding: 6px 8px;">House ${pData.house || '--'}</td>
               <td style="padding: 6px 8px; font-size: 10px; color: ${pData.is_retrograde ? '#DC2626' : '#059669'}; font-weight: 700;">${pData.is_retrograde ? 'Retrograde (R)' : 'Direct'}</td>
@@ -12875,7 +12959,7 @@
           </tbody>
         </table>
 
-        <div style="position: absolute; bottom: 15mm; left: 15mm; right: 15mm; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+        <div style="margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
           <span>Nirayana Chitra Paksha Lahiri Ayanamsha</span>
           <span>Page 2</span>
         </div>
@@ -12909,7 +12993,7 @@
               </div>
             ` : ''}
 
-            <div style="position: absolute; bottom: 15mm; left: 15mm; right: 15mm; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+            <div style="margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
               <span>Licensed exclusively to ${escapeHtml(nativeName)} (${hash.substring(0, 12)})</span>
               <span>Page ${pageNum++}</span>
             </div>
@@ -12917,40 +13001,77 @@
           container.appendChild(secPage);
         });
 
-        // 12-Month Calendar
+        // 12-Month Calendar (Chunked into 6 months per page for clean, unclipped A4 layout)
         if (docOrChart.monthlyForecasts && docOrChart.monthlyForecasts.length > 0) {
-          const monthPage = document.createElement('div');
-          monthPage.className = 'pdf-a4-page';
-          let monthRows = '';
-          docOrChart.monthlyForecasts.forEach(m => {
-            monthRows += `
-              <div style="border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: #FFFDF8;">
-                <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; color: #881337;">
-                  <span>${escapeHtml(m.monthName)}</span>
-                  <span style="font-size: 11px; color: #D97706;">${escapeHtml(m.activeDasha?.maha || '')} / ${escapeHtml(m.activeDasha?.antar || '')}</span>
+          const forecasts = docOrChart.monthlyForecasts;
+          const chunkSize = 6;
+          for (let c = 0; c < forecasts.length; c += chunkSize) {
+            const chunk = forecasts.slice(c, c + chunkSize);
+            const isFirst = (c === 0);
+            const monthPage = document.createElement('div');
+            monthPage.className = 'pdf-a4-page';
+            let monthRows = '';
+            chunk.forEach(m => {
+              monthRows += `
+                <div style="border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; background: #FFFDF8;">
+                  <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 11.5px; color: #881337;">
+                    <span>${escapeHtml(m.monthName)}</span>
+                    <span style="font-size: 10.5px; color: #D97706;">${escapeHtml(m.activeDasha?.maha || '')} / ${escapeHtml(m.activeDasha?.antar || '')}</span>
+                  </div>
+                  <div style="font-size: 10.5px; color: #334155; margin: 2px 0;"><strong>Transit:</strong> ${escapeHtml(m.transitHighlights)}</div>
+                  <div style="font-size: 10.5px; color: #475569;"><strong>Career:</strong> ${escapeHtml(m.careerGuidance)}</div>
+                  ${m.relationshipGuidance ? `<div style="font-size: 10.5px; color: #475569;"><strong>Relationships:</strong> ${escapeHtml(m.relationshipGuidance)}</div>` : ''}
+                  <div style="display: flex; justify-content: space-between; font-size: 9.5px; margin-top: 3px; padding-top: 3px; border-top: 1px dashed #E2E8F0;">
+                    <span style="color: #059669;"><strong>Favorable:</strong> ${(m.favorableDates || []).join(', ')}</span>
+                    <span style="color: #DC2626;"><strong>Caution:</strong> ${(m.cautionDates || []).join(', ')}</span>
+                  </div>
                 </div>
-                <div style="font-size: 11px; color: #334155; margin: 3px 0;"><strong>Transit Highlight:</strong> ${escapeHtml(m.transitHighlights)}</div>
-                <div style="font-size: 11px; color: #475569;"><strong>Career &amp; Purpose:</strong> ${escapeHtml(m.careerGuidance)}</div>
-                <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #E2E8F0;">
-                  <span style="color: #059669;"><strong>Favorable:</strong> ${(m.favorableDates || []).join(', ')}</span>
-                  <span style="color: #DC2626;"><strong>Caution:</strong> ${(m.cautionDates || []).join(', ')}</span>
-                </div>
+              `;
+            });
+
+            monthPage.innerHTML = `
+              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 14px; font-size: 10.5px; color: #64748B;">
+                <span>AstroVerse &bull; ${escapeHtml(title)}</span>
+                <span>Twelve-Month Roadmap (${isFirst ? 'Months 1–6' : 'Months 7–12'})</span>
+              </div>
+              <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 0 0 10px;">Twelve-Month Transit &amp; Dasha Calendar (${isFirst ? 'Months 1 to 6' : 'Months 7 to 12'})</h2>
+              <div>${monthRows}</div>
+              <div style="margin-top: 16px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+                <span>Licensed exclusively to ${escapeHtml(nativeName)} (${hash.substring(0, 12)})</span>
+                <span>Page ${pageNum++}</span>
               </div>
             `;
-          });
+            container.appendChild(monthPage);
+          }
+        }
 
-          monthPage.innerHTML = `
+        // Ephemeris Provenance & Philosophical Notice Page
+        if (docOrChart.ethicalNotice) {
+          const noticePage = document.createElement('div');
+          noticePage.className = 'pdf-a4-page';
+          noticePage.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 16px; font-size: 10.5px; color: #64748B;">
               <span>AstroVerse &bull; ${escapeHtml(title)}</span>
-              <span>Twelve-Month Timing Roadmap</span>
+              <span>Ephemeris Verification &amp; Ethical Notice</span>
             </div>
-            <h2 style="font-size: 17px; font-weight: 800; color: #881337; margin: 0 0 10px;">Twelve-Month Transit &amp; Dasha Calendar</h2>
-            <div>${monthRows}</div>
-            <div style="position: absolute; bottom: 15mm; left: 15mm; right: 15mm; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+            <div style="background: rgba(254, 243, 199, 0.5); border: 1px solid #FCD34D; border-radius: 10px; padding: 18px; margin-bottom: 24px;">
+              <h3 style="font-size: 15px; font-weight: 800; color: #92400E; margin: 0 0 8px;">Classical Vedic Philosophical Notice</h3>
+              <p style="font-size: 11.5px; line-height: 1.7; color: #78350F; margin: 0;">${escapeHtml(docOrChart.ethicalNotice)}</p>
+            </div>
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px; font-size: 11.5px; color: #475569; line-height: 1.7;">
+              <h4 style="font-size: 13px; font-weight: 800; color: #1E293B; margin: 0 0 6px;">Publication Provenance &amp; Technical Cryptography</h4>
+              <div><strong>Document Verification Hash:</strong> <code>${hash}</code></div>
+              <div><strong>Calculation Settings:</strong> ${escapeHtml(ayanamsha)}</div>
+              <div><strong>Engine:</strong> ${escapeHtml(docOrChart.calculationSettings?.engineVersion || 'Swiss Ephemeris 2.10.03 native')}</div>
+              <div><strong>Generated At:</strong> ${docOrChart.calculationSettings?.calculationTimestamp || new Date().toISOString()}</div>
+              <div><strong>Ownership License:</strong> Private Digital Archive licensed to ${escapeHtml(nativeName)}</div>
+            </div>
+            <div style="margin-top: 40px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+              <span>AstroVerse Enterprise Vedic Publication &bull; End of Document</span>
               <span>Page ${pageNum++}</span>
             </div>
           `;
-          container.appendChild(monthPage);
+          container.appendChild(noticePage);
         }
       }
 
@@ -12964,21 +13085,11 @@
       // Allow a brief tick for SVG rendering, table bounds, and fonts to settle in the DOM
       await new Promise(resolve => setTimeout(resolve, 150));
 
-            // Ensure container has a measured height before html2pdf clones it
-      console.log('PDF container clientHeight before export:', container.clientHeight);
-      console.log('PDF container scrollHeight before export:', container.scrollHeight);
-      container.style.height = container.scrollHeight + 'px';
-      container.style.position = 'relative';
-      container.style.zIndex = 'auto';
-
-      // Validate that content exists
+            // Validate that content exists
       if (!container || !container.children || container.children.length === 0) {
         showToast("Error: Document content is empty. PDF generation cancelled.", "error");
         return;
       }
-
-
-      
 
       try {
         if (typeof html2pdf !== 'undefined') {
@@ -13000,7 +13111,17 @@
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
           };
-          await html2pdf().set(opt).from(container).save();
+          const worker = html2pdf().set(opt).from(container);
+          await worker.toCanvas();
+          if (!worker.prop.canvas || worker.prop.canvas.height === 0 || worker.prop.canvas.width === 0) {
+            throw new Error("Rendered canvas produced empty dimensions (height/width 0). Blank PDF aborted.");
+          }
+          await worker.toPdf();
+          const pdfDoc = worker.prop.pdf;
+          if (!pdfDoc || pdfDoc.internal.getNumberOfPages() === 0) {
+            throw new Error("Rendered PDF contains 0 pages.");
+          }
+          await worker.save();
           showToast("🎉 PDF downloaded successfully!", "success");
         } else {
           window.print();
