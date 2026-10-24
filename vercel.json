@@ -28,10 +28,7 @@
     "wallet-service": {
       "root": "services/wallet-service",
       "framework": "express",
-      "entrypoint": "src/server.ts",
-      "env": {
-        "DEMO_MODE": "true"
-      }
+      "entrypoint": "src/server.ts"
     }
   },
   "rewrites": [
