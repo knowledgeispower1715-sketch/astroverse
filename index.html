@@ -12964,10 +12964,21 @@
       // Allow a brief tick for SVG rendering, table bounds, and fonts to settle in the DOM
       await new Promise(resolve => setTimeout(resolve, 150));
 
+            // Ensure container has a measured height before html2pdf clones it
+      console.log('PDF container clientHeight before export:', container.clientHeight);
+      console.log('PDF container scrollHeight before export:', container.scrollHeight);
+      container.style.height = container.scrollHeight + 'px';
+      container.style.position = 'relative';
+      container.style.zIndex = 'auto';
+
+      // Validate that content exists
       if (!container || !container.children || container.children.length === 0) {
         showToast("Error: Document content is empty. PDF generation cancelled.", "error");
         return;
       }
+
+
+      
 
       try {
         if (typeof html2pdf !== 'undefined') {
