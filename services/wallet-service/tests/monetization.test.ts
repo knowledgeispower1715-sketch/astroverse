@@ -332,6 +332,55 @@ async function runMonetizationTestSuite() {
       assert(res.data.message.includes('partner profile'));
     });
 
+    await test('Generating Kundli Milan with self as partner is rejected with HTTP 400 SELF_AS_PARTNER_INVALID', async () => {
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_kundli_milan',
+          profileId: profileB.id,
+          partnerProfileId: profileB.id,
+          paymentMethod: 'wallet'
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'SELF_AS_PARTNER_INVALID');
+      assert(res.data.message.includes('cannot be identical'));
+    });
+
+    await test('Generating Kundli Milan without partner profile is rejected with HTTP 400 MISSING_PARTNER_PROFILE', async () => {
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_kundli_milan',
+          profileId: profileB.id,
+          paymentMethod: 'wallet'
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'MISSING_PARTNER_PROFILE');
+    });
+
+    await test('Generating Relationship & Marriage report succeeds as single-profile without partner', async () => {
+      await db.addDemoCredits(userB.id, 500);
+      const res = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenB}` },
+        body: {
+          productId: 'report_relationship_marriage',
+          profileId: profileB.id,
+          paymentMethod: 'DEMO_WALLET'
+        }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.success, true);
+      assert.strictEqual(res.data.document.productId, 'report_relationship_marriage');
+      assert.strictEqual(res.data.document.profileName, profileB.profileName);
+      // Clean up demo credits so subsequent tests have pristine baseline
+      await db.resetDemoWallet(userB.id);
+    });
+
     await test('Inline profileData with out-of-bounds coordinates is rejected with HTTP 400 INVALID_COORDINATES', async () => {
       const res = await request('/api/reports/order', {
         method: 'POST',

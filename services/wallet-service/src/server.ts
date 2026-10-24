@@ -2245,6 +2245,21 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
       });
     }
 
+    if (productId === 'report_kundli_milan') {
+      if (!partnerProfile) {
+        return res.status(400).json({
+          error: 'MISSING_PARTNER_PROFILE',
+          message: 'Kundli Milan synastry requires a distinct partner birth profile.'
+        });
+      }
+      if (partnerProfile.id === profile.id) {
+        return res.status(400).json({
+          error: 'SELF_AS_PARTNER_INVALID',
+          message: 'Subject profile and partner profile cannot be identical for synastry matchmaking.'
+        });
+      }
+    }
+
     // Resolve user's effective subscription tier to apply legitimate member discounts
     const dbUser = await db.findUserById(user.id);
     const { tier } = EntitlementManager.resolveEffectiveTier(dbUser);
@@ -2463,6 +2478,21 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
         userId: user.id,
         ...pValidation.cleanData
       });
+    }
+
+    if (productId === 'report_kundli_milan') {
+      if (!partnerProfile) {
+        return res.status(400).json({
+          error: 'MISSING_PARTNER_PROFILE',
+          message: 'Kundli Milan synastry requires a distinct partner birth profile.'
+        });
+      }
+      if (partnerProfile.id === profile.id) {
+        return res.status(400).json({
+          error: 'SELF_AS_PARTNER_INVALID',
+          message: 'Subject profile and partner profile cannot be identical for synastry matchmaking.'
+        });
+      }
     }
 
     const dbUser = await db.findUserById(user.id);

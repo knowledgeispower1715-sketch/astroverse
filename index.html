@@ -881,32 +881,34 @@
       position: fixed;
       top: 24px;
       right: 24px;
-      z-index: 9999;
+      z-index: 999999;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       pointer-events: none;
     }
     .toast-item {
       pointer-events: auto;
-      background: #FFFFFF;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 12px 18px;
-      box-shadow: var(--shadow-lg);
+      background: #0F172A;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 14px 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-size: 13px;
+      gap: 14px;
+      font-size: 13.5px;
       font-weight: 600;
-      color: #1E293B;
-      min-width: 280px;
-      max-width: 420px;
-      animation: slideInRight 0.3s ease forwards;
+      color: #F8FAFC;
+      min-width: 300px;
+      max-width: 480px;
+      line-height: 1.4;
+      animation: slideInRight 0.25s ease forwards;
     }
-    .toast-item.success { border-left: 4px solid #10B981; }
-    .toast-item.error { border-left: 4px solid #EF4444; }
-    .toast-item.info { border-left: 4px solid #3B82F6; }
+    .toast-item.success { border-left: 5px solid #10B981; }
+    .toast-item.error { border-left: 5px solid #EF4444; }
+    .toast-item.info { border-left: 5px solid #38BDF8; }
+    .toast-item.warning { border-left: 5px solid #F59E0B; }
     @keyframes slideInRight {
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
@@ -7179,7 +7181,7 @@
 
       currentCalculatedChart = {
         name,
-        city: document.getElementById('input-k-city') ? document.getElementById('input-k-city').value : "Current Location",
+        city: (document.getElementById('input-k-city-search')?.value?.trim()) || (document.getElementById('input-k-city')?.value?.trim()) || "Jabalpur, Madhya Pradesh, India",
         dob: document.getElementById('input-k-dob').value,
         tob: document.getElementById('input-k-tob').value || "12:00",
         lat: parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815,
@@ -12140,8 +12142,9 @@
 
       document.getElementById('builder-product-title').textContent = activeBuilderProduct.displayName;
       const partnerGroup = document.getElementById('builder-partner-group');
+      const isSynastry = (productId === 'report_kundli_milan' || productId === 'report_matchmaking_synastry');
       if (partnerGroup) {
-        partnerGroup.style.display = (productId === 'report_kundli_milan' || productId.includes('matchmaking') || productId.includes('relationship')) ? 'block' : 'none';
+        partnerGroup.style.display = isSynastry ? 'block' : 'none';
       }
 
       // 1. Populate Subject Profiles
@@ -12163,16 +12166,23 @@
         }
       }
 
-      // Partner profile (for Kundli Milan)
+      // Partner profile (for Kundli Milan synastry only, excluding active subject)
       if (partnerSel) {
         partnerSel.innerHTML = '';
-        if (savedUserProfiles && Array.isArray(savedUserProfiles) && savedUserProfiles.length > 0) {
-          partnerSel.innerHTML = savedUserProfiles.map(p =>
-            `<option value="${p.id}">${p.name} (${p.rel || 'Partner'})</option>`
+        const currentSubVal = sel ? sel.value : null;
+        const availablePartners = (savedUserProfiles && Array.isArray(savedUserProfiles)) ? savedUserProfiles.filter(p => {
+          if (currentSubVal === 'current_chart') {
+            return p.name !== currentCalculatedChart?.name;
+          }
+          return String(p.id) !== String(currentSubVal);
+        }) : [];
+
+        if (availablePartners.length > 0) {
+          partnerSel.innerHTML = availablePartners.map(p =>
+            `<option value="${p.id}">${escapeHtml(p.name)} (${escapeHtml(p.rel || 'Partner')})</option>`
           ).join('');
-        }
-        if (partnerSel.options.length === 0) {
-          partnerSel.innerHTML = '<option value="default_partner">Partner Profile</option>';
+        } else {
+          partnerSel.innerHTML = '<option value="none">No separate partner profile available</option>';
         }
       }
 
@@ -12191,6 +12201,19 @@
         `).join('');
       }
 
+      // Ensure funding method defaults to Demo Wallet if Demo credits are present and Real balance is 0
+      const payRadios = document.getElementsByName('builder_pay_method');
+      const shouldDefaultDemo = currentDemoWalletBalance > 0 && currentWalletBalance <= 0;
+      let hasChecked = false;
+      for (const r of payRadios) {
+        if (r.checked) hasChecked = true;
+      }
+      if (!hasChecked || shouldDefaultDemo) {
+        for (const r of payRadios) {
+          r.checked = (r.value === 'DEMO_WALLET');
+        }
+      }
+
       onBuilderProfileChanged();
       if (partnerGroup && partnerGroup.style.display !== 'none') {
         onBuilderPartnerChanged();
@@ -12207,10 +12230,22 @@
 
     function onBuilderProfileChanged() {
       const sel = document.getElementById('builder-profile-select');
+      const partnerSel = document.getElementById('builder-partner-select');
       const preview = document.getElementById('builder-profile-preview');
       if (!sel || !preview) return;
 
       const val = sel.value;
+      if (partnerSel && savedUserProfiles && Array.isArray(savedUserProfiles)) {
+        const availablePartners = savedUserProfiles.filter(p => {
+          if (val === 'current_chart') {
+            return p.name !== currentCalculatedChart?.name;
+          }
+          return String(p.id) !== String(val);
+        });
+        partnerSel.innerHTML = availablePartners.length > 0
+          ? availablePartners.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${escapeHtml(p.rel || 'Partner')})</option>`).join('')
+          : '<option value="none">No separate partner profile available</option>';
+      }
       let p = null;
       if (val === 'current_chart') {
         p = currentCalculatedChart ? {
@@ -12491,6 +12526,13 @@
       const focus = document.getElementById('builder-focus-select')?.value || 'holistic';
       const depth = document.getElementById('builder-depth-select')?.value || 'advanced';
       const lang = document.getElementById('builder-lang-select')?.value || 'en';
+
+      if (activeBuilderProduct.productId === 'report_kundli_milan' || activeBuilderProduct.productId === 'report_matchmaking_synastry') {
+        if (!partnerId || partnerId === 'none' || partnerId === profileId) {
+          showToast("Kundli Milan synastry requires a distinct partner chart. Please select or add a separate partner profile.", "warning");
+          return;
+        }
+      }
 
       const payRadios = document.getElementsByName('builder_pay_method');
       let method = 'DEMO_WALLET';
