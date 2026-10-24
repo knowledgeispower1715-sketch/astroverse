@@ -1386,6 +1386,7 @@ async function runAuthTestSuite() {
       assert.strictEqual(res.data.requiredAmount, 2100);
     });
 
+    const pujaClientKey = `PUJA_TEST_${Date.now()}`;
     await test('POST /api/wallet/book-puja successfully books puja and debits wallet', async () => {
       // Book a puja within the 51.00 balance (e.g. 25.00 mini-sankalp)
       const res = await request('/api/wallet/book-puja', {
@@ -1394,7 +1395,7 @@ async function runAuthTestSuite() {
         body: {
           pujaName: 'Navagraha Shanti Archana',
           amount: 25.00,
-          clientKey: 'PUJA_TEST_001'
+          clientKey: pujaClientKey
         }
       });
       assert.strictEqual(res.status, 200);
@@ -1411,7 +1412,7 @@ async function runAuthTestSuite() {
         body: {
           pujaName: 'Navagraha Shanti Archana',
           amount: 25.00,
-          clientKey: 'PUJA_TEST_001'
+          clientKey: pujaClientKey
         }
       });
       assert.strictEqual(res.status, 200);

@@ -689,7 +689,8 @@ def generate_structured_prediction(
     doshas: Optional[Dict[str, Any]] = None,
     active_hora_planet: Optional[str] = None,
     hora_window: Optional[str] = None,
-    category: str = "general"
+    category: str = "general",
+    lang: str = "en"
 ) -> Dict[str, Any]:
     hora_planet = active_hora_planet or "Jupiter"
     time_window_str = hora_window or "Current Astronomical Interval"

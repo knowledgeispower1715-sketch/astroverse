@@ -133,6 +133,7 @@ class PredictionRequest(BaseModel):
     active_hora_planet: Optional[str] = Field(None, description="Active planetary hora ruler")
     hora_window: Optional[str] = Field(None, description="Hora time window string")
     category: str = Field("general", description="Category: general, career, wealth, health, relationships")
+    lang: str = Field("en", description="Output language: 'en' or 'hi'")
 
 class TajikaRequest(BirthDetails):
     target_year: Optional[int] = Field(None, description="Target year for solar return calculation, e.g. 2026")
@@ -609,7 +610,8 @@ def generate_prediction_endpoint(req: PredictionRequest):
             doshas=doshas,
             active_hora_planet=req.active_hora_planet,
             hora_window=req.hora_window,
-            category=req.category
+            category=req.category,
+            lang=req.lang
         )
         result["mode"] = "PERSONALIZED_CHART_GROUNDED"
         result["profile_loaded"] = True
@@ -624,7 +626,8 @@ def generate_prediction_endpoint(req: PredictionRequest):
             doshas=None,
             active_hora_planet=req.active_hora_planet,
             hora_window=req.hora_window,
-            category=req.category
+            category=req.category,
+            lang=req.lang
         )
         result["mode"] = "GENERAL_TRANSIT_UNPERSONALIZED"
         result["profile_loaded"] = False
