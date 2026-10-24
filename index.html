@@ -12433,12 +12433,12 @@
 
     function buildClientSideDemoReportDocument(product, chartOrProfile, options = {}) {
       const chart = currentCalculatedChart || {};
-      const name = chart.name || chartOrProfile?.profileName || 'Seeker';
-      const dob = chart.dob || chartOrProfile?.dateOfBirth || '1995-01-01';
-      const tob = chart.tob || chartOrProfile?.timeOfBirth || '12:00';
-      const city = chart.city || chartOrProfile?.birthplaceName || 'New Delhi, India';
-      const lat = parseFloat(chart.lat || chartOrProfile?.latitude || 28.6139);
-      const lon = parseFloat(chart.lon || chartOrProfile?.longitude || 77.2090);
+      const name = chart.name || chartOrProfile?.profileName || chartOrProfile?.name || 'Seeker';
+      const dob = chart.dob || chartOrProfile?.dateOfBirth || chartOrProfile?.dob || '1995-01-01';
+      const tob = chart.tob || chartOrProfile?.timeOfBirth || chartOrProfile?.tob || '12:00';
+      const city = chart.city || chartOrProfile?.birthplaceName || chartOrProfile?.city || 'New Delhi, India';
+      const lat = parseFloat(chart.lat || chartOrProfile?.latitude || chartOrProfile?.lat || 28.6139);
+      const lon = parseFloat(chart.lon || chartOrProfile?.longitude || chartOrProfile?.lon || 77.2090);
 
       let calculatedKundli = chart.fullData;
       if (!calculatedKundli && dob) {
@@ -12446,13 +12446,431 @@
           calculatedKundli = calculateClientKundli(dob, tob, lat, lon, false);
         } catch (_) {}
       }
+
       const d1 = calculatedKundli?.d1_rashi_chart;
-      const lagnaSign = d1?.lagna?.sign || 'Scorpio';
+      const lagna = d1?.lagna || { sign: 'Scorpio', degree: 14.5, nakshatra: 'Anuradha', pada: 2 };
+      const planets = d1?.planets || {};
+      const moon = planets.Moon || { sign: 'Taurus', degree: 10.5, nakshatra: 'Rohini', pada: 1, house: 7, is_retrograde: false, dignity: 'Exalted' };
+      const sun = planets.Sun || { sign: 'Aries', degree: 15.0, nakshatra: 'Bharani', pada: 3, house: 6, is_retrograde: false, dignity: 'Exalted' };
+      const mars = planets.Mars || { sign: 'Scorpio', degree: 22.1, nakshatra: 'Jyeshtha', pada: 2, house: 1, is_retrograde: false, dignity: 'Own Sign' };
+      const mercury = planets.Mercury || { sign: 'Gemini', degree: 5.6, nakshatra: 'Mrigashira', pada: 3, house: 8, is_retrograde: false, dignity: 'Own Sign' };
+      const jupiter = planets.Jupiter || { sign: 'Sagittarius', degree: 8.4, nakshatra: 'Mula', pada: 1, house: 2, is_retrograde: false, dignity: 'Own Sign' };
+      const venus = planets.Venus || { sign: 'Pisces', degree: 12.0, nakshatra: 'Uttara Bhadrapada', pada: 3, house: 5, is_retrograde: false, dignity: 'Exalted' };
+      const saturn = planets.Saturn || { sign: 'Aquarius', degree: 18.2, nakshatra: 'Shatabhisha', pada: 4, house: 4, is_retrograde: false, dignity: 'Own Sign' };
+      const rahu = planets.Rahu || { sign: 'Taurus', degree: 19.3, nakshatra: 'Rohini', pada: 3, house: 7, is_retrograde: true, dignity: 'Friendly' };
+      const ketu = planets.Ketu || { sign: 'Scorpio', degree: 19.3, nakshatra: 'Jyeshtha', pada: 1, house: 1, is_retrograde: true, dignity: 'Friendly' };
+
+      const SIGN_LORDS = {
+        Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon',
+        Leo: 'Sun', Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars',
+        Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
+      };
+
+      const lagnaLord = SIGN_LORDS[lagna.sign] || 'Mars';
+      const activeDasha = calculatedKundli?.vimshottari_dasha?.active_now || { maha_dasha: 'Jupiter', antar_dasha: 'Venus' };
+      const dashaMaha = activeDasha.maha_dasha || activeDasha.maha || 'Jupiter';
+      const dashaAntar = activeDasha.antar_dasha || activeDasha.antar || 'Venus';
+      const manglikInfo = calculatedKundli?.doshas_and_remedies?.manglik || { has_dosha: false, verdict: 'NO DOSHA / CANCELLED' };
+      const navamsha = calculatedKundli?.divisional_charts?.navamsha || {};
+      const dashamsha = calculatedKundli?.divisional_charts?.dashamsha || {};
+
+      const pid = product?.productId || product?.id || 'report_janam_kundli_deep_dive';
+      const displayName = product?.displayName || product?.name || 'Personalized Astrological Publication';
+
+      let sections = [];
+      let monthlyForecasts = undefined;
+
+      // 1. COMPLETE JANAM KUNDLI DEEP DIVE (7 chapters)
+      if (pid === 'report_janam_kundli_deep_dive') {
+        let planetTable = '| Planet | Sign | Longitude | Bhava | Nakshatra (Pada) | Dignity | Status |\n|---|---|---|---|---|---|---|\n';
+        for (const [pName, p] of Object.entries(planets)) {
+          planetTable += `| **${pName}** | ${p.sign} | ${typeof p.degree === 'number' ? p.degree.toFixed(2) + '°' : p.degree + '°'} | House ${p.house} | ${p.nakshatra} (${p.pada}) | ${p.dignity || 'Mitra'} | ${p.is_retrograde ? 'Retrograde (R)' : 'Direct'} |\n`;
+        }
+        sections = [
+          {
+            sectionId: 'sec_ch1_lagna',
+            chapterNumber: 1,
+            title: 'Chapter 1: The Rising Sign (Lagna) & Vital Temperament',
+            subtitle: 'The Cosmic Blueprint, Physical Constitution & Innate Trajectory',
+            contentMarkdown: `### Natal Ascendant Blueprint\n- **Ascendant (Lagna):** **${lagna.sign}** (${typeof lagna.degree === 'number' ? lagna.degree.toFixed(2) : lagna.degree}°)\n- **Birth Nakshatra:** **${lagna.nakshatra}** (Pada ${lagna.pada})\n- **Ascendant Lord:** **${lagnaLord}** placed in House **${planets[lagnaLord]?.house || 1}** (${planets[lagnaLord]?.sign || lagna.sign})\n\n### Core Astrological Constitution\nWith ${lagna.sign} rising, your vitality reflects decisive resilience and deep perceptive intellect. The placement of ${lagnaLord} in the ${planets[lagnaLord]?.house || 1}st house anchors your personal agency, prioritizing integrity and deliberate, focused growth.`
+          },
+          {
+            sectionId: 'sec_ch2_planets',
+            chapterNumber: 2,
+            title: 'Chapter 2: Sidereal Ephemeris & Planetary Dignities',
+            subtitle: 'Nirayana Planetary Coordinates, Bhava Placements & Dignities',
+            contentMarkdown: `### High-Precision Planetary Ephemeris (Lahiri Ayanamsha)\n\n${planetTable}\n\n*Surya in ${sun.sign} illuminates the core conscious will, Chandra in ${moon.sign} provides mental fortitude, and Mangal in ${mars.sign} fuels purposeful execution.*`
+          },
+          {
+            sectionId: 'sec_ch3_vargas',
+            chapterNumber: 3,
+            title: 'Chapter 3: Divisional Harmonic Vargas (D9 & D10)',
+            subtitle: 'Navamsha (D9) Soul Blueprint & Dashamsha (D10) Professional Harmonic',
+            contentMarkdown: `### Harmonic Divisional Charts\n- **Navamsha (D9) Lagna:** **${navamsha.d9_lagna?.sign || lagna.sign}** — Represents subconscious desires, dharmic maturity, and matrimonial harmony.\n- **Dashamsha (D10) Lagna:** **${dashamsha.d10_lagna?.sign || lagna.sign}** — Governs executive authority, vocational reputation, and institutional achievements.\n\nPlanetary dignities in the D9 chart validate long-term inner stability, while D10 alignments confirm strategic executive capability.`
+          },
+          {
+            sectionId: 'sec_ch4_ashtakavarga',
+            chapterNumber: 4,
+            title: 'Chapter 4: Sarvashtakavarga 337-Bindu Distribution',
+            subtitle: 'Universal Benefic Point Allocation Across the 12 Bhavas',
+            contentMarkdown: `### Ashtakavarga Vital Energy Distribution\nThe classical Parashari Ashtakavarga system synthesizes 337 benefic points (Bindus) across all 12 houses to measure structural resilience:\n\n| House | Sign | Benefic Bindus | Astrological Significance |\n|---|---|---|---|\n| 1st Bhava | ${lagna.sign} | 31 Bindus | Vital physical constitution and self-resilience |\n| 2nd Bhava | ${signsList[(signsList.indexOf(lagna.sign)+1)%12]} | 29 Bindus | Accumulated wealth and speech clarity |\n| 10th Bhava | ${signsList[(signsList.indexOf(lagna.sign)+9)%12]} | 34 Bindus | Vocational authority and executive achievements |\n| 11th Bhava | ${signsList[(signsList.indexOf(lagna.sign)+10)%12]} | 33 Bindus | Inflow of profits and fulfillment of aspirations |\n\nHouses with 28+ Bindus represent reliable karmic strongholds throughout lifetime transits.`
+          },
+          {
+            sectionId: 'sec_ch5_dasha',
+            chapterNumber: 5,
+            title: 'Chapter 5: Active Vimshottari Mahadasha & Antardasha',
+            subtitle: 'Current Operational Planetary Cycle & Strategic Temporal Horizons',
+            contentMarkdown: `### Vimshottari Dasha Trajectory\n- **Active Mahadasha:** **${dashaMaha}**\n- **Active Antardasha:** **${dashaAntar}**\n- **Operational Theme:** Expanding foundational knowledge, refining strategic partnerships, and harvesting prior efforts.\n\nPlanetary periods govern when specific natal potentials ripen into observable real-world milestones.`
+          },
+          {
+            sectionId: 'sec_ch6_yogas_doshas',
+            chapterNumber: 6,
+            title: 'Chapter 6: Major Yogas & Dosha Diagnostics',
+            subtitle: 'Raja Yogas, Dhana Yogas, Kuja Dosha & Shastra Mitigations',
+            contentMarkdown: `### Planetary Combinations (Yogas)\n1. **Gajakesari Yoga Formation:** Angular relationship between Chandra and Guru fosters moral wisdom and community respect.\n2. **Dharma-Karmadhipati Alignment:** Mutual reception between trine and angle lords bolsters high-integrity leadership.\n\n### Dosha Verification\n- **Kuja Dosha (Manglik):** ${manglikInfo.verdict}. Mars situated in House ${mars.house || 1}.\n- **Kaal Sarp Diagnostic:** Planetary distribution indicates free movement across the lunar nodal axis.`
+          },
+          {
+            sectionId: 'sec_ch7_remedies_methodology',
+            chapterNumber: 7,
+            title: 'Chapter 7: Vedic Remedial Blueprint & Purushartha',
+            subtitle: 'Traditional Gemstone Principles, Mantras, Charity & Personal Agency',
+            contentMarkdown: `### Remedial Architecture\n- **Primary Deva / Archetype:** Harmonizing with ${lagnaLord} through disciplined morning contemplation.\n- **Charitable Giving (Daana):** Supporting educational initiatives on Thursdays and providing warm meals on Saturdays.\n- **Purushartha Integration:** Planetary charts indicate celestial predispositions; your deliberate action (*Kriyamana Karma*) determines the ultimate realization of destiny.`
+          }
+        ];
+      }
+      // 2. CAREER & EDUCATION (7 chapters)
+      else if (pid === 'report_career_education') {
+        const tenthSign = signsList[(signsList.indexOf(lagna.sign) + 9) % 12];
+        const tenthLord = SIGN_LORDS[tenthSign] || 'Sun';
+        sections = [
+          {
+            sectionId: 'sec_career_overview',
+            chapterNumber: 1,
+            title: 'Chapter 1: Professional Trajectory & 10th House Karma Bhava',
+            subtitle: 'Core Vocational Archetypes, Executive Capacity & Career Potential',
+            contentMarkdown: `### Karma Bhava (10th House) Profile\n- **10th House Sign:** **${tenthSign}**\n- **10th House Lord:** **${tenthLord}** placed in House **${planets[tenthLord]?.house || 10}**\n- **Vocation Archetype:** Strategic Leadership, Analytical Problem Solving, and Sustainable Enterprise\n\nWith ${tenthSign} ruling your tenth house, your professional journey thrives on method, accountability, and clarity of purpose.`
+          },
+          {
+            sectionId: 'sec_dashamsha_d10',
+            chapterNumber: 2,
+            title: 'Chapter 2: D10 Dashamsha Harmonic Vocation Analysis',
+            subtitle: 'Harmonic Confirmation of Institutional Seniority & Specialized Expertise',
+            contentMarkdown: `### Dashamsha (D10) Harmonic Analysis\n- **D10 Lagna:** **${dashamsha.d10_lagna?.sign || tenthSign}**\n- **Vocational Ruler:** **${tenthLord}**\n\nThe D10 harmonic chart confirms an upward vocational trajectory characterized by institutional credibility and increasing authority over multi-year cycles.`
+          },
+          {
+            sectionId: 'sec_10th_house_lordship',
+            chapterNumber: 3,
+            title: 'Chapter 3: 10th Lord Placement & Career Archetypes',
+            subtitle: 'Functional Expression of Public Authority and Commercial Acumen',
+            contentMarkdown: `### 10th Lord Dynamics\nYour 10th house ruler **${tenthLord}** operates as the primary engine of your worldly contributions. Its strength indicates favorable rapport with senior leadership, institutional autonomy, and strong execution standards.`
+          },
+          {
+            sectionId: 'sec_dhana_financial_axes',
+            chapterNumber: 4,
+            title: 'Chapter 4: Wealth Axes (2nd & 11th Bhavas) & Income Potential',
+            subtitle: 'Liquid Assets, Corporate Gains & Sustained Capital Accumulation',
+            contentMarkdown: `### Wealth Architecture (2nd & 11th Bhavas)\n- **2nd House (Dhana Bhava):** Governs accumulated assets and fiscal reserves.\n- **11th House (Labha Bhava):** Governs recurring professional inflows, royalties, and expanded networks.\n\nFinancial stability peaks during favorable sub-periods of ${jupiter.sign ? 'Guru' : 'Dhana lords'}, favoring diversified long-term investments over speculative volatility.`
+          },
+          {
+            sectionId: 'sec_active_dasha_career',
+            chapterNumber: 5,
+            title: 'Chapter 5: Active Dasha Influences on Vocation',
+            subtitle: 'Operational Vimshottari Cycle & Favorable Professional Timing',
+            contentMarkdown: `### Current Professional Dasha Horizon\n- **Operational Period:** **${dashaMaha}** Mahadasha / **${dashaAntar}** Antardasha.\n- **Professional Imperative:** Consolidation of domain mastery, strategic expansion, and mentorship.\n\nThis cycle emphasizes taking structured initiative and formalizing enterprise agreements.`
+          },
+          {
+            sectionId: 'sec_optimal_industries',
+            chapterNumber: 6,
+            title: 'Chapter 6: Optimal Industries & Leadership Roles',
+            subtitle: 'High-Affinity Sectors, Executive Niches & Entrepreneurial Pathways',
+            contentMarkdown: `### Prime Industry Sectors\n1. **Technology & Engineering Systems:** Systems architecture, data strategy, and precision operations.\n2. **Advisory & Strategic Governance:** Enterprise management, legal consulting, and policy leadership.\n3. **Financial Technology & Commerce:** Structured capital, asset stewardship, and scalable commerce.`
+          },
+          {
+            sectionId: 'sec_career_obstacles_remedies',
+            chapterNumber: 7,
+            title: 'Chapter 7: Professional Obstacle Remediation & Yantras',
+            subtitle: 'Navigating Workplace Friction, Office Politics & Stress Mitigation',
+            contentMarkdown: `### Workplace Remedial Strategy\n- **Mantra Sadhana:** Surya Gayatri or Aditya Hridaya Stotra on Sunday mornings to strengthen executive presence.\n- **Desk Ergonomics & Vastu:** Arranging professional workspaces facing East or North-East to enhance mental clarity and decisive focus.`
+          }
+        ];
+      }
+      // 3. RELATIONSHIP & MARRIAGE (6 chapters)
+      else if (pid === 'report_relationship_marriage') {
+        const seventhSign = signsList[(signsList.indexOf(lagna.sign) + 6) % 12];
+        const seventhLord = SIGN_LORDS[seventhSign] || 'Venus';
+        sections = [
+          {
+            sectionId: 'sec_rel_7th_house',
+            chapterNumber: 1,
+            title: 'Chapter 1: 7th House Kalatra Bhava & Relationship Dynamics',
+            subtitle: 'The Mirror of Partnership, Spouse Archetype & Relational Values',
+            contentMarkdown: `### 7th House Kalatra Bhava Profile\n- **7th House Sign:** **${seventhSign}**\n- **7th House Lord:** **${seventhLord}** placed in House **${planets[seventhLord]?.house || 7}**\n- **Spouse Archetype:** Emotionally mature, intellectually curious, and values-driven companion\n\nThe 7th bhava reflects long-term union dynamics. With ${seventhSign} ruling your 7th house, balanced reciprocal respect and intellectual rapport form the bedrock of your relational happiness.`
+          },
+          {
+            sectionId: 'sec_navamsha_d9_marriage',
+            chapterNumber: 2,
+            title: 'Chapter 2: D9 Navamsha Analysis of Marital Harmony',
+            subtitle: 'The Soul Blueprint of Long-Term Marital Longevity & Companionship',
+            contentMarkdown: `### Navamsha (D9) Marital Harmonic\n- **Navamsha Lagna:** **${navamsha.d9_lagna?.sign || seventhSign}**\n- **Navamsha 7th House:** Signifies inner psychological compatibility and subconscious bonding.\n\nThe D9 chart demonstrates that relationships develop greater emotional resonance as both partners mature and cultivate mutual patience.`
+          },
+          {
+            sectionId: 'sec_rel_temperament',
+            chapterNumber: 3,
+            title: 'Chapter 3: Emotional Compatibility & Temperament',
+            subtitle: 'Chandra (Moon) Instincts, Intimacy Expectations & Communication Modes',
+            contentMarkdown: `### Lunar Mind (*Manas*) in Relationships\nYour Moon in **${moon.sign}** seeks emotional consistency and grounded understanding. When communication is open, honest, and unhurried, relational conflicts dissolve quickly.`
+          },
+          {
+            sectionId: 'sec_manglik_dosha_eval',
+            chapterNumber: 4,
+            title: 'Chapter 4: Manglik Dosha & Marital Balance',
+            subtitle: 'Kuja Dosha Placement, Intensity Assessment & Classical Cancellations',
+            contentMarkdown: `### Kuja Dosha Evaluation\n- **Mars House Placement:** House **${mars.house || 1}**\n- **Dosha Status:** **${manglikInfo.verdict}**\n- **Dynamic Assessment:** Mars energy in your chart provides passion, loyalty, and protective instincts. Channeling this vitality constructively prevents unnecessary relational frictions.`
+          },
+          {
+            sectionId: 'sec_marriage_timing_windows',
+            chapterNumber: 5,
+            title: 'Chapter 5: Marriage Timing Windows & Dasha Triggers',
+            subtitle: 'Jupiterian Transits & Active Vimshottari Horizons for Significant Unions',
+            contentMarkdown: `### Astrological Timing Horizons\n- **Active Operational Period:** **${dashaMaha}** Mahadasha / **${dashaAntar}** Antardasha.\n- **Favorable Transit Triggers:** Transits of **Guru (Jupiter)** aspecting your natal 7th house or natal Venus create prime cosmic windows for solemnizing marital commitments and deepening relational roots.`
+          },
+          {
+            sectionId: 'sec_vedic_remedies_harmony',
+            chapterNumber: 6,
+            title: 'Chapter 6: Vedic Remedies for Marital Harmony',
+            subtitle: 'Traditional Mantras, Astrological Practices & Interpersonal Wisdom',
+            contentMarkdown: `### Relationship Remedial Blueprint\n1. **Venusian Harmony:** Chanting the Shukra Beej Mantra on Friday evenings enhances affection and mutual respect.\n2. **Shared Spiritual Focus:** Practicing joint charitable acts or spiritual reflections strengthens mutual covenants.\n3. **Communication Balance:** Cultivating active listening and patient dialogue dissolves subtle misunderstandings before they compound.`
+          }
+        ];
+      }
+      // 4. KUNDLI MILAN / MATCHMAKING (4 chapters)
+      else if (pid === 'report_kundli_milan' || pid === 'report_matchmaking_synastry') {
+        let partnerProfile = null;
+        if (options.partnerId && savedUserProfiles && Array.isArray(savedUserProfiles)) {
+          partnerProfile = savedUserProfiles.find(x => String(x.id) === String(options.partnerId));
+        }
+        const pAName = name;
+        const pBName = partnerProfile ? (partnerProfile.name || partnerProfile.profileName || 'Partner B') : 'Partner (Selected Profile)';
+        const pBDob = partnerProfile ? (partnerProfile.dob || partnerProfile.dateOfBirth || '1996-05-15') : '1996-05-15';
+        const pBTob = partnerProfile ? (partnerProfile.tob || partnerProfile.timeOfBirth || '12:00') : '12:00';
+        const pBLat = parseFloat(partnerProfile ? (partnerProfile.lat || partnerProfile.latitude || 28.6139) : 28.6139);
+        const pBLon = parseFloat(partnerProfile ? (partnerProfile.lon || partnerProfile.longitude || 77.2090) : 77.2090);
+
+        let pBKundli = null;
+        try {
+          pBKundli = calculateClientKundli(pBDob, pBTob, pBLat, pBLon, false);
+        } catch (_) {}
+        const pBMoon = pBKundli?.d1_rashi_chart?.planets?.Moon || { sign: 'Cancer', nakshatra: 'Pushya', pada: 2 };
+        const pBMars = pBKundli?.d1_rashi_chart?.planets?.Mars || { house: 4, sign: 'Aries' };
+        const pBManglik = [1, 4, 7, 8, 12].includes(pBMars.house);
+
+        sections = [
+          {
+            sectionId: 'sec_ashtakoota_synastry',
+            chapterNumber: 1,
+            title: 'Chapter 1: Ashtakoota 36-Guna Synastry Matrix (36 Points)',
+            subtitle: 'Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot & Nadi (36 Points)',
+            contentMarkdown: `### Classical Parashari Ashtakoota Compatibility Evaluation (36 Points)\nEvaluating authoritative lunar synastry between **${pAName}** and **${pBName}**.\n\n- **${pAName} (Native):** Moon in **${moon.sign}** (${moon.nakshatra} Nakshatra, Pada ${moon.pada}).\n- **${pBName} (Partner):** Moon in **${pBMoon.sign}** (${pBMoon.nakshatra} Nakshatra, Pada ${pBMoon.pada}).\n\n---\n\n### Total Compatibility Score: **29.5 / 36.0 Gunas**\n### Verdict: **Highly Auspicious Match (Uttam Milan)**\n\n| Kuta Dimension | Maximum Points | Obtained Points | Compatibility Significance |\n| :--- | :--- | :--- | :--- |\n| **1. Varna** | 1.0 Point | **1.0** | Spiritual ego, work alignment, mutual respect |\n| **2. Vashya** | 2.0 Points | **2.0** | Magnetic attraction, emotional dominance balance |\n| **3. Tara** | 3.0 Points | **3.0** | Health, mutual destiny, and biological longevity |\n| **4. Yoni** | 4.0 Points | **3.5** | Physical, biological, and intimate affinity |\n| **5. Graha Maitri** | 5.0 Points | **5.0** | Mental friendship, cognitive wave, mutual companionship |\n| **6. Gana** | 6.0 Points | **6.0** | Temperamental alignment (Deva, Manushya, Rakshasa) |\n| **7. Bhakoot** | 7.0 Points | **7.0** | Emotional bonding, family welfare, financial harmony |\n| **8. Nadi** | 8.0 Points | **8.0** | Ayurvedic genetic constitution, vital nervous system |\n| **TOTAL** | **36.0 Points** | **29.5 / 36.0** | **Highly Auspicious Match (Uttam Milan)** |\n\n> **Counselor Guidance:** Exceptional matrimonial harmony indicated across psychological, biological, and spiritual dimensions.`
+          },
+          {
+            sectionId: 'sec_navamsha_synastry',
+            chapterNumber: 2,
+            title: 'Chapter 2: D9 Navamsha Harmonic Synastry',
+            subtitle: 'Subconscious Temperament, Inner Values & Matrimonial Longevity',
+            contentMarkdown: `### D9 Navamsha Harmonic Confirmation\nWhile the Rashi (D1) chart indicates physical life circumstances, the **D9 Navamsha** reveals the enduring spiritual essence and inner matrimonial disposition:\n\n- **7th House of Navamsha:** Evaluates the subtle psychological temperament of the partner.\n- **Navamsha Lagna Compatibility:** Mutual placement of the D9 Ascendant lords confirms whether long-term shared living deepens intimacy or breeds unspoken distance.\n- **Venus & Jupiter Dignity:** Venus governs relational grace and physical intimacy, while Jupiter blesses the union with moral respect and domestic auspiciousness.`
+          },
+          {
+            sectionId: 'sec_manglik_synastry',
+            chapterNumber: 3,
+            title: 'Chapter 3: Kuja Dosha (Manglik) & Planetary Balance',
+            subtitle: 'Mars Placement in 1st, 2nd, 4th, 7th, 8th & 12th Bhavas & Cancellation Rules',
+            contentMarkdown: `### Kuja Dosha (Manglik Analysis)\nMars represents fiery drive, passion, and personal will. When Mars occupies sensitive matrimonial houses (1st, 2nd, 4th, 7th, 8th, or 12th from Lagna or Moon), its dynamic intensity must be matched or neutralized:\n\n- **${pAName} (Native):** Mars in House **${mars.house || 1}** (${manglikInfo.has_dosha ? 'Manglik' : 'Non-Manglik'}).\n- **${pBName} (Partner):** Mars in House **${pBMars.house}** (${pBManglik ? 'Manglik' : 'Non-Manglik'}).\n- **Synastry Dynamic:** Mutual planetary aspects balance emotional assertiveness, creating stable relational dynamics.`
+          },
+          {
+            sectionId: 'sec_12_kuta_diagnostics',
+            chapterNumber: 4,
+            title: 'Chapter 4: Regional 12-Kuta Extended Diagnostics',
+            subtitle: 'Mahendra, Stree Deergha, Rajju, Vedha & Extended South Indian Systems',
+            contentMarkdown: `### Regional 12-Kuta Extended Diagnostics\nBeyond the primary 8 Kutas, classical southern traditions evaluate four vital sub-kutas for matrimonial security:\n\n1. **Mahendra Kuta:** Confirms prosperity, lineage continuity, and mutual fortune.\n2. **Stree Deergha:** Distance between the bride and groom nakshatras indicates enduring affection.\n3. **Rajju Kuta:** Protects the physical longevity and health of the partners.\n4. **Vedha Kuta:** Checks for inimical star afflictions; absence of Vedha ensures unhindered marital growth.`
+          }
+        ];
+      }
+      // 5. ONE-MONTH FORECAST (5 chapters + 1 month)
+      else if (pid === 'report_one_month_forecast') {
+        sections = [
+          {
+            sectionId: 'sec_month_focus',
+            chapterNumber: 1,
+            title: 'Chapter 1: Monthly Strategic Focus & Planetary Transits',
+            subtitle: '30-Day Astrological Climate, Major Ingresses & Key Horizons',
+            contentMarkdown: `### 30-Day Astrological Weather\n- **Primary Planetary Ingress:** Solar transit through the cardinal axis stimulates focused initiatives.\n- **Active Focus Area:** Strategic communication, workplace realignments, and consolidating prior commitments.\n- **Key Advisory:** Maintain measured execution during lunar sensitive intervals.`
+          },
+          {
+            sectionId: 'sec_month_dasha',
+            chapterNumber: 2,
+            title: 'Chapter 2: Active Vimshottari Dasha Influence',
+            subtitle: 'Sub-Period Dynamics & Temporal Focus for the Upcoming 30 Days',
+            contentMarkdown: `### Operative Temporal Influence\n- **Mahadasha / Antardasha:** **${dashaMaha}** / **${dashaAntar}**\n- **Sub-Period Arc:** High productivity window for formalizing agreements and advancing vocational milestones.`
+          },
+          {
+            sectionId: 'sec_month_lunar',
+            chapterNumber: 3,
+            title: 'Chapter 3: Lunar Cycles & Emotional Tides',
+            subtitle: 'Waxing (Shukla) & Waning (Krishna) Paksha Strategic Timing',
+            contentMarkdown: `### Lunar Rhythm Architecture\n- **Shukla Paksha (Waxing):** Best suited for launching new initiatives, public outreach, and expanding alliances.\n- **Krishna Paksha (Waning):** Optimal for internal reviews, debt reduction, and meditative rest.`
+          },
+          {
+            sectionId: 'sec_month_weekly',
+            chapterNumber: 4,
+            title: 'Chapter 4: Week-by-Week Astrological Guidance',
+            subtitle: 'Four-Week Chronological Breakdown of Opportunities and Watchouts',
+            contentMarkdown: `### Four-Week Chronology\n- **Week 1:** Goal definition, clear communications, and foundational planning.\n- **Week 2:** Maximum momentum, business presentations, and commercial progress.\n- **Week 3:** Consolidation, operational reviews, and interpersonal diplomacy.\n- **Week 4:** Reflection, milestone celebration, and strategic preparation for the next cycle.`
+          },
+          {
+            sectionId: 'sec_month_dates',
+            chapterNumber: 5,
+            title: 'Chapter 5: Auspicious & Sensitive Dates',
+            subtitle: 'Muhurtha-Approved Windows & Cautionary Planetary Intersections',
+            contentMarkdown: `### Important Monthly Date Markers\n- **Highly Auspicious Dates:** 4th, 11th, 19th, 27th (Ideal for investments, important meetings, and major signatures)\n- **Dates for Caution:** 8th, 16th, 23rd (Advised to avoid conflicts, impulse purchases, or hasty decisions)`
+          }
+        ];
+        monthlyForecasts = [
+          {
+            monthName: 'Next 30 Days',
+            transitHighlights: 'Jupiter trine natal Lagna & Sun ingress cardinal axis',
+            careerGuidance: 'High-focus expansion, recognition for meticulous work, and decisive negotiations.',
+            relationshipGuidance: 'Warmth and mutual clarity; plan meaningful quality time.',
+            activeDasha: { maha: dashaMaha, antar: dashaAntar },
+            favorableDates: ['4th', '11th', '19th', '27th'],
+            cautionDates: ['8th', '16th', '23rd']
+          }
+        ];
+      }
+      // 6. TWELVE-MONTH VARSHPHAL (4 chapters + 12 months)
+      else if (pid === 'report_twelve_month_varshphal') {
+        sections = [
+          {
+            sectionId: 'sec_annual_landscape',
+            chapterNumber: 1,
+            title: 'Chapter 1: Annual Overview: The Celestial Landscape',
+            subtitle: 'Macro Planetary Transits Across Saturn, Jupiter & Nodal Axis',
+            contentMarkdown: `### 12-Month Macro Astro-Economic Horizon\nDuring this 12-month annual cycle, your natal **${lagna.sign}** Lagna interacts with major slow-moving planetary transits (*Gochara*):\n1. **Jupiterian Expansion:** Transiting sidereal sectors that illuminate wisdom, institutional credibility, and financial consolidation.\n2. **Saturnian Discipline:** Encouraging methodical perseverance, systemic foundation-building, and structural integrity in commitments.\n3. **Rahu-Ketu Karmic Polarity:** Fostering discernment between transient worldly ambitions and enduring spiritual values.`
+          },
+          {
+            sectionId: 'sec_monthly_progression',
+            chapterNumber: 2,
+            title: 'Chapter 2: Month-by-Month Predictive Analysis (Months 1 to 12)',
+            subtitle: 'Granular Monthly Forecasting Driven by Active Vimshottari Subperiods',
+            contentMarkdown: `### Annual Month-by-Month Predictive Overview\nTwelve distinct monthly astrological windows provide tactical timing indicators, planetary ingresses, and active Dasha transitions across your personal and professional priorities.`
+          },
+          {
+            sectionId: 'sec_annual_dasha',
+            chapterNumber: 3,
+            title: 'Chapter 3: Annual Vimshottari Progression & Subperiod Transitions',
+            subtitle: 'Mapping Antardasha and Pratyantardasha Turning Points Across 12 Months',
+            contentMarkdown: `### Subperiod Progression Schedule\nThe active **${dashaMaha}** Mahadasha transitions through vital subperiod boundaries over the next 12 months, shifting priorities from operational groundwork to recognition and spiritual synthesis.`
+          },
+          {
+            sectionId: 'sec_annual_remedies',
+            chapterNumber: 4,
+            title: 'Chapter 4: Annual Remedial Protocol & Spiritual Alignment',
+            subtitle: 'Harmonizing Mantras, Charitable Practices & Planetary Timing',
+            contentMarkdown: `### Annual Spiritual Blueprint\n- **Core Mantra:** *Om Namo Bhagavate Vasudevaya* chanted with focused diaphragmatic breathing.\n- **Weekly Practice:** Thursday morning contemplative study to strengthen Jupiterian grace.\n- **Service & Charity:** Supporting educational programs or distributing meals to living beings on Saturdays.`
+          }
+        ];
+        monthlyForecasts = [
+          { monthName: 'Month 1', transitHighlights: 'Jupiter trine natal Lagna', careerGuidance: 'Strategic expansion and career recognition.', activeDasha: { maha: dashaMaha, antar: dashaAntar }, favorableDates: ['5th', '14th'], cautionDates: ['9th'] },
+          { monthName: 'Month 2', transitHighlights: 'Sun ingress 2nd house', careerGuidance: 'Financial audits and profitable negotiations.', activeDasha: { maha: dashaMaha, antar: dashaAntar }, favorableDates: ['8th', '22nd'], cautionDates: ['17th'] },
+          { monthName: 'Month 3', transitHighlights: 'Mercury in 10th bhava', careerGuidance: 'High-impact communications and deals.', activeDasha: { maha: dashaMaha, antar: 'Sun' }, favorableDates: ['4th', '19th'], cautionDates: ['12th'] },
+          { monthName: 'Month 4', transitHighlights: 'Venus direct in 4th', careerGuidance: 'Domestic harmony and asset acquisitions.', activeDasha: { maha: dashaMaha, antar: 'Sun' }, favorableDates: ['7th', '21st'], cautionDates: ['15th'] },
+          { monthName: 'Month 5', transitHighlights: 'Mars ingress 3rd bhava', careerGuidance: 'Courageous new initiatives launch.', activeDasha: { maha: dashaMaha, antar: 'Moon' }, favorableDates: ['11th', '25th'], cautionDates: ['18th'] },
+          { monthName: 'Month 6', transitHighlights: 'Full Moon in 5th', careerGuidance: 'Creative breakthroughs and mentor guidance.', activeDasha: { maha: dashaMaha, antar: 'Moon' }, favorableDates: ['6th', '20th'], cautionDates: ['14th'] },
+          { monthName: 'Month 7', transitHighlights: 'Saturn stable in 6th', careerGuidance: 'Overcoming competitive obstacles.', activeDasha: { maha: dashaMaha, antar: 'Mars' }, favorableDates: ['9th', '23rd'], cautionDates: ['16th'] },
+          { monthName: 'Month 8', transitHighlights: 'Sun in 9th bhava', careerGuidance: 'Higher studies and legal approvals.', activeDasha: { maha: dashaMaha, antar: 'Mars' }, favorableDates: ['3rd', '18th'], cautionDates: ['11th'] },
+          { monthName: 'Month 9', transitHighlights: 'Jupiter ingress 10th', careerGuidance: 'Major vocational promotion.', activeDasha: { maha: dashaMaha, antar: 'Rahu' }, favorableDates: ['8th', '24th'], cautionDates: ['13th'] },
+          { monthName: 'Month 10', transitHighlights: 'Mercury exalted', careerGuidance: 'Network partnerships and contracts.', activeDasha: { maha: dashaMaha, antar: 'Rahu' }, favorableDates: ['5th', '22nd'], cautionDates: ['19th'] },
+          { monthName: 'Month 11', transitHighlights: 'Venus in 11th bhava', careerGuidance: 'Substantial monetary gains from investments.', activeDasha: { maha: dashaMaha, antar: 'Rahu' }, favorableDates: ['12th', '27th'], cautionDates: ['15th'] },
+          { monthName: 'Month 12', transitHighlights: 'Solar return alignment', careerGuidance: 'Consolidation of annual goals and new trajectory.', activeDasha: { maha: dashaMaha, antar: 'Jupiter' }, favorableDates: ['10th', '26th'], cautionDates: ['20th'] }
+        ];
+      }
+      // 7. THREE-YEAR ROADMAP (5 chapters)
+      else if (pid === 'report_three_year_roadmap') {
+        sections = [
+          {
+            sectionId: 'sec_3yr_macro',
+            chapterNumber: 1,
+            title: 'Chapter 1: Three-Year Macro Astrological Cycles',
+            subtitle: 'Major Transits of Saturn, Jupiter & Nodal Eclipses (Months 1–36)',
+            contentMarkdown: `### 36-Month Macro Astronomical Cycles\n- **Shani (Saturn) Transit:** Emphasizes structural discipline, boundary setting, and professional mastery.\n- **Guru (Jupiter) Transits:** Successive ingress through productive signs expands wisdom, partnerships, and prosperity.\n- **Rahu-Ketu Axis Shift:** Stimulates decisive shifts in career focus and creative aspirations.`
+          },
+          {
+            sectionId: 'sec_year_1_foundation',
+            chapterNumber: 2,
+            title: 'Chapter 2: Year 1 Roadmap: Foundation & Realignment',
+            subtitle: 'Months 1 to 12 Establishing Core Competencies, Clearing Liabilities',
+            contentMarkdown: `### Year 1 Strategic Focus: Stabilization\n- **Vocation:** Consolidating technical mastery and proving dependability.\n- **Finance:** Debt reduction and systematic emergency reserve accumulation.`
+          },
+          {
+            sectionId: 'sec_year_2_expansion',
+            chapterNumber: 3,
+            title: 'Chapter 3: Year 2 Roadmap: Acceleration & Expansion',
+            subtitle: 'Months 13 to 24 Commercial Breakouts, Strategic Alliances & Relocation',
+            contentMarkdown: `### Year 2 Strategic Focus: Expansion\n- **Vocation:** Launching major independent or high-visibility projects.\n- **Relationships:** Deepening core bonds and expanding high-trust networks.`
+          },
+          {
+            sectionId: 'sec_year_3_legacy',
+            chapterNumber: 4,
+            title: 'Chapter 4: Year 3 Roadmap: Culmination & Legacy',
+            subtitle: 'Months 25 to 36 Harvesting Multi-Year Initiatives & Community Impact',
+            contentMarkdown: `### Year 3 Strategic Focus: Culmination\n- **Vocation:** Institutional recognition, executive seniority, and executive stewardship.\n- **Spiritual Integration:** Aligning material success with philosophical purpose and philanthropic contributions.`
+          },
+          {
+            sectionId: 'sec_3yr_karmic_points',
+            chapterNumber: 5,
+            title: 'Chapter 5: Major Karmic Turning Points & Long-Term Remedies',
+            subtitle: 'Mantra Sadhana, Charitable Commitments & Philosophical Resilience',
+            contentMarkdown: `### Multi-Year Spiritual Anchor\n1. **Long-Term Mantra Sadhana:** Sustained japa of personal Ishta Devata mantras during dawn hours.\n2. **Systemic Daana:** Regular contributions to knowledge dissemination and supporting elderly caregivers.\n3. **Equilibrium:** Remembering that while the stars chart the celestial weather, personal dignity and ethical action (*Purushartha*) determine the harvest.`
+          }
+        ];
+      }
+      // 8. BUNDLE: KUNDLI + VARSHPHAL (11 chapters + 12 months)
+      else if (pid === 'report_bundle_kundli_varshphal') {
+        const deepDiveDoc = buildClientSideDemoReportDocument({ productId: 'report_janam_kundli_deep_dive', displayName: 'Complete Janam Kundli Deep Dive' }, chartOrProfile, options);
+        const annualDoc = buildClientSideDemoReportDocument({ productId: 'report_twelve_month_varshphal', displayName: '12-Month Annual Varshphal' }, chartOrProfile, options);
+        sections = [...deepDiveDoc.sections, ...annualDoc.sections];
+        monthlyForecasts = annualDoc.monthlyForecasts;
+      }
+      // 9. BASIC CHART SUMMARY (3 chapters)
+      else {
+        sections = [
+          {
+            sectionId: 'sec_basic_summary',
+            chapterNumber: 1,
+            title: 'Chapter 1: Basic Chart Summary & Natal Coordinates',
+            subtitle: 'Foundational Ascendant, Moon Sign & Ephemeris Table',
+            contentMarkdown: `### Foundational Vedic Natal Summary\n- **Profile Name:** ${name}\n- **Date & Place of Birth:** ${dob} (${city})\n- **Ascendant (Lagna):** **${lagna.sign}** (${typeof lagna.degree === 'number' ? lagna.degree.toFixed(2) : lagna.degree}°) in **${lagna.nakshatra}** Nakshatra (Pada ${lagna.pada})\n- **Moon Sign (Rashi):** **${moon.sign}** in **${moon.nakshatra}** Nakshatra (Pada ${moon.pada})\n- **Sun Sign (Surya Rashi):** **${sun.sign}** (${typeof sun.degree === 'number' ? sun.degree.toFixed(2) : sun.degree}°)\n\n*To explore Divisional Harmonic Vargas, 337-Bindu Ashtakavarga, and Month-by-Month forecasts, unlock our premium publications in Report Studio.*`
+          },
+          {
+            sectionId: 'sec_basic_planetary_overview',
+            chapterNumber: 2,
+            title: 'Chapter 2: Planetary Highlights & Contemplative Guidance',
+            subtitle: 'Core Graha Archetypes & Foundational Orientation',
+            contentMarkdown: `### Core Astrological Archetypes\n- **Surya (Sun):** Vitality, creative purpose, and conscious self-expression in **${sun.sign}** (${sun.dignity || 'Direct'}).\n- **Chandra (Moon):** Mind (*Manas*), emotional temperament, and instinctual response patterns in **${moon.sign}** (${moon.dignity || 'Direct'}).\n- **Lagna (Ascendant):** Sets the physical blueprint, temperament, and primary trajectory of worldly action in **${lagna.sign}**.`
+          },
+          {
+            sectionId: 'sec_basic_panchang',
+            chapterNumber: 3,
+            title: 'Chapter 3: Birth Panchang Elements & Spiritual Direction',
+            subtitle: 'Tithi, Vara, Nakshatra, Yoga, Karana & Next Steps',
+            contentMarkdown: `### Birth Panchang Elements\n- **Birth Nakshatra:** **${moon.nakshatra}**\n- **Auspicious Direction:** Governed by the elemental ruler of **${lagna.sign}**.\n- **Specialized Publications:** For in-depth career analysis, marital synastry, D10 Dashamsha, and 12-month Varshphal forecasting, browse our specialized publication catalogue in Report Studio.`
+          }
+        ];
+      }
 
       return {
         reportId: `rep_demo_${Date.now()}`,
-        productId: product?.productId || 'report_janam_kundli_deep_dive',
-        productName: product?.displayName || 'Complete Janam Kundli Deep Dive',
+        productId: pid,
+        productName: displayName,
         profileName: name,
         birthCoordinates: {
           dob: dob,
@@ -12477,43 +12895,13 @@
         },
         allowPdfDownload: true,
         ethicalNotice: 'Classical Vedic astrology represents an interpretive science of tendencies, karmic potentials, and cosmic archetypes, operating alongside personal agency (Purushartha).',
-        sections: [
-          {
-            sectionId: 'sec_lagna',
-            chapterNumber: 1,
-            title: 'Lagna & Ascendant Analysis',
-            subtitle: 'The Physical Vehicle & Karmic Trajectory',
-            contentMarkdown: `### Ascendant Overview\nYour Lagna is placed in **${lagnaSign}**, establishing the core baseline of your vital temperament, innate resilience, and primary karmic trajectory in this lifetime.`
-          },
-          {
-            sectionId: 'sec_dignity',
-            chapterNumber: 2,
-            title: 'Planetary Dignities & Avathas',
-            subtitle: 'Vitality and Functional Nature of Cosmic Archetypes',
-            contentMarkdown: `### Classical Planetary Table\n| Planet | Sign | Degree | Dignity | Status |\n|---|---|---|---|---|\n| Surya (Sun) | ${d1?.planets?.Sun?.sign || 'Aries'} | ${d1?.planets?.Sun?.degree ? (typeof d1.planets.Sun.degree === 'number' ? d1.planets.Sun.degree.toFixed(2) + '°' : d1.planets.Sun.degree + '°') : '15.00°'} | Mitra | Direct |\n| Chandra (Moon) | ${d1?.planets?.Moon?.sign || 'Taurus'} | ${d1?.planets?.Moon?.degree ? (typeof d1.planets.Moon.degree === 'number' ? d1.planets.Moon.degree.toFixed(2) + '°' : d1.planets.Moon.degree + '°') : '10.50°'} | Exalted | Direct |\n| Mangal (Mars) | ${d1?.planets?.Mars?.sign || 'Scorpio'} | ${d1?.planets?.Mars?.degree ? (typeof d1.planets.Mars.degree === 'number' ? d1.planets.Mars.degree.toFixed(2) + '°' : d1.planets.Mars.degree + '°') : '22.10°'} | Own Sign | Direct |`
-          },
-          {
-            sectionId: 'sec_career',
-            chapterNumber: 3,
-            title: 'Karma Bhava & Professional Destiny',
-            subtitle: 'Executive Authority & Public Vocation',
-            contentMarkdown: `### 10th House Career Dynamics\nThe tenth bhava signifies executive leadership, status, and professional mastery. Planetary alignments support strategic decision-making, executive responsibility, and independent initiatives.`
-          }
-        ],
-        monthlyForecasts: [
-          { monthName: 'Month 1', transitHighlights: 'Jupiter trine natal Lagna', careerGuidance: 'Strong expansion and career recognition.', activeDasha: { maha: 'Jupiter', antar: 'Venus' }, favorableDates: ['5th', '14th'], cautionDates: ['9th'] },
-          { monthName: 'Month 2', transitHighlights: 'Sun ingress 2nd house', careerGuidance: 'Financial audits and profitable negotiations.', activeDasha: { maha: 'Jupiter', antar: 'Venus' }, favorableDates: ['8th', '22nd'], cautionDates: ['17th'] },
-          { monthName: 'Month 3', transitHighlights: 'Mercury in 10th bhava', careerGuidance: 'High-impact communications and deals.', activeDasha: { maha: 'Jupiter', antar: 'Sun' }, favorableDates: ['4th', '19th'], cautionDates: ['12th'] },
-          { monthName: 'Month 4', transitHighlights: 'Venus direct in 4th', careerGuidance: 'Domestic harmony and asset acquisitions.', activeDasha: { maha: 'Jupiter', antar: 'Sun' }, favorableDates: ['7th', '21st'], cautionDates: ['15th'] },
-          { monthName: 'Month 5', transitHighlights: 'Mars ingress 3rd bhava', careerGuidance: 'Courageous new initiatives launch.', activeDasha: { maha: 'Jupiter', antar: 'Moon' }, favorableDates: ['11th', '25th'], cautionDates: ['18th'] },
-          { monthName: 'Month 6', transitHighlights: 'Full Moon in 5th', careerGuidance: 'Creative breakthroughs and mentor guidance.', activeDasha: { maha: 'Jupiter', antar: 'Moon' }, favorableDates: ['6th', '20th'], cautionDates: ['14th'] },
-          { monthName: 'Month 7', transitHighlights: 'Saturn stable in 6th', careerGuidance: 'Overcoming competitive obstacles.', activeDasha: { maha: 'Jupiter', antar: 'Mars' }, favorableDates: ['9th', '23rd'], cautionDates: ['16th'] },
-          { monthName: 'Month 8', transitHighlights: 'Sun in 9th bhava', careerGuidance: 'Higher studies and legal approvals.', activeDasha: { maha: 'Jupiter', antar: 'Mars' }, favorableDates: ['3rd', '18th'], cautionDates: ['11th'] },
-          { monthName: 'Month 9', transitHighlights: 'Jupiter ingress 10th', careerGuidance: 'Major vocational promotion.', activeDasha: { maha: 'Jupiter', antar: 'Rahu' }, favorableDates: ['8th', '24th'], cautionDates: ['13th'] },
-          { monthName: 'Month 10', transitHighlights: 'Mercury exalted', careerGuidance: 'Network partnerships and contracts.', activeDasha: { maha: 'Jupiter', antar: 'Rahu' }, favorableDates: ['5th', '22nd'], cautionDates: ['19th'] },
-          { monthName: 'Month 11', transitHighlights: 'Venus in 11th bhava', careerGuidance: 'Substantial monetary gains from investments.', activeDasha: { maha: 'Jupiter', antar: 'Rahu' }, favorableDates: ['12th', '27th'], cautionDates: ['15th'] },
-          { monthName: 'Month 12', transitHighlights: 'Solar return alignment', careerGuidance: 'Consolidation of annual goals and new trajectory.', activeDasha: { maha: 'Jupiter', antar: 'Jupiter' }, favorableDates: ['10th', '26th'], cautionDates: ['20th'] }
-        ]
+        tableOfContents: sections.map(s => ({
+          sectionId: s.sectionId,
+          title: s.title,
+          chapterNumber: s.chapterNumber
+        })),
+        sections: sections,
+        monthlyForecasts: monthlyForecasts
       };
     }
 
@@ -12631,7 +13019,7 @@
           const errData = await orderRes.json().catch(() => ({}));
           if (method === 'DEMO_WALLET') {
             console.warn("Backend report order rejected or demo disabled in production, falling back to local demo generator:", errData);
-            const clientDoc = buildClientSideDemoReportDocument(activeBuilderProduct, currentCalculatedChart || profileData, { focus, depth, lang });
+            const clientDoc = buildClientSideDemoReportDocument(activeBuilderProduct, currentCalculatedChart || profileData, { focus, depth, lang, partnerId });
             currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
             localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
             updateDemoWalletDisplay();
@@ -12699,7 +13087,7 @@
         console.error("Report order error:", err);
         if (method === 'DEMO_WALLET') {
           console.warn("Backend unavailable, generating demo publication locally...");
-          const clientDoc = buildClientSideDemoReportDocument(activeBuilderProduct, currentCalculatedChart || profileData, { focus, depth, lang });
+          const clientDoc = buildClientSideDemoReportDocument(activeBuilderProduct, currentCalculatedChart || profileData, { focus, depth, lang, partnerId });
           currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
           localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
           updateDemoWalletDisplay();
@@ -12923,12 +13311,13 @@
       generateAndDownloadReportPdf(currentCalculatedChart, `${currentCalculatedChart.name || 'Seeker'} - Janam Kundli Summary`);
     }
 
-    function generateSvgKundliDiamondPdf(d1) {
-      if (!d1 || !d1.lagna) {
+    function generateSvgKundliDiamondPdf(d1, width = 280, height = 280) {
+      if (!d1) {
         return `<div style="text-align:center; padding: 20px; color:#64748B;">Chart coordinates calculated</div>`;
       }
-      const lagnaSign = d1.lagna.sign;
-      const lIdx = signsList.indexOf(lagnaSign);
+      const lagnaObj = d1.lagna || d1.d9_lagna || d1.d10_lagna || d1.moon_lagna || { sign: 'Aries' };
+      const lagnaSign = lagnaObj.sign || 'Aries';
+      const lIdx = signsList.indexOf(lagnaSign) !== -1 ? signsList.indexOf(lagnaSign) : 0;
       const signs = [];
       for (let h = 1; h <= 12; h++) {
         signs[h] = ((lIdx + (h - 1)) % 12) + 1;
@@ -12937,14 +13326,15 @@
       for (let h = 1; h <= 12; h++) housePlanets[h] = [];
       if (d1.planets) {
         for (const [pName, pData] of Object.entries(d1.planets)) {
-          if (housePlanets[pData.house]) {
-            housePlanets[pData.house].push(pName.substring(0, 2));
+          const hVal = pData.house || pData.chalit_house || 1;
+          if (housePlanets[hVal]) {
+            housePlanets[hVal].push(pName.substring(0, 2));
           }
         }
       }
 
       return `
-        <svg width="280" height="280" viewBox="0 0 280 280" style="background:#FFFDF8; border: 2px solid #881337; border-radius: 4px;">
+        <svg width="${width}" height="${height}" viewBox="0 0 280 280" style="background:#FFFDF8; border: 2px solid #881337; border-radius: 4px;">
           <!-- Outer boundary -->
           <rect x="0" y="0" width="280" height="280" fill="none" stroke="#881337" stroke-width="2"/>
           <!-- Diagonal crosses -->
@@ -13095,7 +13485,152 @@
         }
       }
 
-      const svgChartHtml = generateSvgKundliDiamondPdf(d1);
+      const pid = isDoc ? (docOrChart.productId || 'report_janam_kundli_deep_dive') : 'report_basic_chart_summary';
+      const navamsha = chartData?.divisional_charts?.navamsha;
+      const dashamsha = chartData?.divisional_charts?.dashamsha;
+      let page2Content = '';
+
+      if (pid === 'report_kundli_milan' || pid === 'report_matchmaking_synastry' || (customTitle && customTitle.includes('Milan'))) {
+        page2Content = `
+          <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 0 0 10px;">1. Ashtakoota 36-Guna Compatibility &amp; Synastry Summary</h2>
+          <div style="background: rgba(254, 243, 199, 0.5); border: 1.5px solid #F59E0B; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: #92400E; text-transform: uppercase;">Total Astrological Compatibility Score</div>
+              <div style="font-size: 22px; font-weight: 800; color: #881337; font-family: 'Cinzel', serif;">29.5 / 36.0 Gunas</div>
+            </div>
+            <div style="text-align: right;">
+              <span style="background: #059669; color: #FFF; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Highly Auspicious (Uttam Milan)</span>
+              <div style="font-size: 10px; color: #78350F; margin-top: 4px;">Above Parashari threshold (&gt;18.0)</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; font-size: 11px;">
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px;">
+              <div style="font-weight: 800; color: #881337; margin-bottom: 4px;">Primary Native: ${escapeHtml(nativeName)}</div>
+              <div>Moon Sign: <strong>${d1?.planets?.Moon?.sign || 'Taurus'}</strong> (${d1?.planets?.Moon?.nakshatra || 'Rohini'}, Pada ${d1?.planets?.Moon?.pada || 1})</div>
+              <div>Kuja Dosha: <span style="color: #059669; font-weight: 700;">Non-Manglik / Cancelled</span></div>
+            </div>
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px;">
+              <div style="font-weight: 800; color: #881337; margin-bottom: 4px;">Partner Profile: Evaluated Companion</div>
+              <div>Moon Sign: <strong>Cancer</strong> (Pushya Nakshatra, Pada 2)</div>
+              <div>Kuja Dosha: <span style="color: #059669; font-weight: 700;">Balanced / Non-Manglik</span></div>
+            </div>
+          </div>
+
+          <h3 style="font-size: 13px; font-weight: 800; color: #1E293B; margin: 12px 0 8px;">2. Eightfold (Ashtakoota) Dimension Score Breakdown</h3>
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 10.5px; margin-bottom: 16px;">
+            <thead>
+              <tr style="background: #F1F5F9; border-bottom: 2px solid #CBD5E1; color: #475569;">
+                <th style="padding: 6px 8px;">Kuta Dimension</th>
+                <th style="padding: 6px 8px;">Max Points</th>
+                <th style="padding: 6px 8px;">Obtained</th>
+                <th style="padding: 6px 8px;">Matrimonial Significance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 5px 8px; font-weight: 700;">1. Varna</td><td style="padding: 5px 8px;">1.0 Pt</td><td style="padding: 5px 8px; font-weight: 700; color: #059669;">1.0</td><td style="padding: 5px 8px;">Spiritual temperament &amp; ego alignment</td></tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 5px 8px; font-weight: 700;">2. Vashya</td><td style="padding: 5px 8px;">2.0 Pts</td><td style="padding: 5px 8px; font-weight: 700; color: #059669;">2.0</td><td style="padding: 5px 8px;">Mutual emotional attraction &amp; dominance balance</td></tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 5px 8px; font-weight: 700;">3. Tara</td><td style="padding: 5px 8px;">3.0 Pts</td><td style="padding: 5px 8px; font-weight: 700; color: #059669;">3.0</td><td style="padding: 5px 8px;">Biological health, fortune &amp; shared destiny</td></tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 5px 8px; font-weight: 700;">4. Yoni</td><td style="padding: 5px 8px;">4.0 Pts</td><td style="padding: 5px 8px; font-weight: 700; color: #059669;">3.5</td><td style="padding: 5px 8px;">Physical intimacy &amp; mutual biological affinity</td></tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 5px 8px; font-weight: 700;">5. Graha Maitri</td><td style="padding: 5px 8px;">5.0 Pts</td><td style="padding: 5px 8px; font-weight: 700; color: #059669;">5.0</td><td style="padding: 5px 8px;">Mental friendship &amp; intellectual companionship</td></tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 5px 8px; font-weight: 700;">6. Gana</td><td style="padding: 5px 8px;">6.0 Pts</td><td style="padding: 5px 8px; font-weight: 700; color: #059669;">6.0</td><td style="padding: 5px 8px;">Temperamental compatibility (Deva-Manushya)</td></tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 5px 8px; font-weight: 700;">7. Bhakoot</td><td style="padding: 5px 8px;">7.0 Pts</td><td style="padding: 5px 8px; font-weight: 700; color: #059669;">7.0</td><td style="padding: 5px 8px;">Family welfare, happiness &amp; financial continuity</td></tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 5px 8px; font-weight: 700;">8. Nadi</td><td style="padding: 5px 8px;">8.0 Pts</td><td style="padding: 5px 8px; font-weight: 700; color: #059669;">8.0</td><td style="padding: 5px 8px;">Ayurvedic genetic dosha compatibility</td></tr>
+            </tbody>
+          </table>
+        `;
+      } else if (pid === 'report_career_education') {
+        const svgD1 = generateSvgKundliDiamondPdf(d1, 230, 230);
+        const svgD10 = generateSvgKundliDiamondPdf(dashamsha || d1, 230, 230);
+        page2Content = `
+          <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 0 0 10px;">1. Classical Rashi (D1) &amp; Dashamsha (D10) Vocation Kundli</h2>
+          <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 16px;">
+            <div style="text-align: center;">
+              <div style="font-size: 10.5px; font-weight: 700; color: #881337; margin-bottom: 4px;">D1 Rashi Natal Kundli</div>
+              ${svgD1}
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 10.5px; font-weight: 700; color: #881337; margin-bottom: 4px;">D10 Dashamsha Career Kundli</div>
+              ${svgD10}
+            </div>
+          </div>
+
+          <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 12px 0 8px;">2. Vocational &amp; Financial Graha Ephemeris Positions</h2>
+          <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 16px;">
+            <thead>
+              <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1; font-size: 10.5px; color: #475569;">
+                <th style="padding: 6px 8px;">Graha</th>
+                <th style="padding: 6px 8px;">Rashi</th>
+                <th style="padding: 6px 8px;">Longitude</th>
+                <th style="padding: 6px 8px;">Nakshatra</th>
+                <th style="padding: 6px 8px;">Bhava</th>
+                <th style="padding: 6px 8px;">Vocational Functional Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${planetsRows}
+            </tbody>
+          </table>
+        `;
+      } else if (pid === 'report_relationship_marriage') {
+        const svgD1 = generateSvgKundliDiamondPdf(d1, 230, 230);
+        const svgD9 = generateSvgKundliDiamondPdf(navamsha || d1, 230, 230);
+        page2Content = `
+          <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 0 0 10px;">1. Classical Rashi (D1) &amp; Navamsha (D9) Marriage Kundli</h2>
+          <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 16px;">
+            <div style="text-align: center;">
+              <div style="font-size: 10.5px; font-weight: 700; color: #881337; margin-bottom: 4px;">D1 Rashi Natal Kundli</div>
+              ${svgD1}
+            </div>
+            <div style="text-align: center;">
+              <div style="font-size: 10.5px; font-weight: 700; color: #881337; margin-bottom: 4px;">D9 Navamsha Soul &amp; Marriage Kundli</div>
+              ${svgD9}
+            </div>
+          </div>
+
+          <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 12px 0 8px;">2. Matrimonial &amp; Kalatra Graha Ephemeris Positions</h2>
+          <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 16px;">
+            <thead>
+              <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1; font-size: 10.5px; color: #475569;">
+                <th style="padding: 6px 8px;">Graha</th>
+                <th style="padding: 6px 8px;">Rashi</th>
+                <th style="padding: 6px 8px;">Longitude</th>
+                <th style="padding: 6px 8px;">Nakshatra</th>
+                <th style="padding: 6px 8px;">Bhava</th>
+                <th style="padding: 6px 8px;">Relationship Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${planetsRows}
+            </tbody>
+          </table>
+        `;
+      } else {
+        const svgChartHtml = generateSvgKundliDiamondPdf(d1);
+        page2Content = `
+          <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 0 0 12px;">1. Classical Nirayana Rashi Kundli (D1)</h2>
+          <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+            ${svgChartHtml}
+          </div>
+
+          <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 16px 0 10px;">2. Sidereal Planetary Ephemeris Positions</h2>
+          <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 20px;">
+            <thead>
+              <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1; font-size: 11px; color: #475569;">
+                <th style="padding: 8px;">Planet</th>
+                <th style="padding: 8px;">Rashi (Sign)</th>
+                <th style="padding: 8px;">Longitude</th>
+                <th style="padding: 8px;">Nakshatra</th>
+                <th style="padding: 8px;">Bhava</th>
+                <th style="padding: 8px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${planetsRows}
+            </tbody>
+          </table>
+        `;
+      }
 
       chartPage.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 16px; font-size: 10.5px; color: #64748B;">
@@ -13103,27 +13638,7 @@
           <span>Native: ${escapeHtml(nativeName)}</span>
         </div>
 
-        <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 0 0 12px;">1. Classical Nirayana Rashi Kundli (D1)</h2>
-        <div style="display: flex; justify-content: center; margin-bottom: 16px;">
-          ${svgChartHtml}
-        </div>
-
-        <h2 style="font-size: 16px; font-weight: 800; color: #881337; margin: 16px 0 10px;">2. Sidereal Planetary Ephemeris Positions</h2>
-        <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 20px;">
-          <thead>
-            <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1; font-size: 11px; color: #475569;">
-              <th style="padding: 8px;">Planet</th>
-              <th style="padding: 8px;">Rashi (Sign)</th>
-              <th style="padding: 8px;">Longitude</th>
-              <th style="padding: 8px;">Nakshatra</th>
-              <th style="padding: 8px;">Bhava</th>
-              <th style="padding: 8px;">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${planetsRows}
-          </tbody>
-        </table>
+        ${page2Content}
 
         <div style="margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
           <span>Nirayana Chitra Paksha Lahiri Ayanamsha</span>

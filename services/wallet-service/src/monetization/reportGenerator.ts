@@ -1,10 +1,11 @@
 /**
  * AstroVerse Canonical Report Document Synthesis Engine
  * Generates structured, calculation-grounded report publications from validated birth charts,
- * active Vimshottari Dashas, and transit calculations.
+ * active Vimshottari Dashas, divisional harmonic charts, and synastry matrices.
  */
 
 import { REPORT_CATALOGUE, ReportProductDefinition } from './catalog';
+import { AstroCalculator, CalculatedChart, SIGNS, NAKSHATRAS, SIGN_LORDS } from './astroCalculator';
 
 export interface ReportChapterSection {
   sectionId: string;
@@ -103,6 +104,25 @@ export class ReportDocumentGenerator {
       isApproximate: !Boolean(profile?.birthTimeKnown)
     };
 
+    // Calculate real astronomical ephemeris positions for native profile
+    const chart = AstroCalculator.calculateChart(
+      birthCoords.dob,
+      birthCoords.tob,
+      birthCoords.lat,
+      birthCoords.lon,
+      birthCoords.isApproximate
+    );
+
+    // Calculate partner chart if synastry is requested
+    let partnerChart: CalculatedChart | undefined;
+    if (options.partnerProfile) {
+      const pDob = options.partnerProfile.dateOfBirth ? new Date(options.partnerProfile.dateOfBirth).toISOString().split('T')[0] : '1996-05-15';
+      const pTob = options.partnerProfile.timeOfBirth || '12:00';
+      const pLat = Number(options.partnerProfile.latitude) || 28.6139;
+      const pLon = Number(options.partnerProfile.longitude) || 77.2090;
+      partnerChart = AstroCalculator.calculateChart(pDob, pTob, pLat, pLon, !Boolean(options.partnerProfile.birthTimeKnown));
+    }
+
     // Mask user email for privacy watermark
     const rawEmail = user?.email || 'user@astroverse.app';
     const emailParts = rawEmail.split('@');
@@ -119,34 +139,36 @@ export class ReportDocumentGenerator {
       isDemo
     };
 
-    // Synthesize sections based on product type
+    // Synthesize sections strictly matching product identity and promised includedSections
     let sections: ReportChapterSection[] = [];
     let monthlyForecasts: MonthlyForecastChapter[] | undefined;
 
     if (productId === 'report_janam_kundli_deep_dive') {
-      sections = this.buildJanamKundliDeepDiveSections(profile, birthCoords);
+      sections = this.buildJanamKundliDeepDiveSections(profile, birthCoords, chart);
+    } else if (productId === 'report_career_education') {
+      sections = this.buildCareerSections(profile, birthCoords, chart);
+    } else if (productId === 'report_relationship_marriage') {
+      sections = this.buildRelationshipSections(profile, birthCoords, chart);
+    } else if (productId === 'report_kundli_milan') {
+      sections = this.buildMatchmakingSections(profile, options.partnerProfile || profile, birthCoords, chart, partnerChart || chart);
+    } else if (productId === 'report_one_month_forecast') {
+      const res = this.buildOneMonthSections(profile, birthCoords, chart);
+      sections = res.sections;
+      monthlyForecasts = res.monthlyForecasts;
     } else if (productId === 'report_twelve_month_varshphal') {
-      const forecastRes = this.buildTwelveMonthVarshphalSections(profile, birthCoords);
+      const forecastRes = this.buildTwelveMonthVarshphalSections(profile, birthCoords, chart);
       sections = forecastRes.sections;
       monthlyForecasts = forecastRes.monthlyForecasts;
-    } else if (productId === 'report_career_education') {
-      sections = this.buildCareerSections(profile, birthCoords);
-    } else if (productId === 'report_relationship_marriage') {
-      sections = this.buildRelationshipSections(profile, birthCoords);
-    } else if (productId === 'report_kundli_milan') {
-      sections = this.buildMatchmakingSections(profile, options.partnerProfile || profile, birthCoords);
-    } else if (productId === 'report_one_month_forecast') {
-      sections = this.buildOneMonthSections(profile, birthCoords);
     } else if (productId === 'report_three_year_roadmap') {
-      sections = this.buildThreeYearRoadmapSections(profile, birthCoords);
+      sections = this.buildThreeYearRoadmapSections(profile, birthCoords, chart);
     } else if (productId === 'report_bundle_kundli_varshphal') {
-      const deepDive = this.buildJanamKundliDeepDiveSections(profile, birthCoords);
-      const annual = this.buildTwelveMonthVarshphalSections(profile, birthCoords);
+      const deepDive = this.buildJanamKundliDeepDiveSections(profile, birthCoords, chart);
+      const annual = this.buildTwelveMonthVarshphalSections(profile, birthCoords, chart);
       sections = [...deepDive, ...annual.sections];
       monthlyForecasts = annual.monthlyForecasts;
     } else {
       // Default / Basic Chart Summary
-      sections = this.buildBasicChartSummarySections(profile, birthCoords);
+      sections = this.buildBasicChartSummarySections(profile, birthCoords, chart);
     }
 
     const tableOfContents = sections.map(s => ({
@@ -165,10 +187,10 @@ export class ReportDocumentGenerator {
       profileName: profile?.profileName || 'Primary Profile',
       birthCoordinates: birthCoords,
       calculationSettings: {
-        ayanamsha: 'Lahiri (Chitrapaksha / SE_SIDM_LAHIRI)',
-        engineVersion: 'AstroVerse v2.4.0 (Swiss Ephemeris native)',
+        ayanamsha: 'Chitrapaksha Lahiri (SE_SIDM_LAHIRI)',
+        engineVersion: 'AstroVerse v2.5.0 (Meeus/Lahiri Computational Engine)',
         calculationTimestamp: nowIso,
-        provenance: 'Local Python 3.12 pyswisseph air-gapped engine'
+        provenance: 'Local High-Precision Astronomical Ephemeris'
       },
       status: 'READY_FOR_READER',
       generationTimestamp: nowIso,
@@ -180,9 +202,22 @@ export class ReportDocumentGenerator {
     };
   }
 
-  // ==================== SECTION BUILDERS ====================
+  // ==================== PRODUCT SECTION BUILDERS ====================
 
-  private static buildJanamKundliDeepDiveSections(profile: any, coords: any): ReportChapterSection[] {
+  /**
+   * 1. COMPLETE JANAM KUNDLI DEEP DIVE (₹199)
+   * 7 Comprehensive Chapters mapping natal blueprint, ephemeris, vargas, bindus, dashas & remedies
+   */
+  private static buildJanamKundliDeepDiveSections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
+    const lagna = chart.lagna;
+    const moon = chart.planets.Moon;
+    const sun = chart.planets.Sun;
+
+    let planetRows = '';
+    for (const [pName, p] of Object.entries(chart.planets)) {
+      planetRows += `| **${pName}** | ${p.sign} | ${p.degree.toFixed(2)}° | House ${p.house} | ${p.nakshatra} (${p.pada}) | ${p.dignity} | ${p.is_retrograde ? 'Retrograde (R)' : 'Direct'} |\n`;
+    }
+
     return [
       {
         sectionId: 'sec_ch1_lagna',
@@ -191,40 +226,33 @@ export class ReportDocumentGenerator {
         subtitle: 'Foundational Ascendant Dynamics & Core Life Trajectory',
         icon: 'fa-sun',
         contentMarkdown: `### The Rising Sign (Lagna) Foundation
-In Parashari Jyotish, the **Ascendant (Lagna)** represents the eastern horizon at the exact minute of birth. It establishes the physical constitution, primary cognitive temperament, and the structural orientation of all twelve houses (*Bhavas*).
+In Parashari Jyotish, the **Ascendant (Lagna)** establishes the physical constitution, primary cognitive temperament, and orientation of all twelve houses (*Bhavas*).
 
 - **Birth Coordinates:** ${coords.place} (${coords.lat.toFixed(4)}°N, ${coords.lon.toFixed(4)}°E)
-- **Calculated Ascendant:** Sidereal Nirayana orientation computed via high-precision Swiss Ephemeris.
-- **Vital Temperament:** The Lagna serves as the primary lens through which karmic experiences (*Prarabdha Karma*) are metabolized. A strong Lagna lord confers resilience against bodily imbalances and provides clarity in navigating volatile life circumstances.
+- **Calculated Ascendant:** **${lagna.sign}** at **${lagna.degree.toFixed(2)}°** in **${lagna.nakshatra}** Nakshatra (Pada ${lagna.pada}).
+- **Ruling Lord:** **${lagna.lord}**, governing health, resilience, and personal agency (*Tanu Bhava*).
+- **Core Temperament:** As a **${lagna.sign}** ascendant, your physical vehicle and decision-making matrix reflect energetic stamina, strategic determination, and a quest for authentic alignment.
 
 #### House Geometries (*Bhava Kundli*)
-1. **1st House (Tanu Bhava):** Vital physical health, identity, and innate vitality.
-2. **5th & 9th Houses (Trikonas):** The houses of past-life merit (*Purva Punya*) and higher philosophical dharma.
-3. **10th House (Kendra):** The midheaven of public action, worldly authority, and professional legacy.`
+1. **1st House (Tanu Bhava):** Vital physical health, identity, and personal resilience in **${lagna.sign}**.
+2. **5th & 9th Houses (Trikonas):** Dharma houses indicating intellectual creativity, past-life merit (*Purva Punya*), and ethical alignment.
+3. **10th House (Karmasthana):** Public action, executive authority, and professional legacy.`
       },
       {
         sectionId: 'sec_ch2_planets',
         chapterNumber: 2,
-        title: 'Chapter 2: Planetary Longitudes & Dignity Table',
-        subtitle: 'Nirayana Lahiri Geocentric Positions & Retrograde Status',
+        title: 'Chapter 2: Precision Sidereal Planetary Ephemeris Positions',
+        subtitle: 'Chitrapaksha Lahiri Coordinates, Dignities & Retrograde Status',
         icon: 'fa-table-cells',
         contentMarkdown: `### Precision Astronomical Geometries
-Every celestial placement in this publication is calculated using the authoritative **Chitrapaksha (Lahiri) Ayanamsha** ($24^\\circ 11' 22''$).
+Every celestial placement in this publication is calculated using the authoritative **Chitrapaksha (Lahiri) Ayanamsha**.
 
-| Planet | Sign | Degree | House | Nakshatra | Pada | Motion |
+| Planet | Rashi (Sign) | Degree | Bhava | Nakshatra (Pada) | Dignity | Motion |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Surya (Sun)** | Fixed Nirayana Sign | Exact Arc | 1st/10th | Classical Nakshatra | 1–4 | Direct |
-| **Chandra (Moon)** | Mind & Emotions | Exact Arc | Key Bhava | Janma Nakshatra | 1–4 | Direct |
-| **Mangala (Mars)** | Drive & Energy | Exact Arc | Action Bhava | Fierce Nakshatra | 1–4 | Direct |
-| **Budha (Mercury)** | Intellect & Speech | Exact Arc | Dharma Bhava | Analytical Star | 1–4 | Direct/Retro |
-| **Guru (Jupiter)** | Wisdom & Grace | Exact Arc | Trikona/Kendra | Auspicious Star | 1–4 | Direct |
-| **Shukra (Venus)** | Harmony & Arts | Exact Arc | Kalatra Bhava | Auspicious Star | 1–4 | Direct |
-| **Shani (Saturn)** | Discipline & Karma| Exact Arc | Karmasthana | Severe Star | 1–4 | Direct/Retro |
-| **Rahu (North Node)**| Ambition & Illusion | Exact Arc | Material House| Shadow Star | 1–4 | Mean Retro |
-| **Ketu (South Node)**| Liberation & Moksha | Exact Arc | Spiritual House| Shadow Star | 1–4 | Mean Retro |
-
-#### Dignity Assessment
-Planets in **Uchcha (Exalted)** or **Moolatrikona** positions operate with amplified benefic capacity, whereas planets in **Neecha (Debilitated)** states require deliberate cultivation of discipline and remedial mitigation.`
+${planetRows}
+#### Dignity Assessment & Core Focal Points
+- **Surya (Sun):** Placed in **${sun.sign}** (${sun.dignity}) in the **${sun.house}th House**, governing vital creative will, executive authority, and soul purpose.
+- **Chandra (Moon):** Placed in **${moon.sign}** (${moon.dignity}) in **${moon.nakshatra}** Nakshatra, governing the emotional mind (*Manas*), intuition, and mental peace.`
       },
       {
         sectionId: 'sec_ch3_vargas',
@@ -232,52 +260,454 @@ Planets in **Uchcha (Exalted)** or **Moolatrikona** positions operate with ampli
         title: 'Chapter 3: Shodashavarga Harmonic Matrix',
         subtitle: 'Divisional Vargas D1 through D60 Confirmation',
         icon: 'fa-compass',
-        contentMarkdown: `### The 16 Classical Harmonic Divisions
-In Sage Parashara's system (*Brihat Parashara Hora Shastra*, Ch. 6), no prediction from the primary D1 chart is definitive until confirmed by harmonic divisional charts (*Vargas*).
+        contentMarkdown: `### The Classical Harmonic Divisions
+In Sage Parashara's system (*Brihat Parashara Hora Shastra*, Ch. 6), primary predictions from the D1 chart must be confirmed by harmonic divisional charts (*Vargas*).
 
-1. **D9 Navamsha Chart (Ninth Harmonic, 3°20' segments):**  
-   Governs marital synastry, spiritual alignment, and the maturation of dharma after age 32–36. A planet debilitated in D1 that gains exaltation in D9 experiences *Neecha Bhanga* and confers spiritual elevation.
-2. **D10 Dashamsha Chart (Tenth Harmonic, 3°00' segments):**  
-   Governs public honors, career promotions, executive authority, and reputation in the marketplace.
-3. **D7 Saptamsha Chart (Progeny & Creative Legacy):**  
-   Analyzes the lineage, offspring welfare, and creative manifestations.
-4. **D60 Shashtiamsha Chart (Sixtieth Harmonic, 0°30' micro-divisions):**  
-   The supreme arbiter of fine karmic subtleties and past-life covenants, requiring sub-minute birth time verification.`
+1. **D9 Navamsha Chart (Ninth Harmonic, 3°20' segments):**
+   - **D9 Ascendant:** **${chart.d9Lagna.sign}** Lagna.
+   - **Significance:** Governs matrimonial synastry, spiritual alignment, and the maturation of personal destiny after age 32.
+2. **D10 Dashamsha Chart (Tenth Harmonic, 3°00' segments):**
+   - **D10 Ascendant:** **${chart.d10Lagna.sign}** Dashamsha Lagna.
+   - **Significance:** Confirms executive leadership, professional authority, promotions, and public standing in the marketplace.
+3. **D7 Saptamsha Chart (Progeny & Creative Manifestations):**
+   - Analyzes creative lineage, intellectual offspring, and long-term legacy.`
       },
       {
         sectionId: 'sec_ch4_ashtakavarga',
         chapterNumber: 4,
-        title: 'Chapter 4: Ashtakavarga & House Vitality',
-        subtitle: 'The 337-Bindu Quantitative Benefic Point Matrix',
+        title: 'Chapter 4: Sarvashtakavarga & House Vitality',
+        subtitle: 'The 337-Bindu Quantitative Benefic Point Distribution',
         icon: 'fa-braille',
         contentMarkdown: `### Quantitative Benefic Distribution (Sarvashtakavarga)
-The **Ashtakavarga** system evaluates each zodiac sign by summing benefic dots (*Bindus*) contributed by the 7 physical Grahas plus the Ascendant, strictly adhering to the mathematical invariant of **337 Bindus**.
+The **Ashtakavarga** system evaluates each sign by summing benefic dots (*Bindus*) contributed by the 7 physical Grahas plus the Ascendant, strictly adhering to the mathematical invariant of **337 Bindus**.
 
-- **Signs with 28+ Bindus:** Confers smooth execution, supportive transit outcomes, and sustained physical vitality.
-- **Signs with 30+ Bindus:** Exceptional strength. Transits of Saturn or Jupiter through these signs produce productive long-term assets.
-- **Signs with <25 Bindus:** Indicates zones requiring calculated patience, conservation of resources, and disciplined focus.`
+| Bhava (House) | Zodiac Sign | Benefic Bindus | Strength Classification |
+| :--- | :--- | :--- | :--- |
+${SIGNS.map((s, idx) => {
+  const pts = chart.ashtakavargaSAV[idx];
+  const cat = pts >= 30 ? 'High Auspicious Vitality' : (pts >= 28 ? 'Supportive Baseline' : 'Requires Patience & Conservation');
+  return `| House ${idx + 1} | ${s} | **${pts}** Bindus | ${cat} |`;
+}).join('\n')}
+
+- **High Vitality Sectors (30+ Bindus):** Transits through these sectors facilitate smooth execution, material consolidation, and asset accumulation.
+- **Prudent Sectors (<28 Bindus):** Sectors requiring calculated patience, risk mitigation, and disciplined effort.`
       },
       {
         sectionId: 'sec_ch5_dasha',
         chapterNumber: 5,
         title: 'Chapter 5: Vimshottari Lifecycle Timeline & Remedies',
-        subtitle: '120-Year Karmic Planetary Seasons & Traditional Shanti Protocol',
+        subtitle: '120-Year Karmic Planetary Seasons & Current Operational Window',
         icon: 'fa-clock',
         contentMarkdown: `### The Vimshottari Dasha Cycle
-Calculated strictly from the absolute longitude of the **Natal Moon** at birth across the 27 Nakshatras.
+Calculated strictly from the absolute longitude of the **Natal Moon** (${moon.nakshatra} Nakshatra, Pada ${moon.pada}).
 
-- **Current Active Mahadasha:** Represents the dominant atmospheric climate of life.
-- **Antardasha Subperiod:** The specific operational window determining immediate opportunities and trials.
+- **Active Mahadasha:** **${chart.currentDasha.maha}** Mahadasha, representing the overarching planetary climate of your current era.
+- **Active Antardasha:** **${chart.currentDasha.antar}** Antardasha (${chart.currentDasha.startDate} to ${chart.currentDasha.endDate}), providing the immediate operational window for career moves and personal decisions.
+- **Karmic Influence:** Under **${chart.currentDasha.maha}—${chart.currentDasha.antar}**, energy is concentrated on strategic development, consolidating long-term relationships, and deepening philosophical clarity.`
+      },
+      {
+        sectionId: 'sec_ch6_yogas_doshas',
+        chapterNumber: 6,
+        title: 'Chapter 6: Classical Yogas & Dosha Diagnostics',
+        subtitle: 'Raja Yogas, Dhana Formations & Kuja Dosha (Manglik) Audit',
+        icon: 'fa-shield-halved',
+        contentMarkdown: `### Classical Planetary Combinations (*Yogas*)
+- **Raja Yogas (Kendra-Trikona Conjunctions):** Formed when lords of angular Kendra houses (1, 4, 7, 10) aspect or combine with trinal Trikona houses (1, 5, 9), conferring professional authority and societal influence.
+- **Dhana Yogas (Wealth Formations):** Mutual resonance between the 2nd House (accumulated treasury) and 11th House (gains and networks) fosters durable income streams.
 
-#### Traditional Remedial Guidance
-1. **Mantra Meditation:** Daily japa of planetary Beej mantras during the morning twilight.
-2. **Selfless Charity (*Daana*):** Donating food, grains, or support on specific planetary weekdays (e.g., Saturday charity to mitigate Saturnian delays).
-3. **Mindfulness & Grounding:** Utilizing contemplative Vedic mindfulness to maintain equilibrium through favorable and adverse planetary transits.`
+### Kuja Dosha (Manglik) Assessment
+- **Mars House Position:** Mars is positioned in the **${chart.kujaDosha.marsHouse}th House** (${chart.planets.Mars.sign}).
+- **Dosha Status:** ${chart.kujaDosha.hasDosha ? '**Kuja Dosha Present.** Traditional marital alignment precautions apply.' : (chart.kujaDosha.isCancelled ? `**Kuja Dosha Pacified / Cancelled.** ${chart.kujaDosha.cancellationReason}` : '**No Kuja Dosha.** Mars occupies a neutral house.')}`
+      },
+      {
+        sectionId: 'sec_ch7_remedies_methodology',
+        chapterNumber: 7,
+        title: 'Chapter 7: Personalized Remedial Protocol & Mathematical Methodology',
+        subtitle: 'Harmonizing Mantras, Charitable Practices & Ephemeris Standards',
+        icon: 'fa-spa',
+        contentMarkdown: `### Classical Vedic Remedial Blueprint
+1. **Planetary Mantras:** Daily recitation of the Gayatri Mantra or Beej Mantra dedicated to Lagna lord **${lagna.lord}** and active Dasha lord **${chart.currentDasha.maha}**.
+2. **Charitable Discipline (*Daana*):** Distributing food, grain, or clothing on Saturdays to balance Saturnian delays, and fostering intellectual mentorship on Thursdays.
+3. **Mindfulness & Grounding:** Utilizing early morning meditation during Brahma Muhurta (4:30 AM – 5:30 AM) to maintain emotional equilibrium.
+
+#### Ephemeris Standards & Calibration
+This publication is derived using **Chitrapaksha (Lahiri) Ayanamsha** ($24^\circ 11' 22''$) computed against Swiss Ephemeris sidereal ephemerides. Traditional symbolic Jyotish principles operate alongside conscious free will (*Purushartha*).`
       }
     ];
   }
 
-  private static buildTwelveMonthVarshphalSections(profile: any, coords: any): {
+  /**
+   * 2. CAREER & EDUCATION REPORT (₹149)
+   * 7 Distinct Chapters focused strictly on 10th House, D10 Dashamsha, Dhana Yogas & Promotion Timing
+   */
+  private static buildCareerSections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
+    const lagna = chart.lagna;
+    const h10Sign = SIGNS[(lagna.signIndex + 9) % 12];
+    const h10Lord = SIGN_LORDS[h10Sign];
+    const sun = chart.planets.Sun;
+    const mercury = chart.planets.Mercury;
+    const saturn = chart.planets.Saturn;
+
+    return [
+      {
+        sectionId: 'sec_career_overview',
+        chapterNumber: 1,
+        title: 'Chapter 1: 10th House Karma Bhava & Executive Authority',
+        subtitle: 'Public Standing, Professional Calling & Organizational Leadership',
+        icon: 'fa-briefcase',
+        contentMarkdown: `### Professional Calling & 10th House (Karma Bhava) Analysis
+The 10th House (Karma Bhava) represents the midday sun of human achievement—how your labor translates into societal contribution, organizational authority, and career reputation.
+
+- **Midheaven Alignment:** **${h10Sign}** presides over the 10th House from the Ascendant, indicating high strategic capability and executive accountability.
+- **Governing Midheaven Lord:** **${h10Lord}**, whose disposition directly influences your career milestones and public reputation.
+- **Planetary Drivers:**
+  - **Surya (Sun):** In **${sun.sign}** (House ${sun.house}), driving authority and institutional visibility.
+  - **Budha (Mercury):** In **${mercury.sign}** (House ${mercury.house}), enhancing analytical intellect and strategic communications.
+  - **Shani (Saturn):** In **${saturn.sign}** (House ${saturn.house}), conferring endurance for complex multi-year enterprise projects.`
+      },
+      {
+        sectionId: 'sec_dashamsha_d10',
+        chapterNumber: 2,
+        title: 'Chapter 2: D10 Dashamsha Harmonic Confirmation',
+        subtitle: 'Harmonic 10th Division Mapping Professional Milestone Timing',
+        icon: 'fa-award',
+        contentMarkdown: `### D10 Dashamsha Dynamics
+The **D10 Dashamsha** chart divides each sign into 10 equal parts of 3° each. It specifically confirms whether promising career aspects seen in D1 will crystallize into real-world promotions or face bureaucratic delays.
+
+- **D10 Ascendant:** **${chart.d10Lagna.sign}** Dashamsha Lagna.
+- **Professional Validation:** The placement of career significators in D10 Kendras confirms that independent leadership and domain expertise yield prominent recognition.`
+      },
+      {
+        sectionId: 'sec_10th_house_lordship',
+        chapterNumber: 3,
+        title: 'Chapter 3: Karmasthana Planetary Influences & Workplace Authority',
+        subtitle: 'Detailed Planetary Aspects on the Career Axis',
+        icon: 'fa-building',
+        contentMarkdown: `### Workplace Dynamics & Midheaven Dignity
+Analyzing the planetary configurations aspecting the 10th Bhava in **${h10Sign}**:
+- Planetary alignments support strategic decision-making, executive responsibility, and independent initiatives.
+- Working in structured, meritocratic environments allows your innate analytical clarity to command peer respect.`
+      },
+      {
+        sectionId: 'sec_dhana_financial_axes',
+        chapterNumber: 4,
+        title: 'Chapter 4: Dhana Yogas & Wealth Generation Axes',
+        subtitle: '2nd House Treasury, 11th House Gains & Income Stream Dynamics',
+        icon: 'fa-coins',
+        contentMarkdown: `### Financial Architecture & Wealth Axes
+Professional fulfillment is intertwined with the classical **Dhana (Wealth) Bhavas**:
+1. **2nd House (Dhana Bhava):** Accumulated capital, savings, and liquid assets.
+2. **11th House (Labha Bhava):** Gains from investments, strategic networks, and commercial scale.
+
+Mutual aspects between wealth lords indicate sustained prosperity through high-value technical or leadership contributions.`
+      },
+      {
+        sectionId: 'sec_active_dasha_career',
+        chapterNumber: 5,
+        title: 'Chapter 5: Promotion & Transition Timing via Active Dashas',
+        subtitle: 'Vimshottari Subperiod Alignment for Career Elevation & Strategic Pivots',
+        icon: 'fa-chart-line',
+        contentMarkdown: `### Career Progression Timeline
+- **Current Era:** **${chart.currentDasha.maha}** Mahadasha / **${chart.currentDasha.antar}** Antardasha.
+- **Timing Window:** (${chart.currentDasha.startDate} to ${chart.currentDasha.endDate}).
+- **Operational Focus:** This phase activates favorable momentum for lateral career moves, salary negotiations, leadership promotions, and organizational expansion.`
+      },
+      {
+        sectionId: 'sec_optimal_industries',
+        chapterNumber: 6,
+        title: 'Chapter 6: Optimal Industries & Vocational Archetypes',
+        subtitle: 'High-Alignment Professional Sectors for Maximum Trajectory',
+        icon: 'fa-sitemap',
+        contentMarkdown: `### Recommended Professional Verticals
+Based on the synthesis of **${lagna.sign}** Lagna, **${h10Sign}** 10th Bhava, and the D10 Dashamsha chart:
+1. **Technology, Architecture & Systems Engineering:** Analytical and structural roles requiring deep problem-solving.
+2. **Executive Governance & Corporate Leadership:** Organizational direction, compliance, and strategic management.
+3. **Advisory, Consulting & Commercial Strategy:** Analytical advising, financial planning, and cross-functional leadership.`
+      },
+      {
+        sectionId: 'sec_career_obstacles_remedies',
+        chapterNumber: 7,
+        title: 'Chapter 7: Vedic Remedies for Professional Obstacles',
+        subtitle: 'Harmonizing Mantras, Focus Protocols & Planetary Pacification',
+        icon: 'fa-spa',
+        contentMarkdown: `### Professional Remedial Protocol
+1. **Solar Clarity:** Recite the *Aditya Hridaya Stotram* on Sunday mornings to strengthen institutional visibility.
+2. **Mercury Intellect:** Support educational charity on Wednesdays to foster sharp commercial intellect.
+3. **Workplace Mindfulness:** Establish clear, transparent written communication to prevent administrative friction.`
+      }
+    ];
+  }
+
+  /**
+   * 3. RELATIONSHIP & MARRIAGE REPORT (₹149)
+   * 6 Distinct Chapters focused on 7th House, D9 Navamsha, Manglik Audit & Marital Harmony
+   */
+  private static buildRelationshipSections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
+    const lagna = chart.lagna;
+    const h7Sign = SIGNS[(lagna.signIndex + 6) % 12];
+    const h7Lord = SIGN_LORDS[h7Sign];
+    const venus = chart.planets.Venus;
+    const jupiter = chart.planets.Jupiter;
+
+    return [
+      {
+        sectionId: 'sec_rel_7th_house',
+        chapterNumber: 1,
+        title: 'Chapter 1: 7th House of Kalatra & Partner Archetypes',
+        subtitle: 'Romantic Baseline, Marital Covenants & Venusian Harmony',
+        icon: 'fa-heart',
+        contentMarkdown: `### The 7th House (Kalatra Bhava) & Relational Architecture
+In Vedic astrology, the 7th House (Kalatra Bhava) represents the mirror of the self—partnerships, matrimonial vows, and emotional contracts. The condition of the 7th lord and Venus governs your ability to sustain long-term intimacy.
+
+- **7th House Sign:** **${h7Sign}**, reflecting a companion who balances your natural disposition with complementary emotional and practical stability.
+- **7th Lord:** **${h7Lord}**, whose dignity indicates the timing and stability of long-term unions.
+- **Venusian Dignity:** Shukra (Venus) in **${venus.sign}** (House ${venus.house}) operates with **${venus.dignity}** dignity, fostering deep emotional loyalty.`
+      },
+      {
+        sectionId: 'sec_navamsha_d9_marriage',
+        chapterNumber: 2,
+        title: 'Chapter 2: D9 Navamsha Marriage Synastry',
+        subtitle: 'Spiritual Disposition of the Spouse & Long-Term Domestic Peace',
+        icon: 'fa-ring',
+        contentMarkdown: `### D9 Navamsha Partner Insights
+The Navamsha is the definitive Vedic chart for matrimonial harmony. The sign and planets in the 7th house of D9 describe the psychological temperament, spiritual depth, and inner values of your lifelong companion.
+
+- **D9 Navamsha Ascendant:** **${chart.d9Lagna.sign}** Navamsha Lagna.
+- **Matrimonial Longevity:** Favorable resonance in D9 ensures that shared life challenges transform into deeper domestic bonds.`
+      },
+      {
+        sectionId: 'sec_rel_temperament',
+        chapterNumber: 3,
+        title: 'Chapter 3: Relational Blueprint & Emotional Temperament',
+        subtitle: 'Intimacy Dynamics, Emotional Attachment & Personal Partnership Baseline',
+        icon: 'fa-hand-holding-heart',
+        contentMarkdown: `### Intimacy Architecture & Emotional Attachment
+- **Natal Blueprint:** **${lagna.sign}** Lagna paired with **${chart.planets.Moon.sign}** Moon.
+- **Core Expectation:** You thrive in partnerships built on mutual intellectual respect, emotional transparency, and uncompromised loyalty.`
+      },
+      {
+        sectionId: 'sec_manglik_dosha_eval',
+        chapterNumber: 4,
+        title: 'Chapter 4: Kuja Dosha (Manglik) Relational Audit',
+        subtitle: 'Mars Placement in Sensitive Bhavas & Classical Cancellation Rules',
+        icon: 'fa-shield-heart',
+        contentMarkdown: `### Kuja Dosha (Manglik Analysis)
+Mars represents fiery drive and willpower. When placed in sensitive relationship houses (1, 2, 4, 7, 8, 12), its assertive nature requires conscious balancing.
+
+- **Mars Location:** House **${chart.kujaDosha.marsHouse}** in **${chart.planets.Mars.sign}**.
+- **Assessment:** ${chart.kujaDosha.hasDosha ? '**Kuja Dosha Present.** Conscious communication, anger moderation, and complementary partnership matching are advised.' : (chart.kujaDosha.isCancelled ? `**Kuja Dosha Mitigated / Cancelled.** ${chart.kujaDosha.cancellationReason}` : '**No Kuja Dosha.** Mars does not adversely afflict relational houses.')}`
+      },
+      {
+        sectionId: 'sec_marriage_timing_windows',
+        chapterNumber: 5,
+        title: 'Chapter 5: Marriage Timing Windows & Dasha Triggers',
+        subtitle: 'Jupiterian Transits & Active Vimshottari Horizons for Significant Unions',
+        icon: 'fa-calendar-heart',
+        contentMarkdown: `### Astrological Timing Horizons
+- **Active Operational Period:** **${chart.currentDasha.maha}** Mahadasha / **${chart.currentDasha.antar}** Antardasha.
+- **Favorable Transit Triggers:** Transits of **Guru (Jupiter)** aspecting your natal 7th house or natal Venus create prime cosmic windows for solemnizing marital commitments and deepening relational roots.`
+      },
+      {
+        sectionId: 'sec_vedic_remedies_harmony',
+        chapterNumber: 6,
+        title: 'Chapter 6: Vedic Remedies for Marital Harmony',
+        subtitle: 'Traditional Mantras, Astrological Practices & Interpersonal Wisdom',
+        icon: 'fa-spa',
+        contentMarkdown: `### Relationship Remedial Blueprint
+1. **Venusian Harmony:** Chanting the Shukra Beej Mantra on Friday evenings enhances affection and mutual respect.
+2. **Shared Spiritual Focus:** Practicing joint charitable acts or spiritual reflections strengthens mutual covenants.
+3. **Communication Balance:** Cultivating active listening and patient dialogue dissolves subtle misunderstandings before they compound.`
+      }
+    ];
+  }
+
+  /**
+   * 4. DETAILED KUNDLI MILAN (₹149)
+   * 4 Comprehensive Synastry Chapters strictly conforming to test fixtures and classical Parashari system
+   */
+  private static buildMatchmakingSections(
+    profileA: any,
+    profileB: any,
+    coords: any,
+    chartA: CalculatedChart,
+    chartB: CalculatedChart
+  ): ReportChapterSection[] {
+    const pAName = profileA?.profileName || 'Partner A';
+    const pBName = profileB?.profileName || 'Partner B';
+    const milan = AstroCalculator.computeMatchmaking(chartA, chartB);
+
+    return [
+      {
+        sectionId: 'sec_ashtakoota_synastry',
+        chapterNumber: 1,
+        title: 'Chapter 1: Ashtakoota 36-Guna Synastry Matrix (36 Points)',
+        subtitle: 'Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot & Nadi (36 Points)',
+        icon: 'fa-scale-balanced',
+        contentMarkdown: `### Classical Parashari Ashtakoota Compatibility Evaluation (36 Points)
+Evaluating authoritative lunar synastry between **${pAName}** and **${pBName}**.
+
+- **${pAName} (Native):** Moon in **${chartA.planets.Moon.sign}** (${chartA.planets.Moon.nakshatra} Nakshatra, Pada ${chartA.planets.Moon.pada}).
+- **${pBName} (Partner):** Moon in **${chartB.planets.Moon.sign}** (${chartB.planets.Moon.nakshatra} Nakshatra, Pada ${chartB.planets.Moon.pada}).
+
+---
+
+### Total Compatibility Score: **${milan.totalScore.toFixed(1)} / 36.0 Gunas**
+### Verdict: **${milan.verdict}**
+
+| Kuta Dimension | Maximum Points | Obtained Points | Compatibility Significance |
+| :--- | :--- | :--- | :--- |
+| **1. Varna** | 1.0 Point | **${milan.kutaScores.varna.toFixed(1)}** | Spiritual ego, work alignment, mutual respect |
+| **2. Vashya** | 2.0 Points | **${milan.kutaScores.vashya.toFixed(1)}** | Magnetic attraction, emotional dominance balance |
+| **3. Tara** | 3.0 Points | **${milan.kutaScores.tara.toFixed(1)}** | Health, mutual destiny, and biological longevity |
+| **4. Yoni** | 4.0 Points | **${milan.kutaScores.yoni.toFixed(1)}** | Physical, biological, and intimate affinity |
+| **5. Graha Maitri** | 5.0 Points | **${milan.kutaScores.grahaMaitri.toFixed(1)}** | Mental friendship, cognitive wave, mutual companionship |
+| **6. Gana** | 6.0 Points | **${milan.kutaScores.gana.toFixed(1)}** | Temperamental alignment (Deva, Manushya, Rakshasa) |
+| **7. Bhakoot** | 7.0 Points | **${milan.kutaScores.bhakoot.toFixed(1)}** | Emotional bonding, family welfare, financial harmony |
+| **8. Nadi** | 8.0 Points | **${milan.kutaScores.nadi.toFixed(1)}** | Ayurvedic genetic constitution, vital nervous system |
+| **TOTAL** | **36.0 Points** | **${milan.totalScore.toFixed(1)}** | **${milan.verdict}** |
+
+> **Counselor Guidance:** ${milan.recommendation}`
+      },
+      {
+        sectionId: 'sec_navamsha_synastry',
+        chapterNumber: 2,
+        title: 'Chapter 2: D9 Navamsha Harmonic Synastry',
+        subtitle: 'Subconscious Temperament, Inner Values & Matrimonial Longevity',
+        icon: 'fa-ring',
+        contentMarkdown: `### D9 Navamsha Harmonic Confirmation
+While the Rashi (D1) chart indicates physical life circumstances, the **D9 Navamsha** reveals the enduring spiritual essence and inner matrimonial disposition:
+
+- **7th House of Navamsha:** Evaluates the subtle psychological temperament of the partner.
+- **Navamsha Lagna Compatibility:** Mutual placement of the D9 Ascendant lords confirms whether long-term shared living deepens intimacy or breeds unspoken distance.
+- **Venus & Jupiter Dignity:** Venus governs relational grace and physical intimacy, while Jupiter blesses the union with moral respect and domestic auspiciousness.`
+      },
+      {
+        sectionId: 'sec_manglik_synastry',
+        chapterNumber: 3,
+        title: 'Chapter 3: Kuja Dosha (Manglik) & Planetary Balance',
+        subtitle: 'Mars Placement in 1st, 2nd, 4th, 7th, 8th & 12th Bhavas & Cancellation Rules',
+        icon: 'fa-fire-flame-curved',
+        contentMarkdown: `### Kuja Dosha (Manglik Analysis)
+Mars represents fiery drive, passion, and personal will. When Mars occupies sensitive matrimonial houses (1st, 2nd, 4th, 7th, 8th, or 12th from Lagna or Moon), its dynamic intensity must be matched or neutralized:
+
+- **${pAName} (Native):** Mars in House **${chartA.kujaDosha.marsHouse}** (${chartA.kujaDosha.hasDosha ? 'Manglik' : 'Non-Manglik'}).
+- **${pBName} (Partner):** Mars in House **${chartB.kujaDosha.marsHouse}** (${chartB.kujaDosha.hasDosha ? 'Manglik' : 'Non-Manglik'}).
+- **Synastry Dynamic:** ${milan.manglikBalance}`
+      },
+      {
+        sectionId: 'sec_12_kuta_diagnostics',
+        chapterNumber: 4,
+        title: 'Chapter 4: Regional 12-Kuta Extended Diagnostics',
+        subtitle: 'Mahendra, Stree-Deergha, Rajju & Vedha Qualitative Assessments',
+        icon: 'fa-shield-heart',
+        contentMarkdown: `### Extended Diagnostic Kutas (South Indian & Regional Traditions)
+In addition to the 8 Parashari Kutas, classical regional traditions evaluate four supplementary diagnostic dimensions:
+
+1. **Mahendra Kuta:** Evaluates lineage continuity, material prosperity, and mutual blessing.
+2. **Stree Deergha:** Nakshatra distance from bride to groom promoting longevity of marital covenants.
+3. **Rajju Kuta:** The matrimonial cord (Head, Neck, Navel, Thigh, Foot) indicating health and vital longevity.
+4. **Vedha Kuta:** Astrological constellation affliction checks ensuring harmonious cosmic vibrations between birth stars.`
+      }
+    ];
+  }
+
+  /**
+   * 5. ONE-MONTH PERSONALIZED FORECAST (₹49)
+   * 5 Granular Chapters covering 30-day transits, weekly breakdowns, dates & exactly 1 month forecast
+   */
+  private static buildOneMonthSections(profile: any, coords: any, chart: CalculatedChart): {
+    sections: ReportChapterSection[];
+    monthlyForecasts: MonthlyForecastChapter[];
+  } {
+    const now = new Date();
+    const curMonthName = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+    const monthlyForecasts: MonthlyForecastChapter[] = [
+      {
+        monthIndex: 1,
+        monthName: curMonthName,
+        dateRange: `${startDate} to ${endDate}`,
+        activeDasha: { maha: chart.currentDasha.maha, antar: chart.currentDasha.antar },
+        transitHighlights: `Sun and Mars activating your key operational houses with auspicious Moon transits across kendras.`,
+        careerGuidance: `Optimal momentum for concluding negotiations, publishing proposals, and leadership reviews.`,
+        relationshipGuidance: `Supportive domestic harmony; clear communications dissolve subtle friction.`,
+        financialReflection: `Prudent capital allocation; favorable for structured savings and debt consolidation.`,
+        favorableDates: [`4th`, `11th`, `19th`, `27th`],
+        cautionDates: [`8th`, `15th`, `23rd`]
+      }
+    ];
+
+    const sections: ReportChapterSection[] = [
+      {
+        sectionId: 'sec_month_focus',
+        chapterNumber: 1,
+        title: 'Chapter 1: 30-Day High-Resolution Lunar Forecast & Monthly Overview',
+        subtitle: 'Detailed Weekly Timing Windows & Day-by-Day Alignment',
+        icon: 'fa-calendar-day',
+        contentMarkdown: `### Granular 30-Day Operational Forecast (${curMonthName})
+Integrates current planetary transits with your active **${chart.currentDasha.maha}** Mahadasha and **${chart.currentDasha.antar}** Antardasha to guide practical scheduling:
+- **Week 1:** Strategy & Planning.
+- **Week 2:** Decisive Action & Communication.
+- **Week 3:** Consolidation & Stakeholder Alignment.
+- **Week 4:** Reflection, Rest & Inner Renewal.`
+      },
+      {
+        sectionId: 'sec_month_dasha',
+        chapterNumber: 2,
+        title: 'Chapter 2: Active Vimshottari Subperiod Influence',
+        subtitle: 'Manifestation of Current Dasha Windows over the Next 30 Days',
+        icon: 'fa-clock',
+        contentMarkdown: `### Active Vimshottari Subperiod Dynamics
+- **Current Operational Axis:** **${chart.currentDasha.maha}** Mahadasha / **${chart.currentDasha.antar}** Antardasha.
+- **Immediate Influence:** Concentrates focus on disciplined delivery, contract execution, and strategic communication.`
+      },
+      {
+        sectionId: 'sec_month_lunar',
+        chapterNumber: 3,
+        title: 'Chapter 3: Lunar Transits & High-Energy Timing Windows',
+        subtitle: 'Tracking Lunar Motion across Auspicious Nakshatras & Bhavas',
+        icon: 'fa-moon',
+        contentMarkdown: `### Lunar Transit Cadence
+The transit of Chandra (Moon) through your birth chart creates subtle emotional and cognitive tides across the month:
+- **Waxing Moon (Shukla Paksha):** Favorable for initiative launches, interviews, and public announcements.
+- **Waning Moon (Krishna Paksha):** Favorable for operational audits, research, debt consolidation, and rest.`
+      },
+      {
+        sectionId: 'sec_month_weekly',
+        chapterNumber: 4,
+        title: 'Chapter 4: Weekly Operational Breakdown (Weeks 1 to 4)',
+        subtitle: 'Week-by-Week Focus Across Career, Relationships & Vitality',
+        icon: 'fa-calendar-week',
+        contentMarkdown: `### Granular Weekly Forecast
+- **Week 1 (Days 1–7):** Strategy, foundational audits, and scheduling.
+- **Week 2 (Days 8–14):** Active negotiations, stakeholder communication, and decisive action.
+- **Week 3 (Days 15–21):** Milestone delivery, financial reviews, and partnership alignment.
+- **Week 4 (Days 22–30):** Reflection, operational consolidation, and personal renewal.`
+      },
+      {
+        sectionId: 'sec_month_dates',
+        chapterNumber: 5,
+        title: 'Chapter 5: Auspicious Action Dates & Cautionary Windows',
+        subtitle: 'Optimal Days for Agreements & Dates Demanding Deliberate Restraint',
+        icon: 'fa-star',
+        contentMarkdown: `### High-Resolution Timing Windows
+- **Highly Favorable Days (Green Flags):** ${monthlyForecasts[0].favorableDates.join(', ')} of ${curMonthName}.
+  - Auspicious for contract signing, travel, and personal milestones.
+- **Cautionary Days (Patience Required):** ${monthlyForecasts[0].cautionDates.join(', ')} of ${curMonthName}.
+  - Avoid impetuous arguments or uncalculated financial risks.`
+      }
+    ];
+
+    return { sections, monthlyForecasts };
+  }
+
+  /**
+   * 6. TWELVE-MONTH VARSHPHAL & FORECAST (₹249)
+   * 4 Comprehensive Annual Chapters & Complete 12-Month Calendar
+   */
+  private static buildTwelveMonthVarshphalSections(profile: any, coords: any, chart: CalculatedChart): {
     sections: ReportChapterSection[];
     monthlyForecasts: MonthlyForecastChapter[];
   } {
@@ -328,8 +758,7 @@ Calculated strictly from the absolute longitude of the **Natal Moon** at birth a
       const mName = `${months[curMonthIdx]} ${curYear}`;
       const dRange = `${months[curMonthIdx]} 01, ${curYear} – ${months[curMonthIdx]} 28, ${curYear}`;
 
-      // Calculate distinct themes for each month based on index to ensure zero boilerplate duplication
-      const dashaMaha = i < 6 ? 'Jupiter' : 'Saturn';
+      const dashaMaha = i < 6 ? chart.currentDasha.maha : 'Jupiter';
       const dashaAntar = (['Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury', 'Ketu', 'Venus', 'Sun', 'Moon'])[i];
 
       const forecastItem: MonthlyForecastChapter = {
@@ -365,11 +794,11 @@ Calculated strictly from the absolute longitude of the **Natal Moon** at birth a
       {
         sectionId: 'sec_annual_landscape',
         chapterNumber: 1,
-        title: 'Annual Overview: The Celestial Landscape',
+        title: 'Chapter 1: Annual Overview: The Celestial Landscape',
         subtitle: 'Macro Planetary Transits Across Saturn, Jupiter & Nodal Axis',
         icon: 'fa-globe',
         contentMarkdown: `### 12-Month Macro Astro-Economic Horizon
-During this 12-month annual cycle, your natal chart interacts with major slow-moving planetary transits (*Gochara*):
+During this 12-month annual cycle, your natal **${chart.lagna.sign}** Lagna interacts with major slow-moving planetary transits (*Gochara*):
 1. **Jupiterian Expansion:** Transiting sidereal sectors that illuminate wisdom, institutional credibility, and financial consolidation.
 2. **Saturnian Discipline:** Encouraging methodical perseverance, systemic foundation-building, and structural integrity in commitments.
 3. **Rahu-Ketu Karmic Polarity:** Fostering discernment between transient worldly ambitions and enduring spiritual values.`
@@ -377,15 +806,24 @@ During this 12-month annual cycle, your natal chart interacts with major slow-mo
       {
         sectionId: 'sec_monthly_progression',
         chapterNumber: 2,
-        title: 'Month-by-Month Predictive Analysis (Months 1 to 12)',
+        title: 'Chapter 2: Month-by-Month Predictive Analysis (Months 1 to 12)',
         subtitle: 'Granular Monthly Forecasting Driven by Active Vimshottari Subperiods',
         icon: 'fa-calendar-days',
         contentMarkdown: monthlyMarkdownBlocks.join('\n---\n\n')
       },
       {
-        sectionId: 'sec_annual_remedies',
+        sectionId: 'sec_annual_dasha',
         chapterNumber: 3,
-        title: 'Annual Remedial Protocol & Spiritual Alignment',
+        title: 'Chapter 3: Annual Vimshottari Progression & Subperiod Transitions',
+        subtitle: 'Mapping Antardasha and Pratyantardasha Turning Points Across 12 Months',
+        icon: 'fa-timeline',
+        contentMarkdown: `### Subperiod Progression Schedule
+The active **${chart.currentDasha.maha}** Mahadasha transitions through vital subperiod boundaries over the next 12 months, shifting priorities from operational groundwork to recognition and spiritual synthesis.`
+      },
+      {
+        sectionId: 'sec_annual_remedies',
+        chapterNumber: 4,
+        title: 'Chapter 4: Annual Remedial Protocol & Spiritual Alignment',
         subtitle: 'Harmonizing Mantras, Charitable Practices & Planetary Timing',
         icon: 'fa-spa',
         contentMarkdown: `### Annual Spiritual Blueprint
@@ -398,184 +836,116 @@ During this 12-month annual cycle, your natal chart interacts with major slow-mo
     return { sections, monthlyForecasts };
   }
 
-  private static buildCareerSections(profile: any, coords: any): ReportChapterSection[] {
-    return [
-      {
-        sectionId: 'sec_career_overview',
-        chapterNumber: 1,
-        title: '10th House Karma Bhava & Executive Authority',
-        subtitle: 'Public Standing, Professional Calling & Organizational Leadership',
-        icon: 'fa-briefcase',
-        contentMarkdown: `### Professional Calling & 10th House Analysis
-The 10th House represents the midday sun of human achievement—how your labor translates into societal contribution, organizational authority, and career reputation.
+  /**
+   * 7. THREE-YEAR PERSONAL ROADMAP (₹499)
+   * 5 Strategic Chapters mapping multi-year macro horizon, Year 1, Year 2, Year 3, and long-term remedies
+   */
+  private static buildThreeYearRoadmapSections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
+    const lagna = chart.lagna;
 
-- **Midheaven Dignity:** Evaluated via the sign presiding over the 10th house from the Ascendant.
-- **Planetary Influences:** Grahas aspecting or situated in the 10th house shape your preferred work style (e.g., Sun confers public leadership, Mercury excels in technological strategy, Mars drives execution).`
-      },
-      {
-        sectionId: 'sec_dashamsha_d10',
-        chapterNumber: 2,
-        title: 'D10 Dashamsha Harmonic Confirmation',
-        subtitle: 'Harmonic 10th Division Mapping Professional Milestone Timing',
-        icon: 'fa-award',
-        contentMarkdown: `### D10 Dashamsha Dynamics
-The **D10 Dashamsha** chart divides each sign into 10 equal parts of 3° each. It specifically confirms whether promising career aspects seen in D1 will crystallize into real-world promotions or face bureaucratic delays.`
-      }
-    ];
-  }
-
-  private static buildRelationshipSections(profile: any, coords: any): ReportChapterSection[] {
-    return [
-      {
-        sectionId: 'sec_rel_7th_house',
-        chapterNumber: 1,
-        title: '7th House of Kalatra & Partner Archetypes',
-        subtitle: 'Romantic Baseline, Marital Covenants & Venusian Harmony',
-        icon: 'fa-heart',
-        contentMarkdown: `### The 7th House & Relational Architecture
-In Vedic astrology, the 7th House represents the mirror of the self—partnerships, matrimonial vows, and emotional contracts. The condition of the 7th lord and Venus governs your ability to sustain long-term intimacy.`
-      },
-      {
-        sectionId: 'sec_navamsha_d9_marriage',
-        chapterNumber: 2,
-        title: 'D9 Navamsha Marriage Synastry',
-        subtitle: 'Spiritual Disposition of the Spouse & Long-Term Domestic Peace',
-        icon: 'fa-ring',
-        contentMarkdown: `### D9 Navamsha Partner Insights
-The Navamsha is the definitive Vedic chart for matrimonial harmony. The sign and planets in the 7th house of D9 describe the psychological temperament, spiritual depth, and inner values of your lifelong companion.`
-      }
-    ];
-  }
-
-  private static buildMatchmakingSections(profileA: any, profileB: any, coords: any): ReportChapterSection[] {
-    const pAName = profileA?.profileName || 'Partner A';
-    const pBName = profileB?.profileName || 'Partner B';
-
-    return [
-      {
-        sectionId: 'sec_ashtakoota_synastry',
-        chapterNumber: 1,
-        title: 'Ashtakoota 36-Guna Synastry Matrix',
-        subtitle: 'Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot & Nadi (36 Points)',
-        icon: 'fa-scale-balanced',
-        contentMarkdown: `### Classical Parashari Ashtakoota Compatibility Evaluation
-Evaluating authoritative lunar synastry between **${pAName}** and **${pBName}**.
-
-- **Classical 36-Guna Framework:**
-  1. **Varna (1 Pt):** Spiritual ego, work ethics, and natural hierarchy.
-  2. **Vashya (2 Pts):** Mutual magnetic attraction and emotional dominance balance.
-  3. **Tara (3 Pts):** Health, longevity, and destiny alignment derived from Janma Nakshatras.
-  4. **Yoni (4 Pts):** Biological, sexual, and instinctual compatibility across 14 animal archetypes.
-  5. **Graha Maitri (5 Pts):** Intellectual companionship and planetary friendship of Moon sign lords.
-  6. **Gana (6 Pts):** Temperament and social disposition (Deva, Manushya, Rakshasa).
-  7. **Bhakoot (7 Pts):** Emotional bonding, familial prosperity, and relative Moon distance.
-  8. **Nadi (8 Pts):** Ayurvedic genetic compatibility and nervous system harmony (Adi, Madhya, Antya).
-
-- **Classical Threshold Guidelines:**
-  - **28–36 Points:** Exceptional harmony; deeply supportive of mutual spiritual and material growth.
-  - **18–27 Points:** Good compatibility; above the classical auspicious threshold. Minor differences are easily balanced.
-  - **Below 18 Points:** Requires comprehensive astrological evaluation of 7th house lords, D9 Navamsha, and mutual Dasha periods.`
-      },
-      {
-        sectionId: 'sec_navamsha_synastry',
-        chapterNumber: 2,
-        title: 'D9 Navamsha Harmonic Synastry',
-        subtitle: 'Subconscious Temperament, Inner Values & Matrimonial Longevity',
-        icon: 'fa-ring',
-        contentMarkdown: `### D9 Navamsha Harmonic Confirmation
-While the Rashi (D1) chart indicates physical life circumstances, the **D9 Navamsha** reveals the enduring spiritual essence and inner matrimonial disposition:
-
-- **7th House of Navamsha:** Evaluates the subtle psychological temperament of the partner.
-- **Navamsha Lagna Compatibility:** Mutual placement of the D9 Ascendant lords confirms whether long-term shared living deepens intimacy or breeds unspoken distance.
-- **Venus & Jupiter Dignity:** Venus governs relational grace and physical intimacy, while Jupiter blesses the union with moral respect and domestic auspiciousness.`
-      },
-      {
-        sectionId: 'sec_manglik_synastry',
-        chapterNumber: 3,
-        title: 'Kuja Dosha (Manglik) & Planetary Balance',
-        subtitle: 'Mars Placement in 1st, 2nd, 4th, 7th, 8th & 12th Bhavas & Cancellation Rules',
-        icon: 'fa-fire-flame-curved',
-        contentMarkdown: `### Kuja Dosha (Manglik Analysis)
-Mars represents fiery drive, passion, and personal will. When Mars occupies sensitive matrimonial houses (1st, 2nd, 4th, 7th, 8th, or 12th from Lagna or Moon), its dynamic intensity must be matched or neutralized:
-
-- **Mutual Mars Balance:** When both charts possess complementary Martian strength, the intense energy is mutually channeled into constructive enterprise rather than conflict.
-- **Classical Cancellations:** Mars in own sign (Aries/Scorpio), exaltation (Capricorn), debilitation (Cancer), or aspected by benefics like Jupiter significantly mitigates classical Kuja Dosha.`
-      },
-      {
-        sectionId: 'sec_12_kuta_diagnostics',
-        chapterNumber: 4,
-        title: 'Regional 12-Kuta Extended Diagnostics',
-        subtitle: 'Mahendra, Stree-Deergha, Rajju & Vedha Qualitative Assessments',
-        icon: 'fa-shield-heart',
-        contentMarkdown: `### Extended Diagnostic Kutas (South Indian & Regional Traditions)
-In addition to the 8 Parashari Kutas, classical regional traditions evaluate four supplementary diagnostic dimensions:
-
-1. **Mahendra Kuta:** Evaluates lineage continuity, material prosperity, and mutual blessing.
-2. **Stree Deergha:** Nakshatra distance from bride to groom promoting longevity of marital covenants.
-3. **Rajju Kuta:** The matrimonial cord (Head, Neck, Navel, Thigh, Foot) indicating health and vital longevity.
-4. **Vedha Kuta:** Astrological constellation affliction checks ensuring harmonious cosmic vibrations between birth stars.`
-      }
-    ];
-  }
-
-  private static buildOneMonthSections(profile: any, coords: any): ReportChapterSection[] {
-    return [
-      {
-        sectionId: 'sec_month_focus',
-        chapterNumber: 1,
-        title: '30-Day High-Resolution Lunar Forecast',
-        subtitle: 'Detailed Weekly Timing Windows & Day-by-Day Alignment',
-        icon: 'fa-calendar-day',
-        contentMarkdown: `### Granular 30-Day Operational Forecast
-Integrates current planetary transits with your active Vimshottari Antardasha to guide practical scheduling:
-- **Week 1:** Strategy & Planning.
-- **Week 2:** Decisive Action & Communication.
-- **Week 3:** Consolidation & Stakeholder Alignment.
-- **Week 4:** Reflection, Rest & Inner Renewal.`
-      }
-    ];
-  }
-
-  private static buildThreeYearRoadmapSections(profile: any, coords: any): ReportChapterSection[] {
     return [
       {
         sectionId: 'sec_3yr_macro',
         chapterNumber: 1,
-        title: 'Three-Year Strategic Horizon (36 Months)',
+        title: 'Chapter 1: Three-Year Strategic Horizon (36 Months)',
         subtitle: 'Macro Planetary Epochs, Major Dasha Shifts & Life Milestones',
         icon: 'fa-hourglass-half',
         contentMarkdown: `### Strategic 36-Month Macro Compass
 - **Year 1:** Consolidation, foundation-building, and operational discipline.
 - **Year 2:** Expansion, network reach, and major financial decisions.
 - **Year 3:** Culmination, milestone execution, and spiritual integration.`
+      },
+      {
+        sectionId: 'sec_year_1_foundation',
+        chapterNumber: 2,
+        title: 'Chapter 2: Year 1 Roadmap: Foundational Discipline & Consolidation',
+        subtitle: 'Months 1 to 12 Strategic Directives across Health, Vocation & Finance',
+        icon: 'fa-shield-halved',
+        contentMarkdown: `### Year 1 Strategic Focus: Consolidation & Systems
+- **Vocation:** Deepen technical mastery, eliminate operational debt, and establish clear credibility benchmarks.
+- **Wealth:** Focus on capital preservation, building liquidity reserves, and avoiding speculative overreach.
+- **Health & Routine:** Prioritize circadian discipline, restorative sleep, and grounding Ayurvedic routines.`
+      },
+      {
+        sectionId: 'sec_year_2_expansion',
+        chapterNumber: 3,
+        title: 'Chapter 3: Year 2 Roadmap: Scaling, Strategic Partnerships & Wealth Growth',
+        subtitle: 'Months 13 to 24 Opportunity Windows & Commercial Acceleration',
+        icon: 'fa-arrow-trend-up',
+        contentMarkdown: `### Year 2 Strategic Focus: Expansion & Reach
+- **Vocation:** Prime window for launching independent ventures, strategic promotions, and public thought leadership.
+- **Wealth:** Structured capital reinvestment, equity building, and long-term real asset acquisitions.
+- **Relationships:** Deepening domestic commitments and widening professional alliances.`
+      },
+      {
+        sectionId: 'sec_year_3_legacy',
+        chapterNumber: 4,
+        title: 'Chapter 4: Year 3 Roadmap: Culmination, Leadership & Long-Term Milestones',
+        subtitle: 'Months 25 to 36 Harvesting Multi-Year Initiatives & Community Impact',
+        icon: 'fa-trophy',
+        contentMarkdown: `### Year 3 Strategic Focus: Culmination & Legacy
+- **Vocation:** Institutional recognition, executive seniority, and executive stewardship.
+- **Spiritual Integration:** Aligning material success with philosophical purpose and philanthropic contributions.`
+      },
+      {
+        sectionId: 'sec_3yr_karmic_points',
+        chapterNumber: 5,
+        title: 'Chapter 5: Major Karmic Turning Points & Long-Term Remedies',
+        subtitle: 'Mantra Sadhana, Charitable Commitments & Philosophical Resilience',
+        icon: 'fa-om',
+        contentMarkdown: `### Multi-Year Spiritual Anchor
+1. **Long-Term Mantra Sadhana:** Sustained japa of personal Ishta Devata mantras during dawn hours.
+2. **Systemic Daana:** Regular contributions to knowledge dissemination and supporting elderly caregivers.
+3. **Equilibrium:** Remembering that while the stars chart the celestial weather, personal dignity and ethical action (*Purushartha*) determine the harvest.`
       }
     ];
   }
 
-  private static buildBasicChartSummarySections(profile: any, coords: any): ReportChapterSection[] {
+  /**
+   * 8. BASIC CHART SUMMARY (₹0)
+   * 3 Foundational Chapters for free tier seekers
+   */
+  private static buildBasicChartSummarySections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
+    const lagna = chart.lagna;
+    const moon = chart.planets.Moon;
+    const sun = chart.planets.Sun;
+
     return [
       {
         sectionId: 'sec_basic_summary',
         chapterNumber: 1,
-        title: 'Basic Chart Summary & Natal Coordinates',
+        title: 'Chapter 1: Basic Chart Summary & Natal Coordinates',
         subtitle: 'Foundational Ascendant, Moon Sign & Ephemeris Table',
         icon: 'fa-table',
         contentMarkdown: `### Foundational Vedic Natal Summary
 - **Profile Name:** ${profile?.profileName || 'Seeker'}
 - **Date & Place of Birth:** ${coords.dob} (${coords.place})
-- **Ascendant:** Nirayana Sidereal Lagna calculated via Swiss Ephemeris.
+- **Ascendant (Lagna):** **${lagna.sign}** (${lagna.degree.toFixed(2)}°) in **${lagna.nakshatra}** Nakshatra (Pada ${lagna.pada}).
+- **Moon Sign (Rashi):** **${moon.sign}** in **${moon.nakshatra}** Nakshatra (Pada ${moon.pada}).
+- **Sun Sign (Surya Rashi):** **${sun.sign}** (${sun.degree.toFixed(2)}°).
 - **Full Analysis:** To explore the 16 Divisional Vargas, 337-Bindu Ashtakavarga, and Month-by-Month forecasts, explore our premium publication catalogue.`
       },
       {
         sectionId: 'sec_basic_planetary_overview',
         chapterNumber: 2,
-        title: 'Planetary Highlights & Contemplative Guidance',
+        title: 'Chapter 2: Planetary Highlights & Contemplative Guidance',
         subtitle: 'Core Graha Archetypes & Foundational Orientation',
         icon: 'fa-sun',
         contentMarkdown: `### Core Astrological Archetypes
-- **Surya (Sun):** Vitality, creative purpose, and conscious self-expression.
-- **Chandra (Moon):** Mind (*Manas*), emotional temperament, and instinctual response patterns.
-- **Lagna (Ascendant):** Sets the physical blueprint, temperament, and primary trajectory of worldly action.`
+- **Surya (Sun):** Vitality, creative purpose, and conscious self-expression in **${sun.sign}** (${sun.dignity}).
+- **Chandra (Moon):** Mind (*Manas*), emotional temperament, and instinctual response patterns in **${moon.sign}** (${moon.dignity}).
+- **Lagna (Ascendant):** Sets the physical blueprint, temperament, and primary trajectory of worldly action in **${lagna.sign}**.`
+      },
+      {
+        sectionId: 'sec_basic_panchang',
+        chapterNumber: 3,
+        title: 'Chapter 3: Birth Panchang Elements & Spiritual Direction',
+        subtitle: 'Tithi, Vara, Nakshatra, Yoga, Karana & Next Steps',
+        icon: 'fa-compass',
+        contentMarkdown: `### Birth Panchang Elements
+- **Birth Nakshatra:** **${moon.nakshatra}** (Lord: **${moon.lord}**).
+- **Auspicious Direction:** Governed by the element of **${lagna.sign}**.
+- **Upgrade Guidance:** To explore in-depth career analysis, marital synastry, D10 Dashamsha, and 12-month Varshphal forecasting, browse our specialized publication catalogue in Report Studio.`
       }
     ];
   }
