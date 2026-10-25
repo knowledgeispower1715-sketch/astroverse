@@ -167,6 +167,11 @@ async function runNumerologyTests() {
     assert(fullProse.includes('Bhagyank'), 'Report must mention Bhagyank');
     assert(fullProse.includes('Chaldean'), 'Report must mention Chaldean');
     assert(fullProse.includes('Pythagorean'), 'Report must mention Pythagorean');
+
+    // Verify calculation provenance & ayanamsha are numerology-specific
+    assert.strictEqual(doc.calculationSettings.provenance, 'Vedic Numerology & Cheiro/Pythagorean Harmonic Systems');
+    assert.strictEqual(doc.calculationSettings.ayanamsha, 'N/A (Chaldean & Pythagorean Sound Vibration)');
+    assert.strictEqual(doc.calculationSettings.engineVersion, 'AstroVerse Vedic Numerology Engine v2.5.0');
   });
 
   // 3. HTTP Server Endpoints

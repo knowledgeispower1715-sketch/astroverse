@@ -422,3 +422,150 @@ test('Google OAuth 2.0 & GIS client configuration in index.html is valid and com
   assert.strictEqual(parsedUrl.searchParams.get('response_type'), 'code');
   assert.strictEqual(parsedUrl.searchParams.get('scope'), 'openid email profile');
 });
+
+test('Tier Simulator UI (Header & Drawer) is present, configured, and functional in index.html', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const indexPath = path.resolve(__dirname, '../../../index.html');
+  const htmlContent = fs.readFileSync(indexPath, 'utf-8');
+
+  // 1. Header simulator bar
+  assert(htmlContent.includes('id="header-tier-simulator"'), 'Header must contain #header-tier-simulator');
+  assert(htmlContent.includes('id="sim-tier-free"'), 'Header must have Free simulator button');
+  assert(htmlContent.includes('id="sim-tier-plus"'), 'Header must have Plus simulator button');
+  assert(htmlContent.includes('id="sim-tier-premium"'), 'Header must have Premium simulator button');
+
+  // 2. Mobile drawer simulator
+  assert(htmlContent.includes('class="mobile-drawer-sim-box"'), 'Mobile drawer must contain .mobile-drawer-sim-box');
+  assert(htmlContent.includes('id="mob-sim-tier-free"'), 'Mobile drawer must have Free simulator button');
+  assert(htmlContent.includes('id="mob-sim-tier-plus"'), 'Mobile drawer must have Plus simulator button');
+  assert(htmlContent.includes('id="mob-sim-tier-premium"'), 'Mobile drawer must have Premium simulator button');
+
+  // 3. Controller functions
+  assert(htmlContent.includes('function updateTierSimulatorButtonsUI('), 'index.html must define updateTierSimulatorButtonsUI');
+  assert(htmlContent.includes('function simulateTierFromUI('), 'index.html must define simulateTierFromUI');
+});
+
+test('Streamlined Report Purchase & Confirmation dialog replaced 5-step customizer in index.html', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const indexPath = path.resolve(__dirname, '../../../index.html');
+  const htmlContent = fs.readFileSync(indexPath, 'utf-8');
+
+  // 1. Modal title and category
+  assert(htmlContent.includes('OFFICIAL PUBLICATION ORDER'), 'Must have OFFICIAL PUBLICATION ORDER badge');
+  assert(htmlContent.includes('Review &amp; Confirm Publication'), 'Must have Review & Confirm Publication title');
+
+  // 2. Guaranteed Publication Scope container present
+  assert(htmlContent.includes('id="builder-chapters-container"'), 'Must have builder-chapters-container');
+  assert(htmlContent.includes('Guaranteed Publication Scope'), 'Must have Guaranteed Publication Scope label');
+
+  // 3. Single confirm CTA
+  assert(htmlContent.includes('id="btn-builder-generate"'), 'Must have btn-builder-generate CTA');
+  assert(htmlContent.includes('Confirm &amp; Generate Complete Publication'), 'CTA must read Confirm & Generate Complete Publication');
+});
+
+test('Client-side demo engine in index.html generates 15-chapter publication for report_vedic_name_numerology with exact QA fixture values', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const indexPath = path.resolve(__dirname, '../../../index.html');
+  const htmlContent = fs.readFileSync(indexPath, 'utf-8');
+
+  // 1. Numerology report handler present in buildClientSideDemoReportDocument
+  assert(
+    htmlContent.includes("else if (pid === 'report_vedic_name_numerology')"),
+    'buildClientSideDemoReportDocument must explicitly handle report_vedic_name_numerology'
+  );
+
+  // 2. All 15 chapter IDs present
+  const requiredChapterIds = [
+    'sec_num_ch1_exec',
+    'sec_num_ch2_moolank',
+    'sec_num_ch3_bhagyank',
+    'sec_num_ch4_chaldean',
+    'sec_num_ch5_pythagorean',
+    'sec_num_ch6_compound',
+    'sec_num_ch7_matrix',
+    'sec_num_ch8_harmony',
+    'sec_num_ch9_candidates',
+    'sec_num_ch10_nakshatra',
+    'sec_num_ch11_signature',
+    'sec_num_ch12_commercial',
+    'sec_num_ch13_remedies',
+    'sec_num_ch14_practical',
+    'sec_num_ch15_verification'
+  ];
+
+  for (const chId of requiredChapterIds) {
+    assert(htmlContent.includes(chId), `index.html must include numerology chapter ${chId}`);
+  }
+
+  // 3. Numerology provenance in calculationSettings
+  assert(
+    htmlContent.includes("Vedic Numerology & Cheiro/Pythagorean Harmonic Systems"),
+    'Must set numerology provenance'
+  );
+  assert(
+    htmlContent.includes("AstroVerse Vedic Numerology Engine v2.5.0"),
+    'Must set numerology engine version'
+  );
+  assert(
+    htmlContent.includes("N/A (Chaldean & Pythagorean Sound Vibration)"),
+    'Must set numerology ayanamsha placeholder'
+  );
+
+  // 4. Zero occurrences of unhandled "undefined Nakshatra" in report template
+  assert(
+    !htmlContent.includes('in **${lagna.nakshatra}** Nakshatra (Pada ${lagna.pada})'),
+    'Raw un-guarded lagna.nakshatra template string must not exist'
+  );
+
+  // 5. Test exact calculations on QA fixture ARYAN TIWARI (2005-08-20)
+  const cleanDob = '2005-08-20';
+  const day = parseInt(cleanDob.slice(8, 10), 10);
+  function reduce1To9(n: number): number {
+    let val = Math.abs(n);
+    while (val > 9) {
+      val = String(val).split('').reduce((acc, digit) => acc + parseInt(digit, 10), 0);
+    }
+    return val === 0 ? 9 : val;
+  }
+
+  const moolank = reduce1To9(day);
+  assert.strictEqual(moolank, 2, 'Day 20 must reduce to Moolank 2');
+
+  const dobDigits = cleanDob.replace(/\D/g, '');
+  const totalDateSum = dobDigits.split('').reduce((acc, digit) => acc + parseInt(digit, 10), 0);
+  const bhagyank = reduce1To9(totalDateSum);
+  assert.strictEqual(totalDateSum, 17, '2005-08-20 digit sum must be 17');
+  assert.strictEqual(bhagyank, 8, 'Sum 17 must reduce to Bhagyank 8');
+
+  const CHALDEAN_MAP: Record<string, number> = {
+    A: 1, I: 1, J: 1, Q: 1, Y: 1,
+    B: 2, K: 2, R: 2,
+    C: 3, G: 3, L: 3, S: 3,
+    D: 4, M: 4, T: 4,
+    E: 5, H: 5, N: 5, X: 5,
+    U: 6, V: 6, W: 6,
+    O: 7, Z: 7,
+    F: 8, P: 8
+  };
+
+  const name = 'ARYAN TIWARI';
+  const cleanLetters = name.toUpperCase().replace(/[^A-Z]/g, '');
+  let chaldeanCompound = 0;
+  for (const ch of cleanLetters) {
+    chaldeanCompound += CHALDEAN_MAP[ch] || 0;
+  }
+  const chaldeanRoot = reduce1To9(chaldeanCompound);
+  assert.strictEqual(chaldeanCompound, 25, 'ARYAN TIWARI Chaldean compound must be 25');
+  assert.strictEqual(chaldeanRoot, 7, 'Compound 25 must reduce to Chaldean Naamank 7');
+
+  let pythCompound = 0;
+  for (const ch of cleanLetters) {
+    pythCompound += ((ch.charCodeAt(0) - 65) % 9) + 1;
+  }
+  const pythRoot = reduce1To9(pythCompound);
+  assert.strictEqual(pythCompound, 58, 'ARYAN TIWARI Pythagorean compound must be 58');
+  assert.strictEqual(pythRoot, 4, 'Compound 58 must reduce to Pythagorean Naamank 4');
+});

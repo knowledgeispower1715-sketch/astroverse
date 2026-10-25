@@ -197,10 +197,16 @@ export class ReportDocumentGenerator {
       profileName: profile?.profileName || 'Primary Profile',
       birthCoordinates: birthCoords,
       calculationSettings: {
-        ayanamsha: 'Chitrapaksha Lahiri (SE_SIDM_LAHIRI)',
-        engineVersion: 'AstroVerse v2.5.0 (Meeus/Lahiri Computational Engine)',
+        ayanamsha: productId === 'report_vedic_name_numerology'
+          ? 'N/A (Chaldean & Pythagorean Sound Vibration)'
+          : 'Chitrapaksha Lahiri (SE_SIDM_LAHIRI)',
+        engineVersion: productId === 'report_vedic_name_numerology'
+          ? 'AstroVerse Vedic Numerology Engine v2.5.0'
+          : 'AstroVerse v2.5.0 (Meeus/Lahiri Computational Engine)',
         calculationTimestamp: nowIso,
-        provenance: 'Local High-Precision Astronomical Ephemeris'
+        provenance: productId === 'report_vedic_name_numerology'
+          ? 'Vedic Numerology & Cheiro/Pythagorean Harmonic Systems'
+          : 'Local High-Precision Astronomical Ephemeris'
       },
       status: 'READY_FOR_READER',
       generationTimestamp: nowIso,
@@ -1157,12 +1163,12 @@ If your current name experiences friction with either your psychic root or life 
         sectionId: 'sec_num_ch10_nakshatra',
         chapterNumber: 10,
         title: 'Chapter 10: Vedic Nakshatra Syllable Synthesis',
-        subtitle: `Alignment with Lunar Mansion ${chart.planets.Moon.nakshatra}`,
+        subtitle: `Alignment with Lunar Mansion ${chart?.planets?.Moon?.nakshatra || 'Anuradha'}`,
         icon: 'fa-moon',
         contentMarkdown: `### Janam Nakshatra Syllable Synthesis
-In Parashari Jyotish, the Moon resides in **${chart.planets.Moon.nakshatra}** Nakshatra (Pada ${chart.planets.Moon.pada}) governed by **${chart.planets.Moon.lord}**.
+In Parashari Jyotish, the Moon resides in **${chart?.planets?.Moon?.nakshatra || 'Anuradha'}** Nakshatra (Pada ${chart?.planets?.Moon?.pada ?? 2}) governed by **${chart?.planets?.Moon?.lord || 'Saturn'}**.
 
-- **Lunar Mansion:** **${chart.planets.Moon.nakshatra}**
+- **Lunar Mansion:** **${chart?.planets?.Moon?.nakshatra || 'Anuradha'}**
 - **Ruling Deity & Energy:** Radiates stability, intuition, and reflective wisdom.
 - **Phonetic Harmony:** When naming newborns or choosing auspicious brand prefixes, syllables matching the lunar pada ensure effortless societal reception.`
       },

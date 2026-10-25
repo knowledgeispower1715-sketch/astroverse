@@ -86,6 +86,7 @@ async function runDifferentiationTests() {
     'report_twelve_month_varshphal',
     'report_three_year_roadmap',
     'report_bundle_kundli_varshphal',
+    'report_vedic_name_numerology',
     'report_basic_chart_summary'
   ];
 
@@ -194,6 +195,15 @@ async function runDifferentiationTests() {
   assert.strictEqual(basic.monthlyForecasts, undefined, 'Basic Summary must NOT have monthlyForecasts');
   console.log('[PASS] Basic Summary contains 3 foundational chapters and no monthlyForecasts');
 
+  // Vedic Name Correction & Numerology Master Blueprint (15 chapters)
+  const numerology = generatedReports['report_vedic_name_numerology'];
+  assert.strictEqual(numerology.sections.length, 15, 'Numerology Blueprint must contain 15 chapters');
+  assert.strictEqual(numerology.sections[0].sectionId, 'sec_num_ch1_exec');
+  assert.strictEqual(numerology.sections[14].sectionId, 'sec_num_ch15_verification');
+  assert.strictEqual(numerology.monthlyForecasts, undefined, 'Numerology report must NOT have monthlyForecasts');
+  assert.strictEqual(numerology.calculationSettings.provenance, 'Vedic Numerology & Cheiro/Pythagorean Harmonic Systems');
+  console.log('[PASS] Numerology Master Blueprint contains all 15 promised chapters and numerology provenance');
+
   // 4. Cross-product non-overlap and anti-contamination assertion
   console.log('\n--- 4. CROSS-PRODUCT NON-OVERLAP & ANTI-CONTAMINATION ---');
 
@@ -203,6 +213,14 @@ async function runDifferentiationTests() {
   const marriageIds = new Set(marriage.sections.map((s: any) => s.sectionId));
   const milanIds = new Set(milanDoc.sections.map((s: any) => s.sectionId));
   const basicIds = new Set(basic.sections.map((s: any) => s.sectionId));
+  const numIds = new Set(numerology.sections.map((s: any) => s.sectionId));
+
+  // Career vs Marriage vs Numerology: 0 overlapping section IDs
+  for (const id of numIds) {
+    assert(!deepDiveIds.has(id), `Section ${id} found in both Numerology and Deep Dive!`);
+    assert(!basicIds.has(id), `Section ${id} found in both Numerology and Basic Summary!`);
+    assert(!careerIds.has(id), `Section ${id} found in both Numerology and Career!`);
+  }
 
   // Career vs Marriage: 0 overlapping section IDs
   for (const id of careerIds) {
