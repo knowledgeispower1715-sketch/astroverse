@@ -6183,90 +6183,31 @@
         </div>
       </div>
 
-      <!-- Google 1-Tap & OAuth 2.0 Sign In Option -->
-      <div id="auth-google-section" style="margin-bottom: 16px;">
-        <button type="button" class="btn-google-auth" id="btn-google-signin-custom" onclick="triggerGoogleSignIn()">
-          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/></svg>
-          <span id="btn-google-signin-text">Continue with Google</span>
+      <!-- Primary Google Sign-In Action (Unified Single Action) -->
+      <div id="auth-google-section" style="margin-bottom: 20px;">
+        <button type="button" class="btn-google-auth" id="btn-unified-google-login" onclick="triggerUnifiedGoogleLogin()" style="width: 100%; justify-content: center; min-height: 48px; font-size: 14px; font-weight: 600; border-radius: 10px; background: #FFFFFF; color: #1F2937; border: 1px solid #E5E7EB; box-shadow: 0 2px 6px rgba(0,0,0,0.12); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s ease;">
+          <svg width="20" height="20" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/></svg>
+          <span id="btn-unified-google-text">Continue with Google</span>
         </button>
-        <div id="g_id_signin_rendered" style="display: none; justify-content: center; margin-top: 8px;"></div>
-        <div style="text-align: center; margin-top: 6px;">
-          <button type="button" id="btn-google-fullpage-fallback" onclick="initiateGoogleOAuthFlow(true)" style="background: none; border: none; color: #94A3B8; font-size: 11px; text-decoration: underline; cursor: pointer; padding: 2px 4px; transition: color 0.15s;" onmouseover="this.style.color='#FCD34D'" onmouseout="this.style.color='#94A3B8'">
-            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i> Continue with Full-Page Google Sign-In
-          </button>
-        </div>
-        <div style="display: flex; align-items: center; margin: 14px 0 10px; color: #64748B; font-size: 11px;">
+        <div style="display: flex; align-items: center; margin: 18px 0 14px; color: #64748B; font-size: 11px;">
           <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
-          <span style="padding: 0 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">or continue with</span>
+          <span style="padding: 0 12px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; color: #94A3B8;">or sign in with email &amp; password</span>
           <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
         </div>
       </div>
 
-      <!-- Tab Switcher (3 Tabs: Mobile OTP, Password Sign In, New Registration) -->
+      <!-- Clean Tab Switcher (2 Tabs: Password Sign In, New Registration) -->
       <div class="auth-modal-tabs" role="tablist">
-        <button class="auth-modal-tab active" id="modal-tab-otp" role="tab" aria-selected="true" onclick="switchAuthModalTab('otp')">
-          <i class="fa-solid fa-mobile-screen"></i> Mobile OTP
-        </button>
-        <button class="auth-modal-tab" id="modal-tab-password" role="tab" aria-selected="false" onclick="switchAuthModalTab('password')">
-          <i class="fa-solid fa-key"></i> Password
+        <button class="auth-modal-tab active" id="modal-tab-password" role="tab" aria-selected="true" onclick="switchAuthModalTab('password')">
+          <i class="fa-solid fa-key"></i> Sign In
         </button>
         <button class="auth-modal-tab" id="modal-tab-register" role="tab" aria-selected="false" onclick="switchAuthModalTab('register')">
           <i class="fa-solid fa-user-plus"></i> Register
         </button>
       </div>
 
-      <!-- Tab A: Mobile OTP -->
-      <div id="modal-panel-otp" class="auth-modal-panel active" role="tabpanel">
-        <div id="modal-otp-step-1">
-          <p style="font-size: 13px; color: #94A3B8; margin-bottom: 14px;">
-            Enter your mobile number to receive a secure 6-digit one-time password (OTP):
-          </p>
-          <div class="form-field-group">
-            <label class="form-field-label" style="color: #E2E8F0;">Country Code &amp; Mobile Number</label>
-            <div style="display: flex; gap: 8px;">
-              <select id="modal-otp-country-code" class="form-input-text" style="width: 85px; flex-shrink: 0; background: #0F172A; color: #F8FAFC; border-color: #334155;">
-                <option value="+91" selected>🇮🇳 +91</option>
-                <option value="+1">🇺🇸 +1</option>
-                <option value="+44">🇬🇧 +44</option>
-                <option value="+971">🇦🇪 +971</option>
-              </select>
-              <input type="tel" id="modal-otp-phone" class="form-input-text" placeholder="9876543210" maxlength="10" style="background: #0F172A; color: #F8FAFC; border-color: #334155; flex: 1;">
-            </div>
-            <span id="modal-otp-phone-error" style="font-size: 11px; color: #EF4444; display: none; margin-top: 4px;"></span>
-          </div>
-          <button class="btn-gold-primary" id="btn-modal-send-otp" style="width: 100%; justify-content: center; min-height: 44px;" onclick="handleModalRequestOtp()">
-            <i class="fa-solid fa-paper-plane"></i> Send Verification Code
-          </button>
-        </div>
-
-        <div id="modal-otp-step-2" style="display: none;">
-          <p style="font-size: 13px; color: #94A3B8; margin-bottom: 12px;">
-            Enter the 6-digit verification code sent to <strong id="modal-otp-sent-to" style="color: #F8FAFC;"></strong>:
-          </p>
-          <div class="form-field-group">
-            <label class="form-field-label" style="color: #E2E8F0;">6-Digit OTP</label>
-            <input type="text" id="modal-otp-code" class="form-input-text" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;" maxlength="6" style="background: #0F172A; color: #F8FAFC; border-color: #334155; font-size: 20px; letter-spacing: 6px; text-align: center;">
-            <div id="modal-otp-preview-hint" style="font-size: 11px; color: #10B981; margin-top: 4px; font-weight: 600;"></div>
-            <span id="modal-otp-verify-error" style="font-size: 11px; color: #EF4444; display: none; margin-top: 4px;"></span>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-outline-secondary" style="flex: 1; justify-content: center; min-height: 44px; color: #CBD5E1; border-color: #475569;" onclick="resetModalOtpStep()">
-              Back
-            </button>
-            <button class="btn-gold-primary" id="btn-modal-verify-otp" style="flex: 2; justify-content: center; min-height: 44px;" onclick="handleModalVerifyOtp()">
-              <i class="fa-solid fa-shield-check"></i> Verify &amp; Sign In
-            </button>
-          </div>
-          <div style="margin-top: 12px; text-align: center;">
-            <button id="btn-modal-resend-otp" onclick="handleModalResendOtp()" style="background: none; border: none; font-size: 12px; color: #F59E0B; cursor: pointer; text-decoration: underline;" disabled>
-              Resend OTP (wait 60s)
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab B: Password Sign In -->
-      <div id="modal-panel-password" class="auth-modal-panel" role="tabpanel" style="display: none;">
+      <!-- Tab A: Password Sign In -->
+      <div id="modal-panel-password" class="auth-modal-panel active" role="tabpanel" style="display: block;">
         <div class="form-field-group">
           <label class="form-field-label" style="color: #E2E8F0;">Email Address or Mobile Number</label>
           <input type="text" id="modal-pwd-ident" class="form-input-text" placeholder="name@example.com or +919876543210" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
@@ -6274,9 +6215,6 @@
         <div class="form-field-group">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label class="form-field-label" style="color: #E2E8F0; margin-bottom: 0;">Password</label>
-            <button type="button" onclick="switchAuthModalTab('otp')" style="background: none; border: none; font-size: 12px; color: #60A5FA; cursor: pointer; text-decoration: none;">
-              Use OTP instead
-            </button>
           </div>
           <div style="position: relative;">
             <input type="password" id="modal-pwd-val" class="form-input-text" placeholder="Enter your password" style="background: #0F172A; color: #F8FAFC; border-color: #334155; padding-right: 40px;">
@@ -11825,20 +11763,6 @@
             cancel_on_tap_outside: true
           });
           isGoogleAuthInitialized = true;
-
-          const renderContainer = document.getElementById('g_id_signin_rendered');
-          if (renderContainer && !renderContainer.hasChildNodes()) {
-            window.google.accounts.id.renderButton(renderContainer, {
-              theme: 'outline',
-              size: 'large',
-              type: 'standard',
-              shape: 'rectangular',
-              text: 'continue_with',
-              logo_alignment: 'left',
-              width: 320
-            });
-            renderContainer.style.display = 'flex';
-          }
         }
 
         if (window.google.accounts.oauth2 && !googleCodeClient) {
@@ -11852,11 +11776,14 @@
               }
             },
             error_callback: (err) => {
-              console.warn('[Google OAuth2 Popup] Error:', err);
+              console.warn('[Google OAuth2 Popup] Notice:', err);
+              resetUnifiedGoogleButton();
               if (err && err.type === 'popup_closed') {
                 showToast('Google sign-in popup was closed.', 'info');
               } else {
-                showToast('Popup sign-in unavailable. Use "Continue with Full-Page Google Sign-In" below.', 'info');
+                // Popup unavailable or origin blocked: fallback directly to full-page redirect
+                showToast('Redirecting to Google Sign-In...', 'info');
+                initiateGoogleOAuthFlow();
               }
             }
           });
@@ -11866,30 +11793,39 @@
       }
     }
 
-    function triggerGoogleSignIn() {
+    function resetUnifiedGoogleButton() {
+      const btn = document.getElementById('btn-unified-google-login') || document.getElementById('btn-google-signin-custom');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/></svg> <span id="btn-unified-google-text">Continue with Google</span>';
+      }
+    }
+
+    function triggerUnifiedGoogleLogin() {
       initGoogleAuth();
-      // 1. Try modern OAuth2 Code Popup Client (best UX across mobile and desktop)
+
+      const btn = document.getElementById('btn-unified-google-login') || document.getElementById('btn-google-signin-custom');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Google...';
+      }
+
+      // 1. Try modern OAuth2 Code Popup Client if available
       if (googleCodeClient) {
         try {
           googleCodeClient.requestCode();
           return;
         } catch (e) {
-          console.warn('[Google Auth] Popup requestCode failed, trying GIS prompt:', e);
+          console.warn('[Google Auth] Popup requestCode failed, falling back to redirect:', e);
         }
       }
 
-      // 2. Try Google Identity Services One Tap prompt
-      if (typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.id) {
-        window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            initiateGoogleOAuthFlow();
-          }
-        });
-        return;
-      }
-
-      // 3. Fallback to standard OAuth 2.0 full-page redirection
+      // 2. Fallback to standard full-page redirection (reliable across all mobile & desktop browsers)
       initiateGoogleOAuthFlow();
+    }
+
+    function triggerGoogleSignIn() {
+      triggerUnifiedGoogleLogin();
     }
 
     function initiateGoogleOAuthFlow(manualUserTrigger = false) {
@@ -11939,14 +11875,25 @@
       updateUserSessionUI();
     }
 
+    function handleGoogleAuthSuccess(u, sessionToken) {
+      applyAuthenticatedSession(u, sessionToken);
+      closeAuthModal();
+      showToast(`Signed in successfully as ${currentUserSession.name}!`, 'success');
+      resumePendingActionAfterAuth();
+    }
+
+    function handleGoogleAuthError(errMsg) {
+      resetUnifiedGoogleButton();
+      showToast(errMsg, 'error');
+    }
+
     async function handleGoogleAuthCallback(response) {
       if (!response || !response.credential) {
-        showToast('Google authentication cancelled or credential not received.', 'error');
+        handleGoogleAuthError('Google authentication cancelled or credential not received.');
         return;
       }
 
-      const btn = document.getElementById('btn-google-signin-custom');
-      const origHtml = btn ? btn.innerHTML : '';
+      const btn = document.getElementById('btn-unified-google-login') || document.getElementById('btn-google-signin-custom');
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating with Google...';
@@ -11960,26 +11907,17 @@
         });
         const data = await res.json();
         if (res.ok) {
-          applyAuthenticatedSession(data.user, data.sessionToken);
-          closeAuthModal();
-          showToast(`Signed in successfully as ${currentUserSession.name}!`, 'success');
-          resumePendingActionAfterAuth();
+          handleGoogleAuthSuccess(data.user, data.sessionToken);
         } else {
-          showToast(data.message || 'Google authentication failed.', 'error');
+          handleGoogleAuthError(data.message || 'Google authentication failed.');
         }
       } catch (err) {
-        showToast('Failed to reach authentication server.', 'error');
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = origHtml;
-        }
+        handleGoogleAuthError('Failed to reach authentication server.');
       }
     }
 
     async function exchangeGoogleCodeOnBackend(code, redirectUri = 'postmessage') {
-      const btn = document.getElementById('btn-google-signin-custom');
-      const origHtml = btn ? btn.innerHTML : '';
+      const btn = document.getElementById('btn-unified-google-login') || document.getElementById('btn-google-signin-custom');
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating with Google...';
@@ -11996,20 +11934,12 @@
         });
         const data = await res.json();
         if (res.ok) {
-          applyAuthenticatedSession(data.user, data.sessionToken);
-          closeAuthModal();
-          showToast(`Signed in successfully as ${currentUserSession.name}!`, 'success');
-          resumePendingActionAfterAuth();
+          handleGoogleAuthSuccess(data.user, data.sessionToken);
         } else {
-          showToast(data.message || 'Google sign-in exchange failed.', 'error');
+          handleGoogleAuthError(data.message || 'Google sign-in exchange failed.');
         }
       } catch (err) {
-        showToast('Failed to reach authentication server.', 'error');
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = origHtml;
-        }
+        handleGoogleAuthError('Failed to reach authentication server.');
       }
     }
 
@@ -12265,7 +12195,7 @@
     }
 
     function switchAuthModalTab(tab) {
-      const tabs = ['otp', 'password', 'register'];
+      const tabs = ['password', 'register'];
       tabs.forEach(t => {
         const tabBtn = document.getElementById(`modal-tab-${t}`);
         const panel = document.getElementById(`modal-panel-${t}`);
@@ -12279,197 +12209,10 @@
         }
       });
 
-      if (tab === 'otp') {
-        setTimeout(() => { document.getElementById('modal-otp-phone')?.focus(); }, 120);
-      } else if (tab === 'password') {
+      if (tab === 'password') {
         setTimeout(() => { document.getElementById('modal-pwd-ident')?.focus(); }, 120);
       } else if (tab === 'register') {
         setTimeout(() => { document.getElementById('modal-reg-name')?.focus(); }, 120);
-      }
-    }
-
-    function resetModalOtpStep() {
-      document.getElementById('modal-otp-step-2').style.display = 'none';
-      document.getElementById('modal-otp-step-1').style.display = 'block';
-      if (modalOtpCountdownInterval) clearInterval(modalOtpCountdownInterval);
-    }
-
-    function startModalOtpCooldown(seconds = 60) {
-      let rem = seconds;
-      const resendBtn = document.getElementById('btn-modal-resend-otp');
-      if (!resendBtn) return;
-      resendBtn.disabled = true;
-      resendBtn.textContent = `Resend OTP (wait ${rem}s)`;
-
-      if (modalOtpCountdownInterval) clearInterval(modalOtpCountdownInterval);
-      modalOtpCountdownInterval = setInterval(() => {
-        rem--;
-        if (rem <= 0) {
-          clearInterval(modalOtpCountdownInterval);
-          resendBtn.disabled = false;
-          resendBtn.textContent = 'Resend OTP';
-        } else {
-          resendBtn.textContent = `Resend OTP (wait ${rem}s)`;
-        }
-      }, 1000);
-    }
-
-    function handleModalResendOtp() {
-      handleModalRequestOtp();
-    }
-
-    async function handleModalRequestOtp() {
-      const countryCode = document.getElementById('modal-otp-country-code')?.value || '+91';
-      const phoneInput = document.getElementById('modal-otp-phone')?.value?.trim();
-      const errEl = document.getElementById('modal-otp-phone-error');
-      if (errEl) errEl.style.display = 'none';
-
-      if (!phoneInput) {
-        if (errEl) { errEl.textContent = 'Please enter your 10-digit mobile number.'; errEl.style.display = 'block'; }
-        return;
-      }
-      const cleanPhone = phoneInput.replace(/[\s\-]/g, '');
-      if (!/^\d{10}$/.test(cleanPhone) && countryCode === '+91') {
-        if (errEl) { errEl.textContent = 'Please enter a valid 10-digit Indian mobile number.'; errEl.style.display = 'block'; }
-        return;
-      }
-
-      const fullPhone = countryCode + cleanPhone;
-      activeModalOtpPhone = fullPhone;
-      activeAuthTarget = fullPhone;
-
-      const btn = document.getElementById('btn-modal-send-otp');
-      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...'; }
-
-      try {
-        const res = await fetch(`${getAuthBase()}/api/auth/request-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: fullPhone, type: 'phone' })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          document.getElementById('modal-otp-sent-to').textContent = fullPhone;
-          document.getElementById('modal-otp-step-1').style.display = 'none';
-          document.getElementById('modal-otp-step-2').style.display = 'block';
-          const hint = document.getElementById('modal-otp-preview-hint');
-          if (hint && data.devPreviewOtp) {
-            hint.textContent = `[Dev Test Code: ${data.devPreviewOtp}]`;
-          } else if (hint) {
-            hint.textContent = '';
-          }
-          startModalOtpCooldown(data.cooldownSeconds || 60);
-          setTimeout(() => { document.getElementById('modal-otp-code')?.focus(); }, 120);
-          showToast(`Verification code dispatched to ${fullPhone}`, 'info');
-        } else {
-          if (errEl) { errEl.textContent = data.message || 'Failed to dispatch OTP.'; errEl.style.display = 'block'; }
-          showToast(data.message || 'Failed to send OTP.', 'error');
-        }
-      } catch (err) {
-        if (errEl) {
-          errEl.innerHTML = `
-            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; color: #FCA5A5; margin-top: 6px;">
-              <strong style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <i class="fa-solid fa-wifi"></i> Authentication Service Offline
-              </strong>
-              <span>Cannot connect to authentication service. You can continue calculating charts in local Guest Mode.</span>
-              <div style="margin-top: 8px; display: flex; gap: 8px;">
-                <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
-                <button type="button" class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px; color: #CBD5E1; border-color: #64748B;" onclick="checkAuthServiceReadiness(true)">Check Connection</button>
-              </div>
-            </div>
-          `;
-          errEl.style.display = 'block';
-        }
-        showToast('Authentication server unavailable.', 'error');
-      } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Send Verification Code'; }
-      }
-    }
-
-    async function handleModalVerifyOtp() {
-      const otp = document.getElementById('modal-otp-code')?.value?.trim();
-      const errEl = document.getElementById('modal-otp-verify-error');
-      if (errEl) errEl.style.display = 'none';
-
-      if (!otp || otp.length !== 6) {
-        if (errEl) { errEl.textContent = 'Please enter the 6-digit verification code.'; errEl.style.display = 'block'; }
-        return;
-      }
-
-      const btn = document.getElementById('btn-modal-verify-otp');
-      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...'; }
-
-      try {
-        const res = await fetch(`${getAuthBase()}/api/auth/verify-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: activeModalOtpPhone, otp })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          const u = data.user;
-          currentSessionToken = data.sessionToken;
-          currentUserSession = {
-            id: u.id,
-            name: u.displayName || u.phone || 'User',
-            identifier: u.phone || activeModalOtpPhone,
-            email: u.email,
-            phone: u.phone,
-            role: u.role,
-            status: u.status
-          };
-          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
-
-          localStorage.setItem('astro_session_token', currentSessionToken);
-          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
-          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-
-          await linkPendingGuestProfileToUser(u, currentSessionToken);
-          await syncProfilesFromBackend(u.id);
-          updateUserSessionUI();
-          closeAuthModal();
-          showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
-          resumePendingActionAfterAuth();
-        } else {
-          if (res.status === 503 && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {
-            errEl.innerHTML = `
-              <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 10px; border-radius: 8px; color: #FDE68A; margin-top: 6px;">
-                <strong style="color: #F59E0B; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                  <i class="fa-solid fa-database"></i> Database Connection Required
-                </strong>
-                <span>Cloud account persistence requires a PostgreSQL database (<code>DATABASE_URL</code>). You can continue exploring in Guest Mode.</span>
-                <div style="margin-top: 8px;">
-                  <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
-                </div>
-              </div>
-            `;
-            errEl.style.display = 'block';
-            showToast("Production requires connected PostgreSQL database. Guest Mode is available.", "warning");
-          } else {
-            if (errEl) { errEl.textContent = data.message || 'Invalid or expired code.'; errEl.style.display = 'block'; }
-            showToast(data.message || 'Invalid or expired OTP.', 'error');
-          }
-        }
-      } catch (err) {
-        if (errEl) {
-          errEl.innerHTML = `
-            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px; border-radius: 8px; color: #FCA5A5; margin-top: 6px;">
-              <strong style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <i class="fa-solid fa-wifi"></i> Server Connection Offline
-              </strong>
-              <span>Cannot reach authentication server. You can explore all features in Guest Mode.</span>
-              <div style="margin-top: 8px; display: flex; gap: 8px;">
-                <button type="button" class="btn-gold-primary" style="padding: 4px 10px; font-size: 11px;" onclick="continueAsGuest()">Continue as Guest</button>
-                <button type="button" class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px; color: #CBD5E1; border-color: #64748B;" onclick="checkAuthServiceReadiness(true)">Check Connection</button>
-              </div>
-            </div>
-          `;
-          errEl.style.display = 'block';
-        }
-        showToast('Authentication server unavailable.', 'error');
-      } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Verify &amp; Sign In'; }
       }
     }
 

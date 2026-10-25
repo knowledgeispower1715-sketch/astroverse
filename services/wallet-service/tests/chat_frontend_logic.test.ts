@@ -374,16 +374,28 @@ test('Google OAuth 2.0 & GIS client configuration in index.html is valid and com
 
   // 3. Google Sign-In button elements in auth modal
   assert(
-    htmlContent.includes('id="btn-google-signin-custom"'),
-    'Auth modal must include custom styled Continue with Google button'
+    htmlContent.includes('id="btn-unified-google-login"'),
+    'Auth modal must include unified Continue with Google button'
   );
   assert(
-    htmlContent.includes('triggerGoogleSignIn()'),
-    'Auth modal button must trigger Google sign-in flow'
+    htmlContent.includes('triggerUnifiedGoogleLogin()'),
+    'Auth modal button must trigger unified Google sign-in flow'
   );
   assert(
-    htmlContent.includes('id="g_id_signin_rendered"'),
-    'Auth modal must provide render container for native Google Identity One-Tap/button'
+    !htmlContent.includes('id="g_id_signin_rendered"'),
+    'Duplicate native render container must not be present to avoid duplicate buttons'
+  );
+  assert(
+    !htmlContent.includes('id="btn-google-signin-custom"'),
+    'Obsolete multi-button Google elements must not be present'
+  );
+  assert(
+    !htmlContent.includes('id="modal-tab-otp"'),
+    'Nonfunctional Mobile OTP tab must be removed'
+  );
+  assert(
+    !htmlContent.includes('id="modal-panel-otp"'),
+    'Nonfunctional Mobile OTP panel must be removed'
   );
 
   // 4. Redirect handler & callback functions present
