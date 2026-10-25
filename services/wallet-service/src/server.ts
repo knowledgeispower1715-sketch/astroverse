@@ -11,6 +11,17 @@ import {
 } from './monetization/catalog';
 import { EntitlementManager } from './monetization/entitlements';
 import { ReportDocumentGenerator } from './monetization/reportGenerator';
+import {
+  digitRoot1To9,
+  calculateMoolank,
+  calculateBhagyank,
+  calculateNaamank,
+  calculateHarmonyScore,
+  PLANET_DATA,
+  RELATIONSHIP_MATRIX,
+  PREFERRED_COMPOUND_NUMBERS,
+  CHALLENGING_COMPOUND_NUMBERS
+} from './monetization/numerologyCalculator';
 
 const app = express();
 app.use(express.json());
@@ -2557,6 +2568,259 @@ app.post('/api/ai-astrologer/consume-quota', authenticate, async (req: Authentic
       });
     }
     handleServiceError(res, err, 'Quota check failed');
+  }
+});
+
+// ==================== 7.5 NUMEROLOGY & NAME CORRECTION API ====================
+
+app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
+  const { name, birthDate, dateOfBirth, calculationSpelling, analysisTarget, phoneNumber, language } = req.body;
+  const targetDob = birthDate || dateOfBirth;
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'NAME_REQUIRED', message: 'Name string is required.' });
+  }
+  if (!targetDob || typeof targetDob !== 'string') {
+    return res.status(400).json({ error: 'BIRTH_DATE_REQUIRED', message: 'Valid ISO birthDate (YYYY-MM-DD) is required.' });
+  }
+
+  // Optional authentication check for tier resolution & quota consumption
+  let user: any = null;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1].trim();
+    const tokenHash = hashToken(token);
+    const session = await db.findSessionByTokenHash(tokenHash);
+    if (session) {
+      user = await db.findUserById(session.userId);
+    }
+  }
+
+  const { tier } = EntitlementManager.resolveEffectiveTier(user);
+
+  try {
+    if (analysisTarget === 'business_name' || analysisTarget === 'mobile_number') {
+      EntitlementManager.assertBusinessOrMobileAllowed(tier);
+    }
+
+    if (user) {
+      EntitlementManager.consumeNumerologyCheck(user.id, tier);
+    }
+
+    const targetName = (calculationSpelling || name).trim();
+    if (analysisTarget === 'mobile_number') {
+      if (!phoneNumber) return res.status(400).json({ error: 'PHONE_REQUIRED', message: 'phoneNumber is required.' });
+      const digits = String(phoneNumber).replace(/\D/g, '');
+      const calcDigits = digits.slice(-10);
+      const total = calcDigits.split('').map(Number).reduce((a, b) => a + b, 0);
+      const root = digitRoot1To9(total);
+      const pInfo = PLANET_DATA[root] || PLANET_DATA[1];
+      return res.json({
+        success: true,
+        target: 'mobile_number',
+        digitCount: calcDigits.length,
+        compoundTotal: total,
+        reducedNumber: root,
+        governingPlanetEn: pInfo.planetEn,
+        governingPlanetHi: pInfo.planetHi,
+        luckyColorsEn: pInfo.luckyColorsEn,
+        luckyColorsHi: pInfo.luckyColorsHi,
+        sanitizedDisplay: `...${calcDigits.slice(-4)}`
+      });
+    }
+
+    const day = parseInt(targetDob.slice(8, 10), 10);
+    const moolank = calculateMoolank(day);
+    const bhagyank = calculateBhagyank(targetDob);
+    const naamank = calculateNaamank(targetName);
+    const harmony = calculateHarmonyScore(moolank, bhagyank.destinyNumber, naamank.chaldean.compoundTotal);
+
+    const planetM = PLANET_DATA[moolank] || PLANET_DATA[1];
+    const planetB = PLANET_DATA[bhagyank.destinyNumber] || PLANET_DATA[1];
+    const planetN = PLANET_DATA[naamank.chaldean.naamank] || PLANET_DATA[1];
+
+    res.json({
+      success: true,
+      originalName: name,
+      calculationSpelling: targetName,
+      birthDate: targetDob,
+      birthNumber: {
+        value: moolank,
+        title: 'Moolank (Psychic / Birth Number)',
+        titleHi: 'मूलांक (जन्मांक)',
+        governingPlanet: planetM.planetEn,
+        governingPlanetHi: planetM.planetHi,
+        archetype: planetM.archetypeEn,
+        archetypeHi: planetM.archetypeHi,
+        qualities: planetM.qualitiesEn,
+        qualitiesHi: planetM.qualitiesHi,
+        element: planetM.elementEn
+      },
+      destinyNumber: {
+        value: bhagyank.destinyNumber,
+        masterNumber: bhagyank.masterNumber,
+        totalCompound: bhagyank.totalSum,
+        title: 'Bhagyank (Destiny / Life Path Number)',
+        titleHi: 'भाग्यांक (जीवन पथ अंक)',
+        governingPlanet: planetB.planetEn,
+        governingPlanetHi: planetB.planetHi,
+        archetype: planetB.archetypeEn,
+        archetypeHi: planetB.archetypeHi
+      },
+      nameNumbers: {
+        chaldean: {
+          naamank: naamank.chaldean.naamank,
+          compoundTotal: naamank.chaldean.compoundTotal,
+          breakdown: naamank.chaldean.breakdown,
+          system: 'Chaldean (Vedic Standard)',
+          governingPlanet: planetN.planetEn,
+          governingPlanetHi: planetN.planetHi,
+          isPreferred: naamank.chaldean.isPreferred,
+          isChallenging: naamank.chaldean.isChallenging
+        },
+        pythagorean: {
+          naamank: naamank.pythagorean.naamank,
+          compoundTotal: naamank.pythagorean.compoundTotal,
+          breakdown: naamank.pythagorean.breakdown,
+          system: 'Pythagorean'
+        }
+      },
+      harmony,
+      favorableElements: {
+        luckyColors: planetM.luckyColorsEn,
+        luckyColorsHi: planetM.luckyColorsHi,
+        luckyDays: planetM.luckyDaysEn,
+        luckyDaysHi: planetM.luckyDaysHi,
+        luckyGemstone: planetM.luckyGemEn,
+        luckyGemstoneHi: planetM.luckyGemHi
+      },
+      userTier: tier
+    });
+  } catch (err: any) {
+    if (err.code === 'NUMEROLOGY_QUOTA_EXCEEDED' || err.code === 'UPGRADE_REQUIRED') {
+      return res.status(403).json({
+        error: err.code,
+        message: err.message,
+        tier: err.tier,
+        upgradeRequired: err.upgradeRequired
+      });
+    }
+    handleServiceError(res, err, 'Numerology analysis failed');
+  }
+});
+
+app.post('/api/numerology/correct-name', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const { name, birthDate, dateOfBirth, calculationSpelling, candidateCount, moonNakshatra, gender } = req.body;
+  const targetDob = birthDate || dateOfBirth;
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'NAME_REQUIRED', message: 'Name string is required.' });
+  }
+  if (!targetDob || typeof targetDob !== 'string') {
+    return res.status(400).json({ error: 'BIRTH_DATE_REQUIRED', message: 'Valid birthDate (YYYY-MM-DD) is required.' });
+  }
+
+  const user = await db.findUserById(req.user!.id);
+  const { tier } = EntitlementManager.resolveEffectiveTier(user);
+
+  try {
+    EntitlementManager.assertNameCorrectionAllowed(tier);
+
+    const targetName = (calculationSpelling || name).trim().toUpperCase();
+    const day = parseInt(targetDob.slice(8, 10), 10);
+    const moolank = calculateMoolank(day);
+    const bhagyank = calculateBhagyank(targetDob);
+    const baseNaam = calculateNaamank(targetName);
+    const baseHarmony = calculateHarmonyScore(moolank, bhagyank.destinyNumber, baseNaam.chaldean.compoundTotal);
+
+    // Bounded candidate generation in TypeScript
+    const words = targetName.split(' ');
+    const firstName = words[0];
+    const surname = words.slice(1).join(' ');
+
+    const variations: { name: string; noteEn: string; noteHi: string }[] = [];
+    const vTransforms: [string, string][] = [['A', 'AA'], ['I', 'EE'], ['E', 'EE'], ['U', 'OO']];
+    for (const [o, n] of vTransforms) {
+      if (firstName.includes(o)) {
+        const v = firstName.replace(o, n);
+        variations.push({ name: `${v} ${surname}`.trim(), noteEn: `Vowel expansion (${o} -> ${n})`, noteHi: `स्वर विस्तार (${o} -> ${n})` });
+      }
+    }
+
+    const hPairs: [string, string][] = [['S', 'SH'], ['K', 'KH'], ['D', 'DH'], ['T', 'TH'], ['R', 'RH']];
+    for (const [o, n] of hPairs) {
+      if (firstName.includes(o) && !firstName.includes(o + 'H')) {
+        const v = firstName.replace(o, n);
+        variations.push({ name: `${v} ${surname}`.trim(), noteEn: `Phonetic harmonizer (${o} -> ${n})`, noteHi: `ध्वनि सामंजस्य (${o} -> ${n})` });
+      }
+    }
+
+    if (!firstName.endsWith('A') && !firstName.endsWith('H')) {
+      variations.push({ name: `${firstName}A ${surname}`.trim(), noteEn: "Terminal 'A' resonant harmonic", noteHi: "अंतिम 'A' स्वर कम्पन" });
+      variations.push({ name: `${firstName}H ${surname}`.trim(), noteEn: "Terminal 'H' breath harmonizer", noteHi: "अंतिम 'H' प्राण संतुलन" });
+    }
+
+    const dCons = ['N', 'R', 'L', 'M', 'S'];
+    for (const c of dCons) {
+      if (firstName.includes(c) && !firstName.includes(c + c)) {
+        const v = firstName.replace(c, c + c);
+        variations.push({ name: `${v} ${surname}`.trim(), noteEn: `Resonant doubling of '${c}'`, noteHi: `'${c}' का पुनरावृत्ति संतुलन` });
+      }
+    }
+
+    const candidates: any[] = [];
+    const seenCompounds = new Set<number>();
+    const countLimit = Math.min(Math.max(Number(candidateCount) || 5, 1), 5);
+
+    for (const v of variations) {
+      try {
+        const calc = calculateNaamank(v.name);
+        const comp = calc.chaldean.compoundTotal;
+        const harm = calculateHarmonyScore(moolank, bhagyank.destinyNumber, comp);
+        if (!seenCompounds.has(comp) || candidates.length < countLimit) {
+          seenCompounds.add(comp);
+          candidates.push({
+            proposedName: v.name,
+            alterationNoteEn: v.noteEn,
+            alterationNoteHi: v.noteHi,
+            chaldeanCompound: comp,
+            chaldeanNaamank: calc.chaldean.naamank,
+            pythagoreanCompound: calc.pythagorean.compoundTotal,
+            pythagoreanNaamank: calc.pythagorean.naamank,
+            governingPlanetEn: calc.chaldean.governingPlanet,
+            harmonyScore: harm.score,
+            alignmentTierEn: harm.alignmentTierEn,
+            alignmentTierHi: harm.alignmentTierHi,
+            isPreferredCompound: calc.chaldean.isPreferred
+          });
+          if (candidates.length >= countLimit) break;
+        }
+      } catch (_) {}
+    }
+
+    candidates.sort((a, b) => b.harmonyScore - a.harmonyScore);
+
+    res.json({
+      success: true,
+      originalName: name,
+      calculationSpelling: targetName,
+      birthDate,
+      baselineMoolank: moolank,
+      baselineBhagyank: bhagyank.destinyNumber,
+      baselineChaldeanCompound: baseNaam.chaldean.compoundTotal,
+      baselineHarmonyScore: baseHarmony.score,
+      baselineAlignmentTierEn: baseHarmony.alignmentTierEn,
+      baselineAlignmentTierHi: baseHarmony.alignmentTierHi,
+      candidatesCount: candidates.length,
+      candidates
+    });
+  } catch (err: any) {
+    if (err.code === 'PREMIUM_REQUIRED') {
+      return res.status(403).json({
+        error: 'PREMIUM_REQUIRED',
+        message: err.message,
+        upgradeRequired: SubscriptionTier.PREMIUM
+      });
+    }
+    handleServiceError(res, err, 'Name correction failed');
   }
 });
 

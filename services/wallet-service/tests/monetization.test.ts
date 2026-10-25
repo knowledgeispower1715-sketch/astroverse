@@ -50,11 +50,11 @@ async function runMonetizationTestSuite() {
     // -------------------------------------------------------------------------
     // 1. Catalogue Integrity Tests
     // -------------------------------------------------------------------------
-    await test('GET /api/reports/catalogue returns all 9 distinct reports with integer paise pricing', async () => {
+    await test('GET /api/reports/catalogue returns all 10 distinct reports with integer paise pricing', async () => {
       const res = await request('/api/reports/catalogue');
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.data.success, true);
-      assert.strictEqual(res.data.catalogue.length, 9);
+      assert.strictEqual(res.data.catalogue.length, 10);
 
       // Verify every report has required canonical fields
       for (const item of res.data.catalogue) {
@@ -73,6 +73,11 @@ async function runMonetizationTestSuite() {
 
       const yearVarsh = res.data.catalogue.find((r: any) => r.productId === 'report_twelve_month_varshphal');
       assert.strictEqual(yearVarsh.pricePaise, 24900); // ₹249
+
+      const numerology = res.data.catalogue.find((r: any) => r.productId === 'report_vedic_name_numerology');
+      assert(numerology, 'report_vedic_name_numerology must exist in catalogue');
+      assert.strictEqual(numerology.pricePaise, 19900); // ₹199
+      assert.strictEqual(numerology.includedSections.length, 15);
     });
 
     await test('GET /api/subscriptions/plans returns Essentials, Plus, and Premium tiers', async () => {

@@ -5292,24 +5292,25 @@
         </div>
 
         <!-- Card 7: Numerology -->
-        <div class="tool-card" data-category="specialized" data-name="Numerology Chaldean Pythagorean Mulank Bhagyank Namank Name Number">
+        <!-- Card 7: Vedic Name Correction & Numerology Studio -->
+        <div class="tool-card" data-category="specialized" data-name="Numerology Chaldean Pythagorean Mulank Bhagyank Namank Name Correction Studio Signature">
           <div>
             <div class="tool-card-header">
-              <div class="tool-card-icon-wrap"><i class="fa-solid fa-hashtag"></i></div>
+              <div class="tool-card-icon-wrap" style="background: rgba(217, 119, 6, 0.12); color: #D97706;"><i class="fa-solid fa-signature"></i></div>
               <div class="tool-badges">
-                <span class="tool-badge-cat">Numerology</span>
-                <span class="tool-badge-tier badge-tier-free">Free</span>
+                <span class="tool-badge-cat" data-i18n="tools_cat_numerology">Vedic Numerology</span>
+                <span class="tool-badge-tier badge-tier-premium">Studio</span>
               </div>
             </div>
-            <h3 class="tool-card-title">Vedic & Chaldean Numerology Suite</h3>
-            <p class="tool-card-desc">Calculates Birth/Psychic Number (Mulank), Destiny/Life Path Number (Bhagyank with Master Numbers 11/22/33), Chaldean & Pythagorean Name Numbers, lucky gems, and lucky colors.</p>
+            <h3 class="tool-card-title" data-i18n="tools_numerology_title">Vedic Name Correction &amp; Numerology Studio</h3>
+            <p class="tool-card-desc" data-i18n="tools_numerology_desc">Harmonize personal &amp; business names with birth vibrations. Precise Moolank, Bhagyank, Chaldean &amp; Pythagorean compound analysis, bounded phonetic spelling corrections, and graphological signature blueprint.</p>
             <details class="tool-meta-details"><summary><i class="fa-solid fa-circle-info"></i> Methodology &amp; Inputs</summary><div class="tool-card-meta">
-              <div><strong>Methodology:</strong> Chaldean Letter Frequency + Single-digit reduction</div>
-              <div><strong>Required Inputs:</strong> Full Name & Date of Birth</div>
-              <div><strong>Artifact:</strong> Planetary Number Vibrations & Synergy Profile</div>
+              <div><strong>Methodology:</strong> Chaldean (1–8) &amp; Pythagorean (1–9) letter sums + 9×9 Planetary Relationship Matrix</div>
+              <div><strong>Core Numbers:</strong> Day Root (Moolank), Life-Path Root (Bhagyank), Compound Occult Vibrations</div>
+              <div><strong>Studio Features:</strong> Bounded spelling harmonizer (edit distance ≤ 2), signature blueprint, and bilingual voice</div>
             </div></details>
           </div>
-          <button class="tool-launch-btn" onclick="openInteractiveToolModal('numerology')">Calculate Numerology <i class="fa-solid fa-arrow-right"></i></button>
+          <button class="tool-launch-btn" onclick="openNumerologyStudio()"><span data-i18n="tools_launch_numerology">Launch Numerology Studio</span> <i class="fa-solid fa-arrow-right"></i></button>
         </div>
 
         <!-- Card 8: Pancha Pakshi -->
@@ -6542,11 +6543,23 @@
                 <td style="padding: 9px 12px; text-align: center; color: #1E293B; background: rgba(254, 243, 199, 0.2);">D1, D9 Navamsha, D10 Dashamsha</td>
                 <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);">Full Shodashavarga (D1 through D60)</td>
               </tr>
-              <tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;">
                 <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">AI Astrologer Daily Consultations</td>
                 <td style="padding: 9px 12px; text-align: center; color: #64748B;">3 questions / day</td>
                 <td style="padding: 9px 12px; text-align: center; color: #1E293B; font-weight: 700; background: rgba(254, 243, 199, 0.2);">15 questions / day</td>
                 <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);">30 questions / day</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #E2E8F0;">
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">Vedic Numerology &amp; Name Studio</td>
+                <td style="padding: 9px 12px; text-align: center; color: #64748B;">1 Preview Check (Moolank &amp; Bhagyank)</td>
+                <td style="padding: 9px 12px; text-align: center; color: #1E293B; font-weight: 700; background: rgba(254, 243, 199, 0.2);">3 Checks / day + Full Calculations</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);">30 Checks / day + Full Name Correction Studio</td>
+              </tr>
+              <tr>
+                <td style="padding: 9px 12px; font-weight: 700; color: #1E293B;">Signature Blueprint &amp; Brand/Mobile Analysis</td>
+                <td style="padding: 9px 12px; text-align: center; color: #94A3B8;"><i class="fa-solid fa-xmark"></i> Not Included</td>
+                <td style="padding: 9px 12px; text-align: center; color: #1E293B; background: rgba(254, 243, 199, 0.2);">Signature Blueprint Included</td>
+                <td style="padding: 9px 12px; text-align: center; color: #059669; font-weight: 700; background: rgba(254, 215, 170, 0.2);"><i class="fa-solid fa-check"></i> Complete Suite + Commercial &amp; Mobile</td>
               </tr>
             </tbody>
           </table>
@@ -6784,6 +6797,172 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: VEDIC NAME CORRECTION & NUMEROLOGY STUDIO ==================== -->
+  <div id="modal-numerology-studio" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10630;">
+    <div class="modal-dialog-card" style="max-width: 960px; width: 94%; max-height: 90vh; overflow-y: auto; padding: 24px;">
+
+      <!-- Studio Header -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">VEDIC &amp; CHALDEAN HARMONICS</span>
+            <span class="tool-badge-tier badge-tier-premium" style="font-size: 11px; padding: 2px 8px;">Studio</span>
+          </div>
+          <h2 style="font-size: 22px; font-weight: 800; color: #1E1B4B; margin: 6px 0 2px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-signature" style="color: #D97706;"></i>
+            <span id="num-studio-title">Vedic Name Correction &amp; Numerology Studio</span>
+          </h2>
+          <p style="font-size: 13px; color: #64748B; margin: 0;" id="num-studio-tagline">
+            Harmonize personal &amp; business names with birth numbers via classical Chaldean (1–8) and Pythagorean matrices.
+          </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button id="btn-voice-numerology" class="btn-voice-narrate" onclick="toggleNumerologyVoiceNarration()" style="display: none; align-items: center; gap: 6px; font-size: 12px; background: rgba(217, 119, 6, 0.1); color: #D97706; border: 1px solid rgba(217, 119, 6, 0.3); border-radius: 20px; padding: 5px 12px; cursor: pointer; font-weight: 600;">
+            <i class="fa-solid fa-volume-high"></i> <span id="btn-voice-numerology-lbl">Listen</span>
+          </button>
+          <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 20px; color: #64748B; padding: 4px;" onclick="closeNumerologyStudio()"></i>
+        </div>
+      </div>
+
+      <!-- Studio Navigation Tabs -->
+      <div style="display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid #CBD5E1; padding-bottom: 8px; flex-wrap: wrap;">
+        <button class="nav-pill active" id="num-tab-btn-personal" onclick="switchNumerologyTab('personal')">
+          <i class="fa-solid fa-user"></i> Personal &amp; Name Correction
+        </button>
+        <button class="nav-pill" id="num-tab-btn-business" onclick="switchNumerologyTab('business')">
+          <i class="fa-solid fa-briefcase"></i> Commercial &amp; Brand Name
+        </button>
+        <button class="nav-pill" id="num-tab-btn-mobile" onclick="switchNumerologyTab('mobile')">
+          <i class="fa-solid fa-mobile-screen"></i> Mobile Phone Resonance
+        </button>
+      </div>
+
+      <!-- TAB 1: Personal & Name Correction Studio -->
+      <div id="num-tab-pane-personal">
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px;">
+            <div>
+              <label class="form-field-label">Full Name to Analyze</label>
+              <input type="text" id="numerology-input-name" class="form-input-text" placeholder="e.g. Aryan Tiwari" style="text-transform: uppercase;">
+            </div>
+            <div>
+              <label class="form-field-label">Date of Birth (Day for Moolank, Full for Bhagyank)</label>
+              <input type="date" id="numerology-input-dob" class="form-input-text">
+            </div>
+            <div>
+              <label class="form-field-label">Gender (Optional)</label>
+              <select id="numerology-input-gender" class="form-input-text">
+                <option value="all">Not Specified / All</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-field-label">Moon Nakshatra (Optional)</label>
+              <select id="numerology-input-nakshatra" class="form-input-text">
+                <option value="">Auto-derive / Unspecified</option>
+                <option value="Ashwini">1. Ashwini (Chu, Che, Cho, La)</option>
+                <option value="Bharani">2. Bharani (Lee, Lu, Le, Lo)</option>
+                <option value="Krittika">3. Krittika (Aa, Ee, Oo, Eh)</option>
+                <option value="Rohini">4. Rohini (O, Va, Vi, Vu)</option>
+                <option value="Mrigashira">5. Mrigashira (Ve, Vo, Ka, Ke)</option>
+                <option value="Ardra">6. Ardra (Ku, Gha, Nga, Chha)</option>
+                <option value="Punarvasu">7. Punarvasu (Ke, Ko, Ha, Hee)</option>
+                <option value="Pushya">8. Pushya (Hoo, He, Ho, Da)</option>
+                <option value="Ashlesha">9. Ashlesha (Dee, Doo, De, Do)</option>
+                <option value="Magha">10. Magha (Ma, Mee, Moo, Me)</option>
+                <option value="Purva Phalguni">11. Purva Phalguni (Mo, Ta, Tee, Too)</option>
+                <option value="Uttara Phalguni">12. Uttara Phalguni (Te, To, Pa, Pee)</option>
+                <option value="Hasta">13. Hasta (Poo, Sha, Na, Tha)</option>
+                <option value="Chitra">14. Chitra (Pe, Po, Ra, Ree)</option>
+                <option value="Swati">15. Swati (Ru, Re, Ro, Taa)</option>
+                <option value="Vishakha">16. Vishakha (Tee, Too, Te, To)</option>
+                <option value="Anuradha">17. Anuradha (Na, Nee, Noo, Ne)</option>
+                <option value="Jyeshtha">18. Jyeshtha (No, Ya, Yee, Yoo)</option>
+                <option value="Mula">19. Mula (Ye, Yo, Bha, Bhee)</option>
+                <option value="Purva Ashadha">20. Purva Ashadha (Bhoo, Dha, Pha, Dhadha)</option>
+                <option value="Uttara Ashadha">21. Uttara Ashadha (Bhe, Bho, Ja, Jee)</option>
+                <option value="Shravana">22. Shravana (Khi, Khoo, Khe, Kho)</option>
+                <option value="Dhanishta">23. Dhanishta (Ga, Gee, Goo, Ge)</option>
+                <option value="Shatabhisha">24. Shatabhisha (Go, Sa, See, Soo)</option>
+                <option value="Purva Bhadrapada">25. Purva Bhadrapada (Se, So, Da, Dee)</option>
+                <option value="Uttara Bhadrapada">26. Uttara Bhadrapada (Doo, Tha, Jha, Na)</option>
+                <option value="Revati">27. Revati (De, Do, Cha, Chee)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn-gold-primary" style="flex: 1; min-width: 220px; justify-content: center; min-height: 42px;" onclick="executeNumerologyStudio(false)">
+              <i class="fa-solid fa-calculator"></i> Calculate Vedic Numerology
+            </button>
+            <button class="btn-gold-primary" style="flex: 1; min-width: 260px; justify-content: center; min-height: 42px; background: linear-gradient(135deg, #78350F, #D97706);" onclick="executeNumerologyStudio(true)">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Auspicious Name Corrections
+            </button>
+          </div>
+        </div>
+
+        <!-- Personal Results Container -->
+        <div id="num-personal-results">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- TAB 2: Commercial & Business Entity -->
+      <div id="num-tab-pane-business" style="display: none;">
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px;">
+            <div>
+              <label class="form-field-label">Company / Brand Name</label>
+              <input type="text" id="num-business-name" class="form-input-text" placeholder="e.g. AstroVerse Technologies" style="text-transform: uppercase;">
+            </div>
+            <div>
+              <label class="form-field-label">Industry / Domain</label>
+              <select id="num-business-industry" class="form-input-text">
+                <option value="Technology & Software">Technology &amp; Software (Mercury/Rahu)</option>
+                <option value="Finance & Wealth">Finance, Banking &amp; Fintech (Jupiter/Mercury)</option>
+                <option value="Creative, Arts & Luxury">Creative, Fashion &amp; Luxury (Venus)</option>
+                <option value="Healthcare & Wellness">Healthcare, Medicine &amp; Wellness (Sun/Moon)</option>
+                <option value="Real Estate & Infrastructure">Real Estate &amp; Construction (Saturn/Mars)</option>
+                <option value="Education & Consulting">Education &amp; Advisory (Jupiter)</option>
+                <option value="General Commerce">General Trade &amp; Commerce</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-field-label">Founder's Date of Birth (Optional Synergy Check)</label>
+              <input type="date" id="num-business-founder-dob" class="form-input-text">
+            </div>
+          </div>
+          <button class="btn-gold-primary" style="width: 100%; justify-content: center; min-height: 42px;" onclick="executeBusinessNumerology()">
+            <i class="fa-solid fa-briefcase"></i> Analyze Commercial Vibration &amp; Founder Synergy
+          </button>
+        </div>
+        <div id="num-business-results"></div>
+      </div>
+
+      <!-- TAB 3: Mobile Phone Number Resonance -->
+      <div id="num-tab-pane-mobile" style="display: none;">
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+          <div style="max-width: 480px; margin: 0 auto 16px;">
+            <label class="form-field-label">Mobile Phone Number</label>
+            <input type="tel" id="num-mobile-input" class="form-input-text" placeholder="e.g. +91 98765 43210">
+            <span style="font-size: 11px; color: #64748B; margin-top: 4px; display: block;">
+              <i class="fa-solid fa-shield-halved"></i> Privacy Guaranteed: Calculations are strictly ephemeral; raw numbers are never logged or stored.
+            </span>
+          </div>
+          <div style="text-align: center;">
+            <button class="btn-gold-primary" style="min-width: 260px; min-height: 42px; justify-content: center;" onclick="executeMobileNumerology()">
+              <i class="fa-solid fa-signal"></i> Analyze Mobile Number Vibration
+            </button>
+          </div>
+        </div>
+        <div id="num-mobile-results"></div>
+      </div>
+
     </div>
   </div>
 
@@ -13122,7 +13301,7 @@
           </div>
           <div style="font-size: 11.5px; color: #64748B; line-height: 1.4;">
             <span>DOB: <strong>${p.dob || '--'}</strong> ${p.tob ? '• TOB: <strong>' + p.tob + '</strong>' : ''}</span><br>
-            <span>Birthplace: <strong>${escapeHtml(p.city || 'Coordinates Provided')}</strong></span> &bull; 
+            <span>Birthplace: <strong>${escapeHtml(p.city || 'Coordinates Provided')}</strong></span> &bull;
             <span>Geo: Lat <strong>${Number(p.lat || 28.61).toFixed(2)}°</strong>, Lon <strong>${Number(p.lon || 77.20).toFixed(2)}°</strong></span>
             ${p.isApproximate ? '<br><span style="color:#D97706; font-size:10.5px;"><i class="fa-solid fa-triangle-exclamation"></i> Approximate/Solar time used</span>' : ''}
           </div>
@@ -14362,10 +14541,10 @@
 
     function triggerReaderPdfDownload() {
       if (!activeReaderDoc) return;
-      const isAllowed = activeReaderDoc.productId === 'report_basic_chart_summary' || 
-                        activeReaderDoc.allowPdfDownload === true || 
+      const isAllowed = activeReaderDoc.productId === 'report_basic_chart_summary' ||
+                        activeReaderDoc.allowPdfDownload === true ||
                         activeReaderDoc.watermark?.isDemo === true ||
-                        Boolean(currentUserEntitlements?.allowsReportPdfDownload) || 
+                        Boolean(currentUserEntitlements?.allowsReportPdfDownload) ||
                         (currentUserSession && currentUserSession.role === 'SUPER_ADMIN');
 
       if (!isAllowed) {
@@ -15459,6 +15638,11 @@
         btn_listen: 'Listen',
         btn_stop: 'Stop',
         btn_recharge: 'Recharge Wallet',
+        tools_cat_numerology: 'Vedic Numerology',
+        tools_numerology_title: 'Vedic Name Correction & Numerology Studio',
+        tools_numerology_desc: 'Harmonize personal & business names with birth vibrations. Precise Moolank, Bhagyank, Chaldean & Pythagorean compound analysis, bounded phonetic spelling corrections, and graphological signature blueprint.',
+        tools_launch_numerology: 'Launch Numerology Studio',
+        num_moolank: 'Moolank (Psychic Number)',
         lang_switch_label: 'हिंदी'
       },
       hi: {
@@ -15482,6 +15666,11 @@
         btn_listen: 'आवाज में सुनें',
         btn_stop: 'रोकें',
         btn_recharge: 'वॉलेट रिचार्ज करें',
+        tools_cat_numerology: 'वैदिक अंकज्योतिष',
+        tools_numerology_title: 'वैदिक नाम सुधार एवं अंकज्योतिष स्टूडियो',
+        tools_numerology_desc: 'जन्म मूलांक व भाग्यांक के साथ नाम का सामंजस्य। चाल्डियन व पाइथागोरियन संयुक्त कंपन विश्लेषण, संतुलित ध्वन्यात्मक नाम सुधार और हस्तलेखन हस्ताक्षर मार्गदर्शन।',
+        tools_launch_numerology: 'अंकज्योतिष स्टूडियो खोलें',
+        num_moolank: 'मूलांक (जन्मांक)',
         lang_switch_label: 'English'
       }
     };
@@ -16680,23 +16869,8 @@
     if (!modal || !content) return;
 
     if (toolType === 'numerology') {
-      content.innerHTML = `
-        <h3 style="font-family:'Cinzel',serif; color:var(--vedic-maroon); margin-bottom:8px;"><i class="fa-solid fa-hashtag"></i> Vedic & Chaldean Numerology Calculator</h3>
-        <p style="font-size:13px; color:#64748B; margin-bottom:20px;">Calculate your Mulank (Psychic Number), Bhagyank (Destiny Number), and Chaldean/Pythagorean Name Numbers.</p>
-        <div style="display:flex; flex-direction:column; gap:14px;">
-          ${currentCalculatedChart ? `<div style="font-size:12px; color:var(--av-color-success); background:var(--av-color-success-bg); padding:6px 10px; border-radius:6px; border:1px solid #A7F3D0;"><i class="fa-solid fa-circle-check"></i> Auto-filled from active chart: <strong>${currentCalculatedChart.name}</strong></div>` : ''}
-          <div>
-            <label class="form-field-label">Full Name</label>
-            <input type="text" id="modal-num-name" class="form-input-text" placeholder="e.g. Anand Sharma" value="${currentCalculatedChart ? currentCalculatedChart.name : 'Anand Sharma'}">
-          </div>
-          <div>
-            <label class="form-field-label">Date of Birth</label>
-            <input type="date" id="modal-num-dob" class="form-input-text" value="${currentCalculatedChart ? currentCalculatedChart.dob : '1995-06-15'}">
-          </div>
-          <button class="tool-launch-btn" onclick="executeNumerologyCalculation()"><i class="fa-solid fa-calculator"></i> Calculate Numbers</button>
-          <div id="modal-num-results" style="margin-top:16px;"></div>
-        </div>
-      `;
+      openNumerologyStudio();
+      return;
     } else if (toolType === 'pancha_pakshi') {
       content.innerHTML = `
         <h3 style="font-family:'Cinzel',serif; color:var(--vedic-maroon); margin-bottom:8px;"><i class="fa-solid fa-crow"></i> Tamil Pancha Pakshi (Five Birds) Biorhythm</h3>
@@ -17044,6 +17218,647 @@
     }
   }
 
+
+    // ==============================================================================
+    // VEDIC NAME CORRECTION & NUMEROLOGY STUDIO WORKSPACE CONTROLLER
+    // ==============================================================================
+    let currentNumerologyReadingText = '';
+
+    function openNumerologyStudio(tab = 'personal') {
+      const modal = document.getElementById('modal-numerology-studio');
+      if (!modal) return;
+
+      const nameInput = document.getElementById('numerology-input-name');
+      const dobInput = document.getElementById('numerology-input-dob');
+      if (nameInput && (!nameInput.value || nameInput.value.trim() === '')) {
+        if (typeof currentCalculatedChart !== 'undefined' && currentCalculatedChart && currentCalculatedChart.name) {
+          nameInput.value = currentCalculatedChart.name.toUpperCase();
+        } else if (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) {
+          nameInput.value = currentUser.displayName.toUpperCase();
+        } else {
+          nameInput.value = 'ARYAN TIWARI';
+        }
+      }
+      if (dobInput && (!dobInput.value || dobInput.value.trim() === '')) {
+        if (typeof currentCalculatedChart !== 'undefined' && currentCalculatedChart && currentCalculatedChart.dob) {
+          dobInput.value = currentCalculatedChart.dob;
+        } else {
+          dobInput.value = '2005-08-20';
+        }
+      }
+
+      switchNumerologyTab(tab);
+      modal.style.display = 'flex';
+    }
+
+    function closeNumerologyStudio() {
+      if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
+        AstroVerseVoiceEngine.stop();
+      }
+      const modal = document.getElementById('modal-numerology-studio');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function switchNumerologyTab(tabName) {
+      const tabs = ['personal', 'business', 'mobile'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`num-tab-btn-${t}`);
+        const pane = document.getElementById(`num-tab-pane-${t}`);
+        if (btn) btn.classList.toggle('active', t === tabName);
+        if (pane) pane.style.display = t === tabName ? 'block' : 'none';
+      });
+    }
+
+    function toggleNumerologyVoiceNarration() {
+      if (!currentNumerologyReadingText) return;
+      const btn = document.getElementById('btn-voice-numerology');
+      const lbl = document.getElementById('btn-voice-numerology-lbl');
+      if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine) {
+        if (AstroVerseVoiceEngine.isSpeaking) {
+          AstroVerseVoiceEngine.stop();
+          if (btn) {
+            btn.innerHTML = `<i class="fa-solid fa-volume-high"></i> <span>${currentLanguage === 'hi' ? 'सुनें' : 'Listen'}</span>`;
+            btn.style.background = 'rgba(217, 119, 6, 0.1)';
+            btn.style.color = '#D97706';
+          }
+        } else {
+          AstroVerseVoiceEngine.speakText(currentNumerologyReadingText, btn, currentLanguage === 'hi' ? 'hi' : 'en');
+          if (btn) {
+            btn.innerHTML = `<i class="fa-solid fa-stop"></i> <span>${currentLanguage === 'hi' ? 'रोकें' : 'Stop'}</span>`;
+            btn.style.background = '#F59E0B';
+            btn.style.color = '#FFFFFF';
+          }
+        }
+      }
+    }
+
+    function applyCorrectionCandidate(proposedName) {
+      const nameInput = document.getElementById('numerology-input-name');
+      if (nameInput) {
+        nameInput.value = proposedName.toUpperCase();
+        executeNumerologyStudio(false);
+      }
+    }
+
+    async function executeNumerologyStudio(isCorrection = false) {
+      const name = (document.getElementById('numerology-input-name')?.value || '').trim();
+      const dob = (document.getElementById('numerology-input-dob')?.value || '').trim();
+      const gender = document.getElementById('numerology-input-gender')?.value || 'all';
+      const nakshatra = document.getElementById('numerology-input-nakshatra')?.value || '';
+      const resBox = document.getElementById('num-personal-results');
+      if (!resBox) return;
+
+      if (!name) {
+        resBox.innerHTML = '<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5;"><i class="fa-solid fa-triangle-exclamation"></i> Please enter a valid name.</div>';
+        return;
+      }
+      if (!dob || dob.length < 10) {
+        resBox.innerHTML = '<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5;"><i class="fa-solid fa-triangle-exclamation"></i> Please enter a valid Date of Birth (YYYY-MM-DD).</div>';
+        return;
+      }
+
+      resBox.innerHTML = `
+        <div style="text-align: center; padding: 32px 16px; color: #64748B;">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; color: #D97706; margin-bottom: 12px;"></i>
+          <div style="font-weight: 700; color: #1E293B;">Computing Vedic &amp; Chaldean Number Harmonics...</div>
+          <div style="font-size: 12px; margin-top: 4px;">Evaluating Moolank, Bhagyank, and 9×9 Planetary Relationship Matrix</div>
+        </div>
+      `;
+
+      const token = localStorage.getItem('astroverse_session_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      let numData = null;
+      let correctionCandidates = null;
+      let upgradePromptRequired = false;
+
+      try {
+        if (isCorrection) {
+          // Attempt to call correct-name endpoint
+          const cRes = await fetch('/api/numerology/correct-name', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ name, birthDate: dob, moonNakshatra: nakshatra, gender })
+          });
+          const cData = await cRes.json();
+          if (cRes.ok && cData.success) {
+            numData = {
+              birthNumber: {
+                value: cData.nativeBaseline.moolank,
+                governingPlanet: cData.nativeBaseline.moolankPlanet,
+                title: 'Moolank (Psychic / Day Root)',
+                titleHi: 'मूलांक (जन्मांक)',
+                archetype: 'The Foundation Element',
+                archetypeHi: 'मूल स्वभाव',
+                qualities: ['Core Vitality', 'Inherent Nature', 'Personal Drive'],
+                qualitiesHi: ['प्राकृतिक स्वभाव', 'मूल ऊर्जा'],
+                element: 'Astro-Numerological'
+              },
+              destinyNumber: {
+                value: cData.nativeBaseline.bhagyank,
+                masterNumber: cData.nativeBaseline.masterNumber,
+                totalCompound: cData.nativeBaseline.totalDateSum,
+                title: 'Bhagyank (Destiny Number)',
+                titleHi: 'भाग्यांक (जीवन पथ अंक)',
+                governingPlanet: cData.nativeBaseline.bhagyankPlanet,
+                archetype: 'The Life Path Vector',
+                archetypeHi: 'कर्म पथ'
+              },
+              nameNumbers: {
+                chaldean: {
+                  naamank: cData.nativeBaseline.baseChaldeanRoot,
+                  compoundTotal: cData.nativeBaseline.baseChaldeanCompound,
+                  governingPlanet: cData.nativeBaseline.baseChaldeanPlanet,
+                  breakdown: [],
+                  isPreferred: [14, 19, 21, 23, 24, 27, 32, 33, 37, 41, 42, 45, 46, 50].includes(cData.nativeBaseline.baseChaldeanCompound),
+                  isChallenging: [12, 16, 18, 26, 28].includes(cData.nativeBaseline.baseChaldeanCompound)
+                },
+                pythagorean: {
+                  naamank: cData.nativeBaseline.baseChaldeanRoot,
+                  compoundTotal: cData.nativeBaseline.baseChaldeanCompound,
+                  breakdown: []
+                }
+              },
+              harmony: cData.nativeBaseline.baseHarmony,
+              signatureGuidance: cData.signatureGuidance
+            };
+            correctionCandidates = cData.candidates;
+          } else {
+            // Need upgrade or fallback to base analyze
+            upgradePromptRequired = true;
+            const aRes = await fetch('/api/numerology/analyze', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ name, birthDate: dob })
+            });
+            numData = await aRes.json();
+          }
+        } else {
+          const aRes = await fetch('/api/numerology/analyze', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ name, birthDate: dob })
+          });
+          numData = await aRes.json();
+        }
+
+        if (!numData || !numData.success) {
+          resBox.innerHTML = `<div style="color: #DC2626; padding: 14px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5;">${numData?.message || 'Numerology calculation failed. Please check inputs.'}</div>`;
+          return;
+        }
+
+        const moolankVal = numData.birthNumber.value;
+        const bhagyankVal = numData.destinyNumber.value;
+        const chaldeanRoot = numData.nameNumbers.chaldean.naamank;
+        const chaldeanComp = numData.nameNumbers.chaldean.compoundTotal;
+        const pythRoot = numData.nameNumbers.pythagorean.naamank;
+        const pythComp = numData.nameNumbers.pythagorean.compoundTotal;
+        const harmonyScore = numData.harmony.score;
+        const harmonyTierEn = numData.harmony.alignmentTierEn || 'Synergy Evaluated';
+        const harmonyTierHi = numData.harmony.alignmentTierHi || 'सामंजस्य मूल्यांकित';
+
+        // Prepare text for neural TTS narration
+        if (currentLanguage === 'hi') {
+          currentNumerologyReadingText = `${name} का मूलांक ${moolankVal} है, जिसके स्वामी ग्रह ${numData.birthNumber.governingPlanetHi || numData.birthNumber.governingPlanet} हैं। आपका भाग्यांक ${bhagyankVal} है, जिसके स्वामी ${numData.destinyNumber.governingPlanetHi || numData.destinyNumber.governingPlanet} हैं। चाल्डियन नामांक ${chaldeanComp} यानी मूल अंक ${chaldeanRoot} है। आपके नाम और जन्म अंकों का सामंजस्य स्कोर ${harmonyScore} प्रतिशत है, जो कि ${harmonyTierHi} दर्शाता है। हस्ताक्षर को बाएं से दाएं पंद्रह से पच्चीस अंश के ऊपर की ओर रखें और नीचे दो बिंदु लगाएं।`;
+        } else {
+          currentNumerologyReadingText = `${name}'s Moolank is ${moolankVal}, governed by ${numData.birthNumber.governingPlanet}. Your Bhagyank is ${bhagyankVal}, governed by ${numData.destinyNumber.governingPlanet}. The Chaldean Name Number is compound ${chaldeanComp}, reducing to root ${chaldeanRoot}. Your overall vibrational harmony score is ${harmonyScore} out of 100, indicating ${harmonyTierEn}. In graphology, maintain an ascending signature slope of plus 15 to plus 25 degrees with two grounding dots.`;
+        }
+
+        // Show listen button in modal header
+        const voiceBtn = document.getElementById('btn-voice-numerology');
+        if (voiceBtn) voiceBtn.style.display = 'inline-flex';
+
+        // Chaldean breakdown chips
+        let chaldeanChipsHtml = '';
+        if (numData.nameNumbers.chaldean.breakdown && numData.nameNumbers.chaldean.breakdown.length > 0) {
+          chaldeanChipsHtml = `
+            <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;">
+              ${numData.nameNumbers.chaldean.breakdown.map((b) => `<span style="background: #FEF3C7; color: #92400E; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; border: 1px solid #FDE68A;">${b.letter}=${b.value}</span>`).join('')}
+            </div>
+          `;
+        }
+
+        // Harmony color
+        const scoreColor = harmonyScore >= 80 ? '#059669' : harmonyScore >= 60 ? '#D97706' : '#DC2626';
+        const scoreBg = harmonyScore >= 80 ? '#D1FAE5' : harmonyScore >= 60 ? '#FEF3C7' : '#FEE2E2';
+
+        // Candidates HTML
+        let candidatesHtml = '';
+        if (correctionCandidates && correctionCandidates.length > 0) {
+          candidatesHtml = `
+            <div style="margin-top: 24px; border-top: 1px solid #E2E8F0; padding-top: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                  <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #059669; background: #D1FAE5; padding: 2px 8px; border-radius: 6px;">AI CORRECTION STUDIO</span>
+                  <h3 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 4px 0 0;">
+                    ${currentLanguage === 'hi' ? 'शुभ नाम सुधार विकल्प (उच्चतम ग्रहीय सामंजस्य)' : 'Auspicious Name Corrections (Maximum Planetary Synergy)'}
+                  </h3>
+                </div>
+                <span style="font-size: 12px; color: #64748B;">Bounded Edit Cost &le; 2</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                ${correctionCandidates.map((c, idx) => `
+                  <div style="background: #FFFFFF; border: 1.5px solid ${c.isPreferredCompound ? '#FCD34D' : '#E2E8F0'}; border-radius: 10px; padding: 14px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+                    ${c.isPreferredCompound ? '<span style="position: absolute; top: 10px; right: 10px; background: #FEF3C7; color: #B45309; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px;"><i class="fa-solid fa-star"></i> PREFERRED</span>' : ''}
+                    <div style="font-size: 15px; font-weight: 800; color: #1E1B4B; letter-spacing: 0.5px;">${c.proposedName}</div>
+                    <div style="font-size: 11.5px; color: #64748B; margin: 2px 0 8px;">${c.transformationNote} (Distance: ${c.editDistance})</div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11.5px; margin-bottom: 10px;">
+                      <span style="background: #F1F5F9; padding: 2px 8px; border-radius: 4px;">Chaldean: <strong>${c.chaldeanCompound} &rarr; ${c.chaldeanRoot}</strong></span>
+                      <span style="background: #ECFDF5; color: #065F46; padding: 2px 8px; border-radius: 4px; font-weight: 700;">Harmony: <strong>${c.harmonyScore}%</strong></span>
+                    </div>
+                    <button class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 11.5px; padding: 5px 10px;" onclick="applyCorrectionCandidate('${c.proposedName}')">
+                      <i class="fa-solid fa-arrow-turn-up"></i> Test &amp; Apply This Spelling
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        // Upgrade prompt HTML if triggered
+        let paywallBannerHtml = '';
+        if (upgradePromptRequired) {
+          paywallBannerHtml = `
+            <div style="margin-top: 20px; background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px solid #FCD34D; border-radius: 12px; padding: 18px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+                <div>
+                  <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #B45309; background: #FEF3C7; padding: 2px 8px; border-radius: 6px; border: 1px solid #FDE68A;">PREMIUM FEATURE</span>
+                  <h4 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 4px 0 2px;">
+                    ${currentLanguage === 'hi' ? 'वैदिक नाम सुधार स्टूडियो अनलॉक करें' : 'Unlock Vedic Name Correction Studio'}
+                  </h4>
+                  <p style="font-size: 12.5px; color: #92400E; margin: 0; max-width: 580px;">
+                    Generate 3–5 bounded auspicious spelling alternatives, complete letter-by-letter sound harmonizers, and personalized signature graphology with Plus (₹149/mo) or Premium (₹299/mo).
+                  </p>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="openPricingPlansModal('PLUS')">
+                    <i class="fa-solid fa-bolt"></i> Upgrade Plan
+                  </button>
+                  <button class="btn-outline-secondary" style="padding: 6px 14px; font-size: 12px; background: #FFFFFF;" onclick="openReportBuilderModal('report_vedic_name_numerology')">
+                    <i class="fa-solid fa-file-invoice"></i> Buy ₹199 Standalone Report
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // Signature guidance graphic & rules
+        const sigData = numData.signatureGuidance || {
+          recommended_slope: '+15° to +25° (Upward Ascending)',
+          guidance_en: {
+            slope: 'Maintain an ascending slant (+15° to +25°) from left to right, symbolizing continuous growth, optimism, and spiritual elevation.',
+            baseline: 'Never allow ending letters to dip below the initial baseline.',
+            underlining: 'Use a single, clean, unbroken underline beneath the name without intersecting descending loops.',
+            dots: 'Place two distinct dots beneath the underline to ground personal authority and enduring prosperity.'
+          },
+          guidance_hi: {
+            slope: 'हस्ताक्षर को बाएं से दाएं ऊपर की ओर (+15° से +25°) रखें, जो निरंतर प्रगति और आशावादिता का प्रतीक है।',
+            baseline: 'हस्ताक्षर के अंतिम अक्षरों को नीचे की ओर न झुकने दें।',
+            underlining: 'हस्ताक्षर के नीचे एक सीधी, अखंड रेखा खींचें जो अक्षरों को न काटे।',
+            dots: 'रेखा के नीचे दो स्पष्ट बिंदु लगाएं जो स्थायित्व, सत्ता और समृद्धि का प्रतीक हैं।'
+          }
+        };
+
+        const sigGuidelines = currentLanguage === 'hi' ? (sigData.guidance_hi || sigData.guidance_en) : sigData.guidance_en;
+
+        resBox.innerHTML = `
+          <!-- Primary Numbers Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <!-- Moolank -->
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; border-top: 4px solid var(--vedic-maroon); box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+              <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">
+                ${currentLanguage === 'hi' ? 'मूलांक (जन्मांक)' : 'Moolank (Psychic Number)'}
+              </span>
+              <div style="font-size: 32px; font-weight: 900; color: var(--vedic-maroon); line-height: 1.1; margin: 4px 0;">
+                ${moolankVal}
+              </div>
+              <div style="font-size: 12px; font-weight: 700; color: #1E293B;">
+                ${numData.birthNumber.governingPlanet}
+              </div>
+              <div style="font-size: 11px; color: #64748B; margin-top: 4px;">
+                ${currentLanguage === 'hi' ? numData.birthNumber.archetypeHi || numData.birthNumber.archetype : numData.birthNumber.archetype}
+              </div>
+            </div>
+
+            <!-- Bhagyank -->
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; border-top: 4px solid var(--saffron-orange); box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">
+                  ${currentLanguage === 'hi' ? 'भाग्यांक (जीवन पथ)' : 'Bhagyank (Destiny Number)'}
+                </span>
+                ${numData.destinyNumber.masterNumber ? `<span style="font-size: 10px; background: #FEF3C7; color: #B45309; font-weight: 800; padding: 1px 6px; border-radius: 4px;">MASTER ${numData.destinyNumber.masterNumber}</span>` : ''}
+              </div>
+              <div style="font-size: 32px; font-weight: 900; color: var(--saffron-orange); line-height: 1.1; margin: 4px 0;">
+                ${bhagyankVal}
+              </div>
+              <div style="font-size: 12px; font-weight: 700; color: #1E293B;">
+                ${numData.destinyNumber.governingPlanet}
+              </div>
+              <div style="font-size: 11px; color: #64748B; margin-top: 4px;">
+                Sum: ${numData.destinyNumber.totalCompound || dob.replace(/\D/g, '').split('').map(Number).reduce((a, b) => a + b, 0)} &rarr; ${bhagyankVal}
+              </div>
+            </div>
+
+            <!-- Chaldean Naamank -->
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; border-top: 4px solid #D97706; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">Chaldean Naamank</span>
+                ${numData.nameNumbers.chaldean.isPreferred ? '<span style="font-size: 10px; background: #D1FAE5; color: #065F46; font-weight: 800; padding: 1px 6px; border-radius: 4px;">AUSPICIOUS</span>' : ''}
+              </div>
+              <div style="font-size: 32px; font-weight: 900; color: #D97706; line-height: 1.1; margin: 4px 0;">
+                ${chaldeanRoot} <span style="font-size: 14px; font-weight: 600; color: #64748B;">(${chaldeanComp})</span>
+              </div>
+              <div style="font-size: 12px; font-weight: 700; color: #1E293B;">
+                ${numData.nameNumbers.chaldean.governingPlanet || 'Chaldean Vibration'}
+              </div>
+              ${chaldeanChipsHtml}
+            </div>
+
+            <!-- Pythagorean Naamank -->
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; border-top: 4px solid #7C3AED; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+              <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">Pythagorean Naamank</span>
+              <div style="font-size: 32px; font-weight: 900; color: #7C3AED; line-height: 1.1; margin: 4px 0;">
+                ${pythRoot} <span style="font-size: 14px; font-weight: 600; color: #64748B;">(${pythComp})</span>
+              </div>
+              <div style="font-size: 12px; font-weight: 700; color: #1E293B;">
+                Cycle 1–9 Harmonic
+              </div>
+              <div style="font-size: 11px; color: #64748B; margin-top: 4px;">
+                Western Comparative Root
+              </div>
+            </div>
+          </div>
+
+          <!-- Harmony Gauge & Planetary Breakdown -->
+          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #D97706;">WEIGHTED HARMONY FORMULA</span>
+                <h3 style="font-size: 17px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
+                  ${currentLanguage === 'hi' ? 'ग्रहीय सामंजस्य एवं कंपन सूचकांक' : 'Planetary Vibrational Harmony Score'}
+                </h3>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 26px; font-weight: 900; color: ${scoreColor}; background: ${scoreBg}; padding: 4px 14px; border-radius: 12px; border: 1.5px solid ${scoreColor};">
+                  ${harmonyScore}%
+                </span>
+                <span style="font-size: 13px; font-weight: 700; color: #1E293B;">${currentLanguage === 'hi' ? harmonyTierHi : harmonyTierEn}</span>
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div style="background: #E2E8F0; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 16px;">
+              <div style="background: ${scoreColor}; width: ${harmonyScore}%; height: 100%; border-radius: 5px; transition: width 0.6s ease;"></div>
+            </div>
+
+            <!-- Subcomponent weights -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 12px;">
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px;">
+                <div style="color: #64748B; font-size: 11px; font-weight: 700;">MOOLANK SYNERGY (40%)</div>
+                <div style="font-weight: 800; color: #1E1B4B; margin: 2px 0;">Moolank ${moolankVal} &harr; Naamank ${chaldeanRoot}</div>
+                <div style="color: #059669; font-weight: 700;">Relation: ${numData.harmony.components?.moolank_compatibility?.relationship || numData.harmony.moolankRel || 'Harmonized'}</div>
+              </div>
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px;">
+                <div style="color: #64748B; font-size: 11px; font-weight: 700;">BHAGYANK SYNERGY (40%)</div>
+                <div style="font-weight: 800; color: #1E1B4B; margin: 2px 0;">Bhagyank ${bhagyankVal} &harr; Naamank ${chaldeanRoot}</div>
+                <div style="color: #059669; font-weight: 700;">Relation: ${numData.harmony.components?.bhagyank_compatibility?.relationship || numData.harmony.bhagyankRel || 'Harmonized'}</div>
+              </div>
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px;">
+                <div style="color: #64748B; font-size: 11px; font-weight: 700;">COMPOUND VIBRATION (20%)</div>
+                <div style="font-weight: 800; color: #1E1B4B; margin: 2px 0;">Chaldean Total: ${chaldeanComp}</div>
+                <div style="color: #D97706; font-weight: 700;">${numData.nameNumbers.chaldean.isPreferred ? 'Preferred Auspicious' : numData.nameNumbers.chaldean.isChallenging ? 'Challenging (Correction Needed)' : 'Neutral Occult Number'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Candidates Section (If Generated) -->
+          ${candidatesHtml}
+
+          <!-- Paywall / Upgrade Banner (If Free or Prompt Required) -->
+          ${paywallBannerHtml}
+
+          <!-- Signature Guidance Blueprint -->
+          <div style="margin-top: 24px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #D97706;">VEDIC GRAPHOLOGY BLUEPRINT</span>
+                <h3 style="font-size: 17px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
+                  ${currentLanguage === 'hi' ? 'हस्ताक्षर एवं हस्तलेखन मार्गदर्शन खाका' : 'Auspicious Signature Alignment Blueprint'}
+                </h3>
+              </div>
+              <span style="font-size: 12px; font-weight: 700; color: #059669; background: #D1FAE5; padding: 2px 8px; border-radius: 6px;">
+                ${sigData.recommended_slope || '+15° to +25° Ascending'}
+              </span>
+            </div>
+
+            <!-- Visual Graphology Blueprint Box -->
+            <div style="background: #FFFDF8; border: 1.5px dashed #FCD34D; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 16px;">
+              <div style="display: inline-block; transform: rotate(-5deg); text-align: left;">
+                <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 38px; color: #1E1B4B; font-weight: 700; border-bottom: 2.5px solid #D97706; padding-bottom: 4px; display: inline-block; letter-spacing: 1px;">
+                  ${name.split(' ')[0]} ${name.split(' ')[1] ? name.split(' ')[1][0] + '.' : ''}
+                </div>
+                <div style="display: flex; justify-content: center; gap: 8px; margin-top: 4px;">
+                  <span style="width: 6px; height: 6px; background: #D97706; border-radius: 50%;"></span>
+                  <span style="width: 6px; height: 6px; background: #D97706; border-radius: 50%;"></span>
+                </div>
+              </div>
+              <div style="font-size: 11px; color: #64748B; margin-top: 12px;">
+                <i class="fa-solid fa-arrow-trend-up" style="color: #059669;"></i> +15&deg; to +25&deg; Upward Ascending Slope &bull; Unbroken Solid Underline &bull; 2 Grounding Dots
+              </div>
+            </div>
+
+            <!-- Rules Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; font-size: 12.5px;">
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;">
+                <strong style="color: #1E1B4B; display: block; margin-bottom: 2px;"><i class="fa-solid fa-arrow-up-right-dots" style="color: #D97706;"></i> Ascending Baseline</strong>
+                <span style="color: #475569;">${sigGuidelines.slope || 'Ascending slope maintains optimism and prevents energy dips.'}</span>
+              </div>
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;">
+                <strong style="color: #1E1B4B; display: block; margin-bottom: 2px;"><i class="fa-solid fa-underline" style="color: #D97706;"></i> Solid Underline</strong>
+                <span style="color: #475569;">${sigGuidelines.underlining || 'Single unbroken straight underline grounds personal stability without cutting loops.'}</span>
+              </div>
+              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;">
+                <strong style="color: #1E1B4B; display: block; margin-bottom: 2px;"><i class="fa-solid fa-ellipsis" style="color: #D97706;"></i> Grounding Dots</strong>
+                <span style="color: #475569;">${sigGuidelines.dots || 'Two dots anchor worldly authority, focus, and enduring wealth.'}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Standalone Report CTA Banner -->
+          <div style="margin-top: 24px; background: linear-gradient(135deg, #1E1B4B 0%, #4C0519 100%); color: #FFFFFF; border-radius: 12px; padding: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <div>
+              <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #FCD34D; background: rgba(252, 211, 77, 0.15); padding: 2px 8px; border-radius: 6px;">15-CHAPTER PUBLICATION</span>
+              <h3 style="font-size: 18px; font-weight: 800; margin: 4px 0 4px; color: #FFFFFF;">
+                Vedic Name Correction &amp; Numerology Master Blueprint
+              </h3>
+              <p style="font-size: 12.5px; color: #CBD5E1; margin: 0; max-width: 580px;">
+                Get a comprehensive 20+ page personalized publication covering complete Moolank, Bhagyank, compound occult meanings, 5 custom name corrections, and graphology blueprint. Available inside private reader and high-resolution PDF.
+              </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px; font-weight: 900; color: #FCD34D;">₹199</span>
+              <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px;" onclick="closeNumerologyStudio(); openReportBuilderModal('report_vedic_name_numerology')">
+                <i class="fa-solid fa-book-open"></i> Customize &amp; Buy Report
+              </button>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        resBox.innerHTML = `<div style="color: #DC2626; padding: 14px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5;">Error computing numerology: ${err.message}</div>`;
+      }
+    }
+
+    async function executeBusinessNumerology() {
+      const name = (document.getElementById('num-business-name')?.value || '').trim();
+      const industry = document.getElementById('num-business-industry')?.value || 'General Commerce';
+      const founderDob = (document.getElementById('num-business-founder-dob')?.value || '').trim();
+      const resBox = document.getElementById('num-business-results');
+      if (!resBox) return;
+
+      if (!name) {
+        resBox.innerHTML = '<div style="color: #DC2626; padding: 10px; background: #FEF2F2; border-radius: 8px;">Please enter a business or brand name.</div>';
+        return;
+      }
+
+      resBox.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Analyzing Commercial Vibrations...</div>';
+
+      try {
+        const token = localStorage.getItem('astroverse_session_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('/api/numerology/analyze', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name,
+            birthDate: founderDob || '2000-01-01',
+            analysisTarget: 'business_name'
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          resBox.innerHTML = `<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 8px;">${data.message || 'Analysis failed'}</div>`;
+          return;
+        }
+
+        const chaldeanComp = data.nameNumbers.chaldean.compoundTotal;
+        const chaldeanRoot = data.nameNumbers.chaldean.naamank;
+        const planet = data.nameNumbers.chaldean.governingPlanet;
+        const isPref = data.nameNumbers.chaldean.isPreferred;
+
+        resBox.innerHTML = `
+          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+              <div>
+                <span style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase;">COMMERCIAL VIBRATION</span>
+                <h4 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">${data.originalName}</h4>
+              </div>
+              <span style="font-size: 12px; font-weight: 700; background: ${isPref ? '#D1FAE5' : '#FEF3C7'}; color: ${isPref ? '#065F46' : '#92400E'}; padding: 3px 10px; border-radius: 12px;">
+                ${isPref ? 'Preferred Commercial Compound' : 'Standard Vibration'}
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px;">
+              <div style="background: #F8FAFC; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                <span style="font-size: 11px; color: #64748B; font-weight: 700;">CHALDEAN COMPOUND</span>
+                <div style="font-size: 22px; font-weight: 900; color: #D97706;">${chaldeanComp} &rarr; ${chaldeanRoot}</div>
+              </div>
+              <div style="background: #F8FAFC; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                <span style="font-size: 11px; color: #64748B; font-weight: 700;">GOVERNING DEITY / PLANET</span>
+                <div style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin-top: 4px;">${planet}</div>
+              </div>
+              <div style="background: #F8FAFC; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                <span style="font-size: 11px; color: #64748B; font-weight: 700;">TARGET DOMAIN</span>
+                <div style="font-size: 13px; font-weight: 700; color: #1E1B4B; margin-top: 4px;">${industry}</div>
+              </div>
+            </div>
+
+            ${founderDob ? `
+              <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 12px; font-size: 12.5px; color: #166534;">
+                <i class="fa-solid fa-circle-check"></i> <strong>Founder Synergy:</strong> Evaluated with birth date <code>${founderDob}</code>. Harmony Score: <strong>${data.harmony?.score || 82}%</strong> (${data.harmony?.alignmentTierEn || 'Favorable'}).
+              </div>
+            ` : ''}
+          </div>
+        `;
+      } catch (err) {
+        resBox.innerHTML = `<div style="color: #DC2626; padding: 10px;">Analysis error: ${err.message}</div>`;
+      }
+    }
+
+    async function executeMobileNumerology() {
+      const phone = (document.getElementById('num-mobile-input')?.value || '').trim();
+      const resBox = document.getElementById('num-mobile-results');
+      if (!resBox) return;
+
+      if (!phone) {
+        resBox.innerHTML = '<div style="color: #DC2626; padding: 10px; background: #FEF2F2; border-radius: 8px;">Please enter a valid phone number.</div>';
+        return;
+      }
+
+      resBox.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Evaluating Telecom Vibrations...</div>';
+
+      try {
+        const token = localStorage.getItem('astroverse_session_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('/api/numerology/analyze', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: 'Mobile Phone',
+            birthDate: '2000-01-01',
+            analysisTarget: 'mobile_number',
+            phoneNumber: phone
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          resBox.innerHTML = `<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 8px;">${data.message || 'Mobile analysis failed'}</div>`;
+          return;
+        }
+
+        resBox.innerHTML = `
+          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div>
+                <span style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase;">TELECOM RESONANCE</span>
+                <h4 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">Masked: ${data.sanitizedDisplay}</h4>
+              </div>
+              <span style="font-size: 12px; font-weight: 700; background: #D1FAE5; color: #065F46; padding: 3px 10px; border-radius: 12px;">
+                Digit Count: ${data.digitCount}
+              </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px;">
+              <div style="background: #F8FAFC; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                <span style="font-size: 11px; color: #64748B; font-weight: 700;">COMPOUND DIGIT SUM</span>
+                <div style="font-size: 22px; font-weight: 900; color: #D97706;">${data.compoundTotal} &rarr; ${data.reducedNumber}</div>
+              </div>
+              <div style="background: #F8FAFC; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                <span style="font-size: 11px; color: #64748B; font-weight: 700;">GOVERNING PLANET</span>
+                <div style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin-top: 4px;">${data.governingPlanetEn}</div>
+              </div>
+              <div style="background: #F8FAFC; padding: 10px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                <span style="font-size: 11px; color: #64748B; font-weight: 700;">FAVORABLE COLORS</span>
+                <div style="font-size: 12px; font-weight: 700; color: #1E1B4B; margin-top: 4px;">${(data.luckyColorsEn || []).join(', ')}</div>
+              </div>
+            </div>
+
+            <div style="font-size: 11.5px; color: #64748B; border-top: 1px solid #E2E8F0; padding-top: 8px;">
+              <i class="fa-solid fa-lock" style="color: #059669;"></i> Zero personal records persisted. Ephemeral evaluation strictly compliant with AstroVerse data protection standards.
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        resBox.innerHTML = `<div style="color: #DC2626; padding: 10px;">Analysis error: ${err.message}</div>`;
+      }
+    }
 
     // ==============================================================================
     // KUNDLI WORKSPACE SUBNAVIGATION & TAB CONTROLLER

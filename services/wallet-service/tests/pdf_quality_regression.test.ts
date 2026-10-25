@@ -237,11 +237,11 @@ async function runPdfQualityRegressionSuite() {
 
   try {
     // ===============================================================
-    // TEST 1: All 9 Products Generate Real Pages Without Blank Pages
+    // TEST 1: All 10 Products Generate Real Pages Without Blank Pages
     // ===============================================================
-    await test('Requirement 1 & 2: All 9 products generate valid physical pages with zero blank pages', async () => {
+    await test('Requirement 1 & 2: All 10 products generate valid physical pages with zero blank pages', async () => {
       const allProductIds = Object.keys(REPORT_CATALOGUE);
-      assert.strictEqual(allProductIds.length, 9, 'All 9 catalogue products must exist');
+      assert.strictEqual(allProductIds.length, 10, 'All 10 catalogue products must exist');
 
       for (const pid of allProductIds) {
         const doc = await ReportDocumentGenerator.generateReport(

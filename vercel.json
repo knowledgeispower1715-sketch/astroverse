@@ -45,6 +45,12 @@
       }
     },
     {
+      "source": "/api/numerology/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/profiles(.*)",
       "destination": {
         "service": "wallet-service"

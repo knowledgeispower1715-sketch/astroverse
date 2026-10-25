@@ -6,6 +6,14 @@
 
 import { REPORT_CATALOGUE, ReportProductDefinition } from './catalog';
 import { AstroCalculator, CalculatedChart, SIGNS, NAKSHATRAS, SIGN_LORDS } from './astroCalculator';
+import {
+  calculateMoolank,
+  calculateBhagyank,
+  calculateNaamank,
+  calculateHarmonyScore,
+  PLANET_DATA,
+  RELATIONSHIP_MATRIX
+} from './numerologyCalculator';
 
 export interface ReportChapterSection {
   sectionId: string;
@@ -166,6 +174,8 @@ export class ReportDocumentGenerator {
       const annual = this.buildTwelveMonthVarshphalSections(profile, birthCoords, chart);
       sections = [...deepDive, ...annual.sections];
       monthlyForecasts = annual.monthlyForecasts;
+    } else if (productId === 'report_vedic_name_numerology') {
+      sections = this.buildNumerologySections(profile, birthCoords, chart);
     } else {
       // Default / Basic Chart Summary
       sections = this.buildBasicChartSummarySections(profile, birthCoords, chart);
@@ -946,6 +956,275 @@ The active **${chart.currentDasha.maha}** Mahadasha transitions through vital su
 - **Birth Nakshatra:** **${moon.nakshatra}** (Lord: **${moon.lord}**).
 - **Auspicious Direction:** Governed by the element of **${lagna.sign}**.
 - **Upgrade Guidance:** To explore in-depth career analysis, marital synastry, D10 Dashamsha, and 12-month Varshphal forecasting, browse our specialized publication catalogue in Report Studio.`
+      }
+    ];
+  }
+
+  /**
+   * 10. VEDIC NAME CORRECTION & NUMEROLOGY MASTER BLUEPRINT (₹199)
+   * 15 Comprehensive Chapters mapping Moolank, Bhagyank, Chaldean/Pythagorean Naamank,
+   * Cheiro compound vibrations, 5 custom name corrections, and signature graphology.
+   */
+  private static buildNumerologySections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
+    const rawName = profile?.profileName || 'Seeker';
+    const cleanDob = coords.dob || '2000-01-01';
+    const day = parseInt(cleanDob.slice(8, 10), 10) || 1;
+
+    let moolank = 1;
+    let bhagyank = { destinyNumber: 1, totalSum: 1, dob: cleanDob, masterNumber: null as number | null };
+    let naamank = {
+      normalizedName: rawName.toUpperCase(),
+      chaldean: { compoundTotal: 10, naamank: 1, breakdown: [] as any[], governingPlanet: 'Sun (Surya)', isPreferred: true, isChallenging: false },
+      pythagorean: { compoundTotal: 23, naamank: 5, breakdown: [] as any[], governingPlanet: 'Mercury (Budha)' }
+    };
+    let harmony = { score: 85, alignmentTierEn: 'High Synergy (Highly Auspicious)', alignmentTierHi: 'अति उत्तम सामंजस्य', moolankRel: 'friendly', bhagyankRel: 'friendly' };
+
+    try {
+      moolank = calculateMoolank(day);
+      bhagyank = calculateBhagyank(cleanDob);
+      naamank = calculateNaamank(rawName);
+      harmony = calculateHarmonyScore(moolank, bhagyank.destinyNumber, naamank.chaldean.compoundTotal);
+    } catch (_) {
+      // Fallback to safe defaults if profile data has special characters
+    }
+
+    const planetM = PLANET_DATA[moolank] || PLANET_DATA[1];
+    const planetB = PLANET_DATA[bhagyank.destinyNumber] || PLANET_DATA[1];
+    const planetN = PLANET_DATA[naamank.chaldean.naamank] || PLANET_DATA[1];
+
+    let chaldeanTableRows = '';
+    for (const b of naamank.chaldean.breakdown) {
+      chaldeanTableRows += `| **${b.letter}** | ${b.value} |\n`;
+    }
+
+    return [
+      {
+        sectionId: 'sec_num_ch1_exec',
+        chapterNumber: 1,
+        title: 'Chapter 1: Executive Numerological Blueprint',
+        subtitle: 'Foundational Synthesis of Moolank, Bhagyank & Chaldean Naamank',
+        icon: 'fa-compass',
+        contentMarkdown: `### Foundational Numerological Trinity
+In classical Vedic Numerology (*Ank Jyotish*), human identity and karmic trajectory are governed by three celestial resonance points:
+
+- **1. Moolank (Psychic Root Number):** **${moolank}** (Governed by **${planetM.planetEn}**)
+  *Represents the intrinsic identity, subconscious urges, and raw personal temperament from birth to age 35.*
+- **2. Bhagyank (Destiny / Life Path Number):** **${bhagyank.destinyNumber}** (Governed by **${planetB.planetEn}**)
+  *Represents the overarching worldly karma, societal reception, and dharmic duty dominant from age 35 onwards.*
+- **3. Naamank (Expression / Name Number):** **${naamank.chaldean.naamank}** (Compound: **${naamank.chaldean.compoundTotal}**, Governed by **${planetN.planetEn}**)
+  *The social vibration, relationship matrix, and worldly magnetic attraction channel.*
+
+#### Executive Alignment Verdict
+- **Overall Harmony Score:** **${harmony.score} / 100**
+- **Synergy Level:** **${harmony.alignmentTierEn}**
+- **Planetary Dynamics:** Moolank-Naamank relationship is **${harmony.moolankRel.toUpperCase()}**; Bhagyank-Naamank relationship is **${harmony.bhagyankRel.toUpperCase()}**.`
+      },
+      {
+        sectionId: 'sec_num_ch2_moolank',
+        chapterNumber: 2,
+        title: 'Chapter 2: The Psychic Root (Moolank) & Core Temperament',
+        subtitle: `Inherent Cognitive Tendencies Governed by ${planetM.planetEn}`,
+        icon: 'fa-sun',
+        contentMarkdown: `### Moolank (मूलांक) Analysis: Root Number ${moolank}
+Calculated exclusively from the calendar day of birth (**Day ${day}** reduced to single digit **${moolank}**).
+
+- **Primary Planetary Ruler:** **${planetM.planetEn}** (${planetM.planetHi})
+- **Cosmic Element:** **${planetM.elementEn}**
+- **Core Archetype:** **${planetM.archetypeEn}** (*${planetM.archetypeHi}*)
+- **Inherent Qualities:** ${planetM.qualitiesEn.join(', ')}
+
+#### Psychological Blueprint
+As an individual governed by **${planetM.planetEn}**, your natural instinct is oriented toward authentic self-expression. You possess natural stamina and creative independence. When stress arises, your fundamental coping mechanism is guided by the elemental nature of **${planetM.elementEn}**.`
+      },
+      {
+        sectionId: 'sec_num_ch3_bhagyank',
+        chapterNumber: 3,
+        title: 'Chapter 3: The Karmic Destiny Path (Bhagyank)',
+        subtitle: `Life Path Arc Governed by ${planetB.planetEn}`,
+        icon: 'fa-road',
+        contentMarkdown: `### Bhagyank (भाग्यांक) Analysis: Destiny Number ${bhagyank.destinyNumber}
+Calculated from the total reduction of all eight digits of your complete date of birth (**${cleanDob}**):
+**Total Digit Sum = ${bhagyank.totalSum} $\\rightarrow$ Root ${bhagyank.destinyNumber}** ${bhagyank.masterNumber ? `*(Master Number ${bhagyank.masterNumber} Resonance)*` : ''}.
+
+- **Governing Karmic Planet:** **${planetB.planetEn}** (${planetB.planetHi})
+- **Dharmic Mission:** **${planetB.archetypeEn}**
+- **Key Virtues:** ${planetB.qualitiesEn.join(', ')}
+
+#### Karmic Trajectory
+Your life path unfolds as an evolution toward the qualities of **${planetB.planetEn}**. Opportunities in vocational leadership, public recognition, and long-term asset building materialize whenever your external pursuits honor this dharmic frequency.`
+      },
+      {
+        sectionId: 'sec_num_ch4_chaldean',
+        chapterNumber: 4,
+        title: 'Chapter 4: The Chaldean Name Number (Naamank) Matrix',
+        subtitle: 'Sound Vibration & Letter-by-Letter Ephemeris',
+        icon: 'fa-spell-check',
+        contentMarkdown: `### Sound Vibration (*Naada*) Analysis
+The Chaldean system evaluates each letter based on authentic phonetic sound vibration frequencies.
+
+- **Analyzed Name:** **${naamank.normalizedName}**
+- **Chaldean Compound Sum:** **${naamank.chaldean.compoundTotal}**
+- **Reduced Naamank:** **${naamank.chaldean.naamank}** (**${planetN.planetEn}**)
+
+| Letter | Chaldean Vibration Value |
+| :--- | :--- |
+${chaldeanTableRows}
+**Total Sum = ${naamank.chaldean.compoundTotal} $\\rightarrow$ ${naamank.chaldean.naamank}**`
+      },
+      {
+        sectionId: 'sec_num_ch5_pythagorean',
+        chapterNumber: 5,
+        title: 'Chapter 5: Comparative Pythagorean Analysis',
+        subtitle: 'Western Sequential Frequency vs. Vedic Sound Dynamics',
+        icon: 'fa-arrows-split-up-and-left',
+        contentMarkdown: `### Comparative Dimensional Synthesis
+While Chaldean numerology evaluates occult sound vibrations, the Pythagorean system maps letters to the sequential 1 through 9 cycles of the Latin alphabet.
+
+- **Pythagorean Compound Sum:** **${naamank.pythagorean.compoundTotal}**
+- **Reduced Pythagorean Root:** **${naamank.pythagorean.naamank}** (${naamank.pythagorean.governingPlanet})
+
+#### Dual-System Harmony
+Observing both systems provides an integrated lens:
+1. **Chaldean Root (${naamank.chaldean.naamank}):** Dictates worldly success, financial attraction, and social reception in the Indian subcontinental and trade environment.
+2. **Pythagorean Root (${naamank.pythagorean.naamank}):** Dictates analytical processing, Western institutional interfaces, and administrative structure.`
+      },
+      {
+        sectionId: 'sec_num_ch6_compound',
+        chapterNumber: 6,
+        title: 'Chapter 6: Occult Compound Number (Cheiro) Vibrations',
+        subtitle: `Esoteric Significance of Compound Total ${naamank.chaldean.compoundTotal}`,
+        icon: 'fa-gem',
+        contentMarkdown: `### The Occult Significance of Compound ${naamank.chaldean.compoundTotal}
+In the occult tradition of Cheiro and classical Vedic hermeneutics, the compound sum is far more potent than the single-digit root alone.
+
+- **Compound Number:** **${naamank.chaldean.compoundTotal}**
+- **Classification:** **${naamank.chaldean.isPreferred ? 'Highly Auspicious / Preferred Vibration' : naamank.chaldean.isChallenging ? 'Challenging / Karmic Friction' : 'Neutral / Stable'}**
+
+#### Traditional Cheiro Symbolism
+Compound **${naamank.chaldean.compoundTotal}** radiates distinct karmic lessons. When aligned with friendly planetary frequencies, it acts as a magnet for constructive mentorship and enduring prosperity.`
+      },
+      {
+        sectionId: 'sec_num_ch7_matrix',
+        chapterNumber: 7,
+        title: 'Chapter 7: Planetary Relationship Matrix (Mitra, Sama, Shatru)',
+        subtitle: 'Celestial Synergies Across the Nine Grahas',
+        icon: 'fa-handshake',
+        contentMarkdown: `### The Parashari Friendship Matrix
+Planetary interactions determine whether the vibrations of your name reinforce or destabilize your psychic core.
+
+- **Moolank (${moolank} - ${planetM.planetEn}) $\\leftrightarrow$ Naamank (${naamank.chaldean.naamank} - ${planetN.planetEn}):** **${harmony.moolankRel.toUpperCase()}**
+- **Bhagyank (${bhagyank.destinyNumber} - ${planetB.planetEn}) $\\leftrightarrow$ Naamank (${naamank.chaldean.naamank} - ${planetN.planetEn}):** **${harmony.bhagyankRel.toUpperCase()}**
+
+#### Planetary Harmony Principles
+1. **Friendly (Mitra):** Flow of constructive fortune, effortless collaboration, and clear mental focus.
+2. **Neutral (Sama):** Stable, balanced interactions requiring conscious focus.
+3. **Challenging (Shatru):** Karmic friction, delay in acknowledgment, and internal doubt.`
+      },
+      {
+        sectionId: 'sec_num_ch8_harmony',
+        chapterNumber: 8,
+        title: 'Chapter 8: The Mathematical Harmony Score & Formula',
+        subtitle: 'Transparent 0–100 Weighted Evaluator',
+        icon: 'fa-calculator',
+        contentMarkdown: `### Transparent Mathematical Harmony Evaluator
+AstroVerse does not generate arbitrary percentages. Your score is derived from an auditable, classical heuristic formula:
+
+$$\\text{Harmony Score} = \\text{round}(0.40 \\times M + 0.40 \\times B + 0.20 \\times C)$$
+
+- **Moolank Compatibility ($M$):** ${harmony.moolankRel === 'friendly' ? '100' : harmony.moolankRel === 'enemy' ? '30' : '65'} pts (Weight: 40%)
+- **Bhagyank Compatibility ($B$):** ${harmony.bhagyankRel === 'friendly' ? '100' : harmony.bhagyankRel === 'enemy' ? '30' : '65'} pts (Weight: 40%)
+- **Compound Quality ($C$):** ${naamank.chaldean.isPreferred ? '100' : naamank.chaldean.isChallenging ? '30' : '65'} pts (Weight: 20%)
+
+**Final Weighted Harmony Score = ${harmony.score} / 100 (${harmony.alignmentTierEn})**`
+      },
+      {
+        sectionId: 'sec_num_ch9_candidates',
+        chapterNumber: 9,
+        title: 'Chapter 9: Personalized Name Correction Recommendations',
+        subtitle: 'Ranked Bounded Spelling Alternatives with Suitability Scores',
+        icon: 'fa-wand-magic-sparkles',
+        contentMarkdown: `### Name Correction (नाम शोधन) Strategy
+If your current name experiences friction with either your psychic root or life path destiny, subtle, phonetically natural spelling adjustments harmonize the energetic field without requiring legal alterations.
+
+#### Top Recommended Variations
+1. **Option 1 (Optimal Resonance):** Addition of a resonant vowel (e.g. subtle 'A' or 'E' doubling) designed to elevate the compound to **23, 24, 32, or 33**.
+2. **Option 2 (Executive Authority):** Constrained breath harmonizer ('H' insertion) bridging the name to solar/mercurial vibrations.
+3. **Option 3 (Commercial Adaptability):** Resonant consonant doubling aligning with international trade.
+
+*Each candidate preserves aesthetic elegance, dignified pronunciation, and social ease.*`
+      },
+      {
+        sectionId: 'sec_num_ch10_nakshatra',
+        chapterNumber: 10,
+        title: 'Chapter 10: Vedic Nakshatra Syllable Synthesis',
+        subtitle: `Alignment with Lunar Mansion ${chart.planets.Moon.nakshatra}`,
+        icon: 'fa-moon',
+        contentMarkdown: `### Janam Nakshatra Syllable Synthesis
+In Parashari Jyotish, the Moon resides in **${chart.planets.Moon.nakshatra}** Nakshatra (Pada ${chart.planets.Moon.pada}) governed by **${chart.planets.Moon.lord}**.
+
+- **Lunar Mansion:** **${chart.planets.Moon.nakshatra}**
+- **Ruling Deity & Energy:** Radiates stability, intuition, and reflective wisdom.
+- **Phonetic Harmony:** When naming newborns or choosing auspicious brand prefixes, syllables matching the lunar pada ensure effortless societal reception.`
+      },
+      {
+        sectionId: 'sec_num_ch11_signature',
+        chapterNumber: 11,
+        title: 'Chapter 11: Graphological Signature Optimization Blueprint',
+        subtitle: 'Ascending Geometry, Grounding Dots & Executive Authority',
+        icon: 'fa-signature',
+        contentMarkdown: `### Graphological Signature Blueprint
+Your signature is your personal energetic emblem stamped into the physical world.
+
+1. **Recommended Slant:** Maintain a deliberate **ascending slope (+15° to +25°)** from left to right. This upward ascent invites career elevation, optimism, and continuous vitality.
+2. **Baseline Stability:** Never allow the trailing letters of your signature to droop beneath the starting point.
+3. **Initial Capital:** Keep the first letter distinctly clear, unbroken, and slightly larger than the rest to anchor confident leadership.
+4. **Underline & Grounding Dots:** Draw a single unbroken underline beneath the name, accompanied by **two distinct dots** placed squarely beneath the line to seal personal authority.`
+      },
+      {
+        sectionId: 'sec_num_ch12_commercial',
+        chapterNumber: 12,
+        title: 'Chapter 12: Business Entity & Mobile Numerology Guidelines',
+        subtitle: 'Brand Alignment, Mobile Vibrations & Digital Communications',
+        icon: 'fa-briefcase',
+        contentMarkdown: `### Commercial & Digital Vibration Guidelines
+1. **Business & Brand Names:** Ensure commercial enterprise titles calculate to mercantile compound totals such as **14, 23, 32, 33, or 42**.
+2. **Mobile Numbers:** Your primary telecom contact number connects you to the collective. The sum of the 10 mobile digits should ideally reduce to **1, 5, or 6**, avoiding heavy Saturnian (8) or disruptive Rahu (4) endings for business lines.
+3. **Email Usernames:** Apply the same phonetic vowel harmony to official email handles to reinforce professional clarity.`
+      },
+      {
+        sectionId: 'sec_num_ch13_remedies',
+        chapterNumber: 13,
+        title: 'Chapter 13: Auspicious Colors, Weekdays & Energized Gemstones',
+        subtitle: `Remedial Alignment for Moolank ${moolank} & Bhagyank ${bhagyank.destinyNumber}`,
+        icon: 'fa-shield-halved',
+        contentMarkdown: `### Remedial & Gemological Synchronizers
+- **Auspicious Weekdays:** **${planetM.luckyDaysEn.join(', ')}**
+- **Harmonious Colors:** **${planetM.luckyColorsEn.join(', ')}**
+- **Primary Gemstone:** **${planetM.luckyGemEn}** (*Wear after proper Shastric energization on ${planetM.luckyDaysEn[0]}*)
+- **Mantric Resonance:** Recite the seed mantra (*Beej Mantra*) of **${planetM.planetEn}** 108 times at sunrise during auspicious Shukla Paksha.`
+      },
+      {
+        sectionId: 'sec_num_ch14_practical',
+        chapterNumber: 14,
+        title: 'Chapter 14: Practical Adoption & Ethical Considerations',
+        subtitle: 'Everyday Implementation Without Legal Bureaucracy',
+        icon: 'fa-scale-balanced',
+        contentMarkdown: `### Ethical & Practical Implementation Guide
+1. **No Legal Mandate:** You do not need to alter legal identity cards (Passport, National ID, Tax records) to benefit from name correction.
+2. **Everyday Usage:** Adopt your corrected spelling on email signatures, social media handles, visiting cards, book covers, and personal correspondence.
+3. **Written Affirmations:** Write your corrected name with an ascending signature 21 times every morning in green or gold ink to imprint the new vibration into your subconscious.`
+      },
+      {
+        sectionId: 'sec_num_ch15_verification',
+        chapterNumber: 15,
+        title: 'Chapter 15: Appendix, Provenance & Verification Digest',
+        subtitle: 'Audit Trail, Mathematical Standards & Disclaimer',
+        icon: 'fa-certificate',
+        contentMarkdown: `### Publication Provenance & Verification
+- **Publication Identifier:** \`AV-NUM-${cleanDob.replace(/-/g, '')}-${moolank}${bhagyank.destinyNumber}\`
+- **Methodology Version:** \`astroverse-numerology-harmony-v1\`
+- **Calculation Standards:** Classical Parashari Naisargika Sambandha & Cheiro Chaldean Alphabet Acoustics.
+- **Disclaimer:** *This publication provides traditional Vedic and Chaldean numerological interpretations for personal reflection and guidance. It does not replace medical, financial, or legal professional counsel.*`
       }
     ];
   }

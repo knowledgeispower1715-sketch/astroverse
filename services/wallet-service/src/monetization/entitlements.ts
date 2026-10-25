@@ -28,6 +28,8 @@ export interface UserEntitlementSnapshot {
 export class EntitlementManager {
   // In-memory daily AI usage cache: userId -> { dateStr: string, count: number }
   private static dailyAiUsageMap = new Map<string, { dateStr: string; count: number }>();
+  // Daily numerology usage cache: userId -> { dateStr: string; count: number }
+  private static dailyNumerologyUsageMap = new Map<string, { dateStr: string; count: number }>();
 
   /**
    * Returns current active subscription tier for a user, handling automatic expiration.
@@ -195,5 +197,78 @@ export class EntitlementManager {
     const plan = SUBSCRIPTION_PLANS[tier] || SUBSCRIPTION_PLANS[SubscriptionTier.FREE];
     if (plan.allowedDivisionalCharts.includes('*')) return true;
     return plan.allowedDivisionalCharts.includes(vargaCode.toUpperCase());
+  }
+
+  /**
+   * Consumes one numerology check against plan entitlements and server-side quotas:
+   * - FREE: 1 lifetime preview check per account
+   * - PLUS: 3 checks per day (resets daily UTC)
+   * - PREMIUM: up to 30 checks per day
+   */
+  public static consumeNumerologyCheck(userId: string, tier: SubscriptionTier = SubscriptionTier.FREE): {
+    usedToday: number;
+    totalAllowed: number;
+    remaining: number;
+  } {
+    const todayStr = new Date().toISOString().split('T')[0];
+    let limit = 1;
+    if (tier === SubscriptionTier.PLUS) {
+      limit = 3;
+    } else if (tier === SubscriptionTier.PREMIUM) {
+      limit = 30;
+    }
+
+    let entry = this.dailyNumerologyUsageMap.get(userId);
+    if (!entry || (tier !== SubscriptionTier.FREE && entry.dateStr !== todayStr)) {
+      entry = { dateStr: todayStr, count: 0 };
+    }
+
+    if (entry.count >= limit) {
+      const err: any = new Error(
+        tier === SubscriptionTier.FREE
+          ? 'Free account preview check used. Upgrade to Plus (3 checks/day) or Premium for full Name Correction Studio.'
+          : `Daily limit of ${limit} numerology checks reached for your ${tier} plan.`
+      );
+      err.code = 'NUMEROLOGY_QUOTA_EXCEEDED';
+      err.tier = tier;
+      err.limit = limit;
+      err.upgradeRequired = tier === SubscriptionTier.FREE ? SubscriptionTier.PLUS : SubscriptionTier.PREMIUM;
+      throw err;
+    }
+
+    entry.count += 1;
+    this.dailyNumerologyUsageMap.set(userId, entry);
+
+    return {
+      usedToday: entry.count,
+      totalAllowed: limit,
+      remaining: limit - entry.count
+    };
+  }
+
+  /**
+   * Validates whether the user's tier grants access to the AI Name Correction Studio.
+   */
+  public static assertNameCorrectionAllowed(tier: SubscriptionTier): void {
+    if (tier !== SubscriptionTier.PREMIUM) {
+      const err: any = new Error('AI Vedic Name Correction Studio is exclusively available for AstroVerse Premium members. Upgrade to unlock custom spelling recommendations.');
+      err.code = 'PREMIUM_REQUIRED';
+      err.tier = tier;
+      err.upgradeRequired = SubscriptionTier.PREMIUM;
+      throw err;
+    }
+  }
+
+  /**
+   * Validates whether commercial/mobile analysis is allowed.
+   */
+  public static assertBusinessOrMobileAllowed(tier: SubscriptionTier): void {
+    if (tier === SubscriptionTier.FREE) {
+      const err: any = new Error('Business name and mobile number numerology analysis requires an AstroVerse Plus or Premium subscription.');
+      err.code = 'UPGRADE_REQUIRED';
+      err.tier = tier;
+      err.upgradeRequired = SubscriptionTier.PLUS;
+      throw err;
+    }
   }
 }

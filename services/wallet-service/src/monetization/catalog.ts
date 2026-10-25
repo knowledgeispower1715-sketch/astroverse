@@ -77,6 +77,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlanDefini
       'Moon Sign & Birth Nakshatra',
       'Daily Vedic Panchang & Planetary Horas',
       'Basic Current Vimshottari Mahadasha',
+      'Basic Moolank & Bhagyank Calculator (1 Name Preview)',
       '3 Substantive AI Astrologer questions / day',
       'Free Report Previews & Table of Contents'
     ]
@@ -102,7 +103,8 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlanDefini
       'analyze_doshas_and_remedies',
       'calculate_panchang',
       'calculate_horas_24h',
-      'match_kundli_36_gunas'
+      'match_kundli_36_gunas',
+      'calculate_numerology_full'
     ],
     reportDiscountPercent: 10,
     hasPersonalizedReportReader: true,
@@ -113,6 +115,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlanDefini
       'Expanded Raja & Dhana Yoga Identifications',
       'Dosha Diagnostics (Manglik, Sade Sati, Kaal Sarp)',
       'Ashtakoota 36-Guna Matchmaking',
+      'Full Chaldean & Pythagorean Numerology with 3 Name Checks / day',
       '15 Substantive AI Astrologer questions / day',
       '10% Member Discount on all Individual Reports',
       'Persistent Cloud Consultation History'
@@ -142,6 +145,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlanDefini
       'Muhurta & Tamil Pancha Pakshi Biorhythms',
       'Horary Prashna Tantra with Tajika Aspects',
       'Birth-Time Rectification (BTR) Scanning',
+      'Full Vedic Name Correction Studio, Signature Blueprint & Audio Narration',
       '30 Substantive AI Astrologer questions / day',
       '20% Member Discount on all Individual Reports',
       'Ad-Free Private Online Report Reader with Watermark'
@@ -373,6 +377,46 @@ export const REPORT_CATALOGUE: Record<string, ReportProductDefinition> = {
       { title: 'Part III: Unified Remedial Synthesis', subtitle: 'Harmonized mantras and spiritual practices', icon: 'fa-spa' }
     ],
     disclaimer: 'Combines two authoritative reports into a single unified digital reader publication.'
+  },
+
+  'report_vedic_name_numerology': {
+    productId: 'report_vedic_name_numerology',
+    displayName: 'Vedic Name Correction & Numerology Master Blueprint',
+    shortDescription: 'Exhaustive 15+ page personal numerology blueprint covering Moolank, Bhagyank, Chaldean Naamank, compound vibrations, 5 custom name variations, and signature analysis.',
+    fullDescription: 'The definitive classical Vedic & Chaldean numerological publication. Unveils your psychic root (Moolank), karmic life path (Bhagyank), social expression number (Naamank), occult Cheiro compound vibration, planetary harmony matrix, 5 personalized name correction alternatives with suitability scores, signature graphology, and practical Shastric remedies.',
+    pricePaise: 19900, // ₹199.00
+    priceRupees: 199,
+    requiredProfileInputs: ['birth_profile'],
+    requiredCapabilities: ['numerology_engine'],
+    includedSections: [
+      'numerology_executive_summary',
+      'numerology_moolank_psychic',
+      'numerology_bhagyank_destiny',
+      'numerology_chaldean_breakdown',
+      'numerology_pythagorean_comparison',
+      'numerology_compound_vibrations',
+      'numerology_planetary_relationship_matrix',
+      'numerology_harmony_score_formula',
+      'numerology_name_corrections_candidates',
+      'numerology_nakshatra_syllable_synthesis',
+      'numerology_signature_alignment_blueprint',
+      'numerology_business_mobile_guidance',
+      'numerology_shastric_remedies_gemstones',
+      'numerology_practical_adoption_ethics',
+      'numerology_appendix_verification_digest'
+    ],
+    forecastPeriod: null,
+    supportedLanguages: ['en', 'hi'],
+    onlineReaderOnly: false,
+    sampleOutline: [
+      { title: 'Psychic Root & Destiny Blueprint', subtitle: 'Moolank & Bhagyank analysis', icon: 'fa-compass' },
+      { title: 'Chaldean & Pythagorean Letter Matrix', subtitle: 'Letter-by-letter vibration breakdown', icon: 'fa-spell-check' },
+      { title: 'Occult Compound Vibrations', subtitle: 'Cheiro double-digit power numbers', icon: 'fa-gem' },
+      { title: '5 Bounded Name Correction Candidates', subtitle: 'Ranked spelling alternatives with suitability scores', icon: 'fa-wand-magic-sparkles' },
+      { title: 'Signature Optimization & Graphology', subtitle: 'Ascending slope, underline & grounding dots', icon: 'fa-signature' },
+      { title: 'Shastric Remedies & Auspicious Colors', subtitle: 'Colors, weekdays & energized gemstones', icon: 'fa-shield-halved' }
+    ],
+    disclaimer: 'Numerology interpretations are intended for personal guidance and spiritual reflection. Traditional name variations do not mandate legal name changes.'
   },
 
   'report_basic_chart_summary': {

@@ -43,7 +43,17 @@ from shadbala_and_yogas import (
     calculate_planetary_avasthas,
     calculate_ishta_kashta_phala
 )
-from numerology_engine import calculate_full_numerology
+from numerology_engine import (
+    calculate_full_numerology,
+    calculate_mulank,
+    calculate_bhagyank,
+    calculate_naamank,
+    calculate_harmony_score,
+    generate_name_correction_candidates,
+    get_signature_guidance,
+    analyze_business_name,
+    analyze_mobile_number
+)
 from pancha_pakshi_engine import calculate_pancha_pakshi
 from prashna_engine import evaluate_prashna
 from upagraha_engine import calculate_upagrahas
@@ -381,12 +391,12 @@ def evaluate_timing_endpoint(req: TimingEvaluationRequest):
         t_date_str = clean_target_time.split("T")[0]
         t_d1 = calculate_kundli(clean_target_time, req.target_lat, req.target_lon, req.target_timezone)
         t_panchang = calculate_full_panchang(t_date_str, req.target_lat, req.target_lon, req.target_timezone)
-        
+
         t_moon_sign_idx = SIGNS.index(t_d1["planets"]["Moon"]["sign"])
         t_moon_deg = (t_moon_sign_idx * 30.0) + t_d1["planets"]["Moon"]["degree"]
         t_nak_idx = int(t_moon_deg / (360.0 / 27.0)) % 27
         t_lagna_idx = SIGNS.index(t_d1["lagna"]["sign"])
-        
+
         # Weekday: Sunday=0 ... Saturday=6
         t_dt = datetime.fromisoformat(clean_target_time)
         t_weekday = (t_dt.weekday() + 1) % 7 # Python weekday() Mon=0...Sun=6 -> Sun=0...Sat=6
@@ -868,6 +878,25 @@ class NumerologyRequest(BaseModel):
     name: str = Field(..., description="Full person or entity name")
     dob: str = Field(..., description="ISO 8601 birth date, e.g. '1995-06-15'")
 
+class NumerologyAnalyzeRequest(BaseModel):
+    name: str = Field(..., description="Full person or entity name")
+    birthDate: str = Field(..., description="ISO 8601 birth date, e.g. '2005-08-20'")
+    calculationSpelling: Optional[str] = Field(None, description="Explicit calculation spelling if different")
+    gender: Optional[str] = Field(None, description="Optional gender")
+    moonNakshatra: Optional[str] = Field(None, description="Optional Moon Nakshatra")
+    language: str = Field("en", description="Output language: 'en' or 'hi'")
+    analysisTarget: str = Field("personal_name", description="personal_name, business_name, or mobile_number")
+    phoneNumber: Optional[str] = Field(None, description="Optional phone number for mobile analysis")
+
+class NameCorrectionRequest(BaseModel):
+    name: str = Field(..., description="Full person name")
+    birthDate: str = Field(..., description="ISO 8601 birth date, e.g. '2005-08-20'")
+    calculationSpelling: Optional[str] = Field(None, description="Explicit calculation spelling")
+    gender: Optional[str] = Field(None, description="Optional gender")
+    moonNakshatra: Optional[str] = Field(None, description="Optional Moon Nakshatra")
+    language: str = Field("en", description="Output language: 'en' or 'hi'")
+    candidateCount: int = Field(5, ge=1, le=10, description="Number of candidates to generate (max 10, default 5)")
+
 class PanchaPakshiRequest(BaseModel):
     nakshatra_number: Optional[int] = Field(None, ge=1, le=27, description="Birth nakshatra number (1-27)")
     name: Optional[str] = Field(None, description="Name for phonetic first vowel fallback")
@@ -893,6 +922,84 @@ class BTRRequest(BaseModel):
     step_minutes: int = Field(3, ge=1, le=10, description="Scan step in minutes")
     life_events: List[Dict[str, str]] = Field([], description="List of milestone events e.g. [{'type': 'marriage', 'date': '2020-11-20'}]")
     timezone: str = Field("Asia/Kolkata", description="IANA timezone")
+
+
+@app.post("/api/numerology/analyze")
+@app.post("/api/v1/numerology/analyze")
+def analyze_numerology_endpoint(req: NumerologyAnalyzeRequest):
+    """
+    Public Numerology Analysis API:
+    Calculates Moolank, Bhagyank, Chaldean and Pythagorean Naamank,
+    Compound number interpretation, 9x9 planetary friendship matrix,
+    weighted harmony score, favorable elements, and signature guidance.
+    """
+    try:
+        target_name = (req.calculationSpelling or req.name).strip()
+        if not target_name:
+            raise HTTPException(status_code=400, detail="Name is required and cannot be empty.")
+
+        if req.analysisTarget == "mobile_number":
+            if not req.phoneNumber:
+                raise HTTPException(status_code=400, detail="Phone number is required for mobile_number target.")
+            return analyze_mobile_number(req.phoneNumber)
+        elif req.analysisTarget == "business_name":
+            return analyze_business_name(target_name, owner_dob_iso=req.birthDate)
+        else:
+            base_data = calculate_full_numerology(name=target_name, dob_iso=req.birthDate)
+            moolank = base_data["birth_number"]["value"]
+            c_root = base_data["name_numbers"]["chaldean"]["naamank"]
+            sig_guidance = get_signature_guidance(moolank=moolank, naamank=c_root)
+            base_data["signature_guidance"] = sig_guidance
+            base_data["language"] = req.language
+            return base_data
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Numerology analysis error: {str(e)}")
+
+
+@app.post("/api/numerology/correct-name")
+@app.post("/api/v1/numerology/correct-name")
+def correct_name_endpoint(req: NameCorrectionRequest):
+    """
+    Name Correction Recommendation API:
+    Generates 3 to 5 bounded, realistic, natural spelling alternatives that
+    maximize planetary harmony with Moolank and Bhagyank and hit auspicious
+    Chaldean compound numbers (e.g. 19, 23, 24, 32, 33, 37, 41, 42).
+    """
+    try:
+        target_name = (req.calculationSpelling or req.name).strip()
+        if not target_name:
+            raise HTTPException(status_code=400, detail="Name is required and cannot be empty.")
+
+        candidates = generate_name_correction_candidates(
+            full_name=target_name,
+            dob_iso=req.birthDate,
+            target_count=min(max(req.candidateCount, 1), 10),
+            moon_nakshatra=req.moonNakshatra,
+            gender=req.gender
+        )
+
+        base_data = calculate_full_numerology(name=target_name, dob_iso=req.birthDate)
+
+        return {
+            "original_name": req.name,
+            "calculation_spelling": target_name,
+            "birth_date": req.birthDate,
+            "baseline_moolank": base_data["birth_number"]["value"],
+            "baseline_bhagyank": base_data["destiny_number"]["value"],
+            "baseline_chaldean_compound": base_data["name_numbers"]["chaldean"]["compound_total"],
+            "baseline_harmony_score": base_data["harmony"]["score"],
+            "baseline_alignment_tier_en": base_data["harmony"]["alignment_tier_en"],
+            "baseline_alignment_tier_hi": base_data["harmony"]["alignment_tier_hi"],
+            "candidates_count": len(candidates),
+            "candidates": candidates,
+            "language": req.language
+        }
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Name correction error: {str(e)}")
 
 
 @app.post("/api/v1/astrology/numerology")
