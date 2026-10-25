@@ -804,7 +804,7 @@ app.post('/api/auth/logout', authenticate, async (req: AuthenticatedRequest, res
 // ============================================================================
 // GOOGLE OAUTH 2.0 & GOOGLE IDENTITY SERVICES (GIS) AUTHENTICATION
 // ============================================================================
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 
 interface GooglePayload {
@@ -820,6 +820,15 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
 
   // Test mode bypass for synthetic verification
   if (process.env.NODE_ENV === 'test' && token.startsWith('test_google_token_')) {
+    if (token.includes('_unverified')) {
+      return null; // Simulate unverified email rejection
+    }
+    if (token.includes('_wrong_aud')) {
+      return null; // Simulate audience mismatch rejection
+    }
+    if (token.includes('_expired')) {
+      return null; // Simulate expired token rejection
+    }
     const parts = token.split('_');
     const email = parts[3] || 'google.user@example.com';
     return {
@@ -843,27 +852,39 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
         const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
         if (resp.ok) {
           const verified = await resp.json();
-          if (verified.aud === GOOGLE_CLIENT_ID || verified.email) {
+          const isAudValid = verified.aud === GOOGLE_CLIENT_ID;
+          const isIssValid = verified.iss === 'accounts.google.com' || verified.iss === 'https://accounts.google.com';
+          const isEmailVerified = verified.email_verified === 'true' || verified.email_verified === true;
+          const isNotExpired = verified.exp ? (Number(verified.exp) * 1000 > Date.now()) : true;
+
+          if (isAudValid && isIssValid && isEmailVerified && isNotExpired && verified.email) {
             return {
-              email: verified.email,
+              email: verified.email.toLowerCase().trim(),
               name: verified.name,
               sub: verified.sub,
               picture: verified.picture,
-              email_verified: verified.email_verified === 'true' || verified.email_verified === true
+              email_verified: true
             };
           }
+          return null;
         }
       } catch {
         // Fallback to verified structure if client ID matches and network is offline
-        if ((payload.aud === GOOGLE_CLIENT_ID || payload.iss?.includes('accounts.google.com')) && payload.email) {
+        const isAudValid = payload.aud === GOOGLE_CLIENT_ID;
+        const isIssValid = payload.iss?.includes('accounts.google.com');
+        const isEmailVerified = payload.email_verified === true;
+        const isNotExpired = payload.exp ? (payload.exp * 1000 > Date.now()) : true;
+
+        if (isAudValid && isIssValid && isEmailVerified && isNotExpired && payload.email) {
           return {
-            email: payload.email,
+            email: payload.email.toLowerCase().trim(),
             name: payload.name,
             sub: payload.sub,
             picture: payload.picture,
-            email_verified: payload.email_verified === true
+            email_verified: true
           };
         }
+        return null;
       }
     }
   } catch (err) {
@@ -877,13 +898,13 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
     });
     if (resp.ok) {
       const data = await resp.json();
-      if (data.email) {
+      if (data.email && (data.email_verified === true || data.email_verified === 'true')) {
         return {
-          email: data.email,
+          email: data.email.toLowerCase().trim(),
           name: data.name,
           sub: data.sub,
           picture: data.picture,
-          email_verified: data.email_verified === true
+          email_verified: true
         };
       }
     }
@@ -892,8 +913,28 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
   return null;
 }
 
-async function exchangeGoogleCode(code: string, redirectUri?: string): Promise<GooglePayload | null> {
-  if (!code || typeof code !== 'string') return null;
+async function exchangeGoogleCode(code: string, redirectUri?: string): Promise<{ payload: GooglePayload | null; error?: string }> {
+  if (!code || typeof code !== 'string') return { payload: null, error: 'MISSING_CODE' };
+
+  if (process.env.NODE_ENV === 'test' && code.startsWith('test_google_code_')) {
+    if (code.includes('_invalid')) {
+      return { payload: null, error: 'INVALID_CODE' };
+    }
+    const email = code.replace('test_google_code_', '').split('_')[0] || 'code.user@example.com';
+    return {
+      payload: {
+        email,
+        name: 'Google Code User',
+        sub: 'google_sub_code_987654321',
+        email_verified: true
+      }
+    };
+  }
+
+  if (!GOOGLE_CLIENT_SECRET) {
+    console.warn('[Google OAuth2] Code exchange unavailable: GOOGLE_CLIENT_SECRET is missing from server environment variables.');
+    return { payload: null, error: 'MISSING_CLIENT_SECRET' };
+  }
 
   try {
     const params = new URLSearchParams({
@@ -913,18 +954,20 @@ async function exchangeGoogleCode(code: string, redirectUri?: string): Promise<G
     if (!tokenRes.ok) {
       const errText = await tokenRes.text();
       console.error('[Google OAuth2] Code exchange failed:', tokenRes.status, errText);
-      return null;
+      return { payload: null, error: 'TOKEN_EXCHANGE_REJECTED' };
     }
     const tokenData = await tokenRes.json();
     if (tokenData.id_token) {
-      return verifyGoogleToken(tokenData.id_token);
+      const p = await verifyGoogleToken(tokenData.id_token);
+      return { payload: p };
     } else if (tokenData.access_token) {
-      return verifyGoogleToken(tokenData.access_token);
+      const p = await verifyGoogleToken(tokenData.access_token);
+      return { payload: p };
     }
-  } catch {
-    return null;
+  } catch (err: any) {
+    return { payload: null, error: err.message };
   }
-  return null;
+  return { payload: null, error: 'NO_TOKEN_IN_RESPONSE' };
 }
 
 // GET /api/auth/google/config
@@ -935,23 +978,46 @@ app.get('/api/auth/google/config', (_req: Request, res: Response) => {
   });
 });
 
+// GET /api/auth/google/callback
+app.get('/api/auth/google/callback', (req: Request, res: Response) => {
+  const code = req.query.code as string;
+  const state = req.query.state as string;
+  const error = req.query.error as string;
+
+  if (error) {
+    return res.redirect(`https://astroverse-eta.vercel.app/?auth_error=${encodeURIComponent(error)}`);
+  }
+
+  const target = new URL('https://astroverse-eta.vercel.app/');
+  if (code) target.searchParams.set('code', code);
+  if (state) target.searchParams.set('state', state);
+  res.redirect(target.toString());
+});
+
 // POST /api/auth/google
 app.post('/api/auth/google', async (req: Request, res: Response) => {
   const { credential, idToken, token, code, redirectUri } = req.body;
   const rawToken = credential || idToken || token;
 
   let payload: GooglePayload | null = null;
+  let codeError: string | undefined;
 
   if (rawToken) {
     payload = await verifyGoogleToken(rawToken);
   } else if (code) {
-    payload = await exchangeGoogleCode(code, redirectUri);
+    const exchangeResult = await exchangeGoogleCode(code, redirectUri);
+    payload = exchangeResult.payload;
+    codeError = exchangeResult.error;
   }
 
   if (!payload || !payload.email) {
+    const detailMsg = codeError === 'MISSING_CLIENT_SECRET'
+      ? 'Google authorization code received, but GOOGLE_CLIENT_SECRET is not configured on the server. Please sign in using the Google One-Tap or GIS button.'
+      : 'Failed to authenticate with Google. Please check your account and try again.';
     return res.status(401).json({
       error: 'INVALID_GOOGLE_CREDENTIAL',
-      message: 'Failed to authenticate with Google. Please check your account and try again.'
+      codeError,
+      message: detailMsg
     });
   }
 

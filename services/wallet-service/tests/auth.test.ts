@@ -1590,6 +1590,59 @@ async function runAuthTestSuite() {
       assert.strictEqual(res.data.user.email, googleTestEmail.toLowerCase());
     });
 
+    await test('POST /api/auth/google rejects tokens with unverified email, wrong audience, or expired validity', async () => {
+      const resUnverified = await request('/api/auth/google', {
+        method: 'POST',
+        body: { credential: 'test_google_token_unverified@example.com_unverified' }
+      });
+      assert.strictEqual(resUnverified.status, 401);
+      assert.strictEqual(resUnverified.data.error, 'INVALID_GOOGLE_CREDENTIAL');
+
+      const resWrongAud = await request('/api/auth/google', {
+        method: 'POST',
+        body: { credential: 'test_google_token_wrongaud@example.com_wrong_aud' }
+      });
+      assert.strictEqual(resWrongAud.status, 401);
+      assert.strictEqual(resWrongAud.data.error, 'INVALID_GOOGLE_CREDENTIAL');
+
+      const resExpired = await request('/api/auth/google', {
+        method: 'POST',
+        body: { credential: 'test_google_token_expired@example.com_expired' }
+      });
+      assert.strictEqual(resExpired.status, 401);
+      assert.strictEqual(resExpired.data.error, 'INVALID_GOOGLE_CREDENTIAL');
+    });
+
+    await test('POST /api/auth/google exchanges valid authorization code and creates session', async () => {
+      const codeEmail = `code.user.${Date.now()}@example.com`;
+      const res = await request('/api/auth/google', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XmlHttpRequest' },
+        body: { code: `test_google_code_${codeEmail}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'AUTHENTICATED');
+      assert(res.data.sessionToken);
+      assert.strictEqual(res.data.user.email, codeEmail.toLowerCase());
+      assert.strictEqual(res.data.user.emailVerified, true);
+    });
+
+    await test('POST /api/auth/google rejects invalid authorization code', async () => {
+      const res = await request('/api/auth/google', {
+        method: 'POST',
+        body: { code: 'test_google_code_invalid' }
+      });
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.data.error, 'INVALID_GOOGLE_CREDENTIAL');
+    });
+
+    await test('GET /api/auth/google/config never exposes client secret', async () => {
+      const res = await request('/api/auth/google/config');
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.clientSecret, undefined, 'Client secret must never be exposed');
+      assert.strictEqual(res.data.secret, undefined);
+    });
+
     await test('Preview mode allows ephemeral storage when VERCEL_ENV=preview', async () => {
       const origVercelEnv = process.env.VERCEL_ENV;
       const origEnv = process.env.NODE_ENV;

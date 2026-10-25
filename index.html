@@ -6190,6 +6190,11 @@
           <span id="btn-google-signin-text">Continue with Google</span>
         </button>
         <div id="g_id_signin_rendered" style="display: none; justify-content: center; margin-top: 8px;"></div>
+        <div style="text-align: center; margin-top: 6px;">
+          <button type="button" id="btn-google-fullpage-fallback" onclick="initiateGoogleOAuthFlow(true)" style="background: none; border: none; color: #94A3B8; font-size: 11px; text-decoration: underline; cursor: pointer; padding: 2px 4px; transition: color 0.15s;" onmouseover="this.style.color='#FCD34D'" onmouseout="this.style.color='#94A3B8'">
+            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 10px;"></i> Continue with Full-Page Google Sign-In
+          </button>
+        </div>
         <div style="display: flex; align-items: center; margin: 14px 0 10px; color: #64748B; font-size: 11px;">
           <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
           <span style="padding: 0 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">or continue with</span>
@@ -11850,6 +11855,8 @@
               console.warn('[Google OAuth2 Popup] Error:', err);
               if (err && err.type === 'popup_closed') {
                 showToast('Google sign-in popup was closed.', 'info');
+              } else {
+                showToast('Popup sign-in unavailable. Use "Continue with Full-Page Google Sign-In" below.', 'info');
               }
             }
           });
@@ -11885,17 +11892,28 @@
       initiateGoogleOAuthFlow();
     }
 
-    function initiateGoogleOAuthFlow() {
+    function initiateGoogleOAuthFlow(manualUserTrigger = false) {
+      let state = '';
+      if (window.crypto && window.crypto.getRandomValues) {
+        const arr = new Uint8Array(16);
+        window.crypto.getRandomValues(arr);
+        state = Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+      } else {
+        state = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      }
+      try {
+        sessionStorage.setItem('astro_oauth_state', state);
+      } catch (_) {}
+
       const redirectUri = 'https://astroverse-eta.vercel.app/';
-      const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
       const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
         'client_id=' + encodeURIComponent(ASTRO_GOOGLE_CLIENT_ID) +
         '&redirect_uri=' + encodeURIComponent(redirectUri) +
         '&response_type=code' +
         '&scope=' + encodeURIComponent('openid email profile') +
+        '&state=' + encodeURIComponent(state) +
         '&access_type=offline' +
-        '&prompt=select_account' +
-        '&nonce=' + encodeURIComponent(nonce);
+        '&prompt=select_account';
       window.location.href = authUrl;
     }
 
@@ -11970,7 +11988,10 @@
       try {
         const res = await fetch(`${getAuthBase()}/api/auth/google`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XmlHttpRequest'
+          },
           body: JSON.stringify({ code, redirectUri })
         });
         const data = await res.json();
@@ -11996,7 +12017,31 @@
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
+        const returnedState = urlParams.get('state');
+        const authError = urlParams.get('error') || urlParams.get('auth_error');
+
+        if (authError) {
+          showToast(`Google authentication notice: ${authError}`, 'error');
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+          return;
+        }
+
         if (code) {
+          let stateMatches = true;
+          try {
+            const savedState = sessionStorage.getItem('astro_oauth_state');
+            sessionStorage.removeItem('astro_oauth_state');
+            if (savedState && returnedState && savedState !== returnedState) {
+              stateMatches = false;
+            }
+          } catch (_) {}
+
+          if (!stateMatches) {
+            showToast('Google authentication state mismatch detected. Sign-in rejected for security.', 'error');
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+            return;
+          }
+
           const cleanUrl = window.location.pathname + window.location.hash;
           window.history.replaceState({}, document.title, cleanUrl);
 
