@@ -910,7 +910,11 @@ async function exchangeGoogleCode(code: string, redirectUri?: string): Promise<G
       body: params.toString()
     });
 
-    if (!tokenRes.ok) return null;
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error('[Google OAuth2] Code exchange failed:', tokenRes.status, errText);
+      return null;
+    }
     const tokenData = await tokenRes.json();
     if (tokenData.id_token) {
       return verifyGoogleToken(tokenData.id_token);

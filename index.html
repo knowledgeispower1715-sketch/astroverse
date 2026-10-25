@@ -11781,30 +11781,53 @@
     // ==================== GOOGLE IDENTITY SERVICES & OAUTH 2.0 CONTROLLERS ====================
     const ASTRO_GOOGLE_CLIENT_ID = '488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com';
     let isGoogleAuthInitialized = false;
+    let googleCodeClient = null;
 
     function initGoogleAuth() {
-      if (typeof window.google === 'undefined' || !window.google.accounts || !window.google.accounts.id) {
+      if (typeof window.google === 'undefined' || !window.google.accounts) {
         return;
       }
       try {
-        window.google.accounts.id.initialize({
-          client_id: ASTRO_GOOGLE_CLIENT_ID,
-          callback: handleGoogleAuthCallback,
-          auto_select: false,
-          cancel_on_tap_outside: true
-        });
-        isGoogleAuthInitialized = true;
+        if (window.google.accounts.id && !isGoogleAuthInitialized) {
+          window.google.accounts.id.initialize({
+            client_id: ASTRO_GOOGLE_CLIENT_ID,
+            callback: handleGoogleAuthCallback,
+            auto_select: false,
+            cancel_on_tap_outside: true
+          });
+          isGoogleAuthInitialized = true;
 
-        const renderContainer = document.getElementById('g_id_signin_rendered');
-        if (renderContainer && !renderContainer.hasChildNodes()) {
-          window.google.accounts.id.renderButton(renderContainer, {
-            theme: 'outline',
-            size: 'large',
-            type: 'standard',
-            shape: 'rectangular',
-            text: 'continue_with',
-            logo_alignment: 'left',
-            width: 320
+          const renderContainer = document.getElementById('g_id_signin_rendered');
+          if (renderContainer && !renderContainer.hasChildNodes()) {
+            window.google.accounts.id.renderButton(renderContainer, {
+              theme: 'outline',
+              size: 'large',
+              type: 'standard',
+              shape: 'rectangular',
+              text: 'continue_with',
+              logo_alignment: 'left',
+              width: 320
+            });
+            renderContainer.style.display = 'flex';
+          }
+        }
+
+        if (window.google.accounts.oauth2 && !googleCodeClient) {
+          googleCodeClient = window.google.accounts.oauth2.initCodeClient({
+            client_id: ASTRO_GOOGLE_CLIENT_ID,
+            scope: 'openid email profile',
+            ux_mode: 'popup',
+            callback: async (response) => {
+              if (response && response.code) {
+                await exchangeGoogleCodeOnBackend(response.code, 'postmessage');
+              }
+            },
+            error_callback: (err) => {
+              console.warn('[Google OAuth2 Popup] Error:', err);
+              if (err && err.type === 'popup_closed') {
+                showToast('Google sign-in popup was closed.', 'info');
+              }
+            }
           });
         }
       } catch (e) {
@@ -11814,15 +11837,28 @@
 
     function triggerGoogleSignIn() {
       initGoogleAuth();
+      // 1. Try modern OAuth2 Code Popup Client (best UX across mobile and desktop)
+      if (googleCodeClient) {
+        try {
+          googleCodeClient.requestCode();
+          return;
+        } catch (e) {
+          console.warn('[Google Auth] Popup requestCode failed, trying GIS prompt:', e);
+        }
+      }
+
+      // 2. Try Google Identity Services One Tap prompt
       if (typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.id) {
         window.google.accounts.id.prompt((notification) => {
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
             initiateGoogleOAuthFlow();
           }
         });
-      } else {
-        initiateGoogleOAuthFlow();
+        return;
       }
+
+      // 3. Fallback to standard OAuth 2.0 full-page redirection
+      initiateGoogleOAuthFlow();
     }
 
     function initiateGoogleOAuthFlow() {
@@ -11837,6 +11873,28 @@
         '&prompt=select_account' +
         '&nonce=' + encodeURIComponent(nonce);
       window.location.href = authUrl;
+    }
+
+    function applyAuthenticatedSession(u, sessionToken) {
+      currentSessionToken = sessionToken;
+      currentUserSession = {
+        id: u.id,
+        name: u.displayName || u.email?.split('@')[0] || 'User',
+        identifier: u.email || 'Google User',
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+        status: u.status
+      };
+      currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+
+      localStorage.setItem('astro_session_token', currentSessionToken);
+      localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+      localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+
+      linkPendingGuestProfileToUser(u, currentSessionToken);
+      syncProfilesFromBackend(u.id);
+      updateUserSessionUI();
     }
 
     async function handleGoogleAuthCallback(response) {
@@ -11860,31 +11918,45 @@
         });
         const data = await res.json();
         if (res.ok) {
-          const u = data.user;
-          currentSessionToken = data.sessionToken;
-          currentUserSession = {
-            id: u.id,
-            name: u.displayName || u.email?.split('@')[0] || 'User',
-            identifier: u.email || 'Google User',
-            email: u.email,
-            phone: u.phone,
-            role: u.role,
-            status: u.status
-          };
-          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
-
-          localStorage.setItem('astro_session_token', currentSessionToken);
-          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
-          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-
-          await linkPendingGuestProfileToUser(u, currentSessionToken);
-          await syncProfilesFromBackend(u.id);
-          updateUserSessionUI();
+          applyAuthenticatedSession(data.user, data.sessionToken);
           closeAuthModal();
           showToast(`Signed in successfully as ${currentUserSession.name}!`, 'success');
           resumePendingActionAfterAuth();
         } else {
           showToast(data.message || 'Google authentication failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Failed to reach authentication server.', 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+
+    async function exchangeGoogleCodeOnBackend(code, redirectUri = 'postmessage') {
+      const btn = document.getElementById('btn-google-signin-custom');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating with Google...';
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, redirectUri })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          applyAuthenticatedSession(data.user, data.sessionToken);
+          closeAuthModal();
+          showToast(`Signed in successfully as ${currentUserSession.name}!`, 'success');
+          resumePendingActionAfterAuth();
+        } else {
+          showToast(data.message || 'Google sign-in exchange failed.', 'error');
         }
       } catch (err) {
         showToast('Failed to reach authentication server.', 'error');
@@ -11905,40 +11977,7 @@
           window.history.replaceState({}, document.title, cleanUrl);
 
           showToast('Verifying Google authorization code...', 'info');
-          const res = await fetch(`${getAuthBase()}/api/auth/google`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              code,
-              redirectUri: 'https://astroverse-eta.vercel.app/'
-            })
-          });
-          const data = await res.json();
-          if (res.ok) {
-            const u = data.user;
-            currentSessionToken = data.sessionToken;
-            currentUserSession = {
-              id: u.id,
-              name: u.displayName || u.email?.split('@')[0] || 'User',
-              identifier: u.email || 'Google User',
-              email: u.email,
-              phone: u.phone,
-              role: u.role,
-              status: u.status
-            };
-            currentWalletBalance = parseFloat(u.walletBalance || 0.00);
-
-            localStorage.setItem('astro_session_token', currentSessionToken);
-            localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
-            localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-
-            await linkPendingGuestProfileToUser(u, currentSessionToken);
-            await syncProfilesFromBackend(u.id);
-            updateUserSessionUI();
-            showToast(`Signed in as ${currentUserSession.name}!`, 'success');
-          } else {
-            showToast(data.message || 'Google sign-in exchange failed.', 'error');
-          }
+          await exchangeGoogleCodeOnBackend(code, 'https://astroverse-eta.vercel.app/');
           return;
         }
 
