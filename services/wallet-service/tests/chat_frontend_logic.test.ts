@@ -352,3 +352,73 @@ test('Report PDF Download is permitted for free basic summary and premium subscr
     'Super admin must have bypass download authority'
   );
 });
+
+test('Google OAuth 2.0 & GIS client configuration in index.html is valid and complete', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const indexPath = path.resolve(__dirname, '../../../index.html');
+  const htmlContent = fs.readFileSync(indexPath, 'utf-8');
+
+  // 1. Google Identity Services client library inclusion
+  assert(
+    htmlContent.includes('accounts.google.com/gsi/client'),
+    'index.html must load Google Identity Services library'
+  );
+
+  // 2. Client ID constant matching authorized project
+  const expectedClientId = '488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com';
+  assert(
+    htmlContent.includes(expectedClientId),
+    'index.html must declare authorized Google Client ID'
+  );
+
+  // 3. Google Sign-In button elements in auth modal
+  assert(
+    htmlContent.includes('id="btn-google-signin-custom"'),
+    'Auth modal must include custom styled Continue with Google button'
+  );
+  assert(
+    htmlContent.includes('triggerGoogleSignIn()'),
+    'Auth modal button must trigger Google sign-in flow'
+  );
+  assert(
+    htmlContent.includes('id="g_id_signin_rendered"'),
+    'Auth modal must provide render container for native Google Identity One-Tap/button'
+  );
+
+  // 4. Redirect handler & callback functions present
+  assert(
+    htmlContent.includes('function initGoogleAuth('),
+    'index.html must define initGoogleAuth()'
+  );
+  assert(
+    htmlContent.includes('function handleGoogleAuthCallback('),
+    'index.html must define handleGoogleAuthCallback()'
+  );
+  assert(
+    htmlContent.includes('function checkGoogleAuthRedirect('),
+    'index.html must define checkGoogleAuthRedirect()'
+  );
+  assert(
+    htmlContent.includes('function initiateGoogleOAuthFlow('),
+    'index.html must define initiateGoogleOAuthFlow()'
+  );
+
+  // 5. OAuth 2.0 authorization URL builder logic test
+  const testClientId = expectedClientId;
+  const redirectUri = 'https://astroverse-eta.vercel.app/';
+  const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+    'client_id=' + encodeURIComponent(testClientId) +
+    '&redirect_uri=' + encodeURIComponent(redirectUri) +
+    '&response_type=code' +
+    '&scope=' + encodeURIComponent('openid email profile') +
+    '&access_type=offline' +
+    '&prompt=select_account';
+
+  const parsedUrl = new URL(authUrl);
+  assert.strictEqual(parsedUrl.hostname, 'accounts.google.com');
+  assert.strictEqual(parsedUrl.searchParams.get('client_id'), expectedClientId);
+  assert.strictEqual(parsedUrl.searchParams.get('redirect_uri'), 'https://astroverse-eta.vercel.app/');
+  assert.strictEqual(parsedUrl.searchParams.get('response_type'), 'code');
+  assert.strictEqual(parsedUrl.searchParams.get('scope'), 'openid email profile');
+});

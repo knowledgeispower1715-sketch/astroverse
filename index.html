@@ -14,6 +14,8 @@
   <!-- Animation & PDF Generation Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Google Identity Services (OAuth 2.0 & GIS) -->
+  <script src="https://accounts.google.com/gsi/client" async defer onload="if(typeof initGoogleAuth==='function')initGoogleAuth();"></script>
 
   <style>
     :root {
@@ -771,6 +773,33 @@
       background: rgba(255, 255, 255, 0.16) !important;
       color: #FFFFFF !important;
       border-color: rgba(255, 255, 255, 0.45) !important;
+    }
+    .btn-google-auth {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #FFFFFF;
+      color: #1F2937;
+      border: 1px solid #CBD5E1;
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      box-sizing: border-box;
+      text-decoration: none;
+    }
+    .btn-google-auth:hover {
+      background: #F8FAFC !important;
+      border-color: #94A3B8 !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12) !important;
+    }
+    .btn-google-auth:active {
+      transform: scale(0.99);
     }
     .auth-modal-header {
       display: flex;
@@ -6130,6 +6159,20 @@
           <button type="button" class="btn-gold-primary" style="padding: 5px 12px; font-size: 11px; width: 100%; justify-content: center;" onclick="continueAsGuest()">
             <i class="fa-solid fa-compass"></i> Continue as Guest (Full Calculations Enabled)
           </button>
+        </div>
+      </div>
+
+      <!-- Google 1-Tap & OAuth 2.0 Sign In Option -->
+      <div id="auth-google-section" style="margin-bottom: 16px;">
+        <button type="button" class="btn-google-auth" id="btn-google-signin-custom" onclick="triggerGoogleSignIn()">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.347 2.825.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/></svg>
+          <span id="btn-google-signin-text">Continue with Google</span>
+        </button>
+        <div id="g_id_signin_rendered" style="display: none; justify-content: center; margin-top: 8px;"></div>
+        <div style="display: flex; align-items: center; margin: 14px 0 10px; color: #64748B; font-size: 11px;">
+          <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
+          <span style="padding: 0 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">or continue with</span>
+          <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
         </div>
       </div>
 
@@ -11718,6 +11761,8 @@
 
     // Initialization on Page Load
     window.addEventListener('DOMContentLoaded', async () => {
+      checkGoogleAuthRedirect();
+      initGoogleAuth();
       updateUserSessionUI();
       updateDemoWalletDisplay();
       renderSavedProfilesList();
@@ -11732,6 +11777,183 @@
       }
       handleHashRoute();
     });
+
+    // ==================== GOOGLE IDENTITY SERVICES & OAUTH 2.0 CONTROLLERS ====================
+    const ASTRO_GOOGLE_CLIENT_ID = '488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com';
+    let isGoogleAuthInitialized = false;
+
+    function initGoogleAuth() {
+      if (typeof window.google === 'undefined' || !window.google.accounts || !window.google.accounts.id) {
+        return;
+      }
+      try {
+        window.google.accounts.id.initialize({
+          client_id: ASTRO_GOOGLE_CLIENT_ID,
+          callback: handleGoogleAuthCallback,
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+        isGoogleAuthInitialized = true;
+
+        const renderContainer = document.getElementById('g_id_signin_rendered');
+        if (renderContainer && !renderContainer.hasChildNodes()) {
+          window.google.accounts.id.renderButton(renderContainer, {
+            theme: 'outline',
+            size: 'large',
+            type: 'standard',
+            shape: 'rectangular',
+            text: 'continue_with',
+            logo_alignment: 'left',
+            width: 320
+          });
+        }
+      } catch (e) {
+        console.warn('[Google Auth] Initialization notice:', e);
+      }
+    }
+
+    function triggerGoogleSignIn() {
+      initGoogleAuth();
+      if (typeof window.google !== 'undefined' && window.google.accounts && window.google.accounts.id) {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            initiateGoogleOAuthFlow();
+          }
+        });
+      } else {
+        initiateGoogleOAuthFlow();
+      }
+    }
+
+    function initiateGoogleOAuthFlow() {
+      const redirectUri = 'https://astroverse-eta.vercel.app/';
+      const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+        'client_id=' + encodeURIComponent(ASTRO_GOOGLE_CLIENT_ID) +
+        '&redirect_uri=' + encodeURIComponent(redirectUri) +
+        '&response_type=code' +
+        '&scope=' + encodeURIComponent('openid email profile') +
+        '&access_type=offline' +
+        '&prompt=select_account' +
+        '&nonce=' + encodeURIComponent(nonce);
+      window.location.href = authUrl;
+    }
+
+    async function handleGoogleAuthCallback(response) {
+      if (!response || !response.credential) {
+        showToast('Google authentication cancelled or credential not received.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-google-signin-custom');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating with Google...';
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const u = data.user;
+          currentSessionToken = data.sessionToken;
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || u.email?.split('@')[0] || 'User',
+            identifier: u.email || 'Google User',
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            status: u.status
+          };
+          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+
+          localStorage.setItem('astro_session_token', currentSessionToken);
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+
+          await linkPendingGuestProfileToUser(u, currentSessionToken);
+          await syncProfilesFromBackend(u.id);
+          updateUserSessionUI();
+          closeAuthModal();
+          showToast(`Signed in successfully as ${currentUserSession.name}!`, 'success');
+          resumePendingActionAfterAuth();
+        } else {
+          showToast(data.message || 'Google authentication failed.', 'error');
+        }
+      } catch (err) {
+        showToast('Failed to reach authentication server.', 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
+    }
+
+    async function checkGoogleAuthRedirect() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        if (code) {
+          const cleanUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+
+          showToast('Verifying Google authorization code...', 'info');
+          const res = await fetch(`${getAuthBase()}/api/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code,
+              redirectUri: 'https://astroverse-eta.vercel.app/'
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            const u = data.user;
+            currentSessionToken = data.sessionToken;
+            currentUserSession = {
+              id: u.id,
+              name: u.displayName || u.email?.split('@')[0] || 'User',
+              identifier: u.email || 'Google User',
+              email: u.email,
+              phone: u.phone,
+              role: u.role,
+              status: u.status
+            };
+            currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+
+            localStorage.setItem('astro_session_token', currentSessionToken);
+            localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+            localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+
+            await linkPendingGuestProfileToUser(u, currentSessionToken);
+            await syncProfilesFromBackend(u.id);
+            updateUserSessionUI();
+            showToast(`Signed in as ${currentUserSession.name}!`, 'success');
+          } else {
+            showToast(data.message || 'Google sign-in exchange failed.', 'error');
+          }
+          return;
+        }
+
+        if (window.location.hash && window.location.hash.includes('id_token=')) {
+          const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
+          const idToken = hashParams.get('id_token');
+          if (idToken) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            handleGoogleAuthCallback({ credential: idToken });
+          }
+        }
+      } catch (e) {
+        console.error('[Google Auth] Redirect verification error:', e);
+      }
+    }
 
     // ==================== AUTH MODAL & MULTI-CHANNEL CONTROLLERS ====================
 
@@ -11916,6 +12138,7 @@
         modal.style.display = 'flex';
         switchAuthModalTab(defaultTab);
         checkAuthServiceReadiness();
+        initGoogleAuth();
       }
     }
 

@@ -1539,6 +1539,57 @@ async function runAuthTestSuite() {
       assert.strictEqual(res2.data.skippedCount, 2);
     });
 
+    await test('GET /api/auth/google/config returns configured Google Client ID', async () => {
+      const res = await request('/api/auth/google/config');
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.clientId, '488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com');
+      assert.strictEqual(res.data.redirectUri, 'https://astroverse-eta.vercel.app/');
+    });
+
+    await test('POST /api/auth/google rejects missing or invalid credential with HTTP 401', async () => {
+      const res1 = await request('/api/auth/google', {
+        method: 'POST',
+        body: {}
+      });
+      assert.strictEqual(res1.status, 401);
+      assert.strictEqual(res1.data.error, 'INVALID_GOOGLE_CREDENTIAL');
+
+      const res2 = await request('/api/auth/google', {
+        method: 'POST',
+        body: { credential: 'malformed_invalid_jwt_token' }
+      });
+      assert.strictEqual(res2.status, 401);
+      assert.strictEqual(res2.data.error, 'INVALID_GOOGLE_CREDENTIAL');
+    });
+
+    const googleTestEmail = `google.user.${Date.now()}@example.com`;
+    let googleSessionToken = '';
+
+    await test('POST /api/auth/google registers new user with verified email and returns session token', async () => {
+      const res = await request('/api/auth/google', {
+        method: 'POST',
+        body: { credential: `test_google_token_${googleTestEmail}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'AUTHENTICATED');
+      assert(res.data.sessionToken, 'Must issue session token');
+      assert.strictEqual(res.data.user.email, googleTestEmail.toLowerCase());
+      assert.strictEqual(res.data.user.emailVerified, true);
+      assert.strictEqual(res.data.user.walletBalance, 0);
+      googleSessionToken = res.data.sessionToken;
+    });
+
+    await test('POST /api/auth/google authenticates existing user and updates login timestamp', async () => {
+      const res = await request('/api/auth/google', {
+        method: 'POST',
+        body: { credential: `test_google_token_${googleTestEmail}` }
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.data.status, 'AUTHENTICATED');
+      assert(res.data.sessionToken);
+      assert.strictEqual(res.data.user.email, googleTestEmail.toLowerCase());
+    });
+
     await test('Preview mode allows ephemeral storage when VERCEL_ENV=preview', async () => {
       const origVercelEnv = process.env.VERCEL_ENV;
       const origEnv = process.env.NODE_ENV;

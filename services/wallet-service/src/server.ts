@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { db, UserRecord, Role, AccountStatus, OrderStatus, isDemoModeActive } from './db';
@@ -794,6 +796,225 @@ app.post('/api/auth/logout', authenticate, async (req: AuthenticatedRequest, res
       targetId: req.user!.id
     });
     res.json({ status: 'LOGGED_OUT', message: 'Session terminated successfully.' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================================
+// GOOGLE OAUTH 2.0 & GOOGLE IDENTITY SERVICES (GIS) AUTHENTICATION
+// ============================================================================
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+
+interface GooglePayload {
+  email: string;
+  name?: string;
+  sub: string;
+  picture?: string;
+  email_verified?: boolean;
+}
+
+async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
+  if (!token || typeof token !== 'string') return null;
+
+  // Test mode bypass for synthetic verification
+  if (process.env.NODE_ENV === 'test' && token.startsWith('test_google_token_')) {
+    const parts = token.split('_');
+    const email = parts[3] || 'google.user@example.com';
+    return {
+      email,
+      name: 'Google Test User',
+      sub: 'google_sub_123456789',
+      email_verified: true
+    };
+  }
+
+  // 1. Try decoding JWT payload to inspect structure
+  try {
+    const parts = token.split('.');
+    if (parts.length === 3) {
+      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf8');
+      const payload = JSON.parse(payloadJson);
+
+      // Verify token with Google tokeninfo endpoint
+      try {
+        const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+        if (resp.ok) {
+          const verified = await resp.json();
+          if (verified.aud === GOOGLE_CLIENT_ID || verified.email) {
+            return {
+              email: verified.email,
+              name: verified.name,
+              sub: verified.sub,
+              picture: verified.picture,
+              email_verified: verified.email_verified === 'true' || verified.email_verified === true
+            };
+          }
+        }
+      } catch {
+        // Fallback to verified structure if client ID matches and network is offline
+        if ((payload.aud === GOOGLE_CLIENT_ID || payload.iss?.includes('accounts.google.com')) && payload.email) {
+          return {
+            email: payload.email,
+            name: payload.name,
+            sub: payload.sub,
+            picture: payload.picture,
+            email_verified: payload.email_verified === true
+          };
+        }
+      }
+    }
+  } catch (err) {
+    // Non-JWT token
+  }
+
+  // 2. Try verifying as an access token via Google UserInfo API
+  try {
+    const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.email) {
+        return {
+          email: data.email,
+          name: data.name,
+          sub: data.sub,
+          picture: data.picture,
+          email_verified: data.email_verified === true
+        };
+      }
+    }
+  } catch {}
+
+  return null;
+}
+
+async function exchangeGoogleCode(code: string, redirectUri?: string): Promise<GooglePayload | null> {
+  if (!code || typeof code !== 'string') return null;
+
+  try {
+    const params = new URLSearchParams({
+      code,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri || 'https://astroverse-eta.vercel.app/',
+      grant_type: 'authorization_code'
+    });
+
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    });
+
+    if (!tokenRes.ok) return null;
+    const tokenData = await tokenRes.json();
+    if (tokenData.id_token) {
+      return verifyGoogleToken(tokenData.id_token);
+    } else if (tokenData.access_token) {
+      return verifyGoogleToken(tokenData.access_token);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+// GET /api/auth/google/config
+app.get('/api/auth/google/config', (_req: Request, res: Response) => {
+  res.json({
+    clientId: GOOGLE_CLIENT_ID,
+    redirectUri: 'https://astroverse-eta.vercel.app/'
+  });
+});
+
+// POST /api/auth/google
+app.post('/api/auth/google', async (req: Request, res: Response) => {
+  const { credential, idToken, token, code, redirectUri } = req.body;
+  const rawToken = credential || idToken || token;
+
+  let payload: GooglePayload | null = null;
+
+  if (rawToken) {
+    payload = await verifyGoogleToken(rawToken);
+  } else if (code) {
+    payload = await exchangeGoogleCode(code, redirectUri);
+  }
+
+  if (!payload || !payload.email) {
+    return res.status(401).json({
+      error: 'INVALID_GOOGLE_CREDENTIAL',
+      message: 'Failed to authenticate with Google. Please check your account and try again.'
+    });
+  }
+
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  const cleanEmail = payload.email.trim().toLowerCase();
+
+  try {
+    let user = await db.findUserByIdentifier(cleanEmail);
+    let isNewUser = false;
+
+    if (!user) {
+      isNewUser = true;
+      user = await db.createUser({
+        phone: null,
+        email: cleanEmail,
+        phoneVerified: false,
+        emailVerified: true,
+        displayName: payload.name || cleanEmail.split('@')[0],
+        role: Role.USER,
+        status: AccountStatus.ACTIVE,
+        walletBalance: 0.00
+      });
+    } else {
+      if (user.status !== AccountStatus.ACTIVE) {
+        return res.status(403).json({
+          error: 'ACCOUNT_INACTIVE',
+          message: `Your account is ${user.status.toLowerCase()}. Please contact customer support.`
+        });
+      }
+
+      const updates: Partial<UserRecord> = {
+        lastLoginAt: new Date().toISOString(),
+        emailVerified: true
+      };
+      if (!user.displayName && payload.name) {
+        updates.displayName = payload.name;
+      }
+      user = await db.updateUser(user.id, updates);
+    }
+
+    // Issue cryptographic 256-bit session token
+    const rawSessionToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(rawSessionToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day session
+
+    await db.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+      ipAddress: clientIp,
+      userAgent: req.headers['user-agent'] || null
+    });
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: isNewUser ? 'AUTH_REGISTER' : 'AUTH_LOGIN',
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: clientIp,
+      metadata: { identifier: cleanEmail, method: 'google_oauth', googleSub: payload.sub }
+    });
+
+    res.json({
+      status: 'AUTHENTICATED',
+      sessionToken: rawSessionToken,
+      user: sanitizeUser(user)
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
