@@ -29,6 +29,7 @@ env/
 codedb.snapshot
 
 # Testing
+test-artifacts/
 .pytest_cache/
 htmlcov/
 .coverage
