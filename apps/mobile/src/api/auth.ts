@@ -98,5 +98,14 @@ export const authApi = {
       return { success: true, profile: res.data.profile };
     }
     return { success: false, error: res.error || 'Failed to save profile' };
+  },
+
+  async deleteAccount(): Promise<{ success: boolean; error?: string }> {
+    const res = await apiClient.delete<any>('/api/user/account');
+    if (res.status === 200) {
+      apiClient.setToken(null);
+      return { success: true };
+    }
+    return { success: false, error: res.error || 'Failed to delete account' };
   }
 };

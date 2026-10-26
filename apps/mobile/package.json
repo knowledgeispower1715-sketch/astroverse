@@ -2,6 +2,7 @@
   "name": "astroverse-mobile",
   "version": "2.0.0",
   "description": "AstroVerse Native Mobile OS for iOS and Android",
+  "type": "module",
   "main": "App.tsx",
   "scripts": {
     "start": "expo start",

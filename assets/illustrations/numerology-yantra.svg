@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <rect width="600" height="600" fill="#131B2E" rx="16" stroke="#C6A15B" stroke-width="3"/>
+  <rect x="75" y="75" width="450" height="450" fill="#0B0F19" stroke="#F59E0B" stroke-width="2"/>
+  
+  <!-- 3x3 Grid Lines -->
+  <line x1="225" y1="75" x2="225" y2="525" stroke="#F59E0B" stroke-width="2"/>
+  <line x1="375" y1="75" x2="375" y2="525" stroke="#F59E0B" stroke-width="2"/>
+  <line x1="75" y1="225" x2="525" y2="225" stroke="#F59E0B" stroke-width="2"/>
+  <line x1="75" y1="375" x2="525" y2="375" stroke="#F59E0B" stroke-width="2"/>
+  
+  <!-- Classical Lo Shu / Vedic Yantra Numerical Grid -->
+  <g font-family="'Cinzel', Georgia, serif" font-size="34" font-weight="800" fill="#FCD34D" text-anchor="middle">
+    <!-- Row 1: 4, 9, 2 -->
+    <text x="150" y="165">4</text>
+    <text x="300" y="165">9</text>
+    <text x="450" y="165">2</text>
+    
+    <!-- Row 2: 3, 5, 7 -->
+    <text x="150" y="315">3</text>
+    <text x="300" y="315" fill="#EF4444">5</text>
+    <text x="450" y="315">7</text>
+    
+    <!-- Row 3: 8, 1, 6 -->
+    <text x="150" y="465">8</text>
+    <text x="300" y="465">1</text>
+    <text x="450" y="465">6</text>
+  </g>
+  <text x="300" y="565" font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="700" fill="#C8B9AE" text-anchor="middle">CHALDEAN &amp; PYTHAGOREAN 3×3 YANTRA HARMONY</text>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <rect width="600" height="600" fill="#0A1020" rx="16"/>
+  
+  <!-- Orbital Ellipses -->
+  <ellipse cx="300" cy="300" rx="260" ry="140" fill="none" stroke="#6366F1" stroke-width="1.5" opacity="0.6"/>
+  <ellipse cx="300" cy="300" rx="210" ry="110" fill="none" stroke="#FBBF24" stroke-width="1.5" opacity="0.7"/>
+  <ellipse cx="300" cy="300" rx="150" ry="80" fill="none" stroke="#EF4444" stroke-width="1.5" opacity="0.8"/>
+  <ellipse cx="300" cy="300" rx="90" ry="50" fill="none" stroke="#10B981" stroke-width="1.5" opacity="0.9"/>
+  
+  <!-- Central Sun -->
+  <circle cx="300" cy="300" r="28" fill="#F59E0B" stroke="#FDE68A" stroke-width="2"/>
+  
+  <!-- Orbiting Planets -->
+  <circle cx="210" cy="300" r="8" fill="#10B981"/><!-- Mercury -->
+  <circle cx="450" cy="300" r="10" fill="#EF4444"/><!-- Mars -->
+  <circle cx="300" cy="190" r="16" fill="#FBBF24"/><!-- Jupiter -->
+  <circle cx="300" cy="440" r="14" fill="#6366F1"/><!-- Saturn -->
+  
+  <!-- Labels -->
+  <text x="300" y="55" font-family="'Cinzel', serif" font-size="14" font-weight="700" fill="#FCD34D" text-anchor="middle">GOCHAR • PLANETARY TRANSITS</text>
+  <text x="300" y="555" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="middle">VIMSHOTTARI DASHA &amp; TRANSIT CROSS-CORRELATION</text>
+</svg>

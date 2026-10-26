@@ -16,6 +16,7 @@ import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { useChart } from '../context/ChartContext';
 import { useWallet } from '../context/WalletContext';
+import { apiClient } from '../api/client';
 
 interface ProfileScreenProps {
   onOpenAuth: () => void;
@@ -49,6 +50,38 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       { text: 'Cancel', style: 'cancel' },
       { text: 'Log Out', style: 'destructive', onPress: () => logout() }
     ]);
+  };
+
+  const [deleting, setDeleting] = useState<boolean>(false);
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account & Data',
+      'PERMANENT ACTION: Are you absolutely sure you want to permanently delete your AstroVerse account and all saved profiles? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Permanently',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              const res = await apiClient.request('/api/user/account', { method: 'DELETE' });
+              if (res.status === 200) {
+                await logout();
+                Alert.alert('Account Deleted', 'Your account and all associated profiles have been permanently removed.');
+              } else {
+                Alert.alert('Error', res.error || 'Failed to delete account. Please try again.');
+              }
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Network error deleting account.');
+            } finally {
+              setDeleting(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -171,6 +204,45 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <Text style={styles.profileLabel}>Version:</Text>
             <Text style={styles.profileVal}>v2.0.0-production</Text>
           </View>
+        </View>
+
+        {/* Privacy, Legal Governance & Account Deletion (Apple Guideline 5.1.1(v) & Google Play compliance) */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>LEGAL, TRUST & PRIVACY</Text>
+          <View style={styles.profileRow}>
+            <Text style={styles.profileLabel}>Customer Support:</Text>
+            <Text style={[styles.profileVal, { color: Colors.gold }]}>support@astroverse.app</Text>
+          </View>
+          <View style={styles.profileRow}>
+            <Text style={styles.profileLabel}>Response SLA:</Text>
+            <Text style={styles.profileVal}>Within 24 business hours</Text>
+          </View>
+          <View style={styles.profileRow}>
+            <Text style={styles.profileLabel}>Payment Security:</Text>
+            <Text style={styles.profileVal}>Secured by Razorpay (256-bit TLS)</Text>
+          </View>
+          <View style={styles.profileRow}>
+            <Text style={styles.profileLabel}>Jurisdiction:</Text>
+            <Text style={styles.profileVal}>New Delhi, India 110001</Text>
+          </View>
+
+          {isAuthenticated && (
+            <View style={styles.dangerZone}>
+              <Text style={styles.dangerTitle}>PERMANENT DATA ERASURE</Text>
+              <Text style={styles.dangerDesc}>
+                Under our privacy governance, you have the right to erase all your account data, saved birth profiles, and reports at any time.
+              </Text>
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={handleDeleteAccount}
+                disabled={deleting}
+              >
+                <Text style={styles.deleteBtnText}>
+                  {deleting ? 'Deleting Account...' : 'Delete Account & All Data'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -337,6 +409,38 @@ const styles = StyleSheet.create({
   },
   txAmount: {
     fontSize: 13,
+    fontWeight: 'bold'
+  },
+  dangerZone: {
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border
+  },
+  dangerTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#EF4444',
+    letterSpacing: 0.5,
+    marginBottom: 4
+  },
+  dangerDesc: {
+    fontSize: 11.5,
+    color: Colors.textMuted,
+    lineHeight: 16,
+    marginBottom: 12
+  },
+  deleteBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center'
+  },
+  deleteBtnText: {
+    color: '#EF4444',
+    fontSize: 12.5,
     fontWeight: 'bold'
   }
 });
