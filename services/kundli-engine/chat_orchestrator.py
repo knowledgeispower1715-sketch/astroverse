@@ -24,6 +24,12 @@ SCOPE_HIGH_STAKES_REQUIRING_LIMITATION = "HIGH_STAKES_REQUIRING_LIMITATION"
 SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY = "UNSUPPORTED_ASTROLOGY_CAPABILITY"
 SCOPE_APP_WALLET = "APP_WALLET"
 
+HINDI_SIGNS = {
+    "Aries": "मेष", "Taurus": "वृषभ", "Gemini": "मिथुन", "Cancer": "कर्क",
+    "Leo": "सिंह", "Virgo": "कन्या", "Libra": "तुला", "Scorpio": "वृश्चिक",
+    "Sagittarius": "धनु", "Capricorn": "मकर", "Aquarius": "कुंभ", "Pisces": "मीन"
+}
+
 ALL_SCOPES = [
     SCOPE_ASTROLOGY_IN_SCOPE,
     SCOPE_ASTROLOGY_CONCEPTUAL,
@@ -70,24 +76,28 @@ CONCEPTUAL_PATTERNS = [
     r"\bwhat is (ashtakavarga|shadbala|vimshottari|navamsha|dashamsha|panchang|d9|d10|lagna|bhava|trikona|kendra|raja yoga|dhana yoga|sade sati|manglik|kaal sarp)\b",
     r"\bhow does (ashtakavarga|shadbala|vimshottari|dasha|retrograde|gochara|transit) work\b",
     r"\bdifference between (d1 and d9|parashari and jaimini|rashi and navamsha|sayana and nirayana|tropical and sidereal|bav and sav)\b",
-    r"\bexplain (the 12 houses|shani sade sati|manglik dosha|pancha mahapurusha|chara karaka|upagrahas|planetary horas)\b",
-    r"\bmeaning of (debilitated|exalted|combust|vargottama|atmakaraka)\b"
+    r"\bexplain (the 12 houses|shani sade sati|sade sati|manglik dosha|pancha mahapurusha|chara karaka|upagrahas|planetary horas|raja yoga|dhana yoga)\b",
+    r"\bmeaning of (debilitated|exalted|combust|vargottama|atmakaraka)\b",
+    r"\b(why is jupiter (considered )?auspicious|importance of jupiter|devaguru brihaspati)\b"
 ]
 
 # Patterns for Social Greetings and Sign-offs
 SOCIAL_PATTERNS = [
-    r"^(hi|hello|hey|namaste|namaskar|pranam|pranaam|om namah shivaya|radhe radhe|jai shri krishna|good morning|good afternoon|good evening|good day)[\s\.\!\?]*$",
+    r"^(hi|hello|hey|namaste|namaskar|pranam|pranaam|om namah shivaya|radhe radhe|jai shri krishna|good morning|good afternoon|good evening|good day)(\s+(there|astrologer|guruji|panditji|ji|acharya|acharyaji|sir|madam|dr|devratan|sunita|raghavendra))?[\s\.\!\?]*$",
+    r"^(नमस्ते|नमस्कार|प्रणाम|ॐ नमः शिवाय|राधे राधे|जय श्री कृष्ण)(\s+.*)?[\s\.\!\?]*$",
     r"^(thank you|thanks|dhanyawad|shukriya|bye|goodbye|see you|take care)[\s\.\!\?]*$",
-    r"^(who are you|what can you do|introduce yourself|help)[\s\.\!\?]*$"
+    r"^(धन्यवाद|शुक्रिया|अलविदा)[\s\.\!\?]*$",
+    r"^(who are you|what can you do|introduce yourself|help)[\s\.\!\?]*$",
+    r"^(आप कौन हैं|परिचय दें|मदद)[\s\.\!\?]*$"
 ]
 
 # Patterns for Contextual Follow-up Messages
 FOLLOW_UP_PATTERNS = [
     r"^(when will this happen|when will that happen|when\??|and when\??)[\s\.\!\?]*$",
     r"^(what about (my )?(saturn|jupiter|mars|venus|mercury|sun|moon|rahu|ketu|dasha)\??)[\s\.\!\?]*$",
-    r"^(and (for|about) my (partner|spouse|career|job|health|marriage)\??)[\s\.\!\?]*$",
-    r"^(why\??|how so\??|tell me more|elaborate on that|can you explain further\??)[\s\.\!\?]*$",
-    r"^(any remedies for this\??|what should i do about that\??)[\s\.\!\?]*$"
+    r"^(and (for|about) my (partner|spouse|career|job|health|marriage|wealth|finances)\??)[\s\.\!\?]*$",
+    r"^(why\??|why do you say that\??|how so\??|tell me more|elaborate on that|can you explain further\??)[\s\.\!\?]*$",
+    r"^(any remedies for this\??|what should i do about that\??|can you explain the remedies\??|what remedies\??)[\s\.\!\?]*$"
 ]
 
 # Patterns for Application Wallet Inquiries (Scenario 9: Distinct from Astrological Wealth)
@@ -289,7 +299,8 @@ def generate_scope_grounded_response(
     kundli: Optional[dict] = None,
     dasha: Optional[dict] = None,
     doshas: Optional[dict] = None,
-    astrologer_name: Optional[str] = None
+    astrologer_name: Optional[str] = None,
+    lang: Optional[str] = "en"
 ) -> Dict[str, Any]:
     """
     Produces deterministic, scope-compliant astrological responses:
@@ -451,6 +462,51 @@ def generate_scope_grounded_response(
                 "5. **Naisargikabala (Natural):** Intrinsic luminosity (Sun > Moon > Venus > Jupiter > Mercury > Mars > Saturn).\n"
                 "6. **Drikbala (Aspectual):** Auspicious vs challenging aspectual rays received from other planets."
             )
+        elif "sade sati" in query.lower():
+            explanation = (
+                "### Shani Sade Sati: The 7.5-Year Karmic Transit of Saturn\n"
+                "In Vedic astrology, **Shani Sade Sati** ('Seven and a Half') refers to the transit of Saturn (*Shani Bhagavan*) through the three zodiac signs encompassing your natal Moon:\n\n"
+                "1. **Rising Phase (12th House from Moon):** Expenditure, recalibration of priorities, and internal introspection.\n"
+                "2. **Peak Phase (1st House / Natal Moon Sign):** Direct emotional testing, psychological maturation, and assumption of heavy responsibilities.\n"
+                "3. **Setting Phase (2nd House from Moon):** Family responsibilities, financial restructuring, and consolidation of enduring wisdom.\n\n"
+                "#### Classical Scriptural Understanding\n"
+                "Sage Parashara emphasizes that Saturn is not an arbitrary punisher, but the *Karmaphala Data* (dispenser of karmic justice). "
+                "Saturn strips away illusions, ego, and impatience to forge enduring inner strength. "
+                "If your natal Moon or transited houses hold high **Ashtakavarga Bindus (28+)** or receive benefic aspects from Jupiter, Sade Sati often brings career elevation, public authority, and institutional stability rather than mere hardship."
+            )
+        elif "manglik" in query.lower() or "kuja" in query.lower():
+            explanation = (
+                "### Manglik Dosha (Kuja Dosha) in Vedic Astrology\n"
+                "**Manglik Dosha** occurs when Mars (*Mangala*) occupies the 1st (Lagna), 4th, 7th, 8th, or 12th house in the natal Rashi chart. "
+                "Because Mars represents intense fiery energy, assertiveness, and courage, its aspect upon the 7th House of partnership can manifest as interpersonal friction or impetuous decision-making if not tempered.\n\n"
+                "#### Classical Cancellation Rules (Kuja Dosha Bhanga)\n"
+                "Classical scriptures enumerate widespread exceptions where Manglik Dosha is neutralized:\n"
+                "1. **Dignity of Mars:** Mars in its own signs (Aries, Scorpio) or exaltation (Capricorn) causes no affliction.\n"
+                "2. **Benefic Aspects:** When Jupiter aspects Mars or the 7th house, the dosha is nullified.\n"
+                "3. **Reciprocal Alignment:** When both partners possess Manglik placements, the fiery energies harmonize.\n"
+                "4. **Maturity:** Parashari tradition notes that the acute volatility of Kuja Dosha softens significantly after age 28 as emotional maturity deepens."
+            )
+        elif "jupiter" in query.lower() and ("auspicious" in query.lower() or "benefic" in query.lower() or "guru" in query.lower() or "devaguru" in query.lower() or "why" in query.lower()):
+            explanation = (
+                "### Why Jupiter (Guru) is Considered the Supreme Benefic in Vedic Astrology\n"
+                "In classical Vedic Jyotish, **Jupiter (*Devaguru Brihaspati*)** is revered as the greatest natural benefic (*Purna Shubha Graha*). "
+                "Sage Parashara accords Jupiter paramount status for several foundational reasons:\n\n"
+                "1. **Karaka of Higher Wisdom & Dharma:** Jupiter signifies divine grace, righteous conduct (*Dharma*), spiritual truth, and higher learning.\n"
+                "2. **The Amrita Drishti (Nectarous Aspects):** While other planets cast aspects (7th house), Jupiter uniquely casts special 5th and 9th trine aspects (*Trikona Drishti*). Classical texts state that Jupiter's aspect acts like *Amrita* (nectar), revitalizing and shielding any house or planet it touches from destruction.\n"
+                "3. **Significator of Progeny & Prosperity:** As the primary *Karaka* for children (5th house) and accumulated wealth (2nd and 11th houses), Jupiter bestows sustainable expansion rather than volatile spikes.\n"
+                "4. **Preserver of Marital Harmony:** For individuals seeking long-term domestic peace, Jupiter represents noble character, forgiveness, and moral integrity."
+            )
+        elif "raja yoga" in query.lower() or "dhana yoga" in query.lower():
+            explanation = (
+                "### Raja Yogas and Dhana Yogas in Parashari Jyotish\n"
+                "In *Brihat Parashara Hora Shastra*, planetary yogas represent geometric planetary covenants that elevate an individual's destiny.\n\n"
+                "#### 1. Raja Yogas (Combinations for Authority and Honor)\n"
+                "- Formed through the conjunction, mutual aspect, or sign exchange between the lord of a **Kendra (1st, 4th, 7th, 10th - Vishnu Sthanas)** and the lord of a **Trikona (1st, 5th, 9th - Lakshmi Sthanas)**.\n"
+                "- When Vishnu (effort/action) unites with Lakshmi (grace/fortune), supreme public authority, executive leadership, and societal respect manifest during the operating Dasha.\n\n"
+                "#### 2. Dhana Yogas (Combinations for Wealth Compounding)\n"
+                "- Formed by relationships between the **1st house** (self), **2nd house** (accumulated capital), **5th house** (intellect/speculation), **9th house** (divine fortune), and **11th house** (recurring gains).\n"
+                "- When the 2nd and 11th lords connect with 5th or 9th lords, the native enjoys compounding prosperity and financial independence."
+            )
         else:
             explanation = (
                 f"### Vedic Astrological Foundation\n"
@@ -506,6 +562,133 @@ def generate_scope_grounded_response(
                 "How do I add demo credits for testing?",
                 "What are the subscription benefits for AI chat?"
             ],
+            "remedyCard": None
+        }
+
+    # 4c. SOCIAL GREETING & INTRODUCTIONS (Warm, courteous welcome; never dumps 10th house career analysis)
+    if scope == SCOPE_SOCIAL_CONVERSATION or intent == "greeting":
+        is_hi = bool(lang and lang.lower().startswith("hi")) or bool(re.search(r"[\u0900-\u097F]", query))
+        lagna_s = kundli.get("lagna", {}).get("sign", "") if kundli else ""
+        moon_s = kundli.get("planets", {}).get("Moon", {}).get("sign", "") if kundli else ""
+        has_chart_grounded = bool(kundli and lagna_s and moon_s)
+
+        if is_hi:
+            lagna_s = HINDI_SIGNS.get(lagna_s, lagna_s)
+            moon_s = HINDI_SIGNS.get(moon_s, moon_s)
+            if persona_id == "dr-sunita-shastri":
+                if has_chart_grounded:
+                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि** — संबंध व मुहूर्त विश्लेषण हेतु तैयार है।)*"
+                else:
+                    chart_note = "\n\n*(वर्तमान में सार्वभौमिक गोचर मोड सक्रिय है। व्यक्तिगत कुंडली मिलान और सूक्ष्म समय विश्लेषण हेतु जन्म कुंडली लिंक कर सकते हैं।)*"
+                message = (
+                    f"नमस्ते! मैं डॉ. सुनीता शास्त्री हूँ, दांपत्य समन्वय, नवमांश (D9) व जैमिनी ज्योतिष विशेषज्ञ।\n\n"
+                    f"AstroVerse में आपका स्वागत है। संबंध और आंतरिक सामंजस्य हमारे जीवन के सबसे महत्वपूर्ण आधार हैं। "
+                    f"चाहे आप विवाह के मुहूर्त, जीवनसाथी के साथ सामंजस्य, या नवमांश अनुकूलता के बारे में जानना चाहते हों, "
+                    f"मैं सहानुभूति और प्रामाणिक शास्त्रीय दृष्टिकोण के साथ आपका मार्गदर्शन करने के लिए उपस्थित हूँ।{chart_note}\n\n"
+                    f"आज आपके मन में संबंध या कुंडली से जुड़ा कौन सा प्रश्न है?"
+                )
+                suggested = [
+                    "विवाह और मांगलिक कार्यों हेतु अनुकूल समय खिड़की कब है?",
+                    "सप्तम भाव से जीवनसाथी के स्वभाव के बारे में क्या संकेत मिलते हैं?",
+                    "D9 नवमांश कुंडली वैवाहिक सामंजस्य को कैसे प्रभावित करती है?",
+                    "संबंधों में सौहार्द व शांति हेतु शास्त्रीय उपाय क्या हैं?"
+                ]
+            elif persona_id == "pandit-raghavendra":
+                if has_chart_grounded:
+                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि** — वैदिक शांति उपायों हेतु तैयार है।)*"
+                else:
+                    chart_note = "\n\n*(वर्तमान में सार्वभौमिक गोचर मोड सक्रिय है। व्यक्तिगत दोष शांति और रत्न परामर्श हेतु जन्म कुंडली बनाएं।)*"
+                message = (
+                    f"ॐ नमः शिवाय! मैं पंडित राघवेंद्र हूँ, शास्त्रीय पराशरी, वैदिक शांति उपाय व प्रामाणिक मंत्र ज्योतिष का साधक।\n\n"
+                    f"शुभ आशीर्वाद। प्राचीन ऋषियों का वचन है कि ग्रहीय गोचर हमारे संचित प्रारब्ध को प्रकट करते हैं, "
+                    f"तथा नित्य प्रार्थना, स्तोत्र पाठ और सात्विक दान हमें हर कालखंड में आत्मिक शांति और धैर्य प्रदान करते हैं।{chart_note}\n\n"
+                    f"आज आप किस आध्यात्मिक प्रश्न या पारंपरिक वैदिक उपाय पर मार्गदर्शन चाहते हैं?"
+                )
+                suggested = [
+                    "वैदिक शांति उपायों और मंत्र साधना का शास्त्रीय आधार क्या है?",
+                    "मेरी साढ़ेसाती और शनि गोचर की वर्तमान स्थिति बताएं",
+                    "मेरे लग्नेश को बलवान करने वाले वैदिक मंत्र कौन से हैं?",
+                    "ग्रह शांति और मानसिक स्थिरता हेतु पारंपरिक नियम क्या हैं?"
+                ]
+            else:
+                if has_chart_grounded:
+                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि** — करियर और धन योगों के विश्लेषण हेतु तैयार है।)*"
+                else:
+                    chart_note = "\n\n*(वर्तमान में सार्वभौमिक गोचर मोड सक्रिय है। अपने सटीक लग्न और विंशोत्तरी दशा के अनुसार परामर्श हेतु किसी भी समय जन्म कुंडली लिंक कर सकते हैं।)*"
+                message = (
+                    f"प्रणाम! मैं आचार्य देवरात्न हूँ, शास्त्रीय पराशरी ज्योतिष, करियर मार्गदर्शन और रणनीतिक जीवन निर्णयों का विशेषज्ञ।\n\n"
+                    f"AstroVerse में आपका स्वागत है। वैदिक ज्योतिष आपके धर्म, सामर्थ्य और कर्म के अनुकूल समय को प्रकाशित करने वाला पावन विज्ञान है। "
+                    f"चाहे आप अपने करियर की दिशा, धन संचय के योग, या सामान्य ज्योतिषीय सिद्धांतों के विषय में मार्गदर्शन चाहते हों, "
+                    f"मैं पूर्ण प्रामाणिकता और स्पष्टता से आपका मार्गदर्शन करने के लिए उपस्थित हूँ।{chart_note}\n\n"
+                    f"आज मैं आपके जीवन पथ में किस प्रकार सहायता कर सकता हूँ?"
+                )
+                suggested = [
+                    "मेरे दशम भाव (करियर) और पदोन्नति का समय बताएं",
+                    "मेरे धन योगों और वित्तीय संचय का विश्लेषण करें",
+                    "विंशोत्तरी महादशा जीवन के निर्णयों को कैसे प्रभावित करती है?",
+                    "मेरे करियर और प्रगति को बल देने वाले वैदिक उपाय क्या हैं?"
+                ]
+        else:
+            if persona_id == "dr-sunita-shastri":
+                if has_chart_grounded:
+                    chart_note = f"\n\n*(Your natal chart — **{lagna_s} Lagna**, Moon in **{moon_s}** — is loaded and ready whenever you wish to evaluate relationship timing or synastry.)*"
+                else:
+                    chart_note = "\n\n*(We are in universal transit mode. You can link your birth chart anytime to unlock personalized synastry and timing.)*"
+                message = (
+                    f"{greeting_salutation} I am {persona_display}, specializing in Jaimini astrology, relationship synastry, and D9 Navamsha harmony.\n\n"
+                    f"Welcome to AstroVerse. Relationships and emotional harmony are central pillars of our life experience. "
+                    f"Whether you are seeking clarity on partnership compatibility, marriage timing, family dynamics, or personal healing, "
+                    f"I am here to explore your path with thoughtful empathy and analytical rigor.{chart_note}\n\n"
+                    f"What relationship question or personal milestone is on your heart today?"
+                )
+                suggested = [
+                    "When is an auspicious timing window for marriage?",
+                    "What does my 7th house reveal about my partner?",
+                    "How does D9 Navamsha support relationship harmony?",
+                    "What classical practices bring peace to partnerships?"
+                ]
+            elif persona_id == "pandit-raghavendra":
+                if has_chart_grounded:
+                    chart_note = f"\n\n*(Your natal coordinates — **{lagna_s} Lagna**, Moon in **{moon_s}** — are verified for remedial and transit assessment.)*"
+                else:
+                    chart_note = "\n\n*(Operating in universal transit mode. Calculate your Janam Kundli whenever you wish to examine personalized doshas and gemstone suitability.)*"
+                message = (
+                    f"{greeting_salutation} I am {persona_display}, dedicated to classical Parashari scriptures, remedial Jyotish, and sacred Vedic mantras.\n\n"
+                    f"Peace and auspicious blessings. The ancient rishis taught that planetary transits bring karmic lessons (*Prarabdha*), "
+                    f"while disciplined prayer, sacred stotras, and selfless charity provide the spiritual fortitude to navigate all seasons with wisdom and serenity.{chart_note}\n\n"
+                    f"What karmic inquiry, spiritual question, or traditional remedy would you like to explore today?"
+                )
+                suggested = [
+                    "What is the classical scriptural basis for Vedic remedies?",
+                    "Evaluate my Sade Sati and Saturn transit status",
+                    "Which mantras harmonize my Lagna lord?",
+                    "Explain traditional spiritual practices for planetary peace"
+                ]
+            else:
+                if has_chart_grounded:
+                    chart_note = f"\n\n*(Your calculated chart — **{lagna_s} Lagna**, Moon in **{moon_s}** — is loaded and ready whenever you wish to examine personal transits or dasha timings.)*"
+                else:
+                    chart_note = "\n\n*(Operating in universal transit mode. You can calculate your Janam Kundli anytime to ground our consultation in your exact natal Lagna and Vimshottari Dasha.)*"
+                message = (
+                    f"{greeting_salutation} I am {persona_display}, specializing in classical Parashari Jyotish, career architecture, and strategic life decisions.\n\n"
+                    f"Welcome to AstroVerse. Vedic astrology is a profound sacred science designed to illuminate your dharma, timings of opportunity, and inner potential. "
+                    f"Whether you seek strategic guidance on your career, insights into wealth compounding, or general astrological principles, I am here to guide you with clarity and scriptural integrity.{chart_note}\n\n"
+                    f"How may I assist your astrological journey today?"
+                )
+                suggested = [
+                    "Analyze my 10th House of Career & promotion timing",
+                    "What does my chart reveal regarding Dhana Yogas?",
+                    "How does Vimshottari Dasha influence life timing?",
+                    "What gemstones or Vedic practices support my path?"
+                ]
+        return {
+            "status": "completed",
+            "scope": SCOPE_SOCIAL_CONVERSATION,
+            "intent": "greeting",
+            "message": message,
+            "chartEvidence": [],
+            "relatedInsights": [],
+            "suggestedQuestions": suggested,
             "remedyCard": None
         }
 
@@ -647,12 +830,12 @@ def generate_scope_grounded_response(
             ]
         else:
             message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"I have analyzed your calculated chart: **{lagna_sign} Lagna**, **{moon_sign} Moon**, and active **{dasha_maha} Mahadasha** with **{dasha_antar} Antardasha**.\n\n"
-                f"### Strategic Career & Life Architecture\n"
-                f"With {lagna_sign} rising, your executive authority and public standing are governed under the current celestial cycle. "
-                f"Under your active {dasha_maha} period, the planetary alignments support strategic positioning, institutional leadership, and structured long-term wealth compounding.\n\n"
-                f"What professional milestone, career transition, or financial objective would you like to examine?"
+                f"{greeting_salutation} I am {persona_display}, specializing in classical Parashari Jyotish, career architecture, and strategic life decisions.\n\n"
+                f"I am connected to your natal chart: **{lagna_sign} Lagna**, Moon in **{moon_sign}** ({moon_nak} Nakshatra), with active **{dasha_maha}-{dasha_antar} Dasha**.\n\n"
+                f"### Astrological Foundation & Guidance\n"
+                f"Under your {lagna_sign} Ascendant, your chart carries distinct potential for purposeful achievement and structured growth. "
+                f"Whether you wish to examine professional direction, timing of opportunities, Dhana Yogas, or personal life balance, I am here to guide you with clarity and scriptural integrity.\n\n"
+                f"What strategic milestone, question, or goal would you like to explore today?"
             )
             suggested = [
                 "Analyze my 10th House of Career & promotion timing",

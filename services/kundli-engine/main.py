@@ -107,6 +107,7 @@ class AIQuestionRequest(BaseModel):
     time_horizon: str = Field("daily", description="hourly, daily, weekly, monthly, yearly, mahadasha")
     astrologer_name: Optional[str] = Field(None, description="Astrologer persona name")
     session_history: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Recent conversation turns")
+    lang: Optional[str] = Field("en", description="Output language: 'en' or 'hi'")
 
 class PartnerBirthProfile(BaseModel):
     name: Optional[str] = "Partner"
@@ -548,7 +549,8 @@ def ask_ai_astrologer(req: AIQuestionRequest):
             doshas=doshas,
             time_horizon=req.time_horizon,
             astrologer_name=req.astrologer_name,
-            session_history=req.session_history
+            session_history=req.session_history,
+            lang=req.lang
         )
         return {
             "mode": "PERSONALIZED_CHART_GROUNDED",
@@ -573,7 +575,8 @@ def ask_ai_astrologer(req: AIQuestionRequest):
             doshas=None,
             time_horizon=req.time_horizon,
             astrologer_name=req.astrologer_name,
-            session_history=req.session_history
+            session_history=req.session_history,
+            lang=req.lang
         )
         return {
             "mode": "GENERAL_TRANSIT_UNPERSONALIZED",
