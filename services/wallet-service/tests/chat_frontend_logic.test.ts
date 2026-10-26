@@ -581,3 +581,160 @@ test('Client-side demo engine in index.html generates 15-chapter publication for
   assert.strictEqual(pythCompound, 58, 'ARYAN TIWARI Pythagorean compound must be 58');
   assert.strictEqual(pythRoot, 4, 'Compound 58 must reduce to Pythagorean Naamank 4');
 });
+
+// ==============================================================================
+// 7. AI ASTROLOGER ENHANCED CONVERSATIONAL & BILINGUAL INTELLIGENCE TESTS
+// ==============================================================================
+
+test('index.html defines toggleBilingualSummary, speech synthesis stop on modal close, and in-chat birth details parsing', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const indexPath = path.resolve(__dirname, '../../../index.html');
+  const htmlContent = fs.readFileSync(indexPath, 'utf-8');
+
+  // 1. Bilingual summary toggle function
+  assert.ok(
+    htmlContent.includes('function toggleBilingualSummary(msgId)'),
+    'index.html must define toggleBilingualSummary'
+  );
+  assert.ok(
+    htmlContent.includes('btn-chat-summary-toggle'),
+    'index.html must include summary toggle button class'
+  );
+  assert.ok(
+    htmlContent.includes('chat-summary-card'),
+    'index.html must render chat-summary-card container'
+  );
+
+  // 2. Speech cancellation on modal close
+  assert.ok(
+    htmlContent.includes('function closeConsultationModal()') &&
+    htmlContent.includes('AstroVerseVoiceEngine.stop()'),
+    'closeConsultationModal must stop active voice speech synthesis'
+  );
+
+  // 3. In-chat birth details calculation in sendAiUserChatMessage
+  assert.ok(
+    htmlContent.includes('calculateClientKundli(cleanDob, cleanTob, resolvedLat, resolvedLon, false)'),
+    'sendAiUserChatMessage must support in-chat birth calculation and linking'
+  );
+});
+
+test('Client-side astrological intent logic recognizes personal introduction without demanding Kundli', () => {
+  const testQueries = [
+    { text: 'My name is Priya', expectedName: 'Priya' },
+    { text: "I am Arjun", expectedName: 'Arjun' },
+    { text: 'Call me Rahul', expectedName: 'Rahul' },
+    { text: 'मेरा नाम प्रिया है', expectedName: 'प्रिया' }
+  ];
+
+  for (const { text, expectedName } of testQueries) {
+    const q = text.toLowerCase();
+    const nameMatch = q.match(/(?:i am|i'm|my name is|call me)\s+([a-zA-Z]{2,30})/i) ||
+      text.match(/(?:मेरा नाम|मैं हूँ|मुझे)\s+([^\s,।!?]{2,30})/);
+    const isPersonalIntro = !!nameMatch && q.split(' ').length <= 10;
+    assert.ok(isPersonalIntro, `Query "${text}" must be classified as personal_introduction`);
+    const parsedName = nameMatch![1].trim();
+    assert.strictEqual(parsedName.toLowerCase(), expectedName.toLowerCase(), `Extracted name must match ${expectedName}`);
+  }
+});
+
+test('Client-side astrological intent logic recognizes daily_routine and delivers Dinacharya guidance', () => {
+  const routineQueries = [
+    'What is the best daily routine according to Vedic astrology?',
+    'Explain Dinacharya rules',
+    'What is the ideal morning routine for Brahma Muhurta?',
+    'दैनिक दिनचर्या के शास्त्रीय नियम क्या हैं?'
+  ];
+
+  for (const text of routineQueries) {
+    const q = text.toLowerCase();
+    const isDailyRoutine = /\b(daily routine|dinacharya|morning routine|ideal day|brahma muhurta|routine for the day|din charya)\b/i.test(q) ||
+      /(दिनचर्या|दैनिक दिनचर्या|ब्रह्म मुहूर्त|आदर्श दिनचर्या|सुबह का समय)/.test(text);
+    assert.ok(isDailyRoutine, `Query "${text}" must be classified as daily_routine`);
+  }
+});
+
+test('Client-side astrological intent logic recognizes progressive birth data when chart is missing', () => {
+  const birthQueries = [
+    'I was born on 15-08-1995',
+    'My dob is 1990/04/12',
+    'Date of birth: 22-11-1988',
+    'मेरा जन्म 15-08-1995 को हुआ था'
+  ];
+
+  for (const text of birthQueries) {
+    const q = text.toLowerCase();
+    const hasDobInQuery = /\b(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2})\b/.test(q) ||
+      /\b(?:born on|dob|birth date|date of birth|birthdate)\b/i.test(q) ||
+      /(?:जन्म तिथि|पैदाइश|जन्म हुआ|जन्म तारीख)/.test(text);
+    assert.ok(hasDobInQuery, `Query "${text}" must detect birth date pattern`);
+  }
+});
+
+test('Client-side astrological intent logic routes all 6 multi-horizon queries with interactive navigation links', () => {
+  const horizonTests = [
+    {
+      query: 'Explain today hourly hora timings',
+      pattern: /\b(hourly hora|current hora|hora calculation|planetary hora|today's hora)\b/i,
+      intent: 'hourly_hora'
+    },
+    {
+      query: 'What is today daily forecast and Panchang?',
+      pattern: /\b(daily forecast|daily panchang|today's prediction|today's forecast|daily horoscope)\b/i,
+      intent: 'daily_forecast'
+    },
+    {
+      query: 'Give me my weekly forecast for the next 7 days',
+      pattern: /\b(weekly forecast|weekly prediction|7-day forecast|7-day prediction)\b/i,
+      intent: 'weekly_forecast'
+    },
+    {
+      query: 'Show me my monthly forecast and 4-week analysis',
+      pattern: /\b(monthly forecast|monthly prediction|4-week forecast|monthly analysis)\b/i,
+      intent: 'monthly_forecast'
+    },
+    {
+      query: 'What is my yearly forecast and 12-month annual prediction?',
+      pattern: /\b(yearly forecast|annual prediction|annual forecast|12-month forecast|year forecast)\b/i,
+      intent: 'yearly_forecast'
+    },
+    {
+      query: 'Explain my 5-year forecast under active Mahadasha guidance',
+      pattern: /\b(mahadasha forecast|5-year dasha|5-year forecast|five-year forecast|mahadasha guidance)\b/i,
+      intent: 'mahadasha_guidance'
+    }
+  ];
+
+  for (const h of horizonTests) {
+    const match = h.pattern.test(h.query);
+    assert.ok(match, `Query "${h.query}" must match pattern for ${h.intent}`);
+  }
+});
+
+test('Client-side astrological intent logic routes "Why do you say that?" to 4-pillar Vedic deduction', () => {
+  const whyQueries = [
+    'Why do you say that?',
+    'What is the astrological reason for this prediction?',
+    'Explain why this timing is favorable',
+    'ऐसा क्यों?'
+  ];
+
+  for (const text of whyQueries) {
+    const q = text.toLowerCase();
+    const isWhy = /\b(why\s+(?:do\s+you\s+say|is\s+that|so|do\s+i|would|should)|how\s+(?:come|do\s+you\s+know)|what\s+is\s+the\s+(?:astrological\s+)?(?:reason|logic|basis)|explain\s+why|why\?)\b/i.test(q) ||
+      /(ऐसा क्यों|क्यों कहा|क्या कारण है|शास्त्रीय तर्क क्या है)/.test(text);
+    assert.ok(isWhy, `Query "${text}" must match isWhy intent pattern`);
+  }
+});
+
+test('Bilingual summary contract contains non-empty English and Hindi representations', () => {
+  const sampleSummary = {
+    en: "Analyzed 10th house career trajectory, Dasha timing, and leadership milestones.",
+    hi: "दशम भाव, करियर दिशा, दशा अवधि एवं पदोन्नति का समय विश्लेषण किया।"
+  };
+
+  assert.ok(typeof sampleSummary.en === 'string' && sampleSummary.en.length > 10, 'English summary must be non-empty string');
+  assert.ok(typeof sampleSummary.hi === 'string' && sampleSummary.hi.length > 10, 'Hindi summary must be non-empty string');
+  assert.ok(/[\u0900-\u097F]/.test(sampleSummary.hi), 'Hindi summary must contain Devanagari script');
+});

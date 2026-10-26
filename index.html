@@ -11910,9 +11910,36 @@
           bubble.appendChild(remEl);
         }
 
+        // Bilingual Summary Card (Collapsible)
+        if (msg.bilingual_summary && (msg.bilingual_summary.en || msg.bilingual_summary.hi)) {
+          const sumCard = document.createElement('div');
+          sumCard.className = 'chat-summary-card';
+          sumCard.id = `chat-summary-card-${msg.id}`;
+          sumCard.style.display = 'none';
+          sumCard.style.background = 'rgba(254, 243, 199, 0.45)';
+          sumCard.style.border = '1px solid #FDE68A';
+          sumCard.style.borderRadius = '8px';
+          sumCard.style.padding = '8px 12px';
+          sumCard.style.marginTop = '8px';
+          sumCard.style.fontSize = '11.5px';
+          sumCard.style.lineHeight = '1.45';
+          sumCard.innerHTML = `
+            <div style="font-weight: 700; color: #92400E; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-language"></i> Bilingual Summary / सारांश
+            </div>
+            ${msg.bilingual_summary.en ? `<div style="color: #1E293B; margin-bottom: 4px;"><strong>EN:</strong> ${escapeHtml(msg.bilingual_summary.en)}</div>` : ''}
+            ${msg.bilingual_summary.hi ? `<div style="color: #1E293B;"><strong>HI:</strong> ${escapeHtml(msg.bilingual_summary.hi)}</div>` : ''}
+          `;
+          bubble.appendChild(sumCard);
+        }
+
+        const summaryToggleBtn = (msg.bilingual_summary && (msg.bilingual_summary.en || msg.bilingual_summary.hi))
+          ? `<button class="btn-chat-summary-toggle" style="padding: 2px 8px; font-size: 10px; margin-left: 6px; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="toggleBilingualSummary('${msg.id}')"><i class="fa-solid fa-language"></i> Summary</button>`
+          : '';
+
         const meta = document.createElement('div');
         meta.className = 'chat-msg-meta chat-msg-meta-agent';
-        meta.innerHTML = `<time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>Chart-Grounded</span> <button class="btn-voice-listen" style="padding: 2px 8px; font-size: 10px; margin-left: 8px;" onclick="toggleChatVoiceNarration('${msg.id}', this)"><i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen</span></button>`;
+        meta.innerHTML = `<time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>Chart-Grounded</span> <button class="btn-voice-listen" style="padding: 2px 8px; font-size: 10px; margin-left: 8px;" onclick="toggleChatVoiceNarration('${msg.id}', this)"><i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen</span></button>${summaryToggleBtn}`;
 
         bubbleWrap.appendChild(bubble);
         bubbleWrap.appendChild(meta);
@@ -11920,6 +11947,13 @@
 
       msgBox.appendChild(bubbleWrap);
     }
+
+    function toggleBilingualSummary(msgId) {
+      const card = document.getElementById(`chat-summary-card-${msgId}`);
+      if (!card) return;
+      card.style.display = card.style.display === 'none' ? 'block' : 'none';
+    }
+    window.toggleBilingualSummary = toggleBilingualSummary;
 
     function renderDynamicChips(chipSuggestions) {
       const container = document.getElementById('ai-chat-chips-container');
@@ -12286,6 +12320,9 @@
 
     function closeConsultationModal() {
       if (consultationTimerInterval) clearInterval(consultationTimerInterval);
+      if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
+        AstroVerseVoiceEngine.stop();
+      }
       document.body.classList.remove('consultation-modal-open');
       const modal = document.getElementById('modal-ai-consultation');
       if (modal) modal.style.display = 'none';
@@ -12367,6 +12404,10 @@
               "कार्यक्षेत्र में सफलता हेतु कौन से वैदिक उपाय फलदायी हैं?"
             ],
             remedyCard: null,
+            bilingual_summary: {
+              en: "Clarified scope boundary: dedicated exclusively to classical Vedic Jyotish.",
+              hi: "कार्यक्षेत्र सीमा स्पष्ट की: केवल शास्त्रीय वैदिक ज्योतिष हेतु समर्पित।"
+            },
             status: 'completed'
           };
         } else {
@@ -12384,6 +12425,10 @@
               "What Vedic remedies strengthen workplace leadership?"
             ],
             remedyCard: null,
+            bilingual_summary: {
+              en: "Clarified scope boundary: dedicated exclusively to classical Vedic Jyotish.",
+              hi: "कार्यक्षेत्र सीमा स्पष्ट की: केवल शास्त्रीय वैदिक ज्योतिष हेतु समर्पित।"
+            },
             status: 'completed'
           };
         }
@@ -12462,6 +12507,10 @@
           relatedInsights: [],
           suggestedQuestions: conceptualQuestions,
           remedyCard: null,
+          bilingual_summary: {
+            en: "Explained classical Vedic astrological foundations and shastric principles.",
+            hi: "शास्त्रीय वैदिक ज्योतिष के आधारभूत सिद्धांतों की व्याख्या की।"
+          },
           status: 'completed'
         };
       }
@@ -12486,6 +12535,10 @@
               "एआई चैट के सब्सक्रिप्शन लाभ क्या हैं?"
             ],
             remedyCard: null,
+            bilingual_summary: {
+              en: "Provided live wallet and demo balance details with recharge link.",
+              hi: "लाइव वॉलेट एवं डेमो बैलेंस की जानकारी दी तथा रीचार्ज लिंक प्रदान किया।"
+            },
             status: 'completed'
           };
         } else {
@@ -12503,9 +12556,362 @@
               "What are the subscription benefits for AI chat?"
             ],
             remedyCard: null,
+            bilingual_summary: {
+              en: "Provided live wallet and demo balance details with recharge link.",
+              hi: "लाइव वॉलेट एवं डेमो बैलेंस की जानकारी दी तथा रीचार्ज लिंक प्रदान किया।"
+            },
             status: 'completed'
           };
         }
+      }
+
+      // Personal Introduction (Acknowledging name warmly, no career dump)
+      const nameMatch = q.match(/(?:i am|i'm|my name is|call me)\s+([a-zA-Z]{2,30})/i) ||
+        (userQuery || '').match(/(?:मेरा नाम|मैं हूँ|मुझे)\s+([^\s,।!?]{2,30})/);
+      const isPersonalIntro = !!nameMatch && !isOutOfScope && q.split(' ').length <= 10;
+
+      if (isPersonalIntro) {
+        let rawName = nameMatch[1].trim();
+        let userName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        let introMsg = '';
+        if (isHi) {
+          introMsg = `नमस्ते **${userName}** जी! मैं ${personaDisplay} हूँ।\n\nएस्ट्रोवर्स वैदिक परामर्श में आपका आत्मीय स्वागत है। मुझे आपसे मिलकर अत्यंत प्रसन्नता हुई।\n\n### मैं आपकी क्या सहायता कर सकता हूँ?\nआप मुझसे जीवन, करियर, संबंध, धन योग अथवा शास्त्रीय वैदिक सिद्धांतों से जुड़ा कोई भी प्रश्न पूछ सकते हैं।\n\n> **सटीक जन्म कुंडली विश्लेषण हेतु:** यदि आप अपनी जन्म कुंडली के आधार पर सटीक दशा, लग्न और गोचर का फल जानना चाहते हैं, तो आप किसी भी समय अपनी जन्म तिथि, समय और स्थान मुझे बता सकते हैं या ऊपर 'कुंडली लिंक करें' बटन का उपयोग कर सकते हैं।\n\nआज आप किस विषय पर चर्चा करना चाहते हैं?`;
+        } else {
+          introMsg = `Namaste **${userName}**! I am ${personaDisplay}.\n\nA warm welcome to our AstroVerse consultation. It is a genuine pleasure to meet you!\n\n### How I Can Guide You Today\nYou are welcome to explore questions about career trajectory, relationship harmony, financial foresight, or sacred classical Vedic Shastras.\n\n> **To Personalize Your Natal Guidance:** Whenever you wish to explore your exact Janam Kundli—including your Ascendant (Lagna), Moon sign, and active Vimshottari Dasha—simply share your birth date, time, and city right here in chat, or use the 'Link Kundli' button above.\n\nWhat question, goal, or curious inquiry would you like to explore today?`;
+        }
+        return {
+          intent: 'personal_introduction',
+          message: introMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "वैदिक ज्योतिष में करियर का विश्लेषण कैसे होता है?",
+            "जन्म कुंडली से क्या जानकारी मिलती है?",
+            "आज की ग्रहीय होरा बताएं",
+            "मैं अपनी जन्म कुंडली के लिए विवरण देना चाहता हूँ"
+          ] : [
+            "How does Vedic astrology examine career?",
+            "What does a Janam Kundli reveal?",
+            "Explain today's planetary Horas",
+            "I want to share my birth details for a reading"
+          ],
+          bilingual_summary: {
+            en: `Welcomed ${userName} warmly and explained consultation capabilities without demanding immediate birth details.`,
+            hi: `${userName} जी का आत्मीय स्वागत किया और बिना किसी दबाव के परामर्श का परिचय दिया।`
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      // Daily Routine & Dinacharya (Grounded in Shastras, no Kundli demanded)
+      const isDailyRoutine = /\b(daily routine|dinacharya|morning routine|ideal day|brahma muhurta|routine for the day|din charya)\b/i.test(q) ||
+        /(दिनचर्या|दैनिक दिनचर्या|ब्रह्म मुहूर्त|आदर्श दिनचर्या|सुबह का समय)/.test(userQuery || '');
+
+      if (isDailyRoutine) {
+        let routineMsg = '';
+        if (isHi) {
+          routineMsg = `### शास्त्रीय वैदिक दिनचर्या (Dinacharya)\nवैदिक ज्योतिष एवं आयुर्वेद के अनुसार दिनचर्या का प्राकृतिक संरेखण मानसिक शांति और ओजस (vitality) की वृद्धि करता है।\n\n#### 1. ब्रह्म मुहूर्त जागरण (सूर्योदय से 1.5 घंटा पूर्व)\nयह काल सत्व गुण से परिपूर्ण होता है। इस समय ध्यान, मन्त्र जप एवं स्वाध्याय करने से प्रज्ञा जागृत होती है।\n\n#### 2. सूर्य संरेखण एवं उषापान\nप्रातः तांबे के पात्र का जल ग्रहण करें एवं उगते सूर्य को अर्घ्य देकर **गायत्री मन्त्र** अथवा **आदित्य हृदय स्तोत्र** का स्मरण करें।\n\n#### 3. मध्याह्न मुख्य आहार (जठराग्नि)\nजब सूर्य आकाश में सर्वोच्च स्थिति में हों (12:00 से 1:30 बजे), तब जठराग्नि सर्वाधिक प्रदीप्त होती है। मुख्य पौष्टिक भोजन इसी समय ग्रहण करें।\n\n#### 4. सायंकालीन शांति एवं स्वाध्याय\nसंध्याकाल में हल्का सुपाच्य भोजन लें और रात्रि 10:00 बजे तक विश्राम करें ताकि चंद्र ऊर्जा शरीर को पुनर्जीवित कर सके।\n\n> यह सार्वभौमिक जीवनशैली मार्गदर्शन है जो सभी के लिए स्वास्थ्यप्रद है। व्यक्तिगत ग्रहों के अनुसार विशिष्ट दिनचर्या हेतु आप अपनी जन्म कुंडली लिंक कर सकते हैं।`;
+        } else {
+          routineMsg = `### Classical Vedic Dinacharya (Daily Routine)\nIn the classical Vedic tradition, aligning your daily rhythm with celestial cycles preserves mental tranquility, physical vitality (*Ojas*), and spiritual clarity.\n\n#### 1. Brahma Muhurta Awakening (Approx. 1.5 Hours Before Dawn)\nThis sacred window is saturated with pure *Sattva Guna*. It is the ideal time for meditation, contemplation, and peaceful mental focus before external demands begin.\n\n#### 2. Solar Attunement & Sunrise Contemplation\nDrink warm water from a pure vessel, step into early morning sunlight, and recite the **Gayatri Mantra** or **Aditya Hridaya Stotra** to energize the solar plexus (*Surya Prana*).\n\n#### 3. Midday Solar Digestion (Jatharagni)\nBetween 12:00 PM and 1:30 PM, the Sun is at its meridian zenith, maximizing the internal digestive fire (*Jatharagni*). Consume your principal balanced meal during this window.\n\n#### 4. Evening Unwinding & Moon Alignment\nTransition into calm activities at dusk. Take a light evening meal before 8:00 PM and rest by 10:00 PM to allow lunar soma to repair bodily tissues.\n\n> This is universal shastric wisdom. If you wish to adapt your routine to your specific Lagna Lord or active Dasha, feel free to link your Janam Kundli!`;
+        }
+        return {
+          intent: 'daily_routine',
+          message: routineMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "ब्रह्म मुहूर्त के क्या आध्यात्मिक लाभ हैं?",
+            "दोपहर में जठराग्नि कैसे काम करती है?",
+            "प्रातःकाल कौन से मंत्र शुभ हैं?",
+            "मेरी कुंडली के अनुसार मेरी दिनचर्या कैसी होनी चाहिए?"
+          ] : [
+            "What are the benefits of Brahma Muhurta?",
+            "How does solar noon affect digestion?",
+            "Which mantras suit morning contemplation?",
+            "Can you align my routine with my natal Kundli?"
+          ],
+          bilingual_summary: {
+            en: "Outlined classical Vedic Dinacharya: Brahma Muhurta awakening, solar digestive alignment, and evening tranquility.",
+            hi: "वैदिक दिनचर्या का शास्त्रीय मार्गदर्शन: ब्रह्म मुहूर्त जागरण, सूर्य संरेखित आहार और सात्विक जीवनशैली।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      // Progressive Birth Data Collection (When no chart is linked and user shares partial birth data)
+      const hasDobInQuery = /\b(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2})\b/.test(q) ||
+        /\b(?:born on|dob|birth date|date of birth|birthdate)\b/i.test(q) ||
+        /(?:जन्म तिथि|पैदाइश|जन्म हुआ|जन्म तारीख)/.test(userQuery || '');
+      const isProgressiveBirthData = !hasChart && hasDobInQuery;
+
+      if (isProgressiveBirthData) {
+        let progMsg = '';
+        if (isHi) {
+          progMsg = `### जन्म विवरण प्राप्ति एवं अग्रिम चरण\nमैंने आपकी जन्म तिथि का विवरण प्राप्त कर लिया है।\n\n#### समय एवं स्थान क्यों आवश्यक हैं?\nवैदिक ज्योतिष में **लग्न (Ascendant)** प्रत्येक 2 घंटे में राशि बदलता है, और **नक्षत्र चरण (Pada)** कुछ ही मिनटों के अंतराल पर परिवर्तित हो जाते हैं। सटीक भाव स्थिति एवं विंशोत्तरी महादशा गणना हेतु निम्नलिखित विवरण आवश्यक हैं:\n\n1. **जन्म समय (Time of Birth):** जैसे 02:30 PM अथवा 14:30\n2. **जन्म स्थान / नगर (City/Place of Birth):** जैसे नई दिल्ली, मुम्बई, जयपुर आदि।\n\n👉 **कृपया अपना जन्म समय और नगर यहाँ चैट में बताएं**, और मैं तुरंत आपकी जन्म कुंडली की गणना करके इस परामर्श को व्यक्तिगत बना दूँगा!`;
+        } else {
+          progMsg = `### Birth Details Received & Next Step\nI have acknowledged your date of birth!\n\n#### Why Exact Time and City Are Essential\nIn classical Parashari Jyotish, the **Lagna (Ascendant)** shifts signs every ~2 hours, and sensitive **Nakshatra Padas** change within minutes. To accurately establish your 12 houses and precise Vimshottari Dasha sequence, we require:\n\n1. **Time of Birth (TOB):** e.g., 02:30 PM or 14:30\n2. **Place / City of Birth (POB):** e.g., New Delhi, Mumbai, Bengaluru, etc.\n\n👉 **Please share your birth time and city right here in chat**, and I will calculate and link your Janam Kundli immediately!`;
+        }
+        return {
+          intent: 'progressive_birth_data',
+          message: progMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "मेरा जन्म दोपहर 2:30 बजे दिल्ली में हुआ था",
+            "मुझे सही जन्म समय ज्ञात नहीं है",
+            "यदि केवल जन्म तिथि पता हो तो क्या करें?",
+            "लग्न के लिए जन्म समय क्यों आवश्यक है?"
+          ] : [
+            "I was born at 02:30 PM in New Delhi",
+            "I do not know my exact birth time",
+            "What if I only know my birth date?",
+            "Explain why birth time is needed for Lagna"
+          ],
+          bilingual_summary: {
+            en: "Acknowledged birth date and explained why time and city of birth are required to calculate Lagna and Dasha.",
+            hi: "जन्म तिथि स्वीकार की और लग्न व दशा गणना हेतु जन्म समय एवं स्थान का महत्व समझाया।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      // Multi-Horizon Queries (Hourly, Daily, Weekly, Monthly, Yearly, Mahadasha)
+      const isHourlyHora = /\b(hourly hora|current hora|hora calculation|planetary hora|today's hora)\b/i.test(q) || /(ग्रहीय होरा|होरा काल)/.test(userQuery || '');
+      const isDailyForecast = /\b(daily forecast|daily panchang|today's prediction|today's forecast|daily horoscope)\b/i.test(q) || /(दैनिक राशिफल|आज का राशिफल|दैनिक पंचांग)/.test(userQuery || '');
+      const isWeeklyForecast = /\b(weekly forecast|weekly prediction|7-day forecast|7-day prediction)\b/i.test(q) || /(साप्ताहिक भविष्यफल|साप्ताहिक राशिफल)/.test(userQuery || '');
+      const isMonthlyForecast = /\b(monthly forecast|monthly prediction|4-week forecast|monthly analysis)\b/i.test(q) || /(मासिक राशिफल|मासिक भविष्यफल)/.test(userQuery || '');
+      const isYearlyForecast = /\b(yearly forecast|annual prediction|annual forecast|12-month forecast|year forecast)\b/i.test(q) || /(वार्षिक भविष्यफल|वार्षिक राशिफल)/.test(userQuery || '');
+      const isMahadashaGuidance = /\b(mahadasha forecast|5-year dasha|5-year forecast|five-year forecast|mahadasha guidance)\b/i.test(q) || /(पंचवर्षीय महादशा|महादशा भविष्यफल)/.test(userQuery || '');
+
+      if (isHourlyHora) {
+        let horaMsg = '';
+        if (isHi) {
+          horaMsg = `### आज की ग्रहीय होरा एवं समय संरेखण\nवैदिक ज्योतिष में **होरा (Hora)** अहोरात्र (24 घंटे) का वह खगोलीय विभाजन है जिसका प्रत्येक घंटा एक विशिष्ट ग्रह द्वारा शासित होता है।\n\n#### 24 होराओं का शास्त्रीय क्रम\nहोरा का चक्र सूर्योदय से आरंभ होता है। दिन के पहले घंटे का स्वामी उस वार का अधिपति होता है। इसके उपरांत प्राचीन काल्डीयन गति क्रम (*शनि -> गुरु -> मंगल -> सूर्य -> शुक्र -> बुध -> चंद्र*) के अनुसार चक्र निरंतर घूमता है।\n\n#### मुख्य शुभ होरा उपयोग\n- **सूर्य होरा:** प्रशासनिक कार्य, सरकारी आवेदन एवं आत्मबल संवर्धन।\n- **गुरु होरा:** विद्या, अध्ययन, धार्मिक अनुष्ठान, विवाह चर्चा एवं निवेश।\n- **बुध होरा:** वाणिज्य, व्यापार, लेखन, लेखांकन एवं अनुबंध।\n- **शुक्र होरा:** कला, वस्त्र, आभूषण, संबंध एवं सौहार्द।\n\n👉 [**इंटरएक्टिव होरा घड़ी देखें**](javascript:switchNavSection('horas'))`;
+        } else {
+          horaMsg = `### Hourly Planetary Hora & Timing Architecture\nIn classical Vedic astrology, a **Hora** represents an approximately 60-minute planetary hour dividing day and night (*Ahoratra*). Each Hora is commanded by a specific Graha lens that colors all actions undertaken during its window.\n\n#### The Classical 24-Hora Order\nThe sequence begins at local sunrise with the lord of that weekday. Subsequent Horas rotate in descending order of astronomical orbital speeds (Chaldean order: *Saturn -> Jupiter -> Mars -> Sun -> Venus -> Mercury -> Moon*).\n\n#### Auspicious Hora Applications\n- **Sun Hora:** Public authority, leadership announcements, and administrative approvals.\n- **Jupiter Hora:** Financial commitments, legal counsel, spiritual initiation, and advisory discussions.\n- **Mercury Hora:** Data analysis, coding, contracts, commercial negotiations, and trade.\n- **Venus Hora:** Creative collaboration, aesthetic purchases, diplomacy, and romance.\n\n👉 [**Open Interactive Hora Clock**](javascript:switchNavSection('horas'))`;
+        }
+        return {
+          intent: 'hourly_hora',
+          message: horaMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "वर्तमान में कौन सी ग्रहीय होरा सक्रिय है?",
+            "व्यापारिक समझौते के लिए सबसे उत्तम होरा कौन सी है?",
+            "सूर्योदय और सूर्यास्त होरा की गणना को कैसे बदलते हैं?",
+            "राहुकाल और होरा में क्या अंतर है?"
+          ] : [
+            "Which planetary Hora is active right now?",
+            "Which Hora is best for contract signing?",
+            "How do sunrise and sunset shift Hora durations?",
+            "What is the difference between Rahu Kaal and Hora?"
+          ],
+          bilingual_summary: {
+            en: "Explained the 24 planetary Horas from sunrise and linked to the interactive Today & Timing dashboard.",
+            hi: "सूर्योदय से 24 ग्रहीय होराओं का क्रम समझाया और इंटरएक्टिव होरा घड़ी का लिंक दिया।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      if (isDailyForecast) {
+        let dailyMsg = '';
+        if (isHi) {
+          dailyMsg = `### आज का दैनिक वैदिक फलादेश एवं पंचांग\nआज के दिन का मार्गदर्शन वैदिक पंचांग के पाँच अंगों (*तिथि, वार, नक्षत्र, योग, करण*) एवं समष्टि गोचर पर आधारित है।\n\n#### आज की खगोलीय स्थिति\n- **चंद्र गोचर:** चंद्र देव का संचरण मानसिक एकाग्रता एवं भावनात्मक स्थिरता को प्रभावित करता है।\n- **शुभ मुहूर्त:** अभिजीत मुहूर्त (दोपहर ~11:45 से 12:35) सभी नवीन और महत्वपूर्ण कार्यों हेतु अत्यंत शुभ है।\n- **वर्जित काल (राहुकाल):** राहुकाल के दौरान महत्वपूर्ण वित्तीय या दीर्घकालिक निर्णय स्थगित रखें।\n\n👉 [**दैनिक पंचांग व फलादेश डैशबोर्ड खोलें**](javascript:switchNavSection('horas'))`;
+        } else {
+          dailyMsg = `### Daily Vedic Forecast & Celestial Weather\nToday's atmospheric guidance integrates the five sacred limbs of the Vedic Panchanga (*Tithi, Vara, Nakshatra, Yoga, and Karana*) with current lunar transits.\n\n#### Today's Cosmic Alignments\n- **Lunar Transits:** Transiting Moon governs today's emotional weather and intuitive receptivity.\n- **Auspicious Muhurta:** The midday *Abhijit Muhurta* window provides universal support for launching essential tasks.\n- **Inauspicious Window (Rahu Kaal):** Refrain from commencing critical contracts or investments during the daily Rahu Kaal window.\n\n👉 [**View Daily Forecast Dashboard**](javascript:switchNavSection('horas'))`;
+        }
+        return {
+          intent: 'daily_forecast',
+          message: dailyMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "आज का राहुकाल किस समय है?",
+            "आज का नक्षत्र कौन सा है और उसका क्या फल है?",
+            "आज अभिजीत मुहूर्त का सटीक समय क्या है?",
+            "मेरी जन्म राशि के अनुसार आज का दिन कैसा रहेगा?"
+          ] : [
+            "What is the exact Rahu Kaal timing today?",
+            "Which Nakshatra is active today and what does it indicate?",
+            "What is the Abhijit Muhurta window today?",
+            "How does today's transit impact my natal Moon sign?"
+          ],
+          bilingual_summary: {
+            en: "Provided daily Panchang weather, lunar transit guidance, and linked to the forecast dashboard.",
+            hi: "दैनिक पंचांग, चंद्र गोचर एवं शुभ मुहूर्त की जानकारी दी तथा डैशबोर्ड लिंक प्रदान किया।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      if (isWeeklyForecast) {
+        let weeklyMsg = '';
+        if (isHi) {
+          weeklyMsg = `### 7-दिवसीय साप्ताहिक खगोलीय पूर्वानुमान\nसाप्ताहिक फलादेश चंद्र देव के विभिन्न राशियों में संचरण (प्रत्येक राशि में लगभग 2.25 दिन) और ग्रहों की तात्कालिक युतियों का विश्लेषण करता है।\n\n#### सप्ताह की मुख्य प्रवृत्तियां\n- **सप्ताह का पूर्वार्ध:** योजना, संगठनात्मक ढांचा और रणनीतिक चर्चाओं हेतु अनुकूल।\n- **सप्ताह का मध्य:** बौद्धिक निर्णय और वाणिज्यिक लेन-देन के लिए सर्वोत्तम।\n- **सप्ताहांत:** आत्मनिरीक्षण, सात्विक विश्राम और पारिवारिक संवाद को प्राथमिकता दें।\n\n👉 [**साप्ताहिक 7-दिन फलादेश देखें**](javascript:switchNavSection('horas'))`;
+        } else {
+          weeklyMsg = `### Weekly 7-Day Planetary Forecast\nThe weekly forecast tracks the Moon's transit across zodiac signs (approximately 2.25 days per sign) alongside key planetary aspects.\n\n#### Weekly Momentum Currents\n- **Early Week:** Strong momentum for structured planning, administrative alignment, and foundational tasks.\n- **Mid-Week:** Favorable for commercial communication, agreements, and intellectual problem-solving.\n- **Weekend:** Ideal for restorative contemplation, family harmony, and spiritual recalibration.\n\n👉 [**Open Weekly Forecast**](javascript:switchNavSection('horas'))`;
+        }
+        return {
+          intent: 'weekly_forecast',
+          message: weeklyMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "इस सप्ताह का सबसे शुभ दिन कौन सा है?",
+            "इस सप्ताह चंद्र गोचर का मेरी राशि पर क्या प्रभाव पड़ेगा?",
+            "क्या इस सप्ताह नए निवेश हेतु अनुकूल समय है?",
+            "सप्ताहांत में कौन से कार्य शुभ रहेंगे?"
+          ] : [
+            "Which day this week is most auspicious for important meetings?",
+            "How will lunar sign changes affect my mood this week?",
+            "Are there favorable transit windows for financial initiatives?",
+            "What precautions should I take this week?"
+          ],
+          bilingual_summary: {
+            en: "Summarized weekly 7-day transit trajectory, lunar shifts, and linked to the forecast dashboard.",
+            hi: "7-दिवसीय चंद्र गोचर एवं ग्रहीय प्रवाह का साप्ताहिक विवरण दिया।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      if (isMonthlyForecast) {
+        let monthlyMsg = '';
+        if (isHi) {
+          monthlyMsg = `### 4-सप्ताह मासिक ज्योतिषीय विश्लेषण\nमासिक फलादेश मुख्य रूप से सूर्य देव की संक्रांति (सूर्य का राशि परिवर्तन), पूर्णिमा व अमावस्या के भावनात्मक चक्रों और तेज गति वाले ग्रहों (बुध, शुक्र, मंगल) के गोचर पर केंद्रित होता है।\n\n#### इस माह के प्रमुख बिंदु\n1. **संक्रांति प्रभाव:** सूर्य का नवीन राशि में प्रवेश सामाजिक व व्यावसायिक दायित्वों में नया दृष्टिकोण लाता है।\n2. **पक्ष चक्र:** शुक्ल पक्ष में नवीन योजनाओं का विस्तार करें; कृष्ण पक्ष में लंबित कार्यों का समापन करें।\n3. **वित्तीय एवं कार्यक्षेत्र स्थिरता:** वक्री ग्रहों के प्रभाव को ध्यान में रखते हुए बड़े निर्णयों में सावधानी बरतें।\n\n👉 [**मासिक 4-सप्ताह विश्लेषण देखें**](javascript:switchNavSection('horas'))`;
+        } else {
+          monthlyMsg = `### 4-Week Monthly Planetary Trajectory\nMonthly forecasting synthesizes solar ingress (*Sankranti*), lunar phases (Shukla and Krishna Paksha), and intermediate planetary transits across Mercury, Venus, and Mars.\n\n#### Key Monthly Focus Areas\n1. **Solar Ingress Alignment:** Solar movement illuminates evolving life priorities and authority structures.\n2. **Paksha Dynamics:** Leverage waxing Shukla Paksha for outward expansion; utilize waning Krishna Paksha for consolidation.\n3. **Financial & Strategic Stability:** Exercise discernment during planetary retrograde stations before making irreversible commitments.\n\n👉 [**View Monthly Analysis**](javascript:switchNavSection('horas'))`;
+        }
+        return {
+          intent: 'monthly_forecast',
+          message: monthlyMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "इस माह में कौन सी संक्रांति होने वाली है?",
+            "मासिक फलादेश के अनुसार करियर में क्या परिवर्तन संभव हैं?",
+            "इस माह की पूर्णिमा और अमावस्या का क्या प्रभाव होगा?",
+            "क्या इस महीने यात्रा अथवा स्थानांतरण के योग हैं?"
+          ] : [
+            "What solar ingress occurs this month?",
+            "How does this month's transit climate affect my career?",
+            "What do this month's Purnima and Amavasya cycles indicate?",
+            "Is this month favorable for long-distance relocation?"
+          ],
+          bilingual_summary: {
+            en: "Analyzed 4-week monthly forecast, solar Sankranti ingress, and lunar Paksha dynamics.",
+            hi: "मासिक 4-सप्ताह फलादेश, सूर्य संक्रांति एवं पक्ष चक्रों का विश्लेषण प्रस्तुत किया।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      if (isYearlyForecast) {
+        let yearlyMsg = '';
+        if (isHi) {
+          yearlyMsg = `### 12-माह वार्षिक वैदिक फलादेश\nवार्षिक फलादेश दीर्घकालीन धीमी गति वाले ग्रहों—विशेष रूप से **बृहस्पति (गुरु)**, **शनि**, और **राहु-केतु** के महा-गोचरों पर आधारित होता है।\n\n#### वर्ष के तीन मुख्य स्तंभ\n1. **गुरु का गोचर (~1 वर्ष प्रति राशि):** ज्ञान, विस्तार, संतान, विवाह और आर्थिक समृद्धि का मुख्य कारक।\n2. **शनि का गोचर (~2.5 वर्ष प्रति राशि):** कर्म, अनुशासन, परिश्रम और स्थायी संरचनाओं के निर्माण का समय।\n3. **राहु-केतु अक्ष (~18 माह):** जीवन में अप्रत्याशित अवसर एवं आध्यात्मिक विरक्ति के क्षेत्र।\n\n👉 [**वार्षिक 12-महीने फलादेश डैशबोर्ड खोलें**](javascript:switchNavSection('horas'))`;
+        } else {
+          yearlyMsg = `### 12-Month Annual Vedic Forecast\nAnnual forecasting is anchored in the slow-moving planetary giants whose transits establish long-term macro trends: **Jupiter**, **Saturn**, and the nodal **Rahu-Ketu** axis.\n\n#### The Three Pillars of the Year\n1. **Jupiter's Transit (~1 Year per Sign):** Governs wisdom, expansion, dharma, marital opportunities, and compounded financial growth.\n2. **Saturn's Transit (~2.5 Years per Sign):** Dictates foundational karma, endurance, career consolidation, and structural maturation.\n3. **Nodal Rahu-Ketu Shift (~18 Months):** Illuminates unconventional opportunities, rapid karmic acceleration, and spiritual introspection.\n\n👉 [**Open Yearly Forecast**](javascript:switchNavSection('horas'))`;
+        }
+        return {
+          intent: 'yearly_forecast',
+          message: yearlyMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "इस वर्ष गुरु और शनि का गोचर मेरे लिए कैसा रहेगा?",
+            "वर्ष के कौन से महीने करियर में पदोन्नति हेतु सर्वश्रेष्ठ हैं?",
+            "क्या इस वर्ष संपत्ति अथवा वाहन क्रय के शुभ योग हैं?",
+            "इस वर्ष के लिए कौन से वैदिक उपाय फलदायी हैं?"
+          ] : [
+            "How do Jupiter and Saturn transits shape my upcoming year?",
+            "Which months this year present peak career advancement windows?",
+            "Does the annual forecast support property acquisition?",
+            "What classical remedies are recommended for the coming year?"
+          ],
+          bilingual_summary: {
+            en: "Detailed 12-month annual forecast governed by slow outer transits: Jupiter, Saturn, and Rahu-Ketu.",
+            hi: "12-माह वार्षिक फलादेश: गुरु, शनि एवं राहु-केतु के महा-गोचरों का विश्लेषण प्रस्तुत किया।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      if (isMahadashaGuidance) {
+        let dashaMsg = '';
+        if (isHi) {
+          dashaMsg = `### 5-वर्षीय विंशोत्तरी महादशा फलादेश\nवैदिक ज्योतिष में **विंशोत्तरी महादशा प्रणाली (120-वर्षीय चक्र)** मानव जीवन के कर्म फलों को उद्घाटित करने वाली सर्वोच्च समय-गणना पद्धति है। 5-वर्षीय परिप्रेक्ष्य में यह आपके जीवन के विकासवादी सोपानों का मानचित्रण करता है।\n\n#### 5-वर्षीय कालखंड के मुख्य चरण\n1. **महादशा अधिपति का प्रभाव:** जीवन के व्यापक संदर्भ, प्राथमिक उद्देश्य एवं वातावरण का निर्धारण।\n2. **अंतर्दशा चक्र (Subperiods):** विशिष्ट घटनाओं, अवसरों और भावनात्मक अवस्थाओं का प्रकटीकरण।\n3. **कर्म परिपक्वता:** पूर्वजन्म संचित प्रारब्ध का वह भाग जो इस कालखंड में अनुभव में आता है।\n\n👉 [**5-वर्षीय महादशा विश्लेषण देखें**](javascript:switchNavSection('horas'))`;
+        } else {
+          dashaMsg = `### 5-Year Vimshottari Mahadasha Guidance\nIn classical Parashari Jyotish, the **Vimshottari Dasha system (120-year cycle)** is the supreme predictive clock governing when specific karmic seeds ripen into lived experience. A 5-year perspective maps your developmental arc and institutional milestones.\n\n#### The 5-Year Developmental Arc\n1. **Mahadasha Sovereign:** Sets the overarching life narrative, psychic climate, and core institutional priorities.\n2. **Antardasha Subperiods:** Triggers specific milestones, career transitions, and relational shifts within that macro narrative.\n3. **Karmic Fruition:** Guides conscious navigation through times of consolidation versus aggressive expansion.\n\n👉 [**Explore 5-Year Mahadasha**](javascript:switchNavSection('horas'))`;
+        }
+        return {
+          intent: 'mahadasha_guidance',
+          message: dashaMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "मेरी वर्तमान महादशा कब तक सक्रिय रहेगी?",
+            "मेरी आगामी अंतर्दशा में क्या मुख्य बदलाव आने वाले हैं?",
+            "दशा संधि (दो दशाओं का संधिकाल) के क्या नियम हैं?",
+            "सक्रिय दशा स्वामी को शांत व प्रसन्न करने के वैदिक उपाय क्या हैं?"
+          ] : [
+            "How long will my active Mahadasha remain in effect?",
+            "What shifts will occur in my upcoming Antardasha?",
+            "What precautions should be observed during Dasha Sandhi?",
+            "Which Vedic remedies fortify my current Dasha lord?"
+          ],
+          bilingual_summary: {
+            en: "Mapped 5-year Vimshottari Mahadasha developmental arc and subperiod transitions.",
+            hi: "5-वर्षीय विंशोत्तरी महादशा, अंतर्दशा संक्रमण एवं कर्म परिपक्वता का विश्लेषण प्रस्तुत किया।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      // "Why do you say that?" Follow-Up Explanation
+      const isWhy = /\b(why\s+(?:do\s+you\s+say|is\s+that|so|do\s+i|would|should)|how\s+(?:come|do\s+you\s+know)|what\s+is\s+the\s+(?:astrological\s+)?(?:reason|logic|basis)|explain\s+why|why\?)\b/i.test(q) ||
+        /(ऐसा क्यों|क्यों कहा|क्या कारण है|शास्त्रीय तर्क क्या है)/.test(userQuery || '');
+
+      if (isWhy) {
+        let whyMsg = '';
+        if (isHi) {
+          whyMsg = `### ज्योतिषीय निष्कर्ष के चार शास्त्रीय आधार स्तंभ\nहमारे परामर्श का प्रत्येक मार्गदर्शन *वृहत् पाराशर होरा शास्त्र* के शुद्ध गणितीय एवं खगोलीय सिद्धांतों पर आधारित है:\n\n#### 1. भावेश स्थिति (House Lordship)\nजिस भाव (जैसे 10वां करियर, 7वां विवाह, 2/11वां धन) के विषय में प्रश्न है, उसके स्वामी ग्रह की D1 जन्म कुंडली एवं D9/D10 वर्ग चक्रों में स्थिति, उच्च/नीच अवस्था और युति का विश्लेषण किया जाता है।\n\n#### 2. ग्रह दृष्टि (Planetary Aspects)\nभाव एवं भावेश पर शुभ ग्रहों (विशेषकर देवगुरु बृहस्पति की अमृत दृष्टि) अथवा पापी ग्रहों (शनि, मंगल, राहु) की दृष्टियों का प्रभाव देखा जाता है।\n\n#### 3. विंशोत्तरी दशा चक्र (Vimshottari Dasha)\nसमय का निर्धारण केवल गोचर से नहीं, बल्कि सक्रिय महादशा और अंतर्दशा से होता है। जो ग्रह दशा में सक्रिय होते हैं, केवल वही घटना को फलित करने का अधिकार रखते हैं।\n\n#### 4. गोचर एवं अष्टकवर्ग (Transits & Ashtakavarga)\nवर्तमान में ग्रहों का भ्रमण जन्म राशि और लग्न से किन भावों में है, और सर्वाष्टकवर्ग (SAV) में उस भाव को कितने बिंदु (28 या अधिक होने पर श्रेष्ठ फल) प्राप्त हैं।`;
+        } else {
+          whyMsg = `### The 4 Pillars of Classical Astrological Deduction\nEvery conclusion in this consultation is grounded in the rigorous mathematical and scriptural axioms of Sage Parashara (*Brihat Parashara Hora Shastra*):\n\n#### 1. House Lordship (Bhavesha)\nWe examine the condition of the planet ruling the specific house under inquiry (e.g. 10th for career, 7th for partnership, 2nd/11th for wealth). Its placement, dignity (exalted, own sign, debilitated), and harmonic strength in divisional charts (D9 Navamsha, D10 Dashamsha) determine the foundational promise.\n\n#### 2. Planetary Dignity & Aspects (Graha Drishti)\nWe assess the celestial aspects cast upon the house. Jupiter's 5th, 7th, and 9th nectar-like glance (*Amrita Drishti*) protects and elevates, while Saturn's 3rd, 7th, and 10th aspects demand discipline and perseverance.\n\n#### 3. Active Vimshottari Dasha Periods\nTransits cannot trigger events without the authorization of the Dasha clock. Your active Mahadasha and Antardasha lords command the current life season and dictate which karmic fruits are ripe for manifestation.\n\n#### 4. Gochara Transits & Ashtakavarga Bindus\nWe calculate current planetary positions relative to your natal Moon and Ascendant, corroborated against the **Sarvashtakavarga (SAV)** point tally (houses with **28 or more Bindus** allow smooth manifestation, while fewer points require patient effort).`;
+        }
+        return {
+          intent: 'is_why',
+          message: whyMsg,
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi ? [
+            "गोचर मेरी महादशा को कैसे प्रभावित करता है?",
+            "मेरे लग्नेश का बल कैसा है?",
+            "किन भावों में सर्वाधिक अष्टकवर्ग बिंदु हैं?",
+            "D9 नवांश इन फलों की पुष्टि कैसे करता है?"
+          ] : [
+            "How does Gochara transit modify my Dasha?",
+            "Explain the dignity of my Lagna Lord",
+            "Which houses have the highest Ashtakavarga Bindus?",
+            "How does D9 Navamsha confirm these promises?"
+          ],
+          bilingual_summary: {
+            en: "Explained the 4-pillar astrological rationale: House Lordships, Planetary Aspects, Vimshottari Dasha, and Gochara transits.",
+            hi: "ज्योतिषीय निष्कर्ष के 4 मुख्य आधार समझाए: भावेश, ग्रह दृष्टि, विंशोत्तरी दशा और गोचर अष्टकवर्ग।"
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
       }
 
       // Intent detection
@@ -12677,6 +13083,10 @@
           relatedInsights: greetInsights,
           suggestedQuestions: greetSuggested,
           remedyCard: null,
+          bilingual_summary: {
+            en: "Welcomed seeker and initialized consultation session.",
+            hi: "परामर्श सत्र का आत्मीय स्वागत संदेश।"
+          },
           status: 'completed'
         };
       }
@@ -12746,6 +13156,10 @@
           relatedInsights: [],
           suggestedQuestions: suggestedQuestions,
           remedyCard: null,
+          bilingual_summary: {
+            en: "Analyzed universal macrocosmic transits and invited natal chart linking for personalized insights.",
+            hi: "सार्वभौमिक गोचर विश्लेषण प्रस्तुत किया और व्यक्तिगत फलादेश हेतु जन्म कुंडली लिंक करने का आमंत्रण दिया।"
+          },
           status: 'completed'
         };
       }
@@ -12998,6 +13412,43 @@
         if (jupCard) relatedInsights.push(jupCard);
       }
 
+      // Generate bilingual summary for personalized readings
+      let personalizedSummary = {
+        en: "Synthesized natal chart constitution, planetary climate, and personal guidance.",
+        hi: "जन्म कुंडली, ग्रहीय प्रभाव एवं समग्र जीवन परामर्श का समन्वय प्रस्तुत किया।"
+      };
+      if (intent === 'career') {
+        personalizedSummary = {
+          en: "Analyzed 10th house career trajectory, Dasha timing, and leadership milestones.",
+          hi: "दशम भाव, करियर दिशा, दशा अवधि एवं पदोन्नति का समय विश्लेषण किया।"
+        };
+      } else if (intent === 'marriage') {
+        personalizedSummary = {
+          en: "Examined 7th house partnership geometry, D9 Navamsha, and marital timing.",
+          hi: "सप्तम भाव, दांपत्य समन्वय, D9 नवांश एवं विवाह समय का विश्लेषण किया।"
+        };
+      } else if (intent === 'wealth') {
+        personalizedSummary = {
+          en: "Evaluated 2nd and 11th house Dhana Yogas, liquidity, and financial timing.",
+          hi: "द्वितीय व एकादश भाव, धन योग एवं वित्तीय सुरक्षा का विश्लेषण किया।"
+        };
+      } else if (intent === 'remedy') {
+        personalizedSummary = {
+          en: "Outlined classical Parashari remedies, mantras, and Saturnian practices.",
+          hi: "शास्त्रीय पाराशरी उपाय, महामृत्युंजय मन्त्र एवं शनि शांति के नियम बताए।"
+        };
+      } else if (intent === 'timing') {
+        personalizedSummary = {
+          en: "Evaluated active Dasha subperiods and upcoming planetary transit windows.",
+          hi: "सक्रिय दशा चक्र एवं आगामी शुभ गोचर खिड़कियों का समय निर्धारण किया।"
+        };
+      } else if (intent === 'explanation') {
+        personalizedSummary = {
+          en: "Detailed mathematical and scriptural foundations of Parashari Jyotish.",
+          hi: "पाराशरी ज्योतिष के गणितीय एवं शास्त्रीय आधारों की व्याख्या की।"
+        };
+      }
+
       return {
         intent: intent,
         message: message,
@@ -13005,6 +13456,7 @@
         relatedInsights: relatedInsights,
         suggestedQuestions: suggested,
         remedyCard: remedyCard,
+        bilingual_summary: personalizedSummary,
         status: 'completed'
       };
     }
@@ -13016,6 +13468,97 @@
       inp.value = '';
 
       if (!activeConsultationSession) return;
+
+      // Progressive in-chat birth details calculation
+      if (!isChatKundliLinked || !currentCalculatedChart) {
+        const textToParse = text;
+        const dateMatch = textToParse.match(/\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})\b/);
+        const timeMatch = textToParse.match(/\b(\d{1,2}:\d{2}(?:\s*(?:am|pm|AM|PM))?)\b/);
+        if (dateMatch && timeMatch) {
+          let rawD = dateMatch[1].replace(/[/.]/g, '-');
+          let dParts = rawD.split('-');
+          let cleanDob = '';
+          if (dParts[0].length === 4) {
+            cleanDob = `${dParts[0]}-${dParts[1].padStart(2, '0')}-${dParts[2].padStart(2, '0')}`;
+          } else if (dParts[2].length === 4) {
+            cleanDob = `${dParts[2]}-${dParts[1].padStart(2, '0')}-${dParts[0].padStart(2, '0')}`;
+          }
+
+          let rawT = timeMatch[1].trim();
+          let cleanTob = '12:00';
+          if (/am|pm/i.test(rawT)) {
+            const isPm = /pm/i.test(rawT);
+            const tOnly = rawT.replace(/\s*(?:am|pm)/i, '');
+            const [hStr, mStr] = tOnly.split(':');
+            let h = parseInt(hStr, 10);
+            if (isPm && h < 12) h += 12;
+            if (!isPm && h === 12) h = 0;
+            cleanTob = `${String(h).padStart(2, '0')}:${mStr.padStart(2, '0')}`;
+          } else {
+            const [hStr, mStr] = rawT.split(':');
+            cleanTob = `${hStr.padStart(2, '0')}:${mStr.padStart(2, '0')}`;
+          }
+
+          if (cleanDob && cleanDob.length === 10) {
+            let resolvedLat = 28.6139;
+            let resolvedLon = 77.2090;
+            let resolvedCity = 'New Delhi, Delhi, India';
+
+            const cityLower = textToParse.toLowerCase();
+            if (cityLower.includes('mumbai') || cityLower.includes('bombay')) {
+              resolvedLat = 19.0760; resolvedLon = 72.8777; resolvedCity = 'Mumbai, Maharashtra, India';
+            } else if (cityLower.includes('bangalore') || cityLower.includes('bengaluru')) {
+              resolvedLat = 12.9716; resolvedLon = 77.5946; resolvedCity = 'Bengaluru, Karnataka, India';
+            } else if (cityLower.includes('kolkata') || cityLower.includes('calcutta')) {
+              resolvedLat = 22.5726; resolvedLon = 88.3639; resolvedCity = 'Kolkata, West Bengal, India';
+            } else if (cityLower.includes('chennai') || cityLower.includes('madras')) {
+              resolvedLat = 13.0827; resolvedLon = 80.2707; resolvedCity = 'Chennai, Tamil Nadu, India';
+            } else if (cityLower.includes('hyderabad')) {
+              resolvedLat = 17.3850; resolvedLon = 78.4867; resolvedCity = 'Hyderabad, Telangana, India';
+            } else if (cityLower.includes('pune')) {
+              resolvedLat = 18.5204; resolvedLon = 73.8567; resolvedCity = 'Pune, Maharashtra, India';
+            } else if (cityLower.includes('jaipur')) {
+              resolvedLat = 26.9124; resolvedLon = 75.7873; resolvedCity = 'Jaipur, Rajasthan, India';
+            } else if (cityLower.includes('jabalpur')) {
+              resolvedLat = 23.1815; resolvedLon = 79.9864; resolvedCity = 'Jabalpur, Madhya Pradesh, India';
+            }
+
+            try {
+              const clientData = calculateClientKundli(cleanDob, cleanTob, resolvedLat, resolvedLon, false);
+              if (clientData && clientData.d1_rashi_chart) {
+                const d1 = clientData.d1_rashi_chart;
+                const lagna = d1.lagna;
+                const moon = d1.planets.Moon;
+                const sun = d1.planets.Sun;
+
+                currentCalculatedChart = {
+                  name: "Seeker",
+                  city: resolvedCity,
+                  dob: cleanDob,
+                  tob: cleanTob,
+                  lat: resolvedLat,
+                  lon: resolvedLon,
+                  timezone: "Asia/Kolkata",
+                  tz: "Asia/Kolkata",
+                  lagnaSign: lagna.sign,
+                  lagnaIdx: signsList.indexOf(lagna.sign),
+                  moonSign: moon.sign,
+                  moonIdx: signsList.indexOf(moon.sign),
+                  sunSign: sun.sign,
+                  nakName: moon.nakshatra || "Rohini",
+                  pada: moon.pada || 1,
+                  fullData: clientData,
+                  isUnknownTime: false
+                };
+                toggleChatKundliLink(true);
+                showToast("Birth details recognized! Calculated Janam Kundli and linked to this consultation.", "success");
+              }
+            } catch (calcErr) {
+              console.warn("[CHAT] In-chat Kundli calculation fallback:", calcErr);
+            }
+          }
+        }
+      }
 
       // 1. Create and render user message
       const userMsg = {
@@ -13171,6 +13714,7 @@
             relatedInsights: data.relatedInsights || [],
             suggestedQuestions: data.suggestedQuestions || [],
             remedyCard: data.remedyCard || null,
+            bilingual_summary: data.bilingual_summary || null,
             status: 'completed'
           };
         }
@@ -13212,7 +13756,8 @@
           personaId: activeConsultationSession.personaId,
           intent: assistantResponse.intent,
           relatedInsights: assistantResponse.relatedInsights,
-          remedyCard: assistantResponse.remedyCard
+          remedyCard: assistantResponse.remedyCard,
+          bilingual_summary: assistantResponse.bilingual_summary || null
         };
 
         activeConsultationSession.messages.push(agentMsg);

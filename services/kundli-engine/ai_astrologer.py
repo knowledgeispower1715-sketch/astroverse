@@ -128,7 +128,8 @@ def generate_astrological_reading(
         SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY,
         SCOPE_ASTROLOGY_CONCEPTUAL,
         SCOPE_APP_WALLET,
-        SCOPE_SOCIAL_CONVERSATION
+        SCOPE_SOCIAL_CONVERSATION,
+        SCOPE_ASTROLOGY_WITH_MISSING_INPUTS
     )
     classification = classify_user_query(user_query, session_history=session_history, has_chart=has_chart)
     scope = classification.get("scope")
@@ -139,7 +140,12 @@ def generate_astrological_reading(
         SCOPE_UNSUPPORTED_ASTROLOGY_CAPABILITY,
         SCOPE_ASTROLOGY_CONCEPTUAL,
         SCOPE_APP_WALLET,
-        SCOPE_SOCIAL_CONVERSATION
+        SCOPE_SOCIAL_CONVERSATION,
+        SCOPE_ASTROLOGY_WITH_MISSING_INPUTS
+    ] or classification.get("is_why") or classification.get("intent") in [
+        "hourly_hora", "daily_forecast", "weekly_forecast", "monthly_forecast",
+        "yearly_forecast", "mahadasha_guidance", "progressive_birth_data",
+        "personal_introduction", "daily_routine"
     ]:
         grounded_res = generate_scope_grounded_response(
             classification=classification,
@@ -707,6 +713,10 @@ def generate_astrological_reading(
         "relatedInsights": related_insights,
         "suggestedQuestions": suggested_questions,
         "remedyCard": remedy_card,
+        "bilingual_summary": {
+            "en": f"Astrological analysis for {lagna} Lagna and {moon_sign} Moon under active {active_maha}-{active_antar} Dasha focused on {intent}.",
+            "hi": f"{HINDI_SIGNS.get(lagna, lagna)} लग्न एवं {HINDI_SIGNS.get(moon_sign, moon_sign)} चंद्र हेतु सक्रिय {active_maha}-{active_antar} दशा के अंतर्गत {intent} का विश्लेषण।"
+        },
         "status": "completed",
         "astrological_grounding": {
             "lagna": lagna,

@@ -759,3 +759,141 @@ def test_saturn_transit_dhaiya_sadesati_separation():
     assert ss_aq["is_active"] is True   # True Sade Sati
     assert ss_aq["is_dhaiya"] is False
     assert "Setting" in ss_aq["classification"]
+
+
+def test_ai_consultation_personal_introduction_acknowledges_name():
+    """Verify that user self-introduction acknowledges user's name and does NOT demand Kundli or dump career."""
+    from chat_orchestrator import classify_user_query, SCOPE_SOCIAL_CONVERSATION
+
+    # English test
+    cl = classify_user_query("My name is Rahul", has_chart=False)
+    assert cl["scope"] == SCOPE_SOCIAL_CONVERSATION
+    assert cl["intent"] == "personal_introduction"
+    assert cl["preferred_name"] == "Rahul"
+
+    res_en = generate_astrological_reading(
+        category="general",
+        user_query="My name is Rahul",
+        kundli=None,
+        astrologer_name="Acharya Devratan"
+    )
+    assert "Rahul" in res_en["message"]
+    assert "10th House" not in res_en["message"]
+    assert "bilingual_summary" in res_en
+    assert "Rahul" in res_en["bilingual_summary"]["en"]
+
+    # Hindi test
+    res_hi = generate_astrological_reading(
+        category="general",
+        user_query="मेरा नाम प्रिया है",
+        kundli=None,
+        astrologer_name="Dr. Sunita Shastri",
+        lang="hi"
+    )
+    assert "प्रिया" in res_hi["message"]
+    assert "सुनीता शास्त्री" in res_hi["message"]
+    assert "bilingual_summary" in res_hi
+
+
+def test_ai_consultation_daily_routine_general_advice_no_kundli_demanded():
+    """Verify Vedic Dinacharya guidance is given without demanding a Kundli chart."""
+    from chat_orchestrator import classify_user_query, SCOPE_ASTROLOGY_CONCEPTUAL
+
+    cl = classify_user_query("How can I improve my daily routine according to Vedic principles?", has_chart=False)
+    assert cl["scope"] == SCOPE_ASTROLOGY_CONCEPTUAL
+    assert cl["intent"] == "daily_routine"
+
+    res = generate_astrological_reading(
+        category="general",
+        user_query="How can I improve my daily routine according to Vedic principles?",
+        kundli=None,
+        astrologer_name="Acharya Devratan"
+    )
+    assert res["status"] == "completed"
+    assert "Dinacharya" in res["message"] or "Brahma Muhurta" in res["message"]
+    assert "bilingual_summary" in res
+    assert "Dinacharya" in res["bilingual_summary"]["en"]
+
+
+def test_ai_consultation_missing_profile_invites_birth_data_or_saved_profile():
+    """Verify personal astrology question without a chart operates in universal mode and invites birth details."""
+    res = generate_astrological_reading(
+        category="marriage",
+        user_query="What does my Kundli say about my marriage?",
+        kundli=None,
+        astrologer_name="Dr. Sunita Shastri"
+    )
+    assert res["status"] == "completed"
+    assert res["scope"] == "ASTROLOGY_WITH_MISSING_INPUTS"
+    assert "Universal Transit Mode" in res["message"]
+    assert "Date of Birth, Time of Birth, and Place of Birth" in res["message"]
+    assert "bilingual_summary" in res
+
+
+def test_ai_consultation_progressive_birth_data_collection():
+    """Verify partial birth date in chat prompts for TOB and POB progressively."""
+    from chat_orchestrator import classify_user_query, SCOPE_ASTROLOGY_WITH_MISSING_INPUTS
+
+    cl = classify_user_query("I was born on 1995-08-15", has_chart=False)
+    assert cl["scope"] == SCOPE_ASTROLOGY_WITH_MISSING_INPUTS
+    assert cl["intent"] == "progressive_birth_data"
+    assert cl["extracted_dob"] == "1995-08-15"
+
+    res = generate_astrological_reading(
+        category="general",
+        user_query="I was born on 1995-08-15",
+        kundli=None,
+        astrologer_name="Acharya Devratan"
+    )
+    assert "1995-08-15" in res["message"]
+    assert "Time of Birth" in res["message"]
+    assert "Place of Birth" in res["message"]
+    assert "bilingual_summary" in res
+
+
+def test_ai_consultation_follow_up_why_explains_astrological_rationale():
+    """Verify 'Why do you say that?' produces structured explanatory rationale with 4 pillars."""
+    from chat_orchestrator import classify_user_query, SCOPE_FOLLOW_UP_REQUIRING_CONTEXT
+
+    history = [
+        {"role": "user", "content": "How will my career progress?"},
+        {"role": "assistant", "content": "Your 10th house indicates leadership."}
+    ]
+    cl = classify_user_query("Why do you say that?", session_history=history, has_chart=True)
+    assert cl["scope"] == SCOPE_FOLLOW_UP_REQUIRING_CONTEXT
+    assert cl["is_why"] is True
+
+    res = generate_astrological_reading(
+        category="general",
+        user_query="Why do you say that?",
+        kundli=SAMPLE_KUNDLI,
+        dasha=SAMPLE_DASHA,
+        doshas=SAMPLE_DOSHAS,
+        astrologer_name="Acharya Devratan",
+        session_history=history
+    )
+    assert res["status"] == "completed"
+    assert "House Lordship" in res["message"] or "Operating Vimshottari Cycle" in res["message"]
+    assert "Brihat Parashara Hora Shastra" in res["message"] or "Gochara" in res["message"]
+    assert "bilingual_summary" in res
+
+
+def test_ai_consultation_multi_horizon_in_chat():
+    """Verify multi-horizon queries in chat produce rich structured guidance with action links."""
+    for query, expected_intent in [
+        ("Show me the hourly hora guidance", "hourly_hora"),
+        ("What is my 7-day weekly forecast?", "weekly_forecast"),
+        ("Give me 5-year mahadasha analysis", "mahadasha_guidance")
+    ]:
+        res = generate_astrological_reading(
+            category="general",
+            user_query=query,
+            kundli=SAMPLE_KUNDLI,
+            dasha=SAMPLE_DASHA,
+            doshas=SAMPLE_DOSHAS,
+            astrologer_name="Acharya Devratan"
+        )
+        assert res["status"] == "completed"
+        assert res["intent"] == expected_intent
+        assert "switchNavSection" in res["message"]
+        assert "bilingual_summary" in res
