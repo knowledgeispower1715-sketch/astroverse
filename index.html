@@ -5787,7 +5787,7 @@
 
           <div class="form-field-group">
             <label class="form-field-label">Chart A / Person A's Name</label>
-            <input type="text" id="milan-boy-name" class="form-input-text" placeholder="Person A's Name" value="Person A">
+            <input type="text" id="milan-boy-name" class="form-input-text" placeholder="Person A's Name" value="">
           </div>
 
           <div class="form-field-group">
@@ -5867,7 +5867,7 @@
 
           <div class="form-field-group">
             <label class="form-field-label">Chart B / Person B's Name</label>
-            <input type="text" id="milan-girl-name" class="form-input-text" placeholder="Person B's Name" value="Person B">
+            <input type="text" id="milan-girl-name" class="form-input-text" placeholder="Person B's Name" value="">
           </div>
 
           <div class="form-field-group">
@@ -7647,12 +7647,12 @@
 
       <!-- 1. Profile Selection -->
       <div class="form-field-group" style="margin-bottom: 14px;">
-        <label class="form-field-label">Subject Birth Profile</label>
+        <label class="form-field-label" id="builder-profile-label">Subject Birth Profile</label>
         <select id="builder-profile-select" class="form-input-text" onchange="onBuilderProfileChanged()">
           <!-- Populated dynamically with saved profiles & active chart -->
         </select>
         <!-- Live Profile Preview Card -->
-        <div id="builder-profile-preview" style="margin-top: 6px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #78350F;">
+        <div id="builder-profile-preview" style="display: none; margin-top: 6px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #78350F;">
           <!-- Live details rendered here -->
         </div>
       </div>
@@ -7761,7 +7761,7 @@
               <span style="font-size: 10px; background: #059669; color: #FFFFFF; padding: 2px 6px; border-radius: 4px; font-weight: 700;">VERIFIED</span>
             </div>
             <div id="reader-doc-subtitle" style="font-size: 11px; color: #CBD5E1; margin-top: 1px;">
-              Native: Anand Sharma • Nirayana Lahiri Ayanamsha (Chitra Paksha) • Swiss Ephemeris
+              Vedic Astrological Publication &bull; Swiss Ephemeris
             </div>
           </div>
         </div>
@@ -7853,11 +7853,11 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px;">
             <div>
               <label class="form-field-label">Full Name to Analyze</label>
-              <input type="text" id="numerology-input-name" class="form-input-text" placeholder="e.g. Aryan Tiwari" style="text-transform: uppercase;">
+              <input type="text" id="numerology-input-name" class="form-input-text" placeholder="Enter full name, e.g. RAHUL SHARMA" value="" style="text-transform: uppercase;">
             </div>
             <div>
               <label class="form-field-label">Date of Birth (Day for Moolank, Full for Bhagyank)</label>
-              <input type="date" id="numerology-input-dob" class="form-input-text">
+              <input type="date" id="numerology-input-dob" class="form-input-text" value="">
             </div>
             <div>
               <label class="form-field-label">Gender (Optional)</label>
@@ -7915,7 +7915,13 @@
 
         <!-- Personal Results Container -->
         <div id="num-personal-results">
-          <!-- Rendered dynamically -->
+          <div id="num-personal-empty-state" style="text-align: center; padding: 36px 20px; color: #64748B; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 12px;">
+            <i class="fa-solid fa-calculator" style="font-size: 32px; color: #D97706; margin-bottom: 12px; display: inline-block;"></i>
+            <h4 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Vedic &amp; Chaldean Number Harmonics</h4>
+            <p style="font-size: 13px; color: #64748B; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+              Enter your full name and date of birth above to calculate your Moolank, Bhagyank, Chaldean Naamank, and 9×9 planetary relationship harmony.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -10632,6 +10638,13 @@
       localStorage.removeItem('astro_user_session');
       localStorage.removeItem('astro_wallet_bal');
 
+      if (typeof resetNumerologyStudio === 'function') {
+        resetNumerologyStudio();
+      }
+      currentCalculatedChart = null;
+      activeConsultationSession = null;
+      isChatKundliLinked = false;
+
       updateUserSessionUI();
       if (notify) showToast("Signed out successfully.", "info");
       switchNavSection('kundli');
@@ -12038,7 +12051,7 @@
       }
     }
 
-    let isChatKundliLinked = true;
+    let isChatKundliLinked = false;
 
     function updateChatContextBar() {
       const chartPill = document.getElementById('ai-chat-chart-details');
@@ -15188,19 +15201,50 @@
       // 1. Populate Subject Profiles
       const sel = document.getElementById('builder-profile-select');
       const partnerSel = document.getElementById('builder-partner-select');
+      const profileLabel = document.getElementById('builder-profile-label');
+      if (profileLabel) {
+        profileLabel.textContent = (productId === 'report_vedic_name_numerology')
+          ? 'Publication Subject (Name & Birth Date)'
+          : 'Subject Birth Profile';
+      }
+
       if (sel) {
         sel.innerHTML = '';
-        if (currentCalculatedChart && currentCalculatedChart.name) {
-          sel.innerHTML += `<option value="current_chart" selected>${currentCalculatedChart.name} (Active Chart: ${currentCalculatedChart.dob})</option>`;
-        }
-        if (savedUserProfiles && Array.isArray(savedUserProfiles) && savedUserProfiles.length > 0) {
-          savedUserProfiles.forEach(p => {
-            const isSel = (!currentCalculatedChart || !currentCalculatedChart.name) && sel.options.length === 0;
-            sel.innerHTML += `<option value="${p.id}" ${isSel ? 'selected' : ''}>${p.name} (${p.rel || 'Self'} • ${p.dob || ''})</option>`;
-          });
-        }
-        if (sel.options.length === 0) {
-          sel.innerHTML = '<option value="default">Default Seeker Chart</option>';
+        if (productId === 'report_vedic_name_numerology') {
+          if (typeof currentNumerologySubject !== 'undefined' && currentNumerologySubject && currentNumerologySubject.name) {
+            sel.innerHTML = `<option value="numerology_subject" selected>${escapeHtml(currentNumerologySubject.name)} (DOB: ${currentNumerologySubject.dob} • Numerology Studio)</option>`;
+            if (savedUserProfiles && Array.isArray(savedUserProfiles) && savedUserProfiles.length > 0) {
+              sel.innerHTML += '<optgroup label="Or select a saved birth profile:">';
+              savedUserProfiles.forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${escapeHtml(p.name)} (${p.dob || ''})</option>`;
+              });
+              sel.innerHTML += '</optgroup>';
+            }
+          } else {
+            sel.innerHTML = '<option value="" disabled selected>Choose a profile or analyze a name in Numerology Studio...</option>';
+            if (currentCalculatedChart && currentCalculatedChart.name) {
+              sel.innerHTML += `<option value="current_chart">${escapeHtml(currentCalculatedChart.name)} (Active Chart: ${currentCalculatedChart.dob})</option>`;
+            }
+            if (savedUserProfiles && Array.isArray(savedUserProfiles) && savedUserProfiles.length > 0) {
+              savedUserProfiles.forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${escapeHtml(p.name)} (${p.dob || ''})</option>`;
+              });
+            }
+          }
+        } else {
+          // For all other chart-based reports: blank / explicit selection by default
+          sel.innerHTML = '<option value="" disabled selected>Choose a saved profile...</option>';
+          if (currentCalculatedChart && currentCalculatedChart.name) {
+            sel.innerHTML += `<option value="current_chart">${escapeHtml(currentCalculatedChart.name)} (Active Chart: ${currentCalculatedChart.dob})</option>`;
+          }
+          if (savedUserProfiles && Array.isArray(savedUserProfiles) && savedUserProfiles.length > 0) {
+            savedUserProfiles.forEach(p => {
+              sel.innerHTML += `<option value="${p.id}">${escapeHtml(p.name)} (${escapeHtml(p.rel || 'Self')} • ${p.dob || ''})</option>`;
+            });
+          }
+          if (sel.options.length <= 1) {
+            sel.innerHTML += '<option value="" disabled>No saved profiles found. Please create a profile or calculate a chart first.</option>';
+          }
         }
       }
 
@@ -15282,6 +15326,8 @@
     function closeReportBuilderModal() {
       const modal = document.getElementById('modal-report-builder');
       if (modal) modal.style.display = 'none';
+      const preview = document.getElementById('builder-profile-preview');
+      if (preview) preview.style.display = 'none';
     }
 
     function onBuilderProfileChanged() {
@@ -15291,6 +15337,28 @@
       if (!sel || !preview) return;
 
       const val = sel.value;
+      if (!val || val === '') {
+        preview.style.display = 'none';
+        updateBuilderPriceEstimate();
+        return;
+      }
+
+      if (val === 'numerology_subject' && typeof currentNumerologySubject !== 'undefined' && currentNumerologySubject) {
+        preview.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong><i class="fa-solid fa-signature" style="color: #D97706;"></i> ${escapeHtml(currentNumerologySubject.name)}</strong>
+            <span style="font-size: 11px; background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">Numerology Studio Subject</span>
+          </div>
+          <div style="font-size: 11.5px; color: #64748B; line-height: 1.4;">
+            <span>Date of Birth: <strong>${currentNumerologySubject.dob}</strong></span><br>
+            <span>Calculation Standard: <strong>Vedic &amp; Chaldean Sound Vibration Matrix (15 Dedicated Chapters)</strong></span>
+          </div>
+        `;
+        preview.style.display = 'block';
+        updateBuilderPriceEstimate();
+        return;
+      }
+
       if (partnerSel && savedUserProfiles && Array.isArray(savedUserProfiles)) {
         const availablePartners = savedUserProfiles.filter(p => {
           if (val === 'current_chart') {
@@ -15489,12 +15557,12 @@
 
     function buildClientSideDemoReportDocument(product, chartOrProfile, options = {}) {
       const chart = currentCalculatedChart || {};
-      const name = chart.name || chartOrProfile?.profileName || chartOrProfile?.name || 'Seeker';
-      const dob = chart.dob || chartOrProfile?.dateOfBirth || chartOrProfile?.dob || '1995-01-01';
-      const tob = chart.tob || chartOrProfile?.timeOfBirth || chartOrProfile?.tob || '12:00';
-      const city = chart.city || chartOrProfile?.birthplaceName || chartOrProfile?.city || 'New Delhi, India';
-      const lat = parseFloat(chart.lat || chartOrProfile?.latitude || chartOrProfile?.lat || 28.6139);
-      const lon = parseFloat(chart.lon || chartOrProfile?.longitude || chartOrProfile?.lon || 77.2090);
+      const name = chartOrProfile?.profileName || chartOrProfile?.name || chart.name || 'Seeker';
+      const dob = chartOrProfile?.dateOfBirth || chartOrProfile?.dob || chart.dob || '2000-01-01';
+      const tob = chartOrProfile?.timeOfBirth || chartOrProfile?.tob || chart.tob || '12:00';
+      const city = chartOrProfile?.birthplaceName || chartOrProfile?.city || chart.city || 'New Delhi, India';
+      const lat = parseFloat(chartOrProfile?.latitude || chartOrProfile?.lat || chart.lat || 28.6139);
+      const lon = parseFloat(chartOrProfile?.longitude || chartOrProfile?.lon || chart.lon || 77.2090);
 
       let calculatedKundli = chart.fullData;
       if (!calculatedKundli && dob) {
@@ -15913,7 +15981,7 @@
       // 9. VEDIC NAME CORRECTION & NUMEROLOGY MASTER BLUEPRINT (15 chapters)
       else if (pid === 'report_vedic_name_numerology') {
         const rawName = name || 'Seeker';
-        const cleanDob = dob || '2005-08-20';
+        const cleanDob = dob || '2000-01-01';
         const day = parseInt(cleanDob.slice(8, 10), 10) || 1;
 
         function reduce1To9(n) {
@@ -16209,7 +16277,13 @@
       if (!activeBuilderProduct) return;
 
       const profileSel = document.getElementById('builder-profile-select');
-      let profileId = profileSel?.value || 'default';
+      let profileId = profileSel?.value;
+
+      if (!profileId || profileId === '') {
+        showToast("Please choose a profile to generate this publication.", "warning");
+        return;
+      }
+
       const partnerId = document.getElementById('builder-partner-select')?.value || null;
       const focus = document.getElementById('builder-focus-select')?.value || 'holistic';
       const depth = document.getElementById('builder-depth-select')?.value || 'advanced';
@@ -16235,7 +16309,7 @@
           currentSessionToken = token;
           currentUserSession = {
             id: `demo_user_${Date.now()}`,
-            name: currentCalculatedChart?.name || 'Demo Seeker',
+            name: (activeBuilderProduct.productId === 'report_vedic_name_numerology' && typeof currentNumerologySubject !== 'undefined' && currentNumerologySubject) ? currentNumerologySubject.name : (currentCalculatedChart?.name || 'Demo Seeker'),
             email: 'demo@astroverse.app',
             role: 'USER',
             walletBalance: 0
@@ -16274,7 +16348,18 @@
       let resolvedProfileId = profileId;
       let profileData = null;
 
-      if (profileId === 'current_chart') {
+      if (profileId === 'numerology_subject' && typeof currentNumerologySubject !== 'undefined' && currentNumerologySubject) {
+        resolvedProfileId = 'numerology_subject';
+        profileData = {
+          profileName: currentNumerologySubject.name,
+          dateOfBirth: currentNumerologySubject.dob,
+          relationship: 'Self',
+          birthplaceName: 'Vedic Numerology Harmonic Scope',
+          latitude: 28.6139,
+          longitude: 77.2090,
+          resolvedTimezone: 'Asia/Kolkata'
+        };
+      } else if (profileId === 'current_chart') {
         if (savedUserProfiles && savedUserProfiles.length > 0) {
           resolvedProfileId = savedUserProfiles[0].id;
         } else if (currentCalculatedChart) {
@@ -16319,7 +16404,13 @@
           const errData = await orderRes.json().catch(() => ({}));
           if (method === 'DEMO_WALLET') {
             console.warn("Backend report order rejected or demo disabled in production, falling back to local demo generator:", errData);
-            const clientDoc = buildClientSideDemoReportDocument(activeBuilderProduct, currentCalculatedChart || profileData, { focus, depth, lang, partnerId });
+            const clientDoc = buildClientSideDemoReportDocument(
+              activeBuilderProduct,
+              (activeBuilderProduct.productId === 'report_vedic_name_numerology' && typeof currentNumerologySubject !== 'undefined' && currentNumerologySubject)
+                ? { profileName: currentNumerologySubject.name, dateOfBirth: currentNumerologySubject.dob }
+                : (profileData || (resolvedProfileId === 'current_chart' ? currentCalculatedChart : null) || (savedUserProfiles || []).find(x => String(x.id) === String(resolvedProfileId))),
+              { focus, depth, lang, partnerId }
+            );
             currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
             localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
             updateDemoWalletDisplay();
@@ -17149,7 +17240,7 @@
           </table>
         `;
       } else if (pid === 'report_vedic_name_numerology') {
-        const cleanDob = dob || '2005-08-20';
+        const cleanDob = dob || '2000-01-01';
         const day = parseInt(cleanDob.slice(8, 10), 10) || 1;
         function reduce1To9(n) {
           let val = Math.abs(parseInt(n, 10)) || 0;
@@ -19684,7 +19775,7 @@
           ${currentCalculatedChart ? `<div style="font-size:12px; color:var(--av-color-success); background:var(--av-color-success-bg); padding:6px 10px; border-radius:6px; border:1px solid #A7F3D0;"><i class="fa-solid fa-circle-check"></i> Auto-filled from active chart: <strong>${currentCalculatedChart.name} (${currentCalculatedChart.dob} ${currentCalculatedChart.tob})</strong></div>` : ''}
           <div>
             <label class="form-field-label">Birth Date &amp; Time</label>
-            <input type="datetime-local" id="modal-upagrahas-dob" class="form-input-text" value="${currentCalculatedChart ? currentCalculatedChart.dob + 'T' + (currentCalculatedChart.tob || '10:30') : '1995-06-15T10:30'}">
+            <input type="datetime-local" id="modal-upagrahas-dob" class="form-input-text" value="${currentCalculatedChart ? currentCalculatedChart.dob + 'T' + (currentCalculatedChart.tob || '10:30') : ''}">
           </div>
           <button class="tool-launch-btn" onclick="executeUpagrahasCalculation()"><i class="fa-solid fa-calculator"></i> Calculate Upagrahas</button>
           <div id="modal-upagrahas-results" style="margin-top:16px;"></div>
@@ -19698,7 +19789,7 @@
           ${currentCalculatedChart ? `<div style="font-size:12px; color:var(--av-color-success); background:var(--av-color-success-bg); padding:6px 10px; border-radius:6px; border:1px solid #A7F3D0;"><i class="fa-solid fa-circle-check"></i> Auto-filled nominal time from active chart: <strong>${currentCalculatedChart.name}</strong></div>` : ''}
           <div>
             <label class="form-field-label">Reported Birth Datetime</label>
-            <input type="datetime-local" id="modal-btr-dob" class="form-input-text" value="${currentCalculatedChart ? currentCalculatedChart.dob + 'T' + (currentCalculatedChart.tob || '10:30') : '1995-06-15T10:30'}">
+            <input type="datetime-local" id="modal-btr-dob" class="form-input-text" value="${currentCalculatedChart ? currentCalculatedChart.dob + 'T' + (currentCalculatedChart.tob || '10:30') : ''}">
           </div>
           <div>
             <label class="form-field-label">Search Window (+/- minutes)</label>
@@ -19747,10 +19838,14 @@
   }
 
   async function executeNumerologyCalculation() {
-    const name = document.getElementById('modal-num-name')?.value || 'Native';
-    const dob = document.getElementById('modal-num-dob')?.value || '1995-06-15';
+    const name = document.getElementById('modal-num-name')?.value?.trim();
+    const dob = document.getElementById('modal-num-dob')?.value?.trim();
     const resBox = document.getElementById('modal-num-results');
     if (!resBox) return;
+    if (!name || !dob) {
+      resBox.innerHTML = '<div style="color:#DC2626; padding:10px; background:#FEF2F2; border-radius:6px; font-size:13px;"><i class="fa-solid fa-triangle-exclamation"></i> Please enter full name and birth date.</div>';
+      return;
+    }
     resBox.innerHTML = '<div style="text-align:center; padding:16px; color:#64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Calculating Numerology...</div>';
 
     try {
@@ -19871,9 +19966,13 @@
   }
 
   async function executeUpagrahasCalculation() {
-    const dob = document.getElementById('modal-upagrahas-dob')?.value || '1995-06-15T10:30';
+    const dob = document.getElementById('modal-upagrahas-dob')?.value?.trim();
     const resBox = document.getElementById('modal-upagrahas-results');
     if (!resBox) return;
+    if (!dob) {
+      resBox.innerHTML = '<div style="color:#DC2626; padding:10px; background:#FEF2F2; border-radius:6px; font-size:13px;"><i class="fa-solid fa-triangle-exclamation"></i> Please select a valid birth date and time.</div>';
+      return;
+    }
     resBox.innerHTML = '<div style="text-align:center; padding:16px; color:#64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Calculating 11 Sub-planets...</div>';
 
     try {
@@ -19912,10 +20011,14 @@
   }
 
   async function executeBTRCalculation() {
-    const dob = document.getElementById('modal-btr-dob')?.value || '1995-06-15T10:30';
+    const dob = document.getElementById('modal-btr-dob')?.value?.trim();
     const win = parseInt(document.getElementById('modal-btr-window')?.value || '15');
     const resBox = document.getElementById('modal-btr-results');
     if (!resBox) return;
+    if (!dob) {
+      resBox.innerHTML = '<div style="color:#DC2626; padding:10px; background:#FEF2F2; border-radius:6px; font-size:13px;"><i class="fa-solid fa-triangle-exclamation"></i> Please select a valid birth datetime to rectify.</div>';
+      return;
+    }
     resBox.innerHTML = '<div style="text-align:center; padding:16px; color:#64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Scanning Lagna Transitions...</div>';
 
     try {
@@ -19977,6 +20080,55 @@
     // VEDIC NAME CORRECTION & NUMEROLOGY STUDIO WORKSPACE CONTROLLER
     // ==============================================================================
     let currentNumerologyReadingText = '';
+    let currentNumerologySubject = null;
+    let currentNumerologyRequestId = 0;
+
+    function resetNumerologyStudio() {
+      currentNumerologyRequestId++;
+      if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
+        AstroVerseVoiceEngine.stop();
+      }
+
+      const nameInput = document.getElementById('numerology-input-name');
+      const dobInput = document.getElementById('numerology-input-dob');
+      const genderInput = document.getElementById('numerology-input-gender');
+      const nakInput = document.getElementById('numerology-input-nakshatra');
+      const bizName = document.getElementById('num-business-name');
+      const bizDob = document.getElementById('num-business-founder-dob');
+      const bizInd = document.getElementById('num-business-industry');
+      const phoneInput = document.getElementById('num-mobile-input');
+      const voiceBtn = document.getElementById('btn-voice-numerology');
+
+      if (nameInput) nameInput.value = '';
+      if (dobInput) dobInput.value = '';
+      if (genderInput) genderInput.value = 'all';
+      if (nakInput) nakInput.value = '';
+      if (bizName) bizName.value = '';
+      if (bizDob) bizDob.value = '';
+      if (bizInd) bizInd.value = 'Technology & Software';
+      if (phoneInput) phoneInput.value = '';
+      if (voiceBtn) voiceBtn.style.display = 'none';
+
+      currentNumerologyReadingText = '';
+      currentNumerologySubject = null;
+
+      const pRes = document.getElementById('num-personal-results');
+      if (pRes) {
+        pRes.innerHTML = `
+          <div id="num-personal-empty-state" style="text-align: center; padding: 36px 20px; color: #64748B; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 12px;">
+            <i class="fa-solid fa-calculator" style="font-size: 32px; color: #D97706; margin-bottom: 12px; display: inline-block;"></i>
+            <h4 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Vedic &amp; Chaldean Number Harmonics</h4>
+            <p style="font-size: 13px; color: #64748B; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+              Enter your full name and date of birth above to calculate your Moolank, Bhagyank, Chaldean Naamank, and 9×9 planetary relationship harmony.
+            </p>
+          </div>
+        `;
+      }
+      const bRes = document.getElementById('num-business-results');
+      if (bRes) bRes.innerHTML = '';
+      const mRes = document.getElementById('num-mobile-results');
+      if (mRes) mRes.innerHTML = '';
+    }
 
     function openNumerologyStudio(tab = 'personal') {
       const modal = document.getElementById('modal-numerology-studio');
@@ -19986,23 +20138,10 @@
       const dockNum = document.getElementById('mob-dock-numerology');
       if (dockNum) dockNum.classList.add('active');
 
-      const nameInput = document.getElementById('numerology-input-name');
-      const dobInput = document.getElementById('numerology-input-dob');
-      if (nameInput && (!nameInput.value || nameInput.value.trim() === '')) {
-        if (typeof currentCalculatedChart !== 'undefined' && currentCalculatedChart && currentCalculatedChart.name) {
-          nameInput.value = currentCalculatedChart.name.toUpperCase();
-        } else if (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) {
-          nameInput.value = currentUser.displayName.toUpperCase();
-        } else {
-          nameInput.value = 'ARYAN TIWARI';
-        }
-      }
-      if (dobInput && (!dobInput.value || dobInput.value.trim() === '')) {
-        if (typeof currentCalculatedChart !== 'undefined' && currentCalculatedChart && currentCalculatedChart.dob) {
-          dobInput.value = currentCalculatedChart.dob;
-        } else {
-          dobInput.value = '2005-08-20';
-        }
+      // Every fresh feature session must start blank by default without restoring previous identity
+      const pRes = document.getElementById('num-personal-results');
+      if (!currentNumerologySubject || !pRes || !pRes.innerHTML.trim() || pRes.innerHTML.includes('num-personal-empty-state')) {
+        resetNumerologyStudio();
       }
 
       switchNumerologyTab(tab);
@@ -20010,14 +20149,21 @@
     }
 
     function closeNumerologyStudio() {
-      if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
-        AstroVerseVoiceEngine.stop();
-      }
+      resetNumerologyStudio();
       const modal = document.getElementById('modal-numerology-studio');
       if (modal) modal.style.display = 'none';
       document.querySelectorAll('.mob-dock-btn').forEach(b => b.classList.remove('active'));
       const activeMobBtn = document.getElementById('mob-dock-' + (currentActiveNavSection || 'overview'));
       if (activeMobBtn) activeMobBtn.classList.add('active');
+    }
+
+    function openNumerologyReportBuilderModal() {
+      if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
+        AstroVerseVoiceEngine.stop();
+      }
+      const modal = document.getElementById('modal-numerology-studio');
+      if (modal) modal.style.display = 'none';
+      openReportBuilderModal('report_vedic_name_numerology');
     }
 
     function switchNumerologyTab(tabName) {
@@ -20062,6 +20208,7 @@
     }
 
     async function executeNumerologyStudio(isCorrection = false) {
+      const activeReqId = ++currentNumerologyRequestId;
       const name = (document.getElementById('numerology-input-name')?.value || '').trim();
       const dob = (document.getElementById('numerology-input-dob')?.value || '').trim();
       const gender = document.getElementById('numerology-input-gender')?.value || 'all';
@@ -20250,10 +20397,24 @@
           numData = await aRes.json();
         }
 
+        if (activeReqId !== currentNumerologyRequestId) {
+          console.warn("Discarding stale numerology response for request ID:", activeReqId);
+          return;
+        }
+
         if (!numData || !numData.success) {
           resBox.innerHTML = `<div style="color: #DC2626; padding: 14px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5;">${numData?.message || 'Numerology calculation failed. Please check inputs.'}</div>`;
           return;
         }
+
+        currentNumerologySubject = {
+          name,
+          dob,
+          gender,
+          nakshatra,
+          numData,
+          correctionCandidates
+        };
 
         const moolankVal = numData.birthNumber.value;
         const bhagyankVal = numData.destinyNumber.value;
@@ -20347,7 +20508,7 @@
                   <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="openPricingPlansModal('PLUS')">
                     <i class="fa-solid fa-bolt"></i> Upgrade Plan
                   </button>
-                  <button class="btn-outline-secondary" style="padding: 6px 14px; font-size: 12px; background: #FFFFFF;" onclick="openReportBuilderModal('report_vedic_name_numerology')">
+                  <button class="btn-outline-secondary" style="padding: 6px 14px; font-size: 12px; background: #FFFFFF;" onclick="openNumerologyReportBuilderModal()">
                     <i class="fa-solid fa-file-invoice"></i> Buy ₹199 Standalone Report
                   </button>
                 </div>
@@ -20551,7 +20712,7 @@
             </div>
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 20px; font-weight: 900; color: #FCD34D;">₹199</span>
-              <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px;" onclick="closeNumerologyStudio(); openReportBuilderModal('report_vedic_name_numerology')">
+              <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px;" onclick="openNumerologyReportBuilderModal()">
                 <i class="fa-solid fa-book-open"></i> Customize &amp; Buy Report
               </button>
             </div>
@@ -20563,6 +20724,7 @@
     }
 
     async function executeBusinessNumerology() {
+      const activeReqId = ++currentNumerologyRequestId;
       const name = (document.getElementById('num-business-name')?.value || '').trim();
       const industry = document.getElementById('num-business-industry')?.value || 'General Commerce';
       const founderDob = (document.getElementById('num-business-founder-dob')?.value || '').trim();
@@ -20594,6 +20756,11 @@
           });
           if (res.ok) data = await res.json();
         } catch (_) {}
+
+        if (activeReqId !== currentNumerologyRequestId) {
+          console.warn("Discarding stale business numerology response for request ID:", activeReqId);
+          return;
+        }
 
         if (!data || !data.success) {
           // Local fallback computation
@@ -20666,6 +20833,7 @@
     }
 
     async function executeMobileNumerology() {
+      const activeReqId = ++currentNumerologyRequestId;
       const phone = (document.getElementById('num-mobile-input')?.value || '').trim();
       const resBox = document.getElementById('num-mobile-results');
       if (!resBox) return;
@@ -20696,6 +20864,11 @@
           });
           if (res.ok) data = await res.json();
         } catch (_) {}
+
+        if (activeReqId !== currentNumerologyRequestId) {
+          console.warn("Discarding stale mobile numerology response for request ID:", activeReqId);
+          return;
+        }
 
         if (!data || !data.success) {
           // Local fallback computation
