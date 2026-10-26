@@ -1644,6 +1644,43 @@
       padding: 3px 10px;
       border-radius: 12px;
     }
+    /* Six-Horizon Period Cards Styles */
+    .guidance-period-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .guidance-period-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .guidance-period-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    }
+    .guidance-period-card.is-locked-card {
+      background: #FFFDF7 !important;
+      border: 1.5px dashed #D97706 !important;
+    }
+    .btn-unlock-inline {
+      transition: all 0.2s ease;
+    }
+    .btn-unlock-inline:hover {
+      filter: brightness(1.08);
+      transform: scale(1.01);
+    }
+    @media (max-width: 640px) {
+      .guidance-period-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+      }
+      .guidance-period-card {
+        padding: 12px !important;
+      }
+      .guidance-quarter-strip {
+        grid-template-columns: 1fr !important;
+      }
+    }
     /* Password Strength Meter */
     .pwd-strength-container {
       margin-top: 6px;
@@ -5383,6 +5420,9 @@
               <li>Analyzing benefic planetary alignments...</li>
             </ul>
           </div>
+
+          <!-- Rich Period Progression: 7-Day / 4-Week / 12-Month / 5-Year / 3-Diurnal / 3-Hora Detailed Cards -->
+          <div id="guidance-period-items-container" class="guidance-period-items-container" style="margin-top: 18px;"></div>
 
           <!-- Collapsible Toggle for Deep Analysis Sections -->
           <div style="text-align: center; margin: 18px 0 12px;">
@@ -14426,17 +14466,24 @@
     window.currentActivePrediction = null;
 
     function isPremiumReportUnlocked() {
-      return localStorage.getItem('astro_premium_unlocked') === 'true';
+      if (localStorage.getItem('astro_premium_unlocked') === 'true') return true;
+      const simTier = localStorage.getItem('astro_simulated_tier');
+      if (['PLUS', 'PREMIUM', 'PRO'].includes(simTier)) return true;
+      if (typeof currentUserEntitlements !== 'undefined' && currentUserEntitlements && ['PLUS', 'PREMIUM', 'PRO'].includes(currentUserEntitlements.tier)) return true;
+      if (typeof isDemoTestingMode !== 'undefined' && isDemoTestingMode && typeof currentDemoWalletBalance !== 'undefined' && currentDemoWalletBalance > 0) return true;
+      return false;
     }
 
     function openPremiumPaywallModal() {
+      const isDemo = (!currentSessionToken || (typeof isDemoTestingMode !== 'undefined' && isDemoTestingMode));
+      const effectiveBal = (isDemo && typeof currentDemoWalletBalance !== 'undefined' && currentDemoWalletBalance > 0) ? currentDemoWalletBalance : currentWalletBalance;
       const balEl = document.getElementById('paywall-current-wallet-disp');
-      if (balEl) balEl.textContent = `₹${currentWalletBalance.toFixed(2)}`;
+      if (balEl) balEl.textContent = `₹${effectiveBal.toFixed(2)}${isDemo && currentDemoWalletBalance > 0 ? ' (Demo Wallet)' : ''}`;
 
       const suffBox = document.getElementById('paywall-sufficient-controls');
       const insuffBox = document.getElementById('paywall-insufficient-controls');
 
-      if (currentWalletBalance >= 49.0) {
+      if (effectiveBal >= 49.0) {
         if (suffBox) suffBox.style.display = 'block';
         if (insuffBox) insuffBox.style.display = 'none';
       } else {
@@ -14453,6 +14500,13 @@
 
     function quickRechargePaywall(amt) {
       if (!currentSessionToken) {
+        if (typeof isDemoTestingMode !== 'undefined' && isDemoTestingMode) {
+          currentDemoWalletBalance = (currentDemoWalletBalance || 0) + amt;
+          localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+          showToast(`Recharged ₹${amt}.00 in Demo Wallet!`, "success");
+          openPremiumPaywallModal();
+          return;
+        }
         openAuthModal();
         return;
       }
@@ -14461,6 +14515,18 @@
 
     async function confirmUnlockPremiumReport() {
       const token = currentSessionToken || localStorage.getItem('astro_session_token');
+      const isDemo = (!token || (typeof isDemoTestingMode !== 'undefined' && isDemoTestingMode));
+
+      if (isDemo && typeof currentDemoWalletBalance !== 'undefined' && currentDemoWalletBalance >= 49.0) {
+        currentDemoWalletBalance -= 49.0;
+        localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+        localStorage.setItem('astro_premium_unlocked', 'true');
+        closePremiumPaywallModal();
+        showToast("🎉 Premium Multi-Horizon Analysis Unlocked Successfully (Demo Wallet)!", "success");
+        generatePersonalizedGuidance(currentGuidanceHorizon);
+        return;
+      }
+
       if (!token) {
         showToast("Please sign in to unlock premium reports with your wallet balance.", "info");
         closePremiumPaywallModal();
@@ -18051,26 +18117,76 @@
     });
 
 
+    function getLocalDateString(tz = "Asia/Kolkata", d = new Date()) {
+      try {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz || "Asia/Kolkata",
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).format(d);
+      } catch (e) {
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+    }
+
+    const HORIZON_TITLES = {
+      hourly: { en: "Hourly (Hora) Guidance", hi: "प्रति घंटा (होरा) मार्गदर्शन" },
+      daily: { en: "Daily Forecast", hi: "दैनिक फलादेश" },
+      weekly: { en: "Weekly (7 Days) Forecast", hi: "साप्ताहिक (7 दिवसीय) फलादेश" },
+      monthly: { en: "Monthly (4 Weeks) Analysis", hi: "मासिक (4 सप्ताह) विश्लेषण" },
+      yearly: { en: "Yearly (12 Months) Outlook", hi: "वार्षिक (12 माह) दृष्टिकोण" },
+      mahadasha: { en: "Mahadasha (5-Yr) Arc", hi: "महादशा (5-वर्षीय) कालचक्र" }
+    };
+
+    let currentGuidanceRequestId = 0;
+    let guidanceAbortController = null;
+
     function selectGuidanceHorizon(horizon) {
+      if (guidanceAbortController) {
+        try { guidanceAbortController.abort(); } catch (e) {}
+      }
       currentGuidanceHorizon = horizon;
+      currentGuidanceRequestId++;
+
       document.querySelectorAll('.horizon-btn').forEach(b => b.classList.remove('active'));
       const activeBtn = document.getElementById('btn-hz-' + horizon);
       if (activeBtn) activeBtn.classList.add('active');
-      generatePersonalizedGuidance(horizon);
+
+      const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
+      const titleEl = document.getElementById('guidance-report-title');
+      const hMeta = HORIZON_TITLES[horizon] || { en: horizon, hi: horizon };
+      if (titleEl) {
+        titleEl.textContent = isHi ? `गणना हो रही है: ${hMeta.hi}...` : `Calculating: ${hMeta.en}...`;
+      }
+      const summaryEl = document.getElementById('guidance-disp-summary');
+      if (summaryEl) {
+        summaryEl.textContent = isHi ? "स्विस एफिमेरिस एवं पराशरी सूत्रों से गणना की जा रही है..." : "Computing high-precision Swiss Ephemeris astronomical positions...";
+      }
+      const periodWrap = document.getElementById('guidance-period-items-container');
+      if (periodWrap) {
+        periodWrap.innerHTML = `<div style="text-align:center; padding: 24px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--vedic-maroon); margin-bottom: 8px;"></i><p style="margin: 0; font-size: 13px;">${isHi ? 'खगोलीय गोचर लोड हो रहा है...' : 'Synthesizing celestial transits...'}</p></div>`;
+      }
+
+      generatePersonalizedGuidance(horizon, currentGuidanceRequestId);
     }
 
     function refreshCurrentGuidance() {
-      generatePersonalizedGuidance(currentGuidanceHorizon);
+      selectGuidanceHorizon(currentGuidanceHorizon);
     }
 
-    let isGuidanceGenerating = false;
+    async function generatePersonalizedGuidance(horizon = 'hourly', reqId = null) {
+      const activeReqId = reqId || ++currentGuidanceRequestId;
+      guidanceAbortController = new AbortController();
+      const signal = guidanceAbortController.signal;
 
-    async function generatePersonalizedGuidance(horizon = 'hourly') {
-      if (isGuidanceGenerating) return;
-      isGuidanceGenerating = true;
       try {
-        const targetDate = new Date().toISOString().split('T')[0];
+        const tz = (currentCalculatedChart && currentCalculatedChart.timezone) || "Asia/Kolkata";
+        const targetDate = getLocalDateString(tz);
         const hasChart = !!currentCalculatedChart;
+        const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
+        const isUnlocked = isPremiumReportUnlocked();
 
         if (!window.currentActiveHoraPlanet && typeof calculateClientSolarHoras === 'function') {
           const clientHoras = calculateClientSolarHoras(targetDate);
@@ -18086,7 +18202,9 @@
           active_hora_planet: window.currentActiveHoraPlanet || "Sun",
           hora_window: window.currentActiveHoraWindow || "Active Solar Hour",
           category: "general",
-          lang: (typeof currentLanguage !== 'undefined' && currentLanguage) ? currentLanguage : "en"
+          lang: isHi ? "hi" : "en",
+          is_unlocked: isUnlocked,
+          preview_tier: (typeof currentUserEntitlements !== 'undefined' && currentUserEntitlements?.tier) || (localStorage.getItem('astro_simulated_tier')) || "FREE"
         };
 
         if (hasChart && currentCalculatedChart.fullData) {
@@ -18094,7 +18212,6 @@
           const tob = currentCalculatedChart.tob || document.getElementById('input-k-tob').value || "12:00";
           const lat = currentCalculatedChart.lat || parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
           const lon = currentCalculatedChart.lon || parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
-          const tz = currentCalculatedChart.timezone || document.getElementById('k-resolved-tz').value || "Asia/Kolkata";
 
           payload.dob = `${dob}T${tob}:00`;
           payload.lat = lat;
@@ -18106,24 +18223,138 @@
           const res = await fetch('/api/predictions/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: signal
           });
 
           if (res.ok) {
             const data = await res.json();
+            if (activeReqId !== currentGuidanceRequestId) return;
             window.currentActivePrediction = data;
             renderStructuredPredictionUI(data);
             return;
           }
         } catch (err) {
-          // Fallback to client synthesis engine
+          if (err.name === 'AbortError') return;
         }
 
-        // Client mathematical multi-horizon engine
+        if (activeReqId !== currentGuidanceRequestId) return;
         renderFallbackGuidanceUI(horizon, hasChart);
-      } finally {
-        isGuidanceGenerating = false;
+      } catch (err) {
+        console.error("Guidance generation error:", err);
       }
+    }
+
+    function renderPeriodItemsHTML(horizon, periodItemsData, isUnlocked, isHi) {
+      if (!periodItemsData || !periodItemsData.items || !periodItemsData.items.length) {
+        return '';
+      }
+      const items = periodItemsData.items;
+      const quarters = periodItemsData.quarters || [];
+
+      let html = `<div class="guidance-period-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-layer-group" style="color: #D97706;"></i>
+          ${horizon === 'hourly' ? (isHi ? 'आगामी होरा कालचक्र' : 'Upcoming Planetary Hora Sequence') :
+           (horizon === 'daily' ? (isHi ? 'दैनिक 3 अहोरात्र चरण' : '3 Diurnal Phase Breakdown') :
+           (horizon === 'weekly' ? (isHi ? '7-दिवसीय दैनिक गोचर मानचित्र' : '7-Day Day-by-Day Forecast') :
+           (horizon === 'monthly' ? (isHi ? '4-सप्ताह विस्तृत मासिक प्रगति' : '4-Week Strategic Progression') :
+           (horizon === 'yearly' ? (isHi ? '12-माह वार्षिक सौर व ग्रहीय गोचर' : '12-Month Annual Transit Timeline') :
+           (isHi ? '5-वर्षीय विंशोत्तरी महादशा कालखंड' : '5-Year Vimshottari Karmic Timeline')))))}
+        </h4>
+        <span class="period-count-badge" style="font-size: 11px; font-weight: 700; background: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 999px;">
+          ${items.length} ${horizon === 'yearly' ? (isHi ? 'माह + 4 त्रैमास' : 'Months + 4 Quarters') : (isHi ? 'चरण' : 'Phases')}
+        </span>
+      </div>`;
+
+      if (horizon === 'yearly' && quarters.length) {
+        html += `<div class="guidance-quarter-strip" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 16px;">`;
+        quarters.forEach(q => {
+          html += `
+            <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 12px;">
+              <div style="font-size: 12px; font-weight: 800; color: #92400E; margin-bottom: 2px;">${q.quarter}: ${q.title}</div>
+              <div style="font-size: 11px; color: #78350F; line-height: 1.4;">${q.theme}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+
+      html += `<div class="guidance-period-grid">`;
+      items.forEach(it => {
+        const isLocked = Boolean(it.is_preview_locked);
+        if (isLocked) {
+          html += `
+            <div class="guidance-period-card is-locked-card" style="background: #FFFDF7; border: 1.5px dashed #D97706; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 12px; font-weight: 800; color: #92400E; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">
+                    ${it.day_name || it.month_name || it.year_label || it.title || `Phase ${it.period_index}`}
+                  </span>
+                  <span style="font-size: 12px; color: #D97706; font-weight: 700;"><i class="fa-solid fa-lock"></i> ${isHi ? 'प्रीमियम' : 'Premium'}</span>
+                </div>
+                <div style="font-size: 13px; font-weight: 700; color: #1E1B4B; margin-bottom: 6px;">
+                  ${it.focus_theme || it.title || (isHi ? 'विस्तृत ग्रहीय फलादेश' : 'Deep Transit Analysis')}
+                </div>
+                <p style="font-size: 12px; color: #64748B; line-height: 1.45; margin: 0 0 10px;">
+                  ${it.teaser || (isHi ? 'इस अवधि का सूक्ष्म विश्लेषण ₹49 ऑल-हॉराइजन्स पास में उपलब्ध है।' : 'Detailed hourly timing, Tara Bala, and remedies available in the ₹49 All-Horizons pass.')}
+                </p>
+              </div>
+              <button type="button" class="btn-unlock-inline" onclick="openPremiumPaywallModal()" style="width: 100%; background: linear-gradient(135deg, #F59E0B, #D97706); color: #FFFFFF; border: none; padding: 8px 12px; font-size: 12px; font-weight: 800; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 4px rgba(217,119,6,0.25);">
+                <i class="fa-solid fa-crown"></i> ${isHi ? '₹49 में संपूर्ण पास अनलॉक करें' : 'Unlock With ₹49 All-Horizons Pass'}
+              </button>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="guidance-period-card" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                  <span style="font-size: 12px; font-weight: 800; color: #1E1B4B; background: #EEF2FF; padding: 3px 8px; border-radius: 6px;">
+                    ${it.day_name ? `${it.day_name} (${it.date})` : (it.month_name || it.year_label || it.title || `Phase ${it.period_index}`)}
+                  </span>
+                  ${it.weekday_ruler ? `<span style="font-size: 11px; font-weight: 700; color: #6D28D9; background: #F5F3FF; padding: 2px 7px; border-radius: 6px;">${isHi ? 'स्वामी' : 'Ruler'}: ${it.weekday_ruler}</span>` : ''}
+                  ${it.transiting_moon ? `<span style="font-size: 11px; font-weight: 700; color: #0284C7; background: #F0F9FF; padding: 2px 7px; border-radius: 6px;"><i class="fa-solid fa-moon"></i> ${it.transiting_moon}</span>` : ''}
+                  ${it.energy_category ? `<span style="font-size: 11px; font-weight: 700; color: #065F46; background: #ECFDF5; padding: 2px 7px; border-radius: 6px;">${it.energy_category_hi || it.energy_category}</span>` : ''}
+                </div>
+                ${it.focus_theme ? `<div style="font-size: 13px; font-weight: 700; color: #1E1B4B; margin-bottom: 6px;">${it.focus_theme}</div>` : ''}
+                ${it.strategic_theme ? `<div style="font-size: 13px; font-weight: 700; color: #1E1B4B; margin-bottom: 6px;">${it.strategic_theme}</div>` : ''}
+                <p style="font-size: 12px; color: #334155; line-height: 1.5; margin: 0 0 10px;">
+                  ${it.guidance || it.action_recommendation || it.focus_guidance || it.recommendation || ''}
+                </p>
+                ${it.auspicious_window ? `
+                  <div style="font-size: 11px; font-weight: 700; color: #92400E; background: #FFFBEB; border: 1px solid #FEF3C7; padding: 4px 8px; border-radius: 6px; margin-bottom: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-regular fa-clock"></i> ${isHi ? 'शुभ वेला' : 'Auspicious Window'}: ${it.auspicious_window}
+                  </div>
+                ` : ''}
+                ${it.opportunities ? `
+                  <div style="font-size: 11px; color: #065F46; margin-bottom: 6px;">
+                    <strong>${isHi ? 'अवसर' : 'Key Focus'}:</strong> ${it.opportunities}
+                  </div>
+                ` : ''}
+                ${it.cautions ? `
+                  <div style="font-size: 11px; color: #991B1B; margin-bottom: 6px;">
+                    <strong>${isHi ? 'सावधानी' : 'Caution'}:</strong> ${it.cautions}
+                  </div>
+                ` : ''}
+              </div>
+              ${it.beej_mantra ? `
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #E2E8F0; font-size: 11px; color: #475569; display: flex; justify-content: space-between; align-items: center;">
+                  <span><i class="fa-solid fa-om" style="color: #D97706;"></i> <strong>${it.beej_mantra}</strong></span>
+                  <span style="font-size: 10px; color: #94A3B8;">${it.transliteration || ''}</span>
+                </div>
+              ` : ''}
+              ${it.vedic_remedy ? `
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #E2E8F0; font-size: 11px; color: #6D28D9;">
+                  <i class="fa-solid fa-hands-praying"></i> <strong>${isHi ? 'उपाय' : 'Remedy'}:</strong> ${it.vedic_remedy}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+      });
+      html += `</div>`;
+      return html;
     }
 
     function renderStructuredPredictionUI(data) {
@@ -18239,6 +18470,12 @@
       const isFreeHorizon = (currentGuidanceHorizon === 'hourly' || currentGuidanceHorizon === 'daily');
       const isUnlocked = isPremiumReportUnlocked();
 
+      // Render Rich Period Progression Cards (7-Day / 4-Week / 12-Month / 5-Year / 3-Diurnal / 3-Hora)
+      const periodWrap = document.getElementById('guidance-period-items-container');
+      if (periodWrap) {
+        periodWrap.innerHTML = renderPeriodItemsHTML(currentGuidanceHorizon, data.period_items, isUnlocked, isHi);
+      }
+
       if (deepWrap && ctaBox) {
         if (isFreeHorizon || isUnlocked) {
           deepWrap.classList.remove('is-locked');
@@ -18248,6 +18485,231 @@
           ctaBox.style.display = 'block';
         }
       }
+    }
+
+    function buildClientPeriodItems(horizon, targetDateStr, isHi, hasChart, isUnlocked, lagnaSign, moonSign) {
+      const d = new Date(targetDateStr || new Date());
+      const signsList = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
+      const hindiSigns = { Aries: "मेष", Taurus: "वृषभ", Gemini: "मिथुन", Cancer: "कर्क", Leo: "सिंह", Virgo: "कन्या", Libra: "तुला", Scorpio: "वृश्चिक", Sagittarius: "धनु", Capricorn: "मकर", Aquarius: "कुंभ", Pisces: "मीन" };
+      const weekdayRulers = ["Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Sun"];
+      const weekdayNamesEn = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      const weekdayNamesHi = ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार"];
+      const hindiPlanets = { Sun: "सूर्य", Moon: "चंद्र", Mars: "मंगल", Mercury: "बुध", Jupiter: "बृहस्पति", Venus: "शुक्र", Saturn: "शनि", Rahu: "राहु", Ketu: "केतु" };
+      const chaldean = ["Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon"];
+      const beejMantras = {
+        Sun: { mantra: "ॐ ह्रीं ह्रीं सूर्याय नमः", transliteration: "Om Hreem Hreem Suryaya Namah" },
+        Moon: { mantra: "ॐ सों सोमाय नमः", transliteration: "Om Som Somaya Namah" },
+        Mars: { mantra: "ॐ क्रां क्रीं क्रौं सः भौमाय नमः", transliteration: "Om Kraam Kreem Kraum Sah Bhaumaya Namah" },
+        Mercury: { mantra: "ॐ ब्रां ब्रीं ब्रौं सः बुधाय नमः", transliteration: "Om Braam Breem Braum Sah Budhaya Namah" },
+        Jupiter: { mantra: "ॐ ग्रां ग्रीं ग्रौं सः गुरुवे नमः", transliteration: "Om Graam Greem Graum Sah Guruve Namah" },
+        Venus: { mantra: "ॐ द्रां द्रीं द्रौं सः शुक्राय नमः", transliteration: "Om Draam Dreem Draum Sah Shukraya Namah" },
+        Saturn: { mantra: "ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः", transliteration: "Om Praam Preem Praum Sah Shanaishcharaya Namah" }
+      };
+
+      if (horizon === 'hourly') {
+        const hPlanet = window.currentActiveHoraPlanet || "Jupiter";
+        const startIdx = chaldean.indexOf(hPlanet) >= 0 ? chaldean.indexOf(hPlanet) : 1;
+        const cards = [];
+        for (let off = 0; off < 3; off++) {
+          const p = chaldean[(startIdx + off) % chaldean.length];
+          const pHi = hindiPlanets[p] || p;
+          const energy = ["Jupiter", "Venus", "Mercury"].includes(p) ? "Favorable" : (["Sun", "Moon"].includes(p) ? "Moderate" : "Caution");
+          const energyHi = ["Jupiter", "Venus", "Mercury"].includes(p) ? "शुभ" : (["Sun", "Moon"].includes(p) ? "मध्यम" : "सावधानी");
+          cards.push({
+            period_index: off + 1,
+            title: isHi ? `${pHi} होरा (${off === 0 ? 'सक्रिय' : `आगामी +${off}`})` : `${p} Hora (${off === 0 ? 'Active Now' : `Upcoming +${off}h`})`,
+            time_window: off === 0 ? (window.currentActiveHoraWindow || "Active Hour") : (isHi ? `अगला +${off} घंटा` : `Next +${off}h`),
+            planet: p,
+            planet_hi: pHi,
+            energy_category: energy,
+            energy_category_hi: energyHi,
+            beej_mantra: beejMantras[p]?.mantra || "",
+            transliteration: beejMantras[p]?.transliteration || "",
+            guidance: isHi ? `इस ${pHi} होरा में एकाग्रता और अनुशासित कर्म से सफलता प्राप्त होगी।` : `During this ${p} Hora, focus on disciplined strategic priorities and clarity.`,
+            is_preview_locked: false
+          });
+        }
+        return { items: cards };
+      }
+
+      if (horizon === 'daily') {
+        return {
+          items: [
+            {
+              period_index: 1,
+              title: isHi ? "प्रातः काल: सूर्योदय से मध्याह्न" : "Morning Phase: Pratah Kala (Dawn to Solar Noon)",
+              focus_theme: isHi ? "रणनीतिक योजना एवं उच्च प्राथमिकता कार्य" : "High-Leverage Strategic Inception & Focus",
+              guidance: isHi ? "प्रातःकालीन वेला में सौर प्राण और शुभ होराएं बौद्धिक एकाग्रता को शिखर पर रखती हैं।" : "Solar prana and benefic diurnal Horas harmonize conscious focus during morning hours.",
+              auspicious_window: isHi ? "प्रातः 07:30 AM – 09:30 AM" : "07:30 AM – 09:30 AM",
+              is_preview_locked: false
+            },
+            {
+              period_index: 2,
+              title: isHi ? "मध्याह्न काल: अभिजित मुहूर्त एवं कर्म संपादन" : "Midday Phase: Madhyahna & Abhijit Muhurta (~11:45 AM – 12:35 PM)",
+              focus_theme: isHi ? "व्यावसायिक क्रियान्वयन एवं सहयोगात्मक समझौते" : "Collaborative Reviews, Negotiations & Execution",
+              guidance: isHi ? "अभिजित मुहूर्त (~11:45 AM – 12:35 PM) अशुभ गोचर दोषों का शमन करता है।" : "The classical Abhijit Muhurta window mitigates ambient transit impurities, favoring pivotal business negotiations.",
+              auspicious_window: "Abhijit Muhurta (~11:45 AM – 12:35 PM)",
+              is_preview_locked: false
+            },
+            {
+              period_index: 3,
+              title: isHi ? "सायंकाल एवं निशा: पारिवारिक सौहार्द व विश्राम" : "Evening & Night Phase: Sayankala & Nisha (Sunset Onward)",
+              focus_theme: isHi ? "पारिवारिक सौहार्द, स्वाध्याय एवं मानसिक शांति" : "Domestic Well-being, Study & Restorative Rest",
+              guidance: isHi ? "सूर्यास्त उपरांत चंद्र ऊर्जा मानसिक शांति और भावनात्मक संतुलन प्रदान करती है।" : "Post-sunset lunar transitions soothe neurological intensity. Ideal for domestic connection and reflection.",
+              auspicious_window: isHi ? "सायं 06:30 PM – 07:45 PM" : "06:30 PM – 07:45 PM",
+              is_preview_locked: false
+            }
+          ]
+        };
+      }
+
+      if (horizon === 'weekly') {
+        const cards = [];
+        const baseMoonIdx = signsList.indexOf(moonSign) >= 0 ? signsList.indexOf(moonSign) : 0;
+        const lagnaIdx = signsList.indexOf(lagnaSign) >= 0 ? signsList.indexOf(lagnaSign) : 0;
+        for (let i = 0; i < 7; i++) {
+          const cur = new Date(d);
+          cur.setDate(d.getDate() + i);
+          const wIdx = (cur.getDay() + 6) % 7;
+          const ruler = weekdayRulers[wIdx];
+          const rulerDisp = isHi ? (hindiPlanets[ruler] || ruler) : ruler;
+          const dayName = isHi ? weekdayNamesHi[wIdx] : weekdayNamesEn[wIdx];
+          const tMoonIdx = (baseMoonIdx + Math.floor(i / 2.25)) % 12;
+          const tMoon = signsList[tMoonIdx];
+          const tMoonDisp = isHi ? (hindiSigns[tMoon] || tMoon) : tMoon;
+          const hNum = hasChart ? (((tMoonIdx - lagnaIdx + 12) % 12) + 1) : ((i % 12) + 1);
+          const isLocked = (!isUnlocked) && (i >= 2);
+
+          if (isLocked) {
+            cards.push({
+              period_index: i + 1,
+              date: getLocalDateString("Asia/Kolkata", cur),
+              day_name: dayName,
+              weekday_ruler: rulerDisp,
+              transiting_moon: tMoonDisp,
+              activated_house: hNum,
+              focus_theme: isHi ? `भाव ${hNum} गोचर प्रभाव` : `House ${hNum} Transit Activation`,
+              is_preview_locked: true,
+              teaser: isHi ? `🔒 दिवस ${i+1} (${dayName}): चंद्र का ${tMoonDisp} राशि में गोचर आपके ${hNum}वें भाव को सक्रिय करेगा। संपूर्ण 7-दिवसीय फलादेश अनलॉक करें।` : `🔒 Day ${i+1} (${dayName}): Moon in ${tMoon} activates House ${hNum}. Unlock with ₹49 All-Horizons pass.`
+            });
+          } else {
+            cards.push({
+              period_index: i + 1,
+              date: getLocalDateString("Asia/Kolkata", cur),
+              day_name: dayName,
+              weekday_ruler: rulerDisp,
+              transiting_moon: tMoonDisp,
+              activated_house: hNum,
+              focus_theme: isHi ? `भाव ${hNum} में चंद्र संचरण` : `House ${hNum} Lunar Transit`,
+              guidance: isHi ? `आज चंद्र का ${tMoonDisp} राशि में संचरण आपके ${hNum}वें भाव को प्रकाशित करता है। ${rulerDisp} द्वारा शासित इस दिन में अनुशासित कार्यशैली लाभप्रद रहेगी।` : `Transiting Moon in ${tMoon} illuminates your natal House ${hNum}. Governed by ${ruler}, maintain structured focus and clarity.`,
+              auspicious_window: "09:30 AM – 11:15 AM",
+              beej_mantra: beejMantras[ruler]?.mantra || "",
+              transliteration: beejMantras[ruler]?.transliteration || "",
+              is_preview_locked: false
+            });
+          }
+        }
+        return { items: cards };
+      }
+
+      if (horizon === 'monthly') {
+        const weeks = [];
+        const titlesEn = ["Week 1: Strategic Inception & Alignment", "Week 2: Execution Momentum & Visibility", "Week 3: Capital Consolidation & Audits", "Week 4: Review, Completion & Rejuvenation"];
+        const titlesHi = ["सप्ताह १: रणनीतिक आधारशिला एवं शुभारंभ", "सप्ताह २: कर्म दक्षता एवं सामाजिक विस्तार", "सप्ताह ३: पूंजी संचय एवं परिसंपत्ति समीक्षा", "सप्ताह ४: समीक्षा, पूर्णता एवं आत्म-मंथन"];
+        for (let w = 0; w < 4; w++) {
+          const wStart = new Date(d);
+          wStart.setDate(d.getDate() + (w * 7));
+          const wEnd = new Date(d);
+          wEnd.setDate(d.getDate() + ((w + 1) * 7 - 1));
+          const isLocked = (!isUnlocked) && (w >= 1);
+          const t = isHi ? titlesHi[w] : titlesEn[w];
+          if (isLocked) {
+            weeks.push({
+              period_index: w + 1,
+              title: t,
+              date_range: `${getLocalDateString("Asia/Kolkata", wStart)} to ${getLocalDateString("Asia/Kolkata", wEnd)}`,
+              is_preview_locked: true,
+              teaser: isHi ? `🔒 सप्ताह ${w+1}: विस्तृत गोचर विश्लेषण एवं मुहूर्त ₹49 में अनलॉक करें।` : `🔒 Week ${w+1}: Detailed transit synthesis and timings available in ₹49 All-Horizons pass.`
+            });
+          } else {
+            weeks.push({
+              period_index: w + 1,
+              title: t,
+              date_range: `${getLocalDateString("Asia/Kolkata", wStart)} to ${getLocalDateString("Asia/Kolkata", wEnd)}`,
+              guidance: isHi ? "इस सप्ताह नए उपक्रमों का शिलान्यास और दूरगामी योजनाओं का क्रियान्वयन फलदायी रहेगा।" : "Favorable planetary currents support strategic milestones and foundational execution.",
+              is_preview_locked: false
+            });
+          }
+        }
+        return { items: weeks };
+      }
+
+      if (horizon === 'yearly') {
+        const months = [];
+        const monthNamesEn = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const monthNamesHi = ["जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"];
+        const quarters = [
+            { quarter: "Q1", title: isHi ? "प्रथम त्रैमास: आधारशिला एवं पुनर्गठन" : "Foundation & Realignment", theme: isHi ? "कार्यशैली का पुनर्गठन और प्रतिष्ठा संवर्धन।" : "Workflow restructuring and reputation compounding." },
+            { quarter: "Q2", title: isHi ? "द्वितीय त्रैमास: पूंजी संचय एवं मजबूती" : "Capital Growth & Assets", theme: isHi ? "विवेकपूर्ण निवेश और बजट संतुलन।" : "Prudent investment and balance sheet optimization." },
+            { quarter: "Q3", title: isHi ? "तृतीय त्रैमास: विद्या एवं शोध" : "Intellectual Mastery", theme: isHi ? "ज्ञानार्जन और आध्यात्मिक उन्नति।" : "Deepening expertise and strategic expansion." },
+            { quarter: "Q4", title: isHi ? "चतुर्थ त्रैमास: गृह सुख व स्थिरता" : "Domestic Consolidation", theme: isHi ? "पारिवारिक सौहार्द और वार्षिक समीक्षा।" : "Family stability and annual consolidation." }
+        ];
+        for (let m = 0; m < 12; m++) {
+          const calMonthIdx = (d.getMonth() + m) % 12;
+          const calYear = d.getFullYear() + Math.floor((d.getMonth() + m) / 12);
+          const mName = isHi ? monthNamesHi[calMonthIdx] : monthNamesEn[calMonthIdx];
+          const isLocked = (!isUnlocked) && (m >= 3);
+          if (isLocked) {
+            months.push({
+              period_index: m + 1,
+              month_name: `${mName} ${calYear}`,
+              quarter: `Q${Math.floor(m / 3) + 1}`,
+              is_preview_locked: true,
+              teaser: isHi ? `🔒 माह ${m+1} (${mName} ${calYear}): संपूर्ण 12-माह फलादेश ₹49 में अनलॉक करें।` : `🔒 Month ${m+1} (${mName} ${calYear}): Unlock full 12-month map with ₹49 pass.`
+            });
+          } else {
+            months.push({
+              period_index: m + 1,
+              month_name: `${mName} ${calYear}`,
+              quarter: `Q${Math.floor(m / 3) + 1}`,
+              guidance: isHi ? `${mName} ${calYear} में अनुशासित कार्यप्रणाली और नैतिक आचरण से करियर में निरंतरता बनी रहेगी।` : `Focus during ${mName} ${calYear} centers on compounding professional reputation and long-term consistency.`,
+              is_preview_locked: false
+            });
+          }
+        }
+        return { items: months, quarters: quarters };
+      }
+
+      if (horizon === 'mahadasha') {
+        const years = [];
+        const startYear = d.getFullYear();
+        const themesEn = ["Foundation Building & Mentorship", "Capital Growth & Asset Stabilization", "Intellectual Mastery & Spiritual Studies", "Domestic Peace & Matrimonial Harmony", "Karmic Fruition & Advisory Leadership"];
+        const themesHi = ["आधारशिला निर्माण एवं मार्गदर्शन", "पूंजी संचय एवं परिसंपत्ति स्थिरीकरण", "बौद्धिक उत्कर्ष एवं आध्यात्मिक ज्ञान", "पारिवारिक सौहार्द एवं दांपत्य सुख", "कर्म सिद्धि एवं सलाहकार नेतृत्व"];
+        for (let y = 0; y < 5; y++) {
+          const lbl = isHi ? `वर्ष ${y+1} (${startYear + y}–${startYear + y + 1})` : `Year ${y+1} (${startYear + y}–${startYear + y + 1})`;
+          const isLocked = (!isUnlocked) && (y >= 1);
+          if (isLocked) {
+            years.push({
+              period_index: y + 1,
+              year_label: lbl,
+              is_preview_locked: true,
+              teaser: isHi ? `🔒 ${lbl}: विंशोत्तरी दशा चक्र एवं शास्त्रीय उपाय ₹49 में अनलॉक करें।` : `🔒 ${lbl}: Complete 5-year timeline and remedies available in ₹49 All-Horizons pass.`
+            });
+          } else {
+            years.push({
+              period_index: y + 1,
+              year_label: lbl,
+              strategic_theme: isHi ? themesHi[y] : themesEn[y],
+              guidance: isHi ? "इस कालखंड में दीर्घकालिक प्रतिष्ठा और स्थायित्व के लिए विवेकपूर्ण निर्णय लें।" : "Align conscious effort with ethical duty (Dharma) to maximize this dasha season.",
+              vedic_remedy: isHi ? "सक्रिय महादशा स्वामी के बीज मंत्र का नियमित जप करें।" : "Recite active Mahadasha lord Beej Mantra regularly.",
+              is_preview_locked: false
+            });
+          }
+        }
+        return { items: years };
+      }
+
+      return { items: [] };
     }
 
     function renderFallbackGuidanceUI(horizon, hasChart) {
@@ -18261,7 +18723,8 @@
       const sadeSati = hasChart ? (fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis") : "General Saturn Transit in Pisces";
       const horaPlanet = window.currentActiveHoraPlanet || "Jupiter";
       const horaWindow = window.currentActiveHoraWindow || "Active Astronomical Interval";
-      const targetDate = new Date().toISOString().split('T')[0];
+      const tz = hasChart ? (currentCalculatedChart?.timezone || "Asia/Kolkata") : "Asia/Kolkata";
+      const targetDate = getLocalDateString(tz);
       const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
 
       let reportTitle = "";
@@ -18830,6 +19293,9 @@
         }
       }
 
+      const isUnlocked = isPremiumReportUnlocked();
+      const clientPeriodItems = buildClientPeriodItems(horizon, targetDate, isHi, hasChart, isUnlocked, lagna, moon);
+
       renderStructuredPredictionUI({
         report_title: reportTitle,
         profile_loaded: hasChart,
@@ -18850,7 +19316,8 @@
           active_antardasha: null,
           sade_sati_phase: "General Saturn Transit in Pisces"
         },
-        sections: s
+        sections: s,
+        period_items: clientPeriodItems
       });
     }
 

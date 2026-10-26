@@ -602,3 +602,160 @@ def test_ai_consultation_hindi_greeting_response():
     assert res_sunita["intent"] == "greeting"
     assert "नमस्ते!" in res_sunita["message"]
     assert "सुनीता शास्त्री" in res_sunita["message"]
+
+
+def test_six_horizon_canonical_data_contract_and_preview_gating():
+    """Verify all six horizons return canonical contracts, rich period_items, and proper preview gating."""
+    target_date = "2026-10-27"
+    horizons = ["hourly", "daily", "weekly", "monthly", "yearly", "mahadasha"]
+
+    for h in horizons:
+        # 1. Unlocked = False (Free Preview Mode)
+        pred_locked = generate_structured_prediction(
+            horizon=h,
+            target_date_str=target_date,
+            kundli=SAMPLE_KUNDLI,
+            dasha=SAMPLE_DASHA,
+            doshas=SAMPLE_DOSHAS,
+            is_unlocked=False,
+            lang="en"
+        )
+        assert pred_locked["time_horizon"] == h
+        assert "period" in pred_locked
+        assert pred_locked["period"]["start_date"] == target_date
+        assert "preview" in pred_locked
+        assert "calculation_context" in pred_locked
+        assert "provenance" in pred_locked
+        assert "period_items" in pred_locked
+        items = pred_locked["period_items"]["items"]
+
+        if h == "hourly":
+            assert len(items) == 3
+            assert all(it["is_preview_locked"] is False for it in items)
+            assert any(it["planet"] in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"] for it in items)
+            assert all("beej_mantra" in it and len(it["beej_mantra"]) > 0 for it in items)
+        elif h == "daily":
+            assert len(items) == 3
+            assert all(it["is_preview_locked"] is False for it in items)
+            assert "morning_pratah" in [it.get("phase_key") for it in items]
+            assert "midday_madhyahna" in [it.get("phase_key") for it in items]
+            assert "evening_nisha" in [it.get("phase_key") for it in items]
+        elif h == "weekly":
+            assert len(items) == 7
+            # Days 1 & 2 unlocked, Days 3–7 locked
+            assert items[0]["is_preview_locked"] is False
+            assert items[1]["is_preview_locked"] is False
+            assert all(items[idx]["is_preview_locked"] is True for idx in range(2, 7))
+            assert all("teaser" in items[idx] for idx in range(2, 7))
+        elif h == "monthly":
+            assert len(items) == 4
+            # Week 1 unlocked, Weeks 2–4 locked
+            assert items[0]["is_preview_locked"] is False
+            assert all(items[idx]["is_preview_locked"] is True for idx in range(1, 4))
+        elif h == "yearly":
+            assert len(items) == 12
+            assert "quarters" in pred_locked["period_items"]
+            assert len(pred_locked["period_items"]["quarters"]) == 4
+            # Q1 (Months 1–3) unlocked, Q2–Q4 (Months 4–12) locked
+            assert all(items[idx]["is_preview_locked"] is False for idx in range(3))
+            assert all(items[idx]["is_preview_locked"] is True for idx in range(3, 12))
+        elif h == "mahadasha":
+            assert len(items) == 5
+            # Year 1 unlocked, Years 2–5 locked
+            assert items[0]["is_preview_locked"] is False
+            assert all(items[idx]["is_preview_locked"] is True for idx in range(1, 5))
+
+        # 2. Unlocked = True (Paid / Tier Access Mode)
+        pred_unlocked = generate_structured_prediction(
+            horizon=h,
+            target_date_str=target_date,
+            kundli=SAMPLE_KUNDLI,
+            dasha=SAMPLE_DASHA,
+            doshas=SAMPLE_DOSHAS,
+            is_unlocked=True,
+            lang="en"
+        )
+        assert pred_unlocked["preview"]["unlocked"] is True
+        items_unlocked = pred_unlocked["period_items"]["items"]
+        assert all(it["is_preview_locked"] is False for it in items_unlocked)
+
+
+def test_six_horizon_hindi_period_items_parity():
+    """Verify Hindi period items contain rich Devanagari text, correct Hindi weekday names, and mantras."""
+    import re
+    target_date = "2026-10-27"
+
+    pred_weekly_hi = generate_structured_prediction(
+        horizon="weekly",
+        target_date_str=target_date,
+        kundli=SAMPLE_KUNDLI,
+        dasha=SAMPLE_DASHA,
+        doshas=SAMPLE_DOSHAS,
+        is_unlocked=True,
+        lang="hi"
+    )
+    items = pred_weekly_hi["period_items"]["items"]
+    assert len(items) == 7
+    for it in items:
+        assert re.search(r"[\u0900-\u097F]", it["day_name"]) is not None
+        assert re.search(r"[\u0900-\u097F]", it["weekday_ruler"]) is not None
+        assert re.search(r"[\u0900-\u097F]", it["transiting_moon"]) is not None
+        assert re.search(r"[\u0900-\u097F]", it["guidance"]) is not None
+        assert "ॐ" in it["beej_mantra"]
+
+    pred_yearly_hi = generate_structured_prediction(
+        horizon="yearly",
+        target_date_str=target_date,
+        kundli=SAMPLE_KUNDLI,
+        dasha=SAMPLE_DASHA,
+        doshas=SAMPLE_DOSHAS,
+        is_unlocked=True,
+        lang="hi"
+    )
+    assert len(pred_yearly_hi["period_items"]["items"]) == 12
+    assert len(pred_yearly_hi["period_items"]["quarters"]) == 4
+    for q in pred_yearly_hi["period_items"]["quarters"]:
+        assert re.search(r"[\u0900-\u097F]", q["title"]) is not None
+
+
+def test_saturn_transit_dhaiya_sadesati_separation():
+    """Verify Kantaka Shani (4th house) and Ashtama Shani (8th house) are separated from 7.5-year Sade Sati."""
+    from doshas_and_remedies import analyze_doshas_and_remedies
+
+    # Base planets dict with Rahu and Ketu for dosha analysis
+    base_planets = dict(SAMPLE_KUNDLI["planets"])
+    base_planets["Rahu"] = {"sign": "Pisces", "degree": 5.0, "house": 8, "nakshatra": "Uttara Bhadrapada"}
+    base_planets["Ketu"] = {"sign": "Virgo", "degree": 5.0, "house": 2, "nakshatra": "Uttara Phalguni"}
+
+    # Transiting Saturn is in Pisces (idx 11).
+    # If natal Moon is in Sagittarius (idx 8):
+    # diff = ((11 - 8 + 12) % 12) + 1 = 4 (Kantaka Shani / 4th House Dhaiya)
+    planets_sag_moon = dict(base_planets)
+    planets_sag_moon["Moon"] = {"sign": "Sagittarius", "degree": 14.5, "nakshatra": "Moola"}
+    doshas_sag = analyze_doshas_and_remedies(planets_sag_moon, "Leo")
+
+    ss_sag = doshas_sag["sade_sati"]
+    assert ss_sag["is_active"] is False  # NOT Sade Sati!
+    assert ss_sag["is_dhaiya"] is True   # Active Dhaiya!
+    assert "Kantaka Shani (4th House Dhaiya)" in ss_sag["classification"]
+    assert "Clear of Sade Sati" in ss_sag["phase"]
+
+    # If natal Moon is in Leo (idx 4):
+    # diff = ((11 - 4 + 12) % 12) + 1 = 8 (Ashtama Shani / 8th House Dhaiya)
+    planets_leo_moon = dict(base_planets)
+    planets_leo_moon["Moon"] = {"sign": "Leo", "degree": 10.0, "nakshatra": "Magha"}
+    doshas_leo = analyze_doshas_and_remedies(planets_leo_moon, "Leo")
+    ss_leo = doshas_leo["sade_sati"]
+    assert ss_leo["is_active"] is False  # NOT Sade Sati!
+    assert ss_leo["is_dhaiya"] is True   # Active Dhaiya!
+    assert "Ashtama Shani (8th House Dhaiya)" in ss_leo["classification"]
+
+    # If natal Moon is in Aquarius (idx 10):
+    # diff = ((11 - 10 + 12) % 12) + 1 = 2 (Phase 3: Setting Sade Sati)
+    planets_aq_moon = dict(base_planets)
+    planets_aq_moon["Moon"] = {"sign": "Aquarius", "degree": 20.0, "nakshatra": "Purva Bhadrapada"}
+    doshas_aq = analyze_doshas_and_remedies(planets_aq_moon, "Leo")
+    ss_aq = doshas_aq["sade_sati"]
+    assert ss_aq["is_active"] is True   # True Sade Sati
+    assert ss_aq["is_dhaiya"] is False
+    assert "Setting" in ss_aq["classification"]

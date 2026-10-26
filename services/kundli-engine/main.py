@@ -135,7 +135,7 @@ class MatchmakingRequest(BaseModel):
     girl_moon_degree: Optional[float] = None
 
 class PredictionRequest(BaseModel):
-    horizon: str = Field("hourly", description="hourly, weekly, monthly, yearly")
+    horizon: str = Field("hourly", description="hourly, daily, weekly, monthly, yearly, mahadasha")
     target_date: Optional[str] = Field(None, description="ISO target date string, e.g. '2026-10-21'")
     dob: Optional[str] = Field(None, description="ISO 8601 birth datetime, e.g. '1995-06-15T10:30:00'")
     lat: Optional[float] = Field(None, ge=-90.0, le=90.0, description="Latitude")
@@ -145,6 +145,8 @@ class PredictionRequest(BaseModel):
     hora_window: Optional[str] = Field(None, description="Hora time window string")
     category: str = Field("general", description="Category: general, career, wealth, health, relationships")
     lang: str = Field("en", description="Output language: 'en' or 'hi'")
+    is_unlocked: bool = Field(False, description="Whether full premium content is unlocked")
+    preview_tier: str = Field("FREE", description="Preview access tier: FREE, PLUS, PREMIUM, PRO")
 
 class TajikaRequest(BirthDetails):
     target_year: Optional[int] = Field(None, description="Target year for solar return calculation, e.g. 2026")
@@ -624,7 +626,9 @@ def generate_prediction_endpoint(req: PredictionRequest):
             active_hora_planet=req.active_hora_planet,
             hora_window=req.hora_window,
             category=req.category,
-            lang=req.lang
+            lang=req.lang,
+            is_unlocked=req.is_unlocked,
+            preview_tier=req.preview_tier
         )
         result["mode"] = "PERSONALIZED_CHART_GROUNDED"
         result["profile_loaded"] = True
@@ -640,7 +644,9 @@ def generate_prediction_endpoint(req: PredictionRequest):
             active_hora_planet=req.active_hora_planet,
             hora_window=req.hora_window,
             category=req.category,
-            lang=req.lang
+            lang=req.lang,
+            is_unlocked=req.is_unlocked,
+            preview_tier=req.preview_tier
         )
         result["mode"] = "GENERAL_TRANSIT_UNPERSONALIZED"
         result["profile_loaded"] = False

@@ -115,28 +115,37 @@ def analyze_doshas_and_remedies(planets: dict, lagna_sign: str):
     moon_sign_idx = SIGNS.index(planets["Moon"]["sign"])
     diff = ((TRANSIT_SATURN_SIGN_IDX - moon_sign_idx + 12) % 12) + 1
 
+    is_sade_sati = diff in [12, 1, 2]
+    is_dhaiya = diff in [4, 8]
+
     if diff == 12:
         sadesati_phase = "Phase 1: Rising (Aarohan) — 12th from Moon"
+        saturn_classification = "Sade Sati (Phase 1: Rising)"
         sadesati_desc = "Saturn transits the 12th house from natal Moon. Native may experience increased expenses and lifestyle shifts."
         sadesati_remedy = "Light a mustard oil lamp under a Peepal tree on Saturday evenings."
     elif diff == 1:
         sadesati_phase = "Phase 2: Peak (Madhya / Janma Shani) — Over Natal Moon"
+        saturn_classification = "Sade Sati (Phase 2: Peak)"
         sadesati_desc = "Saturn transits directly over your natal Moon. Demands high discipline, perseverance, and emotional patience."
         sadesati_remedy = "Recite Dasharatha Shani Stotra and wear an iron ring made from horseshoe."
     elif diff == 2:
         sadesati_phase = "Phase 3: Setting (Avarohan) — 2nd from Moon"
+        saturn_classification = "Sade Sati (Phase 3: Setting)"
         sadesati_desc = "Saturn moves through the 2nd house from Moon. Financial consolidation and family stabilization phase."
         sadesati_remedy = "Donate black sesame seeds, mustard oil, or blue cloth to the needy on Saturdays."
     elif diff == 4:
-        sadesati_phase = "Kantaka Shani (Dhaiya 4th House)"
-        sadesati_desc = "2.5-year minor transit in the 4th house from natal Moon affecting domestic environment."
+        sadesati_phase = "Clear of Sade Sati (Kantaka Shani 4th House Dhaiya Active)"
+        saturn_classification = "Kantaka Shani (4th House Dhaiya)"
+        sadesati_desc = "Not in Sade Sati. Active 2.5-year minor Dhaiya in the 4th house from natal Moon (Kantaka Shani) affecting domestic environment."
         sadesati_remedy = "Chant Shani Beej Mantra 108 times: Om Sham Shanaishcharaya Namah."
     elif diff == 8:
-        sadesati_phase = "Ashtama Shani (Dhaiya 8th House)"
-        sadesati_desc = "2.5-year minor transit in the 8th house from natal Moon. Guard against sudden changes."
+        sadesati_phase = "Clear of Sade Sati (Ashtama Shani 8th House Dhaiya Active)"
+        saturn_classification = "Ashtama Shani (8th House Dhaiya)"
+        sadesati_desc = "Not in Sade Sati. Active 2.5-year minor Dhaiya in the 8th house from natal Moon (Ashtama Shani). Guard against sudden disruptions."
         sadesati_remedy = "Perform Telabhishek to Lord Shani on Saturdays."
     else:
         sadesati_phase = "Free from Sade Sati & Dhaiya"
+        saturn_classification = "Normal Saturn Transit (Clear)"
         sadesati_desc = "Transiting Saturn is favorably placed relative to your natal Moon."
         sadesati_remedy = "No Saturn afflictions active at this time."
 
@@ -171,8 +180,10 @@ def analyze_doshas_and_remedies(planets: dict, lagna_sign: str):
             "remedy": kalsarp_remedy
         },
         "sade_sati": {
-            "is_active": diff in [12, 1, 2],
+            "is_active": is_sade_sati,
+            "is_dhaiya": is_dhaiya,
             "phase": sadesati_phase,
+            "classification": saturn_classification,
             "description": sadesati_desc,
             "remedy": sadesati_remedy
         },

@@ -60,6 +60,27 @@ HINDI_SIGNS = {
     "Sagittarius": "धनु", "Capricorn": "मकर", "Aquarius": "कुंभ", "Pisces": "मीन"
 }
 
+BEEJ_MANTRAS = {
+    "Sun": {"mantra": "ॐ ह्रीं ह्रीं सूर्याय नमः", "transliteration": "Om Hreem Hreem Suryaya Namah"},
+    "Moon": {"mantra": "ॐ सों सोमाय नमः", "transliteration": "Om Som Somaya Namah"},
+    "Mars": {"mantra": "ॐ क्रां क्रीं क्रौं सः भौमाय नमः", "transliteration": "Om Kraam Kreem Kraum Sah Bhaumaya Namah"},
+    "Mercury": {"mantra": "ॐ ब्रां ब्रीं ब्रौं सः बुधाय नमः", "transliteration": "Om Braam Breem Braum Sah Budhaya Namah"},
+    "Jupiter": {"mantra": "ॐ ग्रां ग्रीं ग्रौं सः गुरुवे नमः", "transliteration": "Om Graam Greem Graum Sah Guruve Namah"},
+    "Venus": {"mantra": "ॐ द्रां द्रीं द्रौं सः शुक्राय नमः", "transliteration": "Om Draam Dreem Draum Sah Shukraya Namah"},
+    "Saturn": {"mantra": "ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः", "transliteration": "Om Praam Preem Praum Sah Shanaishcharaya Namah"},
+    "Rahu": {"mantra": "ॐ भ्रां भ्रीं भ्रौं सः राहवे नमः", "transliteration": "Om Bhraam Bhreem Bhraum Sah Rahave Namah"},
+    "Ketu": {"mantra": "ॐ स्रां स्रीं स्रौं सः केतवे नमः", "transliteration": "Om Sraam Sreem Sraum Sah Ketave Namah"}
+}
+
+CHALDEAN_ORDER = ["Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon"]
+WEEKDAY_RULERS = ["Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Sun"]
+WEEKDAY_NAMES_EN = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+WEEKDAY_NAMES_HI = ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार"]
+SIGNS_LIST = [
+    "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+    "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+]
+
 def generate_astrological_reading(
     category: str,
     user_query: str,
@@ -697,6 +718,394 @@ def generate_astrological_reading(
     }
 
 
+def _build_period_items(
+    horizon_lower: str,
+    target_dt: date,
+    is_hi: bool,
+    has_chart: bool,
+    kundli: Optional[Dict[str, Any]],
+    dasha: Optional[Dict[str, Any]],
+    doshas: Optional[Dict[str, Any]],
+    active_hora_planet: str,
+    hora_window: str,
+    is_unlocked: bool
+) -> Dict[str, Any]:
+    lagna = kundli["lagna"]["sign"] if has_chart and kundli and "lagna" in kundli else "Aries"
+    lagna_hi = HINDI_SIGNS.get(lagna, lagna)
+    moon_sign = kundli["planets"]["Moon"]["sign"] if has_chart and kundli and "planets" in kundli and "Moon" in kundli["planets"] else "Aries"
+    moon_hi = HINDI_SIGNS.get(moon_sign, moon_sign)
+    moon_nak = kundli["planets"]["Moon"]["nakshatra"] if has_chart and kundli and "planets" in kundli and "Moon" in kundli["planets"] else "Ashwini"
+    dasha = dasha or {}
+    doshas = doshas or {}
+    active_maha = dasha.get("active_now", {}).get("maha_dasha", "Jupiter")
+    active_antar = dasha.get("active_now", {}).get("antar_dasha", active_maha)
+    maha_hi = HINDI_PLANETS.get(active_maha, active_maha)
+    antar_hi = HINDI_PLANETS.get(active_antar, active_antar)
+
+    # 1. HOURLY HORAS
+    if horizon_lower == "hourly":
+        h_planet = active_hora_planet or "Jupiter"
+        start_idx = CHALDEAN_ORDER.index(h_planet) if h_planet in CHALDEAN_ORDER else 1
+        cards = []
+        for offset in range(3):
+            p = CHALDEAN_ORDER[(start_idx + offset) % len(CHALDEAN_ORDER)]
+            p_hi = HINDI_PLANETS.get(p, p)
+            mantra_data = BEEJ_MANTRAS.get(p, {})
+            energy = "Favorable" if p in ["Jupiter", "Venus", "Mercury"] else ("Authoritative / Moderate" if p in ["Sun", "Moon"] else "Caution / Disciplined")
+            energy_hi = "शुभ (Favorable)" if p in ["Jupiter", "Venus", "Mercury"] else ("मध्यम / आधिकारिक" if p in ["Sun", "Moon"] else "सावधानी / अनुशासित")
+            win = hora_window if offset == 0 else (f"Next Hour (+{offset}h)" if not is_hi else f"अगला होरा (+{offset} घंटा)")
+
+            if is_hi:
+                title = f"{p_hi} होरा ({'सक्रिय' if offset == 0 else f'आगामी +{offset}'})"
+                rec = (
+                    f"इस {p_hi} काल में {p_hi} से संबंधित विषयों — "
+                    f"{'ज्ञान, वित्तीय परामर्श, और शुभ अनुबंध' if p == 'Jupiter' else ('सौंदर्य, संबंध, कला और सुलह' if p == 'Venus' else ('व्यापार, गणित, संचार और विश्लेषण' if p == 'Mercury' else ('प्रशासन, नेतृत्व और उच्च अधिकारी संवाद' if p == 'Sun' else ('पारिवारिक समन्वय और जनसंपर्क' if p == 'Moon' else ('तकनीकी, साहस और भूमि कार्य' if p == 'Mars' else 'दीर्घकालिक कार्य, अनुशासन और श्रम')))))} — "
+                    f"को प्राथमिकता दें।"
+                )
+                avoid = "उतावलेपन, आक्रोश और अनिर्णय की स्थिति से बचें।" if p in ["Mars", "Saturn"] else "समय का अपव्यय और अनावश्यक विवाद टालें।"
+            else:
+                title = f"{p} Hora ({'Active Now' if offset == 0 else f'Upcoming +{offset}h'})"
+                rec = (
+                    f"Prioritize activities resonant with {p}: "
+                    f"{'wealth expansion, legal counsel, and sacred studies' if p == 'Jupiter' else ('creative arts, alliances, luxury and social accord' if p == 'Venus' else ('commercial trade, documentation, analytics and writing' if p == 'Mercury' else ('executive leadership, government matters and vital decisions' if p == 'Sun' else ('public relations, domestic wellness and nurturing ties' if p == 'Moon' else ('technical initiative, decisive action and physical tasks' if p == 'Mars' else 'patient structural labor, organization and grounding')))))}."
+                )
+                avoid = "Avoid impulsive haste, contentious debates, or speculative volatility." if p in ["Mars", "Saturn"] else "Avoid trivial distractions and delay of core duties."
+
+            cards.append({
+                "period_index": offset + 1,
+                "title": title,
+                "time_window": win,
+                "planet": p,
+                "planet_hi": p_hi,
+                "energy_category": energy,
+                "energy_category_hi": energy_hi,
+                "beej_mantra": mantra_data.get("mantra", ""),
+                "transliteration": mantra_data.get("transliteration", ""),
+                "action_recommendation": rec,
+                "avoid": avoid,
+                "is_preview_locked": False
+            })
+        return {"items": cards}
+
+    # 2. DAILY FORECAST (3 DIURNAL PHASES)
+    if horizon_lower == "daily":
+        phases = []
+        phases.append({
+            "period_index": 1,
+            "phase_key": "morning_pratah",
+            "title": "प्रातः काल: सूर्योदय से मध्याह्न (06:00 AM – 12:00 PM)" if is_hi else "Morning Phase: Pratah Kala (Dawn to Solar Noon)",
+            "time_window": "06:00 AM – 12:00 PM",
+            "governing_energy": "सूर्य तेज एवं प्रातःकालीन शुभ होरा" if is_hi else "Solar Vitality & Auspicious Morning Horas",
+            "focus_theme": "उच्च प्राथमिकता कार्य, रणनीतिक योजना एवं एकाग्रता" if is_hi else "High-Leverage Strategic Inception & Deep Focus",
+            "guidance": (
+                f"प्रातःकाल में सूर्योदय के साथ सौर प्राण और शुभ होराएं सक्रिय होती हैं। "
+                f"{'आपकी जन्म कुंडली के ' + lagna_hi + ' लग्न और ' + moon_hi + ' चंद्र राशि के लिए यह समय मानसिक स्पष्टता का शिखर है।' if has_chart else 'यह वेला नए कार्यों के शुभारंभ और गहन चिंतन के लिए सर्वाधिक उपयुक्त है।'}"
+            ) if is_hi else (
+                f"Solar prana and benefic diurnal Horas harmonize conscious focus during morning hours. "
+                f"{'For your natal ' + lagna + ' Lagna and ' + moon_sign + ' Moon, this window supports authoritative execution.' if has_chart else 'Auspicious atmospheric alignment for deep intellectual output before operational interruptions.'}"
+            ),
+            "recommendation": "दिन के सबसे चुनौतीपूर्ण कार्य को 11:30 AM से पूर्व संपन्न करें।" if is_hi else "Complete your most demanding objective before solar noon.",
+            "cautions": "दिन के आरंभ में बिखरे हुए डिजिटल संदेशों में समय नष्ट न करें।" if is_hi else "Guard against reactive digital communications during initial focus hours.",
+            "auspicious_window": "प्रातः 07:30 AM – 09:30 AM" if is_hi else "07:30 AM – 09:30 AM (Benefic Window)",
+            "is_preview_locked": False
+        })
+        phases.append({
+            "period_index": 2,
+            "phase_key": "midday_madhyahna",
+            "title": "मध्याह्न काल: अभिजित मुहूर्त एवं कर्म संपादन (12:00 PM – 05:30 PM)" if is_hi else "Midday Phase: Madhyahna & Abhijit Muhurta (~11:45 AM – 12:35 PM)",
+            "time_window": "12:00 PM – 05:30 PM",
+            "governing_energy": "अभिजित मुहूर्त एवं व्यावसायिक गति" if is_hi else "Abhijit Muhurta & Executive Momentum",
+            "focus_theme": "बैठकें, सहयोगात्मक समझौते एवं तकनीकी कार्य" if is_hi else "Collaborative Reviews, Contract Negotiation & Execution",
+            "guidance": (
+                "मध्याह्न वेला में अभिजित मुहूर्त (~11:45 AM – 12:35 PM) अशुभ गोचर दोषों का शमन करता है। "
+                "महत्वपूर्ण वार्ताओं, ग्राहक संवाद और समझौतों को अंतिम रूप देने के लिए यह समय श्रेष्ठ है।"
+            ) if is_hi else (
+                "Midday peak cosmic radiation supports collaborative ventures. The classical Abhijit Muhurta window "
+                "(~11:45 AM – 12:35 PM) mitigates ambient transit impurities, favoring pivotal business negotiations."
+            ),
+            "recommendation": "अनुबंधों पर हस्ताक्षर और टीम समन्वय मध्याह्न में करें।" if is_hi else "Finalize vetted contracts and conduct client negotiations during the afternoon.",
+            "cautions": "दैनिक राहुकाल अवधि में सट्टेबाजी या जल्दबाजी के समझौतों से बचें।" if is_hi else "Avoid speculative agreements during the localized Rahu Kaal window.",
+            "auspicious_window": "अभिजित मुहूर्त (~11:45 AM – 12:35 PM)" if is_hi else "Abhijit Muhurta (~11:45 AM – 12:35 PM)",
+            "is_preview_locked": False
+        })
+        phases.append({
+            "period_index": 3,
+            "phase_key": "evening_nisha",
+            "title": "सायंकाल एवं निशा: पारिवारिक सौहार्द व विश्राम (05:30 PM – रात्रि)" if is_hi else "Evening & Night Phase: Sayankala & Nisha (Sunset Onward)",
+            "time_window": "05:30 PM – 11:30 PM",
+            "governing_energy": "चंद्र शांति एवं संध्या होरा" if is_hi else "Lunar Tranquility & Evening Restorative Grahas",
+            "focus_theme": "पारिवारिक सौहार्द, स्वाध्याय, ध्यान एवं शांति" if is_hi else "Domestic Well-being, Philosophical Study & Rest",
+            "guidance": (
+                "सूर्यास्त उपरांत चंद्र ऊर्जा मानसिक शांति और भावनात्मक संतुलन प्रदान करती है। "
+                "पारिवारिक सौहार्द, आध्यात्मिक वाचन और आगामी दिन की प्राथमिकताओं के निर्धारण का यह शुभ समय है।"
+            ) if is_hi else (
+                "Post-sunset lunar transitions soothe neurological intensity. Ideal for domestic connection, "
+                "reflective reading, and synthesizing insights from the completed day."
+            ),
+            "recommendation": "कार्य से औपचारिक विराम लें और सायं ध्यान अथवा स्वाध्याय करें।" if is_hi else "Deliberately disconnect from professional channels; cultivate mindfulness.",
+            "cautions": "देर रात गरिष्ठ भोजन और अत्यधिक स्क्रीन समय से बचें।" if is_hi else "Minimize late-night screen exposure to preserve deep sleep cycles.",
+            "auspicious_window": "सायं 06:30 PM – 07:45 PM" if is_hi else "06:30 PM – 07:45 PM (Twilight Window)",
+            "is_preview_locked": False
+        })
+        return {"items": phases}
+
+    # 3. WEEKLY FORECAST (7 DATED DAILY CARDS)
+    if horizon_lower == "weekly":
+        cards = []
+        base_moon_idx = SIGNS_LIST.index(moon_sign) if moon_sign in SIGNS_LIST else 0
+        lagna_idx = SIGNS_LIST.index(lagna) if lagna in SIGNS_LIST else 0
+        day_focus_en = [
+            ("Executive Direction & Leadership", "Direct energy toward core goals; communicate with authority and clarity."),
+            ("Financial Planning & Resource Allocation", "Review liquidity and budgets; align expenditures with tangible returns."),
+            ("Courageous Initiatives & Creative Drive", "Execute bold technical actions; resolve lingering obstacles with vigor."),
+            ("Intellectual Analysis & Documentation", "Draft agreements, optimize digital workflows, and deliberate strategic details."),
+            ("Wisdom, Mentorship & Institutional Alliances", "Consult seniors, formalize strategic pacts, and study long-term investments."),
+            ("Diplomacy, Social Accord & Creative Balance", "Harmonize relationships, foster creative projects, and reward collaborator loyalty."),
+            ("Discipline, Restructuring & Contemplative Rest", "Consolidate achievements, practice ethical duty (Dharma), and rest mindfully.")
+        ]
+        day_focus_hi = [
+            ("नेतृत्व एवं आधिकारिक संवाद", "मूल लक्ष्यों पर ऊर्जा केंद्रित करें; आत्मविश्वास और स्पष्टता से संवाद करें।"),
+            ("वित्तीय योजना एवं संसाधन प्रबंधन", "बजट और व्यय की समीक्षा करें; संसाधनों का विवेकपूर्ण उपयोग सुनिश्चित करें।"),
+            ("साहसिक पहल एवं तकनीकी कर्म", "साहस और संकल्प के साथ लंबित कार्यों को पूर्ण करें; बाधाओं का समाधान करें।"),
+            ("बौद्धिक विश्लेषण एवं प्रलेखन", "अनुबंधों का प्रारूप तैयार करें, विश्लेषणात्मक कार्य संपन्न करें और सतर्क रहें।"),
+            ("मार्गदर्शन, विद्या एवं संस्थागत सहयोग", "वरिष्ठों से परामर्श लें, दूरगामी योजनाओं को औपचारिक रूप दें और धर्म का पालन करें।"),
+            ("सौहार्द, कला एवं सामाजिक सामंजस्य", "संबंधों में प्रगाढ़ता लाएं, कलात्मक कार्यों में संलग्न हों और सहयोगियों का सम्मान करें।"),
+            ("अनुशासन, समीक्षा एवं आध्यात्मिक विश्राम", "साप्ताहिक उपलब्धियों का लेखा-जोखा करें, आत्म-मंथन करें और विश्राम लें।")
+        ]
+        for i in range(7):
+            cur = target_dt + timedelta(days=i)
+            w_idx = cur.weekday()
+            ruler = WEEKDAY_RULERS[w_idx]
+            ruler_disp = HINDI_PLANETS.get(ruler, ruler) if is_hi else ruler
+            day_name = WEEKDAY_NAMES_HI[w_idx] if is_hi else WEEKDAY_NAMES_EN[w_idx]
+            t_moon_idx = (base_moon_idx + int(i / 2.25)) % 12
+            t_moon = SIGNS_LIST[t_moon_idx]
+            t_moon_disp = HINDI_SIGNS.get(t_moon, t_moon) if is_hi else t_moon
+            h_num = ((t_moon_idx - lagna_idx + 12) % 12) + 1 if has_chart else ((i % 12) + 1)
+            h_meaning = HOUSE_SIGNIFICATORS.get(h_num, "Personal development")
+
+            is_locked = (not is_unlocked) and (i >= 2)
+            theme, details = (day_focus_hi[i % 7] if is_hi else day_focus_en[i % 7])
+            mantra_data = BEEJ_MANTRAS.get(ruler, {})
+
+            if is_locked:
+                teaser = (
+                    f"🔒 दिवस {i+1} ({day_name}, {cur.strftime('%d %b')}): चंद्र का {t_moon_disp} राशि में गोचर "
+                    f"आपके {h_num}वें भाव ({h_meaning.split(',')[0]}) को सक्रिय करेगा। "
+                    f"संपूर्ण 7-दिवसीय सटीक होरा, अनुकूल मुहूर्त और उपाय ₹49 में अनलॉक करें।"
+                ) if is_hi else (
+                    f"🔒 Day {i+1} ({day_name}, {cur.strftime('%b %d')}): Moon transits into sidereal {t_moon}, "
+                    f"energizing House {h_num} ({h_meaning.split(',')[0]}). "
+                    f"Unlock full ₹49 All-Horizons pass for exact hour-by-hour windows, Tara Bala, and remedies."
+                )
+                cards.append({
+                    "period_index": i + 1,
+                    "date": cur.strftime("%Y-%m-%d"),
+                    "day_name": day_name,
+                    "weekday_ruler": ruler_disp,
+                    "transiting_moon": t_moon_disp,
+                    "activated_house": h_num,
+                    "focus_theme": theme,
+                    "is_preview_locked": True,
+                    "teaser": teaser
+                })
+            else:
+                guidance_text = (
+                    f"{'आपकी जन्म कुंडली अनुसार, ' if has_chart else ''}आज चंद्र का {t_moon_disp} राशि में संचरण आपके "
+                    f"{h_num}वें भाव को प्रकाशित करता है। {ruler_disp} द्वारा शासित इस दिन में {details}"
+                ) if is_hi else (
+                    f"{'Personalized to your chart: ' if has_chart else ''}Transiting Moon in {t_moon} activates your "
+                    f"natal House {h_num} ({h_meaning}). Governed by {ruler}, {details}"
+                )
+                cards.append({
+                    "period_index": i + 1,
+                    "date": cur.strftime("%Y-%m-%d"),
+                    "day_name": day_name,
+                    "weekday_ruler": ruler_disp,
+                    "transiting_moon": t_moon_disp,
+                    "activated_house": h_num,
+                    "house_signification": h_meaning,
+                    "focus_theme": theme,
+                    "guidance": guidance_text,
+                    "auspicious_window": "09:30 AM – 11:15 AM" if not is_hi else "प्रातः 09:30 AM – 11:15 AM",
+                    "beej_mantra": mantra_data.get("mantra", ""),
+                    "transliteration": mantra_data.get("transliteration", ""),
+                    "is_preview_locked": False
+                })
+        return {"items": cards}
+
+    # 4. MONTHLY FORECAST (4 WEEKS)
+    if horizon_lower == "monthly":
+        weeks = []
+        week_templates_en = [
+            ("Week 1: Strategic Inception & Alignment", "Shukla Paksha (Waxing Phase)", "Focus on establishing foundations, launching core milestones, and executive mentorship.", "Favorable for inaugurations and crucial agreements.", "Tuesday & Thursday mornings"),
+            ("Week 2: Execution Momentum & Visibility", "Shukla Paksha toward Purnima", "Peak operational momentum. Step into public visibility and pitch key stakeholders.", "Watch interpersonal sensitivity around peak lunar full phase.", "Monday & Friday midday"),
+            ("Week 3: Capital Consolidation & Audits", "Krishna Paksha (Waning Phase)", "Focus on budget rationalization, asset audits, and settling pending liabilities.", "Avoid unvetted speculative purchases.", "Wednesday & Thursday afternoons"),
+            ("Week 4: Review, Completion & Rejuvenation", "Krishna Paksha toward Amavasya", "Wrap up open commitments, clear mental clutter, and engage in restorative study.", "Take added rest to prevent burnout before new cycle.", "Tuesday evening & Saturday morning")
+        ]
+        week_templates_hi = [
+            ("सप्ताह १: रणनीतिक आधारशिला एवं शुभारंभ", "शुक्ल पक्ष (आरंभिक चरण)", "नई योजनाओं का शिलान्यास, प्राथमिक लक्ष्यों का क्रियान्वयन और वरिष्ठों का मार्गदर्शन।", "नए उपक्रमों और अनुबंधों हेतु अत्यंत शुभ।", "मंगलवार व गुरुवार प्रातः"),
+            ("सप्ताह २: कर्म दक्षता एवं सामाजिक विस्तार", "शुक्ल पक्ष (पूर्णिमा की ओर)", "कार्यक्षेत्र में दृश्यता, नेतृत्व और सहयोगियों संग सशक्त समन्वय।", "पूर्णिमा के आसपास भावनात्मक उद्वेग से बचें।", "सोमवार व शुक्रवार मध्याह्न"),
+            ("सप्ताह ३: पूंजी संचय एवं परिसंपत्ति समीक्षा", "कृष्ण पक्ष (घटता चंद्रमा)", "वित्तीय समीक्षा, बजट संतुलन, बकाया दायित्वों की पूर्णता।", "जोखिम भरे सट्टेबाजी के सौदों से परहेज करें।", "बुधवार व गुरुवार अपराह्न"),
+            ("सप्ताह ४: समीक्षा, पूर्णता एवं आत्म-मंथन", "कृष्ण पक्ष (अमावस्या की ओर)", "पुराने कार्यों का समापन, मानसिक शांति और आध्यात्मिक पुनर्नवा।", "थकान से बचने हेतु पर्याप्त विश्राम और सात्विक आहार लें।", "मंगलवार सायं व शनिवार प्रातः")
+        ]
+        for w in range(4):
+            w_start = target_dt + timedelta(days=w * 7)
+            w_end = target_dt + timedelta(days=(w + 1) * 7 - 1)
+            is_locked = (not is_unlocked) and (w >= 1)
+            tpl = week_templates_hi[w] if is_hi else week_templates_en[w]
+
+            if is_locked:
+                teaser = (
+                    f"🔒 सप्ताह {w+1} ({w_start.strftime('%d %b')} – {w_end.strftime('%d %b')}): "
+                    f"{tpl[1]} अंतर्गत करियर और वित्तीय गोचर। संपूर्ण मासिक विश्लेषण ₹49 में अनलॉक करें।"
+                ) if is_hi else (
+                    f"🔒 Week {w+1} ({w_start.strftime('%b %d')} – {w_end.strftime('%b %d')}): "
+                    f"Deep transit analysis for {tpl[1]}. Unlock complete 4-week blueprint for ₹49."
+                )
+                weeks.append({
+                    "period_index": w + 1,
+                    "date_range": f"{w_start.strftime('%Y-%m-%d')} to {w_end.strftime('%Y-%m-%d')}",
+                    "title": tpl[0],
+                    "lunar_phase": tpl[1],
+                    "is_preview_locked": True,
+                    "teaser": teaser
+                })
+            else:
+                weeks.append({
+                    "period_index": w + 1,
+                    "date_range": f"{w_start.strftime('%Y-%m-%d')} to {w_end.strftime('%Y-%m-%d')}",
+                    "title": tpl[0],
+                    "lunar_phase": tpl[1],
+                    "focus_guidance": tpl[2],
+                    "opportunities": tpl[3],
+                    "favorable_windows": tpl[4],
+                    "is_preview_locked": False
+                })
+        return {"items": weeks}
+
+    # 5. YEARLY FORECAST (12 MONTHS + 4 QUARTERS)
+    if horizon_lower == "yearly":
+        months = []
+        month_names_en = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        month_names_hi = ["जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"]
+        quarters_en = [
+            {"quarter": "Q1", "title": "Foundation & Strategic Realignment", "theme": "Restructure workflows, consolidate reputation, and establish sustainable momentum."},
+            {"quarter": "Q2", "title": "Capital Growth & Asset Compounding", "theme": "Compound investments, optimize tax and budget lines, and negotiate major partnerships."},
+            {"quarter": "Q3", "title": "Intellectual Mastery & Expansion", "theme": "Deepen professional mastery, publish works, or undertake pilgrimage/auspicious travel."},
+            {"quarter": "Q4", "title": "Domestic Consolidation & Celebration", "theme": "Celebrate family milestones, consolidate property, and conduct annual charitable reflection."}
+        ]
+        quarters_hi = [
+            {"quarter": "Q1", "title": "प्रथम त्रैमास: आधारशिला एवं पुनर्गठन", "theme": "कार्यशैली का पुनर्गठन, प्रतिष्ठा संवर्धन और सतत प्रगति की नींव।"},
+            {"quarter": "Q2", "title": "द्वितीय त्रैमास: पूंजी संचय एवं वित्तीय मजबूती", "theme": "विवेकपूर्ण निवेश, बजट अनुशासन और रणनीतिक साझेदारियों का लाभ।"},
+            {"quarter": "Q3", "title": "तृतीय त्रैमास: विद्या, शोध एवं आध्यात्मिक उन्नति", "theme": "बौद्धिक विकास, उच्च अध्ययन, तीर्थाटन और ज्ञानार्जन।"},
+            {"quarter": "Q4", "title": "चतुर्थ त्रैमास: गृह सुख, पारिवारिक मांगलिक कार्य", "theme": "पारिवारिक सौहार्द, संपत्ति स्थिरीकरण और वार्षिक परोपकार।"}
+        ]
+
+        for m in range(12):
+            cal_month_idx = (target_dt.month - 1 + m) % 12
+            cal_year = target_dt.year + ((target_dt.month - 1 + m) // 12)
+            m_name = month_names_hi[cal_month_idx] if is_hi else month_names_en[cal_month_idx]
+            q_num = (m // 3) + 1
+            is_locked = (not is_unlocked) and (m >= 3)
+            solar_sign_idx = (cal_month_idx + 9) % 12
+            s_sign = SIGNS_LIST[solar_sign_idx]
+            s_sign_disp = HINDI_SIGNS.get(s_sign, s_sign) if is_hi else s_sign
+
+            if is_locked:
+                teaser = (
+                    f"🔒 माह {m+1} ({m_name} {cal_year}): सूर्य का {s_sign_disp} संक्रांति गोचर। "
+                    f"Q{q_num} के अंतर्गत संपूर्ण 12-माह फलादेश व शुभ मुहूर्त ₹49 में अनलॉक करें।"
+                ) if is_hi else (
+                    f"🔒 Month {m+1} ({m_name} {cal_year}): Sun ingress into sidereal {s_sign}. "
+                    f"Unlock complete 12-month transit map and timings with the ₹49 All-Horizons pass."
+                )
+                months.append({
+                    "period_index": m + 1,
+                    "month_name": f"{m_name} {cal_year}",
+                    "quarter": f"Q{q_num}",
+                    "solar_sign": s_sign_disp,
+                    "is_preview_locked": True,
+                    "teaser": teaser
+                })
+            else:
+                guidance_m = (
+                    f"{m_name} {cal_year} में सौर गोचर {s_sign_disp} राशि में रहेगा। "
+                    f"यह माह {'आपकी ' + maha_hi + ' दशा के सहयोग से ' if has_chart else ''}"
+                    f"करियर में निरंतरता, वित्तीय स्थिरता और व्यवस्थित कर्म का फल देगा।"
+                ) if is_hi else (
+                    f"Sun traverses sidereal {s_sign} during {m_name} {cal_year}. "
+                    f"{'Supported by your ' + active_maha + ' Dasha, ' if has_chart else ''}"
+                    f"focus is directed toward steady professional compounding and ethical integrity."
+                )
+                months.append({
+                    "period_index": m + 1,
+                    "month_name": f"{m_name} {cal_year}",
+                    "quarter": f"Q{q_num}",
+                    "solar_sign": s_sign_disp,
+                    "guidance": guidance_m,
+                    "focus_theme": f"Q{q_num} Strategic Execution",
+                    "is_preview_locked": False
+                })
+        return {
+            "items": months,
+            "quarters": quarters_hi if is_hi else quarters_en
+        }
+
+    # 6. MAHADASHA (5-YEAR TIMELINE)
+    if horizon_lower in ["mahadasha", "5year", "five_year"]:
+        years = []
+        year_themes_en = [
+            ("Year 1: Foundation Building & Mentorship", "Consolidating core reputation, securing reliable sponsors, and organizing routines.", "Avoid scattered multi-tasking.", "Recite active Mahadasha Lord Beej Mantra on designated weekday."),
+            ("Year 2: Capital Compounding & Asset Growth", "Prudent investment compounding, property stabilization, and high-trust alliances.", "Guard against over-leveraged loans.", "Practice Saturday charity (Daan) of black sesame or mustard oil."),
+            ("Year 3: Intellectual Mastery & Spiritual Expansion", "Scholarly achievements, philosophical depth, publication, and purposeful journeying.", "Keep pride in check during triumphs.", "Recite Vishnu Sahasranama or Gayatri Mantra at sunrise."),
+            ("Year 4: Domestic Peace & Generational Harmony", "Deepening family bonds, matrimonial harmony, domestic property enhancements.", "Maintain clear financial boundaries with relatives.", "Light a ghee lamp before family altar daily."),
+            ("Year 5: Karmic Fruition & Advisory Leadership", "Transition into respected consultative authority, fulfillment of major milestones.", "Prepare humbly for subsequent Dasha shift.", "Support educational or healthcare causes for the underprivileged.")
+        ]
+        year_themes_hi = [
+            ("वर्ष १: आधारशिला निर्माण एवं मार्गदर्शन", "व्यावसायिक साख को सुदृढ़ करना, वरिष्ठ गुरुओं का सानिध्य और दिनचर्या में स्थिरता।", "एक साथ अनेक कार्यों में ऊर्जा न बिखेरें।", "सक्रिय महादशा स्वामी के बीज मंत्र का नियमित जप करें।"),
+            ("वर्ष २: पूंजी संचय एवं परिसंपत्ति विस्तार", "विवेकपूर्ण निवेश, संपत्ति सुरक्षा और विश्वस्त व्यावसायिक साझेदारियों का निर्माण।", "अनावश्यक ऋण या वित्तीय जोखिम से बचें।", "शनिवार को काले तिल अथवा सरसों के तेल का दान करें।"),
+            ("वर्ष ३: बौद्धिक उत्कर्ष एवं आध्यात्मिक ज्ञान", "ज्ञानार्जन, शोध, दार्शनिक परिपक्वता, लेखन अथवा मांगलिक यात्राएं।", "सफलता के क्षणों में अहंकार से बचें।", "सूर्योदय काल में श्री विष्णु सहस्रनाम अथवा गायत्री मंत्र का पाठ करें।"),
+            ("वर्ष ४: पारिवारिक सौहार्द एवं दांपत्य सुख", "घरेलू शांति, दांपत्य सामंजस्य, आवास में सुधार और सामाजिक मान-प्रतिष्ठा।", "पारिवारिक मामलों में वित्तीय पारदर्शिता रखें।", "नियमित रूप से घर में शुद्ध घी का दीपक प्रज्वलित करें।"),
+            ("वर्ष ५: कर्म सिद्धि एवं सलाहकार नेतृत्व", "सलाहकार पद, जीवन के प्रमुख लक्ष्यों की पूर्ति और दीर्घकालिक कृतज्ञता।", "आगामी दशा संक्रमण हेतु विनम्रतापूर्वक तैयारी करें।", "विद्यार्थियों अथवा निर्धनों की शिक्षा व स्वास्थ्य में सहयोग दें।")
+        ]
+        start_year = target_dt.year
+        for y in range(5):
+            lbl = f"Year {y+1} ({start_year + y}–{start_year + y + 1})" if not is_hi else f"वर्ष {y+1} ({start_year + y}–{start_year + y + 1})"
+            is_locked = (not is_unlocked) and (y >= 1)
+            yt = year_themes_hi[y] if is_hi else year_themes_en[y]
+
+            if is_locked:
+                teaser = (
+                    f"🔒 {lbl}: {active_maha if not is_hi else maha_hi} महादशा अंतर्गत "
+                    f"{yt[0].split(':')[1] if ':' in yt[0] else yt[0]}। संपूर्ण 5-वर्षीय विंशोत्तरी कालखंड ₹49 में अनलॉक करें।"
+                ) if is_hi else (
+                    f"🔒 {lbl}: Under {active_maha} Mahadasha — {yt[0]}. "
+                    f"Unlock complete 5-year chronological timeline and remedies with ₹49 pass."
+                )
+                years.append({
+                    "period_index": y + 1,
+                    "year_label": lbl,
+                    "ruling_period": f"{active_maha} Mahadasha" if not is_hi else f"{maha_hi} महादशा",
+                    "is_preview_locked": True,
+                    "teaser": teaser
+                })
+            else:
+                years.append({
+                    "period_index": y + 1,
+                    "year_label": lbl,
+                    "ruling_period": f"{active_maha} Mahadasha / {active_antar} Antardasha" if not is_hi else f"{maha_hi} महादशा / {antar_hi} अंतर्दशा",
+                    "title": yt[0],
+                    "strategic_theme": yt[1],
+                    "cautions": yt[2],
+                    "vedic_remedy": yt[3],
+                    "is_preview_locked": False
+                })
+        return {"items": years}
+
+    return {"items": []}
+
+
 def generate_structured_prediction(
     horizon: str,
     target_date_str: str,
@@ -706,13 +1115,65 @@ def generate_structured_prediction(
     active_hora_planet: Optional[str] = None,
     hora_window: Optional[str] = None,
     category: str = "general",
-    lang: str = "en"
+    lang: str = "en",
+    is_unlocked: bool = False,
+    preview_tier: str = "FREE"
 ) -> Dict[str, Any]:
     hora_planet = active_hora_planet or "Jupiter"
     time_window_str = hora_window or "Current Astronomical Interval"
     horizon_lower = horizon.lower()
     is_hi = bool(lang and lang.lower().startswith("hi"))
     hora_hi = HINDI_PLANETS.get(hora_planet, hora_planet)
+
+    try:
+        target_dt = datetime.strptime(target_date_str, "%Y-%m-%d").date()
+    except Exception:
+        target_dt = date.today()
+
+    period_start = target_dt.strftime("%Y-%m-%d")
+    if horizon_lower == "weekly":
+        period_end = (target_dt + timedelta(days=6)).strftime("%Y-%m-%d")
+    elif horizon_lower == "monthly":
+        period_end = (target_dt + timedelta(days=27)).strftime("%Y-%m-%d")
+    elif horizon_lower == "yearly":
+        period_end = (target_dt + timedelta(days=364)).strftime("%Y-%m-%d")
+    elif horizon_lower in ["mahadasha", "5year", "five_year"]:
+        period_end = f"{target_dt.year + 5}-{target_dt.month:02d}-{target_dt.day:02d}"
+    else:
+        period_end = period_start
+
+    period_info = {
+        "start_date": period_start,
+        "end_date": period_end,
+        "timezone": "Asia/Kolkata",
+        "horizon": horizon_lower
+    }
+
+    is_preview = not is_unlocked if horizon_lower in ["weekly", "monthly", "yearly", "mahadasha", "5year", "five_year"] else False
+    preview_info = {
+        "is_preview": is_preview,
+        "unlocked": is_unlocked if horizon_lower in ["weekly", "monthly", "yearly", "mahadasha", "5year", "five_year"] else True,
+        "preview_scope": (
+            "100% Full Access" if (is_unlocked or horizon_lower in ["hourly", "daily"])
+            else ("Days 1–2 Full Preview (Days 3–7 Gated)" if horizon_lower == "weekly"
+            else ("Week 1 Full Preview (Weeks 2–4 Gated)" if horizon_lower == "monthly"
+            else ("Q1 Full Preview (Q2–Q4 Gated)" if horizon_lower == "yearly"
+            else "Year 1 Full Preview (Years 2–5 Gated)")))
+        )
+    }
+
+    period_items = _build_period_items(
+        horizon_lower=horizon_lower,
+        target_dt=target_dt,
+        is_hi=is_hi,
+        has_chart=bool(kundli and isinstance(kundli, dict) and "lagna" in kundli and "planets" in kundli),
+        kundli=kundli,
+        dasha=dasha,
+        doshas=doshas,
+        active_hora_planet=hora_planet,
+        hora_window=time_window_str,
+        is_unlocked=is_unlocked
+    )
 
     if not kundli:
         # Canonical unpersonalized general transit guidance (no fabricated Lagna or Moon)
@@ -1011,6 +1472,20 @@ def generate_structured_prediction(
             "report_title": report_title,
             "time_horizon": horizon_lower,
             "target_date": target_date_str,
+            "period": period_info,
+            "calculation_context": {
+                "lagna_sign": None,
+                "lagna_degree": None,
+                "moon_sign": None,
+                "moon_nakshatra": None,
+                "active_mahadasha": None,
+                "active_antardasha": None,
+                "saturn_classification": "Universal Sidereal Pisces Transit",
+                "sade_sati_phase": "सार्वभौमिक गोचर" if is_hi else "General Transit",
+                "active_hora_planet": hora_planet,
+                "active_hora_window": time_window_str
+            },
+            "preview": preview_info,
             "profile": {
                 "name": "प्रिय साधक" if is_hi else "Guest Seeker",
                 "is_guest": True,
@@ -1044,11 +1519,19 @@ def generate_structured_prediction(
                 "practical_reflection": reflection,
                 "limitations": limitations
             },
+            "period_items": period_items,
             "timing_metadata": {
                 "active_hora_planet": hora_planet,
                 "hora_window": time_window_str,
                 "calculation_engine": "SwissEphemeris_v2.10_Lahiri",
                 "interpretation_standard": "Parashari_Jyotish_Canonical_v2"
+            },
+            "provenance": {
+                "calculation_engine": "SwissEphemeris_v2.10_Lahiri",
+                "ephemeris_mode": "Sidereal_Lahiri_Ayanamsha",
+                "dasha_system": "Vimshottari_120_Year",
+                "saturn_classification": "Universal Sidereal Pisces Transit",
+                "time_horizon": horizon_lower
             }
         }
 
@@ -1066,6 +1549,7 @@ def generate_structured_prediction(
 
     planets = kundli["planets"]
     sadesati = doshas.get("sade_sati", {}).get("phase", "Free")
+    saturn_classification = doshas.get("sade_sati", {}).get("classification") or sadesati
     is_manglik = doshas.get("manglik", {}).get("is_manglik", False)
 
     lagna_hi = HINDI_SIGNS.get(lagna, lagna)
@@ -1499,6 +1983,20 @@ def generate_structured_prediction(
         "report_title": report_title,
         "time_horizon": horizon_lower,
         "target_date": target_date_str,
+        "period": period_info,
+        "calculation_context": {
+            "lagna_sign": lagna,
+            "lagna_degree": round(lagna_deg, 2) if lagna_deg is not None else None,
+            "moon_sign": moon_sign,
+            "moon_nakshatra": moon_nak,
+            "active_mahadasha": active_maha,
+            "active_antardasha": active_antar,
+            "saturn_classification": saturn_classification,
+            "sade_sati_phase": sadesati,
+            "active_hora_planet": hora_planet,
+            "active_hora_window": time_window_str
+        },
+        "preview": preview_info,
         "profile": {
             "name": kundli.get("profile_name", "Valued Seeker"),
             "lagna": lagna,
@@ -1509,6 +2007,7 @@ def generate_structured_prediction(
             "active_mahadasha": active_maha,
             "active_antardasha": active_antar,
             "sade_sati_phase": sadesati,
+            "saturn_classification": saturn_classification,
             "is_manglik": is_manglik
         },
         "sections": {
@@ -1523,7 +2022,7 @@ def generate_structured_prediction(
                 "lagna": f"{lagna_hi} ({round(lagna_deg, 2)}°)" if is_hi else f"{lagna} ({round(lagna_deg, 2)}°)",
                 "moon": f"{moon_hi} ({moon_nak})" if is_hi else f"{moon_sign} ({moon_nak})",
                 "active_dasha": f"{maha_hi} महादशा / {antar_hi} अंतर्दशा" if is_hi else f"{active_maha} Mahadasha / {active_antar} Antardasha",
-                "saturn_transit": f"शनि गोचर: {sadesati}" if is_hi else sadesati,
+                "saturn_transit": f"शनि गोचर: {saturn_classification}" if is_hi else saturn_classification,
                 "current_interval_lord": hora_hi if is_hi else hora_planet
             },
             "applicable_traditional_rules": why,
@@ -1531,10 +2030,18 @@ def generate_structured_prediction(
             "practical_reflection": reflection,
             "limitations": limitations
         },
+        "period_items": period_items,
         "timing_metadata": {
             "active_hora_planet": hora_planet,
             "hora_window": time_window_str,
             "calculation_engine": "SwissEphemeris_v2.10_Lahiri",
             "interpretation_standard": "Parashari_Jyotish_Canonical_v2"
+        },
+        "provenance": {
+            "calculation_engine": "SwissEphemeris_v2.10_Lahiri",
+            "ephemeris_mode": "Sidereal_Lahiri_Ayanamsha",
+            "dasha_system": "Vimshottari_120_Year",
+            "saturn_classification": saturn_classification,
+            "time_horizon": horizon_lower
         }
     }
