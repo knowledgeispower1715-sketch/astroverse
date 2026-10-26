@@ -3,7 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Astroverse — Enterprise Vedic Astrology & Live Consultation Platform</title>
+  <title>AstroVerse AI — Vedic Astrology Software & Astrological Calculations Platform</title>
+  <meta name="description" content="AstroVerse AI is a high-precision Vedic astrology software platform offering Swiss Ephemeris Janam Kundli calculations, Ashtakoota 36-Guna compatibility synastry, planetary transit timelines, and Chaldean numerology reports.">
+  <meta name="keywords" content="Vedic astrology software, Janam Kundli calculator, Swiss Ephemeris, astrological synastry, Ashtakoota 36 Guna, planetary transit, numerology software, horoscope calculations">
+  <meta name="author" content="AstroVerse AI Software Platform">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://astroverse-eta.vercel.app/">
+  <meta property="og:title" content="AstroVerse AI — Vedic Astrology Software & Astrological Calculations Platform">
+  <meta property="og:description" content="High-precision computational Vedic astrology software, birth chart calculation, planetary ephemeris, and personalized astrological reports.">
+  <meta property="og:image" content="https://astroverse-eta.vercel.app/og-image.png">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://astroverse-eta.vercel.app/">
+  <meta name="twitter:title" content="AstroVerse AI — Vedic Astrology Software & Astrological Calculations Platform">
+  <meta name="twitter:description" content="High-precision computational Vedic astrology software, birth chart calculation, planetary ephemeris, and personalized astrological reports.">
+
+  <!-- Schema.org SoftwareApplication Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AstroVerse AI",
+    "applicationCategory": "ReferenceApplication, UtilitiesApplication",
+    "operatingSystem": "Web Browser",
+    "browserRequirements": "Requires JavaScript. Requires HTML5.",
+    "description": "Enterprise-grade Vedic astrology calculation software providing high-precision Nirayana birth charts (Janam Kundli), Ashtakoota 36-Guna compatibility synastry, 24-hour planetary Horas, and multi-horizon astrological forecast reports.",
+    "url": "https://astroverse-eta.vercel.app/",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Free Tier",
+        "price": "0",
+        "priceCurrency": "INR",
+        "description": "Essential Janam Kundli birth chart calculation, D1 Lagna, and foundational planetary positions."
+      },
+      {
+        "@type": "Offer",
+        "name": "Plus Plan",
+        "price": "499",
+        "priceCurrency": "INR",
+        "billingDuration": "P1M",
+        "description": "Expanded divisional charts D1-D10, Ashtakoota 36-Guna compatibility synastry, and 10 daily AI consultations."
+      },
+      {
+        "@type": "Offer",
+        "name": "Premium Plan",
+        "price": "999",
+        "priceCurrency": "INR",
+        "billingDuration": "P1M",
+        "description": "Full research-grade suite with D1-D60 Shodashvarga, unlimited AI consultations, and 15-chapter numerology blueprint."
+      }
+    ]
+  }
+  </script>
 
   <!-- Typography & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3976,6 +4032,226 @@
       background: radial-gradient(circle at top right, #FFFDF8, #FFF7ED);
     }
 
+    /* ==================== ASTROVERSE LUXURY COMPLIANCE FOOTER ==================== */
+    .astro-main-footer {
+      background: linear-gradient(180deg, #1C0B12 0%, #10050A 100%);
+      color: #E2D7CF;
+      border-top: 1px solid rgba(198, 161, 91, 0.35);
+      position: relative;
+      z-index: 40;
+      margin-top: 48px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .footer-inner-wrap {
+      max-width: var(--av-content-max);
+      margin: 0 auto;
+      padding: 56px 24px 32px;
+    }
+    .footer-columns-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr 1.2fr 1.6fr;
+      gap: 36px;
+      margin-bottom: 40px;
+    }
+    @media (max-width: 1024px) {
+      .footer-columns-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+      }
+    }
+    @media (max-width: 640px) {
+      .footer-columns-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+    }
+    .footer-col-title {
+      font-family: var(--av-font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: #F59E0B;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .footer-brand-title {
+      font-family: var(--av-font-display);
+      font-size: 20px;
+      font-weight: 800;
+      color: #FFFDF9;
+      letter-spacing: 0.04em;
+      margin: 0 0 4px;
+    }
+    .footer-brand-sub {
+      font-size: 11.5px;
+      color: #D7C8BB;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+    .footer-brand-desc {
+      color: #B8A89C;
+      font-size: 12.5px;
+      line-height: 1.65;
+      margin-bottom: 16px;
+    }
+    .footer-notice-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11.5px;
+      color: #FCD34D;
+      line-height: 1.5;
+    }
+    .footer-links-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer-links-list a, .footer-links-list button {
+      color: #C8B9AE;
+      text-decoration: none;
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: 12.5px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color var(--av-duration-fast);
+    }
+    .footer-links-list a:hover, .footer-links-list button:hover {
+      color: #F59E0B;
+    }
+    .footer-security-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .footer-payment-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .footer-pay-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #FAF9F6;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .footer-bottom-bar {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 11.5px;
+      color: #9E8E83;
+    }
+    .footer-disclaimer-text {
+      line-height: 1.6;
+      text-align: justify;
+    }
+
+    /* ==================== LEGAL POLICIES MODAL ==================== */
+    .legal-modal-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      max-width: 900px;
+      width: 95%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .legal-modal-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #E2E8F0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFDF9;
+    }
+    .legal-tabs-row {
+      display: flex;
+      gap: 6px;
+      padding: 10px 24px;
+      background: #F8FAFC;
+      border-bottom: 1px solid #E2E8F0;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .legal-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748B;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .legal-tab-btn.active {
+      background: #881337;
+      color: #FFFFFF;
+      border-color: #881337;
+    }
+    .legal-modal-content {
+      padding: 24px 28px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #334155;
+    }
+    .legal-modal-content h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: #881337;
+      margin-top: 0;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #F1F5F9;
+      padding-bottom: 8px;
+    }
+    .legal-modal-content h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1E293B;
+      margin-top: 18px;
+      margin-bottom: 6px;
+    }
+    .legal-modal-content p, .legal-modal-content ul {
+      margin-bottom: 12px;
+    }
+    .legal-modal-content ul {
+      padding-left: 20px;
+    }
+    .legal-modal-content li {
+      margin-bottom: 4px;
+    }
+
   </style>
 </head>
 <body>
@@ -4020,7 +4296,7 @@
         <i class="fa-solid fa-clock"></i> Today &amp; Timing
       </button>
       <button class="nav-link-btn" id="btn-nav-matchmaking" onclick="switchNavSection('matchmaking')">
-        <i class="fa-solid fa-heart"></i> Compatibility
+        <i class="fa-solid fa-heart-pulse"></i> Compatibility
       </button>
       <button class="nav-link-btn" id="btn-nav-astrologers" onclick="switchNavSection('astrologers')">
         <i class="fa-solid fa-user-tie"></i> AI Astrologer
@@ -4113,7 +4389,7 @@
         <i class="fa-solid fa-clock"></i> <span>Today &amp; Solar Horas</span>
       </button>
       <button class="mobile-nav-item" id="mob-nav-matchmaking" onclick="mobileNavNavigate('matchmaking')">
-        <i class="fa-solid fa-heart"></i> <span>Kundli Milan (Compatibility)</span>
+        <i class="fa-solid fa-heart-pulse"></i> <span>Astrological Compatibility</span>
       </button>
       <button class="mobile-nav-item" id="mob-nav-astrologers" onclick="mobileNavNavigate('astrologers')">
         <i class="fa-solid fa-user-tie"></i> <span>AI Astrologer Consultation</span>
@@ -5415,17 +5691,20 @@
     <!-- ==================== TAB 4: 36-GUNA KUNDLI MATCHING ==================== -->
     <section id="view-matchmaking" class="page-tab-view">
       <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-heart" style="color: #EC4899;"></i> Kundli Milan — 36-Guna Matchmaking</h2>
-        <p>Comprehensive 8-Koota Vedic compatibility analysis powered by authentic Swiss Ephemeris calculations from full birth details (Date, Time, Place) with Nadi, Bhakoot, and Manglik Dosha evaluation.</p>
+        <h2><i class="fa-solid fa-heart-pulse" style="color: #EC4899;"></i> Kundli Milan — 36-Guna Astrological Compatibility Analysis</h2>
+        <p>Comprehensive 8-Koota Vedic compatibility synastry powered by authentic Swiss Ephemeris calculations from full birth details (Date, Time, Place) with Nadi, Bhakoot, and Kuja Dosha evaluation.</p>
+        <div style="background: rgba(54, 85, 120, 0.08); border-left: 3px solid #365578; padding: 10px 14px; border-radius: 6px; font-size: 12px; color: #365578; margin-top: 10px; line-height: 1.5;">
+          <i class="fa-solid fa-circle-info"></i> <strong>Astrological Software Notice:</strong> This feature is a mathematical birth-chart synastry calculator derived from classical Parashari Jyotish principles comparing planetary degrees and nakshatras between two birth times. AstroVerse AI is an astrology software calculation platform, not a matrimonial matchmaking agency, matrimonial bureau, or dating service.
+        </div>
       </div>
 
       <!-- Dual Profile Inputs -->
       <div class="grid-layout-2col" style="margin-bottom: 24px;">
-        <!-- Boy's Profile Card -->
+        <!-- Chart A Profile Card -->
         <div class="astro-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
             <h3 style="font-size: 16px; font-weight: 800; color: #1D4ED8; margin: 0;">
-              <i class="fa-solid fa-mars"></i> Boy's Particulars (Groom)
+              <i class="fa-solid fa-circle-user"></i> Primary Chart Particulars (Chart A)
             </h3>
             <button type="button" class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="autofillMilanPartner('boy')">
               <i class="fa-solid fa-wand-magic-sparkles"></i> Use My Loaded Chart
@@ -5433,8 +5712,8 @@
           </div>
 
           <div class="form-field-group">
-            <label class="form-field-label">Boy's Full Name</label>
-            <input type="text" id="milan-boy-name" class="form-input-text" placeholder="Boy's Name" value="Groom">
+            <label class="form-field-label">Chart A / Person A's Name</label>
+            <input type="text" id="milan-boy-name" class="form-input-text" placeholder="Person A's Name" value="Person A">
           </div>
 
           <div class="form-field-group">
@@ -5501,11 +5780,11 @@
           </div>
         </div>
 
-        <!-- Girl's Profile Card -->
+        <!-- Chart B Profile Card -->
         <div class="astro-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
             <h3 style="font-size: 16px; font-weight: 800; color: #DB2777; margin: 0;">
-              <i class="fa-solid fa-venus"></i> Girl's Particulars (Bride)
+              <i class="fa-solid fa-circle-user"></i> Secondary Chart Particulars (Chart B)
             </h3>
             <button type="button" class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="autofillMilanPartner('girl')">
               <i class="fa-solid fa-wand-magic-sparkles"></i> Use My Loaded Chart
@@ -5513,8 +5792,8 @@
           </div>
 
           <div class="form-field-group">
-            <label class="form-field-label">Girl's Full Name</label>
-            <input type="text" id="milan-girl-name" class="form-input-text" placeholder="Girl's Name" value="Bride">
+            <label class="form-field-label">Chart B / Person B's Name</label>
+            <input type="text" id="milan-girl-name" class="form-input-text" placeholder="Person B's Name" value="Person B">
           </div>
 
           <div class="form-field-group">
@@ -5585,18 +5864,18 @@
       <!-- Action Button -->
       <div style="margin-bottom: 24px;">
         <button class="btn-gold-primary" id="btn-calc-milan" style="width: 100%; justify-content: center; font-size: 15px; padding: 14px 24px;" onclick="calculateFullKundliMilanUI()">
-          <i class="fa-solid fa-heart"></i> Calculate Full Kundli Milan &amp; 36 Gunas (Swiss Ephemeris)
+          <i class="fa-solid fa-heart-pulse"></i> Calculate Astrological Compatibility (36-Guna Synastry)
         </button>
       </div>
 
-      <!-- Matchmaking Score & In-Depth Report Display -->
+      <!-- Compatibility Synastry Score & In-Depth Report Display -->
       <div class="astro-card">
         <div id="milan-empty-state" class="empty-state-card empty-state-luxury">
-          <i class="fa-solid fa-heart chakra-icon" style="color: #EC4899; filter: drop-shadow(0 2px 8px rgba(236, 72, 153, 0.25));"></i>
-          <h4 style="font-size: 17px; font-weight: 800; color: #1E1B4B; margin-bottom: 6px;">No Match Calculated</h4>
-          <p style="font-size: 13px; color: #64748B; max-width: 480px; margin: 0 auto 16px; line-height: 1.5;">Enter complete birth particulars (Date, Time, City) for both partners above to compute authentic Swiss Ephemeris Ashtakoota compatibility and supplementary synastry.</p>
+          <i class="fa-solid fa-heart-pulse chakra-icon" style="color: #EC4899; filter: drop-shadow(0 2px 8px rgba(236, 72, 153, 0.25));"></i>
+          <h4 style="font-size: 17px; font-weight: 800; color: #1E1B4B; margin-bottom: 6px;">No Synastry Calculated</h4>
+          <p style="font-size: 13px; color: #64748B; max-width: 480px; margin: 0 auto 16px; line-height: 1.5;">Enter complete birth particulars (Date, Time, City) for both charts above to compute authentic Swiss Ephemeris Ashtakoota compatibility and supplementary synastry.</p>
           <button type="button" class="btn-outline-secondary" onclick="loadSampleMatchProfiles()" style="padding: 7px 18px; font-size: 12px; border-radius: 999px;">
-            <i class="fa-solid fa-wand-magic-sparkles" style="color: #EC4899;"></i> Try Verified Match Profiles
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: #EC4899;"></i> Try Verified Sample Chart Pair
           </button>
         </div>
 
@@ -5740,7 +6019,7 @@
           <button class="tool-filter-btn" onclick="setToolCategoryFilter('dasha_timing', this)">Dasha & Timing</button>
           <button class="tool-filter-btn" onclick="setToolCategoryFilter('ashtakavarga', this)">Ashtakavarga</button>
           <button class="tool-filter-btn" onclick="setToolCategoryFilter('panchang_muhurta', this)">Panchang & Muhurta</button>
-          <button class="tool-filter-btn" onclick="setToolCategoryFilter('matchmaking', this)">Matchmaking</button>
+          <button class="tool-filter-btn" onclick="setToolCategoryFilter('matchmaking', this)">Compatibility Synastry</button>
           <button class="tool-filter-btn" onclick="setToolCategoryFilter('prashna', this)">Horary / Prashna</button>
           <button class="tool-filter-btn" onclick="setToolCategoryFilter('specialized', this)">Specialized Traditions</button>
           <button class="tool-filter-btn" onclick="setToolCategoryFilter('api', this)">Developer API</button>
@@ -6023,22 +6302,22 @@
           <button class="tool-launch-btn" onclick="switchNavSection('horas'); setTimeout(() => document.getElementById('panchang-daily-card')?.scrollIntoView({behavior:'smooth'}), 150);">Open Daily Panchang <i class="fa-solid fa-arrow-right"></i></button>
         </div>
 
-        <!-- Card 15: 36-Guna Ashtakoota Matchmaking -->
-        <div class="tool-card" data-category="matchmaking" data-name="36-Guna Ashtakoota Kundli Milan Matchmaking Compatibility Synastry">
+        <!-- Card 15: 36-Guna Ashtakoota Compatibility Synastry -->
+        <div class="tool-card" data-category="matchmaking" data-name="36-Guna Ashtakoota Kundli Milan Compatibility Synastry">
           <div>
             <div class="tool-card-header">
-              <div class="tool-card-icon-wrap"><i class="fa-solid fa-heart"></i></div>
+              <div class="tool-card-icon-wrap"><i class="fa-solid fa-heart-pulse"></i></div>
               <div class="tool-badges">
-                <span class="tool-badge-cat">Matchmaking</span>
+                <span class="tool-badge-cat">Compatibility Synastry</span>
                 <span class="tool-badge-tier badge-tier-free">Free</span>
               </div>
             </div>
-            <h3 class="tool-card-title">36-Guna Kundli Milan & Compatibility</h3>
+            <h3 class="tool-card-title">36-Guna Kundli Milan &amp; Astrological Synastry</h3>
             <p class="tool-card-desc">Comprehensive Parashari 8-Kuta synastry: Varna (1), Vashya (2), Tara (3), Yoni (4), Graha Maitri (5), Gana (6), Bhakoot (7), and Nadi (8) with points scored out of 36.0 and cross-chart D9 alignment.</p>
             <details class="tool-meta-details"><summary><i class="fa-solid fa-circle-info"></i> Methodology &amp; Inputs</summary><div class="tool-card-meta">
               <div><strong>Methodology:</strong> Classical Ashtakoota Scoring + Nadi/Bhakoot Dosha Exceptions</div>
-              <div><strong>Required Inputs:</strong> Boy &amp; Girl Birth Dates, Times &amp; Places</div>
-              <div><strong>Artifact:</strong> 8-Fold Radar Breakdown, Score Percentage &amp; Matrimonial Verdict</div>
+              <div><strong>Required Inputs:</strong> Chart A &amp; Chart B Birth Dates, Times &amp; Places</div>
+              <div><strong>Artifact:</strong> 8-Fold Radar Breakdown, Score Percentage &amp; Astrological Synastry Report</div>
             </div></details>
           </div>
           <button class="tool-launch-btn" onclick="switchNavSection('matchmaking')">Launch Kundli Milan <i class="fa-solid fa-arrow-right"></i></button>
@@ -6050,7 +6329,7 @@
             <div class="tool-card-header">
               <div class="tool-card-icon-wrap"><i class="fa-solid fa-fire"></i></div>
               <div class="tool-badges">
-                <span class="tool-badge-cat">Matchmaking</span>
+                <span class="tool-badge-cat">Compatibility Synastry</span>
                 <span class="tool-badge-tier badge-tier-free">Free</span>
               </div>
             </div>
@@ -6459,6 +6738,134 @@
 
 
   </main>
+
+  <!-- ==================== ASTROVERSE LUXURY COMPLIANCE FOOTER ==================== -->
+  <footer class="astro-main-footer" role="contentinfo">
+    <div class="footer-inner-wrap">
+      <div class="footer-columns-grid">
+        <!-- Col 1: Brand & Purpose -->
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #F59E0B, #B45309); display: flex; align-items: center; justify-content: center; color: #FFF; font-size: 16px;">
+              <i class="fa-solid fa-dharmachakra"></i>
+            </div>
+            <div>
+              <h3 class="footer-brand-title">AstroVerse AI</h3>
+              <div class="footer-brand-sub">Vedic Astrology Software Platform</div>
+            </div>
+          </div>
+          <p class="footer-brand-desc">
+            Enterprise-grade computational astrology software powered by astronomical ephemerides, Swiss Ephemeris algorithms, and classical Parashari Jyotish principles. Delivering research-grade Nirayana birth charts, planetary Horas, 36-Guna compatibility synastry, and multi-horizon personal publications.
+          </p>
+          <div class="footer-notice-box">
+            <i class="fa-solid fa-shield-halved" style="color: #F59E0B; margin-right: 4px;"></i>
+            <strong>Software Platform Notice:</strong> AstroVerse AI is an astronomical calculation software and educational platform. We do not provide matrimonial matchmaking, dating services, or marriage bureau facilities.
+          </div>
+        </div>
+
+        <!-- Col 2: Calculation Suites -->
+        <div>
+          <div class="footer-col-title"><i class="fa-solid fa-calculator"></i> Calculation Suites</div>
+          <ul class="footer-links-list">
+            <li><button type="button" onclick="switchNavSection('kundli'); window.scrollTo({top:0,behavior:'smooth'});"><i class="fa-solid fa-dharmachakra"></i> Janam Kundli &amp; D1-D60</button></li>
+            <li><button type="button" onclick="switchNavSection('horas'); window.scrollTo({top:0,behavior:'smooth'});"><i class="fa-solid fa-clock"></i> 24-Hour Planetary Horas</button></li>
+            <li><button type="button" onclick="switchNavSection('matchmaking'); window.scrollTo({top:0,behavior:'smooth'});"><i class="fa-solid fa-heart-pulse"></i> 36-Guna Synastry Matrix</button></li>
+            <li><button type="button" onclick="openSlideDrawer('Numerology Studio', document.getElementById('view-numerology')?.innerHTML || '<p>Open Numerology from Tools</p>');"><i class="fa-solid fa-arrow-up-9-1"></i> Numerology Studio</button></li>
+            <li><button type="button" onclick="openReportStoreModal()"><i class="fa-solid fa-file-invoice"></i> Personalized Reports Store</button></li>
+            <li><button type="button" onclick="switchNavSection('tools'); window.scrollTo({top:0,behavior:'smooth'});"><i class="fa-solid fa-toolbox"></i> 60+ Vedic Calculation Tools</button></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Compliance & Legal -->
+        <div>
+          <div class="footer-col-title"><i class="fa-solid fa-scale-balanced"></i> Trust &amp; Governance</div>
+          <ul class="footer-links-list">
+            <li><button type="button" onclick="openLegalModal('terms')"><i class="fa-solid fa-file-contract"></i> Terms of Service</button></li>
+            <li><button type="button" onclick="openLegalModal('privacy')"><i class="fa-solid fa-user-shield"></i> Privacy Policy</button></li>
+            <li><button type="button" onclick="openLegalModal('refund')"><i class="fa-solid fa-arrow-rotate-left"></i> Refund &amp; Cancellation</button></li>
+            <li><button type="button" onclick="openLegalModal('shipping')"><i class="fa-solid fa-truck-fast"></i> Digital Delivery Policy</button></li>
+            <li><button type="button" onclick="openLegalModal('contact')"><i class="fa-solid fa-headset"></i> Contact Us &amp; Support</button></li>
+            <li><button type="button" onclick="openLegalModal('pricing')"><i class="fa-solid fa-tags"></i> Pricing &amp; Billing Disclosures</button></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: Payment Security & Support -->
+        <div>
+          <div class="footer-col-title"><i class="fa-solid fa-lock"></i> Payment &amp; Security</div>
+          <div class="footer-security-card">
+            <div style="font-weight: 700; color: #FFFDF9; display: flex; align-items: center; gap: 6px; font-size: 12.5px; margin-bottom: 6px;">
+              <i class="fa-solid fa-shield-check" style="color: #10B981; font-size: 15px;"></i> Secured by Razorpay
+            </div>
+            <div style="font-size: 11.5px; color: #C8B9AE; line-height: 1.5;">
+              Transactions encrypted via 256-bit TLS SSL. Processed securely through RBI-licensed payment aggregator Razorpay.
+            </div>
+            <div class="footer-payment-badges">
+              <span class="footer-pay-pill"><i class="fa-solid fa-bolt"></i> UPI</span>
+              <span class="footer-pay-pill"><i class="fa-solid fa-building-columns"></i> NetBanking</span>
+              <span class="footer-pay-pill"><i class="fa-regular fa-credit-card"></i> RuPay / Cards</span>
+            </div>
+          </div>
+
+          <div style="font-size: 12px; color: #C8B9AE;">
+            <div style="margin-bottom: 4px;"><strong style="color: #FAF9F6;">Support SLA:</strong> Response within 24 hours</div>
+            <div style="margin-bottom: 4px;"><strong style="color: #FAF9F6;">Email:</strong> <a href="mailto:support@astroverse.app" style="color: #F59E0B; text-decoration: underline;">support@astroverse.app</a></div>
+            <div><strong style="color: #FAF9F6;">Hours:</strong> Mon - Sat: 09:00 - 18:00 IST</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="footer-bottom-bar">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>© 2026 AstroVerse AI Software Platform. All rights reserved.</div>
+          <div style="display: flex; gap: 16px; font-size: 11.5px;">
+            <a href="javascript:void(0)" onclick="openLegalModal('terms')" style="color: #B8A89C; text-decoration: none;">Terms</a>
+            <a href="javascript:void(0)" onclick="openLegalModal('privacy')" style="color: #B8A89C; text-decoration: none;">Privacy</a>
+            <a href="javascript:void(0)" onclick="openLegalModal('refund')" style="color: #B8A89C; text-decoration: none;">Refunds</a>
+            <a href="javascript:void(0)" onclick="openLegalModal('contact')" style="color: #B8A89C; text-decoration: none;">Contact Support</a>
+          </div>
+        </div>
+        <div class="footer-disclaimer-text">
+          <strong>Astrological Calculation Disclaimer:</strong> Astrological calculations, predictions, and interpretations generated by AstroVerse AI software are derived from astronomical ephemeris models and classical Vedic astrological algorithms. They are provided solely for educational, cultural, research, and self-reflection purposes. Astrological guidance does not substitute for qualified medical, psychological, legal, investment, or financial counsel.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== MODAL: LEGAL & COMPLIANCE POLICIES ==================== -->
+  <div id="modal-legal-policy" class="modal-backdrop-wrap" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="legal-modal-title">
+    <div class="legal-modal-card">
+      <div class="legal-modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(136, 19, 55, 0.1); color: #881337; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+            <i class="fa-solid fa-scale-balanced"></i>
+          </div>
+          <div>
+            <h3 id="legal-modal-title" style="margin: 0; font-size: 18px; font-weight: 800; color: #881337;">AstroVerse AI Policies &amp; Compliance</h3>
+            <div style="font-size: 11px; color: #64748B;">Official Regulatory, Payment &amp; Consumer Trust Governance</div>
+          </div>
+        </div>
+        <button type="button" onclick="closeLegalModal()" style="background: transparent; border: none; font-size: 20px; color: #64748B; cursor: pointer; padding: 4px;" aria-label="Close modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Policy Tabs Navigation -->
+      <div class="legal-tabs-row" role="tablist">
+        <button type="button" class="legal-tab-btn active" id="tab-btn-terms" onclick="switchLegalTab('terms')">Terms of Service</button>
+        <button type="button" class="legal-tab-btn" id="tab-btn-privacy" onclick="switchLegalTab('privacy')">Privacy Policy</button>
+        <button type="button" class="legal-tab-btn" id="tab-btn-refund" onclick="switchLegalTab('refund')">Refund &amp; Cancellation</button>
+        <button type="button" class="legal-tab-btn" id="tab-btn-shipping" onclick="switchLegalTab('shipping')">Digital Delivery</button>
+        <button type="button" class="legal-tab-btn" id="tab-btn-contact" onclick="switchLegalTab('contact')">Contact Us &amp; Support</button>
+        <button type="button" class="legal-tab-btn" id="tab-btn-pricing" onclick="switchLegalTab('pricing')">Pricing &amp; Subscriptions</button>
+      </div>
+
+      <!-- Policy Content Views -->
+      <div class="legal-modal-content" id="legal-modal-content-area">
+        <!-- Rendered dynamically by switchLegalTab() -->
+      </div>
+    </div>
+  </div>
 
 
   <!-- ==================== MODAL: SAVED REPORT VIEWER ==================== -->
@@ -7178,7 +7585,7 @@
 
       <!-- Partner Profile for Kundli Milan (if applicable) -->
       <div class="form-field-group" id="builder-partner-group" style="display: none; margin-bottom: 14px;">
-        <label class="form-field-label">Partner Birth Profile (Matchmaking)</label>
+        <label class="form-field-label">Partner Birth Profile (Compatibility Synastry)</label>
         <select id="builder-partner-select" class="form-input-text" onchange="onBuilderPartnerChanged()">
           <!-- Populated dynamically -->
         </select>
@@ -9622,13 +10029,13 @@
       if (c.lat !== undefined && c.lon !== undefined) {
         selectMilanCity(partner, c.city || "Current Location", c.lat, c.lon, c.tz || "Asia/Kolkata");
       }
-      showToast(`Autofilled ${partner === 'boy' ? "Boy's" : "Girl's"} particulars from your Janam Kundli.`, "success");
+      showToast(`Autofilled ${partner === 'boy' ? "Chart A's" : "Chart B's"} particulars from your Janam Kundli.`, "success");
     }
 
     async function calculateFullKundliMilanUI() {
       clearToasts();
 
-      const bName = document.getElementById('milan-boy-name')?.value?.trim() || "Groom";
+      const bName = document.getElementById('milan-boy-name')?.value?.trim() || "Person A";
       const bDob = document.getElementById('milan-boy-dob')?.value;
       const bHh = document.getElementById('milan-boy-tob-hh')?.value || "12";
       const bMm = document.getElementById('milan-boy-tob-mm')?.value || "00";
@@ -9636,7 +10043,7 @@
       const bLonRaw = document.getElementById('milan-boy-lon')?.value;
       const bTz = document.getElementById('milan-boy-tz')?.value || "Asia/Kolkata";
 
-      const gName = document.getElementById('milan-girl-name')?.value?.trim() || "Bride";
+      const gName = document.getElementById('milan-girl-name')?.value?.trim() || "Person B";
       const gDob = document.getElementById('milan-girl-dob')?.value;
       const gHh = document.getElementById('milan-girl-tob-hh')?.value || "12";
       const gMm = document.getElementById('milan-girl-tob-mm')?.value || "00";
@@ -9645,7 +10052,7 @@
       const gTz = document.getElementById('milan-girl-tz')?.value || "Asia/Kolkata";
 
       if (!bDob || !gDob) {
-        showToast("Please enter birth dates for both Boy and Girl.", "error");
+        showToast("Please enter birth dates for both Chart A and Chart B.", "error");
         return;
       }
 
@@ -9655,15 +10062,15 @@
       const gLon = parseFloat(gLonRaw);
 
       if (isNaN(bLat) || isNaN(bLon)) {
-        showToast("Please search and select a verified birth city for the Boy.", "error");
+        showToast("Please search and select a verified birth city for Chart A.", "error");
         return;
       }
       if (isNaN(gLat) || isNaN(gLon)) {
-        showToast("Please search and select a verified birth city for the Girl.", "error");
+        showToast("Please search and select a verified birth city for Chart B.", "error");
         return;
       }
 
-      showToast("Computing authentic Swiss Ephemeris 36-Guna Kundli Milan...", "info");
+      showToast("Computing authentic Swiss Ephemeris 36-Guna Astrological Compatibility Synastry...", "info");
 
       const boyPayload = {
         name: bName,
@@ -13649,6 +14056,207 @@
       }
     }
 
+    // ==================== ASTROVERSE LEGAL & COMPLIANCE POLICIES ====================
+    const ASTROVERSE_LEGAL_POLICIES = {
+      terms: {
+        title: "Terms of Service",
+        html: `
+          <h3>1. Acceptance of Terms & Platform Identity</h3>
+          <p>Welcome to AstroVerse AI ("Platform", "we", "us", or "our"), an enterprise-grade computational Vedic astrology and astronomical ephemeris software platform accessible at <strong>https://astroverse-eta.vercel.app/</strong>. By accessing, browsing, registering an account, or purchasing digital publications or subscriptions on AstroVerse AI, you agree to be bound by these Terms of Service.</p>
+
+          <h3>2. Scope of Software Services & Non-Matrimonial Notice</h3>
+          <p>AstroVerse AI develops and provides computational software tools based on astronomical ephemeris mathematics and classical Parashari Jyotish principles. Features include Nirayana Janam Kundli generation, planetary Horas, 36-Guna compatibility synastry, Chaldean/Pythagorean numerology algorithms, and personalized multi-horizon prediction publications.</p>
+          <p><strong>EXPLICIT SERVICE CLASSIFICATION:</strong> AstroVerse AI is strictly a computational astrology software platform. AstroVerse AI is <strong>NOT</strong> a matrimonial matchmaking agency, dating service, marriage bureau, or social networking platform. Tools calculating astrological compatibility (such as the 36-Guna synastry calculator) evaluate astronomical planetary coordinates between two user-supplied timestamps solely for astrological educational and cultural reflection.</p>
+
+          <h3>3. User Accounts & Identity Verification</h3>
+          <p>Users may access guest calculation tiers or authenticate securely using Google Identity Services (OAuth 2.0). You are responsible for safeguarding your login credentials and session tokens. You must provide authentic birth coordinates to ensure mathematical precision in astrological ephemeris calculations.</p>
+
+          <h3>4. Payments, Razorpay Gateway & Billing</h3>
+          <p>All financial transactions on AstroVerse AI, including digital report purchases, wallet top-ups, and subscription plans (Plus and Premium), are billed in Indian Rupees (INR) and processed securely through <strong>Razorpay</strong>, an authorized payment aggregator regulated by the Reserve Bank of India (RBI). AstroVerse does not capture, store, or process payment card numbers or banking passwords.</p>
+
+          <h3>5. Intellectual Property</h3>
+          <p>All algorithms, ephemeris integrations, user interface code, text, charts, graphics, and generated report publication formats are the exclusive intellectual property of AstroVerse AI. Users are granted a personal, non-exclusive, revocable license to view and download their personalized reports for personal, non-commercial use.</p>
+
+          <h3>6. Disclaimer of Warranties & Educational Nature</h3>
+          <p>Astrological calculations and forecast reports are derived from interpretive mathematical and traditional Jyotish models. All guidance is offered for educational, informational, and self-reflection purposes. Astrological outputs do not constitute licensed medical, legal, psychiatric, financial, or investment advice.</p>
+
+          <h3>7. Limitation of Liability & Dispute Jurisdiction</h3>
+          <p>To the maximum extent permitted by applicable Indian law, AstroVerse AI's aggregate liability for any claims arising from the service shall not exceed the actual amount paid by the user in the preceding three (3) months. These Terms shall be governed by and construed in accordance with the laws of India, and any disputes shall be subject to the exclusive jurisdiction of the competent courts in New Delhi, India.</p>
+        `
+      },
+      privacy: {
+        title: "Privacy Policy",
+        html: `
+          <h3>1. Information We Collect</h3>
+          <p>AstroVerse AI collects only the minimal data required to compute astronomical charts and deliver personalized software services:</p>
+          <ul>
+            <li><strong>Astronomical Birth Details:</strong> Date of birth, exact time of birth, and birth city coordinates (latitude, longitude, timezone). These are essential inputs to query the Swiss Ephemeris and generate accurate Nirayana planetary longitudes.</li>
+            <li><strong>Account Identity:</strong> Display name, email address, and profile photo provided via Google Identity Services OAuth 2.0.</li>
+            <li><strong>Usage & Calculations:</strong> Saved birth profiles, generated report publications, and wallet balance ledger.</li>
+          </ul>
+
+          <h3>2. Zero Storage of Financial & Payment Data</h3>
+          <p>AstroVerse AI complies strictly with Reserve Bank of India (RBI) payment guidelines. <strong>We do NOT store, process, or transmit your credit/debit card numbers, CVVs, expiry dates, net banking credentials, or UPI PINs.</strong> All payment processing is offloaded directly to PCI-DSS Level 1 compliant payment aggregator Razorpay via encrypted TLS 1.3 tunnels.</p>
+
+          <h3>3. How We Use and Protect Your Data</h3>
+          <p>Your birth details and calculation records are used exclusively to render your astrological charts, horoscope timelines, and personalized reports. We never sell, rent, monetise, or trade your personal or astrological information to third-party data brokers, marketers, or advertisers.</p>
+
+          <h3>4. Data Encryption & Security Architecture</h3>
+          <p>All data in transit is encrypted using industry-standard 256-bit TLS (Transport Layer Security). Application databases employ strict user-level authorization barriers ensuring User A cannot read, query, or mutate User B's saved birth profiles or purchased reports.</p>
+
+          <h3>5. Cookies and Local Session Storage</h3>
+          <p>We use session cookies and local storage exclusively to maintain authenticated login sessions, language preferences (English/Hindi), and active calculation states. We do not use third-party behavioral tracking cookies.</p>
+
+          <h3>6. Right to Rectification and Erasure (Account Deletion)</h3>
+          <p>You have the absolute right to inspect, export, or delete your saved birth profiles and account data. To request complete deletion of your account and associated records, submit an email to <strong>support@astroverse.app</strong>. Your data will be permanently purged within 30 business days.</p>
+        `
+      },
+      refund: {
+        title: "Refund & Cancellation Policy",
+        html: `
+          <h3>1. Nature of Digital Goods & Instant Delivery</h3>
+          <p>AstroVerse AI delivers specialized software services, instant mathematical ephemeris calculations, and digital PDF publication downloads. Because these digital products are intangible and delivered instantaneously upon order confirmation, standard physical return mechanics do not apply.</p>
+
+          <h3>2. Failed Transactions & Double Debits</h3>
+          <p>If an amount is deducted from your bank account or UPI handle but the corresponding report or wallet credit is not activated due to a network interruption or callback timeout:</p>
+          <ul>
+            <li>Razorpay's automated reconciliation system typically identifies and initiates an automatic reversal within 24 to 48 hours.</li>
+            <li>Refunds for failed transactions are credited back to the original payment source within <strong>5 to 7 business days</strong>, subject to your banking institution's processing cycles.</li>
+          </ul>
+
+          <h3>3. Subscription Cancellations</h3>
+          <p>Users enrolled in recurring Plus (₹499/mo) or Premium (₹999/mo) subscription plans may cancel their subscription at any time without penalty via their Account Billing settings or by emailing support@astroverse.app. Upon cancellation, your subscription remains active until the end of the current paid billing cycle, with no further charges incurred.</p>
+
+          <h3>4. Technical Defect & Calculation Remediation</h3>
+          <p>In the rare event that a purchased publication contains verifiable technical generation defects (e.g. truncated chapters, rendering errors, or calculation failure):</p>
+          <ul>
+            <li>Notify our support team at <strong>support@astroverse.app</strong> within seven (7) calendar days of generation, providing your registered email and transaction reference.</li>
+            <li>Our engineering team will regenerate and re-issue the publication at zero additional charge, or credit your AstroVerse wallet with equivalent credits or process a full refund to your source payment method.</li>
+          </ul>
+
+          <h3>5. Discretionary Refund Requests</h3>
+          <p>Due to the personal and interpretive nature of astrology, refunds cannot be granted simply because an astrological interpretation does not match personal subjective expectations or future life outcomes. Calculations are performed strictly according to verified mathematical ephemerides.</p>
+        `
+      },
+      shipping: {
+        title: "Shipping & Digital Delivery Policy",
+        html: `
+          <h3>1. Exclusively Digital Fulfillment</h3>
+          <p>AstroVerse AI is a 100% cloud-based software-as-a-service (SaaS) and digital publishing platform. <strong>No physical goods or printed media are packaged or shipped to your physical address.</strong></p>
+
+          <h3>2. Digital Delivery Timelines & Service Level Agreement (SLA)</h3>
+          <ul>
+            <li><strong>Immediate Interactive Calculations:</strong> Janam Kundli charts, D1-D60 divisional diagrams, 24-hour planetary Horas, and 36-Guna synastry matrices are rendered instantaneously in your web browser within <strong>1 to 3 seconds</strong>.</li>
+            <li><strong>Personalized Report Publications:</strong> Multi-chapter PDF publications (such as the 15-chapter Numerology Master Blueprint or 11-chapter Kundli + Varshphal Bundle) are computationally assembled and available in your secure in-app reader within <strong>10 to 45 seconds</strong>.</li>
+            <li><strong>Downloadable Offline PDFs:</strong> High-resolution, printable A4 PDF documents can be downloaded immediately to your device on demand.</li>
+          </ul>
+
+          <h3>3. Electronic Order Receipts & Invoices</h3>
+          <p>Upon successful payment confirmation via Razorpay, an electronic payment receipt detailing the order ID, transaction reference, amount paid, and tax breakdown is dispatched to your registered email address within <strong>5 minutes</strong>.</p>
+
+          <h3>4. Permanent In-App Library Access</h3>
+          <p>All purchased publications and generated reports are permanently tied to your authenticated user account and remain accessible for on-demand reading and re-downloading at any time from your <strong>My Space / Dashboard</strong> section.</p>
+        `
+      },
+      contact: {
+        title: "Contact Us & Customer Support",
+        html: `
+          <h3>Customer Support & Grievance Redressal</h3>
+          <p>We are dedicated to providing prompt, transparent support for all technical, astrological calculation, billing, and subscription inquiries.</p>
+
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 18px; margin: 16px 0;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <strong style="color: #1E293B; display: block; font-size: 13px;">Customer Support Email:</strong>
+                <a href="mailto:support@astroverse.app" style="color: #881337; font-weight: 700; text-decoration: underline;">support@astroverse.app</a>
+              </div>
+              <div>
+                <strong style="color: #1E293B; display: block; font-size: 13px;">Support Hours:</strong>
+                <span>Monday to Saturday: 09:00 AM – 06:00 PM IST</span>
+              </div>
+              <div>
+                <strong style="color: #1E293B; display: block; font-size: 13px;">Standard Response SLA:</strong>
+                <span>Initial response within 24 business hours</span>
+              </div>
+              <div>
+                <strong style="color: #1E293B; display: block; font-size: 13px;">Platform Operations:</strong>
+                <span>New Delhi, Delhi, India — 110001</span>
+              </div>
+            </div>
+          </div>
+
+          <h3>Grievance Officer (IT Rules, 2021)</h3>
+          <p>In accordance with the Information Technology Act, 2000 and rules made thereunder, the contact details of the Grievance Officer are:</p>
+          <ul>
+            <li><strong>Designation:</strong> Grievance Redressal Officer</li>
+            <li><strong>Email:</strong> <a href="mailto:grievance@astroverse.app" style="color: #881337; font-weight: 600;">grievance@astroverse.app</a></li>
+            <li><strong>Resolution Timeframe:</strong> Acknowledgment within 24 hours; complete investigation and resolution within 15 calendar days.</li>
+          </ul>
+        `
+      },
+      pricing: {
+        title: "Pricing, Plans & Subscriptions Disclosures",
+        html: `
+          <h3>Transparent Pricing Architecture</h3>
+          <p>All fees on AstroVerse AI are explicitly disclosed in Indian Rupees (INR) with zero hidden maintenance charges or surprise recurring debits.</p>
+
+          <h4>1. Membership & Subscription Tiers</h4>
+          <ul>
+            <li><strong>Free Tier (₹0):</strong> Foundational Janam Kundli birth chart, D1 Lagna, daily Panchanga, planetary Horas, and essential calculations.</li>
+            <li><strong>Plus Plan (₹499 / Month or ₹3,999 / Year):</strong> Unlocks D1-D10 divisional charts, full Ashtakoota 36-Guna compatibility synastry, complete Numerology Studio with 10 corrections/day, 10 daily AI consultations, and 10% discount across all report publications.</li>
+            <li><strong>Premium Plan (₹999 / Month or ₹7,999 / Year):</strong> Complete research-grade astrological software suite including all D1-D60 Shodashvarga divisional charts, unlimited AI astrological consultations, unlimited Numerology corrections, 20% discount on publications, and watermark-free high-resolution PDF exports.</li>
+          </ul>
+
+          <h4>2. Individual Specialized Report Publications</h4>
+          <ul>
+            <li><strong>Complete Janam Kundli Deep Dive (7 Chapters):</strong> ₹499</li>
+            <li><strong>Career & Education Vocational Report (7 Chapters):</strong> ₹399</li>
+            <li><strong>Relationship & Marriage Astrological Report (6 Chapters):</strong> ₹399</li>
+            <li><strong>Detailed Kundli Milan (Astrological Synastry - 4 Chapters):</strong> ₹399</li>
+            <li><strong>One-Month Personalized Forecast (5 Chapters):</strong> ₹149</li>
+            <li><strong>Twelve-Month Varshphal & Forecast (4 Chapters):</strong> ₹699</li>
+            <li><strong>Three-Year Personal Life Roadmap (5 Chapters):</strong> ₹899</li>
+            <li><strong>Kundli + Varshphal Master Bundle (11 Chapters):</strong> ₹999</li>
+            <li><strong>Vedic Name Correction & Numerology Master Blueprint (15 Chapters):</strong> ₹499</li>
+          </ul>
+
+          <h4>3. Payment Gateway & Taxes</h4>
+          <p>Payments are processed in real-time via Razorpay. Prices include all applicable statutory GST and service taxes. Invoices are generated electronically for every payment order.</p>
+        `
+      }
+    };
+
+    function openLegalModal(tabKey = 'terms') {
+      const modal = document.getElementById('modal-legal-policy');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      switchLegalTab(tabKey);
+    }
+
+    function closeLegalModal() {
+      const modal = document.getElementById('modal-legal-policy');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function switchLegalTab(tabKey) {
+      const policy = ASTROVERSE_LEGAL_POLICIES[tabKey] || ASTROVERSE_LEGAL_POLICIES.terms;
+      const contentArea = document.getElementById('legal-modal-content-area');
+      const titleEl = document.getElementById('legal-modal-title');
+      if (contentArea) contentArea.innerHTML = policy.html;
+      if (titleEl) titleEl.textContent = `AstroVerse AI — ${policy.title}`;
+
+      // Update active tab buttons
+      ['terms', 'privacy', 'refund', 'shipping', 'contact', 'pricing'].forEach(k => {
+        const btn = document.getElementById(`tab-btn-${k}`);
+        if (btn) {
+          if (k === tabKey) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+
+      if (contentArea) contentArea.scrollTop = 0;
+    }
+
     function openPricingPlansModal(preselectedTier) {
       const modal = document.getElementById('modal-pricing-plans');
       if (!modal) return;
@@ -13874,8 +14482,8 @@
         },
         {
           productId: 'report_kundli_milan',
-          displayName: 'Detailed Kundli Milan (Matchmaking)',
-          shortDescription: 'Full 36-Guna Ashtakoota synastry matrix with cross-chart D9 Navamsha compatibility.',
+          displayName: 'Detailed Kundli Milan (Astrological Synastry)',
+          shortDescription: 'Full 36-Guna Ashtakoota synastry matrix with cross-chart D9 Navamsha compatibility software calculation.',
           pricePaise: 14900,
           includedSections: ['36-Guna Matrix', '8-Kuta Scores', 'Nadi & Bhakoot Check', 'Mutual Synastry'],
           category: 'RELATIONSHIP'

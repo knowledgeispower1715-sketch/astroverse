@@ -3,7 +3,7 @@ dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { db, UserRecord, Role, AccountStatus, OrderStatus, isDemoModeActive } from './db';
-import { razorpay, isRazorpayConfigured, verifyRazorpaySignature } from './razorpay';
+import { razorpay, isRazorpayConfigured, verifyRazorpaySignature, verifyRazorpayWebhookSignature, getRazorpayWebhookSecret } from './razorpay';
 import {
   SUBSCRIPTION_PLANS,
   REPORT_CATALOGUE,
@@ -26,7 +26,11 @@ import {
 } from './monetization/numerologyCalculator';
 
 const app = express();
-app.use(express.json());
+app.use(express.json({
+  verify: (req: any, _res: any, buf: Buffer) => {
+    req.rawBody = buf;
+  }
+}));
 
 const ALLOWED_ORIGINS = [
   'https://astroverse-eta.vercel.app',
@@ -2441,6 +2445,146 @@ app.post('/api/subscriptions/cancel', authenticate, async (req: AuthenticatedReq
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Subscription cancellation failed');
+  }
+});
+
+// In-memory set to guarantee idempotent processing of webhook event deliveries
+const processedWebhookEvents = new Set<string>();
+
+// POST /api/webhooks/razorpay (Razorpay Asynchronous Webhook Processor)
+app.post('/api/webhooks/razorpay', async (req: Request, res: Response) => {
+  try {
+    const signature = req.headers['x-razorpay-signature'] as string;
+    if (!signature) {
+      return res.status(400).json({
+        error: 'MISSING_SIGNATURE',
+        message: 'Missing x-razorpay-signature header on webhook event.'
+      });
+    }
+
+    const rawPayload = (req as any).rawBody || Buffer.from(JSON.stringify(req.body));
+    const isValid = verifyRazorpayWebhookSignature(rawPayload, signature);
+    if (!isValid) {
+      return res.status(400).json({
+        error: 'INVALID_SIGNATURE',
+        message: 'Cryptographic signature verification failed for Razorpay webhook.'
+      });
+    }
+
+    const event = req.body;
+    const eventId = (req.headers['x-razorpay-event-id'] as string) ||
+      event.id ||
+      crypto.createHash('sha256').update(rawPayload).digest('hex');
+
+    // Idempotency: skip already-processed events
+    if (processedWebhookEvents.has(eventId)) {
+      return res.status(200).json({
+        status: 'ok',
+        event: event.event,
+        alreadyProcessed: true,
+        message: 'Webhook event was previously processed idempotently.'
+      });
+    }
+
+    const eventType = event.event;
+
+    if (eventType === 'order.paid' || eventType === 'payment.captured') {
+      const orderId = event.payload?.payment?.entity?.order_id || event.payload?.order?.entity?.id;
+      const paymentId = event.payload?.payment?.entity?.id;
+      if (orderId) {
+        const order = db.findPaymentOrderByRazorpayId(orderId);
+        if (order && order.status === OrderStatus.CREATED) {
+          try {
+            await db.rechargeWallet(
+              order.userId,
+              order.amount,
+              paymentId || `pay_wh_${Date.now()}`,
+              orderId
+            );
+          } catch (settleErr: any) {
+            console.error('[WEBHOOK] Order settlement warning:', settleErr.message);
+          }
+        }
+      }
+    } else if (eventType === 'subscription.charged' || eventType === 'subscription.activated') {
+      const subEntity = event.payload?.subscription?.entity;
+      const customerEmail = subEntity?.customer_email || subEntity?.notes?.email;
+      if (customerEmail) {
+        const user = await db.findUserByEmail(customerEmail);
+        if (user) {
+          const tier = subEntity?.notes?.tier === 'PREMIUM' ? 'PREMIUM' : 'PLUS';
+          const billing = subEntity?.notes?.billing === 'annual' ? 'ANNUAL' : 'MONTHLY';
+          await db.updateSubscription(user.id, tier, billing, billing === 'ANNUAL' ? 365 : 30);
+        }
+      }
+    } else if (eventType === 'subscription.cancelled') {
+      const subEntity = event.payload?.subscription?.entity;
+      const customerEmail = subEntity?.customer_email || subEntity?.notes?.email;
+      if (customerEmail) {
+        const user = await db.findUserByEmail(customerEmail);
+        if (user) {
+          await db.cancelSubscription(user.id);
+        }
+      }
+    }
+
+    // Record processed event to prevent duplicate execution
+    processedWebhookEvents.add(eventId);
+
+    return res.status(200).json({
+      status: 'ok',
+      event: eventType,
+      processed: true
+    });
+  } catch (err: any) {
+    console.error('[WEBHOOK] Error processing Razorpay webhook:', err);
+    return res.status(500).json({
+      error: 'WEBHOOK_PROCESSING_FAILED',
+      message: 'Internal server error while processing webhook.'
+    });
+  }
+});
+
+// GET /api/billing/status (Active tier, subscription renewal, wallet balance, and entitlements)
+app.get('/api/billing/status', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = await db.findUserById(req.user!.id);
+    if (!user) {
+      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'User not found.' });
+    }
+    const snapshot = EntitlementManager.getEntitlementSnapshot(user);
+
+    res.json({
+      userId: user.id,
+      tier: snapshot.tier,
+      subscriptionStatus: snapshot.subscriptionStatus,
+      subscriptionExpiresAt: snapshot.expiresAt,
+      walletBalance: user.walletBalance || 0,
+      currency: 'INR',
+      entitlements: snapshot,
+      billingCycle: snapshot.billingPeriod || (snapshot.subscriptionStatus === 'ACTIVE' ? 'monthly' : null)
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to fetch billing status');
+  }
+});
+
+// GET /api/billing/history (User payment orders and wallet statement history)
+app.get('/api/billing/history', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const orders = db.getUserPaymentOrders(userId);
+    const statement = await db.getWalletStatement(userId);
+
+    res.json({
+      userId,
+      orders,
+      ledger: statement,
+      totalOrders: orders.length,
+      totalTransactions: statement.length
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to fetch billing history');
   }
 });
 

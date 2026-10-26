@@ -75,3 +75,61 @@ export function generateTestPaymentSignature(orderId: string, paymentId: string)
     .update(`${orderId}|${paymentId}`)
     .digest('hex');
 }
+
+export const TEST_RAZORPAY_WEBHOOK_SECRET = 'test_webhook_secret_hmac256_astroverse';
+
+export function getRazorpayWebhookSecret(): string {
+  if (process.env.RAZORPAY_WEBHOOK_SECRET && !process.env.RAZORPAY_WEBHOOK_SECRET.includes('placeholder')) {
+    return process.env.RAZORPAY_WEBHOOK_SECRET;
+  }
+  if (process.env.NODE_ENV === 'test') {
+    return TEST_RAZORPAY_WEBHOOK_SECRET;
+  }
+  return '';
+}
+
+/**
+ * Timing-safe cryptographic HMAC-SHA256 signature verification for Razorpay Webhooks.
+ * Validates the raw request payload buffer against the signature sent in `x-razorpay-signature`.
+ */
+export function verifyRazorpayWebhookSignature(
+  rawBody: Buffer | string,
+  signature: string,
+  customSecret?: string
+): boolean {
+  if (!rawBody || !signature) {
+    return false;
+  }
+
+  const secret = customSecret || getRazorpayWebhookSecret();
+  if (!secret) {
+    return false;
+  }
+
+  const generatedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(rawBody)
+    .digest('hex');
+
+  const genBuf = Buffer.from(generatedSignature, 'utf8');
+  const sigBuf = Buffer.from(signature, 'utf8');
+
+  if (genBuf.length !== sigBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(genBuf, sigBuf);
+}
+
+/**
+ * Helper to generate a valid test webhook signature for automated regression tests.
+ */
+export function generateTestWebhookSignature(payload: Buffer | string, secret = TEST_RAZORPAY_WEBHOOK_SECRET): string {
+  if (process.env.NODE_ENV !== 'test') {
+    throw new Error('Test webhook signature generation is only permitted in test environment.');
+  }
+  return crypto
+    .createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+}

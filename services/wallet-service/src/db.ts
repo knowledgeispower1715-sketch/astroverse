@@ -1271,6 +1271,12 @@ class ResilientDatabase {
     return this.data.paymentOrders.find(o => o.razorpayOrderId === razorpayOrderId) || null;
   }
 
+  getUserPaymentOrders(userId: string): PaymentOrderRecord[] {
+    return this.data.paymentOrders
+      .filter(o => o.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
   isPaymentIdUsed(paymentId: string, excludeOrderId?: string): boolean {
     const usedInOrders = this.data.paymentOrders.some(
       o => o.razorpayPaymentId === paymentId && o.razorpayOrderId !== excludeOrderId

@@ -87,6 +87,18 @@
       }
     },
     {
+      "source": "/api/webhooks/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/billing/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/entitlements/(.*)",
       "destination": {
         "service": "wallet-service"

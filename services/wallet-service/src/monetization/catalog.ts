@@ -114,7 +114,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlanDefini
       'Detailed Vimshottari Dasha with Antardashas',
       'Expanded Raja & Dhana Yoga Identifications',
       'Dosha Diagnostics (Manglik, Sade Sati, Kaal Sarp)',
-      'Ashtakoota 36-Guna Matchmaking',
+      'Ashtakoota 36-Guna Compatibility Synastry',
       'Full Chaldean & Pythagorean Numerology with 3 Name Checks / day',
       '15 Substantive AI Astrologer questions / day',
       '10% Member Discount on all Individual Reports',
@@ -248,13 +248,13 @@ export const REPORT_CATALOGUE: Record<string, ReportProductDefinition> = {
 
   'report_kundli_milan': {
     productId: 'report_kundli_milan',
-    displayName: 'Detailed Kundli Milan (Matchmaking)',
-    shortDescription: 'Full 36-Guna Ashtakoota synastry matrix with cross-chart D9 Navamsha compatibility.',
-    fullDescription: 'Two-chart synastry evaluation for marriage or long-term partnership. Computes the 8 Kutas (Varna, Vashya, Tara, Yoni, Graha Maitri, Gana, Bhakoot, Nadi) out of 36 points, tests for Manglik mutual pacification, and checks D9 cross-ascendant resonance.',
+    displayName: 'Detailed Kundli Milan (Astrological Synastry)',
+    shortDescription: 'Full 36-Guna Ashtakoota synastry matrix with cross-chart D9 Navamsha compatibility software calculation.',
+    fullDescription: 'Two-chart classical Vedic astrological synastry evaluation. Computes the 8 Kutas (Varna, Vashya, Tara, Yoni, Graha Maitri, Gana, Bhakoot, Nadi) out of 36 points, tests for Manglik mutual pacification, and checks D9 cross-ascendant resonance based strictly on user-provided astronomical birth coordinates. This is an educational software calculation, not a matrimonial matchmaking service.',
     pricePaise: 14900, // ₹149.00
     priceRupees: 149,
-    requiredProfileInputs: ['boy_profile', 'girl_profile'],
-    requiredCapabilities: ['matchmaking', 'ephemeris', 'divisional_charts'],
+    requiredProfileInputs: ['primary_profile', 'partner_profile'],
+    requiredCapabilities: ['compatibility', 'ephemeris', 'divisional_charts'],
     includedSections: [
       'ashtakoota_summary_score',
       '8_kuta_detailed_breakdown',
@@ -271,7 +271,7 @@ export const REPORT_CATALOGUE: Record<string, ReportProductDefinition> = {
       { title: 'Nadi & Health Compatibility', subtitle: 'Genetic and biological harmony (8 Points)', icon: 'fa-dna' },
       { title: 'Bhakoot & Emotional Resonance', subtitle: 'Mutual lunar disposition (7 Points)', icon: 'fa-people-arrows' }
     ],
-    disclaimer: 'Kundli Milan measures classical energetic harmony and is intended to support, not dictate, personal matrimonial choices.'
+    disclaimer: 'Kundli Milan is an ancient astrological calculation measuring classical planetary harmony for two birth charts. AstroVerse AI is a specialized astrology software platform and does not provide dating, matrimonial matchmaking, or partner introduction services.'
   },
 
   'report_one_month_forecast': {
