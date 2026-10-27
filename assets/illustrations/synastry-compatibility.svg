@@ -16,10 +16,10 @@
   <!-- Chart B Celestial Ring -->
   <circle cx="360" cy="300" r="160" fill="none" stroke="url(#chartBGrad)" stroke-width="3" stroke-dasharray="6 3"/>
   <circle cx="360" cy="300" r="90" fill="rgba(236, 72, 153, 0.12)" stroke="#F472B6" stroke-width="1.5"/>
-  
+
   <!-- Central Intersection (36-Guna Ashtakoota Harmony Lens) -->
   <ellipse cx="300" cy="300" rx="60" ry="110" fill="rgba(245, 158, 11, 0.2)" stroke="#F59E0B" stroke-width="2"/>
-  
+
   <!-- Labels -->
   <text x="180" y="170" font-family="'Cinzel', serif" font-size="14" font-weight="700" fill="#93C5FD">CHART A (NATAL)</text>
   <text x="420" y="170" font-family="'Cinzel', serif" font-size="14" font-weight="700" fill="#F9A8D4">CHART B (SYNASTRY)</text>

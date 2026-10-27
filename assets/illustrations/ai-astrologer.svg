@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <radialGradient id="aiHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4F46E5" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#312E81" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0B0F19" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="guruGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="#0B0F19" rx="16"/>
+
+  <!-- Aura Halo -->
+  <circle cx="300" cy="270" r="190" fill="url(#aiHalo)"/>
+
+  <!-- Celestial Astrolabe Geometric Ring Network -->
+  <circle cx="300" cy="270" r="170" fill="none" stroke="#C6A15B" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/>
+  <circle cx="300" cy="270" r="130" fill="none" stroke="url(#guruGold)" stroke-width="2"/>
+  <circle cx="300" cy="270" r="90" fill="none" stroke="#818CF8" stroke-width="1.5" stroke-dasharray="2 4"/>
+
+  <!-- Constellation Nodes & Connecting Rays -->
+  <g stroke="#FDE68A" stroke-width="1.2" opacity="0.6">
+    <line x1="300" y1="100" x2="300" y2="440"/>
+    <line x1="130" y1="270" x2="470" y2="270"/>
+    <line x1="180" y1="150" x2="420" y2="390"/>
+    <line x1="180" y1="390" x2="420" y2="150"/>
+  </g>
+
+  <!-- Glowing Constellation Stars -->
+  <circle cx="300" cy="100" r="5" fill="#FCD34D"/>
+  <circle cx="470" cy="270" r="5" fill="#FCD34D"/>
+  <circle cx="300" cy="440" r="5" fill="#FCD34D"/>
+  <circle cx="130" cy="270" r="5" fill="#FCD34D"/>
+  <circle cx="420" cy="150" r="4" fill="#818CF8"/>
+  <circle cx="180" cy="390" r="4" fill="#818CF8"/>
+  <circle cx="180" cy="150" r="4" fill="#818CF8"/>
+  <circle cx="420" cy="390" r="4" fill="#818CF8"/>
+
+  <!-- Central Third Eye / Divine Insight Symbol -->
+  <ellipse cx="300" cy="270" rx="42" ry="24" fill="#1E1B4B" stroke="url(#guruGold)" stroke-width="2.5"/>
+  <circle cx="300" cy="270" r="14" fill="#F59E0B" stroke="#FEF08A" stroke-width="2"/>
+  <circle cx="300" cy="270" r="6" fill="#4338CA"/>
+
+  <!-- Vedic Guru Aura Rays -->
+  <polygon points="300,220 306,236 322,242 306,248 300,264 294,248 278,242 294,236" fill="#FDE68A"/>
+
+  <!-- Bilingual Consultation Labels -->
+  <text x="300" y="495" font-family="'Cinzel', Georgia, serif" font-size="15" font-weight="700" fill="#FCD34D" text-anchor="middle" letter-spacing="1">CHART-GROUNDED AI GURU</text>
+  <text x="300" y="525" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="600" fill="#94A3B8" text-anchor="middle">PARASHARI • JAIMINI • BILINGUAL CONSULTATION</text>
+</svg>

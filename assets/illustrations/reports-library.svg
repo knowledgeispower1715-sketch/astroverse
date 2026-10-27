@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bookCoverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4C0519"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="goldRibbon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="#0B0F19" rx="16"/>
+
+  <!-- Sacred Book Cover & Manuscript Page Stack -->
+  <rect x="130" y="80" width="340" height="420" rx="12" fill="#F8FAFC" opacity="0.15" transform="rotate(-4 300 290)"/>
+  <rect x="135" y="80" width="340" height="420" rx="12" fill="#F8FAFC" opacity="0.25" transform="rotate(-2 300 290)"/>
+  <rect x="140" y="80" width="340" height="420" rx="12" fill="url(#bookCoverGrad)" stroke="url(#goldRibbon)" stroke-width="3"/>
+
+  <!-- Inner Gold Filigree Borders -->
+  <rect x="160" y="100" width="300" height="380" rx="6" fill="none" stroke="#F5C45E" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <rect x="170" y="110" width="280" height="360" rx="4" fill="none" stroke="url(#goldRibbon)" stroke-width="2"/>
+
+  <!-- Embossed Sacred Emblem / Seal -->
+  <circle cx="310" cy="230" r="55" fill="rgba(212, 175, 55, 0.15)" stroke="url(#goldRibbon)" stroke-width="2"/>
+  <polygon points="310,195 320,220 345,230 320,240 310,265 300,240 275,230 300,220" fill="url(#goldRibbon)"/>
+
+  <!-- Gold Bookmark Ribbon -->
+  <path d="M 390,80 L 390,260 L 410,240 L 430,260 L 430,80 Z" fill="url(#goldRibbon)"/>
+
+  <!-- Title Typography -->
+  <text x="310" y="325" font-family="'Cinzel', Georgia, serif" font-size="16" font-weight="700" fill="#FCD34D" text-anchor="middle" letter-spacing="1.5">VEDIC BLUEPRINT</text>
+  <text x="310" y="350" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="600" fill="#E2E8F0" text-anchor="middle">COMPLETE 9-PUBLICATION SUITE</text>
+  <text x="310" y="380" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="700" fill="#F59E0B" text-anchor="middle" letter-spacing="1">100% CHAPTER INTEGRITY • ZERO BLANK PAGES</text>
+
+  <!-- Bottom Seal -->
+  <circle cx="310" cy="430" r="16" fill="#D97706" stroke="#FEF08A" stroke-width="1.5"/>
+</svg>

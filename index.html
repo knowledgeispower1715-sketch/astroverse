@@ -393,6 +393,221 @@
       filter: drop-shadow(0 2px 8px rgba(217, 119, 6, 0.25));
     }
 
+    /* Cosmic Luxury Background & Spin */
+    .cosmic-hero-zodiac-bg {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      width: 220px;
+      height: 220px;
+      max-width: 35vw;
+      max-height: 220px;
+      opacity: 0.12;
+      pointer-events: none;
+      user-select: none;
+      animation: cosmicSlowSpin 140s linear infinite;
+    }
+    @media (max-width: 640px) {
+      .cosmic-hero-zodiac-bg {
+        width: 140px;
+        height: 140px;
+        max-width: 40vw;
+        right: 8px;
+        top: 8px;
+        opacity: 0.08;
+      }
+    }
+    @keyframes cosmicSlowSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Active Natal Chart Card */
+    .overview-active-chart-card {
+      background: linear-gradient(135deg, #0B1020 0%, #151C33 50%, #1E1B4B 100%);
+      border: 1px solid rgba(212, 175, 55, 0.32);
+      border-radius: var(--astro-radius-card);
+      padding: 22px 26px;
+      margin-bottom: 24px;
+      color: #F8FAFC;
+      box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.4), 0 0 1px 1px rgba(212, 175, 55, 0.18);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Daily Guidance Overview Card */
+    .overview-daily-guidance-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: var(--astro-radius-card);
+      padding: 24px;
+      margin-bottom: 26px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .rashi-quick-pills-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+    .rashi-quick-pill {
+      white-space: nowrap;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #CBD5E1;
+      background: #F8FAFC;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+    }
+    .rashi-quick-pill:hover, .rashi-quick-pill:focus {
+      background: #1E1B4B;
+      color: #F5C45E;
+      border-color: #D4AF37;
+      transform: translateY(-1px);
+    }
+
+    /* Image-Led Feature Directory Grid */
+    .cosmic-directory-header {
+      margin-bottom: 18px;
+    }
+    .cosmic-directory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 22px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 1200px) {
+      .cosmic-directory-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 640px) {
+      .cosmic-directory-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .cosmic-service-card {
+      background: #FFFFFF;
+      border: 1px solid #E8DED5;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(36, 21, 27, 0.05);
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .cosmic-service-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(36, 21, 27, 0.12);
+      border-color: #D4AF37;
+    }
+
+    .cosmic-card-art-wrap {
+      width: 100%;
+      height: 155px;
+      background: linear-gradient(135deg, #0B1020 0%, #151C33 50%, #1E1B4B 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      padding: 14px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    }
+    .cosmic-card-art-wrap img {
+      max-height: 125px;
+      max-width: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
+      transition: transform 0.3s ease;
+    }
+    .cosmic-service-card:hover .cosmic-card-art-wrap img {
+      transform: scale(1.05);
+    }
+
+    .cosmic-card-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 14px;
+      background: rgba(11, 16, 32, 0.88);
+      border: 1px solid rgba(212, 175, 55, 0.45);
+      color: #F5C45E;
+      text-transform: uppercase;
+      backdrop-filter: blur(8px);
+    }
+
+    .cosmic-card-body {
+      padding: 20px 20px 18px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .cosmic-card-title {
+      font-family: var(--av-font-display, "Cinzel", Georgia, serif);
+      font-size: 16.5px;
+      font-weight: 700;
+      color: #1E1B4B;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+
+    .cosmic-card-tags {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .cosmic-card-tag-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: #F1F5F9;
+      color: #475569;
+      border: 1px solid #E2E8F0;
+    }
+
+    .cosmic-card-desc {
+      font-size: 13px;
+      color: #64748B;
+      line-height: 1.55;
+      margin-bottom: 18px;
+      flex: 1;
+    }
+
+    .cosmic-card-btn {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
     /* Reduced Motion Rules */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -4520,7 +4735,8 @@
 
   <!-- Atmospheric Cosmic Luxury Hero Banner -->
   <section class="cosmic-hero-wrapper" id="main-hero-banner">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap;">
+    <img src="assets/illustrations/hero-zodiac-wheel.svg" alt="Vedic Zodiac Dharmachakra" class="cosmic-hero-zodiac-bg" />
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; position: relative; z-index: 2;">
       <div style="flex: 1; min-width: 290px;">
         <div class="cosmic-hero-tag">
           <i class="fa-solid fa-om"></i> Parashari Jyotish &bull; Swiss Ephemeris Precision
@@ -4616,15 +4832,276 @@
         </div>
       </div>
 
+      <!-- Active Natal Chart Banner (Dynamic via updateOverviewActiveChartBanner) -->
+      <div id="overview-active-chart-card" class="overview-active-chart-card"></div>
+
+      <!-- Daily Cosmic Guidance & Panchang Overview Card -->
+      <div class="overview-daily-guidance-card" id="daily-guidance-overview-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-sun" style="color: #F59E0B;"></i> Today's Cosmic Rhythm
+            </div>
+            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 19px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
+              Daily Panchang &amp; Planetary Timing
+            </h3>
+          </div>
+          <button class="btn-outline-secondary" style="font-size: 12px; padding: 6px 14px;" onclick="switchNavSection('horas')">
+            <i class="fa-solid fa-clock"></i> View 24h Horas &amp; 6 Horizons
+          </button>
+        </div>
+
+        <!-- 3 Metric Blocks -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px;">
+          <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: #92400E; text-transform: uppercase;">Active Solar Hora</div>
+            <div style="font-size: 18px; font-weight: 800; color: #78350F; margin: 4px 0;" id="overview-daily-hora-name">Calculating...</div>
+            <div style="font-size: 11.5px; color: #B45309;" id="overview-daily-hora-action">Favorable for negotiations, study &amp; planning</div>
+          </div>
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">Five Limbs of Time (Panchang)</div>
+            <div style="font-size: 14px; font-weight: 700; color: #1E293B; margin: 4px 0;">Vara, Tithi, Nakshatra, Yoga, Karana</div>
+            <div style="font-size: 11.5px; color: #64748B;">Computed sidereally for your current coordinates</div>
+          </div>
+          <div style="background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: #6B21A8; text-transform: uppercase;">Daily Gochar / Transits</div>
+            <div style="font-size: 14px; font-weight: 700; color: #581C87; margin: 4px 0;">Moon &amp; Planet Positions</div>
+            <div style="font-size: 11.5px; color: #7E22CE;">Real-time planetary longitude cross-correlations</div>
+          </div>
+        </div>
+
+        <!-- 12 Signs Quick Horoscope Picker -->
+        <div>
+          <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 8px;">
+            <i class="fa-solid fa-star-and-crescent" style="color: #F59E0B;"></i> Explore Today's Rashi Horoscope:
+          </div>
+          <div class="rashi-quick-pills-row">
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Aries');">♈ Mesha (Aries)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Taurus');">♉ Vrishabha (Taurus)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Gemini');">♊ Mithuna (Gemini)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Cancer');">♋ Karka (Cancer)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Leo');">♌ Simha (Leo)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Virgo');">♍ Kanya (Virgo)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Libra');">♎ Tula (Libra)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Scorpio');">♏ Vrischika (Scorpio)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Sagittarius');">♐ Dhanu (Sagittarius)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Capricorn');">♑ Makara (Capricorn)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Aquarius');">♒ Kumbha (Aquarius)</button>
+            <button class="rashi-quick-pill" onclick="switchNavSection('horoscope'); selectHoroscopeSign('Pisces');">♓ Meena (Pisces)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image-Led Cosmic Feature Directory Grid -->
+      <div class="cosmic-directory-header">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-compass" style="color: #F59E0B;"></i> Complete Vedic Astrology Suite
+            </div>
+            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 22px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
+              Astrological Services &amp; Research Tools
+            </h3>
+          </div>
+          <span style="font-size: 12px; color: #64748B; font-weight: 600;">8 Core Vedic Disciplines • Swiss Ephemeris Precision</span>
+        </div>
+      </div>
+
+      <div class="cosmic-directory-grid" id="cosmic-directory-grid">
+        <!-- 1. Janam Kundli -->
+        <article class="cosmic-service-card" id="card-service-kundli">
+          <div class="cosmic-card-art-wrap">
+            <span class="cosmic-card-badge">Vedic Core</span>
+            <img src="assets/illustrations/kundli-birthchart.svg" alt="Vedic Janam Kundli Birth Chart Lattice" loading="lazy" />
+          </div>
+          <div class="cosmic-card-body">
+            <h4 class="cosmic-card-title">Janam Kundli &amp; Vargas</h4>
+            <div class="cosmic-card-tags">
+              <span class="cosmic-card-tag-pill">D1 &amp; D9</span>
+              <span class="cosmic-card-tag-pill">Shadbala</span>
+              <span class="cosmic-card-tag-pill">Ashtakavarga</span>
+              <span class="cosmic-card-tag-pill">120-Yr Dasha</span>
+            </div>
+            <p class="cosmic-card-desc">
+              High-precision Parashari natal charts with exact planetary degrees, house lordships, 16 Shodashavarga divisions, and planetary strength scoring.
+            </p>
+            <button type="button" class="btn-gold-primary cosmic-card-btn" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+              <i class="fa-solid fa-sparkles"></i> Calculate Free Kundli
+            </button>
+          </div>
+        </article>
+
+        <!-- 2. Today's Panchang & Horas -->
+        <article class="cosmic-service-card" id="card-service-horas">
+          <div class="cosmic-card-art-wrap">
+            <span class="cosmic-card-badge">Real-Time</span>
+            <img src="assets/illustrations/horas-timing.svg" alt="24-Hour Solar Planetary Horas Wheel" loading="lazy" />
+          </div>
+          <div class="cosmic-card-body">
+            <h4 class="cosmic-card-title">Panchang &amp; 24h Horas</h4>
+            <div class="cosmic-card-tags">
+              <span class="cosmic-card-tag-pill">24 Solar Horas</span>
+              <span class="cosmic-card-tag-pill">5 Panchang Limbs</span>
+              <span class="cosmic-card-tag-pill">Pancha Pakshi</span>
+              <span class="cosmic-card-tag-pill">Muhurta</span>
+            </div>
+            <p class="cosmic-card-desc">
+              Astronomical planetary hours from local sunrise. Discover favorable windows for financial deals, major announcements, and spiritual pursuits.
+            </p>
+            <button type="button" class="btn-gold-primary cosmic-card-btn" onclick="switchNavSection('horas')">
+              <i class="fa-solid fa-clock"></i> 24h Horas &amp; Panchang
+            </button>
+          </div>
+        </article>
+
+        <!-- 3. Kundli Milan -->
+        <article class="cosmic-service-card" id="card-service-milan">
+          <div class="cosmic-card-art-wrap">
+            <span class="cosmic-card-badge">Synastry</span>
+            <img src="assets/illustrations/synastry-compatibility.svg" alt="36-Guna Kundli Milan Synastry" loading="lazy" />
+          </div>
+          <div class="cosmic-card-body">
+            <h4 class="cosmic-card-title">36-Guna Kundli Milan</h4>
+            <div class="cosmic-card-tags">
+              <span class="cosmic-card-tag-pill">36 Points</span>
+              <span class="cosmic-card-tag-pill">Nadi Dosha</span>
+              <span class="cosmic-card-tag-pill">Bhakoot Dosha</span>
+              <span class="cosmic-card-tag-pill">Parashari Rules</span>
+            </div>
+            <p class="cosmic-card-desc">
+              Classical Ashtakoota compatibility with verified Parashari cancellation algorithms, Manglik Dosha matching, and planetary synastry matrices.
+            </p>
+            <button type="button" class="btn-gold-primary cosmic-card-btn" onclick="switchNavSection('matchmaking')">
+              <i class="fa-solid fa-heart"></i> Check Compatibility
+            </button>
+          </div>
+        </article>
+
+        <!-- 4. Numerology Studio -->
+        <article class="cosmic-service-card" id="card-service-numerology">
+          <div class="cosmic-card-art-wrap">
+            <span class="cosmic-card-badge">Vedic Yantra</span>
+            <img src="assets/illustrations/numerology-yantra.svg" alt="Chaldean & Pythagorean Numerology Yantra" loading="lazy" />
+          </div>
+          <div class="cosmic-card-body">
+            <h4 class="cosmic-card-title">Numerology Studio</h4>
+            <div class="cosmic-card-tags">
+              <span class="cosmic-card-tag-pill">Moolank &amp; Bhagyank</span>
+              <span class="cosmic-card-tag-pill">3×3 Yantra</span>
+              <span class="cosmic-card-tag-pill">Name Correction</span>
+              <span class="cosmic-card-tag-pill">Signature</span>
+            </div>
+            <p class="cosmic-card-desc">
+              Chaldean and Pythagorean numerical harmony. Optimize personal or company name spelling, phone vibrations, and auspicious signature slope.
+            </p>
+            <button type="button" class="btn-gold-primary cosmic-card-btn" onclick="openNumerologyStudio()">
+              <i class="fa-solid fa-arrow-up-9-1"></i> Launch Numerology Studio
+            </button>
+          </div>
+        </article>
+
+        <!-- 5. Planetary Transits -->
+        <article class="cosmic-service-card" id="card-service-transits">
+          <div class="cosmic-card-art-wrap">
+            <span class="cosmic-card-badge">Ephemeris</span>
+            <img src="assets/illustrations/transits-timeline.svg" alt="Gochar Planetary Transits Timeline" loading="lazy" />
+          </div>
+          <div class="cosmic-card-body">
+            <h4 class="cosmic-card-title">Planetary Transits &amp; Gochar</h4>
+            <div class="cosmic-card-tags">
+              <span class="cosmic-card-tag-pill">Gochar</span>
+              <span class="cosmic-card-tag-pill">Sade Sati</span>
+              <span class="cosmic-card-tag-pill">Guru Transit</span>
+              <span class="cosmic-card-tag-pill">Rahu-Ketu</span>
+            </div>
+            <p class="cosmic-card-desc">
+              Sidereal tracking of Saturn, Jupiter, Rahu, and Ketu movements. Cross-correlate major life cycles with active Vimshottari Mahadasha.
+            </p>
+            <button type="button" class="btn-gold-primary cosmic-card-btn" onclick="switchNavSection('horas')">
+              <i class="fa-solid fa-compass"></i> Inspect Transits &amp; Gochar
+            </button>
+          </div>
+        </article>
+
+        <!-- 6. AI Astrologer Consultation -->
+        <article class="cosmic-service-card" id="card-service-ai">
+          <div class="cosmic-card-art-wrap">
+            <span class="cosmic-card-badge">Bilingual AI</span>
+            <img src="assets/illustrations/ai-astrologer.svg" alt="Chart Grounded Vedic AI Astrologer" loading="lazy" />
+          </div>
+          <div class="cosmic-card-body">
+            <h4 class="cosmic-card-title">Chart-Grounded AI Astrologer</h4>
+            <div class="cosmic-card-tags">
+              <span class="cosmic-card-tag-pill">English &amp; Hindi</span>
+              <span class="cosmic-card-tag-pill">3 Vedic Personas</span>
+              <span class="cosmic-card-tag-pill">Chart Grounded</span>
+              <span class="cosmic-card-tag-pill">Voice Narrated</span>
+            </div>
+            <p class="cosmic-card-desc">
+              Interactive consultation with Vedic scholar personas. Ask life questions with responses strictly calculated from your personal natal coordinates.
+            </p>
+            <button type="button" class="btn-gold-primary cosmic-card-btn" onclick="toggleChatDrawer()">
+              <i class="fa-solid fa-comments"></i> Consult AI Astrologer
+            </button>
+          </div>
+        </article>
+
+        <!-- 7. Premium Publications -->
+        <article class="cosmic-service-card" id="card-service-reports">
+          <div class="cosmic-card-art-wrap">
+            <span class="cosmic-card-badge">Editorial Store</span>
+            <img src="assets/illustrations/reports-library.svg" alt="Vedic Blueprint Publications Library" loading="lazy" />
+          </div>
+          <div class="cosmic-card-body">
+            <h4 class="cosmic-card-title">Vedic Publications &amp; PDFs</h4>
+            <div class="cosmic-card-tags">
+              <span class="cosmic-card-tag-pill">9 Publications</span>
+              <span class="cosmic-card-tag-pill">Guaranteed Chapters</span>
+              <span class="cosmic-card-tag-pill">Printable A4</span>
+              <span class="cosmic-card-tag-pill">₹49 to ₹499</span>
+            </div>
+            <p class="cosmic-card-desc">
+              In-depth prediction books: Janam Kundli Deep Dive, 12-Month Varshphal, Career Blueprint, and Numerology Blueprint with private reader access.
+            </p>
+            <button type="button" class="btn-gold-primary cosmic-card-btn" onclick="openReportStoreModal()">
+              <i class="fa-solid fa-file-invoice"></i> Browse Reports Store
+            </button>
+          </div>
+        </article>
+
+        <!-- 8. Vedic Remedies & Rituals -->
+        <article class="cosmic-service-card" id="card-service-remedies">
+          <div class="cosmic-card-art-wrap">
+            <span class="cosmic-card-badge">Sacred Shanti</span>
+            <img src="assets/illustrations/remedies-yantra.svg" alt="Vedic Remedies and Sacred Yantra" loading="lazy" />
+          </div>
+          <div class="cosmic-card-body">
+            <h4 class="cosmic-card-title">Vedic Remedies &amp; Rituals</h4>
+            <div class="cosmic-card-tags">
+              <span class="cosmic-card-tag-pill">Navagraha Gems</span>
+              <span class="cosmic-card-tag-pill">Beej Mantras</span>
+              <span class="cosmic-card-tag-pill">Daana (Charity)</span>
+              <span class="cosmic-card-tag-pill">Dosha Shanti</span>
+            </div>
+            <p class="cosmic-card-desc">
+              Classical remediation guidelines: gemstone compatibility by lagna lord, authentic Sanskrit mantras with japa counts, and charitable practices.
+            </p>
+            <button type="button" class="btn-gold-primary cosmic-card-btn" onclick="switchNavSection('pujas')">
+              <i class="fa-solid fa-om"></i> Explore Vedic Remedies
+            </button>
+          </div>
+        </article>
+      </div>
+
       <!-- Segmented Cosmic Feature Hub -->
       <div class="cosmic-feature-hub" id="cosmic-feature-hub">
         <div class="cosmic-hub-header">
           <div>
             <h3 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 0 0 4px;">
-              <i class="fa-solid fa-compass" style="color: #D97706;"></i> Cosmic Feature Hub
+              <i class="fa-solid fa-layer-group" style="color: #D97706;"></i> In-Depth Technical Explorer &amp; Harmonic Scope
             </h3>
             <p style="font-size: 13px; color: #64748B; margin: 0;">
-              One-click access to authentic calculations, timing, synastry, and deep publications.
+              Explore multi-harmonic divisionals (D1–D60), classical Ashtakavarga matrices, synastry breakdowns, and computational algorithms.
             </p>
           </div>
         </div>
@@ -9180,6 +9657,11 @@
         document.getElementById('pill-sadesati-verdict').style.color = doshas.sade_sati.is_active ? "#92400E" : "#047857";
         document.getElementById('desc-sadesati-text').textContent = doshas.sade_sati.description || "Saturn transit is favorable.";
       }
+
+      // Synchronize Overview Active Chart banner
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
     }
 
     function switchKundliSubChart(type) {
@@ -9505,6 +9987,9 @@
       if (heroHora) heroHora.textContent = `${planet} Hora`;
       const heroHoraTime = document.getElementById('overview-hora-time');
       if (heroHoraTime) heroHoraTime.textContent = windowStr;
+
+      const dailyHora = document.getElementById('overview-daily-hora-name');
+      if (dailyHora) dailyHora.textContent = `${planet} Hora`;
 
       const hubHora = document.getElementById('hub-daily-hora-planet');
       if (hubHora) hubHora.textContent = `${planet} Hora`;
@@ -10603,6 +11088,9 @@
 
           await syncProfilesFromBackend(u.id);
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
 
           if (context === 'modal') {
             closeAuthModal();
@@ -10644,8 +11132,14 @@
       currentCalculatedChart = null;
       activeConsultationSession = null;
       isChatKundliLinked = false;
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
 
       updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
       if (notify) showToast("Signed out successfully.", "info");
       switchNavSection('kundli');
     }
@@ -10715,6 +11209,9 @@
             }
           } catch (_) {}
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           updateDemoWalletDisplay();
         } else if (res.status === 401 || res.status === 403) {
           executeSignOut(false);
@@ -10845,6 +11342,9 @@
           currentUserSession.preferredTimezone = data.user.preferredTimezone;
           localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           showToast("Profile preferences updated successfully.", "success");
         } else {
           showToast(data.message || "Failed to update profile.", "error");
@@ -10919,6 +11419,9 @@
           currentUserSession.emailVerified = u.emailVerified;
           localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           closeLinkIdentityModal();
           showToast(`Successfully linked ${activeLinkTarget}!`, "success");
         } else {
@@ -11519,6 +12022,9 @@
         currentWalletBalance = parseFloat(verifyData.newBalance);
         localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
         updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
         closeWalletModal();
         showToast(`Wallet recharged successfully! ₹${verifyData.newBalance.toFixed(2)} current balance.`, "success");
 
@@ -13835,6 +14341,9 @@
         if (res.ok && data.booked) {
           currentWalletBalance = Number(data.newBalance);
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           showToast(`Booking Confirmed for ${pujaName}! Priest assigned & Sankalp registered.`, "success");
         } else if (data.error === 'INSUFFICIENT_FUNDS') {
           const shortfall = amt - currentWalletBalance;
@@ -13872,6 +14381,101 @@
     }
 
     // ==================== COSMIC FEATURE HUB & GUIDANCE CONTROLLERS ====================
+    function updateOverviewActiveChartBanner() {
+      const container = document.getElementById('overview-active-chart-card');
+      if (!container) return;
+
+      if (currentCalculatedChart && currentCalculatedChart.lagnaSign) {
+        const name = currentCalculatedChart.name || 'Seeker';
+        const lagna = currentCalculatedChart.lagnaSign;
+        const moon = currentCalculatedChart.moonSign || 'Taurus';
+        const nak = currentCalculatedChart.nakName || 'Rohini';
+        const pada = currentCalculatedChart.pada || 1;
+        const sun = currentCalculatedChart.sunSign || 'Leo';
+        const dashaMaha = currentCalculatedChart.fullData?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
+        const dashaAntar = currentCalculatedChart.fullData?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
+
+        container.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 270px;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #34D399; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 10px; border-radius: 20px; margin-bottom: 8px;">
+                <i class="fa-solid fa-circle-check"></i> Active Natal Chart Loaded
+              </div>
+              <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 0 0 6px;">
+                ${escapeHtml(name)}'s Cosmic Blueprint
+              </h3>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                <span style="font-size: 12px; background: rgba(212, 175, 55, 0.15); border: 1px solid rgba(212, 175, 55, 0.3); color: #F5C45E; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                  Lagna: ${lagna} (H1)
+                </span>
+                <span style="font-size: 12px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #93C5FD; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                  Moon Sign: ${moon}
+                </span>
+                <span style="font-size: 12px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #D8B4FE; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                  Nakshatra: ${nak} (Pada ${pada})
+                </span>
+                <span style="font-size: 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                  Sun Sign: ${sun}
+                </span>
+                <span style="font-size: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: #FDE68A; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                  Dasha: ${dashaMaha}-${dashaAntar}
+                </span>
+              </div>
+              <p style="font-size: 12.5px; color: #94A3B8; margin: 0; line-height: 1.5;">
+                Computed via Swiss Ephemeris for ${escapeHtml(currentCalculatedChart.city || 'Calculated Coordinates')} (${currentCalculatedChart.dob} ${currentCalculatedChart.tob}). All 16 Shodashavarga divisions and transits are synchronized.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px; min-height: 44px;" onclick="switchNavSection('kundli')">
+                <i class="fa-solid fa-dharmachakra"></i> View Full Kundli
+              </button>
+              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; color: #F8FAFC; border-color: rgba(212, 175, 55, 0.35); min-height: 44px;" onclick="switchNavSection('kundli'); if(typeof switchKundliTab==='function') switchKundliTab('dasha');">
+                <i class="fa-solid fa-timeline"></i> Dasha Timeline
+              </button>
+              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; color: #F8FAFC; border-color: rgba(212, 175, 55, 0.35); min-height: 44px;" onclick="openChatWithActiveChart()">
+                <i class="fa-solid fa-comments"></i> Consult AI Guru
+              </button>
+            </div>
+          </div>
+        `;
+        container.style.display = 'block';
+      } else {
+        container.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 260px;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #F5C45E; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                <i class="fa-solid fa-compass"></i> Personal Cosmic Blueprint
+              </div>
+              <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0 0 6px;">
+                No Natal Chart Calculated Yet
+              </h3>
+              <p style="font-size: 13px; color: #94A3B8; margin: 0; line-height: 1.5; max-width: 640px;">
+                Enter your exact birth details in Free Janam Kundli to compute sidereal Lagna, D9 Navamsha, Shadbala, and cross-correlated planetary transits with Swiss Ephemeris precision.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button class="btn-gold-primary" style="padding: 10px 20px; font-size: 13px; min-height: 44px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+                <i class="fa-solid fa-sparkles"></i> Calculate Free Kundli
+              </button>
+              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; color: #F8FAFC; border-color: rgba(212, 175, 55, 0.35); min-height: 44px;" onclick="loadSampleBirthChart(); switchNavSection('kundli');">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Try Sample Chart
+              </button>
+            </div>
+          </div>
+        `;
+        container.style.display = 'block';
+      }
+    }
+
+    function openChatWithActiveChart() {
+      if (typeof toggleChatDrawer === 'function') {
+        toggleChatDrawer();
+        if (currentCalculatedChart && typeof toggleChatKundliLink === 'function') {
+          toggleChatKundliLink(true);
+        }
+      }
+    }
+
     function switchHubTab(tabName) {
       document.querySelectorAll('.cosmic-hub-tab').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.cosmic-hub-panel').forEach(panel => panel.classList.remove('active'));
@@ -13980,6 +14584,9 @@
       checkGoogleAuthRedirect();
       initGoogleAuth();
       updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
       updateDemoWalletDisplay();
       renderSavedProfilesList();
       selectHoroscopeSign('Aries');
@@ -14123,6 +14730,9 @@
       linkPendingGuestProfileToUser(u, currentSessionToken);
       syncProfilesFromBackend(u.id);
       updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
     }
 
     function handleGoogleAuthSuccess(u, sessionToken) {
@@ -14300,6 +14910,9 @@
       closeAuthModal();
       showToast("Browsing in Guest Mode. All Vedic calculations and charts are active on this device.", "info");
       updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
     }
 
     function saveCurrentGuestState() {
@@ -14513,6 +15126,9 @@
           await linkPendingGuestProfileToUser(u, currentSessionToken);
           await syncProfilesFromBackend(u.id);
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           closeAuthModal();
           showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
           resumePendingActionAfterAuth();
@@ -14610,6 +15226,9 @@
           await linkPendingGuestProfileToUser(u, currentSessionToken);
           await syncProfilesFromBackend(u.id);
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           closeAuthModal();
           showToast(`Welcome, ${name}! Your account has been registered.`, 'success');
           resumePendingActionAfterAuth();
@@ -14806,6 +15425,9 @@
           localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
           localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           showToast(`Welcome, ${name}! Account created successfully.`, "success");
           // Pre-fill complete profile
           document.getElementById('cp-name').value = name;
@@ -14851,6 +15473,9 @@
           localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
           await syncProfilesFromBackend(u.id);
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           loadUserSavedReports();
           showToast(`Welcome back, ${currentUserSession.name}!`, "success");
           switchNavSection('dashboard');
@@ -15118,6 +15743,9 @@
           localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
           localStorage.setItem('astro_premium_unlocked', 'true');
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
 
           closePremiumPaywallModal();
           showToast(data.alreadyUnlocked ? "Premium Report already unlocked!" : "🎉 Premium Multi-Horizon Analysis Unlocked Successfully!", "success");
@@ -15528,6 +16156,9 @@
           closePricingPlansModal();
           await fetchUserEntitlements();
           updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
         } else {
           showToast(data.message || "Subscription payment verification failed.", "error");
         }
@@ -16987,6 +17618,9 @@
             currentWalletBalance = Math.max(0, currentWalletBalance - finalRupees);
             localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
             updateUserSessionUI();
+      if (typeof updateOverviewActiveChartBanner === 'function') {
+        updateOverviewActiveChartBanner();
+      }
           }
           closeReportBuilderModal();
           closeReportStoreModal();

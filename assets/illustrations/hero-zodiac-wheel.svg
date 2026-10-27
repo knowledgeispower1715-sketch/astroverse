@@ -15,16 +15,16 @@
       <stop offset="100%" stop-color="#4C0519"/>
     </linearGradient>
   </defs>
-  
+
   <!-- Cosmic Background -->
   <circle cx="400" cy="400" r="390" fill="url(#cosmicGlow)" stroke="url(#goldGrad)" stroke-width="4"/>
-  
+
   <!-- Concentric Rings -->
   <circle cx="400" cy="400" r="360" fill="none" stroke="#C6A15B" stroke-width="1.5" stroke-dasharray="4 4"/>
   <circle cx="400" cy="400" r="330" fill="none" stroke="url(#goldGrad)" stroke-width="3"/>
   <circle cx="400" cy="400" r="260" fill="none" stroke="#78350F" stroke-width="1.5"/>
   <circle cx="400" cy="400" r="180" fill="none" stroke="url(#goldGrad)" stroke-width="2"/>
-  
+
   <!-- 12 Zodiac Radial Sectors & Markers -->
   <g stroke="url(#goldGrad)" stroke-width="1.5" opacity="0.75">
     <line x1="400" y1="70" x2="400" y2="730"/>
@@ -36,7 +36,7 @@
     <line x1="114" y1="565" x2="686" y2="235"/>
     <line x1="235" y1="686" x2="565" y2="114"/>
   </g>
-  
+
   <!-- 12 Zodiac Glyphs / Signs (Sanskrit & English labels) -->
   <g font-family="'Cinzel', 'Noto Sans Devanagari', serif" font-size="13" font-weight="700" fill="#FCD34D" text-anchor="middle">
     <text x="400" y="105">MESHA • ARIES</text>
@@ -52,12 +52,12 @@
     <text x="145" y="255">KUMBHA • AQUARIUS</text>
     <text x="255" y="145">MEENA • PISCES</text>
   </g>
-  
+
   <!-- Center Dharmachakra Hub -->
   <circle cx="400" cy="400" r="110" fill="url(#maroonGrad)" stroke="url(#goldGrad)" stroke-width="4"/>
   <circle cx="400" cy="400" r="50" fill="none" stroke="#FDE68A" stroke-width="2"/>
   <circle cx="400" cy="400" r="18" fill="#F59E0B"/>
-  
+
   <!-- Central Emblem / Star of Guidance -->
   <polygon points="400,310 425,375 490,400 425,425 400,490 375,425 310,400 375,375" fill="url(#goldGrad)" opacity="0.9"/>
 </svg>

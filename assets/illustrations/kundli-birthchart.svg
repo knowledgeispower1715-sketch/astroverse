@@ -16,7 +16,7 @@
   <line x1="50" y1="50" x2="550" y2="550" stroke="url(#kGold)" stroke-width="2"/>
   <line x1="50" y1="550" x2="550" y2="50" stroke="url(#kGold)" stroke-width="2"/>
   <polygon points="300,50 550,300 300,550 50,300" fill="none" stroke="url(#kGold)" stroke-width="2.5"/>
-  
+
   <!-- 12 House Labels -->
   <g font-family="'Plus Jakarta Sans', sans-serif" font-size="12" font-weight="800" fill="#FCD34D" text-anchor="middle">
     <!-- H1 Lagna -->
