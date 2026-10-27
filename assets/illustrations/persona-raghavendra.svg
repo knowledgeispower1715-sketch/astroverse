@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <radialGradient id="raghavHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4A0E17" stop-opacity="0.95"/>
+      <stop offset="65%" stop-color="#2A080E" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#140205" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="raghavGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="40%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <linearGradient id="silkKurta" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="60%" stop-color="#E2E8F0"/>
+      <stop offset="100%" stop-color="#CBD5E1"/>
+    </linearGradient>
+    <linearGradient id="angavastram" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C2410C"/>
+      <stop offset="60%" stop-color="#9A3412"/>
+      <stop offset="100%" stop-color="#7C2D12"/>
+    </linearGradient>
+    <linearGradient id="raghavSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D8A878"/>
+      <stop offset="100%" stop-color="#BF8856"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="600" height="600" fill="url(#raghavHalo)" rx="24" stroke="url(#raghavGold)" stroke-width="4"/>
+
+  <!-- Celestial Halo & Radiance Rings -->
+  <circle cx="300" cy="260" r="195" fill="none" stroke="url(#raghavGold)" stroke-width="2" stroke-dasharray="6 3" opacity="0.6"/>
+  <circle cx="300" cy="260" r="160" fill="rgba(217, 119, 6, 0.08)" stroke="#F59E0B" stroke-width="1.8"/>
+
+  <!-- Classical Yogas & Shadbala Scales Geometry -->
+  <polygon points="300,95 440,370 160,370" fill="none" stroke="url(#raghavGold)" stroke-width="1.5" opacity="0.35"/>
+  <polygon points="300,425 440,150 160,150" fill="none" stroke="url(#raghavGold)" stroke-width="1.5" opacity="0.35"/>
+
+  <!-- White Silk Kurta Shoulders -->
+  <path d="M 165,495 Q 230,405 300,405 Q 370,405 435,495 L 460,540 L 140,540 Z" fill="url(#silkKurta)" stroke="url(#raghavGold)" stroke-width="2"/>
+  <!-- Rich Saffron/Terracotta Angavastram Drape -->
+  <path d="M 200,490 Q 250,420 300,440 L 285,540 L 160,540 Z" fill="url(#angavastram)" stroke="url(#raghavGold)" stroke-width="2"/>
+
+  <!-- Sacred Tulsi Mala -->
+  <g fill="#451A03" stroke="#D4AF37" stroke-width="1">
+    <circle cx="275" cy="425" r="4.5"/>
+    <circle cx="288" cy="433" r="4.5"/>
+    <circle cx="300" cy="437" r="4.5"/>
+    <circle cx="312" cy="433" r="4.5"/>
+    <circle cx="325" cy="425" r="4.5"/>
+  </g>
+
+  <!-- Neck -->
+  <path d="M 276,340 L 324,340 L 318,410 L 282,410 Z" fill="url(#raghavSkin)"/>
+
+  <!-- Head Silhouette & Face -->
+  <ellipse cx="300" cy="270" rx="64" ry="78" fill="url(#raghavSkin)"/>
+
+  <!-- Traditional Scholar Haircut with Small Shikha / Traditional Knot -->
+  <path d="M 235,260 C 235,185 365,185 365,260 C 365,215 345,185 300,185 C 255,185 235,215 235,260 Z" fill="#1E293B"/>
+  <circle cx="300" cy="180" r="10" fill="#1E293B"/>
+
+  <!-- Analytical, Methodical Eyebrows & Glasses/Eyes -->
+  <path d="M 264,250 Q 278,242 292,249" stroke="#1E293B" stroke-width="2.5" fill="none"/>
+  <path d="M 308,249 Q 322,242 336,250" stroke="#1E293B" stroke-width="2.5" fill="none"/>
+
+  <!-- Framed Glasses (Refined Scholarly Look) -->
+  <rect x="264" y="248" width="28" height="18" rx="4" fill="none" stroke="url(#raghavGold)" stroke-width="1.8"/>
+  <rect x="308" y="248" width="28" height="18" rx="4" fill="none" stroke="url(#raghavGold)" stroke-width="1.8"/>
+  <line x1="292" y1="255" x2="308" y2="255" stroke="url(#raghavGold)" stroke-width="1.8"/>
+  <!-- Eyes -->
+  <ellipse cx="278" cy="257" rx="6" ry="3.5" fill="#1E293B"/>
+  <ellipse cx="322" cy="257" rx="6" ry="3.5" fill="#1E293B"/>
+  <circle cx="280" cy="256" r="1.5" fill="#FFFFFF"/>
+  <circle cx="324" cy="256" r="1.5" fill="#FFFFFF"/>
+
+  <!-- Scholarly Nose & Subtle Mustache -->
+  <path d="M 300,255 L 297,284 L 305,284" stroke="#9A6237" stroke-width="2" fill="none"/>
+  <path d="M 284,296 Q 300,292 316,296" stroke="#334155" stroke-width="2" fill="none"/>
+
+  <!-- Traditional Tripundra / Sacred Ash & Kumkum Tilak -->
+  <line x1="288" y1="216" x2="312" y2="216" stroke="#E2E8F0" stroke-width="2"/>
+  <line x1="286" y1="221" x2="314" y2="221" stroke="#E2E8F0" stroke-width="2"/>
+  <line x1="288" y1="226" x2="312" y2="226" stroke="#E2E8F0" stroke-width="2"/>
+  <circle cx="300" cy="221" r="2.5" fill="#DC2626"/>
+
+  <!-- Sacred Vedic Yantra Shield in Foreground -->
+  <rect x="220" y="475" width="160" height="28" rx="4" fill="#FFFBEB" stroke="url(#raghavGold)" stroke-width="1.8"/>
+  <text x="300" y="493" font-family="'Cinzel', Georgia, serif" font-size="11" font-weight="700" fill="#78350F" text-anchor="middle" letter-spacing="0.5">SHADBALA &amp; YOGAS</text>
+
+  <!-- Identification Badge in Imperial Gold & Saffron -->
+  <rect x="120" y="535" width="360" height="42" rx="10" fill="#380710" stroke="url(#raghavGold)" stroke-width="2"/>
+  <text x="300" y="555" font-family="'Cinzel', Georgia, serif" font-size="14" font-weight="700" fill="#FDE68A" text-anchor="middle" letter-spacing="1">PANDIT RAGHAVENDRA • AI GURU</text>
+  <text x="300" y="570" font-family="'Plus Jakarta Sans', sans-serif" font-size="9.5" font-weight="700" fill="#FED7AA" text-anchor="middle">CLASSICAL YOGAS • SHADBALA • REMEDIES</text>
+</svg>

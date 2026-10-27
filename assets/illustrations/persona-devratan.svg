@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <radialGradient id="devHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4A0E17" stop-opacity="0.95"/>
+      <stop offset="65%" stop-color="#2A080E" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#140205" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="goldFrame" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="40%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <linearGradient id="robeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="50%" stop-color="#B45309"/>
+      <stop offset="100%" stop-color="#78350F"/>
+    </linearGradient>
+    <linearGradient id="shawlGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#881337"/>
+      <stop offset="100%" stop-color="#4C0519"/>
+    </linearGradient>
+    <linearGradient id="skinTone" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#DEB887"/>
+      <stop offset="100%" stop-color="#C68B59"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="600" height="600" fill="url(#devHalo)" rx="24" stroke="url(#goldFrame)" stroke-width="4"/>
+
+  <!-- Celestial Halo & Radiance Rings -->
+  <circle cx="300" cy="260" r="195" fill="none" stroke="url(#goldFrame)" stroke-width="2" stroke-dasharray="6 3" opacity="0.6"/>
+  <circle cx="300" cy="260" r="160" fill="rgba(212, 175, 55, 0.08)" stroke="#3B82F6" stroke-width="1.8"/>
+
+  <!-- Parashari Celestial Ring with 12 Zodiac Houses -->
+  <g stroke="url(#goldFrame)" stroke-width="1.2" opacity="0.4">
+    <line x1="300" y1="100" x2="300" y2="420"/>
+    <line x1="140" y1="260" x2="460" y2="260"/>
+    <line x1="187" y1="147" x2="413" y2="373"/>
+    <line x1="187" y1="373" x2="413" y2="147"/>
+  </g>
+
+  <!-- Shoulders & Traditional Kurta/Angavastram -->
+  <path d="M 170,490 Q 230,400 300,400 Q 370,400 430,490 L 460,540 L 140,540 Z" fill="url(#robeGrad)" stroke="url(#goldFrame)" stroke-width="2"/>
+  <!-- Regal Maroon Shawl over Left Shoulder -->
+  <path d="M 170,490 Q 220,410 260,430 L 230,540 L 140,540 Z" fill="url(#shawlGrad)" stroke="url(#goldFrame)" stroke-width="1.5"/>
+
+  <!-- Rudraksha Mala / Sacred Beads -->
+  <g fill="#78350F" stroke="#D4AF37" stroke-width="1">
+    <circle cx="270" cy="425" r="5"/>
+    <circle cx="282" cy="433" r="5"/>
+    <circle cx="295" cy="438" r="5"/>
+    <circle cx="305" cy="438" r="5"/>
+    <circle cx="318" cy="433" r="5"/>
+    <circle cx="330" cy="425" r="5"/>
+  </g>
+
+  <!-- Neck -->
+  <path d="M 275,340 L 325,340 L 320,410 L 280,410 Z" fill="url(#skinTone)"/>
+
+  <!-- Head Silhouette & Facial Structure -->
+  <ellipse cx="300" cy="270" rx="65" ry="80" fill="url(#skinTone)"/>
+
+  <!-- Dignified Graying Hair & Traditional Grooming -->
+  <path d="M 235,260 C 235,185 365,185 365,260 C 365,220 345,190 300,190 C 255,190 235,220 235,260 Z" fill="#334155"/>
+  <!-- Distinguished Beard & Mustache -->
+  <path d="M 260,295 Q 300,320 340,295 Q 350,335 300,358 Q 250,335 260,295 Z" fill="#475569" stroke="#64748B" stroke-width="1"/>
+
+  <!-- Calm, Wise Eyes & Eyebrows -->
+  <path d="M 262,250 Q 277,243 292,250" stroke="#1E293B" stroke-width="2.5" fill="none"/>
+  <path d="M 308,250 Q 323,243 338,250" stroke="#1E293B" stroke-width="2.5" fill="none"/>
+  <!-- Eyes -->
+  <ellipse cx="277" cy="258" rx="8" ry="4" fill="#1E293B"/>
+  <ellipse cx="323" cy="258" rx="8" ry="4" fill="#1E293B"/>
+  <circle cx="279" cy="257" r="1.5" fill="#FFFFFF"/>
+  <circle cx="325" cy="257" r="1.5" fill="#FFFFFF"/>
+
+  <!-- Nose -->
+  <path d="M 300,255 L 297,285 L 306,285" stroke="#A76B3C" stroke-width="2" fill="none"/>
+
+  <!-- Sacred Chandan & Kumkum Tilak on Forehead -->
+  <!-- Yellow Chandan U-Shape / Tripundra -->
+  <path d="M 292,215 Q 300,230 308,215" stroke="#FDE047" stroke-width="3" fill="none"/>
+  <!-- Red Kumkum Dot in Center -->
+  <circle cx="300" cy="222" r="3" fill="#DC2626"/>
+
+  <!-- Palm Leaf Brihat Parashara Scripture in Foreground -->
+  <rect x="220" y="475" width="160" height="28" rx="4" fill="#FEF3C7" stroke="url(#goldFrame)" stroke-width="1.8"/>
+  <line x1="230" y1="484" x2="370" y2="484" stroke="#B45309" stroke-width="1" stroke-dasharray="3 2"/>
+  <line x1="230" y1="492" x2="350" y2="492" stroke="#B45309" stroke-width="1" stroke-dasharray="3 2"/>
+
+  <!-- Identification Badge in Imperial Gold & Blue -->
+  <rect x="120" y="535" width="360" height="42" rx="10" fill="#1E3A8A" stroke="url(#goldFrame)" stroke-width="2"/>
+  <text x="300" y="555" font-family="'Cinzel', Georgia, serif" font-size="14" font-weight="700" fill="#FDE68A" text-anchor="middle" letter-spacing="1">ACHARYA DEVRATAN • AI GURU</text>
+  <text x="300" y="570" font-family="'Plus Jakarta Sans', sans-serif" font-size="9.5" font-weight="700" fill="#93C5FD" text-anchor="middle">BRIHAT PARASHARA • PRASHNA KUNDLI</text>
+</svg>

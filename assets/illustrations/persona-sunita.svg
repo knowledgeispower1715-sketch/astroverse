@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <radialGradient id="sunitaHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4A0E17" stop-opacity="0.95"/>
+      <stop offset="65%" stop-color="#2A080E" stop-opacity="0.98"/>
+      <stop offset="100%" stop-color="#140205" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="sunitaGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="40%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <linearGradient id="sareeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9D174D"/>
+      <stop offset="50%" stop-color="#831843"/>
+      <stop offset="100%" stop-color="#500724"/>
+    </linearGradient>
+    <linearGradient id="zariBorder" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="sunitaSkin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E5C29F"/>
+      <stop offset="100%" stop-color="#CE9B72"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="600" height="600" fill="url(#sunitaHalo)" rx="24" stroke="url(#sunitaGold)" stroke-width="4"/>
+
+  <!-- Celestial Sacred Geometry (Lotus Petal Halo & Navamsha D9 Ring) -->
+  <circle cx="300" cy="260" r="195" fill="none" stroke="url(#sunitaGold)" stroke-width="2" stroke-dasharray="6 3" opacity="0.6"/>
+  <circle cx="300" cy="260" r="160" fill="rgba(236, 72, 153, 0.08)" stroke="#EC4899" stroke-width="1.8"/>
+
+  <!-- Jaimini Karaka Matrix Geometry -->
+  <polygon points="300,105 435,260 300,415 165,260" fill="none" stroke="url(#sunitaGold)" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Elegant Silk Saree Pallu & Shoulders -->
+  <path d="M 160,500 Q 225,415 300,415 Q 375,415 440,500 L 460,540 L 140,540 Z" fill="url(#sareeGrad)" stroke="url(#sunitaGold)" stroke-width="2"/>
+  <!-- Gold Embroidered Zari Pallu Border -->
+  <path d="M 170,490 Q 240,430 330,460 L 320,540 L 150,540 Z" fill="rgba(212, 175, 55, 0.25)" stroke="url(#zariBorder)" stroke-width="3"/>
+
+  <!-- Elegant Gold Necklace & Pendent -->
+  <path d="M 265,395 Q 300,430 335,395" fill="none" stroke="url(#sunitaGold)" stroke-width="2.5"/>
+  <circle cx="300" cy="425" r="7" fill="#DC2626" stroke="url(#sunitaGold)" stroke-width="1.5"/>
+
+  <!-- Neck -->
+  <path d="M 280,340 L 320,340 L 315,405 L 285,405 Z" fill="url(#sunitaSkin)"/>
+
+  <!-- Head Silhouette & Face -->
+  <ellipse cx="300" cy="265" rx="60" ry="74" fill="url(#sunitaSkin)"/>
+
+  <!-- Neat Traditional Hair Tied Back with Traditional Gajra / Jasmine Accent -->
+  <path d="M 230,250 C 230,175 370,175 370,250 C 370,205 350,180 300,180 C 250,180 230,205 230,250 Z" fill="#1E293B"/>
+  <ellipse cx="300" cy="180" rx="35" ry="18" fill="#1E293B"/>
+  <!-- Pearl / Jasmine Floral Accent -->
+  <circle cx="245" cy="205" r="4.5" fill="#FEF08A"/>
+  <circle cx="255" cy="195" r="4.5" fill="#FFFFFF"/>
+  <circle cx="265" cy="190" r="4.5" fill="#FEF08A"/>
+
+  <!-- Intelligent, Approachable Eyes & Eyebrows -->
+  <path d="M 265,248 Q 278,240 292,246" stroke="#1E293B" stroke-width="2.2" fill="none"/>
+  <path d="M 308,246 Q 322,240 335,248" stroke="#1E293B" stroke-width="2.2" fill="none"/>
+  <!-- Eyes with Natural Kajal & Warm Light -->
+  <ellipse cx="278" cy="254" rx="7.5" ry="4" fill="#1E293B"/>
+  <ellipse cx="322" cy="254" rx="7.5" ry="4" fill="#1E293B"/>
+  <circle cx="280" cy="253" r="1.5" fill="#FFFFFF"/>
+  <circle cx="324" cy="253" r="1.5" fill="#FFFFFF"/>
+
+  <!-- Elegant Feminine Nose -->
+  <path d="M 300,252 L 298,278 L 305,278" stroke="#B87D4F" stroke-width="1.8" fill="none"/>
+
+  <!-- Warm, Empathetic Smile -->
+  <path d="M 285,298 Q 300,310 315,298" stroke="#9F1239" stroke-width="2.5" fill="none"/>
+
+  <!-- Traditional Round Vermillion Red Bindi -->
+  <circle cx="300" cy="235" r="4" fill="#DC2626" stroke="#FEF08A" stroke-width="1"/>
+
+  <!-- Traditional Gold Jhumka Earrings -->
+  <circle cx="235" cy="275" r="4" fill="url(#sunitaGold)"/>
+  <polygon points="231,280 239,280 235,292" fill="url(#sunitaGold)"/>
+  <circle cx="365" cy="275" r="4" fill="url(#sunitaGold)"/>
+  <polygon points="361,280 369,280 365,292" fill="url(#sunitaGold)"/>
+
+  <!-- Jaimini Sutra Manuscript Scroll in Hands -->
+  <rect x="220" y="475" width="160" height="28" rx="4" fill="#FFFBEB" stroke="url(#sunitaGold)" stroke-width="1.8"/>
+  <text x="300" y="493" font-family="'Cinzel', Georgia, serif" font-size="11" font-weight="700" fill="#78350F" text-anchor="middle" letter-spacing="0.5">JAIMINI UPADESHA</text>
+
+  <!-- Identification Badge in Imperial Gold & Maroon -->
+  <rect x="120" y="535" width="360" height="42" rx="10" fill="#781A24" stroke="url(#sunitaGold)" stroke-width="2"/>
+  <text x="300" y="555" font-family="'Cinzel', Georgia, serif" font-size="14" font-weight="700" fill="#FDE68A" text-anchor="middle" letter-spacing="1">DR. SUNITA SHASTRI • AI GURU</text>
+  <text x="300" y="570" font-family="'Plus Jakarta Sans', sans-serif" font-size="9.5" font-weight="700" fill="#FBCFE8" text-anchor="middle">JAIMINI SUTRAS • CHARA KARAKAS • D9</text>
+</svg>

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <radialGradient id="cdGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4A0E17" stop-opacity="0.95"/>
+      <stop offset="70%" stop-color="#2A080E" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#140205" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="cdGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="cdBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#1E3A8A"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#cdGlow)" rx="20" stroke="url(#cdGold)" stroke-width="3"/>
+
+  <!-- 4-Phase Lunar Arc (4 Weeks of the Month) -->
+  <path d="M 120,380 C 180,180 420,180 480,380" fill="none" stroke="url(#cdGold)" stroke-width="3" stroke-dasharray="6 4"/>
+
+  <!-- 4 Strategic Pillars representing 4 Weeks -->
+  <!-- Week 1: Foundation (New Moon Crescent) -->
+  <g transform="translate(140, 290)">
+    <rect x="-24" y="-30" width="48" height="90" rx="8" fill="rgba(59, 130, 246, 0.2)" stroke="#3B82F6" stroke-width="2"/>
+    <circle cx="0" cy="-45" r="14" fill="#3B82F6" stroke="#93C5FD" stroke-width="1.5"/>
+    <text x="0" y="20" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#93C5FD" text-anchor="middle">WK 1</text>
+    <text x="0" y="38" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="600" fill="#E2E8F0" text-anchor="middle">INITIATION</text>
+  </g>
+
+  <!-- Week 2: Momentum (Waxing Gibbous) -->
+  <g transform="translate(245, 220)">
+    <rect x="-24" y="-30" width="48" height="130" rx="8" fill="rgba(212, 175, 55, 0.2)" stroke="#D4AF37" stroke-width="2"/>
+    <circle cx="0" cy="-45" r="15" fill="#D4AF37" stroke="#FEF08A" stroke-width="1.5"/>
+    <text x="0" y="20" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FDE68A" text-anchor="middle">WK 2</text>
+    <text x="0" y="38" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="600" fill="#E2E8F0" text-anchor="middle">MOMENTUM</text>
+  </g>
+
+  <!-- Week 3: Peak / Culmination (Full Moon) -->
+  <g transform="translate(355, 220)">
+    <rect x="-24" y="-30" width="48" height="130" rx="8" fill="rgba(245, 158, 11, 0.2)" stroke="#F59E0B" stroke-width="2"/>
+    <circle cx="0" cy="-45" r="16" fill="#F59E0B" stroke="#FEF3C7" stroke-width="2"/>
+    <text x="0" y="20" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#FEF08A" text-anchor="middle">WK 3</text>
+    <text x="0" y="38" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="600" fill="#E2E8F0" text-anchor="middle">CULMINATION</text>
+  </g>
+
+  <!-- Week 4: Integration (Waning) -->
+  <g transform="translate(460, 290)">
+    <rect x="-24" y="-30" width="48" height="90" rx="8" fill="rgba(139, 92, 246, 0.2)" stroke="#8B5CF6" stroke-width="2"/>
+    <circle cx="0" cy="-45" r="14" fill="#8B5CF6" stroke="#DDD6FE" stroke-width="1.5"/>
+    <text x="0" y="20" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#DDD6FE" text-anchor="middle">WK 4</text>
+    <text x="0" y="38" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="600" fill="#E2E8F0" text-anchor="middle">HARVEST</text>
+  </g>
+
+  <!-- Dharma Wheel / 10th House Karma Crest -->
+  <circle cx="300" cy="110" r="38" fill="url(#cdBlue)" stroke="url(#cdGold)" stroke-width="2.5"/>
+  <polygon points="300,85 308,102 326,110 308,118 300,135 292,118 274,110 292,102" fill="url(#cdGold)"/>
+
+  <!-- Typography Labels -->
+  <text x="300" y="525" font-family="'Cinzel', Georgia, serif" font-size="16" font-weight="700" fill="#FCD34D" text-anchor="middle" letter-spacing="1.5">MONTHLY 4-WEEK STRATEGIC PROGRESSION</text>
+  <text x="300" y="552" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="600" fill="#E2D9D2" text-anchor="middle">10TH HOUSE KARMA • DHARMA EXECUTION • LUNAR PHASES</text>
+</svg>

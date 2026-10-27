@@ -399,4 +399,44 @@ remedies_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" 
 with open('assets/illustrations/remedies-yantra.svg', 'w', encoding='utf-8') as f:
     f.write(remedies_svg)
 
-print("Created 9 master SVG vector illustrations in assets/illustrations/")
+# 10. PANCHANG CALENDAR (Daily Forecast / Diurnal Phase)
+with open('assets/illustrations/panchang-calendar.svg', 'w', encoding='utf-8') as f:
+    from generate_all_illustrations import panchang_calendar_svg
+    f.write(panchang_calendar_svg)
+
+# 11. TRANSIT WHEEL (Weekly 7-Day Cycle Forecast)
+with open('assets/illustrations/transit-wheel.svg', 'w', encoding='utf-8') as f:
+    from generate_all_illustrations import transit_wheel_svg
+    f.write(transit_wheel_svg)
+
+# 12. CAREER DHARMA (Monthly 4-Week Strategic Progression)
+with open('assets/illustrations/career-dharma.svg', 'w', encoding='utf-8') as f:
+    from generate_all_illustrations import career_dharma_svg
+    f.write(career_dharma_svg)
+
+# 13. WEALTH ABUNDANCE (Yearly 12-Month Outlook + 4 Quarters)
+with open('assets/illustrations/wealth-abundance.svg', 'w', encoding='utf-8') as f:
+    from generate_all_illustrations import wealth_abundance_svg
+    f.write(wealth_abundance_svg)
+
+# 14. MAHADASHA TIMELINE (5-Year Vimshottari Karmic Arc)
+with open('assets/illustrations/mahadasha-timeline.svg', 'w', encoding='utf-8') as f:
+    from generate_all_illustrations import mahadasha_timeline_svg
+    f.write(mahadasha_timeline_svg)
+
+# 15. PERSONA: ACHARYA DEVRATAN
+with open('assets/illustrations/persona-devratan.svg', 'w', encoding='utf-8') as f:
+    from generate_all_illustrations import persona_devratan_svg
+    f.write(persona_devratan_svg)
+
+# 16. PERSONA: DR. SUNITA SHASTRI
+with open('assets/illustrations/persona-sunita.svg', 'w', encoding='utf-8') as f:
+    from generate_all_illustrations import persona_sunita_svg
+    f.write(persona_sunita_svg)
+
+# 17. PERSONA: PANDIT RAGHAVENDRA
+with open('assets/illustrations/persona-raghavendra.svg', 'w', encoding='utf-8') as f:
+    from generate_all_illustrations import persona_raghavendra_svg
+    f.write(persona_raghavendra_svg)
+
+print("Created 17 master SVG vector illustrations in assets/illustrations/")

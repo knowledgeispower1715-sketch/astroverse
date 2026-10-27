@@ -78,46 +78,86 @@
 
   <style>
     :root {
+      /* Celestial Royal Blue top accent */
+      --av-border-top-blue: #3B82F6;
+      --av-blue-glow: 0 2px 16px rgba(59, 130, 246, 0.65);
+      --av-celestial-blue-gradient:
+        linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #2563EB 100%);
+      --av-blue-pill-bg: rgba(37, 99, 235, 0.15);
+      --av-blue-pill-border: rgba(59, 130, 246, 0.35);
+
+      /* Imperial Vedic maroon */
+      --av-maroon-darkest: #380710;
+      --av-maroon-primary: #4A0E17;
+      --av-maroon-surface: #6B1D2F;
+      --av-maroon-card: #781A24;
+      --av-maroon-light: #881337;
+      --av-maroon-glass: rgba(74, 14, 23, 0.88);
+      --av-maroon-gradient:
+        linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%);
+
+      /* Temple gold */
+      --av-gold-primary: #D4AF37;
+      --av-gold-bright: #F5C45E;
+      --av-gold-glow: 0 0 18px rgba(212, 175, 55, 0.40);
+      --av-gold-gradient:
+        linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
+
+      /* Canvas and typography */
+      --av-canvas-deep: #2A080E;
+      --av-text-light: #FFFFFF;
+      --av-text-warm: #FFFBEB;
+      --av-text-subtle: #E2D9D2;
+      --av-text-muted: #D1C5BD;
+
+      /* Additional layout tokens */
+      --av-content-wide: 1440px;
+      --av-content-reading: 1080px;
+      --av-radius-card: 20px;
+      --av-radius-control: 12px;
+      --av-border-subtle: rgba(212, 175, 55, 0.20);
+      --av-shadow-card: 0 14px 36px rgba(12, 2, 7, 0.24);
+
       /* Canonical Modern Luxury Vedic Astrology Design Tokens */
-      --av-color-maroon-950: #4C0519;
-      --av-color-maroon-800: #881337;
+      --av-color-maroon-950: var(--av-maroon-primary);
+      --av-color-maroon-800: var(--av-maroon-light);
       --av-color-saffron: #F59E0B;
-      --av-color-gold: #C6A15B;
+      --av-color-gold: var(--av-gold-primary);
 
-      --av-color-parchment: #FAF9F6;
-      --av-color-surface: #FFFFFF;
-      --av-color-surface-warm: #FFFDF9;
-      --av-color-surface-soft: #F5F0E8;
+      --av-color-parchment: var(--av-canvas-deep);
+      --av-color-surface: var(--av-maroon-primary);
+      --av-color-surface-warm: var(--av-maroon-surface);
+      --av-color-surface-soft: var(--av-maroon-card);
 
-      --av-color-ink: #24151B;
-      --av-color-text-secondary: #70636A;
-      --av-color-text-muted: #8C8186;
+      --av-color-ink: var(--av-text-light);
+      --av-color-text-secondary: var(--av-text-subtle);
+      --av-color-text-muted: var(--av-text-muted);
 
-      --av-color-border: #E8DED5;
-      --av-color-border-strong: #D7C8BB;
+      --av-color-border: rgba(212, 175, 55, 0.22);
+      --av-color-border-strong: rgba(212, 175, 55, 0.40);
 
-      --av-color-success: #276749;
-      --av-color-success-bg: #EDF7F0;
+      --av-color-success: #10B981;
+      --av-color-success-bg: rgba(16, 185, 129, 0.15);
 
-      --av-color-warning: #8A5200;
-      --av-color-warning-bg: #FFF5DF;
+      --av-color-warning: #F59E0B;
+      --av-color-warning-bg: rgba(245, 158, 11, 0.15);
 
-      --av-color-danger: #A22B3D;
-      --av-color-danger-bg: #FFF0F1;
+      --av-color-danger: #EF4444;
+      --av-color-danger-bg: rgba(239, 68, 68, 0.15);
 
-      --av-color-info: #365578;
-      --av-color-info-bg: #EEF4FA;
+      --av-color-info: #3B82F6;
+      --av-color-info-bg: var(--av-blue-pill-bg);
 
-      --av-color-focus: #D97706;
+      --av-color-focus: var(--av-gold-bright);
 
       --av-font-body: "Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif;
       --av-font-display: "Cinzel", Georgia, serif;
 
-      --av-shadow-xs: 0 1px 2px rgba(76, 5, 25, 0.04);
-      --av-shadow-sm: 0 2px 8px rgba(36, 21, 27, 0.04);
-      --av-shadow-card: 0 6px 20px rgba(36, 21, 27, 0.055);
-      --av-shadow-elevated: 0 16px 44px rgba(36, 21, 27, 0.12);
-      --av-shadow-drawer: -16px 0 52px rgba(36, 21, 27, 0.14);
+      --av-shadow-xs: 0 1px 2px rgba(12, 2, 7, 0.15);
+      --av-shadow-sm: 0 2px 8px rgba(12, 2, 7, 0.20);
+      --av-shadow-card: var(--av-shadow-card);
+      --av-shadow-elevated: 0 18px 48px rgba(12, 2, 7, 0.45);
+      --av-shadow-drawer: -16px 0 52px rgba(12, 2, 7, 0.65);
 
       --av-radius-sm: 8px;
       --av-radius-md: 12px;
@@ -136,8 +176,8 @@
       --av-space-12: 48px;
       --av-space-16: 64px;
 
-      --av-content-max: 1280px;
-      --av-reading-max: 760px;
+      --av-content-max: 1440px;
+      --av-reading-max: 1080px;
       --av-sidebar-width: 248px;
       --av-header-height: 72px;
 
@@ -148,15 +188,15 @@
       --av-easing-standard: cubic-bezier(0.2, 0, 0, 1);
 
       /* Backward compatibility aliases */
-      --saffron-gold: var(--av-color-saffron);
+      --saffron-gold: var(--av-gold-bright);
       --saffron-orange: var(--av-color-focus);
-      --vedic-maroon: var(--av-color-maroon-800);
-      --deep-maroon: var(--av-color-maroon-950);
-      --canvas-bg: var(--av-color-parchment);
-      --card-bg: var(--av-color-surface);
-      --border-color: var(--av-color-border);
-      --text-main: var(--av-color-ink);
-      --text-muted: var(--av-color-text-secondary);
+      --vedic-maroon: var(--av-maroon-primary);
+      --deep-maroon: var(--av-maroon-darkest);
+      --canvas-bg: var(--av-canvas-deep);
+      --card-bg: var(--av-maroon-card);
+      --border-color: var(--av-border-subtle);
+      --text-main: var(--av-text-light);
+      --text-muted: var(--av-text-subtle);
       --shadow-sm: var(--av-shadow-xs);
       --shadow-md: var(--av-shadow-sm);
       --shadow-lg: var(--av-shadow-card);
@@ -166,22 +206,22 @@
       --radius-full: var(--av-radius-full);
 
       /* Astro Cosmic Luxury Palette & Tokens */
-      --astro-bg: #0B1020;
-      --astro-surface: #111A2E;
-      --astro-surface-raised: #17233A;
-      --astro-surface-glass: rgba(17, 26, 46, 0.88);
-      --astro-gold: #D4AF37;
-      --astro-gold-bright: #F5C45E;
-      --astro-gold-glow: rgba(212, 175, 55, 0.25);
-      --astro-burgundy: #741A45;
-      --astro-crimson: #9F1239;
-      --astro-text: #F8FAFC;
-      --astro-text-muted: #94A3B8;
-      --astro-border: rgba(212, 175, 55, 0.20);
-      --astro-border-subtle: rgba(255, 255, 255, 0.08);
-      --astro-radius-card: 16px;
-      --astro-radius-control: 10px;
-      --astro-shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.35), 0 0 1px 1px rgba(212, 175, 55, 0.15);
+      --astro-bg: var(--av-canvas-deep);
+      --astro-surface: var(--av-maroon-primary);
+      --astro-surface-raised: var(--av-maroon-surface);
+      --astro-surface-glass: var(--av-maroon-glass);
+      --astro-gold: var(--av-gold-primary);
+      --astro-gold-bright: var(--av-gold-bright);
+      --astro-gold-glow: var(--av-gold-glow);
+      --astro-burgundy: var(--av-maroon-surface);
+      --astro-crimson: var(--av-maroon-light);
+      --astro-text: var(--av-text-light);
+      --astro-text-muted: var(--av-text-subtle);
+      --astro-border: var(--av-border-subtle);
+      --astro-border-subtle: rgba(212, 175, 55, 0.12);
+      --astro-radius-card: 18px;
+      --astro-radius-control: 12px;
+      --astro-shadow-card: var(--av-shadow-card);
     }
 
     /* Luxury Cosmic Architecture Components */
@@ -499,43 +539,102 @@
       }
     }
 
+    /* Celestial Royal Blue Top Accent Border */
+    .celestial-top-border {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 3.5px;
+      background: var(--av-celestial-blue-gradient);
+      box-shadow: var(--av-blue-glow);
+      z-index: 10550;
+      pointer-events: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .celestial-top-border {
+        box-shadow: 0 1px 4px rgba(59, 130, 246, 0.4);
+      }
+    }
+
+    /* Framer Motion Inspired 3D Interactive Card Classes */
+    .av-card-3d,
     .cosmic-service-card {
-      background: #FFFFFF;
-      border: 1px solid #E8DED5;
-      border-radius: 16px;
+      perspective: 1200px;
+      transform-style: preserve-3d;
+      will-change: transform;
+      position: relative;
+      transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.24s ease, border-color 0.24s ease;
+    }
+    .av-card-3d::after,
+    .cosmic-service-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle 260px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.12), transparent 75%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 3;
+    }
+    .av-card-3d:hover::after,
+    .cosmic-service-card:hover::after {
+      opacity: 1;
+    }
+    @media (hover: none), (prefers-reduced-motion: reduce) {
+      .av-card-3d,
+      .cosmic-service-card {
+        perspective: none !important;
+        transform: none !important;
+        will-change: auto !important;
+      }
+      .av-card-3d::after,
+      .cosmic-service-card::after {
+        display: none !important;
+      }
+    }
+
+    .cosmic-service-card {
+      background: var(--av-maroon-gradient, linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%));
+      border: 1px solid var(--av-border-subtle, rgba(212, 175, 55, 0.22));
+      border-radius: var(--av-radius-card, 18px);
       overflow: hidden;
-      box-shadow: 0 4px 16px rgba(36, 21, 27, 0.05);
-      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      box-shadow: var(--av-shadow-card, 0 14px 36px rgba(12, 2, 7, 0.35));
+      transition: transform 0.26s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.26s ease, border-color 0.26s ease;
       display: flex;
       flex-direction: column;
+      position: relative;
+      color: var(--av-text-light, #FFFFFF);
     }
     .cosmic-service-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 28px rgba(36, 21, 27, 0.12);
-      border-color: #D4AF37;
+      transform: translateY(-5px);
+      box-shadow: 0 18px 42px rgba(12, 2, 7, 0.55), 0 0 22px rgba(212, 175, 55, 0.22);
+      border-color: var(--av-gold-bright, #F5C45E);
     }
 
     .cosmic-card-art-wrap {
       width: 100%;
-      height: 155px;
-      background: linear-gradient(135deg, #0B1020 0%, #151C33 50%, #1E1B4B 100%);
+      height: 165px;
+      background: linear-gradient(135deg, #180307 0%, #380710 50%, #4A0E17 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       overflow: hidden;
-      padding: 14px;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      padding: 16px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.25);
     }
     .cosmic-card-art-wrap img {
-      max-height: 125px;
+      max-height: 135px;
       max-width: 100%;
       object-fit: contain;
-      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5));
-      transition: transform 0.3s ease;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6));
+      transition: transform 0.35s cubic-bezier(0.2, 0, 0, 1);
     }
     .cosmic-service-card:hover .cosmic-card-art-wrap img {
-      transform: scale(1.05);
+      transform: scale(1.06);
     }
 
     .cosmic-card-badge {
@@ -547,48 +646,50 @@
       letter-spacing: 0.5px;
       padding: 3px 8px;
       border-radius: 14px;
-      background: rgba(11, 16, 32, 0.88);
-      border: 1px solid rgba(212, 175, 55, 0.45);
-      color: #F5C45E;
+      background: rgba(30, 5, 10, 0.9);
+      border: 1px solid var(--av-gold-bright, #F5C45E);
+      color: var(--av-gold-bright, #F5C45E);
       text-transform: uppercase;
       backdrop-filter: blur(8px);
     }
 
     .cosmic-card-body {
-      padding: 20px 20px 18px;
+      padding: 22px 20px 20px;
       display: flex;
       flex-direction: column;
       flex: 1;
+      background: transparent;
     }
 
     .cosmic-card-title {
       font-family: var(--av-font-display, "Cinzel", Georgia, serif);
-      font-size: 16.5px;
+      font-size: 17px;
       font-weight: 700;
-      color: #1E1B4B;
-      margin-bottom: 6px;
+      color: var(--av-text-light, #FFFFFF);
+      margin-bottom: 8px;
       line-height: 1.3;
+      letter-spacing: 0.2px;
     }
 
     .cosmic-card-tags {
       display: flex;
-      gap: 5px;
+      gap: 6px;
       flex-wrap: wrap;
       margin-bottom: 12px;
     }
     .cosmic-card-tag-pill {
       font-size: 10.5px;
       font-weight: 700;
-      padding: 2px 7px;
+      padding: 2.5px 8px;
       border-radius: 6px;
-      background: #F1F5F9;
-      color: #475569;
-      border: 1px solid #E2E8F0;
+      background: var(--av-blue-pill-bg, rgba(37, 99, 235, 0.18));
+      color: #93C5FD;
+      border: 1px solid var(--av-blue-pill-border, rgba(59, 130, 246, 0.35));
     }
 
     .cosmic-card-desc {
       font-size: 13px;
-      color: #64748B;
+      color: var(--av-text-subtle, #E2D9D2);
       line-height: 1.55;
       margin-bottom: 18px;
       flex: 1;
@@ -598,7 +699,7 @@
       width: 100%;
       min-height: 44px;
       padding: 10px 16px;
-      border-radius: 10px;
+      border-radius: var(--av-radius-control, 12px);
       font-size: 13px;
       font-weight: 700;
       display: inline-flex;
@@ -638,8 +739,8 @@
       max-width: 100%;
       margin: 0;
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--canvas-bg);
-      color: var(--text-main);
+      background-color: var(--av-canvas-deep, #2A080E);
+      color: var(--av-text-light, #FFFFFF);
       line-height: 1.5;
       overflow-x: clip;
       overflow-y: auto;
@@ -650,8 +751,8 @@
 
     /* Top Announcement Promo Bar */
     .promo-ticker {
-      background: linear-gradient(90deg, var(--deep-maroon) 0%, var(--vedic-maroon) 50%, var(--deep-maroon) 100%);
-      color: #FFFBEB;
+      background: linear-gradient(90deg, var(--av-maroon-darkest, #380710) 0%, var(--av-maroon-primary, #4A0E17) 50%, var(--av-maroon-darkest, #380710) 100%);
+      color: var(--av-text-warm, #FFFBEB);
       font-size: 12px;
       font-weight: 600;
       padding: 7px 16px;
@@ -660,10 +761,10 @@
       justify-content: center;
       align-items: center;
       gap: 12px;
-      border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
     }
     .promo-badge {
-      background: var(--saffron-gold);
+      background: var(--av-gold-bright, #F5C45E);
       color: #78350F;
       font-size: 10px;
       font-weight: 800;
@@ -674,9 +775,11 @@
 
     /* Main Navigation Header */
     .main-navbar {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--border-color);
+      background: rgba(56, 7, 16, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+      box-shadow: 0 4px 24px rgba(12, 2, 7, 0.5);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -699,20 +802,21 @@
     }
     .brand-icon {
       font-size: 24px;
-      color: var(--saffron-orange);
+      color: var(--av-gold-bright, #F5C45E);
     }
     .brand-title {
       font-family: 'Cinzel', serif;
       font-size: 20px;
       font-weight: 800;
-      color: var(--vedic-maroon);
+      color: var(--av-gold-bright, #F5C45E);
       letter-spacing: 0.5px;
     }
     .brand-tag {
       font-size: 10px;
       font-weight: 700;
-      background: #FEF3C7;
-      color: #92400E;
+      background: rgba(212, 175, 55, 0.2);
+      color: var(--av-gold-bright, #F5C45E);
+      border: 1px solid rgba(212, 175, 55, 0.35);
       padding: 2px 6px;
       border-radius: 4px;
       text-transform: uppercase;
@@ -727,10 +831,10 @@
     }
     .nav-link-btn {
       background: transparent;
-      border: none;
+      border: 1px solid transparent;
       font-size: 12px;
       font-weight: 600;
-      color: #475569;
+      color: var(--av-text-warm, #FFFBEB);
       padding: 6px 10px;
       border-radius: var(--radius-md);
       cursor: pointer;
@@ -741,12 +845,14 @@
       white-space: nowrap;
     }
     .nav-link-btn:hover {
-      background: #F1F5F9;
-      color: var(--vedic-maroon);
+      background: rgba(212, 175, 55, 0.16);
+      color: var(--av-gold-bright, #F5C45E);
+      border-color: rgba(212, 175, 55, 0.35);
     }
     .nav-link-btn.active {
-      background: #FFF1F2;
-      color: var(--vedic-maroon);
+      background: rgba(212, 175, 55, 0.22);
+      color: var(--av-gold-bright, #F5C45E);
+      border-color: rgba(212, 175, 55, 0.5);
       font-weight: 700;
     }
 
@@ -1428,17 +1534,50 @@
     .astrologers-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
+      gap: 22px;
     }
     .astrologer-profile-card {
-      background: #FFFFFF;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      box-shadow: var(--shadow-sm);
+      background: var(--av-maroon-gradient, linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%));
+      border: 1px solid var(--av-border-subtle, rgba(212, 175, 55, 0.25));
+      border-radius: var(--av-radius-card, 18px);
+      padding: 22px;
+      box-shadow: var(--av-shadow-card, 0 14px 36px rgba(12, 2, 7, 0.35));
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      color: var(--av-text-light, #FFFFFF);
+      position: relative;
+      transition: transform 0.26s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.26s ease, border-color 0.26s ease;
+    }
+    .astrologer-profile-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 18px 42px rgba(12, 2, 7, 0.55), 0 0 22px rgba(212, 175, 55, 0.22);
+      border-color: var(--av-gold-bright, #F5C45E);
+    }
+    .astro-portrait-wrap {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 2.5px solid var(--av-gold-primary, #D4AF37);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 14px rgba(212, 175, 55, 0.35);
+      overflow: hidden;
+      margin-bottom: 14px;
+      background: #140205;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .astro-portrait-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .ai-chat-avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
     }
     .astro-avatar-wrap {
       width: 60px;
@@ -1909,37 +2048,39 @@
       margin-top: 18px;
     }
     .guidance-discovery-card {
-      background: #FFFFFF;
-      border: 1px solid #E2E8F0;
-      border-radius: 14px;
+      background: var(--av-maroon-gradient, linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%));
+      border: 1px solid var(--av-border-subtle, rgba(212, 175, 55, 0.22));
+      border-radius: 16px;
       padding: 18px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      box-shadow: var(--av-shadow-card, 0 12px 28px rgba(12, 2, 7, 0.35));
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+      color: var(--av-text-light, #FFFFFF);
     }
     .guidance-discovery-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px -2px rgba(217, 119, 6, 0.12);
-      border-color: #FCD34D;
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(12, 2, 7, 0.45), 0 0 18px rgba(212, 175, 55, 0.2);
+      border-color: var(--av-gold-bright, #F5C45E);
     }
     .guidance-discovery-img-wrap {
       width: 100%;
-      height: 90px;
-      border-radius: 10px;
-      background: #FFFDF7;
-      border: 1px solid #FEF3C7;
+      height: 115px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #180307 0%, #380710 100%);
+      border: 1px solid rgba(212, 175, 55, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     .guidance-discovery-img {
-      max-height: 75px;
-      max-width: 85%;
+      max-height: 100px;
+      max-width: 90%;
       object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
     }
     @media (max-width: 640px) {
       .guidance-onboarding-grid {
@@ -2108,6 +2249,13 @@
       .nav-link-btn {
         padding: 6px 8px !important;
         font-size: 11.5px !important;
+      }
+    }
+
+    @media (max-width: 1280px) {
+      #btn-nav-tools,
+      #btn-nav-reports {
+        display: none !important;
       }
     }
 
@@ -3473,12 +3621,12 @@
       align-items: center;
       gap: 8px;
       padding: 6px 14px;
-      background: var(--av-color-surface-warm);
-      border: 1px solid var(--av-color-border);
+      background: rgba(30, 4, 8, 0.75);
+      border: 1px solid rgba(212, 175, 55, 0.32);
       border-radius: var(--av-radius-full);
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
-      color: var(--av-color-maroon-950);
+      color: var(--av-text-warm, #FFFBEB);
       cursor: pointer;
       transition: all var(--av-duration-normal) var(--av-easing-standard);
       max-width: 320px;
@@ -3487,8 +3635,9 @@
       text-overflow: ellipsis;
     }
     .active-profile-pill:hover {
-      border-color: var(--av-color-gold);
-      background: #FFFBEB;
+      border-color: var(--av-gold-bright, #F5C45E);
+      background: rgba(45, 8, 14, 0.95);
+      color: #FFFFFF;
     }
     .chip-status-dot {
       width: 8px;
@@ -4592,6 +4741,9 @@
   </style>
 </head>
 <body>
+
+  <!-- Celestial Royal Blue Top Accent Border -->
+  <div class="celestial-top-border" id="celestial-top-border" aria-hidden="true"></div>
 
   <!-- Toast Container -->
   <div id="toast-container" class="toast-container"></div>
@@ -5942,17 +6094,17 @@
           <!-- 6 Visual Discovery Cards Grid -->
           <div class="guidance-onboarding-grid">
             <!-- Card 1: Hourly (Hora) -->
-            <div class="guidance-discovery-card">
+            <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/horas-timing.svg" alt="Hourly Planetary Horas" class="guidance-discovery-img" onerror="this.style.display='none'">
+                <img src="assets/illustrations/horas-timing.svg" alt="Hourly Planetary Horas" class="guidance-discovery-img" loading="lazy">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                   <span style="font-size: 11px; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">Real-Time Astronomical</span>
                   <span style="font-size: 11px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Free Preview</span>
                 </div>
-                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Hourly (Hora) Guidance</h4>
-                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Hourly (Hora) Guidance</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
                   Chaldean planetary hour sequence mapping auspicious time windows for meetings, negotiations, and intellectual focus.
                 </p>
               </div>
@@ -5962,17 +6114,17 @@
             </div>
 
             <!-- Card 2: Daily Forecast -->
-            <div class="guidance-discovery-card">
+            <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/panchang-calendar.svg" alt="Daily Forecast" class="guidance-discovery-img" onerror="this.style.display='none'">
+                <img src="assets/illustrations/panchang-calendar.svg" alt="Daily Forecast" class="guidance-discovery-img" loading="lazy">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                   <span style="font-size: 11px; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">Diurnal Cycles</span>
                   <span style="font-size: 11px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Free Preview</span>
                 </div>
-                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Daily Forecast</h4>
-                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Daily Forecast</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
                   Three diurnal phases (Morning, Midday Abhijit Muhurta, Evening) synthesized with solar and lunar transit energy.
                 </p>
               </div>
@@ -5982,17 +6134,17 @@
             </div>
 
             <!-- Card 3: Weekly Progression -->
-            <div class="guidance-discovery-card">
+            <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/transit-wheel.svg" alt="Weekly Forecast" class="guidance-discovery-img" onerror="this.style.display='none'">
+                <img src="assets/illustrations/transit-wheel.svg" alt="Weekly Forecast" class="guidance-discovery-img" loading="lazy">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #7C3AED; background: #F5F3FF; padding: 2px 8px; border-radius: 6px;">7-Day Cycle</span>
-                  <span style="font-size: 11px; font-weight: 700; color: #D97706;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #93C5FD; background: rgba(37, 99, 235, 0.2); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">7-Day Cycle</span>
+                  <span style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E);"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
                 </div>
-                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Weekly (7 Days) Forecast</h4>
-                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Weekly (7 Days) Forecast</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
                   Day-by-day transit map tracing transiting Moon across zodiacal houses, auspicious windows, and weekday planetary rulers.
                 </p>
               </div>
@@ -6002,17 +6154,17 @@
             </div>
 
             <!-- Card 4: Monthly Analysis -->
-            <div class="guidance-discovery-card">
+            <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/career-dharma.svg" alt="Monthly Analysis" class="guidance-discovery-img" onerror="this.style.display='none'">
+                <img src="assets/illustrations/career-dharma.svg" alt="Monthly Analysis" class="guidance-discovery-img" loading="lazy">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #0284C7; background: #F0F9FF; padding: 2px 8px; border-radius: 6px;">4-Week Progression</span>
-                  <span style="font-size: 11px; font-weight: 700; color: #D97706;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #93C5FD; background: rgba(37, 99, 235, 0.2); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">4-Week Progression</span>
+                  <span style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E);"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
                 </div>
-                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Monthly (4 Weeks) Analysis</h4>
-                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Monthly (4 Weeks) Analysis</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
                   Strategic 4-week progression mapping foundational inception, execution momentum, financial consolidation, and monthly review.
                 </p>
               </div>
@@ -6022,17 +6174,17 @@
             </div>
 
             <!-- Card 5: Yearly Outlook -->
-            <div class="guidance-discovery-card">
+            <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/wealth-abundance.svg" alt="Yearly Outlook" class="guidance-discovery-img" onerror="this.style.display='none'">
+                <img src="assets/illustrations/wealth-abundance.svg" alt="Yearly Outlook" class="guidance-discovery-img" loading="lazy">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #059669; background: #ECFDF5; padding: 2px 8px; border-radius: 6px;">12 Months + 4 Quarters</span>
-                  <span style="font-size: 11px; font-weight: 700; color: #D97706;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #A7F3D0; background: rgba(16, 185, 129, 0.2); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">12 Months + 4 Quarters</span>
+                  <span style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E);"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
                 </div>
-                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Yearly (12 Months) Outlook</h4>
-                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Yearly (12 Months) Outlook</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
                   Comprehensive 12-month timeline detailing major planetary stations, Jupiter/Saturn ingress, and seasonal strategic quarters.
                 </p>
               </div>
@@ -6042,17 +6194,17 @@
             </div>
 
             <!-- Card 6: Mahadasha Arc -->
-            <div class="guidance-discovery-card">
+            <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/kundli-birthchart.svg" alt="Vimshottari Mahadasha" class="guidance-discovery-img" onerror="this.style.display='none'">
+                <img src="assets/illustrations/mahadasha-timeline.svg" alt="Vimshottari Mahadasha" class="guidance-discovery-img" loading="lazy">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #DC2626; background: #FEF2F2; padding: 2px 8px; border-radius: 6px;">100% Natal Grounded</span>
-                  <span style="font-size: 11px; font-weight: 700; color: #78350F;"><i class="fa-solid fa-certificate"></i> Chart Required</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #FCA5A5; background: rgba(239, 68, 68, 0.2); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3);">100% Natal Grounded</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #FEF08A;"><i class="fa-solid fa-certificate"></i> Chart Required</span>
                 </div>
-                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Mahadasha (5-Yr Arc)</h4>
-                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Mahadasha (5-Yr Arc)</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
                   Vimshottari dasha arc derived from your natal Moon nakshatra. Tracks the active planetary era, antardasha shifts, and remedial mantras.
                 </p>
               </div>
@@ -6366,26 +6518,28 @@
 
       <div class="astrologers-grid">
         <!-- Astrologer 1 -->
-        <div class="astrologer-profile-card">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center;">
+        <div class="astrologer-profile-card av-card-3d">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(37, 99, 235, 0.2); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.35);">
               <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
             </span>
-            <span style="font-size: 11px; color: #4338CA; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Parashari Model</span>
+            <span style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700;"><i class="fa-solid fa-scroll"></i> Parashari Model</span>
           </div>
           <div>
-            <div class="astro-avatar-wrap"><i class="fa-solid fa-user-astronaut"></i></div>
-            <h4 style="font-size: 16px; font-weight: 800; color: #1E293B;">Acharya Devratan (AI Persona)</h4>
-            <div style="font-size: 12px; color: #64748B;">Vedic Astrology, Prashna Kundli, Vastu &amp; Career</div>
-            <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 4px;">Languages: English, Hindi &bull; Brihat Parashara System</div>
-            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #6366F1;"></i> Swiss Ephemeris &amp; D1/D9 Grounded
+            <div class="astro-portrait-wrap">
+              <img src="assets/illustrations/persona-devratan.svg" alt="Acharya Devratan - Parashari AI Astrologer" class="astro-portrait-img" loading="lazy" />
+            </div>
+            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin-bottom: 4px;">Acharya Devratan (AI Persona)</h4>
+            <div style="font-size: 12.5px; color: var(--av-text-warm, #FFFBEB); margin-bottom: 4px;">Brihat Parashara Hora &amp; Career Architecture</div>
+            <div style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700; margin-top: 4px;">Languages: English, Hindi &bull; Brihat Parashara System</div>
+            <div style="font-size: 11px; color: var(--av-text-subtle, #E2D9D2); margin-top: 6px;">
+              <i class="fa-solid fa-calculator" style="color: #60A5FA;"></i> Swiss Ephemeris &amp; D1/D9 Grounded
             </div>
           </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 13px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(212, 175, 55, 0.2); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="font-size: 12.5px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Acharya Devratan', 0)">
+              <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Acharya Devratan', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
@@ -6393,26 +6547,28 @@
         </div>
 
         <!-- Astrologer 2 -->
-        <div class="astrologer-profile-card">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center;">
+        <div class="astrologer-profile-card av-card-3d">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(37, 99, 235, 0.2); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.35);">
               <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
             </span>
-            <span style="font-size: 11px; color: #4338CA; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Jaimini Model</span>
+            <span style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700;"><i class="fa-solid fa-scroll"></i> Jaimini Model</span>
           </div>
           <div>
-            <div class="astro-avatar-wrap"><i class="fa-solid fa-user-graduate"></i></div>
-            <h4 style="font-size: 16px; font-weight: 800; color: #1E293B;">Dr. Sunita Shastri (AI Persona)</h4>
-            <div style="font-size: 12px; color: #64748B;">Jaimini Chara Karakas, Relationship &amp; D9 Synastry</div>
-            <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 4px;">Languages: Hindi, Sanskrit, English &bull; Upadesha Sutras</div>
-            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #6366F1;"></i> Chara Dasha &amp; Darakaraka Grounded
+            <div class="astro-portrait-wrap">
+              <img src="assets/illustrations/persona-sunita.svg" alt="Dr. Sunita Shastri - Jaimini AI Astrologer" class="astro-portrait-img" loading="lazy" />
+            </div>
+            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin-bottom: 4px;">Dr. Sunita Shastri (AI Persona)</h4>
+            <div style="font-size: 12.5px; color: var(--av-text-warm, #FFFBEB); margin-bottom: 4px;">Jaimini Chara Karakas, Relationship &amp; D9 Synastry</div>
+            <div style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700; margin-top: 4px;">Languages: Hindi, Sanskrit, English &bull; Upadesha Sutras</div>
+            <div style="font-size: 11px; color: var(--av-text-subtle, #E2D9D2); margin-top: 6px;">
+              <i class="fa-solid fa-calculator" style="color: #60A5FA;"></i> Chara Dasha &amp; Darakaraka Grounded
             </div>
           </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 13px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(212, 175, 55, 0.2); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="font-size: 12.5px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Dr. Sunita Shastri', 0)">
+              <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Dr. Sunita Shastri', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
@@ -6420,26 +6576,28 @@
         </div>
 
         <!-- Astrologer 3 -->
-        <div class="astrologer-profile-card">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center;">
+        <div class="astrologer-profile-card av-card-3d">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(37, 99, 235, 0.2); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.35);">
               <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
             </span>
-            <span style="font-size: 11px; color: #4338CA; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Jyotish Yogas Model</span>
+            <span style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700;"><i class="fa-solid fa-scroll"></i> Classical Yogas</span>
           </div>
           <div>
-            <div class="astro-avatar-wrap"><i class="fa-solid fa-user-shield"></i></div>
-            <h4 style="font-size: 16px; font-weight: 800; color: #1E293B;">Pandit Raghavendra (AI Persona)</h4>
-            <div style="font-size: 12px; color: #64748B;">Classical Yogas, Wealth, Arudha &amp; D10 Career Timing</div>
-            <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 4px;">Languages: English, Hindi, Telugu &bull; Hora &amp; Shadbala System</div>
-            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #6366F1;"></i> Planetary Dignity &amp; Transit Grounded
+            <div class="astro-portrait-wrap">
+              <img src="assets/illustrations/persona-raghavendra.svg" alt="Pandit Raghavendra - Classical Yogas AI Astrologer" class="astro-portrait-img" loading="lazy" />
+            </div>
+            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin-bottom: 4px;">Pandit Raghavendra (AI Persona)</h4>
+            <div style="font-size: 12.5px; color: var(--av-text-warm, #FFFBEB); margin-bottom: 4px;">Classical Yogas, Wealth, Arudha &amp; Remedial Jyotish</div>
+            <div style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700; margin-top: 4px;">Languages: English, Hindi, Telugu &bull; Hora &amp; Shadbala System</div>
+            <div style="font-size: 11px; color: var(--av-text-subtle, #E2D9D2); margin-top: 6px;">
+              <i class="fa-solid fa-calculator" style="color: #60A5FA;"></i> Planetary Dignity &amp; Transit Grounded
             </div>
           </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #F1F5F9; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 13px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(212, 175, 55, 0.2); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="font-size: 12.5px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="startConsultationSession('Pandit Raghavendra', 0)">
+              <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Pandit Raghavendra', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
@@ -6737,19 +6895,19 @@
         <!-- 4 Distinct Summary Boxes (Updated Dynamically for Each Sign) -->
         <div class="panchang-grid-boxes">
           <div class="panchang-box">
-            <div class="panchang-lbl">Lucky Color</div>
+            <div class="panchang-lbl" id="lbl-horo-color">Lucky Color</div>
             <div class="panchang-val" id="disp-horo-color" style="color: #B91C1C;">Crimson Red</div>
           </div>
           <div class="panchang-box">
-            <div class="panchang-lbl">Lucky Number</div>
+            <div class="panchang-lbl" id="lbl-horo-num">Lucky Number</div>
             <div class="panchang-val" id="disp-horo-num">9</div>
           </div>
           <div class="panchang-box">
-            <div class="panchang-lbl">Auspicious Window</div>
+            <div class="panchang-lbl" id="lbl-horo-time">Auspicious Window</div>
             <div class="panchang-val" id="disp-horo-time">10:30 AM – 12:15 PM</div>
           </div>
           <div class="panchang-box">
-            <div class="panchang-lbl">Ruling Planet</div>
+            <div class="panchang-lbl" id="lbl-horo-planet">Ruling Planet</div>
             <div class="panchang-val" id="disp-horo-planet">Mangal (Mars)</div>
           </div>
         </div>
@@ -8676,8 +8834,8 @@
       <!-- Header -->
       <div style="background: linear-gradient(135deg, #4C0519 0%, #1E1B4B 100%); color: #FFFFFF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.2);">
         <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 44px; height: 44px; font-size: 19px; margin: 0; border: 2px solid #F59E0B; flex-shrink: 0;">
-            <i class="fa-solid fa-user-astronaut"></i>
+          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 44px; height: 44px; font-size: 19px; margin: 0; border: 2px solid #F59E0B; flex-shrink: 0; padding: 0; overflow: hidden; background: #380710;">
+            <img src="assets/illustrations/persona-devratan.svg" alt="Acharya Devratan" class="ai-chat-avatar-img" />
           </div>
           <div style="min-width: 0;">
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -10690,6 +10848,19 @@
 
       const planetEl = document.getElementById('disp-horo-planet');
       if (planetEl) planetEl.textContent = isHi ? data.rulerHi : data.rulerEn;
+
+      // Update summary box labels for bilingual parity
+      const lblColor = document.getElementById('lbl-horo-color');
+      if (lblColor) lblColor.textContent = isHi ? 'शुभ रंग' : 'Lucky Color';
+
+      const lblNum = document.getElementById('lbl-horo-num');
+      if (lblNum) lblNum.textContent = isHi ? 'शुभ अंक' : 'Lucky Number';
+
+      const lblTime = document.getElementById('lbl-horo-time');
+      if (lblTime) lblTime.textContent = isHi ? 'शुभ मुहूर्त' : 'Auspicious Window';
+
+      const lblPlanet = document.getElementById('lbl-horo-planet');
+      if (lblPlanet) lblPlanet.textContent = isHi ? 'स्वामी ग्रह' : 'Ruling Planet';
     }
 
     function toggleHoroscopeVoiceNarration(btnEl) {
@@ -12995,17 +13166,17 @@
         'Acharya Devratan': {
           id: 'acharya-devratan',
           specialty: 'Brihat Parashara Hora & Career Architecture',
-          avatar: '<i class="fa-solid fa-user-astronaut"></i>'
+          avatar: '<img src="assets/illustrations/persona-devratan.svg" alt="Acharya Devratan" class="ai-chat-avatar-img" />'
         },
         'Dr. Sunita Shastri': {
           id: 'dr-sunita-shastri',
           specialty: 'Jaimini Astrology & Relationship Synastry',
-          avatar: '<i class="fa-solid fa-user-graduate"></i>'
+          avatar: '<img src="assets/illustrations/persona-sunita.svg" alt="Dr. Sunita Shastri" class="ai-chat-avatar-img" />'
         },
         'Pandit Raghavendra': {
           id: 'pandit-raghavendra',
           specialty: 'Classical Parashari & Remedial Jyotish',
-          avatar: '<i class="fa-solid fa-user-shield"></i>'
+          avatar: '<img src="assets/illustrations/persona-raghavendra.svg" alt="Pandit Raghavendra" class="ai-chat-avatar-img" />'
         }
       };
 
@@ -14814,6 +14985,54 @@
       }
     }
 
+    function init3DCardInteractions() {
+      if (typeof window === 'undefined') return;
+      if (window.matchMedia && (window.matchMedia('(hover: none)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+        return;
+      }
+
+      const cards = document.querySelectorAll('.av-card-3d, .cosmic-service-card');
+      cards.forEach(card => {
+        let ticking = false;
+        let bounds = null;
+
+        card.addEventListener('mouseenter', () => {
+          bounds = card.getBoundingClientRect();
+        });
+
+        card.addEventListener('mousemove', (e) => {
+          if (!bounds) bounds = card.getBoundingClientRect();
+          const mouseX = e.clientX - bounds.left;
+          const mouseY = e.clientY - bounds.top;
+
+          if (!ticking) {
+            requestAnimationFrame(() => {
+              if (!bounds) return;
+              const centerX = bounds.width / 2;
+              const centerY = bounds.height / 2;
+
+              // Bounded tilt (+/- 7deg max)
+              const rotateY = Math.max(-7, Math.min(7, ((mouseX - centerX) / centerX) * 7));
+              const rotateX = Math.max(-7, Math.min(7, -((mouseY - centerY) / centerY) * 7));
+
+              card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-4px) scale3d(1.015, 1.015, 1.015)`;
+              card.style.setProperty('--mouse-x', `${mouseX.toFixed(1)}px`);
+              card.style.setProperty('--mouse-y', `${mouseY.toFixed(1)}px`);
+              ticking = false;
+            });
+            ticking = true;
+          }
+        });
+
+        card.addEventListener('mouseleave', () => {
+          bounds = null;
+          card.style.transform = '';
+          card.style.removeProperty('--mouse-x');
+          card.style.removeProperty('--mouse-y');
+        });
+      });
+    }
+
     function toggleChatDrawer() {
       const modal = document.getElementById('modal-ai-consultation');
       if (modal && modal.style.display === 'flex') {
@@ -14843,6 +15062,7 @@
         initGuidanceSuite();
       }
       initLuxuryGSAP();
+      init3DCardInteractions();
       if (currentUserSession && currentSessionToken) {
         await validateSessionWithBackend();
         if (currentUserSession && currentSessionToken) {
