@@ -86,6 +86,9 @@ async function runJourneysVerification() {
     await client.send('Page.enable');
     await client.send('DOM.enable');
 
+    await client.send('Page.navigate', { url: `file:///${indexPath}` });
+    await new Promise((r) => setTimeout(r, 1200));
+
     // Wait until controller scripts ready
     for (let i = 0; i < 40; i++) {
       const readyCheck = await client.send('Runtime.evaluate', {

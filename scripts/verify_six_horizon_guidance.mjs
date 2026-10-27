@@ -67,9 +67,15 @@ async function runGuidanceVerification() {
   ]);
 
   try {
-    await new Promise((r) => setTimeout(r, 1400));
-    const targets = await getJson('http://127.0.0.1:9229/json/list');
-    const pageTarget = targets.find((t) => t.type === 'page' && t.url.includes('index.html')) || targets.find((t) => t.type === 'page');
+    let targets = null;
+    for (let i = 0; i < 40; i++) {
+      try {
+        targets = await getJson('http://127.0.0.1:9229/json/list');
+        if (targets && targets.length > 0) break;
+      } catch (_) {}
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    const pageTarget = (targets || []).find((t) => t.type === 'page' && t.url.includes('index.html')) || (targets || []).find((t) => t.type === 'page');
 
     if (!pageTarget) throw new Error('No Chrome page target discovered on port 9229');
 
@@ -77,6 +83,18 @@ async function runGuidanceVerification() {
     await client.connect();
     await client.send('Page.enable');
     await client.send('DOM.enable');
+
+    await client.send('Page.navigate', { url: `file:///${indexPath}` });
+    await new Promise((r) => setTimeout(r, 1200));
+
+    // Wait until controller scripts and DOM are ready
+    for (let i = 0; i < 50; i++) {
+      const readyCheck = await client.send('Runtime.evaluate', {
+        expression: `typeof window.astroGuidanceState !== 'undefined' && document.querySelectorAll('.guidance-discovery-card').length > 0`
+      });
+      if (readyCheck.result && readyCheck.result.value === true) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
 
     // -------------------------------------------------------------
     // TEST 1: Initial Blank State & Six-Horizon Onboarding Invariant

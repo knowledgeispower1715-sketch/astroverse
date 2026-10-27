@@ -226,8 +226,8 @@
 
     /* Luxury Cosmic Architecture Components */
     .cosmic-hero-wrapper {
-      background: linear-gradient(135deg, #0B1020 0%, #151C33 50%, #1A1325 100%);
-      border: 1px solid rgba(212, 175, 55, 0.22);
+      background: linear-gradient(135deg, #380710 0%, #4A0E17 55%, #2A080E 100%);
+      border: 1px solid rgba(212, 175, 55, 0.28);
       border-radius: var(--astro-radius-card);
       padding: 32px 28px;
       margin-bottom: 24px;
@@ -466,25 +466,26 @@
 
     /* Active Natal Chart Card */
     .overview-active-chart-card {
-      background: linear-gradient(135deg, #0B1020 0%, #151C33 50%, #1E1B4B 100%);
+      background: linear-gradient(135deg, #380710 0%, #4A0E17 55%, #2A080E 100%);
       border: 1px solid rgba(212, 175, 55, 0.32);
       border-radius: var(--astro-radius-card);
       padding: 22px 26px;
       margin-bottom: 24px;
-      color: #F8FAFC;
-      box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.4), 0 0 1px 1px rgba(212, 175, 55, 0.18);
+      color: var(--av-text-light, #FFFFFF);
+      box-shadow: var(--av-shadow-card, 0 14px 36px rgba(12, 2, 7, 0.35));
       position: relative;
       overflow: hidden;
     }
 
     /* Daily Guidance Overview Card */
     .overview-daily-guidance-card {
-      background: #FFFFFF;
-      border: 1px solid #E2E8F0;
+      background: var(--av-maroon-gradient, linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%));
+      border: 1px solid var(--av-border-subtle, rgba(212, 175, 55, 0.22));
       border-radius: var(--astro-radius-card);
       padding: 24px;
       margin-bottom: 26px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      box-shadow: var(--av-shadow-card, 0 14px 36px rgba(12, 2, 7, 0.35));
+      color: var(--av-text-light, #FFFFFF);
     }
 
     .rashi-quick-pills-row {
@@ -501,9 +502,9 @@
       font-weight: 700;
       padding: 6px 12px;
       border-radius: 8px;
-      border: 1px solid #CBD5E1;
-      background: #F8FAFC;
-      color: #334155;
+      border: 1px solid rgba(212, 175, 55, 0.28);
+      background: rgba(56, 7, 16, 0.85);
+      color: var(--av-text-warm, #FFFBEB);
       cursor: pointer;
       transition: all 0.15s ease;
       min-height: 38px;
@@ -512,9 +513,9 @@
       text-decoration: none;
     }
     .rashi-quick-pill:hover, .rashi-quick-pill:focus {
-      background: #1E1B4B;
-      color: #F5C45E;
-      border-color: #D4AF37;
+      background: rgba(212, 175, 55, 0.22);
+      color: var(--av-gold-bright, #F5C45E);
+      border-color: var(--av-gold-bright, #F5C45E);
       transform: translateY(-1px);
     }
 
@@ -541,7 +542,7 @@
 
     /* Celestial Royal Blue Top Accent Border */
     .celestial-top-border {
-      position: sticky;
+      position: fixed;
       top: 0;
       left: 0;
       right: 0;
@@ -781,7 +782,7 @@
       border-bottom: 1px solid rgba(212, 175, 55, 0.25);
       box-shadow: 0 4px 24px rgba(12, 2, 7, 0.5);
       position: sticky;
-      top: 0;
+      top: 3.5px;
       z-index: 100;
       display: flex;
       justify-content: space-between;
@@ -5045,7 +5046,7 @@
             <div style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.5px;">
               <i class="fa-solid fa-sun" style="color: #F59E0B;"></i> Today's Cosmic Rhythm
             </div>
-            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 19px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
+            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 19px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 2px 0 0;">
               Daily Panchang &amp; Planetary Timing
             </h3>
           </div>
@@ -5056,26 +5057,26 @@
 
         <!-- 3 Metric Blocks -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px;">
-          <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: #92400E; text-transform: uppercase;">Active Solar Hora</div>
-            <div style="font-size: 18px; font-weight: 800; color: #78350F; margin: 4px 0;" id="overview-daily-hora-name">Calculating...</div>
-            <div style="font-size: 11.5px; color: #B45309;" id="overview-daily-hora-action">Favorable for negotiations, study &amp; planning</div>
+          <div style="background: rgba(56, 7, 16, 0.75); border: 1px solid rgba(212, 175, 55, 0.28); border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E); text-transform: uppercase;">Active Solar Hora</div>
+            <div style="font-size: 18px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 4px 0;" id="overview-daily-hora-name">Calculating...</div>
+            <div style="font-size: 11.5px; color: var(--av-text-subtle, #E2D9D2);" id="overview-daily-hora-action">Favorable for negotiations, study &amp; planning</div>
           </div>
-          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">Five Limbs of Time (Panchang)</div>
-            <div style="font-size: 14px; font-weight: 700; color: #1E293B; margin: 4px 0;">Vara, Tithi, Nakshatra, Yoga, Karana</div>
-            <div style="font-size: 11.5px; color: #64748B;">Computed sidereally for your current coordinates</div>
+          <div style="background: rgba(56, 7, 16, 0.75); border: 1px solid rgba(212, 175, 55, 0.28); border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E); text-transform: uppercase;">Five Limbs of Time (Panchang)</div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--av-text-light, #FFFFFF); margin: 4px 0;">Vara, Tithi, Nakshatra, Yoga, Karana</div>
+            <div style="font-size: 11.5px; color: var(--av-text-subtle, #E2D9D2);">Computed sidereally for your current coordinates</div>
           </div>
-          <div style="background: #FAF5FF; border: 1px solid #E9D5FF; border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: #6B21A8; text-transform: uppercase;">Daily Gochar / Transits</div>
-            <div style="font-size: 14px; font-weight: 700; color: #581C87; margin: 4px 0;">Moon &amp; Planet Positions</div>
-            <div style="font-size: 11.5px; color: #7E22CE;">Real-time planetary longitude cross-correlations</div>
+          <div style="background: rgba(56, 7, 16, 0.75); border: 1px solid rgba(212, 175, 55, 0.28); border-radius: 12px; padding: 14px 16px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E); text-transform: uppercase;">Daily Gochar / Transits</div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--av-text-light, #FFFFFF); margin: 4px 0;">Moon &amp; Planet Positions</div>
+            <div style="font-size: 11.5px; color: var(--av-text-subtle, #E2D9D2);">Real-time planetary longitude cross-correlations</div>
           </div>
         </div>
 
         <!-- 12 Signs Quick Horoscope Picker -->
         <div>
-          <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 8px;">
+          <div style="font-size: 12px; font-weight: 700; color: var(--av-text-warm, #FFFBEB); margin-bottom: 8px;">
             <i class="fa-solid fa-star-and-crescent" style="color: #F59E0B;"></i> Explore Today's Rashi Horoscope:
           </div>
           <div class="rashi-quick-pills-row">
@@ -5102,11 +5103,11 @@
             <div style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.5px;">
               <i class="fa-solid fa-compass" style="color: #F59E0B;"></i> Complete Vedic Astrology Suite
             </div>
-            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 22px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
+            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 22px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 2px 0 0;">
               Astrological Services &amp; Research Tools
             </h3>
           </div>
-          <span style="font-size: 12px; color: #64748B; font-weight: 600;">8 Core Vedic Disciplines • Swiss Ephemeris Precision</span>
+          <span style="font-size: 12px; color: var(--av-text-subtle, #E2D9D2); font-weight: 600;">8 Core Vedic Disciplines • Swiss Ephemeris Precision</span>
         </div>
       </div>
 
@@ -6096,7 +6097,7 @@
             <!-- Card 1: Hourly (Hora) -->
             <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/horas-timing.svg" alt="Hourly Planetary Horas" class="guidance-discovery-img" loading="lazy">
+                <img src="assets/illustrations/horas-timing.svg" alt="Hourly Planetary Horas" class="guidance-discovery-img" loading="lazy" onerror="this.onerror=null; this.src='assets/illustrations/hero-zodiac-wheel.svg';">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -6116,7 +6117,7 @@
             <!-- Card 2: Daily Forecast -->
             <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/panchang-calendar.svg" alt="Daily Forecast" class="guidance-discovery-img" loading="lazy">
+                <img src="assets/illustrations/panchang-calendar.svg" alt="Daily Forecast" class="guidance-discovery-img" loading="lazy" onerror="this.onerror=null; this.src='assets/illustrations/hero-zodiac-wheel.svg';">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -6136,7 +6137,7 @@
             <!-- Card 3: Weekly Progression -->
             <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/transit-wheel.svg" alt="Weekly Forecast" class="guidance-discovery-img" loading="lazy">
+                <img src="assets/illustrations/transit-wheel.svg" alt="Weekly Forecast" class="guidance-discovery-img" loading="lazy" onerror="this.onerror=null; this.src='assets/illustrations/hero-zodiac-wheel.svg';">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -6156,7 +6157,7 @@
             <!-- Card 4: Monthly Analysis -->
             <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/career-dharma.svg" alt="Monthly Analysis" class="guidance-discovery-img" loading="lazy">
+                <img src="assets/illustrations/career-dharma.svg" alt="Monthly Analysis" class="guidance-discovery-img" loading="lazy" onerror="this.onerror=null; this.src='assets/illustrations/hero-zodiac-wheel.svg';">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -6176,7 +6177,7 @@
             <!-- Card 5: Yearly Outlook -->
             <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/wealth-abundance.svg" alt="Yearly Outlook" class="guidance-discovery-img" loading="lazy">
+                <img src="assets/illustrations/wealth-abundance.svg" alt="Yearly Outlook" class="guidance-discovery-img" loading="lazy" onerror="this.onerror=null; this.src='assets/illustrations/hero-zodiac-wheel.svg';">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -6196,7 +6197,7 @@
             <!-- Card 6: Mahadasha Arc -->
             <div class="guidance-discovery-card av-card-3d">
               <div class="guidance-discovery-img-wrap">
-                <img src="assets/illustrations/mahadasha-timeline.svg" alt="Vimshottari Mahadasha" class="guidance-discovery-img" loading="lazy">
+                <img src="assets/illustrations/mahadasha-timeline.svg" alt="Vimshottari Mahadasha" class="guidance-discovery-img" loading="lazy" onerror="this.onerror=null; this.src='assets/illustrations/hero-zodiac-wheel.svg';">
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -10850,17 +10851,18 @@
       if (planetEl) planetEl.textContent = isHi ? data.rulerHi : data.rulerEn;
 
       // Update summary box labels for bilingual parity
+      const dict = (typeof ASTROVERSE_I18N !== 'undefined' && ASTROVERSE_I18N[isHi ? 'hi' : 'en']) || {};
       const lblColor = document.getElementById('lbl-horo-color');
-      if (lblColor) lblColor.textContent = isHi ? 'शुभ रंग' : 'Lucky Color';
+      if (lblColor) lblColor.textContent = dict.horo_lucky_color || (isHi ? 'शुभ रंग' : 'Lucky Color');
 
       const lblNum = document.getElementById('lbl-horo-num');
-      if (lblNum) lblNum.textContent = isHi ? 'शुभ अंक' : 'Lucky Number';
+      if (lblNum) lblNum.textContent = dict.horo_lucky_number || (isHi ? 'शुभ अंक' : 'Lucky Number');
 
       const lblTime = document.getElementById('lbl-horo-time');
-      if (lblTime) lblTime.textContent = isHi ? 'शुभ मुहूर्त' : 'Auspicious Window';
+      if (lblTime) lblTime.textContent = dict.horo_auspicious_window || (isHi ? 'शुभ मुहूर्त' : 'Auspicious Window');
 
       const lblPlanet = document.getElementById('lbl-horo-planet');
-      if (lblPlanet) lblPlanet.textContent = isHi ? 'स्वामी ग्रह' : 'Ruling Planet';
+      if (lblPlanet) lblPlanet.textContent = dict.horo_ruling_planet || (isHi ? 'स्वामी ग्रह' : 'Ruling Planet');
     }
 
     function toggleHoroscopeVoiceNarration(btnEl) {
@@ -12863,7 +12865,9 @@
 
         const meta = document.createElement('div');
         meta.className = 'chat-msg-meta chat-msg-meta-agent';
-        meta.innerHTML = `<time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>Chart-Grounded</span> <button class="btn-voice-listen" style="padding: 2px 8px; font-size: 10px; margin-left: 8px;" onclick="toggleChatVoiceNarration('${msg.id}', this)"><i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen</span></button>${summaryToggleBtn}`;
+        const senderName = (activeConsultationSession && activeConsultationSession.astrologerName) || 'AI Astrologer';
+        const groundLabel = isChatKundliLinked ? 'Chart-Grounded' : 'Universal Transit';
+        meta.innerHTML = `<span style="font-weight: 700; color: #F5C45E;">${escapeHtml(senderName)}</span> &bull; <time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>${groundLabel}</span> <button class="btn-voice-listen" style="padding: 2px 8px; font-size: 10px; margin-left: 8px;" onclick="toggleChatVoiceNarration('${msg.id}', this)"><i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen</span></button>${summaryToggleBtn}`;
 
         bubbleWrap.appendChild(bubble);
         bubbleWrap.appendChild(meta);
@@ -19999,6 +20003,10 @@
         tools_numerology_desc: 'Harmonize personal & business names with birth vibrations. Precise Moolank, Bhagyank, Chaldean & Pythagorean compound analysis, bounded phonetic spelling corrections, and graphological signature blueprint.',
         tools_launch_numerology: 'Launch Numerology Studio',
         num_moolank: 'Moolank (Psychic Number)',
+        horo_lucky_color: 'Lucky Color',
+        horo_lucky_number: 'Lucky Number',
+        horo_auspicious_window: 'Auspicious Window',
+        horo_ruling_planet: 'Ruling Planet',
         lang_switch_label: 'हिंदी'
       },
       hi: {
@@ -20027,6 +20035,10 @@
         tools_numerology_desc: 'जन्म मूलांक व भाग्यांक के साथ नाम का सामंजस्य। चाल्डियन व पाइथागोरियन संयुक्त कंपन विश्लेषण, संतुलित ध्वन्यात्मक नाम सुधार और हस्तलेखन हस्ताक्षर मार्गदर्शन।',
         tools_launch_numerology: 'अंकज्योतिष स्टूडियो खोलें',
         num_moolank: 'मूलांक (जन्मांक)',
+        horo_lucky_color: 'शुभ रंग',
+        horo_lucky_number: 'शुभ अंक',
+        horo_auspicious_window: 'शुभ मुहूर्त',
+        horo_ruling_planet: 'स्वामी ग्रह',
         lang_switch_label: 'English'
       }
     };
@@ -20105,6 +20117,27 @@
           generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
         }
       }
+
+      // Update Horoscope 12 Rashi buttons
+      const signsList = [
+        { en: 'Aries', hi: 'मेष', icon: '♈' },
+        { en: 'Taurus', hi: 'वृषभ', icon: '♉' },
+        { en: 'Gemini', hi: 'मिथुन', icon: '♊' },
+        { en: 'Cancer', hi: 'कर्क', icon: '♋' },
+        { en: 'Leo', hi: 'सिंह', icon: '♌' },
+        { en: 'Virgo', hi: 'कन्या', icon: '♍' },
+        { en: 'Libra', hi: 'तुला', icon: '♎' },
+        { en: 'Scorpio', hi: 'वृश्चिक', icon: '♏' },
+        { en: 'Sagittarius', hi: 'धनु', icon: '♐' },
+        { en: 'Capricorn', hi: 'मकर', icon: '♑' },
+        { en: 'Aquarius', hi: 'कुंभ', icon: '♒' },
+        { en: 'Pisces', hi: 'मीन', icon: '♓' }
+      ];
+      signsList.forEach(s => {
+        const btn = document.getElementById('btn-sign-' + s.en);
+        if (btn) btn.textContent = lang === 'hi' ? `${s.icon} ${s.hi}` : `${s.icon} ${s.en}`;
+      });
+
       const activeHoroBtn = document.querySelector('#view-horoscope .subtab-btn.active');
       const activeSign = activeHoroBtn ? activeHoroBtn.id.replace('btn-sign-', '') : 'Aries';
       if (typeof selectHoroscopeSign === 'function') {
