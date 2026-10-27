@@ -8738,15 +8738,16 @@
 
       <!-- TAB 1: Personal & Name Correction Studio -->
       <div id="num-tab-pane-personal">
+        <div id="num-personal-validation-error" style="display: none; color: #DC2626; padding: 12px 14px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5; margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
         <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px;">
             <div>
               <label class="form-field-label">Full Name to Analyze</label>
-              <input type="text" id="numerology-input-name" class="form-input-text" placeholder="Enter full name, e.g. RAHUL SHARMA" value="" style="text-transform: uppercase;">
+              <input type="text" id="numerology-input-name" class="form-input-text" placeholder="Enter full name, e.g. RAHUL SHARMA" value="" autocomplete="off" style="text-transform: uppercase;">
             </div>
             <div>
               <label class="form-field-label">Date of Birth (Day for Moolank, Full for Bhagyank)</label>
-              <input type="date" id="numerology-input-dob" class="form-input-text" value="">
+              <input type="date" id="numerology-input-dob" class="form-input-text" value="" autocomplete="off">
             </div>
             <div>
               <label class="form-field-label">Gender (Optional)</label>
@@ -8816,11 +8817,12 @@
 
       <!-- TAB 2: Commercial & Business Entity -->
       <div id="num-tab-pane-business" style="display: none;">
+        <div id="num-business-validation-error" style="display: none; color: #DC2626; padding: 12px 14px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5; margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
         <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px;">
             <div>
               <label class="form-field-label">Company / Brand Name</label>
-              <input type="text" id="num-business-name" class="form-input-text" placeholder="e.g. AstroVerse Technologies" style="text-transform: uppercase;">
+              <input type="text" id="num-business-name" class="form-input-text" placeholder="e.g. AstroVerse Technologies" value="" autocomplete="off" style="text-transform: uppercase;">
             </div>
             <div>
               <label class="form-field-label">Industry / Domain</label>
@@ -8836,22 +8838,31 @@
             </div>
             <div>
               <label class="form-field-label">Founder's Date of Birth (Optional Synergy Check)</label>
-              <input type="date" id="num-business-founder-dob" class="form-input-text">
+              <input type="date" id="num-business-founder-dob" class="form-input-text" value="" autocomplete="off">
             </div>
           </div>
           <button class="btn-gold-primary" style="width: 100%; justify-content: center; min-height: 42px;" onclick="executeBusinessNumerology()">
             <i class="fa-solid fa-briefcase"></i> Analyze Commercial Vibration &amp; Founder Synergy
           </button>
         </div>
-        <div id="num-business-results"></div>
+        <div id="num-business-results">
+          <div id="num-business-empty-state" style="text-align: center; padding: 36px 20px; color: #64748B; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 12px;">
+            <i class="fa-solid fa-briefcase" style="font-size: 32px; color: #D97706; margin-bottom: 12px; display: inline-block;"></i>
+            <h4 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Commercial Brand &amp; Enterprise Harmonics</h4>
+            <p style="font-size: 13px; color: #64748B; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+              Enter your enterprise or brand name and select an industry domain above to evaluate Chaldean commercial compounds, governing deity planets, and optional founder synergy.
+            </p>
+          </div>
+        </div>
       </div>
 
       <!-- TAB 3: Mobile Phone Number Resonance -->
       <div id="num-tab-pane-mobile" style="display: none;">
+        <div id="num-mobile-validation-error" style="display: none; color: #DC2626; padding: 12px 14px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5; margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
         <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
           <div style="max-width: 480px; margin: 0 auto 16px;">
             <label class="form-field-label">Mobile Phone Number</label>
-            <input type="tel" id="num-mobile-input" class="form-input-text" placeholder="e.g. +91 98765 43210">
+            <input type="tel" id="num-mobile-input" class="form-input-text" placeholder="e.g. +91 98765 43210" value="" autocomplete="off">
             <span style="font-size: 11px; color: #64748B; margin-top: 4px; display: block;">
               <i class="fa-solid fa-shield-halved"></i> Privacy Guaranteed: Calculations are strictly ephemeral; raw numbers are never logged or stored.
             </span>
@@ -8862,7 +8873,15 @@
             </button>
           </div>
         </div>
-        <div id="num-mobile-results"></div>
+        <div id="num-mobile-results">
+          <div id="num-mobile-empty-state" style="text-align: center; padding: 36px 20px; color: #64748B; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 12px;">
+            <i class="fa-solid fa-mobile-screen" style="font-size: 32px; color: #059669; margin-bottom: 12px; display: inline-block;"></i>
+            <h4 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Telecom &amp; Contact Frequency Resonance</h4>
+            <p style="font-size: 13px; color: #64748B; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+              Enter a 10-digit mobile phone number above to evaluate single-digit root vibration, compound digit sums, governing graha frequencies, and lucky color alignments.
+            </p>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -22267,6 +22286,270 @@
     let currentNumerologySubject = null;
     let currentNumerologyRequestId = 0;
 
+    // Classical Numerological Harmonics Calculation Constants & Helpers
+    function numDigitRoot1To9(n) {
+      let v = Math.abs(parseInt(n, 10)) || 0;
+      while (v > 9) {
+        v = String(v).split('').reduce((a, b) => a + parseInt(b, 10), 0);
+      }
+      return v === 0 ? 9 : v;
+    }
+
+    const NUM_CHALDEAN_MAP = {
+      A: 1, I: 1, J: 1, Q: 1, Y: 1,
+      B: 2, K: 2, R: 2,
+      C: 3, G: 3, L: 3, S: 3,
+      D: 4, M: 4, T: 4,
+      E: 5, H: 5, N: 5, X: 5,
+      U: 6, V: 6, W: 6,
+      O: 7, Z: 7,
+      F: 8, P: 8
+    };
+
+    const NUM_PYTHAGOREAN_MAP = {
+      A: 1, J: 1, S: 1,
+      B: 2, K: 2, T: 2,
+      C: 3, L: 3, U: 3,
+      D: 4, M: 4, V: 4,
+      E: 5, N: 5, W: 5,
+      F: 6, O: 6, X: 6,
+      G: 7, P: 7, Y: 7,
+      H: 8, Q: 8, Z: 8,
+      I: 9, R: 9
+    };
+
+    const NUM_PLANET_DATA = {
+      1: { planetEn: 'Sun (Surya)', planetHi: 'सूर्य', archetype: 'The Sovereign Pioneer', qualities: ['Core Vitality', 'Inner Drive', 'Commanding Authority'] },
+      2: { planetEn: 'Moon (Chandra)', planetHi: 'चंद्र', archetype: 'The Intuitive Luminary', qualities: ['Emotional Depth', 'Diplomacy', 'Adaptive Perception'] },
+      3: { planetEn: 'Jupiter (Guru)', planetHi: 'गुरु', archetype: 'The Wise Architect', qualities: ['Expansive Wisdom', 'Integrity', 'Strategic Advisory'] },
+      4: { planetEn: 'Rahu (North Node)', planetHi: 'राहु', archetype: 'The Disruptive Innovator', qualities: ['Unconventional Vision', 'Technological Flair', 'Audacity'] },
+      5: { planetEn: 'Mercury (Budha)', planetHi: 'बुध', archetype: 'The Agile Communicator', qualities: ['Intellectual Agility', 'Commercial Acumen', 'Versatility'] },
+      6: { planetEn: 'Venus (Shukra)', planetHi: 'शुक्र', archetype: 'The Harmonious Creator', qualities: ['Aesthetic Elegance', 'Relational Harmony', 'Luxury Magnetism'] },
+      7: { planetEn: 'Ketu (South Node)', planetHi: 'केतु', archetype: 'The Mystic Contemplative', qualities: ['Spiritual Intuition', 'Philosophical Depth', 'Detachment'] },
+      8: { planetEn: 'Saturn (Shani)', planetHi: 'शनि', archetype: 'The Master Disciplinarian', qualities: ['Perseverance', 'Enduring Karmic Structure', 'Integrity'] },
+      9: { planetEn: 'Mars (Mangal)', planetHi: 'मंगल', archetype: 'The Noble Warrior', qualities: ['Courage', 'Protective Focus', 'Dynamic Executive Force'] }
+    };
+
+    const NUM_RELATIONSHIP_MATRIX = {
+      1: { 1: 'friendly', 2: 'friendly', 3: 'friendly', 4: 'neutral', 5: 'neutral', 6: 'neutral', 7: 'neutral', 8: 'enemy', 9: 'friendly' },
+      2: { 1: 'friendly', 2: 'friendly', 3: 'friendly', 4: 'neutral', 5: 'friendly', 6: 'neutral', 7: 'neutral', 8: 'neutral', 9: 'neutral' },
+      3: { 1: 'friendly', 2: 'friendly', 3: 'friendly', 4: 'neutral', 5: 'neutral', 6: 'neutral', 7: 'neutral', 8: 'neutral', 9: 'friendly' },
+      4: { 1: 'neutral', 2: 'neutral', 3: 'neutral', 4: 'friendly', 5: 'friendly', 6: 'friendly', 7: 'friendly', 8: 'friendly', 9: 'enemy' },
+      5: { 1: 'friendly', 2: 'enemy', 3: 'neutral', 4: 'friendly', 5: 'friendly', 6: 'friendly', 7: 'neutral', 8: 'neutral', 9: 'neutral' },
+      6: { 1: 'enemy', 2: 'enemy', 3: 'neutral', 4: 'friendly', 5: 'friendly', 6: 'friendly', 7: 'neutral', 8: 'friendly', 9: 'neutral' },
+      7: { 1: 'neutral', 2: 'neutral', 3: 'neutral', 4: 'neutral', 5: 'neutral', 6: 'friendly', 7: 'friendly', 8: 'neutral', 9: 'friendly' },
+      8: { 1: 'enemy', 2: 'enemy', 3: 'neutral', 4: 'friendly', 5: 'friendly', 6: 'friendly', 7: 'neutral', 8: 'friendly', 9: 'enemy' },
+      9: { 1: 'friendly', 2: 'friendly', 3: 'friendly', 4: 'enemy', 5: 'enemy', 6: 'neutral', 7: 'friendly', 8: 'enemy', 9: 'friendly' }
+    };
+
+    const NUM_PREFERRED_COMPOUNDS = new Set([14, 19, 21, 23, 24, 27, 32, 33, 37, 41, 42, 45, 46, 50]);
+    const NUM_CHALLENGING_COMPOUNDS = new Set([12, 16, 18, 26, 28]);
+
+    function evalChaldeanClient(str) {
+      const u = str.toUpperCase().replace(/[^A-Z]/g, '');
+      let comp = 0;
+      const breakdown = [];
+      for (const ch of u) {
+        const val = NUM_CHALDEAN_MAP[ch] || 0;
+        comp += val;
+        breakdown.push({ letter: ch, value: val });
+      }
+      if (comp === 0) comp = 10;
+      const root = numDigitRoot1To9(comp);
+      return {
+        compound: comp,
+        root,
+        breakdown,
+        isPreferred: NUM_PREFERRED_COMPOUNDS.has(comp),
+        isChallenging: NUM_CHALLENGING_COMPOUNDS.has(comp)
+      };
+    }
+
+    function evalPythagoreanClient(str) {
+      const u = str.toUpperCase().replace(/[^A-Z]/g, '');
+      let comp = 0;
+      const breakdown = [];
+      for (const ch of u) {
+        const val = NUM_PYTHAGOREAN_MAP[ch] || 0;
+        comp += val;
+        breakdown.push({ letter: ch, value: val });
+      }
+      if (comp === 0) comp = 10;
+      const root = numDigitRoot1To9(comp);
+      return { compound: comp, root, breakdown };
+    }
+
+    function calcPlanetaryHarmonyScoreClient(moolank, bhagyank, chaldeanCompound) {
+      const naamank = numDigitRoot1To9(chaldeanCompound);
+      const relM = NUM_RELATIONSHIP_MATRIX[moolank]?.[naamank] || 'neutral';
+      const relB = NUM_RELATIONSHIP_MATRIX[bhagyank]?.[naamank] || 'neutral';
+
+      const scoreM = relM === 'friendly' ? 100 : relM === 'enemy' ? 30 : 65;
+      const scoreB = relB === 'friendly' ? 100 : relB === 'enemy' ? 30 : 65;
+      const scoreC = NUM_PREFERRED_COMPOUNDS.has(chaldeanCompound) ? 100 : NUM_CHALLENGING_COMPOUNDS.has(chaldeanCompound) ? 30 : 65;
+
+      const finalScore = Math.round(0.40 * scoreM + 0.40 * scoreB + 0.20 * scoreC);
+      let tierEn = 'Moderate Synergy (Favorable)';
+      let tierHi = 'उत्तम सामंजस्य (अनुकूल)';
+      if (finalScore >= 80) {
+        tierEn = 'High Synergy (Highly Auspicious)';
+        tierHi = 'अति उत्तम सामंजस्य (परम शुभ)';
+      } else if (finalScore < 55) {
+        tierEn = 'Planetary Friction (Correction Recommended)';
+        tierHi = 'ग्रहीय विरोध (नाम सुधार अनुशंसित)';
+      }
+
+      return {
+        score: finalScore,
+        alignmentTierEn: tierEn,
+        alignmentTierHi: tierHi,
+        moolankRel: relM,
+        bhagyankRel: relB
+      };
+    }
+
+    function calcLevenshteinDistanceClient(s1, s2) {
+      if (s1.length < s2.length) return calcLevenshteinDistanceClient(s2, s1);
+      if (s2.length === 0) return s1.length;
+      let prev = Array.from({ length: s2.length + 1 }, (_, i) => i);
+      for (let i = 0; i < s1.length; i++) {
+        const curr = [i + 1];
+        for (let j = 0; j < s2.length; j++) {
+          const ins = prev[j + 1] + 1;
+          const del = curr[j] + 1;
+          const sub = prev[j] + (s1[i] !== s2[j] ? 1 : 0);
+          curr.push(Math.min(ins, del, sub));
+        }
+        prev = curr;
+      }
+      return prev[prev.length - 1];
+    }
+
+    function generateClientNameCorrections(fullName, moolank, bhagyank, targetCount = 5) {
+      const upper = fullName.trim().toUpperCase().replace(/\s+/g, ' ');
+      const words = upper.split(' ');
+      const firstName = words[0];
+      const surname = words.slice(1).join(' ');
+
+      const candidatesSet = new Set();
+      const rawVariations = [];
+
+      function addVar(cand, note) {
+        const fmt = cand.trim().toUpperCase().replace(/\s+/g, ' ');
+        if (fmt !== upper && !candidatesSet.has(fmt)) {
+          candidatesSet.add(fmt);
+          rawVariations.push({ name: fmt, note });
+        }
+      }
+
+      // 1. Classical Sanskrit Vowel Extensions (A -> AA, I -> EE, E -> EE, U -> OO)
+      const vowelTransforms = [
+        ['A', 'AA', 'Classical Sanskrit vowel lengthening (A -> AA)'],
+        ['I', 'EE', 'Phonetic vowel harmonizer (I -> EE)'],
+        ['E', 'EE', 'Extended solar resonance (E -> EE)'],
+        ['U', 'OO', 'Deep resonance acoustic vowel alignment (U -> OO)']
+      ];
+      for (const [origV, newV, note] of vowelTransforms) {
+        if (firstName.includes(origV)) {
+          const idx = firstName.indexOf(origV);
+          const v = firstName.slice(0, idx) + newV + firstName.slice(idx + origV.length);
+          addVar(v + (surname ? ' ' + surname : ''), note);
+        }
+      }
+
+      // 2. Classical Sanskrit Aspirates (S->SH, K->KH, D->DH, T->TH, G->GH, B->BH, C->CH, P->PH; NO 'R->RH')
+      const aspirates = [
+        ['S', 'SH', "Sanskrit sibilant elevation ('S' -> 'SH')"],
+        ['K', 'KH', "Devanagari aspirated resonant ('K' -> 'KH')"],
+        ['D', 'DH', "Vedic soft-aspirate harmonizer ('D' -> 'DH')"],
+        ['T', 'TH', "Phonetic dental aspirate ('T' -> 'TH')"],
+        ['G', 'GH', "Throat chakra velar aspirate ('G' -> 'GH')"],
+        ['B', 'BH', "Auspicious Jupiterian aspirate ('B' -> 'BH')"],
+        ['C', 'CH', "Phonetic palatal reinforcement ('C' -> 'CH')"],
+        ['P', 'PH', "Phonetic labial aspirate ('P' -> 'PH')"]
+      ];
+      for (const [o, n, note] of aspirates) {
+        if (firstName.includes(o) && !firstName.includes(o + 'H')) {
+          const idx = firstName.indexOf(o);
+          const v = firstName.slice(0, idx) + n + firstName.slice(idx + 1);
+          addVar(v + (surname ? ' ' + surname : ''), note);
+        }
+      }
+
+      // 3. Resonant doubling of internal or terminal consonants (NEVER index 0)
+      const doubleConsonants = ['L', 'N', 'M', 'T', 'R', 'S', 'D', 'K', 'P'];
+      for (const c of doubleConsonants) {
+        const idx = firstName.indexOf(c, 1);
+        if (idx > 0 && !firstName.includes(c + c)) {
+          const v = firstName.slice(0, idx) + c + c + firstName.slice(idx + 1);
+          addVar(v + (surname ? ' ' + surname : ''), `Resonant acoustic doubling of internal '${c}'`);
+        }
+        if (firstName.endsWith(c) && !firstName.endsWith(c + c)) {
+          const v = firstName + c;
+          addVar(v + (surname ? ' ' + surname : ''), `Terminal resonant consonant reinforcement ('${c}')`);
+        }
+      }
+
+      // 4. Classical Sanskrit nominative/harmonic terminal vowel ('A') or Visarga ('H')
+      if (!firstName.endsWith('A') && !firstName.endsWith('H')) {
+        addVar(`${firstName}A` + (surname ? ' ' + surname : ''), "Classical Sanskrit terminal 'A' harmonic");
+      } else if (firstName.endsWith('A')) {
+        addVar(`${firstName}H` + (surname ? ' ' + surname : ''), "Classical soft-visarga terminal 'H'");
+      }
+
+      // 5. Combined harmonic adjustments (edit distance = 2)
+      if (firstName.includes('A') && firstName.length > 2) {
+        const lastChar = firstName.slice(-1);
+        if (['L', 'N', 'T', 'M', 'R', 'S'].includes(lastChar) && !firstName.endsWith(lastChar + lastChar)) {
+          const idxA = firstName.indexOf('A');
+          const doubled = firstName.slice(0, idxA) + 'AA' + firstName.slice(idxA + 1) + lastChar;
+          addVar(doubled + (surname ? ' ' + surname : ''), `Harmonic vowel-consonant resonance coupling (A->AA, ${lastChar}->${lastChar}${lastChar})`);
+        }
+      }
+
+      // 6. Astrological Initial Anchor (Standard Indian Professional Numerology Practice)
+      const initials = ['K.', 'V.', 'S.', 'A.', 'R.', 'M.', 'D.', 'N.'];
+      for (const init of initials) {
+        addVar(`${firstName} ${init}` + (surname ? ' ' + surname : ''), `Auspicious harmonic initial anchor (${init})`);
+      }
+
+      const scored = [];
+      for (const { name: candName, note } of rawVariations) {
+        const calc = evalChaldeanClient(candName);
+        const harm = calcPlanetaryHarmonyScoreClient(moolank, bhagyank, calc.compound);
+        const dist = calcLevenshteinDistanceClient(upper, candName);
+        if (dist > 2) continue;
+
+        const prefBonus = calc.isPreferred ? 15 : calc.isChallenging ? -15 : 0;
+        const compositeRank = harm.score + prefBonus - dist * 4;
+
+        scored.push({
+          proposedName: candName,
+          editDistance: dist,
+          transformationNote: note,
+          chaldeanCompound: calc.compound,
+          chaldeanRoot: calc.root,
+          harmonyScore: harm.score,
+          suitabilityScore: Math.min(100, Math.max(25, harm.score + (calc.isPreferred ? 8 : calc.isChallenging ? -12 : 0))),
+          compositeRank,
+          governingPlanet: NUM_PLANET_DATA[calc.root]?.planetEn || 'Unknown',
+          isPreferredCompound: calc.isPreferred
+        });
+      }
+
+      const uniqueScored = [];
+      const seen = new Set();
+      for (const item of scored) {
+        if (!seen.has(item.proposedName)) {
+          seen.add(item.proposedName);
+          uniqueScored.push(item);
+        }
+      }
+
+      uniqueScored.sort((a, b) => b.compositeRank - a.compositeRank || b.harmonyScore - a.harmonyScore || a.editDistance - b.editDistance);
+      return uniqueScored.slice(0, targetCount);
+    }
+
     function resetNumerologyStudio() {
       currentNumerologyRequestId++;
       if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
@@ -22293,6 +22576,13 @@
       if (phoneInput) phoneInput.value = '';
       if (voiceBtn) voiceBtn.style.display = 'none';
 
+      const pErr = document.getElementById('num-personal-validation-error');
+      if (pErr) { pErr.innerHTML = ''; pErr.style.display = 'none'; }
+      const bErr = document.getElementById('num-business-validation-error');
+      if (bErr) { bErr.innerHTML = ''; bErr.style.display = 'none'; }
+      const mErr = document.getElementById('num-mobile-validation-error');
+      if (mErr) { mErr.innerHTML = ''; mErr.style.display = 'none'; }
+
       currentNumerologyReadingText = '';
       currentNumerologySubject = null;
 
@@ -22309,9 +22599,29 @@
         `;
       }
       const bRes = document.getElementById('num-business-results');
-      if (bRes) bRes.innerHTML = '';
+      if (bRes) {
+        bRes.innerHTML = `
+          <div id="num-business-empty-state" style="text-align: center; padding: 36px 20px; color: #64748B; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 12px;">
+            <i class="fa-solid fa-briefcase" style="font-size: 32px; color: #D97706; margin-bottom: 12px; display: inline-block;"></i>
+            <h4 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Commercial Brand &amp; Enterprise Harmonics</h4>
+            <p style="font-size: 13px; color: #64748B; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+              Enter your enterprise or brand name and select an industry domain above to evaluate Chaldean commercial compounds, governing deity planets, and optional founder synergy.
+            </p>
+          </div>
+        `;
+      }
       const mRes = document.getElementById('num-mobile-results');
-      if (mRes) mRes.innerHTML = '';
+      if (mRes) {
+        mRes.innerHTML = `
+          <div id="num-mobile-empty-state" style="text-align: center; padding: 36px 20px; color: #64748B; background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 12px;">
+            <i class="fa-solid fa-mobile-screen" style="font-size: 32px; color: #059669; margin-bottom: 12px; display: inline-block;"></i>
+            <h4 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Telecom &amp; Contact Frequency Resonance</h4>
+            <p style="font-size: 13px; color: #64748B; max-width: 480px; margin: 0 auto; line-height: 1.5;">
+              Enter a 10-digit mobile phone number above to evaluate single-digit root vibration, compound digit sums, governing graha frequencies, and lucky color alignments.
+            </p>
+          </div>
+        `;
+      }
     }
 
     function openNumerologyStudio(tab = 'personal') {
@@ -22323,10 +22633,7 @@
       if (dockNum) dockNum.classList.add('active');
 
       // Every fresh feature session must start blank by default without restoring previous identity
-      const pRes = document.getElementById('num-personal-results');
-      if (!currentNumerologySubject || !pRes || !pRes.innerHTML.trim() || pRes.innerHTML.includes('num-personal-empty-state')) {
-        resetNumerologyStudio();
-      }
+      resetNumerologyStudio();
 
       switchNumerologyTab(tab);
       modal.style.display = 'flex';
@@ -22351,6 +22658,14 @@
     }
 
     function switchNumerologyTab(tabName) {
+      currentNumerologyRequestId++;
+      const pErr = document.getElementById('num-personal-validation-error');
+      if (pErr) { pErr.innerHTML = ''; pErr.style.display = 'none'; }
+      const bErr = document.getElementById('num-business-validation-error');
+      if (bErr) { bErr.innerHTML = ''; bErr.style.display = 'none'; }
+      const mErr = document.getElementById('num-mobile-validation-error');
+      if (mErr) { mErr.innerHTML = ''; mErr.style.display = 'none'; }
+
       const tabs = ['personal', 'business', 'mobile'];
       tabs.forEach(t => {
         const btn = document.getElementById(`num-tab-btn-${t}`);
@@ -22360,10 +22675,41 @@
       });
     }
 
+    function initNumerologyStudioListeners() {
+      const nName = document.getElementById('numerology-input-name');
+      const nDob = document.getElementById('numerology-input-dob');
+      const bName = document.getElementById('num-business-name');
+      const bDob = document.getElementById('num-business-founder-dob');
+      const mInput = document.getElementById('num-mobile-input');
+
+      const clearPersonal = () => {
+        const el = document.getElementById('num-personal-validation-error');
+        if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+      };
+      const clearBiz = () => {
+        const el = document.getElementById('num-business-validation-error');
+        if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+      };
+      const clearMob = () => {
+        const el = document.getElementById('num-mobile-validation-error');
+        if (el) { el.innerHTML = ''; el.style.display = 'none'; }
+      };
+
+      if (nName) nName.addEventListener('input', clearPersonal);
+      if (nDob) { nDob.addEventListener('input', clearPersonal); nDob.addEventListener('change', clearPersonal); }
+      if (bName) bName.addEventListener('input', clearBiz);
+      if (bDob) { bDob.addEventListener('input', clearBiz); bDob.addEventListener('change', clearBiz); }
+      if (mInput) mInput.addEventListener('input', clearMob);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initNumerologyStudioListeners);
+    } else {
+      initNumerologyStudioListeners();
+    }
+
     function toggleNumerologyVoiceNarration() {
       if (!currentNumerologyReadingText) return;
       const btn = document.getElementById('btn-voice-numerology');
-      const lbl = document.getElementById('btn-voice-numerology-lbl');
       if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine) {
         if (AstroVerseVoiceEngine.isSpeaking) {
           AstroVerseVoiceEngine.stop();
@@ -22398,15 +22744,47 @@
       const gender = document.getElementById('numerology-input-gender')?.value || 'all';
       const nakshatra = document.getElementById('numerology-input-nakshatra')?.value || '';
       const resBox = document.getElementById('num-personal-results');
+      const errBox = document.getElementById('num-personal-validation-error');
       if (!resBox) return;
 
       if (!name) {
-        resBox.innerHTML = '<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5;"><i class="fa-solid fa-triangle-exclamation"></i> Please enter a valid name.</div>';
+        if (errBox) {
+          errBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Please enter a valid name to analyze.';
+          errBox.style.display = 'block';
+          errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
         return;
       }
       if (!dob || dob.length < 10) {
-        resBox.innerHTML = '<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FCA5A5;"><i class="fa-solid fa-triangle-exclamation"></i> Please enter a valid Date of Birth (YYYY-MM-DD).</div>';
+        if (errBox) {
+          errBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Please enter a valid Date of Birth (YYYY-MM-DD).';
+          errBox.style.display = 'block';
+          errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
         return;
+      }
+
+      const parsedDob = new Date(dob);
+      const today = new Date();
+      if (isNaN(parsedDob.getTime()) || parsedDob > today) {
+        if (errBox) {
+          errBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Date of Birth cannot be in the future.';
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+      const birthYear = parseInt(dob.slice(0, 4), 10);
+      if (birthYear < 1900) {
+        if (errBox) {
+          errBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Please enter a realistic birth year (1900 or later).';
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+
+      if (errBox) {
+        errBox.innerHTML = '';
+        errBox.style.display = 'none';
       }
 
       resBox.innerHTML = `
@@ -22432,7 +22810,6 @@
 
       try {
         if (isCorrection) {
-          // Attempt to call correct-name endpoint if session available
           let cRes = null;
           let cData = null;
           if (token) {
@@ -22475,8 +22852,8 @@
                   compoundTotal: cData.nativeBaseline.baseChaldeanCompound,
                   governingPlanet: cData.nativeBaseline.baseChaldeanPlanet,
                   breakdown: [],
-                  isPreferred: [14, 19, 21, 23, 24, 27, 32, 33, 37, 41, 42, 45, 46, 50].includes(cData.nativeBaseline.baseChaldeanCompound),
-                  isChallenging: [12, 16, 18, 26, 28].includes(cData.nativeBaseline.baseChaldeanCompound)
+                  isPreferred: NUM_PREFERRED_COMPOUNDS.has(cData.nativeBaseline.baseChaldeanCompound),
+                  isChallenging: NUM_CHALLENGING_COMPOUNDS.has(cData.nativeBaseline.baseChaldeanCompound)
                 },
                 pythagorean: {
                   naamank: cData.nativeBaseline.baseChaldeanRoot,
@@ -22489,96 +22866,155 @@
             };
             correctionCandidates = cData.candidates;
           } else if (isSimulatedPlusOrPremium) {
-            // Guest or simulated tier: generate candidate corrections locally without paywall
-            const aRes = await fetch('/api/numerology/analyze', {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({ name, birthDate: dob })
-            }).catch(() => null);
-            numData = aRes && aRes.ok ? await aRes.json() : null;
-
-            if (!numData || !numData.success) {
-              // Local fallback for base analysis
-              const cleanDay = parseInt(dob.slice(8, 10), 10) || 1;
-              function r19(n) { let v = Math.abs(parseInt(n, 10)) || 0; while (v > 9) { v = String(v).split('').reduce((a, b) => a + parseInt(b, 10), 0); } return v === 0 ? 9 : v; }
-              const mVal = r19(cleanDay);
-              const dSum = dob.replace(/\D/g, '').split('').reduce((a, b) => a + parseInt(b, 10), 0);
-              const bVal = r19(dSum);
-              const CMAP = { A: 1, I: 1, J: 1, Q: 1, Y: 1, B: 2, K: 2, R: 2, C: 3, G: 3, L: 3, S: 3, D: 4, M: 4, T: 4, E: 5, H: 5, N: 5, X: 5, U: 6, V: 6, W: 6, O: 7, Z: 7, F: 8, P: 8 };
-              const cleanU = name.toUpperCase().replace(/[^A-Z]/g, '');
-              let cComp = 0; const cBreak = [];
-              for (const ch of cleanU) { const val = CMAP[ch] || 0; cComp += val; cBreak.push({ letter: ch, value: val }); }
-              if (cComp === 0) cComp = 10;
-              const cRoot = r19(cComp);
-              const PLANETS = { 1: 'Sun (Surya)', 2: 'Moon (Chandra)', 3: 'Jupiter (Guru)', 4: 'Rahu', 5: 'Mercury (Budha)', 6: 'Venus (Shukra)', 7: 'Ketu', 8: 'Saturn (Shani)', 9: 'Mars (Mangal)' };
-              numData = {
-                success: true,
-                birthNumber: { value: mVal, governingPlanet: PLANETS[mVal], archetype: 'Foundation Archetype', qualities: ['Core Vitality', 'Inner Drive'] },
-                destinyNumber: { value: bVal, governingPlanet: PLANETS[bVal], archetype: 'Life Path Direction' },
-                nameNumbers: {
-                  chaldean: { naamank: cRoot, compoundTotal: cComp, governingPlanet: PLANETS[cRoot], breakdown: cBreak, isPreferred: [14, 19, 21, 23, 24, 27, 32, 33, 37, 41, 42, 45, 46, 50].includes(cComp), isChallenging: [12, 16, 18, 26, 28].includes(cComp) },
-                  pythagorean: { naamank: cRoot, compoundTotal: cComp, breakdown: [] }
-                },
-                harmony: { score: 85, alignmentTierEn: 'High Synergy (Simulated Plus/Premium Mode)' }
-              };
-            }
-
-            // Generate candidates locally
+            // Simulated Plus / Premium or fallback candidate generation
             const cleanDay = parseInt(dob.slice(8, 10), 10) || 1;
-            function r19(n) { let v = Math.abs(parseInt(n, 10)) || 0; while (v > 9) { v = String(v).split('').reduce((a, b) => a + parseInt(b, 10), 0); } return v === 0 ? 9 : v; }
-            const mVal = numData.birthNumber.value;
-            const bVal = numData.destinyNumber.value;
-            const CMAP = { A: 1, I: 1, J: 1, Q: 1, Y: 1, B: 2, K: 2, R: 2, C: 3, G: 3, L: 3, S: 3, D: 4, M: 4, T: 4, E: 5, H: 5, N: 5, X: 5, U: 6, V: 6, W: 6, O: 7, Z: 7, F: 8, P: 8 };
-            function evalChaldean(str) {
-              const u = str.toUpperCase().replace(/[^A-Z]/g, '');
-              let comp = 0;
-              for (const ch of u) comp += (CMAP[ch] || 0);
-              return { compound: comp, root: r19(comp) };
-            }
+            const mVal = numDigitRoot1To9(cleanDay);
+            const dSum = dob.replace(/\D/g, '').split('').reduce((a, b) => a + parseInt(b, 10), 0);
+            const bVal = numDigitRoot1To9(dSum);
 
-            const parts = name.trim().toUpperCase().split(/\s+/);
-            const firstN = parts[0];
-            const lastN = parts.slice(1).join(' ');
+            const cEval = evalChaldeanClient(name);
+            const pEval = evalPythagoreanClient(name);
+            const harm = calcPlanetaryHarmonyScoreClient(mVal, bVal, cEval.compound);
 
-            const rawCandidates = [];
-            if (firstN.includes('A')) rawCandidates.push({ name: firstN.replace('A', 'AA') + (lastN ? ' ' + lastN : ''), note: "Vowel expansion ('A' -> 'AA')", dist: 1 });
-            if (firstN.includes('I')) rawCandidates.push({ name: firstN.replace('I', 'EE') + (lastN ? ' ' + lastN : ''), note: "Phonetic vowel harmonizer ('I' -> 'EE')", dist: 1 });
-            if (firstN.length > 2) rawCandidates.push({ name: firstN[0] + 'H' + firstN.slice(1) + (lastN ? ' ' + lastN : ''), note: "Acoustic soft-H breath harmonizer", dist: 1 });
-            if (firstN.length > 2) rawCandidates.push({ name: firstN.slice(0, -1) + firstN.slice(-1) + firstN.slice(-1) + (lastN ? ' ' + lastN : ''), note: "Terminal consonant reinforcement", dist: 1 });
+            numData = {
+              success: true,
+              birthNumber: {
+                value: mVal,
+                governingPlanet: NUM_PLANET_DATA[mVal]?.planetEn || 'Unknown',
+                title: 'Moolank (Psychic / Day Root)',
+                titleHi: 'मूलांक (जन्मांक)',
+                archetype: NUM_PLANET_DATA[mVal]?.archetype || 'Foundation Archetype',
+                qualities: NUM_PLANET_DATA[mVal]?.qualities || ['Core Vitality', 'Inner Drive']
+              },
+              destinyNumber: {
+                value: bVal,
+                governingPlanet: NUM_PLANET_DATA[bVal]?.planetEn || 'Unknown',
+                title: 'Bhagyank (Destiny Number)',
+                titleHi: 'भाग्यांक (जीवन पथ अंक)',
+                archetype: NUM_PLANET_DATA[bVal]?.archetype || 'Life Path Direction'
+              },
+              nameNumbers: {
+                chaldean: {
+                  naamank: cEval.root,
+                  compoundTotal: cEval.compound,
+                  governingPlanet: NUM_PLANET_DATA[cEval.root]?.planetEn || 'Unknown',
+                  breakdown: cEval.breakdown,
+                  isPreferred: cEval.isPreferred,
+                  isChallenging: cEval.isChallenging
+                },
+                pythagorean: {
+                  naamank: pEval.root,
+                  compoundTotal: pEval.compound,
+                  breakdown: pEval.breakdown
+                }
+              },
+              harmony: harm
+            };
 
-            const prefComps = [14, 19, 21, 23, 24, 27, 32, 33, 37, 41, 42, 45, 46, 50];
-            correctionCandidates = rawCandidates.slice(0, 4).map(c => {
-              const res = evalChaldean(c.name);
-              const isPref = prefComps.includes(res.compound);
-              const harm = isPref ? 92 : 84;
-              return {
-                proposedName: c.name,
-                transformationNote: c.note,
-                editDistance: c.dist,
-                chaldeanCompound: res.compound,
-                chaldeanRoot: res.root,
-                harmonyScore: harm,
-                isPreferredCompound: isPref
-              };
-            });
+            correctionCandidates = generateClientNameCorrections(name, mVal, bVal, 5);
             upgradePromptRequired = false;
           } else {
-            // Need upgrade or fallback to base analyze
+            // Free tier: display base analysis with upgrade CTA for full corrections
             upgradePromptRequired = true;
-            const aRes = await fetch('/api/numerology/analyze', {
+            let aRes = null;
+            try {
+              aRes = await fetch('/api/numerology/analyze', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ name, birthDate: dob })
+              });
+              if (aRes.ok) numData = await aRes.json();
+            } catch (_) {}
+
+            if (!numData || !numData.success) {
+              const cleanDay = parseInt(dob.slice(8, 10), 10) || 1;
+              const mVal = numDigitRoot1To9(cleanDay);
+              const dSum = dob.replace(/\D/g, '').split('').reduce((a, b) => a + parseInt(b, 10), 0);
+              const bVal = numDigitRoot1To9(dSum);
+              const cEval = evalChaldeanClient(name);
+              const pEval = evalPythagoreanClient(name);
+              const harm = calcPlanetaryHarmonyScoreClient(mVal, bVal, cEval.compound);
+              numData = {
+                success: true,
+                birthNumber: {
+                  value: mVal,
+                  governingPlanet: NUM_PLANET_DATA[mVal]?.planetEn || 'Unknown',
+                  archetype: NUM_PLANET_DATA[mVal]?.archetype || 'Foundation Archetype'
+                },
+                destinyNumber: {
+                  value: bVal,
+                  governingPlanet: NUM_PLANET_DATA[bVal]?.planetEn || 'Unknown',
+                  archetype: NUM_PLANET_DATA[bVal]?.archetype || 'Life Path Direction'
+                },
+                nameNumbers: {
+                  chaldean: {
+                    naamank: cEval.root,
+                    compoundTotal: cEval.compound,
+                    governingPlanet: NUM_PLANET_DATA[cEval.root]?.planetEn || 'Unknown',
+                    breakdown: cEval.breakdown,
+                    isPreferred: cEval.isPreferred,
+                    isChallenging: cEval.isChallenging
+                  },
+                  pythagorean: {
+                    naamank: pEval.root,
+                    compoundTotal: pEval.compound,
+                    breakdown: pEval.breakdown
+                  }
+                },
+                harmony: harm
+              };
+            }
+          }
+        } else {
+          // Standard Numerology Analysis
+          let aRes = null;
+          try {
+            aRes = await fetch('/api/numerology/analyze', {
               method: 'POST',
               headers,
               body: JSON.stringify({ name, birthDate: dob })
             });
-            numData = await aRes.json();
+            if (aRes.ok) numData = await aRes.json();
+          } catch (_) {}
+
+          if (!numData || !numData.success) {
+            const cleanDay = parseInt(dob.slice(8, 10), 10) || 1;
+            const mVal = numDigitRoot1To9(cleanDay);
+            const dSum = dob.replace(/\D/g, '').split('').reduce((a, b) => a + parseInt(b, 10), 0);
+            const bVal = numDigitRoot1To9(dSum);
+            const cEval = evalChaldeanClient(name);
+            const pEval = evalPythagoreanClient(name);
+            const harm = calcPlanetaryHarmonyScoreClient(mVal, bVal, cEval.compound);
+            numData = {
+              success: true,
+              birthNumber: {
+                value: mVal,
+                governingPlanet: NUM_PLANET_DATA[mVal]?.planetEn || 'Unknown',
+                archetype: NUM_PLANET_DATA[mVal]?.archetype || 'Foundation Archetype'
+              },
+              destinyNumber: {
+                value: bVal,
+                governingPlanet: NUM_PLANET_DATA[bVal]?.planetEn || 'Unknown',
+                archetype: NUM_PLANET_DATA[bVal]?.archetype || 'Life Path Direction'
+              },
+              nameNumbers: {
+                chaldean: {
+                  naamank: cEval.root,
+                  compoundTotal: cEval.compound,
+                  governingPlanet: NUM_PLANET_DATA[cEval.root]?.planetEn || 'Unknown',
+                  breakdown: cEval.breakdown,
+                  isPreferred: cEval.isPreferred,
+                  isChallenging: cEval.isChallenging
+                },
+                pythagorean: {
+                  naamank: pEval.root,
+                  compoundTotal: pEval.compound,
+                  breakdown: pEval.breakdown
+                }
+              },
+              harmony: harm
+            };
           }
-        } else {
-          const aRes = await fetch('/api/numerology/analyze', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ name, birthDate: dob })
-          });
-          numData = await aRes.json();
         }
 
         if (activeReqId !== currentNumerologyRequestId) {
@@ -22635,7 +23071,7 @@
         const scoreColor = harmonyScore >= 80 ? '#059669' : harmonyScore >= 60 ? '#D97706' : '#DC2626';
         const scoreBg = harmonyScore >= 80 ? '#D1FAE5' : harmonyScore >= 60 ? '#FEF3C7' : '#FEE2E2';
 
-        // Candidates HTML
+        // Candidates HTML (Displays 5 high-quality candidates)
         let candidatesHtml = '';
         if (correctionCandidates && correctionCandidates.length > 0) {
           candidatesHtml = `
@@ -22644,20 +23080,20 @@
                 <div>
                   <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #059669; background: #D1FAE5; padding: 2px 8px; border-radius: 6px;">AI CORRECTION STUDIO</span>
                   <h3 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 4px 0 0;">
-                    ${currentLanguage === 'hi' ? 'शुभ नाम सुधार विकल्प (उच्चतम ग्रहीय सामंजस्य)' : 'Auspicious Name Corrections (Maximum Planetary Synergy)'}
+                    ${currentLanguage === 'hi' ? '5 शुभ नाम सुधार विकल्प (उच्चतम ग्रहीय सामंजस्य)' : '5 Auspicious Name Corrections (Maximum Planetary Synergy)'}
                   </h3>
                 </div>
-                <span style="font-size: 12px; color: #64748B;">Bounded Edit Cost &le; 2</span>
+                <span style="font-size: 12px; color: #64748B;">Bounded Edit Cost &le; 2 &bull; 5 Verified Candidates</span>
               </div>
 
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
                 ${correctionCandidates.map((c, idx) => `
                   <div style="background: #FFFFFF; border: 1.5px solid ${c.isPreferredCompound ? '#FCD34D' : '#E2E8F0'}; border-radius: 10px; padding: 14px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
                     ${c.isPreferredCompound ? '<span style="position: absolute; top: 10px; right: 10px; background: #FEF3C7; color: #B45309; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px;"><i class="fa-solid fa-star"></i> PREFERRED</span>' : ''}
                     <div style="font-size: 15px; font-weight: 800; color: #1E1B4B; letter-spacing: 0.5px;">${c.proposedName}</div>
-                    <div style="font-size: 11.5px; color: #64748B; margin: 2px 0 8px;">${c.transformationNote} (Distance: ${c.editDistance})</div>
+                    <div style="font-size: 11.5px; color: #64748B; margin: 2px 0 8px;">${c.transformationNote || c.alterationNoteEn} (Distance: ${c.editDistance})</div>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11.5px; margin-bottom: 10px;">
-                      <span style="background: #F1F5F9; padding: 2px 8px; border-radius: 4px;">Chaldean: <strong>${c.chaldeanCompound} &rarr; ${c.chaldeanRoot}</strong></span>
+                      <span style="background: #F1F5F9; padding: 2px 8px; border-radius: 4px;">Chaldean: <strong>${c.chaldeanCompound} &rarr; ${c.chaldeanRoot || c.chaldeanNaamank}</strong></span>
                       <span style="background: #ECFDF5; color: #065F46; padding: 2px 8px; border-radius: 4px; font-weight: 700;">Harmony: <strong>${c.harmonyScore}%</strong></span>
                     </div>
                     <button class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 11.5px; padding: 5px 10px;" onclick="applyCorrectionCandidate('${c.proposedName}')">
@@ -22682,7 +23118,7 @@
                     ${currentLanguage === 'hi' ? 'वैदिक नाम सुधार स्टूडियो अनलॉक करें' : 'Unlock Vedic Name Correction Studio'}
                   </h4>
                   <p style="font-size: 12.5px; color: #92400E; margin: 0; max-width: 580px;">
-                    Generate 3–5 bounded auspicious spelling alternatives, complete letter-by-letter sound harmonizers, and personalized signature graphology with Plus (₹149/mo) or Premium (₹299/mo).
+                    Generate 5 bounded auspicious spelling alternatives, complete letter-by-letter sound harmonizers, and personalized signature graphology with Plus (₹149/mo) or Premium (₹299/mo).
                   </p>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -22754,120 +23190,99 @@
                 ${numData.destinyNumber.governingPlanet}
               </div>
               <div style="font-size: 11px; color: #64748B; margin-top: 4px;">
-                Sum: ${numData.destinyNumber.totalCompound || dob.replace(/\D/g, '').split('').map(Number).reduce((a, b) => a + b, 0)} &rarr; ${bhagyankVal}
+                ${currentLanguage === 'hi' ? numData.destinyNumber.archetypeHi || numData.destinyNumber.archetype : numData.destinyNumber.archetype}
               </div>
             </div>
 
             <!-- Chaldean Naamank -->
             <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; border-top: 4px solid #D97706; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
               <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">Chaldean Naamank</span>
-                ${numData.nameNumbers.chaldean.isPreferred ? '<span style="font-size: 10px; background: #D1FAE5; color: #065F46; font-weight: 800; padding: 1px 6px; border-radius: 4px;">AUSPICIOUS</span>' : ''}
+                <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">
+                  ${currentLanguage === 'hi' ? 'चाल्डियन नामांक' : 'Chaldean Naamank'}
+                </span>
+                ${numData.nameNumbers.chaldean.isPreferred ? '<span style="font-size: 10px; background: #D1FAE5; color: #065F46; font-weight: 800; padding: 1px 6px; border-radius: 4px;">PREFERRED</span>' : numData.nameNumbers.chaldean.isChallenging ? '<span style="font-size: 10px; background: #FEE2E2; color: #991B1B; font-weight: 800; padding: 1px 6px; border-radius: 4px;">CHALLENGING</span>' : ''}
               </div>
-              <div style="font-size: 32px; font-weight: 900; color: #D97706; line-height: 1.1; margin: 4px 0;">
-                ${chaldeanRoot} <span style="font-size: 14px; font-weight: 600; color: #64748B;">(${chaldeanComp})</span>
+              <div style="display: flex; align-items: baseline; gap: 8px; margin: 4px 0;">
+                <span style="font-size: 32px; font-weight: 900; color: #D97706; line-height: 1.1;">${chaldeanRoot}</span>
+                <span style="font-size: 14px; font-weight: 700; color: #64748B;">(Compound: ${chaldeanComp})</span>
               </div>
               <div style="font-size: 12px; font-weight: 700; color: #1E293B;">
-                ${numData.nameNumbers.chaldean.governingPlanet || 'Chaldean Vibration'}
+                ${numData.nameNumbers.chaldean.governingPlanet}
               </div>
               ${chaldeanChipsHtml}
             </div>
 
             <!-- Pythagorean Naamank -->
-            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; border-top: 4px solid #7C3AED; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
-              <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">Pythagorean Naamank</span>
-              <div style="font-size: 32px; font-weight: 900; color: #7C3AED; line-height: 1.1; margin: 4px 0;">
-                ${pythRoot} <span style="font-size: 14px; font-weight: 600; color: #64748B;">(${pythComp})</span>
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; border-top: 4px solid #2563EB; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+              <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">
+                ${currentLanguage === 'hi' ? 'पाइथागोरस नामांक' : 'Pythagorean Naamank'}
+              </span>
+              <div style="display: flex; align-items: baseline; gap: 8px; margin: 4px 0;">
+                <span style="font-size: 32px; font-weight: 900; color: #2563EB; line-height: 1.1;">${pythRoot}</span>
+                <span style="font-size: 14px; font-weight: 700; color: #64748B;">(Compound: ${pythComp})</span>
               </div>
               <div style="font-size: 12px; font-weight: 700; color: #1E293B;">
-                Cycle 1–9 Harmonic
+                Western Frequency Comparison
               </div>
               <div style="font-size: 11px; color: #64748B; margin-top: 4px;">
-                Western Comparative Root
+                Analytical Sequential Matrix
               </div>
             </div>
           </div>
 
-          <!-- Harmony Gauge & Planetary Breakdown -->
-          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <!-- Overall Harmony & Planetary Synergy Bar -->
+          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
               <div>
-                <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #D97706;">WEIGHTED HARMONY FORMULA</span>
-                <h3 style="font-size: 17px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
-                  ${currentLanguage === 'hi' ? 'ग्रहीय सामंजस्य एवं कंपन सूचकांक' : 'Planetary Vibrational Harmony Score'}
-                </h3>
-              </div>
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 26px; font-weight: 900; color: ${scoreColor}; background: ${scoreBg}; padding: 4px 14px; border-radius: 12px; border: 1.5px solid ${scoreColor};">
-                  ${harmonyScore}%
+                <span style="font-size: 11px; font-weight: 800; color: #64748B; text-transform: uppercase;">
+                  ${currentLanguage === 'hi' ? 'नाम व जन्म अंक सामंजस्य स्कोर' : 'Vibrational Harmony Score'}
                 </span>
-                <span style="font-size: 13px; font-weight: 700; color: #1E293B;">${currentLanguage === 'hi' ? harmonyTierHi : harmonyTierEn}</span>
+                <div style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin-top: 2px;">
+                  ${currentLanguage === 'hi' ? harmonyTierHi : harmonyTierEn}
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 28px; font-weight: 900; color: ${scoreColor};">${harmonyScore}%</span>
+                <div style="font-size: 11px; color: #64748B;">Weighted Parashari Matrix</div>
               </div>
             </div>
 
-            <!-- Progress bar -->
-            <div style="background: #E2E8F0; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 16px;">
-              <div style="background: ${scoreColor}; width: ${harmonyScore}%; height: 100%; border-radius: 5px; transition: width 0.6s ease;"></div>
+            <!-- Progress Meter -->
+            <div style="width: 100%; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
+              <div style="width: ${harmonyScore}%; height: 100%; background: ${scoreColor}; border-radius: 4px; transition: width 0.6s ease;"></div>
             </div>
 
-            <!-- Subcomponent weights -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 12px;">
-              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px;">
-                <div style="color: #64748B; font-size: 11px; font-weight: 700;">MOOLANK SYNERGY (40%)</div>
-                <div style="font-weight: 800; color: #1E1B4B; margin: 2px 0;">Moolank ${moolankVal} &harr; Naamank ${chaldeanRoot}</div>
-                <div style="color: #059669; font-weight: 700;">Relation: ${numData.harmony.components?.moolank_compatibility?.relationship || numData.harmony.moolankRel || 'Harmonized'}</div>
-              </div>
-              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px;">
-                <div style="color: #64748B; font-size: 11px; font-weight: 700;">BHAGYANK SYNERGY (40%)</div>
-                <div style="font-weight: 800; color: #1E1B4B; margin: 2px 0;">Bhagyank ${bhagyankVal} &harr; Naamank ${chaldeanRoot}</div>
-                <div style="color: #059669; font-weight: 700;">Relation: ${numData.harmony.components?.bhagyank_compatibility?.relationship || numData.harmony.bhagyankRel || 'Harmonized'}</div>
-              </div>
-              <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px;">
-                <div style="color: #64748B; font-size: 11px; font-weight: 700;">COMPOUND VIBRATION (20%)</div>
-                <div style="font-weight: 800; color: #1E1B4B; margin: 2px 0;">Chaldean Total: ${chaldeanComp}</div>
-                <div style="color: #D97706; font-weight: 700;">${numData.nameNumbers.chaldean.isPreferred ? 'Preferred Auspicious' : numData.nameNumbers.chaldean.isChallenging ? 'Challenging (Correction Needed)' : 'Neutral Occult Number'}</div>
-              </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #475569;">
+              <span style="background: #F1F5F9; padding: 4px 10px; border-radius: 6px;">
+                Moolank &harr; Naamank: <strong style="text-transform: capitalize; color: #1E293B;">${numData.harmony.moolankRel || 'Harmonic'}</strong>
+              </span>
+              <span style="background: #F1F5F9; padding: 4px 10px; border-radius: 6px;">
+                Bhagyank &harr; Naamank: <strong style="text-transform: capitalize; color: #1E293B;">${numData.harmony.bhagyankRel || 'Harmonic'}</strong>
+              </span>
+              <span style="background: #F1F5F9; padding: 4px 10px; border-radius: 6px;">
+                Compound Quality: <strong style="color: #1E293B;">${numData.nameNumbers.chaldean.isPreferred ? 'Auspicious' : numData.nameNumbers.chaldean.isChallenging ? 'Karmic Friction' : 'Neutral'}</strong>
+              </span>
             </div>
           </div>
 
-          <!-- Candidates Section (If Generated) -->
           ${candidatesHtml}
-
-          <!-- Paywall / Upgrade Banner (If Free or Prompt Required) -->
           ${paywallBannerHtml}
 
-          <!-- Signature Guidance Blueprint -->
-          <div style="margin-top: 24px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+          <!-- Graphology & Signature Optimization Blueprint -->
+          <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <div>
-                <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #D97706;">VEDIC GRAPHOLOGY BLUEPRINT</span>
-                <h3 style="font-size: 17px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
-                  ${currentLanguage === 'hi' ? 'हस्ताक्षर एवं हस्तलेखन मार्गदर्शन खाका' : 'Auspicious Signature Alignment Blueprint'}
-                </h3>
+                <span style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase;">ASTRO-GRAPHOLOGY</span>
+                <h4 style="font-size: 16px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">
+                  ${currentLanguage === 'hi' ? 'हस्ताक्षर संरेखण ब्लूप्रिंट' : 'Personal Signature Alignment Blueprint'}
+                </h4>
               </div>
-              <span style="font-size: 12px; font-weight: 700; color: #059669; background: #D1FAE5; padding: 2px 8px; border-radius: 6px;">
-                ${sigData.recommended_slope || '+15° to +25° Ascending'}
+              <span style="font-size: 12px; color: #059669; font-weight: 700;">
+                <i class="fa-solid fa-signature"></i> ${sigData.recommended_slope || '+15° to +25° Ascending'}
               </span>
             </div>
 
-            <!-- Visual Graphology Blueprint Box -->
-            <div style="background: #FFFDF8; border: 1.5px dashed #FCD34D; border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 16px;">
-              <div style="display: inline-block; transform: rotate(-5deg); text-align: left;">
-                <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 38px; color: #1E1B4B; font-weight: 700; border-bottom: 2.5px solid #D97706; padding-bottom: 4px; display: inline-block; letter-spacing: 1px;">
-                  ${name.split(' ')[0]} ${name.split(' ')[1] ? name.split(' ')[1][0] + '.' : ''}
-                </div>
-                <div style="display: flex; justify-content: center; gap: 8px; margin-top: 4px;">
-                  <span style="width: 6px; height: 6px; background: #D97706; border-radius: 50%;"></span>
-                  <span style="width: 6px; height: 6px; background: #D97706; border-radius: 50%;"></span>
-                </div>
-              </div>
-              <div style="font-size: 11px; color: #64748B; margin-top: 12px;">
-                <i class="fa-solid fa-arrow-trend-up" style="color: #059669;"></i> +15&deg; to +25&deg; Upward Ascending Slope &bull; Unbroken Solid Underline &bull; 2 Grounding Dots
-              </div>
-            </div>
-
-            <!-- Rules Grid -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; font-size: 12.5px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 12.5px; line-height: 1.5;">
               <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px;">
                 <strong style="color: #1E1B4B; display: block; margin-bottom: 2px;"><i class="fa-solid fa-arrow-up-right-dots" style="color: #D97706;"></i> Ascending Baseline</strong>
                 <span style="color: #475569;">${sigGuidelines.slope || 'Ascending slope maintains optimism and prevents energy dips.'}</span>
@@ -22913,30 +23328,64 @@
       const industry = document.getElementById('num-business-industry')?.value || 'General Commerce';
       const founderDob = (document.getElementById('num-business-founder-dob')?.value || '').trim();
       const resBox = document.getElementById('num-business-results');
+      const errBox = document.getElementById('num-business-validation-error');
       if (!resBox) return;
 
       if (!name) {
-        resBox.innerHTML = '<div style="color: #DC2626; padding: 10px; background: #FEF2F2; border-radius: 8px;">Please enter a business or brand name.</div>';
+        if (errBox) {
+          errBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Please enter a business or brand name.';
+          errBox.style.display = 'block';
+        }
         return;
       }
 
-      resBox.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Analyzing Commercial Vibrations...</div>';
+      if (founderDob) {
+        const parsedDob = new Date(founderDob);
+        const today = new Date();
+        if (isNaN(parsedDob.getTime()) || parsedDob > today) {
+          if (errBox) {
+            errBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Founder Date of Birth cannot be in the future.';
+            errBox.style.display = 'block';
+          }
+          return;
+        }
+        const fYear = parseInt(founderDob.slice(0, 4), 10);
+        if (fYear < 1900) {
+          if (errBox) {
+            errBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Please enter a realistic founder birth year (1900 or later).';
+            errBox.style.display = 'block';
+          }
+          return;
+        }
+      }
+
+      if (errBox) {
+        errBox.innerHTML = '';
+        errBox.style.display = 'none';
+      }
+
+      resBox.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #D97706; margin-bottom: 8px;"></i><div>Analyzing Commercial Vibrations...</div></div>';
 
       try {
         const token = currentSessionToken || localStorage.getItem('astro_session_token') || localStorage.getItem('astroverse_session_token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = 'Bearer ' + token;
 
+        const reqBody = {
+          name,
+          analysisTarget: 'business_name',
+          industry
+        };
+        if (founderDob) {
+          reqBody.birthDate = founderDob;
+        }
+
         let data = null;
         try {
           const res = await fetch('/api/numerology/analyze', {
             method: 'POST',
             headers,
-            body: JSON.stringify({
-              name,
-              birthDate: founderDob || '2000-01-01',
-              analysisTarget: 'business_name'
-            })
+            body: JSON.stringify(reqBody)
           });
           if (res.ok) data = await res.json();
         } catch (_) {}
@@ -22948,27 +23397,36 @@
 
         if (!data || !data.success) {
           // Local fallback computation
-          const CHALDEAN_MAP = { A: 1, I: 1, J: 1, Q: 1, Y: 1, B: 2, K: 2, R: 2, C: 3, G: 3, L: 3, S: 3, D: 4, M: 4, T: 4, E: 5, H: 5, N: 5, X: 5, U: 6, V: 6, W: 6, O: 7, Z: 7, F: 8, P: 8 };
-          const clean = name.toUpperCase().replace(/[^A-Z]/g, '');
-          let comp = 0;
-          for (const ch of clean) { comp += (CHALDEAN_MAP[ch] || 0); }
-          if (comp === 0) comp = 23;
-          let root = comp;
-          while (root > 9) { root = String(root).split('').reduce((a, b) => a + parseInt(b, 10), 0); }
-          const PLANETS = { 1: 'Sun (Surya)', 2: 'Moon (Chandra)', 3: 'Jupiter (Guru)', 4: 'Rahu', 5: 'Mercury (Budha)', 6: 'Venus (Shukra)', 7: 'Ketu', 8: 'Saturn (Shani)', 9: 'Mars (Mangal)' };
-          const preferred = [14, 19, 21, 23, 24, 27, 32, 33, 37, 41, 42, 45, 46, 50];
+          const cEval = evalChaldeanClient(name);
+          let founderSynergy = null;
+          let harmony = null;
+
+          if (founderDob) {
+            const cleanDay = parseInt(founderDob.slice(8, 10), 10) || 1;
+            const fMoolank = numDigitRoot1To9(cleanDay);
+            const dSum = founderDob.replace(/\D/g, '').split('').reduce((a, b) => a + parseInt(b, 10), 0);
+            const fBhagyank = numDigitRoot1To9(dSum);
+            harmony = calcPlanetaryHarmonyScoreClient(fMoolank, fBhagyank, cEval.compound);
+            founderSynergy = {
+              founderMoolank: fMoolank,
+              founderBhagyank: fBhagyank,
+              harmony
+            };
+          }
+
           data = {
             success: true,
             originalName: name.toUpperCase(),
             nameNumbers: {
               chaldean: {
-                compoundTotal: comp,
-                naamank: root,
-                governingPlanet: PLANETS[root] || 'Mercury (Budha)',
-                isPreferred: preferred.includes(comp)
+                compoundTotal: cEval.compound,
+                naamank: cEval.root,
+                governingPlanet: NUM_PLANET_DATA[cEval.root]?.planetEn || 'Mercury (Budha)',
+                isPreferred: cEval.isPreferred
               }
             },
-            harmony: { score: 85, alignmentTierEn: 'Favorable Commercial Alignment' }
+            founderSynergy,
+            harmony
           };
         }
 
@@ -23004,11 +23462,15 @@
               </div>
             </div>
 
-            ${founderDob ? `
+            ${founderDob && data.harmony ? `
               <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 12px; font-size: 12.5px; color: #166534;">
-                <i class="fa-solid fa-circle-check"></i> <strong>Founder Synergy:</strong> Evaluated with birth date <code>${founderDob}</code>. Harmony Score: <strong>${data.harmony?.score || 85}%</strong> (${data.harmony?.alignmentTierEn || 'Favorable'}).
+                <i class="fa-solid fa-circle-check"></i> <strong>Founder Synergy:</strong> Evaluated with birth date <code>${founderDob}</code>. Harmony Score: <strong>${data.harmony.score}%</strong> (${data.harmony.alignmentTierEn || 'Favorable'}).
               </div>
-            ` : ''}
+            ` : `
+              <div style="background: #F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 8px; padding: 12px; font-size: 12.5px; color: #64748B;">
+                <i class="fa-solid fa-circle-info" style="color: #6366F1;"></i> <strong>Founder Synergy:</strong> Founder Date of Birth was not provided. Brand entity evaluated purely on commercial compound and sector alignment.
+              </div>
+            `}
           </div>
         `;
       } catch (err) {
@@ -23020,14 +23482,24 @@
       const activeReqId = ++currentNumerologyRequestId;
       const phone = (document.getElementById('num-mobile-input')?.value || '').trim();
       const resBox = document.getElementById('num-mobile-results');
+      const errBox = document.getElementById('num-mobile-validation-error');
       if (!resBox) return;
 
-      if (!phone) {
-        resBox.innerHTML = '<div style="color: #DC2626; padding: 10px; background: #FEF2F2; border-radius: 8px;">Please enter a valid phone number.</div>';
+      const digits = phone.replace(/\D/g, '');
+      if (!phone || digits.length < 7) {
+        if (errBox) {
+          errBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Please enter a valid mobile phone number (at least 7 digits).';
+          errBox.style.display = 'block';
+        }
         return;
       }
 
-      resBox.innerHTML = '<div style="text-align: center; padding: 20px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Evaluating Telecom Vibrations...</div>';
+      if (errBox) {
+        errBox.innerHTML = '';
+        errBox.style.display = 'none';
+      }
+
+      resBox.innerHTML = '<div style="text-align: center; padding: 24px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #059669; margin-bottom: 8px;"></i><div>Evaluating Telecom Vibrations...</div></div>';
 
       try {
         const token = currentSessionToken || localStorage.getItem('astro_session_token') || localStorage.getItem('astroverse_session_token');
@@ -23041,7 +23513,6 @@
             headers,
             body: JSON.stringify({
               name: 'Mobile Phone',
-              birthDate: '2000-01-01',
               analysisTarget: 'mobile_number',
               phoneNumber: phone
             })
@@ -23056,26 +23527,25 @@
 
         if (!data || !data.success) {
           // Local fallback computation
-          const digits = phone.replace(/\D/g, '');
-          const sum = digits.split('').reduce((a, b) => a + (parseInt(b, 10) || 0), 0);
-          let root = sum;
-          while (root > 9) { root = String(root).split('').reduce((a, b) => a + parseInt(b, 10), 0); }
-          const PLANETS = { 1: 'Sun (Surya)', 2: 'Moon (Chandra)', 3: 'Jupiter (Guru)', 4: 'Rahu', 5: 'Mercury (Budha)', 6: 'Venus (Shukra)', 7: 'Ketu', 8: 'Saturn (Shani)', 9: 'Mars (Mangal)' };
-          const masked = phone.length > 5 ? phone.slice(0, 3) + '-XXXXX-' + phone.slice(-4) : '+91-XXXXX-Phone';
+          const calcDigits = digits.length >= 10 ? digits.slice(-10) : digits;
+          const sum = calcDigits.split('').reduce((a, b) => a + (parseInt(b, 10) || 0), 0);
+          const root = numDigitRoot1To9(sum);
+          const pInfo = NUM_PLANET_DATA[root] || NUM_PLANET_DATA[1];
+          const masked = phone.length > 5 ? phone.slice(0, 3) + ' ••••• ••' + phone.slice(-3) : '+91 ••••• ••851';
           data = {
             success: true,
             sanitizedDisplay: masked,
-            digitCount: digits.length,
+            digitCount: calcDigits.length,
             compoundTotal: sum,
             reducedNumber: root,
-            governingPlanetEn: PLANETS[root] || 'Mercury (Budha)',
-            luckyColorsEn: ['Green', 'Silver', 'White']
+            governingPlanetEn: pInfo.planetEn,
+            luckyColorsEn: ['Emerald Green', 'Pearlescent White', 'Solar Gold']
           };
         }
 
         resBox.innerHTML = `
           <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <div>
                 <span style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase;">TELECOM RESONANCE</span>
                 <h4 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 2px 0 0;">Masked: ${data.sanitizedDisplay}</h4>

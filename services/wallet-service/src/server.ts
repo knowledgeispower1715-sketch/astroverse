@@ -20,6 +20,7 @@ import {
   calculateBhagyank,
   calculateNaamank,
   calculateHarmonyScore,
+  generateNameCorrectionCandidates,
   PLANET_DATA,
   RELATIONSHIP_MATRIX,
   PREFERRED_COMPOUND_NUMBERS,
@@ -3055,7 +3056,10 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
 app.post('/api/ai-astrologer/consume-quota', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = await db.findUserById(req.user!.id);
-    const { tier } = EntitlementManager.resolveEffectiveTier(user);
+    let { tier } = EntitlementManager.resolveEffectiveTier(user);
+  if (process.env.NODE_ENV !== 'production' && req.headers['x-simulated-tier']) {
+    tier = String(req.headers['x-simulated-tier']).toUpperCase() as any;
+  }
     const result = EntitlementManager.consumeAiQuery(req.user!.id, tier);
     res.json({
       success: true,
@@ -3085,13 +3089,33 @@ app.post('/api/ai-astrologer/consume-quota', authenticate, async (req: Authentic
 // ==================== 7.5 NUMEROLOGY & NAME CORRECTION API ====================
 
 app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
-  const { name, birthDate, dateOfBirth, calculationSpelling, analysisTarget, phoneNumber, language } = req.body;
-  const targetDob = birthDate || dateOfBirth;
+  const { name, birthDate, dateOfBirth, calculationSpelling, analysisTarget, phoneNumber, language, industry } = req.body;
+  const targetDob = (typeof birthDate === 'string' ? birthDate : typeof dateOfBirth === 'string' ? dateOfBirth : '').trim();
   if (!name || typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'NAME_REQUIRED', message: 'Name string is required.' });
   }
-  if (!targetDob || typeof targetDob !== 'string') {
-    return res.status(400).json({ error: 'BIRTH_DATE_REQUIRED', message: 'Valid ISO birthDate (YYYY-MM-DD) is required.' });
+
+  // Personal numerology requires a birth date; business and mobile have optional or no birth date requirement
+  if (analysisTarget !== 'business_name' && analysisTarget !== 'mobile_number') {
+    if (!targetDob) {
+      return res.status(400).json({ error: 'BIRTH_DATE_REQUIRED', message: 'Valid ISO birthDate (YYYY-MM-DD) is required.' });
+    }
+  }
+
+  // Validate birth date format & bounds whenever provided
+  if (targetDob) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDob)) {
+      return res.status(400).json({ error: 'INVALID_BIRTH_DATE', message: 'Birth date must be in YYYY-MM-DD format.' });
+    }
+    const dateObj = new Date(targetDob);
+    const now = new Date();
+    if (isNaN(dateObj.getTime()) || dateObj > now) {
+      return res.status(400).json({ error: 'FUTURE_BIRTH_DATE', message: 'Birth date cannot be in the future.' });
+    }
+    const year = parseInt(targetDob.slice(0, 4), 10);
+    if (year < 1900) {
+      return res.status(400).json({ error: 'INVALID_BIRTH_YEAR', message: 'Birth year must be 1900 or later.' });
+    }
   }
 
   // Optional authentication check for tier resolution & quota consumption
@@ -3106,7 +3130,10 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
     }
   }
 
-  const { tier } = EntitlementManager.resolveEffectiveTier(user);
+  let { tier } = EntitlementManager.resolveEffectiveTier(user);
+  if (process.env.NODE_ENV !== 'production' && req.headers['x-simulated-tier']) {
+    tier = String(req.headers['x-simulated-tier']).toUpperCase() as any;
+  }
 
   try {
     if (analysisTarget === 'business_name' || analysisTarget === 'mobile_number') {
@@ -3136,6 +3163,53 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
         luckyColorsEn: pInfo.luckyColorsEn,
         luckyColorsHi: pInfo.luckyColorsHi,
         sanitizedDisplay: `...${calcDigits.slice(-4)}`
+      });
+    }
+
+    if (analysisTarget === 'business_name') {
+      const naamank = calculateNaamank(targetName);
+      const comp = naamank.chaldean.compoundTotal;
+      const root = naamank.chaldean.naamank;
+      const planetN = PLANET_DATA[root] || PLANET_DATA[1];
+      let founderSynergy: any = null;
+      let harmony: any = null;
+
+      if (targetDob) {
+        const day = parseInt(targetDob.slice(8, 10), 10);
+        const moolank = calculateMoolank(day);
+        const bhagyank = calculateBhagyank(targetDob);
+        harmony = calculateHarmonyScore(moolank, bhagyank.destinyNumber, comp);
+        founderSynergy = {
+          founderMoolank: moolank,
+          founderBhagyank: bhagyank.destinyNumber,
+          harmony
+        };
+      }
+
+      return res.json({
+        success: true,
+        target: 'business_name',
+        originalName: name,
+        industry: industry || 'General Commerce',
+        nameNumbers: {
+          chaldean: {
+            compoundTotal: comp,
+            naamank: root,
+            governingPlanet: planetN.planetEn,
+            governingPlanetHi: planetN.planetHi,
+            breakdown: naamank.chaldean.breakdown,
+            isPreferred: naamank.chaldean.isPreferred,
+            isChallenging: naamank.chaldean.isChallenging
+          },
+          pythagorean: {
+            compoundTotal: naamank.pythagorean.compoundTotal,
+            naamank: naamank.pythagorean.naamank,
+            governingPlanet: PLANET_DATA[naamank.pythagorean.naamank]?.planetEn || 'Unknown'
+          }
+        },
+        founderSynergy,
+        harmony,
+        userTier: tier
       });
     }
 
@@ -3230,7 +3304,10 @@ app.post('/api/numerology/correct-name', authenticate, async (req: Authenticated
   }
 
   const user = await db.findUserById(req.user!.id);
-  const { tier } = EntitlementManager.resolveEffectiveTier(user);
+  let { tier } = EntitlementManager.resolveEffectiveTier(user);
+  if (process.env.NODE_ENV !== 'production' && req.headers['x-simulated-tier']) {
+    tier = String(req.headers['x-simulated-tier']).toUpperCase() as any;
+  }
 
   try {
     EntitlementManager.assertNameCorrectionAllowed(tier);
@@ -3242,72 +3319,25 @@ app.post('/api/numerology/correct-name', authenticate, async (req: Authenticated
     const baseNaam = calculateNaamank(targetName);
     const baseHarmony = calculateHarmonyScore(moolank, bhagyank.destinyNumber, baseNaam.chaldean.compoundTotal);
 
-    // Bounded candidate generation in TypeScript
-    const words = targetName.split(' ');
-    const firstName = words[0];
-    const surname = words.slice(1).join(' ');
-
-    const variations: { name: string; noteEn: string; noteHi: string }[] = [];
-    const vTransforms: [string, string][] = [['A', 'AA'], ['I', 'EE'], ['E', 'EE'], ['U', 'OO']];
-    for (const [o, n] of vTransforms) {
-      if (firstName.includes(o)) {
-        const v = firstName.replace(o, n);
-        variations.push({ name: `${v} ${surname}`.trim(), noteEn: `Vowel expansion (${o} -> ${n})`, noteHi: `स्वर विस्तार (${o} -> ${n})` });
-      }
-    }
-
-    const hPairs: [string, string][] = [['S', 'SH'], ['K', 'KH'], ['D', 'DH'], ['T', 'TH'], ['R', 'RH']];
-    for (const [o, n] of hPairs) {
-      if (firstName.includes(o) && !firstName.includes(o + 'H')) {
-        const v = firstName.replace(o, n);
-        variations.push({ name: `${v} ${surname}`.trim(), noteEn: `Phonetic harmonizer (${o} -> ${n})`, noteHi: `ध्वनि सामंजस्य (${o} -> ${n})` });
-      }
-    }
-
-    if (!firstName.endsWith('A') && !firstName.endsWith('H')) {
-      variations.push({ name: `${firstName}A ${surname}`.trim(), noteEn: "Terminal 'A' resonant harmonic", noteHi: "अंतिम 'A' स्वर कम्पन" });
-      variations.push({ name: `${firstName}H ${surname}`.trim(), noteEn: "Terminal 'H' breath harmonizer", noteHi: "अंतिम 'H' प्राण संतुलन" });
-    }
-
-    const dCons = ['N', 'R', 'L', 'M', 'S'];
-    for (const c of dCons) {
-      if (firstName.includes(c) && !firstName.includes(c + c)) {
-        const v = firstName.replace(c, c + c);
-        variations.push({ name: `${v} ${surname}`.trim(), noteEn: `Resonant doubling of '${c}'`, noteHi: `'${c}' का पुनरावृत्ति संतुलन` });
-      }
-    }
-
-    const candidates: any[] = [];
-    const seenCompounds = new Set<number>();
     const countLimit = Math.min(Math.max(Number(candidateCount) || 5, 1), 5);
+    const candidateList = generateNameCorrectionCandidates(targetName, moolank, bhagyank.destinyNumber, countLimit);
 
-    for (const v of variations) {
-      try {
-        const calc = calculateNaamank(v.name);
-        const comp = calc.chaldean.compoundTotal;
-        const harm = calculateHarmonyScore(moolank, bhagyank.destinyNumber, comp);
-        if (!seenCompounds.has(comp) || candidates.length < countLimit) {
-          seenCompounds.add(comp);
-          candidates.push({
-            proposedName: v.name,
-            alterationNoteEn: v.noteEn,
-            alterationNoteHi: v.noteHi,
-            chaldeanCompound: comp,
-            chaldeanNaamank: calc.chaldean.naamank,
-            pythagoreanCompound: calc.pythagorean.compoundTotal,
-            pythagoreanNaamank: calc.pythagorean.naamank,
-            governingPlanetEn: calc.chaldean.governingPlanet,
-            harmonyScore: harm.score,
-            alignmentTierEn: harm.alignmentTierEn,
-            alignmentTierHi: harm.alignmentTierHi,
-            isPreferredCompound: calc.chaldean.isPreferred
-          });
-          if (candidates.length >= countLimit) break;
-        }
-      } catch (_) {}
-    }
-
-    candidates.sort((a, b) => b.harmonyScore - a.harmonyScore);
+    const candidates = candidateList.map(c => ({
+      proposedName: c.proposedName,
+      alterationNoteEn: c.transformationNote,
+      alterationNoteHi: c.transformationNote,
+      chaldeanCompound: c.chaldeanCompound,
+      chaldeanNaamank: c.chaldeanRoot,
+      pythagoreanCompound: c.chaldeanCompound,
+      pythagoreanNaamank: c.chaldeanRoot,
+      governingPlanetEn: c.governingPlanet,
+      harmonyScore: c.harmonyScore,
+      suitabilityScore: c.suitabilityScore,
+      editDistance: c.editDistance,
+      alignmentTierEn: c.harmonyScore >= 80 ? 'High Synergy (Highly Auspicious)' : c.harmonyScore >= 60 ? 'Moderate Synergy' : 'Planetary Friction',
+      alignmentTierHi: c.harmonyScore >= 80 ? 'अति उत्तम सामंजस्य' : c.harmonyScore >= 60 ? 'उत्तम सामंजस्य' : 'ग्रहीय विरोध',
+      isPreferredCompound: c.isPreferredCompound
+    }));
 
     res.json({
       success: true,

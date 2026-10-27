@@ -103,6 +103,24 @@ async function runNumerologyTests() {
     }
   });
 
+  test('Bounded Name Correction generator produces 5 culturally appropriate candidates with edit distance <= 2 for RAHUL', () => {
+    const candidates = NumerologyCalculator.generateNameCorrectionCandidates('RAHUL', 1, 5, 5);
+    assert.strictEqual(candidates.length, 5, `Expected 5 candidates, got ${candidates.length}`);
+    const names = candidates.map(c => c.proposedName);
+    // Ensure no bizarre RHAHUL or RRAHUL
+    assert(!names.includes('RHAHUL'), 'Must not produce unnatural RHAHUL');
+    assert(!names.includes('RRAHUL'), 'Must not produce unnatural initial consonant doubling RRAHUL');
+    for (const c of candidates) {
+      assert(c.editDistance <= 2, `Edit distance must be <= 2, got ${c.editDistance}`);
+      assert(c.chaldeanRoot >= 1 && c.chaldeanRoot <= 9);
+      assert(c.suitabilityScore >= 0 && c.suitabilityScore <= 100);
+      assert(c.transformationNote && c.transformationNote.length > 5);
+    }
+    // Verify candidates have diverse, non-identical scores where compounds differ
+    const scores = new Set(candidates.map(c => c.harmonyScore));
+    assert(scores.size > 1, 'Candidates with different compounds must have distinct harmony scores');
+  });
+
   test('Signature Guidance returns auspicious ascending slope and grounding underline', () => {
     const sig = NumerologyCalculator.getSignatureGuidance(1, 'Aryan');
     assert(sig.recommendedSlope.includes('15') || sig.recommendedSlope.includes('ascend'));
@@ -240,6 +258,72 @@ async function runNumerologyTests() {
       }
     });
     assert.strictEqual(res.status, 401);
+  });
+
+  await test('POST /api/numerology/analyze rejects unauthenticated business_name request with 403 UPGRADE_REQUIRED', async () => {
+    const res = await request('/api/numerology/analyze', {
+      method: 'POST',
+      body: {
+        name: 'AstroVerse Technologies',
+        analysisTarget: 'business_name',
+        industry: 'Technology & Software'
+      }
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.data.error, 'UPGRADE_REQUIRED');
+  });
+
+  await test('POST /api/numerology/analyze handles business_name without birthDate and omits founderSynergy', async () => {
+    const res = await request('/api/numerology/analyze', {
+      method: 'POST',
+      headers: { 'x-simulated-tier': 'PLUS' },
+      body: {
+        name: 'AstroVerse Technologies',
+        analysisTarget: 'business_name',
+        industry: 'Technology & Software'
+      }
+    });
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+    assert.strictEqual(res.data.target, 'business_name');
+    assert.strictEqual(res.data.founderSynergy, null);
+    assert.strictEqual(res.data.harmony, null);
+    assert(res.data.nameNumbers.chaldean.compoundTotal > 0);
+  });
+
+  await test('POST /api/numerology/analyze handles business_name with valid founder DOB and computes founderSynergy', async () => {
+    const res = await request('/api/numerology/analyze', {
+      method: 'POST',
+      headers: { 'x-simulated-tier': 'PLUS' },
+      body: {
+        name: 'AstroVerse Technologies',
+        analysisTarget: 'business_name',
+        birthDate: '1990-05-15',
+        industry: 'Technology & Software'
+      }
+    });
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+    assert.notStrictEqual(res.data.founderSynergy, null);
+    assert.strictEqual(res.data.founderSynergy.founderMoolank, 6);
+    assert(res.data.founderSynergy.harmony.score >= 0);
+  });
+
+  await test('POST /api/numerology/analyze rejects business_name with future founder DOB with 400', async () => {
+    const res = await request('/api/numerology/analyze', {
+      method: 'POST',
+      headers: { 'x-simulated-tier': 'PLUS' },
+      body: {
+        name: 'AstroVerse Technologies',
+        analysisTarget: 'business_name',
+        birthDate: '2099-01-01'
+      }
+    });
+
+    assert.strictEqual(res.status, 400);
+    assert.strictEqual(res.data.error, 'FUTURE_BIRTH_DATE');
   });
 
   await new Promise<void>((resolve) => server.close(() => resolve()));

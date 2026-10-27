@@ -375,59 +375,89 @@ export function generateNameCorrectionCandidates(
   const candidatesSet = new Set<string>();
   const rawVariations: { name: string; note: string }[] = [];
 
-  // 1. Vowel extensions (A -> AA, I -> EE, E -> EE, U -> OO)
-  const vowelTransformations: [string, string][] = [
-    ['A', 'AA'], ['I', 'EE'], ['E', 'EE'], ['U', 'OO']
+  // Helper to add candidate safely
+  function addVariation(candName: string, note: string) {
+    const formatted = candName.trim().toUpperCase().replace(/\s+/g, ' ');
+    if (formatted !== upper && !candidatesSet.has(formatted)) {
+      candidatesSet.add(formatted);
+      rawVariations.push({ name: formatted, note });
+    }
+  }
+
+  // 1. Classical Vedic Vowel Extensions (A -> AA, I -> EE, E -> EE, U -> OO)
+  const vowelTransformations: [string, string, string][] = [
+    ['A', 'AA', 'Classical Sanskrit vowel lengthening (A -> AA)'],
+    ['I', 'EE', 'Phonetic vowel harmonizer (I -> EE)'],
+    ['E', 'EE', 'Extended solar resonance (E -> EE)'],
+    ['U', 'OO', 'Deep resonance acoustic vowel alignment (U -> OO)']
   ];
-  for (const [origV, newV] of vowelTransformations) {
+  for (const [origV, newV, note] of vowelTransformations) {
     if (firstName.includes(origV)) {
       const idx = firstName.indexOf(origV);
       const variant = firstName.slice(0, idx) + newV + firstName.slice(idx + origV.length);
-      const cand = (variant + (surname ? ' ' + surname : '')).trim();
-      if (cand !== upper && !candidatesSet.has(cand)) {
-        candidatesSet.add(cand);
-        rawVariations.push({ name: cand, note: `Subtle vowel optimization (${origV} -> ${newV})` });
-      }
+      addVariation(variant + (surname ? ' ' + surname : ''), note);
     }
   }
 
-  // 2. Controlled 'H' insertion after consonants
-  const hPairs: [string, string][] = [
-    ['S', 'SH'], ['K', 'KH'], ['D', 'DH'], ['T', 'TH'], ['G', 'GH'], ['R', 'RH']
+  // 2. Classical Sanskrit Aspirated Consonants (S -> SH, K -> KH, D -> DH, T -> TH, G -> GH, B -> BH, C -> CH, P -> PH)
+  // Note: 'R' is not aspirable in Indian phonology; avoid 'RH'.
+  const aspiratedPairs: [string, string, string][] = [
+    ['S', 'SH', "Sanskrit sibilant elevation ('S' -> 'SH')"],
+    ['K', 'KH', "Devanagari aspirated resonant ('K' -> 'KH')"],
+    ['D', 'DH', "Vedic soft-aspirate harmonizer ('D' -> 'DH')"],
+    ['T', 'TH', "Phonetic dental aspirate ('T' -> 'TH')"],
+    ['G', 'GH', "Throat chakra velar aspirate ('G' -> 'GH')"],
+    ['B', 'BH', "Auspicious Jupiterian aspirate ('B' -> 'BH')"],
+    ['C', 'CH', "Phonetic palatal reinforcement ('C' -> 'CH')"],
+    ['P', 'PH', "Phonetic labial aspirate ('P' -> 'PH')"]
   ];
-  for (const [origC, newC] of hPairs) {
+  for (const [origC, newC, note] of aspiratedPairs) {
     if (firstName.includes(origC) && !firstName.includes(origC + 'H')) {
       const idx = firstName.indexOf(origC);
       const variant = firstName.slice(0, idx) + newC + firstName.slice(idx + 1);
-      const cand = (variant + (surname ? ' ' + surname : '')).trim();
-      if (cand !== upper && !candidatesSet.has(cand)) {
-        candidatesSet.add(cand);
-        rawVariations.push({ name: cand, note: `Phonetic harmonizer (${origC} -> ${newC})` });
-      }
+      addVariation(variant + (surname ? ' ' + surname : ''), note);
     }
   }
 
-  // 3. Resonant doubling of internal consonants
-  const doubleConsonants = ['N', 'R', 'L', 'M', 'S', 'T'];
+  // 3. Resonant doubling of internal or terminal consonants (NEVER at index 0)
+  const doubleConsonants = ['L', 'N', 'M', 'T', 'R', 'S', 'D', 'K', 'P'];
   for (const c of doubleConsonants) {
-    if (firstName.includes(c) && !firstName.includes(c + c)) {
-      const idx = firstName.indexOf(c);
+    // Check if letter exists after the first character
+    const idx = firstName.indexOf(c, 1);
+    if (idx > 0 && !firstName.includes(c + c)) {
       const variant = firstName.slice(0, idx) + c + c + firstName.slice(idx + 1);
-      const cand = (variant + (surname ? ' ' + surname : '')).trim();
-      if (cand !== upper && !candidatesSet.has(cand)) {
-        candidatesSet.add(cand);
-        rawVariations.push({ name: cand, note: `Resonant doubling of '${c}'` });
-      }
+      addVariation(variant + (surname ? ' ' + surname : ''), `Resonant acoustic doubling of internal '${c}'`);
+    }
+    // Also check if last character matches and wasn't already caught at idx
+    if (firstName.endsWith(c) && !firstName.endsWith(c + c)) {
+      const variant = firstName + c;
+      addVariation(variant + (surname ? ' ' + surname : ''), `Terminal resonant consonant reinforcement ('${c}')`);
     }
   }
 
-  // 4. Terminal 'A' or 'H'
+  // 4. Classical Sanskrit nominative/harmonic terminal vowel ('A') or Visarga ('H')
   if (!firstName.endsWith('A') && !firstName.endsWith('H')) {
-    const candA = (`${firstName}A` + (surname ? ' ' + surname : '')).trim();
-    if (!candidatesSet.has(candA)) {
-      candidatesSet.add(candA);
-      rawVariations.push({ name: candA, note: "Terminal 'A' resonant harmonic" });
+    addVariation(`${firstName}A` + (surname ? ' ' + surname : ''), "Classical Sanskrit terminal 'A' harmonic");
+  } else if (firstName.endsWith('A')) {
+    addVariation(`${firstName}H` + (surname ? ' ' + surname : ''), "Classical soft-visarga terminal 'H'");
+  }
+
+  // 5. Combined harmonic adjustments (edit distance = 2) for rich vibration optimization
+  if (firstName.includes('A') && firstName.length > 2) {
+    const lastChar = firstName.slice(-1);
+    if (['L', 'N', 'T', 'M', 'R', 'S'].includes(lastChar) && !firstName.endsWith(lastChar + lastChar)) {
+      const idxA = firstName.indexOf('A');
+      const doubled = firstName.slice(0, idxA) + 'AA' + firstName.slice(idxA + 1) + lastChar;
+      addVariation(doubled + (surname ? ' ' + surname : ''), `Harmonic vowel-consonant resonance coupling (A->AA, ${lastChar}->${lastChar}${lastChar})`);
     }
+  }
+
+  // 6. Astrological Family / Karmic Initial (Standard Indian Professional Numerology Practice)
+  // Appends an auspicious initial (e.g. K., S., V., A., R., M.) to harmonize total compound
+  const auspiciousInitials = ['K.', 'V.', 'S.', 'A.', 'R.', 'M.', 'D.', 'N.'];
+  for (const init of auspiciousInitials) {
+    const withInit = `${firstName} ${init}` + (surname ? ' ' + surname : '');
+    addVariation(withInit, `Auspicious harmonic initial anchor (${init})`);
   }
 
   // Score candidates
@@ -442,8 +472,9 @@ export function generateNameCorrectionCandidates(
       if (dist > 2) continue; // enforce max edit distance <= 2
 
       const isPref = PREFERRED_COMPOUND_NUMBERS.has(comp);
-      const prefBonus = isPref ? 15 : 0;
-      const compositeRank = harm.score + prefBonus - dist * 5;
+      const isChall = CHALLENGING_COMPOUND_NUMBERS.has(comp);
+      const prefBonus = isPref ? 15 : isChall ? -15 : 0;
+      const compositeRank = harm.score + prefBonus - dist * 4;
 
       scored.push({
         proposedName: name,
@@ -452,7 +483,7 @@ export function generateNameCorrectionCandidates(
         chaldeanCompound: comp,
         chaldeanRoot: root,
         harmonyScore: harm.score,
-        suitabilityScore: Math.min(100, harm.score + (isPref ? 10 : 0)),
+        suitabilityScore: Math.min(100, Math.max(20, harm.score + (isPref ? 8 : isChall ? -12 : 0))),
         compositeRank,
         governingPlanet: PLANET_DATA[root]?.planetEn || 'Unknown',
         isPreferredCompound: isPref
@@ -462,8 +493,18 @@ export function generateNameCorrectionCandidates(
     }
   }
 
-  scored.sort((a, b) => b.compositeRank - a.compositeRank || b.harmonyScore - a.harmonyScore || a.editDistance - b.editDistance);
-  return scored.slice(0, targetCount);
+  // Deduplicate by proposedName
+  const uniqueScored: NameCorrectionCandidate[] = [];
+  const seenNames = new Set<string>();
+  for (const item of scored) {
+    if (!seenNames.has(item.proposedName)) {
+      seenNames.add(item.proposedName);
+      uniqueScored.push(item);
+    }
+  }
+
+  uniqueScored.sort((a, b) => b.compositeRank - a.compositeRank || b.harmonyScore - a.harmonyScore || a.editDistance - b.editDistance);
+  return uniqueScored.slice(0, targetCount);
 }
 
 export function getSignatureGuidance(moolank: number, name: string): {
@@ -593,8 +634,8 @@ export const NumerologyCalculator = {
       status: harm.score >= 80 ? 'excellent' : harm.score >= 60 ? 'good' : 'friction'
     };
   },
-  generateNameCorrectionCandidates: (name: string, moolank: number, bhagyank: number) => {
-    return generateNameCorrectionCandidates(name, moolank, bhagyank, 5);
+  generateNameCorrectionCandidates: (name: string, moolank: number, bhagyank: number, targetCount: number = 5) => {
+    return generateNameCorrectionCandidates(name, moolank, bhagyank, targetCount);
   },
   getSignatureGuidance,
   analyzeBusinessName,

@@ -11,6 +11,7 @@ import {
   calculateBhagyank,
   calculateNaamank,
   calculateHarmonyScore,
+  generateNameCorrectionCandidates,
   PLANET_DATA,
   RELATIONSHIP_MATRIX
 } from './numerologyCalculator';
@@ -984,12 +985,14 @@ The active **${chart.currentDasha.maha}** Mahadasha transitions through vital su
       pythagorean: { compoundTotal: 23, naamank: 5, breakdown: [] as any[], governingPlanet: 'Mercury (Budha)' }
     };
     let harmony = { score: 85, alignmentTierEn: 'High Synergy (Highly Auspicious)', alignmentTierHi: 'अति उत्तम सामंजस्य', moolankRel: 'friendly', bhagyankRel: 'friendly' };
+    let candidates: any[] = [];
 
     try {
       moolank = calculateMoolank(day);
       bhagyank = calculateBhagyank(cleanDob);
       naamank = calculateNaamank(rawName);
       harmony = calculateHarmonyScore(moolank, bhagyank.destinyNumber, naamank.chaldean.compoundTotal);
+      candidates = generateNameCorrectionCandidates(rawName, moolank, bhagyank.destinyNumber, 5);
     } catch (_) {
       // Fallback to safe defaults if profile data has special characters
     }
@@ -1001,6 +1004,25 @@ The active **${chart.currentDasha.maha}** Mahadasha transitions through vital su
     let chaldeanTableRows = '';
     for (const b of naamank.chaldean.breakdown) {
       chaldeanTableRows += `| **${b.letter}** | ${b.value} |\n`;
+    }
+
+    let candidatesTableRows = '';
+    let candidatesProse = '';
+    if (candidates && candidates.length > 0) {
+      candidatesTableRows = candidates.map((c, i) =>
+        `| **${i + 1}. ${c.proposedName}** | ${c.chaldeanCompound} (${c.chaldeanRoot}) | ${c.governingPlanet} | ${c.harmonyScore}% | ${c.suitabilityScore}/100 | ${c.editDistance} | ${c.transformationNote} |`
+      ).join('\n');
+
+      candidatesProse = candidates.map((c, i) => `
+##### Candidate ${i + 1}: ${c.proposedName}
+- **Vibrational Alignment:** Chaldean Compound **${c.chaldeanCompound}** reducing to Root **${c.chaldeanRoot}** (governed by **${c.governingPlanet}**).
+- **Synergy Rating:** **${c.harmonyScore}% Harmony** with Moolank ${moolank} & Bhagyank ${bhagyank.destinyNumber} | **Suitability Index:** **${c.suitabilityScore} / 100** (Edit Distance: ${c.editDistance}).
+- **Harmonic Rationale:** ${c.transformationNote}.
+- **Recommended Application:** Ideal for digital branding, email signatures, professional invoices, social media accounts, and visiting cards.
+`).join('\n');
+    } else {
+      candidatesTableRows = '| **1. Current Name Auspicious** | Stable | Native Ruler | 90% | 95/100 | 0 | Baseline already in strong harmony |\n';
+      candidatesProse = 'Your baseline name currently exhibits stable planetary resonance with your birth numbers.';
     }
 
     return [
@@ -1147,17 +1169,19 @@ $$\\text{Harmony Score} = \\text{round}(0.40 \\times M + 0.40 \\times B + 0.20 \
         sectionId: 'sec_num_ch9_candidates',
         chapterNumber: 9,
         title: 'Chapter 9: Personalized Name Correction Recommendations',
-        subtitle: 'Ranked Bounded Spelling Alternatives with Suitability Scores',
+        subtitle: '5 Ranked Bounded Spelling Alternatives with Suitability Scores',
         icon: 'fa-wand-magic-sparkles',
         contentMarkdown: `### Name Correction (नाम शोधन) Strategy
 If your current name experiences friction with either your psychic root or life path destiny, subtle, phonetically natural spelling adjustments harmonize the energetic field without requiring legal alterations.
 
-#### Top Recommended Variations
-1. **Option 1 (Optimal Resonance):** Addition of a resonant vowel (e.g. subtle 'A' or 'E' doubling) designed to elevate the compound to **23, 24, 32, or 33**.
-2. **Option 2 (Executive Authority):** Constrained breath harmonizer ('H' insertion) bridging the name to solar/mercurial vibrations.
-3. **Option 3 (Commercial Adaptability):** Resonant consonant doubling aligning with international trade.
+#### 5 Personalized Name Correction Candidates
+| Candidate Spelling | Chaldean Root | Governing Planet | Harmony | Suitability | Dist | Rationale |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+${candidatesTableRows}
 
-*Each candidate preserves aesthetic elegance, dignified pronunciation, and social ease.*`
+${candidatesProse}
+
+*Each candidate preserves aesthetic elegance, dignified pronunciation, and social ease while optimizing occult planetary frequencies and personal authority.*`
       },
       {
         sectionId: 'sec_num_ch10_nakshatra',
