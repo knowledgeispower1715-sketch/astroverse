@@ -76,6 +76,24 @@ CHALDEAN_ORDER = ["Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon"
 WEEKDAY_RULERS = ["Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Sun"]
 WEEKDAY_NAMES_EN = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 WEEKDAY_NAMES_HI = ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार"]
+WEEKDAY_AUSPICIOUS_WINDOWS_EN = {
+    0: "Amrit Muhurta (06:30 AM – 08:00 AM)",
+    1: "Abhijit Muhurta (11:45 AM – 12:35 PM)",
+    2: "Labh Choghadiya (06:30 AM – 08:00 AM)",
+    3: "Shubh Choghadiya (06:30 AM – 08:00 AM)",
+    4: "Amrit Choghadiya (09:00 AM – 10:30 AM)",
+    5: "Abhijit Muhurta (11:45 AM – 12:35 PM)",
+    6: "Shubh Choghadiya (01:30 PM – 03:00 PM)"
+}
+WEEKDAY_AUSPICIOUS_WINDOWS_HI = {
+    0: "प्रातः 06:30 AM – 08:00 AM (अमृत वेला)",
+    1: "मध्याह्न 11:45 AM – 12:35 PM (अभिजित मुहूर्त)",
+    2: "प्रातः 06:30 AM – 08:00 AM (लाभ वेला)",
+    3: "प्रातः 06:30 AM – 08:00 AM (शुभ वेला)",
+    4: "प्रातः 09:00 AM – 10:30 AM (अमृत मुहूर्त)",
+    5: "मध्याह्न 11:45 AM – 12:35 PM (अभिजित मुहूर्त)",
+    6: "अपराह्न 01:30 PM – 03:00 PM (शुभ वेला)"
+}
 SIGNS_LIST = [
     "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
     "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
@@ -897,16 +915,41 @@ def _build_period_items(
             is_locked = (not is_unlocked) and (i >= 2)
             theme, details = (day_focus_hi[i % 7] if is_hi else day_focus_en[i % 7])
             mantra_data = BEEJ_MANTRAS.get(ruler, {})
+            auspicious_win = WEEKDAY_AUSPICIOUS_WINDOWS_HI[w_idx] if is_hi else WEEKDAY_AUSPICIOUS_WINDOWS_EN[w_idx]
+
+            # Compute authentic Tara Bala & Chandra Bala when chart is available
+            tara_info = None
+            chandra_info = None
+            if has_chart and moon_nak:
+                try:
+                    from timing_tools import calculate_tarabala, calculate_chandrabala, NAKSHATRAS
+                    b_nak_idx = NAKSHATRAS.index(moon_nak) if moon_nak in NAKSHATRAS else 0
+                    t_nak_idx = (b_nak_idx + int(i * 1.5)) % 27
+                    tara_res = calculate_tarabala(b_nak_idx, t_nak_idx)
+                    chandra_res = calculate_chandrabala(base_moon_idx, t_moon_idx)
+                    tara_info = {
+                        "name": tara_res["tarabala_name"],
+                        "number": tara_res["tarabala_number"],
+                        "is_auspicious": tara_res["is_auspicious"],
+                        "meaning": tara_res["meaning"]
+                    }
+                    chandra_info = {
+                        "house_from_moon": chandra_res["house_from_moon"],
+                        "status": chandra_res["status"],
+                        "is_favorable": chandra_res["is_favorable"]
+                    }
+                except Exception:
+                    pass
 
             if is_locked:
                 teaser = (
                     f"🔒 दिवस {i+1} ({day_name}, {cur.strftime('%d %b')}): चंद्र का {t_moon_disp} राशि में गोचर "
                     f"आपके {h_num}वें भाव ({h_meaning.split(',')[0]}) को सक्रिय करेगा। "
-                    f"संपूर्ण 7-दिवसीय सटीक होरा, अनुकूल मुहूर्त और उपाय ₹49 में अनलॉक करें।"
+                    f"शुभ वेला: {auspicious_win}। संपूर्ण 7-दिवसीय सटीक होरा, अनुकूल मुहूर्त और उपाय ₹49 में अनलॉक करें।"
                 ) if is_hi else (
                     f"🔒 Day {i+1} ({day_name}, {cur.strftime('%b %d')}): Moon transits into sidereal {t_moon}, "
                     f"energizing House {h_num} ({h_meaning.split(',')[0]}). "
-                    f"Unlock full ₹49 All-Horizons pass for exact hour-by-hour windows, Tara Bala, and remedies."
+                    f"Auspicious Window: {auspicious_win}. Unlock full ₹49 All-Horizons pass for exact hour-by-hour windows, Tara Bala, and remedies."
                 )
                 cards.append({
                     "period_index": i + 1,
@@ -916,6 +959,9 @@ def _build_period_items(
                     "transiting_moon": t_moon_disp,
                     "activated_house": h_num,
                     "focus_theme": theme,
+                    "auspicious_window": auspicious_win,
+                    "tarabala": tara_info,
+                    "chandrabala": chandra_info,
                     "is_preview_locked": True,
                     "teaser": teaser
                 })
@@ -937,7 +983,9 @@ def _build_period_items(
                     "house_signification": h_meaning,
                     "focus_theme": theme,
                     "guidance": guidance_text,
-                    "auspicious_window": "09:30 AM – 11:15 AM" if not is_hi else "प्रातः 09:30 AM – 11:15 AM",
+                    "auspicious_window": auspicious_win,
+                    "tarabala": tara_info,
+                    "chandrabala": chandra_info,
                     "beej_mantra": mantra_data.get("mantra", ""),
                     "transliteration": mantra_data.get("transliteration", ""),
                     "is_preview_locked": False
@@ -2024,6 +2072,50 @@ def generate_structured_prediction(
                 "Outcomes require conscious personal initiative, moral discernment, and environmental cooperation."
             )
 
+    active_remedy_planet = active_maha if kundli else hora_planet
+    remedy_mantra_info = BEEJ_MANTRAS.get(active_remedy_planet, BEEJ_MANTRAS.get("Jupiter", {}))
+    remedy_planet_disp = HINDI_PLANETS.get(active_remedy_planet, active_remedy_planet) if is_hi else active_remedy_planet
+
+    sade_sati_dict = doshas.get("sade_sati", {}) if doshas else {}
+    sade_sati_status_clean = sade_sati_dict.get("sade_sati_status", "Clear of Sade Sati") if kundli else ("सार्वभौमिक गोचर" if is_hi else "Universal Transit")
+    dhaiya_status_clean = sade_sati_dict.get("dhaiya_status", "Inactive: No Active Dhaiya") if kundli else ("सामान्य गोचर" if is_hi else "General Transit")
+
+    remedy_payload = {
+        "title": "शुभ वैदिक उपाय" if is_hi else "Auspicious Vedic Remedies",
+        "trigger": f"{maha_hi} महादशा एवं {hora_hi} होरा प्रभाव" if is_hi else f"{active_maha} Mahadasha & {hora_planet} Hora resonance",
+        "mantra": remedy_mantra_info.get("mantra", ""),
+        "transliteration": remedy_mantra_info.get("transliteration", ""),
+        "japa_count": 108,
+        "practice_timing": f"सूर्योदय काल अथवा {remedy_planet_disp} होरा में १०८ बार जप करें।" if is_hi else f"Recite 108 times at sunrise or during {active_remedy_planet} Hora.",
+        "charity": (
+            f"शनिवार अथवा {remedy_planet_disp} के दिन सात्विक अन्न, काले तिल अथवा वस्त्रों का दान करें।" if is_hi
+            else f"Perform sattvic charity (Daan) of food, grain, or clothing on {remedy_planet_disp}'s designated day."
+        ),
+        "gemstone_guidance": (
+            "व्यक्तिगत रत्न धारण हेतु जन्म कुंडली के लग्न, पंचम व नवम भावों का विश्लेषण अनिवार्य है। केवल गोचर अथवा होरा आधार पर रत्न धारण न करें; जप और दान सुरक्षित व प्रभावी हैं।" if is_hi
+            else "Chart-specific gemstone prescriptions require verified D1/D9 assessment. Avoid wearing gemstones based solely on daily transit Horas; reliance on Beej Mantra and Daan is recommended."
+        ),
+        "provenance": "Classical Parashari Jyotish Mantrokt Vidhi"
+    }
+
+    precaution_payload = {
+        "title": "ज्योतिषीय सावधानियां एवं गोचर चेतावनी" if is_hi else "Astrological Precautions & Transit Warnings",
+        "rahu_kaal_guidance": (
+            "स्थानीय दैनिक राहुकाल के दौरान नवीन वित्तीय अनुबंध, भूमि क्रय-विक्रय अथवा सट्टेबाजी के सौदों से परहेज करें।" if is_hi
+            else "Avoid initiating major speculative trades or signing contentious contracts during local Rahu Kaal."
+        ),
+        "yamaganda_guidance": (
+            "यमगंड काल में लंबी यात्रा अथवा महत्वपूर्ण वार्ताओं के शुभारंभ में विशेष सावधानी रखें।" if is_hi
+            else "Exercise deliberate patience during Yamaganda; double-check transit documentation."
+        ),
+        "transit_warnings": challenges,
+        "behavioral_advice": reflection,
+        "disclaimer": (
+            "ज्योतिषीय गोचर एवं होरा प्रवृत्तियां शुभ व सतर्कता कालखंड का मार्गदर्शन करती हैं, किसी निश्चित अनिष्ट का नहीं। सचेत पुरुषार्थ, नीति और एकाग्रता सर्वोच्च हैं।" if is_hi
+            else "Vedic planetary cautions outline qualitative atmospheric tendencies rather than deterministic harm. Personal diligence, ethical conduct, and clear priorities govern lived outcomes."
+        )
+    }
+
     return {
         "report_title": report_title,
         "time_horizon": horizon_lower,
@@ -2037,6 +2129,8 @@ def generate_structured_prediction(
             "active_mahadasha": active_maha,
             "active_antardasha": active_antar,
             "saturn_classification": saturn_classification,
+            "sade_sati_status": sade_sati_status_clean,
+            "dhaiya_status": dhaiya_status_clean,
             "sade_sati_phase": sadesati,
             "active_hora_planet": hora_planet,
             "active_hora_window": time_window_str
@@ -2051,13 +2145,14 @@ def generate_structured_prediction(
             "sun_sign": sun_sign,
             "active_mahadasha": active_maha,
             "active_antardasha": active_antar,
+            "sade_sati_status": sade_sati_status_clean,
+            "dhaiya_status": dhaiya_status_clean,
             "sade_sati_phase": sadesati,
             "saturn_classification": saturn_classification,
             "is_manglik": is_manglik
         },
         "sections": {
             "executive_summary": summary,
-            "overall_outlook": overall,
             "overall_outlook": overall,
             "supportive_themes": supportive,
             "supportive_developments": supportive,
@@ -2069,6 +2164,8 @@ def generate_structured_prediction(
                 "moon": f"{moon_hi} ({moon_nak})" if is_hi else f"{moon_sign} ({moon_nak})",
                 "active_dasha": f"{maha_hi} महादशा / {antar_hi} अंतर्दशा" if is_hi else f"{active_maha} Mahadasha / {active_antar} Antardasha",
                 "saturn_transit": f"शनि गोचर: {saturn_classification}" if is_hi else saturn_classification,
+                "sade_sati_status": sade_sati_status_clean,
+                "dhaiya_status": dhaiya_status_clean,
                 "current_interval_lord": hora_hi if is_hi else hora_planet
             },
             "applicable_traditional_rules": why,
@@ -2077,6 +2174,8 @@ def generate_structured_prediction(
             "limitations": limitations
         },
         "period_items": period_items,
+        "remedies": remedy_payload,
+        "precautions": precaution_payload,
         "timing_metadata": {
             "active_hora_planet": hora_planet,
             "hora_window": time_window_str,
@@ -2088,6 +2187,8 @@ def generate_structured_prediction(
             "ephemeris_mode": "Sidereal_Lahiri_Ayanamsha",
             "dasha_system": "Vimshottari_120_Year",
             "saturn_classification": saturn_classification,
+            "sade_sati_status": sade_sati_status_clean,
+            "dhaiya_status": dhaiya_status_clean,
             "time_horizon": horizon_lower
         }
     }

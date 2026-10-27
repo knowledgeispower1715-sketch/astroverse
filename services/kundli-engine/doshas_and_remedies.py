@@ -109,10 +109,12 @@ def analyze_doshas_and_remedies(planets: dict, lagna_sign: str):
         kalsarp_desc = "Planets are distributed freely across both sides of the nodal axis."
         kalsarp_remedy = "Chart is completely free from Rahu-Ketu entrapment."
 
-    # 3. Dynamic Shani Sade Sati Analysis
+    # 3. Dynamic Shani Sade Sati & Dhaiya Analysis
     # Transiting Saturn is currently in Pisces (Index 11)
     TRANSIT_SATURN_SIGN_IDX = 11  # Pisces
+    TRANSIT_SATURN_SIGN = "Pisces"
     moon_sign_idx = SIGNS.index(planets["Moon"]["sign"])
+    natal_moon_sign = planets["Moon"]["sign"]
     diff = ((TRANSIT_SATURN_SIGN_IDX - moon_sign_idx + 12) % 12) + 1
 
     is_sade_sati = diff in [12, 1, 2]
@@ -120,31 +122,43 @@ def analyze_doshas_and_remedies(planets: dict, lagna_sign: str):
 
     if diff == 12:
         sadesati_phase = "Phase 1: Rising (Aarohan) — 12th from Moon"
+        sadesati_status = "Active: Phase 1 (Rising)"
+        dhaiya_status = "Inactive: No Active Dhaiya"
         saturn_classification = "Sade Sati (Phase 1: Rising)"
         sadesati_desc = "Saturn transits the 12th house from natal Moon. Native may experience increased expenses and lifestyle shifts."
         sadesati_remedy = "Light a mustard oil lamp under a Peepal tree on Saturday evenings."
     elif diff == 1:
         sadesati_phase = "Phase 2: Peak (Madhya / Janma Shani) — Over Natal Moon"
+        sadesati_status = "Active: Phase 2 (Peak / Janma Shani)"
+        dhaiya_status = "Inactive: No Active Dhaiya"
         saturn_classification = "Sade Sati (Phase 2: Peak)"
         sadesati_desc = "Saturn transits directly over your natal Moon. Demands high discipline, perseverance, and emotional patience."
         sadesati_remedy = "Recite Dasharatha Shani Stotra and wear an iron ring made from horseshoe."
     elif diff == 2:
         sadesati_phase = "Phase 3: Setting (Avarohan) — 2nd from Moon"
+        sadesati_status = "Active: Phase 3 (Setting)"
+        dhaiya_status = "Inactive: No Active Dhaiya"
         saturn_classification = "Sade Sati (Phase 3: Setting)"
         sadesati_desc = "Saturn moves through the 2nd house from Moon. Financial consolidation and family stabilization phase."
         sadesati_remedy = "Donate black sesame seeds, mustard oil, or blue cloth to the needy on Saturdays."
     elif diff == 4:
-        sadesati_phase = "Clear of Sade Sati (Kantaka Shani 4th House Dhaiya Active)"
+        sadesati_phase = "Clear of Sade Sati"
+        sadesati_status = "Clear of Sade Sati"
+        dhaiya_status = "Active: Kantaka Shani (4th House Dhaiya)"
         saturn_classification = "Kantaka Shani (4th House Dhaiya)"
         sadesati_desc = "Not in Sade Sati. Active 2.5-year minor Dhaiya in the 4th house from natal Moon (Kantaka Shani) affecting domestic environment."
         sadesati_remedy = "Chant Shani Beej Mantra 108 times: Om Sham Shanaishcharaya Namah."
     elif diff == 8:
-        sadesati_phase = "Clear of Sade Sati (Ashtama Shani 8th House Dhaiya Active)"
+        sadesati_phase = "Clear of Sade Sati"
+        sadesati_status = "Clear of Sade Sati"
+        dhaiya_status = "Active: Ashtama Shani (8th House Dhaiya)"
         saturn_classification = "Ashtama Shani (8th House Dhaiya)"
         sadesati_desc = "Not in Sade Sati. Active 2.5-year minor Dhaiya in the 8th house from natal Moon (Ashtama Shani). Guard against sudden disruptions."
         sadesati_remedy = "Perform Telabhishek to Lord Shani on Saturdays."
     else:
-        sadesati_phase = "Free from Sade Sati & Dhaiya"
+        sadesati_phase = "Clear of Sade Sati"
+        sadesati_status = "Clear of Sade Sati"
+        dhaiya_status = "Inactive: No Active Dhaiya"
         saturn_classification = "Normal Saturn Transit (Clear)"
         sadesati_desc = "Transiting Saturn is favorably placed relative to your natal Moon."
         sadesati_remedy = "No Saturn afflictions active at this time."
@@ -182,6 +196,11 @@ def analyze_doshas_and_remedies(planets: dict, lagna_sign: str):
         "sade_sati": {
             "is_active": is_sade_sati,
             "is_dhaiya": is_dhaiya,
+            "sade_sati_status": sadesati_status,
+            "dhaiya_status": dhaiya_status,
+            "transit_saturn_sign": TRANSIT_SATURN_SIGN,
+            "natal_moon_sign": natal_moon_sign,
+            "house_from_moon": diff,
             "phase": sadesati_phase,
             "classification": saturn_classification,
             "description": sadesati_desc,
