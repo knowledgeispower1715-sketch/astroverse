@@ -75,6 +75,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Google Identity Services (OAuth 2.0 & GIS) -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(typeof initGoogleAuth==='function')initGoogleAuth();"></script>
+  <!-- Razorpay Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <style>
     :root {
@@ -9214,6 +9216,7 @@
   <!-- ==================== JAVASCRIPT CONTROLLER ==================== -->
   <script>
     // 1. GLOBAL STATE & SESSION (Section 10: Guest default with ₹0.00 balance)
+    window.RAZORPAY_KEY_ID = "rzp_test_Tt5BwadyapFq9T";
     let currentUserSession = JSON.parse(localStorage.getItem('astro_user_session') || 'null');
     let currentWalletBalance = parseFloat(localStorage.getItem('astro_wallet_bal') || '0.00');
     let currentDemoWalletBalance = parseFloat(localStorage.getItem('astro_demo_wallet_bal') || '0.00');
@@ -12655,7 +12658,7 @@
         const orderData = await orderRes.json();
         if (typeof Razorpay !== 'undefined') {
           const rzpOptions = {
-            key: "rzp_test_placeholder",
+            key: orderData.keyId || window.RAZORPAY_KEY_ID || "rzp_test_Tt5BwadyapFq9T",
             amount: Math.round(creditAmt * 100),
             currency: "INR",
             name: "AstroVerse",
@@ -12669,7 +12672,7 @@
               email: currentUserSession?.email || "",
               contact: currentUserSession?.phone || ""
             },
-            theme: { color: "#F59E0B" }
+            theme: { color: "#18213A" }
           };
           const rzpInstance = new Razorpay(rzpOptions);
           rzpInstance.open();
@@ -17111,7 +17114,7 @@
 
         if (typeof Razorpay !== 'undefined') {
           const rzpOptions = {
-            key: orderData.keyId || "rzp_test_placeholder",
+            key: orderData.keyId || window.RAZORPAY_KEY_ID || "rzp_test_Tt5BwadyapFq9T",
             amount: orderData.amountPaise || (tier === 'PLUS' ? 14900 : 29900),
             currency: "INR",
             name: "AstroVerse Vedic Platform",
@@ -17125,7 +17128,7 @@
               email: currentUserSession?.email || "",
               contact: currentUserSession?.phone || ""
             },
-            theme: { color: tier === 'PREMIUM' ? "#78350F" : "#D97706" }
+            theme: { color: "#18213A" }
           };
           const rzpInstance = new Razorpay(rzpOptions);
           rzpInstance.open();
@@ -18632,7 +18635,7 @@
         } else if (orderData.orderId && method === 'RAZORPAY') {
           if (typeof Razorpay !== 'undefined') {
             const rzpOptions = {
-              key: orderData.keyId || "rzp_test_placeholder",
+              key: orderData.keyId || window.RAZORPAY_KEY_ID || "rzp_test_Tt5BwadyapFq9T",
               amount: orderData.amountPaise || finalPaise,
               currency: "INR",
               name: "AstroVerse Report Studio",
@@ -18646,7 +18649,7 @@
                 email: currentUserSession?.email || "",
                 contact: currentUserSession?.phone || ""
               },
-              theme: { color: "#881337" }
+              theme: { color: "#18213A" }
             };
             const rzpInstance = new Razorpay(rzpOptions);
             rzpInstance.open();

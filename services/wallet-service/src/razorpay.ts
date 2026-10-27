@@ -1,25 +1,32 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
 export const TEST_RAZORPAY_SECRET = 'test_secret_for_automated_regression_suite_hmac256';
 
 export function isRazorpayConfigured(): boolean {
+  if (process.env.NODE_ENV === 'test') {
+    return false;
+  }
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   return Boolean(
     keyId &&
     keySecret &&
     !keyId.includes('placeholder') &&
-    !keySecret.includes('placeholder')
+    !keySecret.includes('placeholder') &&
+    !keyId.includes('your_') &&
+    !keySecret.includes('your_')
   );
 }
 
 export function getRazorpaySecret(): string {
-  if (isRazorpayConfigured()) {
-    return process.env.RAZORPAY_KEY_SECRET!;
-  }
   if (process.env.NODE_ENV === 'test') {
     return TEST_RAZORPAY_SECRET;
+  }
+  if (isRazorpayConfigured()) {
+    return process.env.RAZORPAY_KEY_SECRET!;
   }
   return '';
 }
@@ -79,11 +86,11 @@ export function generateTestPaymentSignature(orderId: string, paymentId: string)
 export const TEST_RAZORPAY_WEBHOOK_SECRET = 'test_webhook_secret_hmac256_astroverse';
 
 export function getRazorpayWebhookSecret(): string {
-  if (process.env.RAZORPAY_WEBHOOK_SECRET && !process.env.RAZORPAY_WEBHOOK_SECRET.includes('placeholder')) {
-    return process.env.RAZORPAY_WEBHOOK_SECRET;
-  }
   if (process.env.NODE_ENV === 'test') {
     return TEST_RAZORPAY_WEBHOOK_SECRET;
+  }
+  if (process.env.RAZORPAY_WEBHOOK_SECRET && !process.env.RAZORPAY_WEBHOOK_SECRET.includes('placeholder')) {
+    return process.env.RAZORPAY_WEBHOOK_SECRET;
   }
   return '';
 }

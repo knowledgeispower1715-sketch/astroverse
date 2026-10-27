@@ -1087,8 +1087,12 @@ async function runAuthTestSuite() {
 
     await test('Production fail-closed check: create-order fails with 503 when live provider is not configured in production', async () => {
       const originalEnv = process.env.NODE_ENV;
+      const originalKeyId = process.env.RAZORPAY_KEY_ID;
+      const originalKeySecret = process.env.RAZORPAY_KEY_SECRET;
       try {
         process.env.NODE_ENV = 'production';
+        delete process.env.RAZORPAY_KEY_ID;
+        delete process.env.RAZORPAY_KEY_SECRET;
         const res = await request('/api/wallet/create-order', {
           method: 'POST',
           headers: { Authorization: `Bearer ${buyerToken}` },
@@ -1098,6 +1102,8 @@ async function runAuthTestSuite() {
         assert.strictEqual(res.data.error, 'PAYMENT_GATEWAY_UNAVAILABLE');
       } finally {
         process.env.NODE_ENV = originalEnv;
+        if (originalKeyId !== undefined) process.env.RAZORPAY_KEY_ID = originalKeyId;
+        if (originalKeySecret !== undefined) process.env.RAZORPAY_KEY_SECRET = originalKeySecret;
       }
     });
 

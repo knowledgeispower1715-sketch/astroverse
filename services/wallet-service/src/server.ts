@@ -1751,7 +1751,8 @@ app.post('/api/wallet/create-order', authenticate, async (req: AuthenticatedRequ
       orderId: order.razorpayOrderId,
       amount: order.amount,
       currency: 'INR',
-      status: 'CREATED'
+      status: 'CREATED',
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tt5BwadyapFq9T'
     });
   } catch (error: any) {
     return handleServiceError(res, error, 'Failed to create payment order');
@@ -2453,7 +2454,7 @@ app.post('/api/subscriptions/create-order', authenticate, async (req: Authentica
       amountRupees: priceRupees,
       tier,
       billingPeriod: period,
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_preview_key'
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tt5BwadyapFq9T'
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Subscription order creation failed');
@@ -2620,6 +2621,15 @@ app.post('/api/webhooks/razorpay', async (req: Request, res: Response) => {
       message: 'Internal server error while processing webhook.'
     });
   }
+});
+
+// GET /api/billing/config (Public payment gateway configuration)
+app.get('/api/billing/config', (_req: Request, res: Response) => {
+  res.json({
+    razorpayKeyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tt5BwadyapFq9T',
+    currency: 'INR',
+    isLiveGateway: isRazorpayConfigured()
+  });
 });
 
 // GET /api/billing/status (Active tier, subscription renewal, wallet balance, and entitlements)
@@ -2928,7 +2938,7 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
       discountPercent: pricing.discountPercent,
       productId,
       profileId,
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_preview_key'
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tt5BwadyapFq9T'
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Report order generation failed');
