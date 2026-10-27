@@ -1064,6 +1064,17 @@ def _build_period_items(
 
     # 6. MAHADASHA (5-YEAR TIMELINE)
     if horizon_lower in ["mahadasha", "5year", "five_year"]:
+        if not has_chart:
+            return {
+                "items": [],
+                "requires_chart": True,
+                "message": (
+                    "विंशोत्तरी महादशा कालखंड आपकी जन्म कालीन चंद्र राशि और नक्षत्र पर आधारित होता है। सटीक 5-वर्षीय विंशोत्तरी कालखंड देखने के लिए अपनी जन्म कुंडली बनाएं।"
+                    if is_hi else
+                    "Personalized 5-year Vimshottari Mahadasha timeline requires a calculated birth chart. Vimshottari Dasha calculations depend on the exact degree of your natal Moon at birth. Please calculate your Janam Kundli to unlock your active Mahadasha and 5-year subperiod timeline."
+                )
+            }
+
         years = []
         year_themes_en = [
             ("Year 1: Foundation Building & Mentorship", "Consolidating core reputation, securing reliable sponsors, and organizing routines.", "Avoid scattered multi-tasking.", "Recite active Mahadasha Lord Beej Mantra on designated weekday."),
@@ -1190,6 +1201,7 @@ def generate_structured_prediction(
         if horizon_lower == "hourly":
             if is_hi:
                 report_title = f"प्रति घंटा सार्वभौमिक मार्गदर्शन: {hora_hi} होरा ({time_window_str})"
+                summary = f"सक्रिय {hora_hi} होरा में रणनीतिक प्राथमिकता, एकाग्रता एवं संतुलित संवाद पर ध्यान केंद्रित करें।"
                 overall = (
                     f"इस सार्वभौमिक {hora_hi} होरा के दौरान, आकाशीय ऊर्जाएं रणनीतिक योजना, विश्लेषणात्मक विवेक और "
                     f"सार्थक संवाद को सशक्त बनाती हैं। शास्त्रीय वैदिक ज्योतिष में ग्रहीय होरा समय के अनुकूल उपयोग का मार्गदर्शन करती है।"
@@ -1217,6 +1229,7 @@ def generate_structured_prediction(
                 limitations = "सार्वभौमिक गोचर सामान्य खगोलीय समय को दर्शाता है। व्यक्तिगत परिणाम आपकी जन्म कुंडली और पुरुषार्थ पर निर्भर करते हैं।"
             else:
                 report_title = f"Hourly Universal Guidance: {hora_planet} Hora ({time_window_str})"
+                summary = f"Active {hora_planet} Hora provides a focused window for disciplined execution, clear communication, and structured planning."
                 overall = (
                     f"During this universal {hora_planet} Hora, celestial energies emphasize focused strategic action, "
                     f"analytical discernment, and purposeful communication. In classical Vedic astrology, planetary Horas "
@@ -1248,6 +1261,7 @@ def generate_structured_prediction(
         elif horizon_lower == "daily":
             if is_hi:
                 report_title = f"दैनिक सार्वभौमिक गोचर पूर्वानुमान: {target_date_str}"
+                summary = "दैनिक सौर एवं चंद्र गोचर प्रातःकालीन एकाग्रता, मध्याह्न सहयोग और सायंकालीन संतुलन पर बल देते हैं।"
                 overall = (
                     "आज की आकाशीय स्थिति अनुशासित कर्म, स्पष्ट संवाद और व्यवस्थित प्रगति का संकेत देती है। "
                     "शास्त्रीय ज्योतिष दैनिक शुभ होरा के अनुसार मुख्य कार्य आरंभ करने का परामर्श देता है।"
@@ -1272,6 +1286,7 @@ def generate_structured_prediction(
                 limitations = "दैनिक गोचर सामान्य वातावरणीय ऊर्जा का वर्णन करता है। व्यक्तिगत परिणाम जन्मकालीन ग्रहों पर निर्भर करते हैं।"
             else:
                 report_title = f"Daily Universal Transit Forecast: {target_date_str}"
+                summary = "Daily solar and lunar transits emphasize structured momentum across morning focus, midday collaboration, and evening recovery."
                 overall = (
                     f"Today's planetary transit geometry highlights disciplined focus, practical communication, and measured execution "
                     f"under sidereal astronomical currents. Classical Jyotish encourages aligning major activities with favorable daily planetary hours."
@@ -1298,6 +1313,7 @@ def generate_structured_prediction(
         elif horizon_lower == "weekly":
             if is_hi:
                 report_title = f"साप्ताहिक सार्वभौमिक गोचर चक्र: 7 दिवसीय विश्लेषण ({target_date_str})"
+                summary = "7-दिवसीय चंद्र चक्र कार्यक्षेत्र में मध्य-सप्ताह सुदृढ़ता और सप्ताहांत पारिवारिक सौहार्द का मार्ग प्रशस्त करता है।"
                 overall = "यह सात दिवसीय चक्र राशिचक्र में चंद्र संचरण को दर्शाता है, जिसमें सप्ताह के आरंभ में व्यावसायिक सुदृढ़ता और सप्ताहांत में पारिवारिक शांति प्रमुख रहेगी।"
                 supportive = [
                     "दिन 1–3: आधिकारिक संचार, परियोजना योजना और अनुशासित कार्य के लिए श्रेष्ठ गति।",
@@ -1319,6 +1335,7 @@ def generate_structured_prediction(
                 limitations = "साप्ताहिक गोचर सामान्य दिशा प्रदान करता है। व्यक्तिगत घटनाएं आपकी महादशा चक्र पर निर्भर करती हैं।"
             else:
                 report_title = f"Weekly Universal Transit Progression: 7-Day Cycle ({target_date_str})"
+                summary = "Seven-day lunar cycle guides mid-week professional consolidation and weekend domestic harmony."
                 overall = "This seven-day transit cycle traces lunar movements across the zodiac, emphasizing professional consolidation early in the week and personal harmony toward the weekend."
                 supportive = [
                     "Days 1–3: Strong momentum for executive communications, project scheduling, and structured work.",
@@ -1342,6 +1359,7 @@ def generate_structured_prediction(
         elif horizon_lower == "monthly":
             if is_hi:
                 report_title = f"मासिक सार्वभौमिक गोचर समीक्षा: {target_date_str}"
+                summary = "4-सप्ताह का गोचर चक्र प्रथम पक्ष में नए उपक्रमों और द्वितीय पक्ष में वित्तीय व आंतरिक संतुलन का समर्थन करता है।"
                 overall = "यह मासिक चक्र व्यवस्थित प्रगति, संस्थागत स्थिरता और दीर्घकालिक पूंजी संचय पर बल देता है।"
                 supportive = [
                     "सप्ताह 1 व 2: शुक्ल पक्ष नए उद्यमों, व्यावसायिक दृश्यता और रणनीतिक गठबंधनों के लिए अनुकूल है।",
@@ -1363,6 +1381,7 @@ def generate_structured_prediction(
                 limitations = "मासिक गोचर व्यापक ऋतुवत वातावरण बताते हैं; व्यक्तिगत घटनाएं जन्म कुंडली से निर्धारित होती हैं।"
             else:
                 report_title = f"Monthly Universal Transit Overview: {target_date_str}"
+                summary = "Four-week transit progression supports foundational initiatives in weeks 1–2, followed by capital and reflective consolidation."
                 overall = "This monthly lunar cycle brings focus to methodical progress, institutional stability, and capital preservation across sidereal transits."
                 supportive = [
                     "Weeks 1 & 2: Waxing Moon supports initiating new ventures, professional visibility, and strategic alliances.",
@@ -1386,6 +1405,7 @@ def generate_structured_prediction(
         elif horizon_lower in ["mahadasha", "5year", "five_year"]:
             if is_hi:
                 report_title = "विंशोत्तरी महादशा अवलोकन (जन्म कुंडली आवश्यक)"
+                summary = "विंशोत्तरी 120-वर्षीय दशा चक्र जीवन के वृहद अध्यायों का शास्त्रीय रूपरेखा प्रस्तुत करता है; व्यक्तिगत फल हेतु जन्म विवरण दर्ज करें।"
                 overall = "विंशोत्तरी महादशा जन्म के समय चंद्र के सूक्ष्म नक्षत्र अंशों से निर्धारित 120 वर्षीय व्यक्तिगत कालचक्र है। बिना जन्म कुंडली के सटीक महादशा फलादेश संभव नहीं है।"
                 supportive = [
                     "टैब 1 में अपनी जन्म तिथि, समय और स्थान दर्ज कर सक्रिय महादशा जानें।",
@@ -1406,6 +1426,7 @@ def generate_structured_prediction(
                 limitations = "सत्यापित जन्म विवरण के बिना दशा समयरेखा की गणना नहीं की जा सकती।"
             else:
                 report_title = "Vimshottari Mahadasha Overview (Requires Birth Chart)"
+                summary = "Vimshottari 120-year canonical timeline framework maps overarching karmic epochs; calculate birth chart to unlock your personal Dasha."
                 overall = "Vimshottari Dasha is an intensely personalized 120-year karmic timeline derived from the exact degree of your natal Moon at the moment of birth. Without a calculated birth chart, personal Dasha periods cannot be inferred."
                 supportive = [
                     "Enter your date, time, and city of birth in Tab 1 to calculate your active Mahadasha.",
@@ -1428,6 +1449,7 @@ def generate_structured_prediction(
         else:
             if is_hi:
                 report_title = "वार्षिक सार्वभौमिक गोचर परिदृश्य: 12-माह खगोलीय चक्र"
+                summary = "12-माह का वार्षिक गोचर करियर में अनुशासन, स्थायी प्रतिष्ठा और नैतिक आचरण के नए आयाम स्थापित करता है।"
                 overall = (
                     "आगामी 12-माह का चक्र देवगुरु बृहस्पति और कर्मफलदाता शनि के प्रमुख गोचर से संचालित रहेगा। "
                     "गुरु का प्रभाव ज्ञान, विवेक और विस्तार लाएगा, जबकि शनि का गोचर अनुशासन, नैतिक दायित्व और स्थिरता की मांग करेगा।"
@@ -1453,6 +1475,7 @@ def generate_structured_prediction(
                 limitations = "वार्षिक गोचर व्यापक सामाजिक ऋतुएं दर्शाता है; निजी जीवन हेतु व्यक्तिगत कुंडली अनिवार्य है।"
             else:
                 report_title = "Yearly Universal Transit Outlook: 12-Month Astronomical Cycle"
+                summary = "Twelve-month planetary transit stations define major thematic seasons for career discipline and long-term stability."
                 overall = (
                     "The upcoming twelve-month cycle is governed by the major sidereal transits of Jupiter and Saturn. "
                     "Jupiter's movements bring themes of wisdom, mentorship, and structural expansion, while Saturn's transit "
@@ -1510,7 +1533,7 @@ def generate_structured_prediction(
                 "is_manglik": False
             },
             "sections": {
-                "executive_summary": (overall.split("। ")[0] + "।") if ("। " in overall) else (overall.split(". ")[0] + "." if ". " in overall else overall),
+                "executive_summary": summary,
                 "overall_outlook": overall,
                 "supportive_themes": supportive,
                 "supportive_developments": supportive,
@@ -1574,6 +1597,7 @@ def generate_structured_prediction(
     if horizon_lower == "hourly":
         if is_hi:
             report_title = f"प्रति घंटा व्यक्तिगत मार्गदर्शन: {hora_hi} होरा ({time_window_str})"
+            summary = f"{lagna_hi} लग्न एवं {maha_hi}-{antar_hi} दशा हेतु, यह {hora_hi} होरा रणनीतिक विवेक और कार्यों की समयबद्ध पूर्णता को बल देती है।"
             overall = (
                 f"इस सक्रिय {hora_hi} होरा के दौरान, आकाशीय प्रभाव आपके जन्म {lagna_hi} लग्न "
                 f"और वर्तमान {maha_hi}-{antar_hi} दशा चक्र से जुड़ते हैं। "
@@ -1609,6 +1633,7 @@ def generate_structured_prediction(
             )
         else:
             report_title = f"Hourly Personal Guidance: {hora_planet} Hora ({time_window_str})"
+            summary = f"For {lagna} Lagna under {active_maha}-{active_antar} Dasha, this {hora_planet} Hora sharpens strategic discernment and purposeful task completion."
             overall = (
                 f"During this active {hora_planet} Hora, celestial influences interact with your natal {lagna} Lagna "
                 f"and current {active_maha}-{active_antar} Dasha cycle. "
@@ -1648,6 +1673,7 @@ def generate_structured_prediction(
     elif horizon_lower == "daily":
         if is_hi:
             report_title = f"दैनिक व्यक्तिगत फलादेश: {target_date_str} (सौर व चंद्र गोचर विश्लेषण)"
+            summary = f"{lagna_hi} लग्न एवं {moon_hi} चंद्र हेतु, आज का गोचर {maha_hi} महादशा में अनुशासित कर्म और व्यावहारिक प्रगति को ऊर्जा देता है।"
             overall = (
                 f"आपके {lagna_hi} लग्न और {moon_hi} चंद्र राशि के लिए, आज का ग्रहीय गोचर "
                 f"{maha_hi}-{antar_hi} दशा के अंतर्गत आपके प्रमुख भावों को ऊर्जावान बना रहा है। "
@@ -1680,6 +1706,7 @@ def generate_structured_prediction(
             )
         else:
             report_title = f"Daily Personal Forecast: {target_date_str} (Solar & Lunar Transit Synthesis)"
+            summary = f"For {lagna} Lagna and {moon_sign} Moon, today's transit geometry activates key functional houses under {active_maha} Mahadasha."
             overall = (
                 f"For your natal {lagna} Lagna and {moon_sign} Moon, today's planetary transit geometry energizes your "
                 f"core functional houses under the {active_maha}-{active_antar} Dasha cycle. "
@@ -1714,6 +1741,7 @@ def generate_structured_prediction(
     elif horizon_lower == "weekly":
         if is_hi:
             report_title = f"साप्ताहिक व्यक्तिगत फलादेश: 7 दिवसीय पराशरी चक्र ({target_date_str})"
+            summary = "7-दिवसीय चंद्र संचरण आपके केंद्र व त्रिकोण भावों को सक्रिय करता है, जो पूर्वार्ध में कर्मक्षेत्र और सप्ताहांत में शांति प्रदान करता है।"
             overall = (
                 f"यह सात दिवसीय अवधि आपके {lagna_hi} लग्न के केंद्र व त्रिकोण भावों में चंद्र संचरण और "
                 f"{maha_hi}-{antar_hi} दशा के प्रभाव से युक्त है। "
@@ -1746,6 +1774,7 @@ def generate_structured_prediction(
             )
         else:
             report_title = f"Weekly Personal Forecast: 7-Day Parashari Cycle ({target_date_str})"
+            summary = f"7-day lunar progression activates your Kendra and Trikona houses, favoring early professional thrust and weekend restorative peace."
             overall = (
                 f"This seven-day forecast period is energized by lunar transits activating your {lagna} Lagna's "
                 f"Kendra and Trikona houses under the {active_maha}-{active_antar} Dasha. "
@@ -1782,6 +1811,7 @@ def generate_structured_prediction(
     elif horizon_lower == "monthly":
         if is_hi:
             report_title = f"मासिक व्यक्तिगत विश्लेषण: ग्रहीय गोचर व दशा संश्लेषण ({target_date_str})"
+            summary = f"4-सप्ताह का गोचर चक्र आपके 10वें भाव को संबल देता है, जिससे {maha_hi} दशा में प्रतिष्ठा और पूंजी संतुलन प्राप्त होता है।"
             overall = (
                 f"यह मासिक चक्र सामाजिक प्रतिष्ठा में वृद्धि और पूंजी संचय का एक सुव्यवस्थित चरण प्रस्तुत करता है। "
                 f"आपके {lagna_hi} लग्न और सक्रिय {maha_hi} महादशा के अंतर्गत "
@@ -1813,6 +1843,7 @@ def generate_structured_prediction(
             )
         else:
             report_title = f"Monthly Personal Analysis: Planetary Transits & Dasha Synthesis ({target_date_str})"
+            summary = f"4-week transit arc stabilizes your professional 10th house axis, enabling institutional progress and capital preservation under {active_maha} Dasha."
             overall = (
                 f"This monthly cycle presents a structured phase of institutional elevation and capital consolidation. "
                 f"With your 10th House {h10_occ} and your active {active_maha} Mahadasha progressing steadily, "
@@ -1849,6 +1880,7 @@ def generate_structured_prediction(
     elif horizon_lower in ["mahadasha", "5year", "five_year"]:
         if is_hi:
             report_title = f"विंशोत्तरी महादशा 5-वर्षीय जीवन चक्र: {maha_hi} महादशा ({antar_hi} अंतर्दशा)"
+            summary = f"{maha_hi} महादशा ({antar_hi} अंतर्दशा) अंतर्गत 5-वर्षीय कालखंड संस्थागत नेतृत्व, परिसंपत्ति स्थिरीकरण और नैतिक ध्येय को सुदृढ़ करता है।"
             overall = (
                 f"वर्तमान में आप {maha_hi} महादशा और {antar_hi} अंतर्दशा के महत्वपूर्ण कालखंड से गुजर रहे हैं। "
                 f"आपके {lagna_hi} लग्न के लिए {maha_hi} वृद्धि, ज्ञान और सिद्धि के प्रमुख भावों का संचालन करता है। "
@@ -1883,6 +1915,7 @@ def generate_structured_prediction(
             )
         else:
             report_title = f"Mahadasha 5-Year Life Arc: {active_maha} Mahadasha ({active_antar} Antardasha)"
+            summary = f"5-year karmic trajectory under {active_maha} Mahadasha ({active_antar} Antardasha) establishes long-term leadership, structural assets, and ethical purpose."
             overall = (
                 f"You are currently traversing the transformative cycle of {active_maha} Mahadasha, "
                 f"with the active sub-period (Antardasha) of {active_antar}. "
@@ -1920,6 +1953,7 @@ def generate_structured_prediction(
     else:
         if is_hi:
             report_title = f"वार्षिक 12-माह पराशरी परिदृश्य: व्यापक महादशा व गोचर विश्लेषण"
+            summary = "12-माह का वार्षिक मानचित्र व्यावसायिक स्वावलंबन, वित्तीय अनुशासन और सामाजिक प्रतिष्ठा में स्थायी वृद्धि का मार्ग प्रशस्त करता है।"
             overall = (
                 f"आगामी 12 महीनों का चक्र आपके जीवन में एक महत्वपूर्ण परिवर्तनकारी युग है। "
                 f"आपकी {maha_hi} महादशा और {antar_hi} अंतर्दशा के संचालन में "
@@ -1954,6 +1988,7 @@ def generate_structured_prediction(
             )
         else:
             report_title = f"Yearly 12-Month Parashari Outlook: Comprehensive Mahadasha & Transit Map"
+            summary = f"12-month transit map guides transformative milestones in professional sovereignty, financial discipline, and personal reputation under {active_maha} Mahadasha."
             overall = (
                 f"The upcoming twelve-month cycle marks a pivotal transformative epoch in your life trajectory. "
                 f"Under the governance of your {active_maha} Mahadasha and {active_antar} Antardasha, "
@@ -2021,7 +2056,8 @@ def generate_structured_prediction(
             "is_manglik": is_manglik
         },
         "sections": {
-            "executive_summary": (overall.split("। ")[0] + "।") if ("। " in overall) else (overall.split(". ")[0] + "." if ". " in overall else overall),
+            "executive_summary": summary,
+            "overall_outlook": overall,
             "overall_outlook": overall,
             "supportive_themes": supportive,
             "supportive_developments": supportive,

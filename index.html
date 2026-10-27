@@ -1896,6 +1896,55 @@
         grid-template-columns: 1fr !important;
       }
     }
+    /* Guidance Onboarding & Discovery Cards */
+    .guidance-onboarding-view {
+      margin-bottom: 20px;
+    }
+    .guidance-onboarding-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .guidance-discovery-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .guidance-discovery-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px -2px rgba(217, 119, 6, 0.12);
+      border-color: #FCD34D;
+    }
+    .guidance-discovery-img-wrap {
+      width: 100%;
+      height: 90px;
+      border-radius: 10px;
+      background: #FFFDF7;
+      border: 1px solid #FEF3C7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .guidance-discovery-img {
+      max-height: 75px;
+      max-width: 85%;
+      object-fit: contain;
+    }
+    @media (max-width: 640px) {
+      .guidance-onboarding-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+    }
     /* Password Strength Meter */
     .pwd-strength-container {
       margin-top: 6px;
@@ -5773,11 +5822,11 @@
             </div>
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <h2 style="font-size: 20px; font-weight: 800; color: #1E1B4B; margin: 0;">Your Personal Astrological Guidance</h2>
-                <span id="guidance-grounding-badge" class="badge-guest">Guest Mode (Solar Transit)</span>
+                <h2 id="guidance-header-title" style="font-size: 20px; font-weight: 800; color: #1E1B4B; margin: 0;">Six-Horizon Astrological Guidance</h2>
+                <span id="guidance-grounding-badge" class="badge-guest"><i class="fa-solid fa-circle-info"></i> No birth chart selected</span>
               </div>
               <p id="guidance-header-sub" style="font-size: 13px; color: #64748B; margin: 2px 0 0;">
-                Calculated via Swiss Ephemeris &bull; Authentic Parashari Jyotish Principles
+                Select a forecast horizon below to explore celestial cycles, or calculate your Janam Kundli for personalized Lagna and Dasha analysis.
               </p>
             </div>
           </div>
@@ -5831,31 +5880,189 @@
           </div>
         </div>
 
-        <!-- Guest Prompt Banner (Displayed when no birth chart is loaded) -->
-        <div id="guidance-guest-banner" class="guidance-guest-banner" style="display: block;">
-          <div style="display: flex; align-items: flex-start; gap: 14px;">
-            <i class="fa-solid fa-circle-info" style="color: #D97706; font-size: 20px; margin-top: 2px;"></i>
-            <div style="flex: 1;">
+        <!-- Universal Transit Mode Disclaimer Banner (Only visible in GENERAL_TRANSIT_PREVIEW) -->
+        <div id="guidance-transit-banner" class="guidance-guest-banner" style="display: none;">
+          <div style="display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;">
+            <i class="fa-solid fa-compass" style="color: #D97706; font-size: 20px; margin-top: 2px;"></i>
+            <div style="flex: 1; min-width: 260px;">
               <div style="font-size: 14px; font-weight: 700; color: #92400E; margin-bottom: 4px;">
-                You are currently viewing general solar Hora transit data.
+                General Transit Guidance (Not Personalized)
               </div>
               <p style="font-size: 13px; color: #78350F; line-height: 1.5; margin-bottom: 10px;">
-                Sign in or calculate your Janam Kundli below to generate 100% chart-grounded Parashari predictions personalized to your natal Lagna, Moon sign, and active Vimshottari Mahadasha.
+                You are currently exploring universal sidereal transits calculated via Swiss Ephemeris. Ground predictions in your natal Lagna, Moon sign, and active Vimshottari Mahadasha by calculating your Janam Kundli.
               </p>
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px; min-height: 44px;" onclick="openAuthModal()">
-                  <i class="fa-solid fa-right-to-bracket"></i> Sign In to Account
+                <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px; min-height: 40px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+                  <i class="fa-solid fa-sparkles"></i> Calculate My Janam Kundli
                 </button>
-                <button class="btn-outline-secondary" style="padding: 6px 14px; font-size: 12px; min-height: 44px;" onclick="document.getElementById('input-k-name').focus()">
-                  <i class="fa-solid fa-arrow-down"></i> Enter Birth Details Below
+                <button class="btn-outline-secondary" style="padding: 6px 14px; font-size: 12px; min-height: 40px;" onclick="returnToGuidanceOnboarding()">
+                  <i class="fa-solid fa-arrow-left"></i> Back to Guidance Overview
                 </button>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Onboarding Experience (Rendered when no profile/chart is loaded) -->
+        <div id="guidance-onboarding-view" class="guidance-onboarding-view" style="display: block;">
+          <div class="guidance-onboarding-hero" style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1px solid #FCD34D; border-radius: 14px; padding: 20px 24px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+              <div style="max-width: 620px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 800; background: rgba(217,119,6,0.15); color: #92400E; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;">
+                    <i class="fa-solid fa-sparkles"></i> Six-Horizon Astrological Suite
+                  </span>
+                  <span style="font-size: 11px; font-weight: 700; color: #78350F;">Authentic Parashari Principles</span>
+                </div>
+                <h3 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">
+                  Discover Planetary Timing Across Six Distinct Life Horizons
+                </h3>
+                <p style="font-size: 13px; color: #78350F; line-height: 1.5; margin: 0;">
+                  Personalized predictions require your Janam Kundli to ground transits in your natal Lagna, Moon sign, and Vimshottari Dasha. Calculate your birth chart below, choose a saved profile, or explore universal astronomical transits.
+                </p>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+                  <i class="fa-solid fa-sparkles"></i> Calculate My Kundli
+                </button>
+                <div style="position: relative;">
+                  <select id="guidance-profile-select" class="form-input-text" style="width: auto; padding: 9px 14px; font-size: 12px; font-weight: 700; background: #FFFFFF; border-color: #FCD34D; color: #92400E; cursor: pointer;" onchange="handleGuidanceProfileSelect(this.value)">
+                    <option value="">Choose a saved profile...</option>
+                  </select>
+                </div>
+                <button class="btn-outline-secondary" style="padding: 9px 16px; font-size: 12px; background: #FFFFFF;" onclick="enterGeneralTransitPreview('hourly')">
+                  <i class="fa-solid fa-compass"></i> Explore General Transit Preview
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6 Visual Discovery Cards Grid -->
+          <div class="guidance-onboarding-grid">
+            <!-- Card 1: Hourly (Hora) -->
+            <div class="guidance-discovery-card">
+              <div class="guidance-discovery-img-wrap">
+                <img src="assets/illustrations/horas-timing.svg" alt="Hourly Planetary Horas" class="guidance-discovery-img" onerror="this.style.display='none'">
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">Real-Time Astronomical</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Free Preview</span>
+                </div>
+                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Hourly (Hora) Guidance</h4>
+                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                  Chaldean planetary hour sequence mapping auspicious time windows for meetings, negotiations, and intellectual focus.
+                </p>
+              </div>
+              <button class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 12px;" onclick="enterGeneralTransitPreview('hourly')">
+                <i class="fa-solid fa-clock"></i> Preview Hourly Transits
+              </button>
+            </div>
+
+            <!-- Card 2: Daily Forecast -->
+            <div class="guidance-discovery-card">
+              <div class="guidance-discovery-img-wrap">
+                <img src="assets/illustrations/panchang-calendar.svg" alt="Daily Forecast" class="guidance-discovery-img" onerror="this.style.display='none'">
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">Diurnal Cycles</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Free Preview</span>
+                </div>
+                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Daily Forecast</h4>
+                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                  Three diurnal phases (Morning, Midday Abhijit Muhurta, Evening) synthesized with solar and lunar transit energy.
+                </p>
+              </div>
+              <button class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 12px;" onclick="enterGeneralTransitPreview('daily')">
+                <i class="fa-solid fa-sun"></i> Preview Daily Transits
+              </button>
+            </div>
+
+            <!-- Card 3: Weekly Progression -->
+            <div class="guidance-discovery-card">
+              <div class="guidance-discovery-img-wrap">
+                <img src="assets/illustrations/transit-wheel.svg" alt="Weekly Forecast" class="guidance-discovery-img" onerror="this.style.display='none'">
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #7C3AED; background: #F5F3FF; padding: 2px 8px; border-radius: 6px;">7-Day Cycle</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #D97706;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                </div>
+                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Weekly (7 Days) Forecast</h4>
+                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                  Day-by-day transit map tracing transiting Moon across zodiacal houses, auspicious windows, and weekday planetary rulers.
+                </p>
+              </div>
+              <button class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 12px;" onclick="enterGeneralTransitPreview('weekly')">
+                <i class="fa-solid fa-calendar-week"></i> Preview Weekly Horizon
+              </button>
+            </div>
+
+            <!-- Card 4: Monthly Analysis -->
+            <div class="guidance-discovery-card">
+              <div class="guidance-discovery-img-wrap">
+                <img src="assets/illustrations/career-dharma.svg" alt="Monthly Analysis" class="guidance-discovery-img" onerror="this.style.display='none'">
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #0284C7; background: #F0F9FF; padding: 2px 8px; border-radius: 6px;">4-Week Progression</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #D97706;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                </div>
+                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Monthly (4 Weeks) Analysis</h4>
+                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                  Strategic 4-week progression mapping foundational inception, execution momentum, financial consolidation, and monthly review.
+                </p>
+              </div>
+              <button class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 12px;" onclick="enterGeneralTransitPreview('monthly')">
+                <i class="fa-solid fa-calendar-days"></i> Preview Monthly Horizon
+              </button>
+            </div>
+
+            <!-- Card 5: Yearly Outlook -->
+            <div class="guidance-discovery-card">
+              <div class="guidance-discovery-img-wrap">
+                <img src="assets/illustrations/wealth-abundance.svg" alt="Yearly Outlook" class="guidance-discovery-img" onerror="this.style.display='none'">
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #059669; background: #ECFDF5; padding: 2px 8px; border-radius: 6px;">12 Months + 4 Quarters</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #D97706;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                </div>
+                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Yearly (12 Months) Outlook</h4>
+                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                  Comprehensive 12-month timeline detailing major planetary stations, Jupiter/Saturn ingress, and seasonal strategic quarters.
+                </p>
+              </div>
+              <button class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 12px;" onclick="enterGeneralTransitPreview('yearly')">
+                <i class="fa-solid fa-calendar"></i> Preview Yearly Horizon
+              </button>
+            </div>
+
+            <!-- Card 6: Mahadasha Arc -->
+            <div class="guidance-discovery-card">
+              <div class="guidance-discovery-img-wrap">
+                <img src="assets/illustrations/kundli-birthchart.svg" alt="Vimshottari Mahadasha" class="guidance-discovery-img" onerror="this.style.display='none'">
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #DC2626; background: #FEF2F2; padding: 2px 8px; border-radius: 6px;">100% Natal Grounded</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #78350F;"><i class="fa-solid fa-certificate"></i> Chart Required</span>
+                </div>
+                <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Mahadasha (5-Yr Arc)</h4>
+                <p style="font-size: 12px; color: #64748B; line-height: 1.5; margin: 0 0 12px;">
+                  Vimshottari dasha arc derived from your natal Moon nakshatra. Tracks the active planetary era, antardasha shifts, and remedial mantras.
+                </p>
+              </div>
+              <button class="btn-gold-primary" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 12px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+                <i class="fa-solid fa-sparkles"></i> Calculate Kundli to Unlock
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- 9-Section Canonical Structured Prediction Content -->
-        <div id="guidance-sections-wrap" class="guidance-sections-wrap">
+        <div id="guidance-sections-wrap" class="guidance-sections-wrap" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
             <div id="guidance-report-title" class="guidance-report-title" style="margin-bottom: 0;">
               Hourly Personal Guidance
@@ -8590,6 +8797,21 @@
     let currentDemoWalletBalance = parseFloat(localStorage.getItem('astro_demo_wallet_bal') || '0.00');
     let savedUserProfiles = JSON.parse(localStorage.getItem('astro_saved_profiles') || '[]');
     let currentCalculatedChart = null;
+    window.astroGuidanceState = 'NO_PROFILE';
+
+    function getLocalDateString(tz = "Asia/Kolkata", d = new Date()) {
+      try {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz || "Asia/Kolkata",
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).format(d);
+      } catch (e) {
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+    }
 
     const signsList = [
       "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -8721,7 +8943,13 @@
       if (targetSection === 'admin') loadAdminConsoleData();
       if (targetSection === 'dashboard') loadUserSavedReports();
       if (targetSection === 'kundli') {
-        if (!window.currentActivePrediction) generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+        if (currentCalculatedChart && !window.currentActivePrediction) {
+          generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+        } else if (!currentCalculatedChart && window.astroGuidanceState !== 'GENERAL_TRANSIT_PREVIEW') {
+          if (typeof setGuidanceState === 'function') {
+            setGuidanceState('NO_PROFILE');
+          }
+        }
       }
       if (targetSection === 'horas') {
         evaluatePanchaPakshiBiorhythm();
@@ -9370,8 +9598,8 @@
               activeNow = {
                 maha_dasha: lord,
                 antar_dasha: adLord,
-                start_date: new Date(adStart).toISOString().split('T')[0],
-                end_date: new Date(adEnd).toISOString().split('T')[0],
+                start_date: getLocalDateString("Asia/Kolkata", new Date(adStart)),
+                end_date: getLocalDateString("Asia/Kolkata", new Date(adEnd)),
                 progress_pct: Math.round(prog * 10) / 10
               };
               break;
@@ -9520,6 +9748,7 @@
         fullData: data,
         isUnknownTime
       };
+      window.currentCalculatedChart = currentCalculatedChart;
 
       // Transition to Active Content
       document.getElementById('kundli-empty-state').style.display = 'none';
@@ -9554,6 +9783,9 @@
       }
 
       // Automatically refresh personalized guidance with newly calculated chart
+      if (typeof setGuidanceState === 'function') {
+        setGuidanceState('PERSONALIZED_READY', { chart: currentCalculatedChart });
+      }
       generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
 
       // Planetary Table
@@ -9917,14 +10149,14 @@
       if (isHourlyHorasLoading) return;
       isHourlyHorasLoading = true;
 
+      const tz = document.getElementById('k-resolved-tz')?.value || 'Asia/Kolkata';
       const dateInput = document.getElementById('input-hora-date');
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getLocalDateString(tz);
       if (!dateInput.value) dateInput.value = todayStr;
 
       const targetDate = dateInput.value;
       const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 28.6139;
       const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 77.2090;
-      const tz = document.getElementById('k-resolved-tz').value || 'Asia/Kolkata';
 
       const metricsEl = document.getElementById('disp-hora-sun-metrics');
       if (metricsEl) {
@@ -11130,10 +11362,14 @@
         resetNumerologyStudio();
       }
       currentCalculatedChart = null;
+      window.currentCalculatedChart = null;
       activeConsultationSession = null;
       isChatKundliLinked = false;
       if (typeof updateOverviewActiveChartBanner === 'function') {
         updateOverviewActiveChartBanner();
+      }
+      if (typeof setGuidanceState === 'function') {
+        setGuidanceState('NO_PROFILE');
       }
 
       updateUserSessionUI();
@@ -14115,7 +14351,7 @@
         const isSimulatedTier = ['PLUS', 'PREMIUM', 'PRO'].includes((localStorage.getItem('astro_simulated_tier') || '').toUpperCase());
         const isDemoWalletActive = typeof currentDemoWalletBalance === 'number' && currentDemoWalletBalance > 0;
         if (!isSimulatedTier && !isDemoWalletActive) {
-          const todayStr = new Date().toISOString().split('T')[0];
+          const todayStr = getLocalDateString('Asia/Kolkata');
           let guestData = { date: todayStr, count: 0 };
           try {
             const stored = JSON.parse(localStorage.getItem('astro_guest_ai_quota') || '{}');
@@ -14591,7 +14827,9 @@
       renderSavedProfilesList();
       selectHoroscopeSign('Aries');
       await loadHourlyHorasUI();
-      generatePersonalizedGuidance('hourly');
+      if (typeof initGuidanceSuite === 'function') {
+        initGuidanceSuite();
+      }
       initLuxuryGSAP();
       if (currentUserSession && currentSessionToken) {
         await validateSessionWithBackend();
@@ -19355,7 +19593,13 @@
 
       // Re-render active Guidance and Horoscope in the new language
       if (typeof generatePersonalizedGuidance === 'function') {
-        generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+        if (window.astroGuidanceState === 'NO_PROFILE') {
+          if (typeof setGuidanceState === 'function') {
+            setGuidanceState('NO_PROFILE');
+          }
+        } else {
+          generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+        }
       }
       const activeHoroBtn = document.querySelector('#view-horoscope .subtab-btn.active');
       const activeSign = activeHoroBtn ? activeHoroBtn.id.replace('btn-sign-', '') : 'Aries';
@@ -19387,17 +19631,128 @@
     });
 
 
-    function getLocalDateString(tz = "Asia/Kolkata", d = new Date()) {
+    // ==================== SIX-HORIZON GUIDANCE STATE CONTROLLER ====================
+    function setGuidanceState(state, meta = {}) {
+      window.astroGuidanceState = state;
+      const onboardingView = document.getElementById('guidance-onboarding-view');
+      const sectionsWrap = document.getElementById('guidance-sections-wrap');
+      const transitBanner = document.getElementById('guidance-transit-banner');
+      const headerTitle = document.getElementById('guidance-header-title');
+      const badge = document.getElementById('guidance-grounding-badge');
+      const headerSub = document.getElementById('guidance-header-sub');
+      const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
+
+      if (state === 'NO_PROFILE') {
+        if (onboardingView) onboardingView.style.display = 'block';
+        if (sectionsWrap) sectionsWrap.style.display = 'none';
+        if (transitBanner) transitBanner.style.display = 'none';
+        if (headerTitle) {
+          headerTitle.textContent = isHi ? "षड्-काल परिप्रेक्ष्य ज्योतिषीय मार्गदर्शन" : "Six-Horizon Astrological Guidance";
+        }
+        if (badge) {
+          badge.className = 'badge-guest';
+          badge.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${isHi ? 'कोई जन्म पत्रिका चयनित नहीं' : 'No birth chart selected'}`;
+        }
+        if (headerSub) {
+          headerSub.textContent = isHi
+            ? "खगोलीय कालचक्र देखने हेतु नीचे किसी होराइजन का चयन करें, अथवा अपनी जन्म कुंडली की गणना कर व्यक्तिगत लग्न व दशा फलादेश प्राप्त करें।"
+            : "Select a forecast horizon below to explore celestial cycles, or calculate your Janam Kundli for personalized Lagna and Dasha analysis.";
+        }
+        renderGuidanceSavedProfilesDropdown();
+      } else if (state === 'GENERAL_TRANSIT_PREVIEW') {
+        if (onboardingView) onboardingView.style.display = 'none';
+        if (sectionsWrap) sectionsWrap.style.display = 'block';
+        if (transitBanner) transitBanner.style.display = 'block';
+        if (headerTitle) {
+          headerTitle.textContent = isHi ? "सामान्य गोचर मार्गदर्शन (गैर-व्यक्तिगत)" : "General Transit Guidance (Not Personalized)";
+        }
+        if (badge) {
+          badge.className = 'badge-guest';
+          badge.innerHTML = `<i class="fa-solid fa-compass"></i> ${isHi ? 'सामान्य सौर गोचर मार्गदर्शन (अतिथि सत्र)' : 'General Solar Transit Guidance'}`;
+        }
+        if (headerSub) {
+          headerSub.textContent = isHi
+            ? "स्विस एफिमेरिस द्वारा संगणित सार्वभौमिक खगोलीय गोचर। जन्म पत्रिका की गणना कर अपने लग्न व नक्षत्र से जोड़ें।"
+            : "Universal sidereal transit geometry computed via Swiss Ephemeris. Calculate your Janam Kundli to ground in your natal chart.";
+        }
+      } else if (state === 'PERSONALIZED_READY') {
+        if (onboardingView) onboardingView.style.display = 'none';
+        if (sectionsWrap) sectionsWrap.style.display = 'block';
+        if (transitBanner) transitBanner.style.display = 'none';
+        const chart = meta.chart || currentCalculatedChart;
+        const name = chart?.name || '';
+        const lagna = chart?.lagnaSign || '';
+        const moon = chart?.moonSign || '';
+        if (headerTitle) {
+          headerTitle.textContent = name
+            ? (isHi ? `आपका व्यक्तिगत वैदिक मार्गदर्शन — ${name}` : `Your Personalized Vedic Guidance — ${name}`)
+            : (isHi ? "आपका व्यक्तिगत वैदिक मार्गदर्शन" : "Your Personalized Vedic Guidance");
+        }
+        if (badge) {
+          badge.className = 'badge-grounded';
+          badge.innerHTML = `<i class="fa-solid fa-certificate"></i> ${isHi ? 'कुंडली आधारित फलादेश' : 'Chart-Grounded'}${lagna ? ` &bull; ${lagna} ${isHi ? 'लग्न' : 'Lagna'}` : ''}${moon ? ` &bull; ${moon} ${isHi ? 'चंद्र' : 'Moon'}` : ''}`;
+        }
+        if (headerSub) {
+          headerSub.textContent = isHi
+            ? "वास्तविक स्विस एफिमेरिस गोचर आपकी जन्म कुंडली के लग्न, चंद्र राशि और विंशोत्तरी दशा के साथ समन्वित।"
+            : "Real-time Swiss Ephemeris celestial transits synthesized with your natal Lagna, Moon sign, and Vimshottari Dasha.";
+        }
+      }
+    }
+
+    function renderGuidanceSavedProfilesDropdown() {
+      const select = document.getElementById('guidance-profile-select');
+      if (!select) return;
+      let profiles = [];
       try {
-        return new Intl.DateTimeFormat('en-CA', {
-          timeZone: tz || "Asia/Kolkata",
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).format(d);
+        profiles = JSON.parse(localStorage.getItem('astro_saved_profiles') || '[]');
       } catch (e) {
-        const pad = (n) => String(n).padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        profiles = savedUserProfiles || [];
+      }
+      if (!profiles || !profiles.length) {
+        profiles = savedUserProfiles || [];
+      }
+
+      select.innerHTML = '<option value="">Choose a saved profile...</option>';
+      if (profiles && profiles.length > 0) {
+        profiles.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = `${p.name} (${p.dob || 'DOB N/A'})`;
+          select.appendChild(opt);
+        });
+        select.style.display = 'inline-block';
+      } else {
+        const opt = document.createElement('option');
+        opt.value = "";
+        opt.textContent = "No saved profiles available";
+        opt.disabled = true;
+        select.appendChild(opt);
+      }
+    }
+
+    function handleGuidanceProfileSelect(profileId) {
+      if (!profileId) return;
+      if (typeof loadSavedProfileToKundli === 'function') {
+        loadSavedProfileToKundli(profileId);
+      }
+    }
+
+    function returnToGuidanceOnboarding() {
+      setGuidanceState('NO_PROFILE');
+    }
+
+    function enterGeneralTransitPreview(horizon = 'hourly') {
+      setGuidanceState('GENERAL_TRANSIT_PREVIEW');
+      selectGuidanceHorizon(horizon);
+    }
+
+    function initGuidanceSuite() {
+      if (currentCalculatedChart) {
+        setGuidanceState('PERSONALIZED_READY', { chart: currentCalculatedChart });
+        generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+      } else {
+        setGuidanceState('NO_PROFILE');
       }
     }
 
@@ -19424,6 +19779,10 @@
       const activeBtn = document.getElementById('btn-hz-' + horizon);
       if (activeBtn) activeBtn.classList.add('active');
 
+      if (!currentCalculatedChart && window.astroGuidanceState === 'NO_PROFILE') {
+        setGuidanceState('GENERAL_TRANSIT_PREVIEW');
+      }
+
       const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
       const titleEl = document.getElementById('guidance-report-title');
       const hMeta = HORIZON_TITLES[horizon] || { en: horizon, hi: horizon };
@@ -19447,6 +19806,10 @@
     }
 
     async function generatePersonalizedGuidance(horizon = 'hourly', reqId = null) {
+      if (!currentCalculatedChart && window.astroGuidanceState !== 'GENERAL_TRANSIT_PREVIEW') {
+        setGuidanceState('NO_PROFILE');
+        return;
+      }
       const activeReqId = reqId || ++currentGuidanceRequestId;
       guidanceAbortController = new AbortController();
       const signal = guidanceAbortController.signal;
@@ -19516,6 +19879,28 @@
     }
 
     function renderPeriodItemsHTML(horizon, periodItemsData, isUnlocked, isHi) {
+      if (periodItemsData && periodItemsData.requires_chart) {
+        return `
+          <div class="guidance-period-header" style="margin-bottom: 12px;">
+            <h4 style="font-size: 15px; font-weight: 800; color: #1E1B4B; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-dharmachakra" style="color: #D97706;"></i>
+              ${isHi ? 'विंशोत्तरी महादशा कालखंड' : 'Vimshottari Karmic Timeline'}
+            </h4>
+          </div>
+          <div class="guidance-chart-required-card" style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); border: 1.5px dashed #D97706; border-radius: 12px; padding: 24px 20px; text-align: center; margin-top: 8px;">
+            <div style="font-size: 28px; color: #D97706; margin-bottom: 10px;"><i class="fa-solid fa-lock"></i></div>
+            <h4 style="font-size: 16px; font-weight: 800; color: #92400E; margin: 0 0 8px;">
+              ${isHi ? 'विंशोत्तरी महादशा हेतु जन्म कुंडली अनिवार्य' : 'Birth Chart Calculation Required for Mahadasha'}
+            </h4>
+            <p style="font-size: 13px; color: #78350F; max-width: 520px; margin: 0 auto 16px; line-height: 1.5;">
+              ${periodItemsData.message || (isHi ? 'विंशोत्तरी महादशा फलादेश के लिए सटीक जन्म तिथि, समय व जन्म स्थान से निर्मित कुंडली अनिवार्य है।' : 'Vimshottari Mahadasha timeline requires an authentic birth chart computed from exact birth date, time, and location. Please calculate your Janam Kundli to ground your personal 120-year cycle.')}
+            </p>
+            <button class="btn-gold-primary" style="margin: 0 auto; padding: 9px 20px; font-size: 12px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+              <i class="fa-solid fa-sparkles"></i> ${isHi ? 'अपनी जन्म कुंडली बनाएं' : 'Calculate My Birth Chart'}
+            </button>
+          </div>
+        `;
+      }
       if (!periodItemsData || !periodItemsData.items || !periodItemsData.items.length) {
         return '';
       }
@@ -19653,7 +20038,13 @@
       // 1. Executive Summary
       const summaryEl = document.getElementById('guidance-disp-summary');
       if (summaryEl) {
-        summaryEl.textContent = s.executive_summary || (s.overall_outlook ? s.overall_outlook.split('. ')[0] + '.' : (isHi ? 'प्रामाणिक ज्योतिषीय फलादेश लोड हुआ।' : 'Grounded astrological overview loaded.'));
+        let execSummary = s.executive_summary;
+        if (!execSummary || execSummary === s.overall_outlook) {
+          execSummary = isHi
+            ? "स्विस एफिमेरिस द्वारा संगणित प्रामाणिक वैदिक गोचर विश्लेषण।"
+            : "Precision Swiss Ephemeris celestial transit analysis.";
+        }
+        summaryEl.textContent = execSummary;
       }
 
       // 2. Overall Outlook
@@ -19753,6 +20144,34 @@
         } else {
           deepWrap.classList.add('is-locked');
           ctaBox.style.display = 'block';
+          if (!isChartGrounded) {
+            ctaBox.innerHTML = `
+              <div style="font-size: 26px; color: #D97706; margin-bottom: 8px;"><i class="fa-solid fa-sparkles"></i></div>
+              <h4 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">${isHi ? 'व्यक्तिगत फलादेश हेतु जन्म कुंडली आवश्यक' : 'Personalized Predictions Require Your Janam Kundli'}</h4>
+              <p style="font-size: 13px; color: #64748B; max-width: 520px; margin: 0 auto 16px;">
+                ${isHi ? 'विस्तृत ७-दिवसीय, मासिक एवं वार्षिक फलादेश को अपनी जन्म पत्रिका से जोड़ने के लिए निःशुल्क जन्म कुंडली की गणना करें।' : 'To unlock personalized multi-horizon forecasts, calculate your free birth chart first. Once calculated, your complete analysis is unlocked with your wallet balance.'}
+              </p>
+              <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <button class="btn-gold-primary" style="padding: 8px 20px; font-size: 13px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+                  <i class="fa-solid fa-sparkles"></i> ${isHi ? 'निःशुल्क जन्म कुंडली बनाएं' : 'Calculate Free Kundli First'}
+                </button>
+              </div>
+            `;
+          } else {
+            ctaBox.innerHTML = `
+              <div style="font-size: 26px; color: #D97706; margin-bottom: 8px;"><i class="fa-solid fa-crown"></i></div>
+              <h4 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">${isHi ? 'संपूर्ण षड्-काल विस्तृत रिपोर्ट अनलॉक करें' : 'Unlock Complete Multi-Horizon Deep Report'}</h4>
+              <p style="font-size: 13px; color: #64748B; max-width: 520px; margin: 0 auto 16px;">
+                ${isHi ? 'अपनी जन्म कुंडली पर आधारित विस्तृत ७-दिवसीय दैनिक फलादेश, ४-सप्ताह मासिक योजना, १२-माह वार्षिक गोचर मानचित्र और ५-वर्षीय विंशोत्तरी महादशा चक्र अनलॉक करें।' : 'Unlock full 7-Day Day-by-Day Forecasts, 4-Week Monthly Blueprints, 12-Month Annual Transit Maps, and 5-Year Mahadasha Karmic Blueprints personalized to your Janam Kundli.'}
+              </p>
+              <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span class="price-pill" style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); background: #FEF3C7; padding: 6px 14px; border-radius: 20px;">₹49 <span style="font-size: 11px; font-weight: 500; color: #78350F;">${isHi ? 'सभी होराइजन' : 'All Horizons Access'}</span></span>
+                <button class="btn-gold-primary" style="padding: 8px 20px; font-size: 13px;" onclick="openPremiumPaywallModal()">
+                  <i class="fa-solid fa-lock-open"></i> ${isHi ? 'वॉलेट से अनलॉक करें' : 'Unlock Full Report with Wallet'}
+                </button>
+              </div>
+            `;
+          }
         }
       }
     }
@@ -19951,6 +20370,15 @@
       }
 
       if (horizon === 'mahadasha') {
+        if (!hasChart) {
+          return {
+            items: [],
+            requires_chart: true,
+            message: isHi
+              ? "विंशोत्तरी महादशा फलादेश के लिए सटीक जन्म तिथि, समय व जन्म स्थान से निर्मित कुंडली अनिवार्य है। कृपया अपनी जन्म कुंडली बनाएं।"
+              : "Vimshottari Mahadasha timeline requires an authentic birth chart computed from exact birth date, time, and location. Please calculate your Janam Kundli to ground your personal 120-year cycle."
+          };
+        }
         const years = [];
         const startYear = d.getFullYear();
         const themesEn = ["Foundation Building & Mentorship", "Capital Growth & Asset Stabilization", "Intellectual Mastery & Spiritual Studies", "Domestic Peace & Matrimonial Harmony", "Karmic Fruition & Advisory Leadership"];
@@ -22655,7 +23083,7 @@
     // ==============================================================================
     // SAMPLE BIRTH CHART LOADER FOR INSTANT EXPLORATION
     // ==============================================================================
-    function loadSampleBirthChart() {
+    async function loadSampleBirthChart() {
       document.getElementById('input-k-name').value = 'Anand Sharma';
       selectGender('Male');
       document.getElementById('input-k-dob').value = '1995-06-15';
@@ -22672,7 +23100,7 @@
       document.getElementById('k-location-resolved-text').textContent = 'New Delhi, Delhi, India (28.61° N, 77.21° E)';
 
       showToast("Loaded verified sample birth particulars for Anand Sharma", "info");
-      generateUserKundli();
+      await generateUserKundli();
     }
 
 </script>
