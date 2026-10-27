@@ -88,12 +88,12 @@ async function runGuidanceVerification() {
     await new Promise((r) => setTimeout(r, 1200));
 
     // Wait until controller scripts and DOM are ready
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 80; i++) {
       const readyCheck = await client.send('Runtime.evaluate', {
-        expression: `typeof window.astroGuidanceState !== 'undefined' && document.querySelectorAll('.guidance-discovery-card').length > 0`
+        expression: `typeof window.astroGuidanceState !== 'undefined' && window.astroGuidanceState === 'NO_PROFILE' && document.querySelectorAll('.guidance-discovery-card').length === 6`
       });
       if (readyCheck.result && readyCheck.result.value === true) break;
-      await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 200));
     }
 
     // -------------------------------------------------------------

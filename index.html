@@ -78,91 +78,131 @@
 
   <style>
     :root {
-      /* Celestial Royal Blue top accent */
-      --av-border-top-blue: #3B82F6;
-      --av-blue-glow: 0 2px 16px rgba(59, 130, 246, 0.65);
-      --av-celestial-blue-gradient:
-        linear-gradient(135deg, #0F172A 0%, #1E3A8A 50%, #2563EB 100%);
-      --av-blue-pill-bg: rgba(37, 99, 235, 0.15);
-      --av-blue-pill-border: rgba(59, 130, 246, 0.35);
+      color-scheme: light;
 
-      /* Imperial Vedic maroon */
-      --av-maroon-darkest: #380710;
-      --av-maroon-primary: #4A0E17;
-      --av-maroon-surface: #6B1D2F;
-      --av-maroon-card: #781A24;
-      --av-maroon-light: #881337;
-      --av-maroon-glass: rgba(74, 14, 23, 0.88);
-      --av-maroon-gradient:
-        linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%);
+      --av-brand: #151A32;
+      --av-brand-raised: #242B49;
+      --av-brand-border: #414967;
 
-      /* Temple gold */
-      --av-gold-primary: #D4AF37;
-      --av-gold-bright: #F5C45E;
-      --av-gold-glow: 0 0 18px rgba(212, 175, 55, 0.40);
-      --av-gold-gradient:
-        linear-gradient(135deg, #FDE68A 0%, #D4AF37 50%, #B45309 100%);
+      --av-canvas: #FAF7F0;
+      --av-surface: #FFFFFF;
+      --av-surface-subtle: #F1EDE4;
+      --av-border: #DDD6C9;
 
-      /* Canvas and typography */
-      --av-canvas-deep: #2A080E;
-      --av-text-light: #FFFFFF;
-      --av-text-warm: #FFFBEB;
-      --av-text-subtle: #E2D9D2;
-      --av-text-muted: #D1C5BD;
+      --av-gold: #C49A42;
+      --av-gold-soft: #E8CB82;
+      --av-gold-deep: #76520D;
 
-      /* Additional layout tokens */
-      --av-content-wide: 1440px;
-      --av-content-reading: 1080px;
-      --av-radius-card: 20px;
-      --av-radius-control: 12px;
-      --av-border-subtle: rgba(212, 175, 55, 0.20);
-      --av-shadow-card: 0 14px 36px rgba(12, 2, 7, 0.24);
+      --av-text: #20243A;
+      --av-text-secondary: #51576A;
+      --av-text-inverse: #FFFFFF;
+      --av-text-on-gold: #242013;
 
-      /* Canonical Modern Luxury Vedic Astrology Design Tokens */
-      --av-color-maroon-950: var(--av-maroon-primary);
-      --av-color-maroon-800: var(--av-maroon-light);
-      --av-color-saffron: #F59E0B;
-      --av-color-gold: var(--av-gold-primary);
+      --av-success: #176B55;
+      --av-warning: #85520B;
+      --av-danger: #A12632;
+      --av-spiritual-accent: #67458A;
 
-      --av-color-parchment: var(--av-canvas-deep);
-      --av-color-surface: var(--av-maroon-primary);
-      --av-color-surface-warm: var(--av-maroon-surface);
-      --av-color-surface-soft: var(--av-maroon-card);
+      --av-radius-sm: 8px;
+      --av-radius-md: 14px;
+      --av-radius-lg: 20px;
+      --av-radius-xl: 26px;
 
-      --av-color-ink: var(--av-text-light);
-      --av-color-text-secondary: var(--av-text-subtle);
-      --av-color-text-muted: var(--av-text-muted);
+      --av-shadow-card:
+        0 8px 24px rgba(21, 26, 50, 0.07);
 
-      --av-color-border: rgba(212, 175, 55, 0.22);
-      --av-color-border-strong: rgba(212, 175, 55, 0.40);
+      --av-shadow-elevated:
+        0 18px 48px rgba(21, 26, 50, 0.13);
 
-      --av-color-success: #10B981;
-      --av-color-success-bg: rgba(16, 185, 129, 0.15);
+      --av-content-max: 1240px;
+      --av-page-gutter: clamp(16px, 3vw, 32px);
 
-      --av-color-warning: #F59E0B;
-      --av-color-warning-bg: rgba(245, 158, 11, 0.15);
+      --av-control-height: 48px;
+      --av-focus-ring: 0 0 0 3px rgba(36, 76, 151, 0.24);
 
-      --av-color-danger: #EF4444;
-      --av-color-danger-bg: rgba(239, 68, 68, 0.15);
+      /* Typography Tokens */
+      --av-text-xs: 0.75rem;
+      --av-text-sm: 0.875rem;
+      --av-text-base: 1rem;
+      --av-text-lg: 1.125rem;
 
-      --av-color-info: #3B82F6;
-      --av-color-info-bg: var(--av-blue-pill-bg);
+      --av-heading-sm: clamp(1.25rem, 2vw, 1.6rem);
+      --av-heading-md: clamp(1.6rem, 3vw, 2.25rem);
+      --av-heading-lg: clamp(2rem, 5vw, 3.5rem);
 
-      --av-color-focus: var(--av-gold-bright);
+      --av-leading-tight: 1.15;
+      --av-leading-body: 1.65;
 
       --av-font-body: "Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif;
       --av-font-display: "Cinzel", Georgia, serif;
 
-      --av-shadow-xs: 0 1px 2px rgba(12, 2, 7, 0.15);
-      --av-shadow-sm: 0 2px 8px rgba(12, 2, 7, 0.20);
-      --av-shadow-card: var(--av-shadow-card);
-      --av-shadow-elevated: 0 18px 48px rgba(12, 2, 7, 0.45);
-      --av-shadow-drawer: -16px 0 52px rgba(12, 2, 7, 0.65);
+      /* Backward compatibility aliases */
+      --av-border-top-blue: var(--av-brand);
+      --av-blue-glow: 0 2px 16px rgba(21, 26, 50, 0.2);
+      --av-celestial-blue-gradient: linear-gradient(135deg, #151A32 0%, #242B49 100%);
+      --av-blue-pill-bg: rgba(36, 76, 151, 0.12);
+      --av-blue-pill-border: var(--av-brand-border);
 
-      --av-radius-sm: 8px;
-      --av-radius-md: 12px;
-      --av-radius-lg: 18px;
-      --av-radius-xl: 24px;
+      --av-maroon-darkest: var(--av-brand);
+      --av-maroon-primary: var(--av-brand);
+      --av-maroon-surface: var(--av-brand-raised);
+      --av-maroon-card: var(--av-surface);
+      --av-maroon-light: var(--av-brand-raised);
+      --av-maroon-glass: rgba(21, 26, 50, 0.94);
+      --av-maroon-gradient: linear-gradient(135deg, #151A32 0%, #242B49 100%);
+
+      --av-gold-primary: var(--av-gold);
+      --av-gold-bright: var(--av-gold-soft);
+      --av-gold-glow: 0 0 16px rgba(196, 154, 66, 0.35);
+      --av-gold-gradient: linear-gradient(135deg, var(--av-gold-soft) 0%, var(--av-gold) 100%);
+
+      --av-canvas-deep: var(--av-canvas);
+      --av-text-light: var(--av-text-inverse);
+      --av-text-warm: var(--av-canvas);
+      --av-text-subtle: var(--av-text-secondary);
+      --av-text-muted: var(--av-text-secondary);
+
+      --av-content-wide: 1240px;
+      --av-content-reading: 1080px;
+      --av-radius-card: var(--av-radius-lg);
+      --av-radius-control: var(--av-radius-sm);
+      --av-border-subtle: var(--av-border);
+
+      --av-color-maroon-950: var(--av-brand);
+      --av-color-maroon-800: var(--av-brand-raised);
+      --av-color-saffron: var(--av-gold);
+      --av-color-gold: var(--av-gold);
+
+      --av-color-parchment: var(--av-canvas);
+      --av-color-surface: var(--av-surface);
+      --av-color-surface-warm: var(--av-surface-subtle);
+      --av-color-surface-soft: var(--av-surface-subtle);
+
+      --av-color-ink: var(--av-text);
+      --av-color-text-secondary: var(--av-text-secondary);
+      --av-color-text-muted: var(--av-text-secondary);
+
+      --av-color-border: var(--av-border);
+      --av-color-border-strong: var(--av-border);
+
+      --av-color-success: var(--av-success);
+      --av-color-success-bg: rgba(23, 107, 85, 0.12);
+
+      --av-color-warning: var(--av-warning);
+      --av-color-warning-bg: rgba(133, 82, 11, 0.12);
+
+      --av-color-danger: var(--av-danger);
+      --av-color-danger-bg: rgba(161, 38, 50, 0.12);
+
+      --av-color-info: #244C97;
+      --av-color-info-bg: rgba(36, 76, 151, 0.12);
+
+      --av-color-focus: var(--av-gold);
+
+      --av-shadow-xs: 0 1px 2px rgba(21, 26, 50, 0.05);
+      --av-shadow-sm: 0 2px 8px rgba(21, 26, 50, 0.06);
+      --av-shadow-drawer: -16px 0 52px rgba(21, 26, 50, 0.25);
+
       --av-radius-full: 9999px;
 
       --av-space-1: 4px;
@@ -176,8 +216,6 @@
       --av-space-12: 48px;
       --av-space-16: 64px;
 
-      --av-content-max: 1440px;
-      --av-reading-max: 1080px;
       --av-sidebar-width: 248px;
       --av-header-height: 72px;
 
@@ -187,16 +225,15 @@
 
       --av-easing-standard: cubic-bezier(0.2, 0, 0, 1);
 
-      /* Backward compatibility aliases */
-      --saffron-gold: var(--av-gold-bright);
-      --saffron-orange: var(--av-color-focus);
-      --vedic-maroon: var(--av-maroon-primary);
-      --deep-maroon: var(--av-maroon-darkest);
-      --canvas-bg: var(--av-canvas-deep);
-      --card-bg: var(--av-maroon-card);
-      --border-color: var(--av-border-subtle);
-      --text-main: var(--av-text-light);
-      --text-muted: var(--av-text-subtle);
+      --saffron-gold: var(--av-gold-soft);
+      --saffron-orange: var(--av-gold);
+      --vedic-maroon: var(--av-brand);
+      --deep-maroon: var(--av-brand);
+      --canvas-bg: var(--av-canvas);
+      --card-bg: var(--av-surface);
+      --border-color: var(--av-border);
+      --text-main: var(--av-text);
+      --text-muted: var(--av-text-secondary);
       --shadow-sm: var(--av-shadow-xs);
       --shadow-md: var(--av-shadow-sm);
       --shadow-lg: var(--av-shadow-card);
@@ -205,29 +242,28 @@
       --radius-lg: var(--av-radius-lg);
       --radius-full: var(--av-radius-full);
 
-      /* Astro Cosmic Luxury Palette & Tokens */
-      --astro-bg: var(--av-canvas-deep);
-      --astro-surface: var(--av-maroon-primary);
-      --astro-surface-raised: var(--av-maroon-surface);
-      --astro-surface-glass: var(--av-maroon-glass);
-      --astro-gold: var(--av-gold-primary);
-      --astro-gold-bright: var(--av-gold-bright);
+      --astro-bg: var(--av-canvas);
+      --astro-surface: var(--av-surface);
+      --astro-surface-raised: var(--av-surface-subtle);
+      --astro-surface-glass: rgba(255, 255, 255, 0.94);
+      --astro-gold: var(--av-gold);
+      --astro-gold-bright: var(--av-gold-soft);
       --astro-gold-glow: var(--av-gold-glow);
-      --astro-burgundy: var(--av-maroon-surface);
-      --astro-crimson: var(--av-maroon-light);
-      --astro-text: var(--av-text-light);
-      --astro-text-muted: var(--av-text-subtle);
-      --astro-border: var(--av-border-subtle);
-      --astro-border-subtle: rgba(212, 175, 55, 0.12);
-      --astro-radius-card: 18px;
-      --astro-radius-control: 12px;
+      --astro-burgundy: var(--av-brand-raised);
+      --astro-crimson: var(--av-danger);
+      --astro-text: var(--av-text);
+      --astro-text-muted: var(--av-text-secondary);
+      --astro-border: var(--av-border);
+      --astro-border-subtle: var(--av-border);
+      --astro-radius-card: var(--av-radius-lg);
+      --astro-radius-control: var(--av-radius-sm);
       --astro-shadow-card: var(--av-shadow-card);
     }
 
     /* Luxury Cosmic Architecture Components */
     .cosmic-hero-wrapper {
-      background: linear-gradient(135deg, #380710 0%, #4A0E17 55%, #2A080E 100%);
-      border: 1px solid rgba(212, 175, 55, 0.28);
+      background: linear-gradient(135deg, var(--av-brand) 0%, var(--av-brand-raised) 100%);
+      border: 1px solid var(--av-brand-border);
       border-radius: var(--astro-radius-card);
       padding: 32px 28px;
       margin-bottom: 24px;
@@ -466,12 +502,13 @@
 
     /* Active Natal Chart Card */
     .overview-active-chart-card {
-      background: linear-gradient(135deg, #380710 0%, #4A0E17 55%, #2A080E 100%);
-      border: 1px solid rgba(212, 175, 55, 0.32);
-      border-radius: var(--astro-radius-card);
+      background: var(--av-surface);
+      border: 1px solid var(--av-border);
+      border-radius: var(--av-radius-lg);
       padding: 22px 26px;
       margin-bottom: 24px;
-      color: var(--av-text-light, #FFFFFF);
+      color: var(--av-text);
+      box-shadow: var(--av-shadow-card);
       box-shadow: var(--av-shadow-card, 0 14px 36px rgba(12, 2, 7, 0.35));
       position: relative;
       overflow: hidden;
@@ -479,13 +516,14 @@
 
     /* Daily Guidance Overview Card */
     .overview-daily-guidance-card {
-      background: var(--av-maroon-gradient, linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%));
-      border: 1px solid var(--av-border-subtle, rgba(212, 175, 55, 0.22));
-      border-radius: var(--astro-radius-card);
+      background: var(--av-surface);
+      border: 1px solid var(--av-border);
+      border-radius: var(--av-radius-lg);
       padding: 24px;
       margin-bottom: 26px;
-      box-shadow: var(--av-shadow-card, 0 14px 36px rgba(12, 2, 7, 0.35));
-      color: var(--av-text-light, #FFFFFF);
+      box-shadow: var(--av-shadow-card);
+      color: var(--av-text);
+      position: relative;
     }
 
     .rashi-quick-pills-row {
@@ -547,9 +585,9 @@
       left: 0;
       right: 0;
       width: 100%;
-      height: 3.5px;
-      background: var(--av-celestial-blue-gradient);
-      box-shadow: var(--av-blue-glow);
+      height: 2px;
+      background: linear-gradient(90deg, #151A32 0%, #C49A42 50%, #151A32 100%);
+      box-shadow: none;
       z-index: 10550;
       pointer-events: none;
     }
@@ -740,8 +778,7 @@
       max-width: 100%;
       margin: 0;
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--av-canvas-deep, #2A080E);
-      color: var(--av-text-light, #FFFFFF);
+      background-color: var(--av-canvas); color: var(--av-text);
       line-height: 1.5;
       overflow-x: clip;
       overflow-y: auto;
@@ -776,13 +813,13 @@
 
     /* Main Navigation Header */
     .main-navbar {
-      background: rgba(56, 7, 16, 0.94);
+      background: var(--av-brand);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(212, 175, 55, 0.25);
-      box-shadow: 0 4px 24px rgba(12, 2, 7, 0.5);
+      border-bottom: 1px solid var(--av-brand-border);
+      box-shadow: 0 4px 20px rgba(21, 26, 50, 0.15);
       position: sticky;
-      top: 3.5px;
+      top: 0;
       z-index: 100;
       display: flex;
       justify-content: space-between;
@@ -1662,10 +1699,12 @@
     .modal-dialog-card {
       width: 100%;
       max-width: 480px;
-      background: #FFFFFF;
-      border-radius: var(--radius-md);
+      background: var(--av-surface);
+      border: 1px solid var(--av-border);
+      border-radius: var(--av-radius-lg);
       padding: 24px;
-      box-shadow: var(--shadow-lg);
+      box-shadow: var(--av-shadow-elevated);
+      color: var(--av-text);
     }
 
     /* Luxury Mobile Bottom Navigation Dock */
@@ -1678,10 +1717,10 @@
       min-height: 58px;
       padding-top: 6px;
       padding-bottom: max(6px, env(safe-area-inset-bottom, 6px));
-      background: rgba(11, 16, 32, 0.96);
+      background: var(--av-brand);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(212, 175, 55, 0.22);
+      border-top: 1px solid var(--av-brand-border);
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
       z-index: 1000;
       justify-content: space-around;
@@ -2049,16 +2088,17 @@
       margin-top: 18px;
     }
     .guidance-discovery-card {
-      background: var(--av-maroon-gradient, linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%));
-      border: 1px solid var(--av-border-subtle, rgba(212, 175, 55, 0.22));
-      border-radius: 16px;
+      background: var(--av-surface);
+      border: 1px solid var(--av-border);
+      border-radius: var(--av-radius-lg);
       padding: 18px;
-      box-shadow: var(--av-shadow-card, 0 12px 28px rgba(12, 2, 7, 0.35));
+      box-shadow: var(--av-shadow-card);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s ease, border-color 0.25s ease;
-      color: var(--av-text-light, #FFFFFF);
+      color: var(--av-text);
+      position: relative;
     }
     .guidance-discovery-card:hover {
       transform: translateY(-4px);
@@ -4950,11 +4990,11 @@
           Instant Janam Kundli calculations, 24-Hour Planetary Horas, 36-Guna Kundli Milan, and chart-grounded AI consultations computed with astronomical rigor.
         </p>
         <div class="cosmic-hero-actions">
-          <button class="btn-gold-primary" style="padding: 12px 24px; font-size: 14px; min-height: 46px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
-            <i class="fa-solid fa-sparkles"></i> Calculate Free Kundli
+          <button class="btn-gold-primary" id="btn-hero-calc-kundli" style="padding: 12px 24px; font-size: 14px; min-height: 48px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+            <i class="fa-solid fa-sparkles"></i> Calculate My Kundli
           </button>
-          <button class="btn-outline-secondary" style="padding: 12px 20px; font-size: 13px; color: #F8FAFC; border-color: rgba(212, 175, 55, 0.4); min-height: 46px;" onclick="loadSampleBirthChart(); switchNavSection('kundli');">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Try Sample Chart
+          <button class="btn-outline-secondary" id="btn-hero-sample-chart" style="padding: 12px 20px; font-size: 13px; color: var(--av-text-inverse); border-color: var(--av-brand-border); min-height: 48px;" onclick="loadSampleBirthChart(); switchNavSection('kundli');">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Explore a Sample Chart
           </button>
         </div>
       </div>
@@ -8658,20 +8698,20 @@
 
   <!-- ==================== MODAL: VEDIC NAME CORRECTION & NUMEROLOGY STUDIO ==================== -->
   <div id="modal-numerology-studio" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10630;">
-    <div class="modal-dialog-card" style="max-width: 960px; width: 94%; max-height: 90vh; overflow-y: auto; padding: 24px;">
+    <div class="modal-dialog-card numerology-dialog-card" style="max-width: 880px; width: 94%; max-height: 88vh; overflow-y: auto; padding: 24px; background: var(--av-surface); border: 1px solid var(--av-border); border-radius: var(--av-radius-lg); box-shadow: var(--av-shadow-elevated);">
 
       <!-- Studio Header -->
       <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px;">
         <div>
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">VEDIC &amp; CHALDEAN HARMONICS</span>
+            <span style="font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--av-spiritual-accent); background: var(--av-surface-subtle); border: 1px solid var(--av-border); padding: 2px 8px; border-radius: 6px;">VEDIC &amp; CHALDEAN HARMONICS</span>
             <span class="tool-badge-tier badge-tier-premium" style="font-size: 11px; padding: 2px 8px;">Studio</span>
           </div>
-          <h2 style="font-size: 22px; font-weight: 800; color: #1E1B4B; margin: 6px 0 2px; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-signature" style="color: #D97706;"></i>
+          <h2 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: clamp(1.2rem, 3vw, 1.5rem); font-weight: 800; color: var(--av-text); margin: 6px 0 2px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-signature" style="color: var(--av-gold);"></i>
             <span id="num-studio-title">Vedic Name Correction &amp; Numerology Studio</span>
           </h2>
-          <p style="font-size: 13px; color: #64748B; margin: 0;" id="num-studio-tagline">
+          <p style="font-size: 13px; color: var(--av-text-secondary); margin: 0;" id="num-studio-tagline">
             Harmonize personal &amp; business names with birth numbers via classical Chaldean (1–8) and Pythagorean matrices.
           </p>
         </div>

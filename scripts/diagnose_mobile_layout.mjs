@@ -85,6 +85,14 @@ async function runDiagnosis() {
 
     await client.send('Page.enable');
     await client.send('DOM.enable');
+    await client.send('Page.navigate', { url: `file:///${indexPath}` });
+    for (let i = 0; i < 50; i++) {
+      const ready = await client.send('Runtime.evaluate', {
+        expression: `document.readyState !== 'loading' && !!document.body && !!document.getElementById('input-k-name')`
+      });
+      if (ready.result && ready.result.value === true) break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
 
     console.log(`\n================= MOBILE & RESPONSIVE LAYOUT AUDIT =================\n`);
 

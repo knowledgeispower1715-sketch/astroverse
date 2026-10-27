@@ -85,6 +85,14 @@ async function runInteractiveVerification() {
 
     await client.send('Page.enable');
     await client.send('DOM.enable');
+    await client.send('Page.navigate', { url: `file:///${indexPath}` });
+    for (let i = 0; i < 50; i++) {
+      const ready = await client.send('Runtime.evaluate', {
+        expression: `document.readyState !== 'loading' && !!document.body && typeof switchNavSection === 'function'`
+      });
+      if (ready.result && ready.result.value === true) break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
 
     // Wait until scripts are ready
     for (let i = 0; i < 40; i++) {
