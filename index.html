@@ -80,45 +80,60 @@
     :root {
       color-scheme: light;
 
-      --av-brand: #151A32;
-      --av-brand-raised: #242B49;
-      --av-brand-border: #414967;
+      /* Phase 1 Authoritative Design Tokens */
+      --av-blue-deep: #1D4ED8;
+      --av-blue-primary: #3B82F6;
+      --av-blue-light: #60A5FA;
+      --av-blue-pale: #93C5FD;
+
+      --av-top-accent: linear-gradient(90deg, #1D4ED8 0%, #3B82F6 40%, #60A5FA 70%, #93C5FD 100%);
+      --av-blue-glow: 0 2px 12px rgba(59, 130, 246, 0.35);
+
+      --av-maroon-base: #380710;
+      --av-maroon-primary: #4A0E17;
+      --av-maroon-raised: #5A121D;
+      --av-maroon-surface: #6B1D2F;
+
+      --av-indigo-deep: #151A32;
+      --av-indigo-raised: #242B49;
+
+      --av-gold-primary: #D4AF37;
+      --av-gold-hover: #E5C158;
+      --av-gold-amber: #F59E0B;
+      --av-gold-light: #FAF3E0;
+      --av-gold-border: #C49A42;
+      --av-gold-bronze: #78350F;
 
       --av-canvas: #FAF7F0;
       --av-surface: #FFFFFF;
-      --av-surface-subtle: #F1EDE4;
-      --av-border: #DDD6C9;
+      --av-surface-muted: #F8FAFC;
+      --av-border: #CBD5E1;
 
-      --av-gold: #C49A42;
-      --av-gold-soft: #E8CB82;
-      --av-gold-deep: #76520D;
+      --av-text-primary: #1E1B4B;
+      --av-text-secondary: #475569;
+      --av-text-placeholder: #475569;
 
-      --av-text: #20243A;
-      --av-text-secondary: #51576A;
-      --av-text-inverse: #FFFFFF;
-      --av-text-on-gold: #242013;
+      --av-text-inverse: #FAF7F0;
+      --av-text-inverse-secondary: #E2D8CF;
 
-      --av-success: #176B55;
-      --av-warning: #85520B;
-      --av-danger: #A12632;
-      --av-spiritual-accent: #67458A;
+      --av-success-text: #065F46;
+      --av-success-bg: #D1FAE5;
+
+      --av-danger-text: #991B1B;
+      --av-danger-bg: #FEE2E2;
+
+      --av-spiritual-text: #581C87;
+      --av-spiritual-bg: #F3E8FF;
 
       --av-radius-sm: 8px;
       --av-radius-md: 14px;
       --av-radius-lg: 20px;
-      --av-radius-xl: 26px;
 
-      --av-shadow-card:
-        0 8px 24px rgba(21, 26, 50, 0.07);
+      --av-page-gutter: clamp(16px, 3vw, 36px);
+      --av-content-max: 1440px;
+      --av-control-height: 46px;
 
-      --av-shadow-elevated:
-        0 18px 48px rgba(21, 26, 50, 0.13);
-
-      --av-content-max: 1240px;
-      --av-page-gutter: clamp(16px, 3vw, 32px);
-
-      --av-control-height: 48px;
-      --av-focus-ring: 0 0 0 3px rgba(36, 76, 151, 0.24);
+      --av-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.42);
 
       /* Typography Tokens */
       --av-text-xs: 0.75rem;
@@ -136,128 +151,61 @@
       --av-font-body: "Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif;
       --av-font-display: "Cinzel", Georgia, serif;
 
-      /* Backward compatibility aliases */
-      --av-border-top-blue: var(--av-brand);
-      --av-blue-glow: 0 2px 16px rgba(21, 26, 50, 0.2);
-      --av-celestial-blue-gradient: linear-gradient(135deg, #151A32 0%, #242B49 100%);
-      --av-blue-pill-bg: rgba(36, 76, 151, 0.12);
-      --av-blue-pill-border: var(--av-brand-border);
-
-      --av-maroon-darkest: var(--av-brand);
-      --av-maroon-primary: var(--av-brand);
-      --av-maroon-surface: var(--av-brand-raised);
+      /* Standard Semantic & Component Aliases */
+      --av-brand: var(--av-indigo-deep);
+      --av-brand-raised: var(--av-indigo-raised);
+      --av-brand-border: #414967;
+      --av-gold: var(--av-gold-primary);
+      --av-gold-soft: var(--av-gold-hover);
+      --av-gold-deep: var(--av-gold-bronze);
+      --av-text: var(--av-text-primary);
+      --av-text-on-gold: #2A080E;
+      --av-success: var(--av-success-text);
+      --av-warning: var(--av-gold-amber);
+      --av-danger: var(--av-danger-text);
+      --av-spiritual-accent: var(--av-spiritual-text);
+      --av-border-top-blue: var(--av-blue-primary);
+      --av-celestial-blue-gradient: var(--av-top-accent);
+      --av-maroon-darkest: var(--av-maroon-base);
+      --av-maroon-surface: var(--av-maroon-raised);
       --av-maroon-card: var(--av-surface);
-      --av-maroon-light: var(--av-brand-raised);
-      --av-maroon-glass: rgba(21, 26, 50, 0.94);
-      --av-maroon-gradient: linear-gradient(135deg, #151A32 0%, #242B49 100%);
-
-      --av-gold-primary: var(--av-gold);
-      --av-gold-bright: var(--av-gold-soft);
-      --av-gold-glow: 0 0 16px rgba(196, 154, 66, 0.35);
-      --av-gold-gradient: linear-gradient(135deg, var(--av-gold-soft) 0%, var(--av-gold) 100%);
-
+      --av-maroon-light: var(--av-maroon-raised);
+      --av-maroon-glass: rgba(56, 7, 16, 0.94);
+      --av-maroon-gradient: linear-gradient(135deg, var(--av-maroon-base) 0%, var(--av-maroon-primary) 100%);
+      --av-gold-glow: 0 0 16px rgba(212, 175, 55, 0.35);
+      --av-gold-gradient: linear-gradient(135deg, var(--av-gold-primary) 0%, var(--av-gold-amber) 100%);
       --av-canvas-deep: var(--av-canvas);
       --av-text-light: var(--av-text-inverse);
       --av-text-warm: var(--av-canvas);
       --av-text-subtle: var(--av-text-secondary);
       --av-text-muted: var(--av-text-secondary);
-
-      --av-content-wide: 1240px;
+      --av-content-wide: 1440px;
       --av-content-reading: 1080px;
       --av-radius-card: var(--av-radius-lg);
       --av-radius-control: var(--av-radius-sm);
       --av-border-subtle: var(--av-border);
-
-      --av-color-maroon-950: var(--av-brand);
-      --av-color-maroon-800: var(--av-brand-raised);
-      --av-color-saffron: var(--av-gold);
-      --av-color-gold: var(--av-gold);
-
+      --av-color-maroon-950: var(--av-maroon-base);
+      --av-color-maroon-800: var(--av-maroon-primary);
+      --av-color-saffron: var(--av-gold-amber);
+      --av-color-gold: var(--av-gold-primary);
       --av-color-parchment: var(--av-canvas);
       --av-color-surface: var(--av-surface);
-      --av-color-surface-warm: var(--av-surface-subtle);
-      --av-color-surface-soft: var(--av-surface-subtle);
-
-      --av-color-ink: var(--av-text);
+      --av-color-surface-warm: var(--av-canvas);
+      --av-color-surface-soft: var(--av-surface-muted);
+      --av-color-ink: var(--av-text-primary);
       --av-color-text-secondary: var(--av-text-secondary);
       --av-color-text-muted: var(--av-text-secondary);
-
       --av-color-border: var(--av-border);
-      --av-color-border-strong: var(--av-border);
-
-      --av-color-success: var(--av-success);
-      --av-color-success-bg: rgba(23, 107, 85, 0.12);
-
-      --av-color-warning: var(--av-warning);
-      --av-color-warning-bg: rgba(133, 82, 11, 0.12);
-
-      --av-color-danger: var(--av-danger);
-      --av-color-danger-bg: rgba(161, 38, 50, 0.12);
-
-      --av-color-info: #244C97;
-      --av-color-info-bg: rgba(36, 76, 151, 0.12);
-
-      --av-color-focus: var(--av-gold);
-
-      --av-shadow-xs: 0 1px 2px rgba(21, 26, 50, 0.05);
-      --av-shadow-sm: 0 2px 8px rgba(21, 26, 50, 0.06);
-      --av-shadow-drawer: -16px 0 52px rgba(21, 26, 50, 0.25);
-
-      --av-radius-full: 9999px;
-
-      --av-space-1: 4px;
-      --av-space-2: 8px;
-      --av-space-3: 12px;
-      --av-space-4: 16px;
-      --av-space-5: 20px;
-      --av-space-6: 24px;
-      --av-space-8: 32px;
-      --av-space-10: 40px;
-      --av-space-12: 48px;
-      --av-space-16: 64px;
-
-      --av-sidebar-width: 248px;
-      --av-header-height: 72px;
-
-      --av-duration-fast: 140ms;
-      --av-duration-normal: 220ms;
-      --av-duration-slow: 320ms;
-
-      --av-easing-standard: cubic-bezier(0.2, 0, 0, 1);
-
-      --saffron-gold: var(--av-gold-soft);
-      --saffron-orange: var(--av-gold);
-      --vedic-maroon: var(--av-brand);
-      --deep-maroon: var(--av-brand);
-      --canvas-bg: var(--av-canvas);
-      --card-bg: var(--av-surface);
-      --border-color: var(--av-border);
-      --text-main: var(--av-text);
-      --text-muted: var(--av-text-secondary);
-      --shadow-sm: var(--av-shadow-xs);
-      --shadow-md: var(--av-shadow-sm);
-      --shadow-lg: var(--av-shadow-card);
-      --radius-sm: var(--av-radius-sm);
-      --radius-md: var(--av-radius-md);
-      --radius-lg: var(--av-radius-lg);
-      --radius-full: var(--av-radius-full);
-
-      --astro-bg: var(--av-canvas);
-      --astro-surface: var(--av-surface);
-      --astro-surface-raised: var(--av-surface-subtle);
-      --astro-surface-glass: rgba(255, 255, 255, 0.94);
-      --astro-gold: var(--av-gold);
-      --astro-gold-bright: var(--av-gold-soft);
-      --astro-gold-glow: var(--av-gold-glow);
-      --astro-burgundy: var(--av-brand-raised);
-      --astro-crimson: var(--av-danger);
-      --astro-text: var(--av-text);
-      --astro-text-muted: var(--av-text-secondary);
-      --astro-border: var(--av-border);
-      --astro-border-subtle: var(--av-border);
-      --astro-radius-card: var(--av-radius-lg);
-      --astro-radius-control: var(--av-radius-sm);
-      --astro-shadow-card: var(--av-shadow-card);
+      --av-color-border-strong: #94A3B8;
+      --av-color-success: var(--av-success-text);
+      --av-color-success-bg: var(--av-success-bg);
+      --av-color-warning: var(--av-gold-amber);
+      --av-color-warning-bg: #FEF3C7;
+      --av-color-danger: var(--av-danger-text);
+      --av-color-danger-bg: var(--av-danger-bg);
+      --av-color-info: var(--av-blue-primary);
+      --av-color-info-bg: #DBEAFE;
+      --av-color-focus: var(--av-blue-primary);
     }
 
     /* Luxury Cosmic Architecture Components */
@@ -578,22 +526,22 @@
       }
     }
 
-    /* Celestial Royal Blue Top Accent Border */
+    /* Celestial Royal Blue Top Accent Border (Phase 2) */
     .celestial-top-border {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       width: 100%;
-      height: 2px;
-      background: linear-gradient(90deg, #151A32 0%, #C49A42 50%, #151A32 100%);
-      box-shadow: none;
+      height: 3.5px;
+      background: var(--av-top-accent);
+      box-shadow: var(--av-blue-glow);
       z-index: 10550;
       pointer-events: none;
     }
     @media (prefers-reduced-motion: reduce) {
       .celestial-top-border {
-        box-shadow: 0 1px 4px rgba(59, 130, 246, 0.4);
+        box-shadow: none;
       }
     }
 
@@ -819,7 +767,7 @@
       border-bottom: 1px solid var(--av-brand-border);
       box-shadow: 0 4px 20px rgba(21, 26, 50, 0.15);
       position: sticky;
-      top: 0;
+      top: 3.5px;
       z-index: 100;
       display: flex;
       justify-content: space-between;
@@ -1201,31 +1149,51 @@
       gap: 8px;
     }
 
+    /* Phase 3: Primary Gold Buttons */
     .btn-gold-primary {
-      background: linear-gradient(135deg, var(--saffron-gold) 0%, var(--saffron-orange) 100%);
-      color: #FFFFFF;
-      border: none;
-      padding: 12px 24px;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
+      background: linear-gradient(135deg, #D4AF37 0%, #F59E0B 100%) !important;
+      color: #2A080E !important;
+      font-weight: 700 !important;
+      border: 1px solid transparent;
+      border-radius: var(--av-radius-md);
+      min-height: var(--av-control-height);
+      box-shadow: 0 4px 14px rgba(212, 175, 55, 0.28);
+      transition: box-shadow 160ms ease, filter 160ms ease, transform 160ms ease;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
-      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
-      transition: all 0.2s;
+      cursor: pointer;
     }
     .btn-gold-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(217, 119, 6, 0.35);
+      filter: brightness(1.03);
+      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.34);
+      color: #2A080E !important;
     }
-    .btn-outline-secondary {
-      background: transparent;
-      border: 1px solid var(--border-color);
-      color: #334155;
+    .btn-gold-primary:active {
+      transform: translateY(1px);
+    }
+    .btn-gold-primary:focus-visible {
+      outline: 3px solid #3B82F6;
+      outline-offset: 2px;
+    }
+    .btn-gold-primary:disabled,
+    .btn-gold-primary[aria-disabled="true"] {
+      opacity: 0.72;
+      box-shadow: none;
+      transform: none;
+      cursor: not-allowed;
+    }
+
+    /* Phase 4: Context-Aware Secondary Buttons */
+    .btn-outline-secondary,
+    .btn-outline-secondary--light {
+      background: #FFFFFF !important;
+      color: #1E1B4B !important;
+      border: 1px solid #CBD5E1 !important;
+      border-radius: var(--av-radius-md);
+      min-height: var(--av-control-height);
       padding: 10px 18px;
-      border-radius: var(--radius-md);
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -1234,9 +1202,147 @@
       align-items: center;
       gap: 6px;
     }
-    .btn-outline-secondary:hover {
-      background: #F8FAFC;
-      border-color: #CBD5E1;
+    .btn-outline-secondary:hover,
+    .btn-outline-secondary--light:hover {
+      background: #F8FAFC !important;
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+    .btn-outline-secondary:focus-visible,
+    .btn-outline-secondary--light:focus-visible {
+      outline: 3px solid #3B82F6;
+      outline-offset: 2px;
+    }
+
+    /* Dark surface secondary buttons */
+    .btn-outline-secondary--dark,
+    .dark-surface .btn-outline-secondary,
+    .hero-banner .btn-outline-secondary,
+    .cosmic-hero-banner .btn-outline-secondary,
+    .guidance-discovery-card .btn-outline-secondary,
+    .main-navbar .btn-outline-secondary {
+      background: rgba(255, 255, 255, 0.07) !important;
+      color: #FAF7F0 !important;
+      border: 1px solid rgba(212, 175, 55, 0.55) !important;
+      border-radius: var(--av-radius-md);
+      min-height: var(--av-control-height);
+    }
+    .btn-outline-secondary--dark:hover,
+    .dark-surface .btn-outline-secondary:hover,
+    .hero-banner .btn-outline-secondary:hover,
+    .cosmic-hero-banner .btn-outline-secondary:hover,
+    .guidance-discovery-card .btn-outline-secondary:hover,
+    .main-navbar .btn-outline-secondary:hover {
+      background: rgba(212, 175, 55, 0.12) !important;
+      border-color: #D4AF37 !important;
+      color: #FFFFFF !important;
+    }
+    .btn-outline-secondary--dark:focus-visible {
+      outline: 3px solid #60A5FA;
+      outline-offset: 2px;
+    }
+
+    /* Phase 5 & 6: Form Controls, Dropdowns & Native Options */
+    .form-control--light,
+    .input--light,
+    .form-input-text,
+    .form-input-select,
+    select,
+    input[type="text"],
+    input[type="date"],
+    input[type="time"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="email"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      color: #1E1B4B !important;
+      background: #FFFFFF !important;
+      border: 1.5px solid #CBD5E1 !important;
+      border-radius: var(--av-radius-sm);
+      min-height: var(--av-control-height);
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    .form-control--light::placeholder,
+    .input--light::placeholder,
+    .form-input-text::placeholder,
+    input::placeholder,
+    textarea::placeholder {
+      color: #475569 !important;
+      opacity: 1 !important;
+    }
+
+    .form-control--light:focus,
+    .input--light:focus,
+    .form-input-text:focus,
+    .form-input-select:focus,
+    select:focus,
+    input:focus,
+    textarea:focus {
+      outline: 3px solid rgba(59, 130, 246, 0.38) !important;
+      outline-offset: 1px !important;
+      border-color: #3B82F6 !important;
+    }
+
+    select option {
+      color: #1E1B4B !important;
+      background-color: #FFFFFF !important;
+    }
+
+    /* Phase 5: Tier Simulation Buttons & Action Pills */
+    .tier-sim-btn,
+    .mob-sim-btn {
+      background: #FFFFFF !important;
+      color: #1E1B4B !important;
+      border: 1.5px solid #CBD5E1 !important;
+      border-radius: var(--av-radius-sm);
+      min-height: 32px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tier-sim-btn:hover,
+    .mob-sim-btn:hover {
+      background: #F8FAFC !important;
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+    .tier-sim-btn.active,
+    .mob-sim-btn.active {
+      background: #4A0E17 !important;
+      border-color: #D4AF37 !important;
+      color: #FAF7F0 !important;
+      box-shadow: 0 2px 8px rgba(74, 14, 23, 0.35);
+    }
+
+    .chat-pill-action-btn {
+      background: #FEF3C7 !important;
+      border: 1px solid #F59E0B !important;
+      color: #92400E !important;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .chat-pill-action-btn:hover {
+      background: #FDE68A !important;
+      color: #78350F !important;
+      border-color: #D97706 !important;
     }
     .btn-text-link {
       background: none;
@@ -9322,15 +9428,15 @@
         const mBtn = document.getElementById(`mob-sim-tier-${t}`);
         const isMatch = (t === norm.toLowerCase());
         if (hBtn) {
-          hBtn.style.background = isMatch ? '#D97706' : 'transparent';
-          hBtn.style.color = isMatch ? '#FFFFFF' : '#78350F';
           hBtn.classList.toggle('active', isMatch);
+          hBtn.style.background = '';
+          hBtn.style.color = '';
         }
         if (mBtn) {
-          mBtn.style.background = isMatch ? '#D97706' : '#FFFFFF';
-          mBtn.style.color = isMatch ? '#FFFFFF' : '#475569';
-          mBtn.style.borderColor = isMatch ? '#B45309' : '#E2E8F0';
           mBtn.classList.toggle('active', isMatch);
+          mBtn.style.background = '';
+          mBtn.style.color = '';
+          mBtn.style.borderColor = '';
         }
       });
       const badge = document.getElementById('mob-sim-tier-active-badge');
@@ -20369,7 +20475,7 @@
         try { guidanceAbortController.abort(); } catch (e) {}
       }
       currentGuidanceHorizon = horizon;
-      currentGuidanceRequestId++;
+      const activeReqId = ++currentGuidanceRequestId;
 
       document.querySelectorAll('.horizon-btn').forEach(b => b.classList.remove('active'));
       const activeBtn = document.getElementById('btn-hz-' + horizon);
@@ -20387,14 +20493,30 @@
       }
       const summaryEl = document.getElementById('guidance-disp-summary');
       if (summaryEl) {
-        summaryEl.textContent = isHi ? "स्विस एफिमेरिस एवं पराशरी सूत्रों से गणना की जा रही है..." : "Computing high-precision Swiss Ephemeris astronomical positions...";
+        summaryEl.innerHTML = `<span style="color: #64748B;"><i class="fa-solid fa-spinner fa-spin" style="color: #D4AF37; margin-right: 6px;"></i> ${isHi ? 'स्विस एफिमेरिस एवं पराशरी सूत्रों से गणना की जा रही है...' : 'Computing high-precision Swiss Ephemeris astronomical positions...'}</span>`;
+      }
+      const outlookEl = document.getElementById('guidance-disp-outlook');
+      if (outlookEl) {
+        outlookEl.innerHTML = `<span style="color: #64748B;"><i class="fa-solid fa-spinner fa-spin" style="color: #D4AF37; margin-right: 6px;"></i> ${isHi ? `${hMeta.hi} फलादेश की गणना जारी है...` : `Synthesizing ${hMeta.en} planetary transits and natal house activations...`}</span>`;
+      }
+      const suppEl = document.getElementById('guidance-disp-supportive');
+      if (suppEl) {
+        suppEl.innerHTML = `<li><span style="color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> ${isHi ? 'शुभ ग्रहीय संरेखण का विश्लेषण जारी...' : 'Analyzing benefic planetary alignments...'}</span></li>`;
+      }
+      const challEl = document.getElementById('guidance-disp-challenges');
+      if (challEl) {
+        challEl.innerHTML = `<li><span style="color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> ${isHi ? 'सतर्कता एवं चुनौती कालखंड का परिकलन...' : 'Evaluating cautionary windows...'}</span></li>`;
+      }
+      const winEl = document.getElementById('guidance-disp-windows');
+      if (winEl) {
+        winEl.innerHTML = `<div class="guidance-window-card" style="opacity: 0.7;"><i class="fa-regular fa-clock fa-spin" style="color: #D4AF37;"></i><span>${isHi ? 'महत्वपूर्ण समय वेला की गणना जारी...' : 'Calculating key time windows...'}</span></div>`;
       }
       const periodWrap = document.getElementById('guidance-period-items-container');
       if (periodWrap) {
-        periodWrap.innerHTML = `<div style="text-align:center; padding: 24px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: var(--vedic-maroon); margin-bottom: 8px;"></i><p style="margin: 0; font-size: 13px;">${isHi ? 'खगोलीय गोचर लोड हो रहा है...' : 'Synthesizing celestial transits...'}</p></div>`;
+        periodWrap.innerHTML = `<div style="text-align:center; padding: 24px; color: #64748B;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; color: #D4AF37; margin-bottom: 8px;"></i><p style="margin: 0; font-size: 13px;">${isHi ? 'कालचक्र प्रगति लोड हो रही है...' : 'Loading horizon timeline progression...'}</p></div>`;
       }
 
-      generatePersonalizedGuidance(horizon, currentGuidanceRequestId);
+      generatePersonalizedGuidance(horizon, activeReqId);
     }
 
     function refreshCurrentGuidance() {
@@ -20610,6 +20732,10 @@
 
     function renderStructuredPredictionUI(data) {
       if (!data || !data.sections) return;
+      if (data.time_horizon && data.time_horizon.toLowerCase() !== currentGuidanceHorizon.toLowerCase()) {
+        console.warn('Dropping stale guidance render for', data.time_horizon, 'active horizon is', currentGuidanceHorizon);
+        return;
+      }
       const s = data.sections;
       const isChartGrounded = Boolean(data.profile_loaded && data.mode === 'PERSONALIZED_CHART_GROUNDED');
       const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
