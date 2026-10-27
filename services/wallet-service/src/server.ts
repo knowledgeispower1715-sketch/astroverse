@@ -3,6 +3,7 @@ dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { db, UserRecord, Role, AccountStatus, OrderStatus, isDemoModeActive } from './db';
+import { getPublicSupabaseConfig, verifySupabaseToken, getSupabaseAdminClient } from './supabase';
 import { razorpay, isRazorpayConfigured, verifyRazorpaySignature, verifyRazorpayWebhookSignature, getRazorpayWebhookSecret } from './razorpay';
 import {
   SUBSCRIPTION_PLANS,
@@ -154,14 +155,26 @@ async function authenticate(req: AuthenticatedRequest, res: Response, next: Next
   const token = authHeader.split(' ')[1].trim();
   const tokenHash = hashToken(token);
 
-  const session = await db.findSessionByTokenHash(tokenHash);
-  if (!session) {
-    return res.status(401).json({ error: 'INVALID_OR_EXPIRED_SESSION', message: 'Session has expired or is invalid.' });
+  let session = await db.findSessionByTokenHash(tokenHash);
+  let user: UserRecord | null = null;
+
+  if (session) {
+    user = await db.findUserById(session.userId);
+  } else {
+    // Check if token is a Supabase JWT or test token
+    const supaResult = await verifySupabaseToken(token);
+    if (supaResult.user) {
+      user = await db.syncSupabaseUser({
+        id: supaResult.user.id,
+        email: supaResult.user.email,
+        phone: supaResult.user.phone,
+        user_metadata: supaResult.user.user_metadata
+      });
+    }
   }
 
-  const user = await db.findUserById(session.userId);
   if (!user) {
-    return res.status(401).json({ error: 'USER_NOT_FOUND', message: 'Associated user account no longer exists.' });
+    return res.status(401).json({ error: 'INVALID_OR_EXPIRED_SESSION', message: 'Session has expired or is invalid.' });
   }
 
   if (user.status !== AccountStatus.ACTIVE) {
@@ -1091,6 +1104,69 @@ app.post('/api/auth/google', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/auth/supabase/config
+// Returns public Supabase configuration for client-side SDK initialization.
+// Invariant: NEVER exposes service role secret or internal credentials.
+app.get('/api/auth/supabase/config', (_req: Request, res: Response) => {
+  res.json(getPublicSupabaseConfig());
+});
+
+// POST /api/auth/supabase/sync
+// Synchronizes authenticated Supabase session with AstroVerse backend,
+// links user profile, and returns sanitized user record and active entitlements.
+app.post('/api/auth/supabase/sync', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  const bodyToken = req.body?.accessToken || req.body?.sessionToken;
+  const token = (authHeader && authHeader.startsWith('Bearer '))
+    ? authHeader.split(' ')[1].trim()
+    : bodyToken;
+
+  if (!token) {
+    return res.status(401).json({ error: 'TOKEN_REQUIRED', message: 'Supabase access token required.' });
+  }
+
+  const supaResult = await verifySupabaseToken(token);
+  if (!supaResult.user || supaResult.error) {
+    return res.status(401).json({
+      error: 'INVALID_SUPABASE_TOKEN',
+      message: supaResult.error || 'Failed to verify Supabase authentication token.'
+    });
+  }
+
+  try {
+    const user = await db.syncSupabaseUser({
+      id: supaResult.user.id,
+      email: supaResult.user.email,
+      phone: supaResult.user.phone,
+      user_metadata: supaResult.user.user_metadata
+    });
+
+    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'SUPABASE_SYNC',
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: clientIp,
+      metadata: { email: user.email, authProvider: 'supabase' }
+    });
+
+    const profiles = await db.getProfilesByUserId(user.id);
+    const entitlements = EntitlementManager.resolveEffectiveTier(user);
+
+    res.json({
+      status: 'AUTHENTICATED',
+      sessionToken: token,
+      user: sanitizeUser(user),
+      profiles,
+      entitlements,
+      walletBalance: user.walletBalance
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'SYNC_FAILED', message: err.message });
   }
 });
 
@@ -3280,12 +3356,17 @@ app.get('/api/ready', (_req: Request, res: Response) => {
     return res.status(503).json({
       status: 'NOT_READY',
       error: 'DATABASE_CONFIGURATION_REQUIRED',
-      message: 'Production deployment requires DATABASE_URL environment variable for durable PostgreSQL persistence.',
+      message: 'Production deployment requires DATABASE_URL or Supabase project configuration for durable persistence.',
       durable: false,
       guestModeAvailable: true
     });
   }
-  return res.json({ status: 'READY', persistence: pStatus.mode, guestModeAvailable: true });
+  return res.json({
+    status: 'READY',
+    persistence: pStatus.mode,
+    guestModeAvailable: true,
+    supabaseConnected: Boolean((pStatus as any).supabaseConnected)
+  });
 });
 
 const PORT = process.env.PORT || 5000;

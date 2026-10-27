@@ -259,11 +259,21 @@ class ResilientDatabase {
     const paths = resolveDbPaths();
     this.dbFilePath = paths.dbFile;
 
+    const resolvedDbUrl = 
+      process.env.DATABASE_URL || 
+      process.env.POSTGRES_PRISMA_URL || 
+      process.env.POSTGRES_URL || 
+      process.env.SUPABASE_POSTGRES_URL;
+
+    if (resolvedDbUrl && !process.env.DATABASE_URL) {
+      process.env.DATABASE_URL = resolvedDbUrl;
+    }
+
     if (process.env.DATABASE_URL && PrismaClientConstructor) {
       try {
         this.prisma = new PrismaClientConstructor();
         this.isPostgresAvailable = true;
-        console.log('[DB] DATABASE_URL detected. Configuring durable PostgreSQL via Prisma.');
+        console.log('[DB] PostgreSQL URL detected. Configuring durable PostgreSQL via Prisma.');
       } catch (err: any) {
         console.error('[DB] Failed to initialize Prisma client:', err?.message || err);
         this.isPostgresAvailable = false;
@@ -271,7 +281,7 @@ class ResilientDatabase {
     } else {
       this.isPostgresAvailable = false;
       if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
-        console.warn('[DB_CONFIG_REQUIRED] Running in production/Vercel without DATABASE_URL. Ephemeral file storage cannot persist across lambda invocations.');
+        console.warn('[DB_CONFIG_REQUIRED] Running in production/Vercel without DATABASE_URL / POSTGRES_URL. Ephemeral file storage cannot persist across lambda invocations.');
       }
     }
 
@@ -284,9 +294,13 @@ class ResilientDatabase {
   assertDurableStorage(): void {
     const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
     const isProd = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
-    if (isProd && !this.isPostgresAvailable) {
+    const hasSupabase = Boolean(
+      process.env.SUPABASE_URL && 
+      (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
+    );
+    if (isProd && !this.isPostgresAvailable && !hasSupabase) {
       throw new Error(
-        'DURABLE_STORAGE_REQUIRED: Production environment requires a configured and connected PostgreSQL database (DATABASE_URL). Ephemeral storage fallback is strictly disabled in production.'
+        'DURABLE_STORAGE_REQUIRED: Production deployment requires a configured and connected PostgreSQL database (DATABASE_URL) or Supabase project. Ephemeral storage fallback is strictly disabled in production.'
       );
     }
   }
@@ -294,13 +308,36 @@ class ResilientDatabase {
   getPersistenceStatus() {
     const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
     const isProd = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
+    const hasDbUrl = Boolean(
+      process.env.DATABASE_URL || 
+      process.env.POSTGRES_PRISMA_URL || 
+      process.env.POSTGRES_URL || 
+      process.env.SUPABASE_POSTGRES_URL
+    );
+    const hasSupabase = Boolean(
+      process.env.SUPABASE_URL && 
+      (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
+    );
+    const isDurable = this.isPostgresAvailable || hasSupabase;
+    let mode = 'LOCAL_DEVELOPMENT_FILE';
+    if (this.isPostgresAvailable) {
+      mode = 'POSTGRES_PRISMA';
+    } else if (hasSupabase) {
+      mode = 'SUPABASE_CLOUD';
+    } else if (isVercelPreview) {
+      mode = 'PREVIEW_EPHEMERAL_MODE';
+    } else if (isProd) {
+      mode = 'UNCONFIGURED_PRODUCTION';
+    }
+
     return {
-      durable: this.isPostgresAvailable,
-      mode: this.isPostgresAvailable ? 'POSTGRES_PRISMA' : (isVercelPreview ? 'PREVIEW_EPHEMERAL_MODE' : (isProd ? 'UNCONFIGURED_PRODUCTION' : 'LOCAL_DEVELOPMENT_FILE')),
-      databaseConfigured: Boolean(process.env.DATABASE_URL),
-      connected: this.isPostgresAvailable,
+      durable: isDurable,
+      mode,
+      databaseConfigured: hasDbUrl || hasSupabase,
+      connected: isDurable,
       isProduction: isProd,
-      isPreview: isVercelPreview
+      isPreview: isVercelPreview,
+      supabaseConnected: hasSupabase
     };
   }
 
@@ -587,6 +624,7 @@ class ResilientDatabase {
   }
 
   async createUser(userData: {
+    id?: string;
     phone?: string | null;
     email?: string | null;
     phoneVerified?: boolean;
@@ -606,6 +644,7 @@ class ResilientDatabase {
       try {
         const u = await this.prisma.user.create({
           data: {
+            ...(userData.id ? { id: userData.id } : {}),
             phone: userData.phone || null,
             email: userData.email ? userData.email.trim().toLowerCase() : null,
             phoneVerified: userData.phoneVerified || false,
@@ -632,7 +671,7 @@ class ResilientDatabase {
 
     const now = new Date().toISOString();
     const newUser: UserRecord = {
-      id: 'usr_' + crypto.randomBytes(8).toString('hex'),
+      id: userData.id || ('usr_' + crypto.randomBytes(8).toString('hex')),
       phone: userData.phone || null,
       email: userData.email ? userData.email.trim().toLowerCase() : null,
       phoneVerified: userData.phoneVerified || false,
@@ -654,6 +693,56 @@ class ResilientDatabase {
     this.data.users.push(newUser);
     this.saveToFile();
     return newUser;
+  }
+
+  async syncSupabaseUser(supabaseUser: {
+    id: string;
+    email?: string | null;
+    phone?: string | null;
+    user_metadata?: any;
+  }): Promise<UserRecord> {
+    const cleanEmail = supabaseUser.email ? supabaseUser.email.trim().toLowerCase() : null;
+    const cleanPhone = supabaseUser.phone ? supabaseUser.phone.trim() : null;
+    const meta = supabaseUser.user_metadata || {};
+    const name = meta.displayName || meta.full_name || meta.name || (cleanEmail ? cleanEmail.split('@')[0] : 'User');
+
+    // 1. Check by ID (UUID from Supabase)
+    let user = await this.findUserById(supabaseUser.id);
+
+    // 2. Fall back to email
+    if (!user && cleanEmail) {
+      user = await this.findUserByIdentifier(cleanEmail);
+    }
+
+    // 3. Fall back to phone
+    if (!user && cleanPhone) {
+      user = await this.findUserByIdentifier(cleanPhone);
+    }
+
+    if (!user) {
+      user = await this.createUser({
+        id: supabaseUser.id,
+        email: cleanEmail,
+        phone: cleanPhone,
+        emailVerified: Boolean(cleanEmail),
+        phoneVerified: Boolean(cleanPhone),
+        displayName: name,
+        role: Role.USER,
+        status: AccountStatus.ACTIVE,
+        walletBalance: 0.00
+      });
+    } else {
+      const updates: Partial<UserRecord> = {
+        lastLoginAt: new Date().toISOString(),
+        emailVerified: cleanEmail ? true : user.emailVerified
+      };
+      if (!user.displayName && name) {
+        updates.displayName = name;
+      }
+      user = await this.updateUser(user.id, updates);
+    }
+
+    return user;
   }
 
   async updateUser(id: string, updates: Partial<UserRecord>): Promise<UserRecord> {

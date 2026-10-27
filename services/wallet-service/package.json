@@ -4,7 +4,7 @@
   "main": "src/server.ts",
   "scripts": {
     "dev": "ts-node src/server.ts",
-    "test": "ts-node tests/auth.test.ts && ts-node tests/chat_frontend_logic.test.ts && ts-node tests/monetization.test.ts && ts-node tests/pdf_fixtures.test.ts && ts-node tests/differentiation.test.ts && ts-node tests/pdf_quality_regression.test.ts && ts-node tests/numerology.test.ts && ts-node tests/razorpay_compliance.test.ts && ts-node tests/privacy_and_form_state.test.ts",
+    "test": "ts-node tests/auth.test.ts && ts-node tests/supabase_auth.test.ts && ts-node tests/chat_frontend_logic.test.ts && ts-node tests/monetization.test.ts && ts-node tests/pdf_fixtures.test.ts && ts-node tests/differentiation.test.ts && ts-node tests/pdf_quality_regression.test.ts && ts-node tests/numerology.test.ts && ts-node tests/razorpay_compliance.test.ts && ts-node tests/privacy_and_form_state.test.ts",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.11.0",
+    "@supabase/supabase-js": "^2.118.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "prisma": "^5.11.0",

@@ -71,6 +71,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- Supabase Client SDK (v2) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Google Identity Services (OAuth 2.0 & GIS) -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(typeof initGoogleAuth==='function')initGoogleAuth();"></script>
 
@@ -7914,6 +7916,7 @@
         <div class="form-field-group">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <label class="form-field-label" style="color: #E2E8F0; margin-bottom: 0;">Password</label>
+            <button type="button" onclick="handleModalForgotPasswordTrigger()" style="background: none; border: none; color: #F59E0B; cursor: pointer; font-size: 11px; padding: 0;">Forgot password?</button>
           </div>
           <div style="position: relative;">
             <input type="password" id="modal-pwd-val" class="form-input-text" placeholder="Enter your password" style="background: #0F172A; color: #F8FAFC; border-color: #334155; padding-right: 40px;">
@@ -7962,6 +7965,9 @@
         <span style="font-size: 11px; color: #64748B; text-align: center;">
           Access full Kundli, Horas, Panchang &amp; remedies saved locally on this device.
         </span>
+        <div style="font-size: 10.5px; color: #94A3B8; text-align: center; margin-top: 6px;">
+          By continuing, you agree to AstroVerse <a href="#/terms" style="color: #F59E0B; text-decoration: underline;" onclick="closeAuthModal()">Terms of Service</a> &amp; <a href="#/privacy" style="color: #F59E0B; text-decoration: underline;" onclick="closeAuthModal()">Privacy Policy</a>.
+        </div>
       </div>
 
     </div>
@@ -11342,6 +11348,11 @@
 
     // Sign Out
     async function executeSignOut(notify = true) {
+      if (supabaseClient && isSupabaseConfigured) {
+        try {
+          await supabaseClient.auth.signOut();
+        } catch (_) {}
+      }
       if (currentSessionToken) {
         try {
           await fetch(`${getAuthBase()}/api/auth/logout`, {
@@ -14817,6 +14828,7 @@
 
     // Initialization on Page Load
     window.addEventListener('DOMContentLoaded', async () => {
+      try { await initSupabaseClient(); } catch (_) {}
       checkGoogleAuthRedirect();
       initGoogleAuth();
       updateUserSessionUI();
@@ -14839,6 +14851,137 @@
       }
       handleHashRoute();
     });
+
+    // ==================== SUPABASE CLIENT & AUTH CONTROLLER ====================
+    let supabaseClient = null;
+    let isSupabaseConfigured = false;
+
+    async function initSupabaseClient() {
+      if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+        return null;
+      }
+      if (supabaseClient) return supabaseClient;
+
+      let supaUrl = '';
+      let supaAnonKey = '';
+
+      // 1. Fetch public config from backend gateway
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/supabase/config`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.supabaseUrl && data.supabaseAnonKey) {
+            supaUrl = data.supabaseUrl;
+            supaAnonKey = data.supabaseAnonKey;
+          }
+        }
+      } catch (_) {}
+
+      // 2. Check window.__ASTRO_CONFIG__ or localStorage overrides
+      if (!supaUrl && window.__ASTRO_CONFIG__?.supabaseUrl) {
+        supaUrl = window.__ASTRO_CONFIG__.supabaseUrl;
+        supaAnonKey = window.__ASTRO_CONFIG__.supabaseAnonKey;
+      }
+      if (!supaUrl) {
+        try {
+          supaUrl = localStorage.getItem('astro_supabase_url') || '';
+          supaAnonKey = localStorage.getItem('astro_supabase_anon_key') || '';
+        } catch (_) {}
+      }
+
+      if (supaUrl && supaAnonKey) {
+        try {
+          supabaseClient = window.supabase.createClient(supaUrl, supaAnonKey, {
+            auth: {
+              autoRefreshToken: true,
+              persistSession: true,
+              detectSessionInUrl: true
+            }
+          });
+          isSupabaseConfigured = true;
+          console.log('[Supabase] Initialized client connected to', supaUrl);
+
+          // Listen for Supabase auth state transitions
+          supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            console.log('[Supabase Auth Event]', event, session ? session.user?.id : 'no session');
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              if (session && session.user) {
+                await handleSupabaseSessionSuccess(session);
+              }
+            } else if (event === 'SIGNED_OUT') {
+              executeSignOut(false);
+            } else if (event === 'PASSWORD_RECOVERY') {
+              openAuthModal('password');
+              showToast('Password recovery detected. Please enter your new password.', 'info');
+            }
+          });
+
+          // Check current active session immediately
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session && session.user && (!currentUserSession || !currentSessionToken)) {
+            await handleSupabaseSessionSuccess(session);
+          }
+
+          const pill = document.getElementById('auth-status-pill');
+          if (pill) {
+            pill.innerHTML = '<span style="width: 7px; height: 7px; border-radius: 50%; background: #10B981; display: inline-block;"></span> <span id="auth-status-text" style="color: #34D399; font-weight: 600;">Supabase Auth Online</span>';
+          }
+          const noticeEl = document.getElementById('auth-db-notice');
+          if (noticeEl) noticeEl.style.display = 'none';
+
+          return supabaseClient;
+        } catch (err) {
+          console.warn('[Supabase] Client creation notice:', err);
+        }
+      }
+      return null;
+    }
+
+    async function handleSupabaseSessionSuccess(session) {
+      if (!session || !session.user) return;
+      const supaUser = session.user;
+      const token = session.access_token;
+
+      let displayName = supaUser.user_metadata?.displayName || 
+                        supaUser.user_metadata?.full_name || 
+                        supaUser.user_metadata?.name || 
+                        (supaUser.email ? supaUser.email.split('@')[0] : 'User');
+
+      // Sync with backend to ensure wallet & profile records exist
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/supabase/sync`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ accessToken: token })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.user) {
+            applyAuthenticatedSession(data.user, token);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('[Supabase Sync] Backend sync notice:', err);
+      }
+
+      // Standalone authenticated session state fallback
+      const userObj = {
+        id: supaUser.id,
+        displayName: displayName,
+        email: supaUser.email,
+        phone: supaUser.phone,
+        role: 'USER',
+        status: 'ACTIVE',
+        walletBalance: 0.00
+      };
+      applyAuthenticatedSession(userObj, token);
+    }
 
     // ==================== GOOGLE IDENTITY SERVICES & OAUTH 2.0 CONTROLLERS ====================
     const ASTRO_GOOGLE_CLIENT_ID = '488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com';
@@ -14896,16 +15039,35 @@
       }
     }
 
-    function triggerUnifiedGoogleLogin() {
-      initGoogleAuth();
-
+    async function triggerUnifiedGoogleLogin() {
       const btn = document.getElementById('btn-unified-google-login');
       if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Google...';
       }
 
-      // 1. Try modern OAuth2 Code Popup Client if available
+      // 1. If Supabase client is configured, use standard Supabase Google OAuth!
+      if (supabaseClient && isSupabaseConfigured) {
+        try {
+          const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: window.location.origin + '/'
+            }
+          });
+          if (error) throw error;
+          return;
+        } catch (err) {
+          console.warn('[Supabase Google OAuth] Error, trying GIS fallback:', err);
+          resetUnifiedGoogleButton();
+          showToast(err.message || 'Google OAuth failed.', 'error');
+          return;
+        }
+      }
+
+      initGoogleAuth();
+
+      // 2. Try modern OAuth2 Code Popup Client if available
       if (googleCodeClient) {
         try {
           googleCodeClient.requestCode();
@@ -14915,7 +15077,7 @@
         }
       }
 
-      // 2. Fallback to standard full-page redirection (reliable across all mobile & desktop browsers)
+      // 3. Fallback to standard full-page redirection (reliable across all mobile & desktop browsers)
       initiateGoogleOAuthFlow();
     }
 
@@ -15318,6 +15480,18 @@
       }
     }
 
+    function handleModalForgotPasswordTrigger() {
+      const ident = document.getElementById('modal-pwd-ident')?.value?.trim();
+      const email = prompt("Enter your account email address to receive a password reset link:", ident && ident.includes('@') ? ident : "");
+      if (!email || !email.includes('@')) {
+        if (email !== null) showToast("Please enter a valid email address.", "error");
+        return;
+      }
+      const forgotInp = document.getElementById('forgot-email');
+      if (forgotInp) forgotInp.value = email;
+      executeForgotPasswordRequest();
+    }
+
     async function handleModalPasswordLogin() {
       const ident = document.getElementById('modal-pwd-ident')?.value?.trim();
       const password = document.getElementById('modal-pwd-val')?.value;
@@ -15335,6 +15509,32 @@
 
       const btn = document.getElementById('btn-modal-pwd-login');
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...'; }
+
+      // 1. Prioritize Supabase Auth if configured
+      if (supabaseClient && isSupabaseConfigured && ident.includes('@')) {
+        try {
+          const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: ident,
+            password: password
+          });
+          if (error) {
+            if (errEl) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+            showToast(error.message, 'error');
+            return;
+          }
+          if (data && data.session) {
+            await handleSupabaseSessionSuccess(data.session);
+            closeAuthModal();
+            showToast(`Welcome back, ${currentUserSession.name}!`, 'success');
+            resumePendingActionAfterAuth();
+            return;
+          }
+        } catch (supaErr) {
+          console.warn('[Supabase Sign In] Exception, trying gateway fallback:', supaErr);
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Account'; }
+        }
+      }
 
       try {
         const res = await fetch(`${getAuthBase()}/api/auth/login-password`, {
@@ -15435,6 +15635,53 @@
 
       const btn = document.getElementById('btn-modal-reg-submit');
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account...'; }
+
+      // 1. Prioritize Supabase Auth registration if configured
+      if (supabaseClient && isSupabaseConfigured && email) {
+        try {
+          const { data, error } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+            options: {
+              data: {
+                displayName: name,
+                full_name: name
+              }
+            }
+          });
+          if (error) {
+            if (errEl) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+            showToast(error.message, 'error');
+            return;
+          }
+          if (data && data.user) {
+            if (data.session) {
+              await handleSupabaseSessionSuccess(data.session);
+              closeAuthModal();
+              showToast(`Welcome, ${name}! Your account is active.`, 'success');
+              resumePendingActionAfterAuth();
+            } else {
+              if (errEl) {
+                errEl.innerHTML = `
+                  <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 12px; border-radius: 8px; color: #D1FAE5; margin-top: 6px;">
+                    <strong style="color: #34D399; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                      <i class="fa-solid fa-envelope-circle-check"></i> Verification Email Dispatched
+                    </strong>
+                    <span>We sent an activation link to <strong>${escapeHtml(email)}</strong>. Please verify your email, then return here to sign in.</span>
+                  </div>
+                `;
+                errEl.style.display = 'block';
+              }
+              showToast('Verification email dispatched! Please check your inbox.', 'success');
+            }
+            return;
+          }
+        } catch (supaErr) {
+          console.warn('[Supabase Sign Up] Exception, trying gateway fallback:', supaErr);
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-user-check"></i> Complete Registration'; }
+        }
+      }
 
       try {
         const res = await fetch(`${getAuthBase()}/api/auth/register-password`, {
@@ -15729,7 +15976,23 @@
       const email = document.getElementById('forgot-email').value.trim();
       if (!email || !email.includes('@')) { showToast("Please enter a valid email address.", "error"); return; }
 
-      showToast("Sending reset code...", "info");
+      showToast("Sending reset link...", "info");
+
+      if (supabaseClient && isSupabaseConfigured) {
+        try {
+          const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/#reset-password'
+          });
+          if (error) throw error;
+          showToast("Password reset link dispatched! Please check your email.", "info");
+          document.getElementById('reset-email').value = email;
+          switchNavSection('reset-password');
+          return;
+        } catch (supaErr) {
+          console.warn('[Supabase Reset Password] Notice:', supaErr);
+        }
+      }
+
       try {
         const res = await fetch(`${getAuthBase()}/api/auth/forgot-password`, {
           method: 'POST',
@@ -15755,8 +16018,8 @@
       const newPassword = document.getElementById('reset-new-password').value;
       const confirmPwd = document.getElementById('reset-confirm-password').value;
 
-      if (!email || !resetToken || !newPassword) {
-        showToast("Please fill all required fields.", "error");
+      if (!newPassword) {
+        showToast("Please enter your new password.", "error");
         return;
       }
       if (newPassword !== confirmPwd) {
@@ -15770,6 +16033,27 @@
       }
 
       showToast("Resetting password...", "info");
+
+      if (supabaseClient && isSupabaseConfigured) {
+        try {
+          const { data, error } = await supabaseClient.auth.updateUser({ password: newPassword });
+          if (error) throw error;
+          showToast("Password reset successfully! Please sign in with your new password.", "success");
+          if (document.getElementById('login-ident') && email) {
+            document.getElementById('login-ident').value = email;
+          }
+          switchNavSection('login');
+          return;
+        } catch (supaErr) {
+          console.warn('[Supabase Update Password] Notice:', supaErr);
+        }
+      }
+
+      if (!email || !resetToken) {
+        showToast("Please fill all required fields.", "error");
+        return;
+      }
+
       try {
         const res = await fetch(`${getAuthBase()}/api/auth/reset-password`, {
           method: 'POST',
