@@ -519,9 +519,8 @@
       border-radius: var(--av-radius-lg);
       padding: 22px 26px;
       margin-bottom: 24px;
-      color: var(--av-text);
-      box-shadow: var(--av-shadow-card);
-      box-shadow: var(--av-shadow-card, 0 14px 36px rgba(12, 2, 7, 0.35));
+      color: var(--av-text-primary, #20263A);
+      box-shadow: var(--av-shadow-card, 0 4px 16px rgba(24, 33, 58, 0.08));
       position: relative;
       overflow: hidden;
     }
@@ -1324,6 +1323,7 @@
     /* Dark surface secondary buttons */
     .btn-outline-secondary--dark,
     .dark-surface .btn-outline-secondary,
+    .auth-modal-card .btn-outline-secondary,
     .hero-banner .btn-outline-secondary,
     .cosmic-hero-banner .btn-outline-secondary,
     .main-navbar .btn-outline-secondary {
@@ -1335,6 +1335,7 @@
     }
     .btn-outline-secondary--dark:hover,
     .dark-surface .btn-outline-secondary:hover,
+    .auth-modal-card .btn-outline-secondary:hover,
     .hero-banner .btn-outline-secondary:hover,
     .cosmic-hero-banner .btn-outline-secondary:hover,
     .main-navbar .btn-outline-secondary:hover {
@@ -15223,30 +15224,30 @@
         container.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 270px;">
-              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #34D399; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 10px; border-radius: 20px; margin-bottom: 8px;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #047857; text-transform: uppercase; letter-spacing: 0.5px; background: #D1FAE5; border: 1px solid #A7F3D0; padding: 3px 10px; border-radius: 20px; margin-bottom: 8px;">
                 <i class="fa-solid fa-circle-check"></i> Active Natal Chart Loaded
               </div>
-              <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 0 0 6px;">
+              <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 20px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">
                 ${escapeHtml(name)}'s Cosmic Blueprint
               </h3>
               <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
-                <span style="font-size: 12px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25); color: #FFFFFF; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                <span style="font-size: 12px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #1E293B; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
                   Lagna: ${lagna} (H1)
                 </span>
-                <span style="font-size: 12px; background: rgba(59, 130, 246, 0.25); border: 1px solid rgba(96, 165, 250, 0.5); color: #93C5FD; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                <span style="font-size: 12px; background: #DBEAFE; border: 1px solid #93C5FD; color: #1E40AF; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
                   Moon Sign: ${moon}
                 </span>
-                <span style="font-size: 12px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25); color: #FFFFFF; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                <span style="font-size: 12px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #1E293B; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
                   Nakshatra: ${nak} (Pada ${pada})
                 </span>
-                <span style="font-size: 12px; background: rgba(212, 175, 55, 0.2); border: 1px solid rgba(212, 175, 55, 0.45); color: #F5C45E; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                <span style="font-size: 12px; background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
                   Sun Sign: ${sun}
                 </span>
-                <span style="font-size: 12px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25); color: #FFFFFF; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
+                <span style="font-size: 12px; background: #F1F5F9; border: 1px solid #CBD5E1; color: #1E293B; padding: 4px 10px; border-radius: 8px; font-weight: 700;">
                   Dasha: ${dashaMaha}-${dashaAntar}
                 </span>
               </div>
-              <p style="font-size: 12.5px; color: #94A3B8; margin: 0; line-height: 1.5;">
+              <p style="font-size: 12.5px; color: var(--av-text-secondary, #566074); margin: 0; line-height: 1.5;">
                 Computed via Swiss Ephemeris for ${escapeHtml(currentCalculatedChart.city || 'Calculated Coordinates')} (${currentCalculatedChart.dob} ${currentCalculatedChart.tob}). All 16 Shodashavarga divisions and transits are synchronized.
               </p>
             </div>
@@ -15254,10 +15255,10 @@
               <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px; min-height: 44px;" onclick="switchNavSection('kundli')">
                 <i class="fa-solid fa-dharmachakra"></i> View Full Kundli
               </button>
-              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; color: #F8FAFC; border-color: rgba(212, 175, 55, 0.35); min-height: 44px;" onclick="switchNavSection('kundli'); if(typeof switchKundliTab==='function') switchKundliTab('dasha');">
+              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; min-height: 44px;" onclick="switchNavSection('kundli'); if(typeof switchKundliTab==='function') switchKundliTab('dasha');">
                 <i class="fa-solid fa-timeline"></i> Dasha Timeline
               </button>
-              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; color: #F8FAFC; border-color: rgba(212, 175, 55, 0.35); min-height: 44px;" onclick="openChatWithActiveChart()">
+              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; min-height: 44px;" onclick="openChatWithActiveChart()">
                 <i class="fa-solid fa-comments"></i> Consult AI Guru
               </button>
             </div>
@@ -15268,13 +15269,13 @@
         container.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 260px;">
-              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #F5C45E; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+              <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
                 <i class="fa-solid fa-compass"></i> Personal Cosmic Blueprint
               </div>
-              <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0 0 6px;">
+              <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 18px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">
                 No Natal Chart Calculated Yet
               </h3>
-              <p style="font-size: 13px; color: #94A3B8; margin: 0; line-height: 1.5; max-width: 640px;">
+              <p style="font-size: 13px; color: var(--av-text-secondary, #566074); margin: 0; line-height: 1.5; max-width: 640px;">
                 Enter your exact birth details in Free Janam Kundli to compute sidereal Lagna, D9 Navamsha, Shadbala, and cross-correlated planetary transits with Swiss Ephemeris precision.
               </p>
             </div>
@@ -15282,7 +15283,7 @@
               <button class="btn-gold-primary" style="padding: 10px 20px; font-size: 13px; min-height: 44px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
                 <i class="fa-solid fa-sparkles"></i> Calculate Free Kundli
               </button>
-              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; color: #F8FAFC; border-color: rgba(212, 175, 55, 0.35); min-height: 44px;" onclick="loadSampleBirthChart(); switchNavSection('kundli');">
+              <button class="btn-outline-secondary" style="padding: 10px 16px; font-size: 13px; min-height: 44px;" onclick="loadSampleBirthChart(); switchNavSection('kundli');">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Try Sample Chart
               </button>
             </div>
@@ -21196,7 +21197,7 @@
               ${it.beej_mantra ? `
                 <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed #E2E8F0; font-size: 11px; color: #475569; display: flex; justify-content: space-between; align-items: center;">
                   <span><i class="fa-solid fa-om" style="color: #D97706;"></i> <strong>${it.beej_mantra}</strong></span>
-                  <span style="font-size: 10px; color: #94A3B8;">${it.transliteration || ''}</span>
+                  <span style="font-size: 10px; color: #64748B;">${it.transliteration || ''}</span>
                 </div>
               ` : ''}
               ${it.vedic_remedy ? `
@@ -22505,7 +22506,7 @@
       if (container) {
         emptyState = document.createElement('div');
         emptyState.id = 'tools-empty-state';
-        emptyState.style.cssText = 'grid-column: 1 / -1; padding: 48px 24px; text-align: center; background: rgba(30, 41, 59, 0.4); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 12px; margin: 16px 0;';
+        emptyState.style.cssText = 'grid-column: 1 / -1; padding: 48px 24px; text-align: center; background: #FFFFFF; border: 1.5px dashed var(--av-border, #CBD5E1); border-radius: 12px; margin: 16px 0; box-shadow: 0 4px 16px rgba(24, 33, 58, 0.05);';
         container.appendChild(emptyState);
       }
     }
@@ -22514,10 +22515,10 @@
         emptyState.style.display = 'block';
         const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
         emptyState.innerHTML = `
-          <i class="fa-solid fa-magnifying-glass" style="font-size: 32px; color: #F59E0B; margin-bottom: 12px; opacity: 0.85;"></i>
-          <h4 style="font-family: 'Cinzel', serif; color: #F8FAFC; margin-bottom: 8px;">${isHi ? 'कोई ज्योतिषीय उपकरण नहीं मिला' : 'No Astrological Tools Found'}</h4>
-          <p style="font-size: 13px; color: #94A3B8; max-width: 480px; margin: 0 auto 16px auto;">${isHi ? 'आपके खोज या फ़िल्टर मानदंड से कोई टूल मेल नहीं खाता। कृपया फ़िल्टर रीसेट करें।' : 'No tools matched your current search query or category filter. Try clearing your search term or switching to "All Tools".'}</p>
-          <button class="tool-launch-btn" style="width: auto; padding: 8px 18px; margin: 0 auto; display: inline-flex; align-items: center; gap: 8px;" onclick="resetToolsFilter()"><i class="fa-solid fa-rotate-left"></i> ${isHi ? 'फ़िल्टर रीसेट करें' : 'Reset All Filters'}</button>
+          <i class="fa-solid fa-magnifying-glass" style="font-size: 32px; color: #D97706; margin-bottom: 12px;"></i>
+          <h4 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 18px; font-weight: 800; color: var(--av-text-primary, #20263A); margin-bottom: 8px;">${isHi ? 'कोई ज्योतिषीय उपकरण नहीं मिला' : 'No Astrological Tools Found'}</h4>
+          <p style="font-size: 13px; color: var(--av-text-secondary, #566074); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.5;">${isHi ? 'आपके खोज या फ़िल्टर मानदंड से कोई टूल मेल नहीं खाता। कृपया फ़िल्टर रीसेट करें।' : 'No tools matched your current search query or category filter. Try clearing your search term or switching to "All Tools".'}</p>
+          <button class="btn-gold-primary" style="width: auto; padding: 8px 20px; margin: 0 auto; display: inline-flex; align-items: center; gap: 8px;" onclick="resetToolsFilter()"><i class="fa-solid fa-rotate-left"></i> ${isHi ? 'फ़िल्टर रीसेट करें' : 'Reset All Filters'}</button>
         `;
       } else {
         emptyState.style.display = 'none';

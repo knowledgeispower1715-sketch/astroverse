@@ -451,13 +451,15 @@ async function runMonetizationTestSuite() {
 
     // Credit User A wallet with sufficient funds to test wallet purchase with 10% Plus discount
     // report_janam_kundli_deep_dive is 19900 paise = ₹199. With Plus 10% discount: 17910 paise = ₹179.10
+    const topupOrderId = `order_test_topup_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+    const topupPaymentId = `pay_test_topup_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
     await db.createPaymentOrder({
       userId: userA.id,
       amount: 250.0,
       currency: 'INR',
-      razorpayOrderId: 'order_test_topup_123'
+      razorpayOrderId: topupOrderId
     });
-    await db.rechargeWallet(userA.id, 250.0, 'pay_test_topup_123', 'order_test_topup_123');
+    await db.rechargeWallet(userA.id, 250.0, topupPaymentId, topupOrderId);
 
     let paidReportId = '';
     await test('Wallet report purchase applies 10% Plus member discount, debits wallet, and creates ledger entry with proper Report description', async () => {
