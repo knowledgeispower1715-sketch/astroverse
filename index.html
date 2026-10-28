@@ -77,44 +77,60 @@
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(typeof initGoogleAuth==='function')initGoogleAuth();"></script>
   <!-- Razorpay Checkout SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <!-- Firebase App & Analytics SDK (v11 Modular) -->
+  <!-- Firebase App & Analytics SDK (v11 Modular) - Secrets loaded securely via runtime config -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getAnalytics, isSupported, logEvent } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBd0EFdhLD3AAGsmBwGf12EGOI2lkAgW80",
-      authDomain: "astroverse-c0b90.firebaseapp.com",
-      projectId: "astroverse-c0b90",
-      storageBucket: "astroverse-c0b90.firebasestorage.app",
-      messagingSenderId: "719758726336",
-      appId: "1:719758726336:web:1e9ed188ed9651562e4925",
-      measurementId: "G-C2JVGQ8GH2"
-    };
+    async function initFirebaseFromConfig() {
+      let cfg = window.FIREBASE_CONFIG;
+      if (!cfg || !cfg.apiKey) {
+        try {
+          const authBase = (window.location.protocol.startsWith('file') || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'http://localhost:5000' : '';
+          const res = await fetch(`${authBase}/api/config`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.firebase && data.firebase.apiKey) {
+              cfg = data.firebase;
+            }
+            if (data.razorpayKeyId) {
+              window.RAZORPAY_KEY_ID = data.razorpayKeyId;
+            }
+          }
+        } catch (_) {}
+      }
 
-    try {
-      const app = initializeApp(firebaseConfig);
-      window.firebaseApp = app;
-      isSupported().then((supported) => {
-        if (supported) {
-          const analytics = getAnalytics(app);
-          window.firebaseAnalytics = analytics;
-          window.logAstroverseEvent = (eventName, params = {}) => {
-            try {
-              if (window.firebaseAnalytics) logEvent(window.firebaseAnalytics, eventName, params);
-            } catch (_) {}
-          };
-          window.logAstroverseEvent('page_view', { page_title: document.title, page_location: window.location.href });
-        } else {
-          window.logAstroverseEvent = () => {};
-        }
-      }).catch(() => {
+      if (!cfg || !cfg.apiKey) {
         window.logAstroverseEvent = () => {};
-      });
-    } catch (e) {
-      console.warn("Firebase initialization deferred:", e);
-      window.logAstroverseEvent = () => {};
+        return;
+      }
+
+      try {
+        const app = initializeApp(cfg);
+        window.firebaseApp = app;
+        isSupported().then((supported) => {
+          if (supported) {
+            const analytics = getAnalytics(app);
+            window.firebaseAnalytics = analytics;
+            window.logAstroverseEvent = (eventName, params = {}) => {
+              try {
+                if (window.firebaseAnalytics) logEvent(window.firebaseAnalytics, eventName, params);
+              } catch (_) {}
+            };
+            window.logAstroverseEvent('page_view', { page_title: document.title, page_location: window.location.href });
+          } else {
+            window.logAstroverseEvent = () => {};
+          }
+        }).catch(() => {
+          window.logAstroverseEvent = () => {};
+        });
+      } catch (e) {
+        console.warn("Firebase initialization deferred:", e);
+        window.logAstroverseEvent = () => {};
+      }
     }
+
+    initFirebaseFromConfig();
   </script>
 
   <style>
@@ -9322,7 +9338,7 @@
   <!-- ==================== JAVASCRIPT CONTROLLER ==================== -->
   <script>
     // 1. GLOBAL STATE & SESSION (Section 10: Guest default with ₹0.00 balance)
-    window.RAZORPAY_KEY_ID = "rzp_test_Tt5BwadyapFq9T";
+    window.RAZORPAY_KEY_ID = window.RAZORPAY_KEY_ID || "";
     var currentLanguage = (typeof localStorage !== 'undefined' && localStorage.getItem('astroverse_lang')) || 'en';
     window.currentLanguage = currentLanguage;
     let currentUserSession = JSON.parse(localStorage.getItem('astro_user_session') || 'null');
@@ -12822,7 +12838,7 @@
         const orderData = await orderRes.json();
         if (typeof Razorpay !== 'undefined') {
           const rzpOptions = {
-            key: orderData.keyId || window.RAZORPAY_KEY_ID || "rzp_test_Tt5BwadyapFq9T",
+            key: orderData.keyId || window.RAZORPAY_KEY_ID || "",
             amount: Math.round(creditAmt * 100),
             currency: "INR",
             name: "AstroVerse",
@@ -15094,7 +15110,7 @@
 
         const res = await fetch(`${authBase}/api/ai-astrologer/ask`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify(payload),
           signal: controller.signal
         });
@@ -17321,7 +17337,7 @@
 
         if (typeof Razorpay !== 'undefined') {
           const rzpOptions = {
-            key: orderData.keyId || window.RAZORPAY_KEY_ID || "rzp_test_Tt5BwadyapFq9T",
+            key: orderData.keyId || window.RAZORPAY_KEY_ID || "",
             amount: orderData.amountPaise || (tier === 'PLUS' ? 14900 : 29900),
             currency: "INR",
             name: "AstroVerse Vedic Platform",
@@ -18842,7 +18858,7 @@
         } else if (orderData.orderId && method === 'RAZORPAY') {
           if (typeof Razorpay !== 'undefined') {
             const rzpOptions = {
-              key: orderData.keyId || window.RAZORPAY_KEY_ID || "rzp_test_Tt5BwadyapFq9T",
+              key: orderData.keyId || window.RAZORPAY_KEY_ID || "",
               amount: orderData.amountPaise || finalPaise,
               currency: "INR",
               name: "AstroVerse Report Studio",
@@ -21114,7 +21130,7 @@
         try {
           const res = await fetch('/api/predictions/generate', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(payload),
             signal: signal
           });

@@ -26,8 +26,45 @@ import {
   PREFERRED_COMPOUND_NUMBERS,
   CHALLENGING_COMPOUND_NUMBERS
 } from './monetization/numerologyCalculator';
+import { createRateLimiter } from './security/rateLimiter';
 
 const app = express();
+app.disable('x-powered-by');
+
+// Security Headers Middleware (OWASP recommended defense-in-depth)
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
+// Production-Grade Rate Limiters
+export const globalApiLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: 'Global API rate limit exceeded. Please wait a moment before sending more requests.'
+});
+
+export const authLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 15,
+  message: 'Too many authentication attempts. Please wait 5 minutes before trying again.'
+});
+
+export const orderLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  message: 'Too many order creation requests. Please wait a few moments before retrying.'
+});
+
+// Apply Global Rate Limiting across all API routes
+app.use('/api', globalApiLimiter);
+
 app.use(express.json({
   verify: (req: any, _res: any, buf: Buffer) => {
     req.rawBody = buf;
@@ -208,7 +245,7 @@ function requireAdmin(allowedRoles: Role[] = [Role.SUPER_ADMIN, Role.SUPPORT, Ro
 // ==================== 1. AUTHENTICATION & SESSIONS ====================
 
 // POST /api/auth/request-otp
-app.post('/api/auth/request-otp', async (req: Request, res: Response) => {
+app.post('/api/auth/request-otp', authLimiter, async (req: Request, res: Response) => {
   const { identifier } = req.body;
   if (!identifier) {
     return res.status(400).json({ error: 'IDENTIFIER_REQUIRED', message: 'Phone number or email address is required.' });
@@ -283,7 +320,7 @@ app.post('/api/auth/request-otp', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/verify-otp
-app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
+app.post('/api/auth/verify-otp', authLimiter, async (req: Request, res: Response) => {
   const { identifier, otp, displayName } = req.body;
   if (!identifier || !otp) {
     return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier and OTP are required.' });
@@ -385,7 +422,7 @@ app.post('/api/auth/verify-otp', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/register-password
-app.post('/api/auth/register-password', async (req: Request, res: Response) => {
+app.post('/api/auth/register-password', authLimiter, async (req: Request, res: Response) => {
   const { email, password, displayName, phone, otp } = req.body;
   if (!password) {
     return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Password is required.' });
@@ -597,7 +634,7 @@ app.post('/api/auth/register-password', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/login-password
-app.post('/api/auth/login-password', async (req: Request, res: Response) => {
+app.post('/api/auth/login-password', authLimiter, async (req: Request, res: Response) => {
   const { identifier, password } = req.body;
   if (!identifier || !password) {
     return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier and password are required.' });
@@ -675,7 +712,7 @@ app.post('/api/auth/login-password', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/forgot-password
-app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
+app.post('/api/auth/forgot-password', authLimiter, async (req: Request, res: Response) => {
   const { identifier } = req.body;
   if (!identifier) {
     return res.status(400).json({ error: 'IDENTIFIER_REQUIRED', message: 'Email address or phone number is required.' });
@@ -730,7 +767,7 @@ app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/reset-password
-app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
+app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Response) => {
   const { identifier, resetCode, newPassword } = req.body;
   if (!identifier || !resetCode || !newPassword) {
     return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier, reset code, and new password are required.' });
@@ -1013,7 +1050,7 @@ app.get('/api/auth/google/callback', (req: Request, res: Response) => {
 });
 
 // POST /api/auth/google
-app.post('/api/auth/google', async (req: Request, res: Response) => {
+app.post('/api/auth/google', authLimiter, async (req: Request, res: Response) => {
   const { credential, idToken, token, code, redirectUri } = req.body;
   const rawToken = credential || idToken || token;
 
@@ -1118,7 +1155,7 @@ app.get('/api/auth/supabase/config', (_req: Request, res: Response) => {
 // POST /api/auth/supabase/sync
 // Synchronizes authenticated Supabase session with AstroVerse backend,
 // links user profile, and returns sanitized user record and active entitlements.
-app.post('/api/auth/supabase/sync', async (req: Request, res: Response) => {
+app.post('/api/auth/supabase/sync', authLimiter, async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   const bodyToken = req.body?.accessToken || req.body?.sessionToken;
   const token = (authHeader && authHeader.startsWith('Bearer '))
@@ -1668,7 +1705,7 @@ export function validateRechargeAmount(amount: any): { valid: boolean; normalize
   return { valid: true, normalizedAmount: rounded };
 }
 
-app.post('/api/wallet/create-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const sessionUser = req.user!;
   const clientSuppliedUserId = req.body.userId;
 
@@ -1752,7 +1789,7 @@ app.post('/api/wallet/create-order', authenticate, async (req: AuthenticatedRequ
       amount: order.amount,
       currency: 'INR',
       status: 'CREATED',
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tt5BwadyapFq9T'
+      keyId: process.env.RAZORPAY_KEY_ID || ''
     });
   } catch (error: any) {
     return handleServiceError(res, error, 'Failed to create payment order');
@@ -2409,7 +2446,7 @@ app.get('/api/entitlements/me', authenticate, async (req: AuthenticatedRequest, 
 });
 
 // POST /api/subscriptions/create-order (Create Razorpay order for Plus/Premium subscription)
-app.post('/api/subscriptions/create-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { tier, billingPeriod } = req.body;
   const user = req.user!;
 
@@ -2454,7 +2491,7 @@ app.post('/api/subscriptions/create-order', authenticate, async (req: Authentica
       amountRupees: priceRupees,
       tier,
       billingPeriod: period,
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tt5BwadyapFq9T'
+      keyId: process.env.RAZORPAY_KEY_ID || ''
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Subscription order creation failed');
@@ -2623,10 +2660,28 @@ app.post('/api/webhooks/razorpay', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/config (Public runtime client configuration without secret leakage)
+app.get('/api/config', (_req: Request, res: Response) => {
+  res.json({
+    razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+    currency: 'INR',
+    isLiveGateway: isRazorpayConfigured(),
+    firebase: {
+      apiKey: process.env.FIREBASE_API_KEY || '',
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'astroverse-c0b90.firebaseapp.com',
+      projectId: process.env.FIREBASE_PROJECT_ID || 'astroverse-c0b90',
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'astroverse-c0b90.firebasestorage.app',
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '719758726336',
+      appId: process.env.FIREBASE_APP_ID || '1:719758726336:web:1e9ed188ed9651562e4925',
+      measurementId: process.env.FIREBASE_MEASUREMENT_ID || 'G-C2JVGQ8GH2'
+    }
+  });
+});
+
 // GET /api/billing/config (Public payment gateway configuration)
 app.get('/api/billing/config', (_req: Request, res: Response) => {
   res.json({
-    razorpayKeyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tt5BwadyapFq9T',
+    razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
     currency: 'INR',
     isLiveGateway: isRazorpayConfigured()
   });
@@ -2722,7 +2777,7 @@ function validateProfileInputData(pd: any): { error?: string; message?: string; 
 }
 
 // POST /api/reports/order (Create order for individual personalized report)
-app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/reports/order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { productId, profileId, partnerProfileId, options, paymentMethod } = req.body;
   const user = req.user!;
 
@@ -2938,7 +2993,7 @@ app.post('/api/reports/order', authenticate, async (req: AuthenticatedRequest, r
       discountPercent: pricing.discountPercent,
       productId,
       profileId,
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_Tt5BwadyapFq9T'
+      keyId: process.env.RAZORPAY_KEY_ID || ''
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Report order generation failed');

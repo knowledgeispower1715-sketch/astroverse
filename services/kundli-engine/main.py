@@ -77,18 +77,103 @@ from prokerala_api import (
     get_prokerala_panchang
 )
 
+import os
+import time
+from collections import defaultdict
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "0"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, max_requests: int = 120, window_seconds: int = 60):
+        super().__init__(app)
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self.requests = defaultdict(list)
+        self.heavy_requests = defaultdict(list)
+        self.last_cleanup = time.time()
+
+    async def dispatch(self, request, call_next):
+        # Bypassed in automated testing suites
+        if os.environ.get("TESTING") == "1" or os.environ.get("PYTEST_CURRENT_TEST"):
+            return await call_next(request)
+
+        # Health checks bypass rate limiting
+        if request.url.path in ("/api/health", "/api/ready", "/api/admin/health"):
+            return await call_next(request)
+
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        if "x-forwarded-for" in request.headers:
+            client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
+
+        now = time.time()
+        # Periodic cleanup of expired records every 5 minutes
+        if now - self.last_cleanup > 300:
+            cutoff = now - self.window_seconds
+            self.requests = defaultdict(list, {ip: [t for t in ts if t > cutoff] for ip, ts in self.requests.items() if any(t > cutoff for t in ts)})
+            self.heavy_requests = defaultdict(list, {ip: [t for t in ts if t > cutoff] for ip, ts in self.heavy_requests.items() if any(t > cutoff for t in ts)})
+            self.last_cleanup = now
+
+        # Heavy calculation endpoints have stricter limit (30 req / min)
+        is_heavy = request.url.path in ("/api/ai-astrologer/ask", "/api/astrology/multi-method-comparison", "/api/predictions/generate")
+        limit = 30 if is_heavy else self.max_requests
+        bucket = self.heavy_requests if is_heavy else self.requests
+
+        cutoff = now - self.window_seconds
+        bucket[client_ip] = [t for t in bucket[client_ip] if t > cutoff]
+
+        if len(bucket[client_ip]) >= limit:
+            retry_after = int(bucket[client_ip][0] + self.window_seconds - now) + 1
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "error": "RATE_LIMIT_EXCEEDED",
+                    "detail": f"Too many requests from this IP. Limit is {limit} requests per minute. Please try again in {max(1, retry_after)} seconds.",
+                    "retry_after_seconds": max(1, retry_after)
+                },
+                headers={"Retry-After": str(max(1, retry_after))}
+            )
+
+        bucket[client_ip].append(now)
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = str(limit)
+        response.headers["X-RateLimit-Remaining"] = str(max(0, limit - len(bucket[client_ip])))
+        return response
+
 app = FastAPI(
     title="Astroverse Engine - High-Precision Vedic Astrology & Ephemeris Service",
     version="2.1.0"
 )
 
+ALLOWED_ORIGINS = [
+    "https://astroverse-eta.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8081",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8081",
+]
+if os.environ.get("FRONTEND_URL"):
+    ALLOWED_ORIGINS.append(os.environ.get("FRONTEND_URL"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS if os.environ.get("NODE_ENV") == "production" else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
 
 class BirthDetails(BaseModel):
     dob: str = Field(..., description="ISO 8601 birth datetime, e.g. '1995-06-15T10:30:00'")
