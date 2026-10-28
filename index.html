@@ -227,9 +227,9 @@
       /* Layout & Max Widths */
       --av-page-gutter: clamp(16px, 3vw, 36px);
       --av-content-max: 1360px;
-      --av-reading-max: 1000px;
+      --av-reading-max: 1040px;
       --av-content-wide: 1360px;
-      --av-content-reading: 1000px;
+      --av-content-reading: 1040px;
 
       /* Shapes & Radii */
       --av-radius-sm: 8px;
@@ -253,33 +253,51 @@
       --av-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.38);
 
       /* Typography Scale */
-      --av-text-xs: 0.75rem;
-      --av-text-sm: 0.875rem;
+      --av-text-xs: 0.8125rem;
+      --av-text-sm: 0.9375rem;
       --av-text-base: 1rem;
       --av-text-lg: 1.125rem;
 
-      --av-heading-sm: clamp(1.25rem, 2vw, 1.6rem);
-      --av-heading-md: clamp(1.6rem, 3vw, 2.25rem);
-      --av-heading-lg: clamp(2rem, 4.5vw, 3.25rem);
+      --av-heading-sm: clamp(1.25rem, 1.8vw, 1.6rem);
+      --av-heading-md: clamp(1.6rem, 2.8vw, 2.25rem);
+      --av-heading-lg: clamp(2rem, 4vw, 3.25rem);
 
       --av-leading-tight: 1.2;
       --av-leading-body: 1.65;
+      --av-line-tight: 1.2;
+      --av-line-body: 1.65;
 
       --av-font-body: "Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif;
       --av-font-display: "Cinzel", Georgia, serif;
     }
 
+    /* Central Layout Containers */
+    .av-page-container {
+      width: min(calc(100% - 2 * var(--av-page-gutter)), var(--av-content-max));
+      margin-inline: auto;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .av-reading-container {
+      width: min(calc(100% - 2 * var(--av-page-gutter)), var(--av-reading-max));
+      margin-inline: auto;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
     /* Luxury Cosmic Architecture Components */
     .cosmic-hero-wrapper {
+      width: min(calc(100% - 2 * var(--av-page-gutter)), var(--av-content-max));
+      margin: 16px auto 24px;
       background: linear-gradient(135deg, var(--av-brand) 0%, var(--av-brand-raised) 100%);
       border: 1px solid var(--av-brand-border);
-      border-radius: var(--astro-radius-card);
-      padding: 32px 28px;
-      margin-bottom: 24px;
+      border-radius: var(--av-radius-card, 16px);
+      padding: clamp(24px, 3.5vw, 36px) clamp(20px, 3.5vw, 36px);
       box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.45), 0 0 1px 1px rgba(212, 175, 55, 0.15);
       position: relative;
       overflow: hidden;
       color: #F8FAFC;
+      box-sizing: border-box;
     }
     .cosmic-hero-wrapper::before {
       content: "";
@@ -316,10 +334,10 @@
       font-family: var(--av-font-serif, "Cinzel", Georgia, serif);
     }
     .cosmic-hero-subtitle {
-      font-size: 14px;
-      color: #94A3B8;
-      max-width: 620px;
-      line-height: 1.6;
+      font-size: 15px;
+      color: var(--av-text-inverse-secondary, #E2E7F0);
+      max-width: 680px;
+      line-height: 1.65;
       margin-bottom: 20px;
     }
     .cosmic-hero-actions {
@@ -336,9 +354,20 @@
       border-radius: 14px;
       padding: 16px 20px;
       min-width: 260px;
+      max-width: 380px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
+    }
+    .cosmic-hero-wrapper .btn-outline-secondary {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: #FFFFFF !important;
+      border: 1px solid rgba(212, 175, 55, 0.35) !important;
+    }
+    .cosmic-hero-wrapper .btn-outline-secondary:hover {
+      background: rgba(255, 255, 255, 0.16) !important;
+      border-color: var(--av-gold-bright, #F5C45E) !important;
+      color: #FFFFFF !important;
     }
 
     /* Personalized Authenticated Command Center */
@@ -701,24 +730,7 @@
       color: #1D4ED8 !important;
       border: 1px solid #BFDBFE !important;
     }
-    .cosmic-service-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 18px 42px rgba(12, 2, 7, 0.55), 0 0 22px rgba(212, 175, 55, 0.22);
-      border-color: var(--av-gold-bright, #F5C45E);
-    }
 
-    .cosmic-card-art-wrap {
-      width: 100%;
-      height: 165px;
-      background: linear-gradient(135deg, #0F172A 0%, #18213A 60%, #293452 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-      padding: 16px;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.25);
-    }
     .cosmic-card-art-wrap img {
       max-height: 135px;
       max-width: 100%;
@@ -917,17 +929,17 @@
     .nav-links-row {
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 4px;
       flex-shrink: 1;
       min-width: 0;
     }
     .nav-link-btn {
       background: transparent;
       border: 1px solid transparent;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--av-text-warm, #FFFBEB);
-      padding: 6px 10px;
+      padding: 6px 11px;
       border-radius: var(--radius-md);
       cursor: pointer;
       transition: all 0.2s ease;
@@ -2501,21 +2513,11 @@
         display: none !important;
       }
       .nav-links-row {
-        gap: 2px !important;
+        gap: 3px !important;
       }
       .nav-link-btn {
-        padding: 5px 6px !important;
-        font-size: 11px !important;
-      }
-      #btn-nav-tools,
-      #btn-nav-reports {
-        display: none !important;
-      }
-    }
-
-    @media (max-width: 1280px) {
-      #btn-nav-horoscope {
-        display: none !important;
+        padding: 6px 8px !important;
+        font-size: 13px !important;
       }
     }
 
@@ -5091,18 +5093,26 @@
       <button class="nav-link-btn" id="btn-nav-horoscope" onclick="switchNavSection('horoscope')">
         <i class="fa-solid fa-star-and-crescent"></i> Horoscope
       </button>
-      <button class="nav-link-btn" id="btn-nav-tools" onclick="switchNavSection('tools')">
-        <i class="fa-solid fa-toolbox"></i> Tools Directory
-      </button>
-      <button class="nav-link-btn" id="btn-nav-dashboard" onclick="switchNavSection('dashboard')">
-        <i class="fa-solid fa-user-shield"></i> My Space
-      </button>
-      <button class="nav-link-btn" id="btn-nav-reports" onclick="openReportStoreModal()" title="Personalized Vedic Reports">
-        <i class="fa-solid fa-file-invoice"></i> Reports Store
-      </button>
-      <button class="nav-link-btn" id="btn-nav-pricing" onclick="openPricingPlansModal()" style="color: #D97706; font-weight: 700;" title="AstroVerse Subscription Plans">
-        <i class="fa-solid fa-crown"></i> Plans &amp; Pricing
-      </button>
+      <!-- Desktop More Dropdown for Secondary Tools -->
+      <div class="nav-more-dropdown-wrap" style="position: relative;">
+        <button type="button" class="nav-link-btn" id="btn-nav-more" onclick="toggleNavMoreDropdown(event)" aria-expanded="false" aria-haspopup="true">
+          <span>More</span> <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
+        </button>
+        <div id="nav-more-dropdown-menu" class="nav-more-menu" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; min-width: 210px; background: #18213A; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); padding: 6px; z-index: 1000;">
+          <button type="button" class="nav-dropdown-item nav-link-btn" id="btn-nav-tools" onclick="switchNavSection('tools'); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px;">
+            <i class="fa-solid fa-toolbox" style="width: 18px; color: #F5C45E;"></i> Tools Directory
+          </button>
+          <button type="button" class="nav-dropdown-item nav-link-btn" id="btn-nav-dashboard" onclick="switchNavSection('dashboard'); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px;">
+            <i class="fa-solid fa-user-shield" style="width: 18px; color: #F5C45E;"></i> My Space
+          </button>
+          <button type="button" class="nav-dropdown-item nav-link-btn" id="btn-nav-reports" onclick="openReportStoreModal(); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px;" title="Personalized Vedic Reports">
+            <i class="fa-solid fa-file-invoice" style="width: 18px; color: #F5C45E;"></i> Reports Store
+          </button>
+          <button type="button" class="nav-dropdown-item nav-link-btn" id="btn-nav-pricing" onclick="openPricingPlansModal(); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px; color: #F59E0B; font-weight: 700;" title="AstroVerse Subscription Plans">
+            <i class="fa-solid fa-crown" style="width: 18px; color: #F59E0B;"></i> Plans &amp; Pricing
+          </button>
+        </div>
+      </div>
     </nav>
 
     <div class="nav-right-actions">
@@ -5237,8 +5247,8 @@
   <!-- Atmospheric Cosmic Luxury Hero Banner -->
   <section class="cosmic-hero-wrapper" id="main-hero-banner">
     <img src="assets/illustrations/hero-zodiac-wheel.svg" alt="Vedic Zodiac Dharmachakra" class="cosmic-hero-zodiac-bg" />
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; position: relative; z-index: 2;">
-      <div style="flex: 1; min-width: 290px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 32px; flex-wrap: wrap; position: relative; z-index: 2;">
+      <div style="flex: 1 1 540px; min-width: 280px;">
         <div class="cosmic-hero-tag">
           <i class="fa-solid fa-om"></i> Parashari Jyotish &bull; Swiss Ephemeris Precision
         </div>
@@ -5257,7 +5267,7 @@
       </div>
 
       <!-- Live Solar Hora Floating Card in Hero -->
-      <div class="cosmic-hero-hora-box" id="hero-live-hora-card">
+      <div class="cosmic-hero-hora-box" id="hero-live-hora-card" style="flex: 0 0 320px; max-width: 360px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <span style="font-size: 11px; font-weight: 800; color: #F5C45E; text-transform: uppercase; letter-spacing: 0.5px;">
             <i class="fa-solid fa-circle-dot" style="color: #10B981;"></i> Active Solar Hora
@@ -5266,8 +5276,8 @@
         </div>
         <div style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 4px 0;" id="overview-hora-name">Calculating...</div>
         <div style="font-size: 12px; color: #34D399; font-family: monospace; font-weight: 700; margin-bottom: 6px;" id="overview-hora-timer">--:-- remaining</div>
-        <div style="font-size: 11.5px; color: #94A3B8; line-height: 1.4;" id="overview-hora-sub">Parashari Solar Hour Alignment</div>
-        <button type="button" class="btn-outline-secondary" style="margin-top: 12px; width: 100%; font-size: 11.5px; padding: 6px 12px; justify-content: center; color: #E2E8F0; border-color: rgba(212, 175, 55, 0.35);" onclick="switchNavSection('horas')">
+        <div style="font-size: 12px; color: #E2E7F0; line-height: 1.4;" id="overview-hora-sub">Parashari Solar Hour Alignment</div>
+        <button type="button" class="btn-outline-secondary" style="margin-top: 12px; width: 100%; font-size: 12px; padding: 8px 12px; justify-content: center;" onclick="switchNavSection('horas')">
           <i class="fa-solid fa-clock"></i> 24h Horas &amp; Biorhythms
         </button>
       </div>
@@ -5306,8 +5316,8 @@
               <i class="fa-solid fa-dharmachakra"></i>
             </div>
             <div>
-              <div style="font-size: 13px; font-weight: 700;">Janam Kundli &amp; Vargas</div>
-              <div style="font-size: 11px; color: #94A3B8;">D1, D9, Shadbala, Dasha</div>
+              <div style="font-size: 13.5px; font-weight: 700;">Janam Kundli &amp; Vargas</div>
+              <div style="font-size: 12px; color: var(--av-text-inverse-secondary, #E2E7F0);">D1, D9, Shadbala, Dasha</div>
             </div>
           </div>
 
@@ -5316,8 +5326,8 @@
               <i class="fa-solid fa-file-invoice"></i>
             </div>
             <div>
-              <div style="font-size: 13px; font-weight: 700;">Saved Reports &amp; Store</div>
-              <div style="font-size: 11px; color: #94A3B8;">Deep dive blueprints &amp; PDFs</div>
+              <div style="font-size: 13.5px; font-weight: 700;">Saved Reports &amp; Store</div>
+              <div style="font-size: 12px; color: var(--av-text-inverse-secondary, #E2E7F0);">Deep dive blueprints &amp; PDFs</div>
             </div>
           </div>
 
@@ -5326,8 +5336,8 @@
               <i class="fa-solid fa-comments"></i>
             </div>
             <div>
-              <div style="font-size: 13px; font-weight: 700;">AI Astrologer Consult</div>
-              <div style="font-size: 11px; color: #94A3B8;">Ask career, love &amp; transit questions</div>
+              <div style="font-size: 13.5px; font-weight: 700;">AI Astrologer Consult</div>
+              <div style="font-size: 12px; color: var(--av-text-inverse-secondary, #E2E7F0);">Ask career, love &amp; transit questions</div>
             </div>
           </div>
         </div>
@@ -9491,6 +9501,10 @@
 
       const navBtn = document.getElementById('btn-nav-' + targetSection);
       if (navBtn) navBtn.classList.add('active');
+      if (['tools', 'dashboard', 'reports', 'pricing'].includes(targetSection)) {
+        const moreBtn = document.getElementById('btn-nav-more');
+        if (moreBtn) moreBtn.classList.add('active');
+      }
       const pill = document.getElementById('pill-' + targetSection);
       if (pill) pill.classList.add('active');
       const mobBtn = document.getElementById('mob-dock-' + targetSection);
@@ -9502,6 +9516,29 @@
       if (targetSection === 'horas') loadHourlyHorasUI();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    function toggleNavMoreDropdown(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('nav-more-dropdown-menu');
+      const btn = document.getElementById('btn-nav-more');
+      if (!menu) return;
+      const isOpen = menu.style.display === 'block';
+      menu.style.display = isOpen ? 'none' : 'block';
+      if (btn) btn.setAttribute('aria-expanded', !isOpen);
+    }
+
+    function closeNavMoreDropdown() {
+      const menu = document.getElementById('nav-more-dropdown-menu');
+      const btn = document.getElementById('btn-nav-more');
+      if (menu) menu.style.display = 'none';
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.nav-more-dropdown-wrap')) {
+        closeNavMoreDropdown();
+      }
+    });
 
     // Mobile Drawer Navigation Controllers
     function toggleMobileNavDrawer() {
@@ -10500,6 +10537,11 @@
           if (el) el.textContent = "--:-- remaining";
           const gTimer = document.getElementById('guidance-active-hora-timer');
           if (gTimer) gTimer.textContent = "--:-- remaining";
+          const heroTimer = document.getElementById('overview-hora-timer');
+          if (heroTimer) {
+            heroTimer.textContent = "--:-- remaining";
+            heroTimer.style.color = '#94A3B8';
+          }
           return;
         }
 
@@ -10517,6 +10559,11 @@
         if (gTimer) {
           gTimer.textContent = timeStr;
           gTimer.style.color = catColor;
+        }
+        const heroTimer = document.getElementById('overview-hora-timer');
+        if (heroTimer) {
+          heroTimer.textContent = timeStr;
+          heroTimer.style.color = catColor;
         }
 
         // Real-Time Progress Engine
@@ -10722,6 +10769,11 @@
       if (cdEl) cdEl.textContent = "--:-- unavailable";
       const gTimer = document.getElementById('guidance-active-hora-timer');
       if (gTimer) gTimer.textContent = "--:-- unavailable";
+      const heroTimer = document.getElementById('overview-hora-timer');
+      if (heroTimer) {
+        heroTimer.textContent = "--:-- unavailable";
+        heroTimer.style.color = '#94A3B8';
+      }
       const fillEl = document.getElementById('hora-progress-bar-fill');
       if (fillEl) fillEl.style.width = '0%';
       const gFill = document.getElementById('guidance-hora-progress-fill');
@@ -10745,6 +10797,8 @@
       if (heroHora) heroHora.textContent = `${planet} Hora`;
       const heroHoraTime = document.getElementById('overview-hora-time');
       if (heroHoraTime) heroHoraTime.textContent = windowStr;
+      const heroHoraSub = document.getElementById('overview-hora-sub');
+      if (heroHoraSub) heroHoraSub.textContent = `Window: ${windowStr}`;
 
       const dailyHora = document.getElementById('overview-daily-hora-name');
       if (dailyHora) dailyHora.textContent = `${planet} Hora`;
@@ -10836,6 +10890,15 @@
           gTimer.textContent = "--:-- (Schedule)";
           gTimer.style.color = '#64748B';
         }
+        const heroTimer = document.getElementById('overview-hora-timer');
+        if (heroTimer) {
+          heroTimer.textContent = "--:-- (Schedule)";
+          heroTimer.style.color = '#94A3B8';
+        }
+        const heroHora = document.getElementById('overview-hora-name');
+        if (heroHora) heroHora.textContent = `Solar Schedule`;
+        const heroHoraSub = document.getElementById('overview-hora-sub');
+        if (heroHoraSub) heroHoraSub.textContent = `Sunrise ${data.sunrise || '--'} • Sunset ${data.sunset || '--'}`;
         const fillEl = document.getElementById('hora-progress-bar-fill');
         if (fillEl) fillEl.style.width = '0%';
         const gFill = document.getElementById('guidance-hora-progress-fill');
