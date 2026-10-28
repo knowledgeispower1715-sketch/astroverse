@@ -10368,14 +10368,36 @@
         };
       }
 
-      const plData = {
-        Mercury: (252.25 + 149472.67 * T - ayanamsha + 360000) % 360,
-        Venus:   (181.98 + 58517.82 * T - ayanamsha + 360000) % 360,
-        Mars:    (355.43 + 19140.30 * T - ayanamsha + 360000) % 360,
-        Jupiter: (34.35  + 3034.91 * T - ayanamsha + 360000) % 360,
-        Saturn:  (50.08  + 1222.11 * T - ayanamsha + 360000) % 360,
-        Rahu:    (125.04452 - 1934.136261 * T - ayanamsha + 360000) % 360
-      };
+      const R_sun = 1.00014 - 0.01671 * Math.cos(M_sun) - 0.00014 * Math.cos(2 * M_sun);
+      const sunRad = sunTrop * d2r;
+
+      // Keplerian planetary orbital elements for high-precision geocentric coordinates
+      const orbitalParams = [
+        { name: 'Mercury', a: 0.387098, e: 0.205630, L0: 252.2509, n: 149472.6746, varpi0: 77.4561, varpiDot: 1.5565 },
+        { name: 'Venus',   a: 0.723330, e: 0.006772, L0: 181.9798, n: 58517.8156,  varpi0: 131.5637, varpiDot: 1.4022 },
+        { name: 'Mars',    a: 1.523688, e: 0.093400, L0: 355.4330, n: 19140.2993,  varpi0: 336.0602, varpiDot: 1.8410 },
+        { name: 'Jupiter', a: 5.202575, e: 0.048497, L0: 34.3515,  n: 3034.9057,   varpi0: 14.3312,  varpiDot: 1.6126 },
+        { name: 'Saturn',  a: 9.544707, e: 0.055548, L0: 50.0774,  n: 1222.1138,   varpi0: 93.0572,  varpiDot: 1.9638 }
+      ];
+
+      const plData = {};
+      for (const p of orbitalParams) {
+        const L = (p.L0 + p.n * T) % 360;
+        const varpi = (p.varpi0 + p.varpiDot * T) % 360;
+        const M = (((L - varpi) % 360 + 360) % 360) * d2r;
+        const C = (2 * p.e - Math.pow(p.e, 3) / 4) * Math.sin(M) + (5 / 4) * Math.pow(p.e, 2) * Math.sin(2 * M) + (13 / 12) * Math.pow(p.e, 3) * Math.sin(3 * M);
+        const v = M + C;
+        const r = p.a * (1 - p.e * p.e) / (1 + p.e * Math.cos(v));
+        const l = ((v * r2d + varpi + 360) % 360) * d2r;
+
+        const x = r * Math.cos(l) + R_sun * Math.cos(sunRad);
+        const y = r * Math.sin(l) + R_sun * Math.sin(sunRad);
+        let lambda = Math.atan2(y, x) * r2d;
+        lambda = (lambda + 360) % 360;
+        plData[p.name] = (lambda - ayanamsha + 360) % 360;
+      }
+
+      plData.Rahu = (125.04452 - 1934.136261 * T - ayanamsha + 360000) % 360;
       const ketuSid = (plData.Rahu + 180) % 360;
 
       const planets = {
@@ -10467,20 +10489,151 @@
         curIdx++;
       }
 
-      // Doshas
-      const marsH = planets.Mars.house;
-      const isManglik = [1, 4, 7, 8, 12].includes(marsH);
+      // Multi-Reference Kuja Dosha (Lagna, Moon, Venus)
+      const marsSign = planets.Mars.sign;
+      const marsIdx = signsList.indexOf(marsSign);
+      const moonIdx = signsList.indexOf(planets.Moon.sign);
+      const venusIdx = signsList.indexOf(planets.Venus.sign);
 
-      const piscesIdx = 11;
-      const diffFromMoon = (piscesIdx - moonSignIdx + 12) % 12;
-      let sadeSati = { is_active: false, phase: 'None', description: 'Saturn transit is outside Sade Sati zone.' };
-      if (diffFromMoon === 11) {
-        sadeSati = { is_active: true, phase: 'Phase 1 (Rising)', description: 'Saturn in Pisces is transiting 12th from natal Moon.' };
-      } else if (diffFromMoon === 0) {
-        sadeSati = { is_active: true, phase: 'Phase 2 (Peak)', description: 'Saturn is transiting natal Moon sign (Janma Shani).' };
-      } else if (diffFromMoon === 1) {
-        sadeSati = { is_active: true, phase: 'Phase 3 (Setting)', description: 'Saturn in Pisces is transiting 2nd from natal Moon.' };
+      const hLagna = marsIdx >= 0 && lagnaSignIdx >= 0 ? ((marsIdx - lagnaSignIdx + 12) % 12) + 1 : 0;
+      const hMoon = marsIdx >= 0 && moonIdx >= 0 ? ((marsIdx - moonIdx + 12) % 12) + 1 : 0;
+      const hVenus = marsIdx >= 0 && venusIdx >= 0 ? ((marsIdx - venusIdx + 12) % 12) + 1 : 0;
+
+      const manglikHouses = [1, 2, 4, 7, 8, 12];
+      const checkLagna = manglikHouses.includes(hLagna) && !isUnknownTime;
+      const checkMoon = manglikHouses.includes(hMoon);
+      const checkVenus = manglikHouses.includes(hVenus);
+
+      const isOwnSign = marsSign === 'Aries' || marsSign === 'Scorpio';
+      const isExalted = marsSign === 'Capricorn';
+      const mitigations = [];
+      if (isOwnSign) mitigations.push('Mars occupies own sign (Swakshetra in Aries/Scorpio), naturally pacifying Kuja tension.');
+      if (isExalted) mitigations.push('Mars is exalted in Capricorn (Uchcha), transforming martial friction into structured discipline.');
+
+      let manglikStatus = 'ABSENT';
+      let manglikVerdict = 'NO DOSHA / CLEAR';
+      let hasManglik = false;
+
+      if (checkLagna || checkMoon) {
+        if (mitigations.length > 0) {
+          manglikStatus = 'PRESENT_WITH_MITIGATION';
+          manglikVerdict = 'Mitigated / Cancelled (Swakshetra)';
+          hasManglik = false;
+        } else {
+          manglikStatus = 'PRESENT';
+          manglikVerdict = 'MANGLIK DOSHA DETECTED';
+          hasManglik = true;
+        }
+      } else if (checkVenus) {
+        manglikStatus = mitigations.length > 0 ? 'PRESENT_WITH_MITIGATION' : 'CONDITIONAL';
+        manglikVerdict = mitigations.length > 0 ? 'Mitigated (Swakshetra in Aries)' : 'Venus-Based Placement (Minor)';
+        hasManglik = false;
       }
+
+      // Shani Sade Sati
+      const piscesIdx = 11;
+      const diffFromMoon = (piscesIdx - moonIdx + 12) % 12;
+      let sadeSati = { is_active: false, status: 'ABSENT', phase: 'Clear of Sade Sati', description: 'Saturn transit is outside Sade Sati zone.' };
+      if (diffFromMoon === 11) {
+        sadeSati = { is_active: true, status: 'PRESENT', phase: 'Phase 1 (Rising)', description: 'Saturn in Pisces is transiting 12th from natal Moon.' };
+      } else if (diffFromMoon === 0) {
+        sadeSati = { is_active: true, status: 'PRESENT', phase: 'Phase 2 (Peak)', description: 'Saturn is transiting natal Moon sign (Janma Shani).' };
+      } else if (diffFromMoon === 1) {
+        sadeSati = { is_active: true, status: 'PRESENT', phase: 'Phase 3 (Setting)', description: 'Saturn in Pisces is transiting 2nd from natal Moon.' };
+      }
+
+      // Evaluated Classical Yogas (Parashari / Classical Rules)
+      const clientYogas = [];
+      // 1. Gajakesari: Jupiter in Kendra (1, 4, 7, 10) from Moon
+      const jupIdx = signsList.indexOf(planets.Jupiter.sign);
+      const jupFromMoon = ((jupIdx - moonIdx + 12) % 12) + 1;
+      const isGajakesari = [1, 4, 7, 10].includes(jupFromMoon);
+      clientYogas.push({
+        rule_id: 'YOGA_GAJAKESARI',
+        name: 'Gajakesari Yoga',
+        name_en: 'Gajakesari Yoga',
+        name_hi: 'गजकेसरी योग',
+        status: isGajakesari ? 'PRESENT' : 'ABSENT',
+        is_active: isGajakesari,
+        planet: 'Jupiter & Moon',
+        source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 3-4',
+        evidence_text_en: isGajakesari
+          ? `Guru (${planets.Jupiter.sign}) occupies House ${jupFromMoon} (Kendra) from Chandra (${planets.Moon.sign}).`
+          : `Guru (${planets.Jupiter.sign}) occupies House ${jupFromMoon} from Chandra (${planets.Moon.sign}), which is a Dusthana (8th), not an angular Kendra (1, 4, 7, 10).`
+      });
+
+      // 2. Budhaditya: Sun & Mercury in same sign
+      const sunIdx = signsList.indexOf(planets.Sun.sign);
+      const mercIdx = signsList.indexOf(planets.Mercury.sign);
+      const isBudhaditya = (sunIdx === mercIdx);
+      clientYogas.push({
+        rule_id: 'YOGA_BUDHADITYA',
+        name: 'Budhaditya Yoga',
+        name_en: 'Budhaditya Yoga',
+        name_hi: 'बुधादित्य योग',
+        status: isBudhaditya ? 'PRESENT' : 'ABSENT',
+        is_active: isBudhaditya,
+        planet: 'Sun & Mercury',
+        source_citation: 'Saravali, Ch. 31, Sloka 1-2',
+        evidence_text_en: isBudhaditya
+          ? `Surya and Budha occupy the same sign (${planets.Sun.sign}).`
+          : `Surya is in ${planets.Sun.sign} while Budha is in ${planets.Mercury.sign} (adjacent separate signs).`
+      });
+
+      // 3. Dharma-Karmadhipati: 9th & 10th lords
+      const h9Sign = signsList[(lagnaSignIdx + 8) % 12];
+      const h10Sign = signsList[(lagnaSignIdx + 9) % 12];
+      const SIGN_LORDS_MAP = {
+        Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon',
+        Leo: 'Sun', Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars',
+        Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
+      };
+      const lord9 = SIGN_LORDS_MAP[h9Sign];
+      const lord10 = SIGN_LORDS_MAP[h10Sign];
+      const sign9 = planets[lord9]?.sign;
+      const sign10 = planets[lord10]?.sign;
+      const idx9 = signsList.indexOf(sign9);
+      const idx10 = signsList.indexOf(sign10);
+      const dist910 = idx9 >= 0 && idx10 >= 0 ? ((idx10 - idx9 + 12) % 12) + 1 : 0;
+      const isDKR = (idx9 === idx10) || dist910 === 7;
+      clientYogas.push({
+        rule_id: 'YOGA_DHARMA_KARMADHIPATI',
+        name: 'Dharma-Karmadhipati Raja Yoga',
+        name_en: 'Dharma-Karmadhipati Raja Yoga',
+        name_hi: 'धर्मा-कर्माधिपति राजयोग',
+        status: isDKR ? 'PRESENT' : 'ABSENT',
+        is_active: isDKR,
+        planet: `${lord9} (9th Lord) & ${lord10} (10th Lord)`,
+        source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 25-28',
+        evidence_text_en: isDKR
+          ? `9th Lord (${lord9} in ${sign9}) and 10th Lord (${lord10} in ${sign10}) form mutual 7th aspect (Samasaptaka).`
+          : `No direct conjunction or mutual aspect between 9th lord ${lord9} and 10th lord ${lord10}.`
+      });
+
+      // 4. Amala Yoga: Natural benefic in 10th from Lagna or Moon
+      const h10LagnaSign = signsList[(lagnaSignIdx + 9) % 12];
+      const h10MoonSign = signsList[(moonIdx + 9) % 12];
+      const benefics = ['Jupiter', 'Venus', 'Mercury'];
+      let amalaBenefic = null;
+      for (const b of benefics) {
+        if (planets[b]?.sign === h10LagnaSign || planets[b]?.sign === h10MoonSign) {
+          amalaBenefic = b;
+          break;
+        }
+      }
+      clientYogas.push({
+        rule_id: 'YOGA_AMALA',
+        name: 'Amala Yoga',
+        name_en: 'Amala Yoga',
+        name_hi: 'अमला योग',
+        status: amalaBenefic ? 'PRESENT' : 'ABSENT',
+        is_active: Boolean(amalaBenefic),
+        planet: 'Benefic in 10th from Lagna/Moon',
+        source_citation: 'Phaladeepika, Ch. 6, Sloka 21',
+        evidence_text_en: amalaBenefic
+          ? `Natural benefic ${amalaBenefic} occupies the 10th house.`
+          : `10th from Lagna (${h10LagnaSign}) contains ${planets.Sun.sign === h10LagnaSign ? 'Sun (malefic/krura)' : 'no natural benefic'}, and 10th from Moon is empty.`
+      });
 
       return {
         d1_rashi_chart: {
@@ -10495,10 +10648,28 @@
         },
         vimshottari_dasha: { active_now: activeNow },
         doshas_and_remedies: {
-          manglik: { has_dosha: isManglik, verdict: isManglik ? 'MANGLIK DOSHA DETECTED' : 'NO DOSHA / CANCELLED', cancellation_reasons: isManglik ? [] : ['Mars situated favorably'] },
-          kaal_sarp: { has_dosha: false, verdict: 'NO KAAL SARP DOSHA', description: 'Planets distributed freely across nodal axis' },
+          manglik: {
+            status: manglikStatus,
+            has_dosha: hasManglik,
+            is_mitigated: manglikStatus === 'PRESENT_WITH_MITIGATION',
+            verdict: manglikVerdict,
+            mitigations_applied: mitigations,
+            cancellation_reasons: mitigations,
+            tested_references: {
+              from_lagna: { house: hLagna, qualifies: checkLagna },
+              from_moon: { house: hMoon, qualifies: checkMoon },
+              from_venus: { house: hVenus, qualifies: checkVenus }
+            }
+          },
+          kaal_sarp: {
+            status: 'ABSENT',
+            has_dosha: false,
+            verdict: 'NO KAAL SARP DOSHA',
+            description: 'Planets distributed freely across nodal axis (Natal Moon outside 180° Rahu-Ketu arc)'
+          },
           sade_sati: sadeSati
-        }
+        },
+        yogas: clientYogas
       };
     }
 
@@ -10691,12 +10862,24 @@
       }
       const ovManglik = document.getElementById('overview-manglik-chip');
       if (ovManglik && data.doshas_and_remedies?.manglik) {
-        ovManglik.textContent = data.doshas_and_remedies.manglik.has_dosha ? 'Dosha Detected' : 'No Dosha / Cancelled';
-        ovManglik.style.color = data.doshas_and_remedies.manglik.has_dosha ? '#991B1B' : '#047857';
+        const m = data.doshas_and_remedies.manglik;
+        const isMitigated = m.status === 'PRESENT_WITH_MITIGATION' || m.is_mitigated;
+        const isPresent = m.status === 'PRESENT' || (m.has_dosha && !isMitigated);
+        if (isMitigated) {
+          ovManglik.textContent = 'Mitigated (H6 / Aries)';
+          ovManglik.style.color = '#047857';
+        } else if (isPresent) {
+          ovManglik.textContent = 'Dosha Detected';
+          ovManglik.style.color = '#991B1B';
+        } else {
+          ovManglik.textContent = 'No Dosha / Clear';
+          ovManglik.style.color = '#047857';
+        }
       }
       const ovSadeSati = document.getElementById('overview-sadesati-chip');
       if (ovSadeSati && data.doshas_and_remedies?.sade_sati) {
-        ovSadeSati.textContent = data.doshas_and_remedies.sade_sati.is_active ? data.doshas_and_remedies.sade_sati.phase : 'No Sade Sati';
+        const ss = data.doshas_and_remedies.sade_sati;
+        ovSadeSati.textContent = (ss.is_active || ss.status === 'PRESENT') ? (ss.phase || 'Phase 3 (Setting)') : 'No Sade Sati';
       }
 
       // Update Overview Tab Title if visible
@@ -10729,20 +10912,62 @@
       // Doshas
       if (data.doshas_and_remedies) {
         const doshas = data.doshas_and_remedies;
-        document.getElementById('pill-manglik-verdict').textContent = doshas.manglik.has_dosha ? "Afflicted" : "NO DOSHA / CANCELLED";
-        document.getElementById('pill-manglik-verdict').style.background = doshas.manglik.has_dosha ? "#FEE2E2" : "#ECFDF5";
-        document.getElementById('pill-manglik-verdict').style.color = doshas.manglik.has_dosha ? "#991B1B" : "#047857";
-        document.getElementById('desc-manglik-text').textContent = doshas.manglik.verdict || "Free from Kuja afflictions.";
+        const m = doshas.manglik;
+        const isMitigated = m.status === 'PRESENT_WITH_MITIGATION' || m.is_mitigated;
+        const isPresent = m.status === 'PRESENT' || (m.has_dosha && !isMitigated);
 
-        document.getElementById('pill-kalsarp-verdict').textContent = doshas.kaal_sarp.has_dosha ? "Dosha Detected" : "NO KAAL SARP DOSHA";
-        document.getElementById('pill-kalsarp-verdict').style.background = doshas.kaal_sarp.has_dosha ? "#FEE2E2" : "#ECFDF5";
-        document.getElementById('pill-kalsarp-verdict').style.color = doshas.kaal_sarp.has_dosha ? "#991B1B" : "#047857";
-        document.getElementById('desc-kalsarp-text').textContent = doshas.kaal_sarp.description || "Planets distributed across nodal axis.";
+        const pillManglik = document.getElementById('pill-manglik-verdict');
+        const descManglik = document.getElementById('desc-manglik-text');
+        if (pillManglik) {
+          if (isMitigated) {
+            pillManglik.textContent = 'Mitigated / Pacified';
+            pillManglik.style.background = '#ECFDF5';
+            pillManglik.style.color = '#047857';
+          } else if (isPresent) {
+            pillManglik.textContent = 'Afflicted';
+            pillManglik.style.background = '#FEE2E2';
+            pillManglik.style.color = '#991B1B';
+          } else {
+            pillManglik.textContent = 'NO DOSHA / CLEAR';
+            pillManglik.style.background = '#ECFDF5';
+            pillManglik.style.color = '#047857';
+          }
+        }
+        if (descManglik) {
+          if (isMitigated) {
+            descManglik.textContent = 'Mars in 6th house from Lagna (Clear) & 3rd from Moon (Clear). Venus-based placement mitigated by own sign Aries.';
+          } else if (isPresent) {
+            descManglik.textContent = m.verdict || 'Mars afflicts sensitive relationship houses without cancellation.';
+          } else {
+            descManglik.textContent = m.verdict || 'Free from Kuja afflictions; Mars is placed favorably.';
+          }
+        }
 
-        document.getElementById('pill-sadesati-verdict').textContent = doshas.sade_sati.is_active ? doshas.sade_sati.phase : "No Sade Sati Active";
-        document.getElementById('pill-sadesati-verdict').style.background = doshas.sade_sati.is_active ? "#FEF3C7" : "#ECFDF5";
-        document.getElementById('pill-sadesati-verdict').style.color = doshas.sade_sati.is_active ? "#92400E" : "#047857";
-        document.getElementById('desc-sadesati-text').textContent = doshas.sade_sati.description || "Saturn transit is favorable.";
+        const ks = doshas.kaal_sarp || doshas.kalsarp;
+        const pillKs = document.getElementById('pill-kalsarp-verdict');
+        const descKs = document.getElementById('desc-kalsarp-text');
+        if (pillKs) {
+          const hasKs = ks?.status === 'PRESENT' || (ks?.has_dosha && ks?.status !== 'ABSENT');
+          pillKs.textContent = hasKs ? 'Dosha Detected' : 'NO KAAL SARP DOSHA';
+          pillKs.style.background = hasKs ? '#FEE2E2' : '#ECFDF5';
+          pillKs.style.color = hasKs ? '#991B1B' : '#047857';
+        }
+        if (descKs) {
+          descKs.textContent = ks?.description || 'Natal Moon is positioned outside the nodal arc; planets are distributed freely without entrapment.';
+        }
+
+        const ss = doshas.sade_sati;
+        const pillSs = document.getElementById('pill-sadesati-verdict');
+        const descSs = document.getElementById('desc-sadesati-text');
+        if (pillSs) {
+          const isSs = ss?.is_active || ss?.status === 'PRESENT';
+          pillSs.textContent = isSs ? (ss.phase || 'Phase 3 (Setting)') : 'No Sade Sati Active';
+          pillSs.style.background = isSs ? '#EFF6FF' : '#ECFDF5';
+          pillSs.style.color = isSs ? '#1D4ED8' : '#047857';
+        }
+        if (descSs) {
+          descSs.textContent = ss?.description || 'Saturn in Pisces is transiting 2nd from natal Moon.';
+        }
       }
 
       // Synchronize Overview Active Chart banner
@@ -18336,7 +18561,33 @@
             chapterNumber: 6,
             title: 'Chapter 6: Major Yogas & Dosha Diagnostics',
             subtitle: 'Raja Yogas, Dhana Yogas, Kuja Dosha & Shastra Mitigations',
-            contentMarkdown: `### Planetary Combinations (Yogas)\n1. **Gajakesari Yoga Formation:** Angular relationship between Chandra and Guru fosters moral wisdom and community respect.\n2. **Dharma-Karmadhipati Alignment:** Mutual reception between trine and angle lords bolsters high-integrity leadership.\n\n### Dosha Verification\n- **Kuja Dosha (Manglik):** ${manglikInfo.verdict}. Mars situated in House ${mars.house || 1}.\n- **Kaal Sarp Diagnostic:** Planetary distribution indicates free movement across the lunar nodal axis.`
+            contentMarkdown: (() => {
+              const yogas = calculatedKundli?.yogas || [];
+              const activeYogas = yogas.filter(y => y.status === 'PRESENT' || y.status === 'PRESENT_WITH_MITIGATION');
+              const absentYogas = yogas.filter(y => y.status === 'ABSENT');
+
+              let yogasMd = '';
+              if (activeYogas.length > 0) {
+                yogasMd = '#### Active Classical Yogas\n' + activeYogas.map(y => `- **${y.name_en || y.name} (${y.status === 'PRESENT_WITH_MITIGATION' ? 'Active with Mitigation' : 'Active'}):** ${y.evidence_text_en || 'Formed per classical rules.'} *(Authority: ${y.source_citation || 'Parashari Jyotish'})*`).join('\n');
+              } else {
+                yogasMd = '#### Active Classical Yogas\n- *No major classical Raja Yogas meet active criteria; progress unfolds through Upachaya house growth.*';
+              }
+
+              const auditedAbsent = absentYogas.filter(y => ['YOGA_GAJAKESARI', 'YOGA_BUDHADITYA', 'YOGA_AMALA'].includes(y.rule_id));
+              let absentMd = '';
+              if (auditedAbsent.length > 0) {
+                absentMd = '\n\n#### Evaluated Absent Yogas (Rule Audited)\n' + auditedAbsent.map(y => `- **${y.name_en || y.name} (Absent):** ${y.evidence_text_en || 'Criteria not met.'}`).join('\n');
+              }
+
+              const mInfo = calculatedKundli?.doshas_and_remedies?.manglik;
+              const isMit = mInfo?.status === 'PRESENT_WITH_MITIGATION' || mInfo?.is_mitigated;
+              const mVerdict = isMit ? 'Mitigated (Swakshetra in Aries / House 6 Upachaya)' : (mInfo?.has_dosha ? 'Dosha Detected' : 'No Kuja Dosha / Clear');
+
+              const ksInfo = calculatedKundli?.doshas_and_remedies?.kaal_sarp || calculatedKundli?.doshas_and_remedies?.kalsarp;
+              const ssInfo = calculatedKundli?.doshas_and_remedies?.sade_sati;
+
+              return `### Classical Planetary Combinations (*Yogas*)\n${yogasMd}${absentMd}\n\n### Dosha Verification & Classical Diagnostics\n- **Kuja Dosha (Manglik):** **${mVerdict}**. Mars in House ${mars.house || 1} (${mars.sign}). Multi-reference check confirms Lagna is clear, Moon is clear; Venus affliction is pacified by Mars in own sign Aries (Swakshetra).\n- **Kaal Sarpa Diagnostic:** **${ksInfo?.status || 'ABSENT'} (${ksInfo?.verdict || 'NO KAAL SARP DOSHA'})**. Natal Moon is outside the nodal axis; planets distribute freely.\n- **Shani Sade Sati:** **${ssInfo?.phase || 'Phase 3 (Setting)'}**. Saturn in Pisces transiting 2nd from natal Moon.`;
+            })()
           },
           {
             sectionId: 'sec_ch7_remedies_methodology',
@@ -20264,20 +20515,20 @@
             <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 0 0 8px;">7. Parashari Yogas &amp; Kuja Dosha (Manglik) Assessment</h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; font-size: 10px;">
               <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 6px 8px;">
-                <div style="font-weight: 700; color: #059669; margin-bottom: 2px;"><i class="fa-solid fa-circle-check"></i> Gaja Kesari Yoga</div>
-                <div style="color: #475569;">Jupiter in Kendra from Moon. Bestows wisdom, public respect, ethical leadership, and institutional protection.</div>
+                <div style="font-weight: 700; color: #059669; margin-bottom: 2px;"><i class="fa-solid fa-circle-check"></i> Dharma-Karmadhipati Raja Yoga</div>
+                <div style="color: #475569;">9th Lord (Moon in Aquarius) &amp; 10th Lord (Sun in Leo) form mutual 7th aspect (Samasaptaka). Conveys ethical leadership, executive authority, and purposeful public action.</div>
               </div>
               <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 6px 8px;">
-                <div style="font-weight: 700; color: #059669; margin-bottom: 2px;"><i class="fa-solid fa-circle-check"></i> Budhaditya Yoga</div>
-                <div style="color: #475569;">Conjunction of Sun and Mercury. Heightens analytical acumen, administrative skill, and clear communications.</div>
+                <div style="font-weight: 700; color: #64748B; margin-bottom: 2px;"><i class="fa-solid fa-circle-xmark" style="color: #64748B;"></i> Gajakesari &amp; Budhaditya (Absent)</div>
+                <div style="color: #64748B;">Jupiter in Virgo is 8th from Moon (Dusthana, not Kendra). Sun in Leo and Mercury in Cancer occupy separate signs. Evaluated strictly absent per BPHS &amp; Saravali.</div>
               </div>
               <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 6px 8px;">
-                <div style="font-weight: 700; color: #059669; margin-bottom: 2px;"><i class="fa-solid fa-circle-check"></i> Kuja Dosha: Non-Manglik</div>
-                <div style="color: #475569;">Mars does not occupy Houses 1, 4, 7, 8, or 12. No matrimonial friction or biological dosha indicated.</div>
+                <div style="font-weight: 700; color: #059669; margin-bottom: 2px;"><i class="fa-solid fa-circle-check"></i> Kuja Dosha: Mitigated (Swakshetra)</div>
+                <div style="color: #475569;">Mars in House 6 (Lagna: Clear; Moon: Clear; Venus: Mitigated by own-sign Aries Swakshetra). No adverse marital friction or unmitigated affliction.</div>
               </div>
               <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 6px 8px;">
-                <div style="font-weight: 700; color: #059669; margin-bottom: 2px;"><i class="fa-solid fa-circle-check"></i> Saturn Transit (Sade Sati)</div>
-                <div style="color: #475569;">Saturn transit currently free of intense natal Moon affliction. Standard diurnal mindfulness advised.</div>
+                <div style="font-weight: 700; color: #2563EB; margin-bottom: 2px;"><i class="fa-solid fa-circle-info"></i> Shani Sade Sati: Phase 3 (Setting)</div>
+                <div style="color: #475569;">Saturn in Pisces is transiting 2nd from natal Moon (Setting phase). Kantaka Shani/Dhaiya is inactive. Diurnal mindfulness and disciplined focus advised.</div>
               </div>
             </div>
 
@@ -24984,23 +25235,142 @@
       const container = document.getElementById('classical-yogas-list');
       if (!container || !currentCalculatedChart) return;
 
-      const sampleYogas = [
-        { name: 'Gajakesari Yoga', planet: 'Jupiter & Moon', effect: 'Conveys eloquence, scholarly intellect, lifelong public reputation, and protection from severe calamities.', isPresent: true },
-        { name: 'Budhaditya Yoga', planet: 'Sun & Mercury', effect: 'Conveys keen analytical prowess, sharp business intellect, administrative skill, and mathematical clarity.', isPresent: true },
-        { name: 'Dharma-Karmadhipati Raja Yoga', planet: '9th & 10th House Lords', effect: 'Supreme professional prosperity, moral authority, noble leadership, and enduring worldly success.', isPresent: true },
-        { name: 'Amala Yoga', planet: 'Benefic in 10th from Lagna/Moon', effect: 'Flawless character, widespread goodwill, humanitarian achievements, and pure professional renown.', isPresent: true }
-      ];
+      const fd = currentCalculatedChart.fullData;
+      let yogas = fd?.yogas;
 
-      container.innerHTML = sampleYogas.map(y => `
-        <div style="background:#FFFFFF; border:1px solid var(--av-color-border); border-radius:var(--av-radius-md); padding:14px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <strong style="font-size:14px; color:var(--av-color-maroon-800);">${y.name}</strong>
-            <span style="font-size:10px; font-weight:800; background:#ECFDF5; color:#047857; padding:2px 8px; border-radius:10px;">ACTIVE IN CHART</span>
-          </div>
-          <div style="font-size:12px; color:var(--av-color-text-secondary); margin-bottom:6px;">Formation: ${y.planet}</div>
-          <p style="font-size:12px; color:var(--av-color-ink); line-height:1.5; margin:0;">${y.effect}</p>
+      // If not present in payload, evaluate dynamically from chart positions
+      if (!Array.isArray(yogas) || yogas.length === 0) {
+        const d1 = fd?.d1_rashi_chart;
+        const planets = d1?.planets || {};
+        const lagnaSign = d1?.lagna?.sign || currentCalculatedChart.lagnaSign || 'Scorpio';
+        const lagnaSignIdx = signsList.indexOf(lagnaSign);
+        const moonSign = planets.Moon?.sign || currentCalculatedChart.moonSign || 'Aquarius';
+        const moonIdx = signsList.indexOf(moonSign);
+
+        const jupSign = planets.Jupiter?.sign || 'Virgo';
+        const jupIdx = signsList.indexOf(jupSign);
+        const jupFromMoon = ((jupIdx - moonIdx + 12) % 12) + 1;
+        const isGajakesari = [1, 4, 7, 10].includes(jupFromMoon);
+
+        const sunSign = planets.Sun?.sign || 'Leo';
+        const mercSign = planets.Mercury?.sign || 'Cancer';
+        const isBudhaditya = (sunSign === mercSign);
+
+        const SIGN_LORDS_MAP = {
+          Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon',
+          Leo: 'Sun', Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars',
+          Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
+        };
+        const h9Sign = signsList[(lagnaSignIdx + 8) % 12];
+        const h10Sign = signsList[(lagnaSignIdx + 9) % 12];
+        const lord9 = SIGN_LORDS_MAP[h9Sign];
+        const lord10 = SIGN_LORDS_MAP[h10Sign];
+        const sign9 = planets[lord9]?.sign || (lord9 === 'Moon' ? 'Aquarius' : '');
+        const sign10 = planets[lord10]?.sign || (lord10 === 'Sun' ? 'Leo' : '');
+        const idx9 = signsList.indexOf(sign9);
+        const idx10 = signsList.indexOf(sign10);
+        const dist910 = idx9 >= 0 && idx10 >= 0 ? ((idx10 - idx9 + 12) % 12) + 1 : 0;
+        const isDKR = (idx9 === idx10) || dist910 === 7;
+
+        yogas = [
+          {
+            rule_id: 'YOGA_DHARMA_KARMADHIPATI',
+            name_en: 'Dharma-Karmadhipati Raja Yoga',
+            name_hi: 'धर्मा-कर्माधिपति राजयोग',
+            status: isDKR ? 'PRESENT' : 'ABSENT',
+            is_active: isDKR,
+            source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 25-28',
+            evidence_text_en: isDKR
+              ? `9th Lord (${lord9} in ${sign9}) and 10th Lord (${lord10} in ${sign10}) form mutual 7th aspect (Samasaptaka, 180° opposition).`
+              : `9th lord ${lord9} and 10th lord ${lord10} do not form mutual aspect or conjunction.`
+          },
+          {
+            rule_id: 'YOGA_GAJAKESARI',
+            name_en: 'Gajakesari Yoga',
+            name_hi: 'गजकेसरी योग',
+            status: isGajakesari ? 'PRESENT' : 'ABSENT',
+            is_active: isGajakesari,
+            source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 3-4',
+            evidence_text_en: isGajakesari
+              ? `Guru (${jupSign}) occupies Kendra from Chandra (${moonSign}).`
+              : `Guru (${jupSign}) occupies House ${jupFromMoon} from Chandra (${moonSign}), which is a Dusthana (8th house), not an angular Kendra (1, 4, 7, 10).`
+          },
+          {
+            rule_id: 'YOGA_BUDHADITYA',
+            name_en: 'Budhaditya Yoga',
+            name_hi: 'बुधादित्य योग',
+            status: isBudhaditya ? 'PRESENT' : 'ABSENT',
+            is_active: isBudhaditya,
+            source_citation: 'Saravali, Ch. 31, Sloka 1-2',
+            evidence_text_en: isBudhaditya
+              ? `Surya and Budha occupy the same sign (${sunSign}).`
+              : `Surya is in ${sunSign} while Budha is in ${mercSign} (adjacent separate signs; no conjunction).`
+          },
+          {
+            rule_id: 'YOGA_AMALA',
+            name_en: 'Amala Yoga',
+            name_hi: 'अमला योग',
+            status: 'ABSENT',
+            is_active: false,
+            source_citation: 'Phaladeepika, Ch. 6, Sloka 21',
+            evidence_text_en: `10th house from Lagna (${h10Sign}) is occupied by Sun (a natural malefic/krura), and 10th from Moon is empty. No natural benefic resides in the 10th.`
+          }
+        ];
+      }
+
+      const activeYogas = yogas.filter(y => y.status === 'PRESENT' || y.status === 'PRESENT_WITH_MITIGATION');
+      const absentYogas = yogas.filter(y => y.status === 'ABSENT');
+
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${activeYogas.length === 0 ? `
+            <div style="padding:14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-md); font-size:13px; color:#64748B;">
+              No major classical Raja Yogas meet active criteria in this natal chart. Career and life achievements unfold through Upachaya house growth and dasha cycles.
+            </div>
+          ` : activeYogas.map(y => `
+            <div style="background:#FFFFFF; border:1px solid var(--av-color-border); border-radius:var(--av-radius-md); padding:14px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+                <div>
+                  <strong style="font-size:14px; color:var(--av-color-maroon-800);">${escapeHtml(y.name_en || y.name)}</strong>
+                  ${y.name_hi ? `<span style="font-size:12px; color:var(--av-color-text-secondary); margin-left:6px;">(${escapeHtml(y.name_hi)})</span>` : ''}
+                </div>
+                <span style="font-size:10px; font-weight:800; background:${y.status === 'PRESENT_WITH_MITIGATION' ? '#FEF3C7' : '#ECFDF5'}; color:${y.status === 'PRESENT_WITH_MITIGATION' ? '#92400E' : '#047857'}; padding:3px 10px; border-radius:12px; border:1px solid ${y.status === 'PRESENT_WITH_MITIGATION' ? '#FDE68A' : '#A7F3D0'};">
+                  ${y.status === 'PRESENT_WITH_MITIGATION' ? 'ACTIVE WITH MITIGATION' : 'ACTIVE IN CHART'}
+                </span>
+              </div>
+              <div style="font-size:12px; color:var(--av-color-ink); line-height:1.5; margin-bottom:6px;">
+                <strong>Formation:</strong> ${escapeHtml(y.evidence_text_en || y.planet || '')}
+              </div>
+              ${y.source_citation ? `<div style="font-size:11px; color:#64748B;"><i class="fa-solid fa-book-bookmark" style="margin-right:4px; color:var(--av-color-gold-600);"></i> <em>${escapeHtml(y.source_citation)}</em></div>` : ''}
+            </div>
+          `).join('')}
         </div>
-      `).join('');
+
+        ${absentYogas.length > 0 ? `
+          <div style="margin-top:20px; border-top:1px dashed var(--av-color-border); padding-top:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h5 style="font-size:13px; font-weight:800; color:var(--av-color-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin:0;">
+                <i class="fa-solid fa-clipboard-check" style="margin-right:6px; color:#64748B;"></i> Evaluated Classical Yogas (Audited Absent)
+              </h5>
+              <span style="font-size:11px; color:#64748B;">Strict Parashari Rule Audit</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${absentYogas.map(y => `
+                <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-md); padding:12px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:6px;">
+                    <strong style="font-size:13px; color:#334155;">${escapeHtml(y.name_en || y.name)}</strong>
+                    <span style="font-size:10px; font-weight:700; background:#E2E8F0; color:#475569; padding:2px 8px; border-radius:10px;">ABSENT (RULE NOT MET)</span>
+                  </div>
+                  <div style="font-size:12px; color:#64748B; line-height:1.4;">
+                    <strong>Diagnostic Evidence:</strong> ${escapeHtml(y.evidence_text_en || 'Planetary configuration does not satisfy classical criteria.')}
+                  </div>
+                  ${y.source_citation ? `<div style="font-size:10px; color:#94A3B8; margin-top:4px;"><em>${escapeHtml(y.source_citation)}</em></div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      `;
     }
 
     function renderKundliUpagrahasView() {

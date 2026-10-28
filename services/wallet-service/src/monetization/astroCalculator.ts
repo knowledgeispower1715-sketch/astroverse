@@ -4,6 +4,14 @@
  * for server-side report synthesis, chart analysis, and matchmaking.
  */
 
+import {
+  YogaDoshaRegistryTS,
+  EvaluatedYoga,
+  EvaluatedDosha,
+  EvaluatedTransits,
+  YogaDoshaStatus
+} from './yogaDoshaRegistry';
+
 export const SIGNS = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
   'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
@@ -89,6 +97,15 @@ export interface CalculatedChart {
     marsHouse: number;
     isCancelled: boolean;
     cancellationReason?: string;
+    status?: YogaDoshaStatus;
+  };
+  yogas?: EvaluatedYoga[];
+  doshas?: Record<string, EvaluatedDosha>;
+  transits?: EvaluatedTransits;
+  yogaDoshaSummary?: {
+    active_yogas_count: number;
+    active_doshas_count: number;
+    sade_sati_active: boolean;
   };
 }
 
@@ -111,7 +128,8 @@ export class AstroCalculator {
     tobStr: string = '12:00',
     lat: number = 28.6139,
     lon: number = 77.2090,
-    isUnknownTime: boolean = false
+    isUnknownTime: boolean = false,
+    externalD1Data?: any
   ): CalculatedChart {
     const parts = dobStr.split('-');
     const year = parseInt(parts[0], 10) || 1995;
@@ -138,6 +156,8 @@ export class AstroCalculator {
     const C_sun = (1.914602 - 0.004817 * T) * Math.sin(M_sun) + (0.019993 - 0.000101 * T) * Math.sin(2 * M_sun) + 0.000289 * Math.sin(3 * M_sun);
     const sunTrop = (L0 + C_sun + 360) % 360;
     const sunSid = (sunTrop - ayanamsha + 360) % 360;
+    const R_sun = 1.00014 - 0.01671 * Math.cos(M_sun) - 0.00014 * Math.cos(2 * M_sun);
+    const sunRad = sunTrop * d2r;
 
     // Moon (Meeus truncated series)
     const Lp = (218.3164477 + 481267.88128 * T) % 360;
@@ -163,21 +183,50 @@ export class AstroCalculator {
     const xAsc = -Math.sin(ramc * d2r) * Math.cos(eps) - Math.tan(lat * d2r) * Math.sin(eps);
     let ascTrop = Math.atan2(yAsc, xAsc) * r2d;
     ascTrop = (ascTrop + 360) % 360;
-    const lagnaSid = (ascTrop - ayanamsha + 360) % 360;
+    let lagnaSid = (ascTrop - ayanamsha + 360) % 360;
+
+    // Check if external Lagna provided
+    if (externalD1Data?.lagna) {
+      if (typeof externalD1Data.lagna.total_degree === 'number') {
+        lagnaSid = externalD1Data.lagna.total_degree;
+      } else if (typeof externalD1Data.lagna.degree === 'number' && externalD1Data.lagna.sign) {
+        const sIdx = SIGNS.indexOf(externalD1Data.lagna.sign);
+        if (sIdx >= 0) lagnaSid = sIdx * 30 + externalD1Data.lagna.degree;
+      }
+    }
 
     const lagnaSignIdx = Math.floor(lagnaSid / 30);
     const lagnaDeg = lagnaSid % 30;
     const lagnaNakIdx = Math.floor(lagnaSid / (360 / 27));
     const lagnaPada = Math.floor((lagnaSid % (360 / 27)) / (360 / 108)) + 1;
 
-    const plData = {
-      Mercury: (252.25 + 149472.67 * T - ayanamsha + 360000) % 360,
-      Venus:   (181.98 + 58517.82 * T - ayanamsha + 360000) % 360,
-      Mars:    (355.43 + 19140.30 * T - ayanamsha + 360000) % 360,
-      Jupiter: (34.35  + 3034.91 * T - ayanamsha + 360000) % 360,
-      Saturn:  (50.08  + 1222.11 * T - ayanamsha + 360000) % 360,
-      Rahu:    (125.04452 - 1934.136261 * T - ayanamsha + 360000) % 360
-    };
+    // Keplerian planetary orbital elements for geocentric positions
+    const orbitalParams = [
+      { name: 'Mercury', a: 0.387098, e: 0.205630, L0: 252.2509, n: 149472.6746, varpi0: 77.4561, varpiDot: 1.5565 },
+      { name: 'Venus',   a: 0.723330, e: 0.006772, L0: 181.9798, n: 58517.8156,  varpi0: 131.5637, varpiDot: 1.4022 },
+      { name: 'Mars',    a: 1.523688, e: 0.093400, L0: 355.4330, n: 19140.2993,  varpi0: 336.0602, varpiDot: 1.8410 },
+      { name: 'Jupiter', a: 5.202575, e: 0.048497, L0: 34.3515,  n: 3034.9057,   varpi0: 14.3312,  varpiDot: 1.6126 },
+      { name: 'Saturn',  a: 9.544707, e: 0.055548, L0: 50.0774,  n: 1222.1138,   varpi0: 93.0572,  varpiDot: 1.9638 }
+    ];
+
+    const plData: Record<string, number> = {};
+    for (const p of orbitalParams) {
+      const L = (p.L0 + p.n * T) % 360;
+      const varpi = (p.varpi0 + p.varpiDot * T) % 360;
+      const M = (((L - varpi) % 360 + 360) % 360) * d2r;
+      const C = (2 * p.e - Math.pow(p.e, 3) / 4) * Math.sin(M) + (5 / 4) * Math.pow(p.e, 2) * Math.sin(2 * M) + (13 / 12) * Math.pow(p.e, 3) * Math.sin(3 * M);
+      const v = M + C;
+      const r = p.a * (1 - p.e * p.e) / (1 + p.e * Math.cos(v));
+      const l = ((v * r2d + varpi + 360) % 360) * d2r;
+
+      const x = r * Math.cos(l) + R_sun * Math.cos(sunRad);
+      const y = r * Math.sin(l) + R_sun * Math.sin(sunRad);
+      let lambda = Math.atan2(y, x) * r2d;
+      lambda = (lambda + 360) % 360;
+      plData[p.name] = (lambda - ayanamsha + 360) % 360;
+    }
+
+    plData.Rahu = (125.04452 - 1934.136261 * T - ayanamsha + 360000) % 360;
     const ketuSid = (plData.Rahu + 180) % 360;
 
     function getDignity(pName: string, sIdx: number): 'Exalted' | 'Moolatrikona' | 'Own Sign' | 'Friendly' | 'Neutral' | 'Enemy' | 'Debilitated' {
@@ -240,6 +289,24 @@ export class AstroCalculator {
       Ketu: makePlanet('Ketu', ketuSid)
     };
 
+    // If external high-precision D1 planet data is provided, synchronize
+    if (externalD1Data && externalD1Data.planets) {
+      for (const [pName, pObj] of Object.entries(externalD1Data.planets as Record<string, any>)) {
+        if (pObj) {
+          let degVal: number | undefined;
+          if (typeof pObj.total_degree === 'number') degVal = pObj.total_degree;
+          else if (typeof pObj.absolute_degree === 'number') degVal = pObj.absolute_degree;
+          else if (typeof pObj.degree === 'number' && pObj.sign) {
+            const sIdx = SIGNS.indexOf(pObj.sign);
+            if (sIdx >= 0) degVal = sIdx * 30 + pObj.degree;
+          }
+          if (degVal !== undefined && pName in planets) {
+            planets[pName] = makePlanet(pName, degVal);
+          }
+        }
+      }
+    }
+
     // D9 Navamsha Chart (3°20' segments = 108 padas)
     const d9LagnaIdx = Math.floor(lagnaSid / (360 / 108)) % 12;
     const d9Planets: Record<string, { sign: string; house: number; degree: number }> = {};
@@ -292,24 +359,17 @@ export class AstroCalculator {
     // Rotate relative to native Lagna sign index
     const ashtakavargaSAV = Array.from({ length: 12 }, (_, i) => baseSAV[(i + lagnaSignIdx) % 12]);
 
-    // Kuja Dosha (Manglik Analysis)
-    const marsHouse = planets.Mars.house;
-    const isManglikHouse = [1, 2, 4, 7, 8, 12].includes(marsHouse);
-    let isCancelled = false;
-    let cancellationReason: string | undefined;
+    // Authoritative Classical Parashari Yoga, Dosha & Transit Evaluation
+    const yogaDoshaResult = YogaDoshaRegistryTS.evaluateAll(
+      planets,
+      SIGNS[lagnaSignIdx],
+      isUnknownTime
+    );
 
-    if (isManglikHouse) {
-      if (planets.Mars.sign === 'Aries' || planets.Mars.sign === 'Scorpio') {
-        isCancelled = true;
-        cancellationReason = 'Mars occupies its own sign (Swakshetra), mitigating Kuja Dosha.';
-      } else if (planets.Mars.sign === 'Capricorn') {
-        isCancelled = true;
-        cancellationReason = 'Mars is exalted in Capricorn (Uchcha), neutralizing Kuja Dosha.';
-      } else if (planets.Jupiter.house === marsHouse || Math.abs(planets.Jupiter.house - marsHouse) === 4 || Math.abs(planets.Jupiter.house - marsHouse) === 8) {
-        isCancelled = true;
-        cancellationReason = 'Benefic aspect of Guru (Jupiter) pacifies Martian afflictions.';
-      }
-    }
+    const manglikDosha = yogaDoshaResult.doshas.manglik;
+    const marsHouse = planets.Mars.house;
+    const isCancelled = manglikDosha.status === 'PRESENT_WITH_MITIGATION' || manglikDosha.mitigations_applied.length > 0;
+    const cancellationReason = isCancelled ? manglikDosha.mitigations_applied.join('; ') : undefined;
 
     return {
       lagna: {
@@ -335,11 +395,16 @@ export class AstroCalculator {
       },
       ashtakavargaSAV,
       kujaDosha: {
-        hasDosha: isManglikHouse && !isCancelled,
+        hasDosha: manglikDosha.status === 'PRESENT',
+        status: manglikDosha.status,
         marsHouse,
         isCancelled,
         cancellationReason
-      }
+      },
+      yogas: yogaDoshaResult.yogas,
+      doshas: yogaDoshaResult.doshas,
+      transits: yogaDoshaResult.transits,
+      yogaDoshaSummary: yogaDoshaResult.summary
     };
   }
 

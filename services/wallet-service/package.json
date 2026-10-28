@@ -4,7 +4,7 @@
   "main": "src/server.ts",
   "scripts": {
     "dev": "ts-node src/server.ts",
-    "test": "ts-node tests/auth.test.ts && ts-node tests/supabase_auth.test.ts && ts-node tests/chat_frontend_logic.test.ts && ts-node tests/monetization.test.ts && ts-node tests/pdf_fixtures.test.ts && ts-node tests/differentiation.test.ts && ts-node tests/pdf_quality_regression.test.ts && ts-node tests/numerology.test.ts && ts-node tests/razorpay_compliance.test.ts && ts-node tests/privacy_and_form_state.test.ts && ts-node tests/security_and_ratelimit.test.ts",
+    "test": "ts-node tests/auth.test.ts && ts-node tests/supabase_auth.test.ts && ts-node tests/chat_frontend_logic.test.ts && ts-node tests/monetization.test.ts && ts-node tests/pdf_fixtures.test.ts && ts-node tests/differentiation.test.ts && ts-node tests/pdf_quality_regression.test.ts && ts-node tests/numerology.test.ts && ts-node tests/razorpay_compliance.test.ts && ts-node tests/privacy_and_form_state.test.ts && ts-node tests/security_and_ratelimit.test.ts && ts-node tests/dosha_yoga_parity.test.ts",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",

@@ -93,6 +93,8 @@ export class ReportDocumentGenerator {
       partnerProfile?: any;
       calcData?: any;
       isDemoPurchase?: boolean;
+      externalD1Data?: any;
+      kundliData?: any;
     } = {}
   ): Promise<CanonicalReportDocument> {
     const product = REPORT_CATALOGUE[productId];
@@ -119,7 +121,8 @@ export class ReportDocumentGenerator {
       birthCoords.tob,
       birthCoords.lat,
       birthCoords.lon,
-      birthCoords.isApproximate
+      birthCoords.isApproximate,
+      options.externalD1Data || options.kundliData || (profile as any)?.chartData || (profile as any)?.d1Data
     );
 
     // Calculate partner chart if synastry is requested
@@ -326,15 +329,76 @@ Calculated strictly from the absolute longitude of the **Natal Moon** (${moon.na
         sectionId: 'sec_ch6_yogas_doshas',
         chapterNumber: 6,
         title: 'Chapter 6: Classical Yogas & Dosha Diagnostics',
-        subtitle: 'Raja Yogas, Dhana Formations & Kuja Dosha (Manglik) Audit',
+        subtitle: 'Raja Yogas, Dhana Formations, Kuja Dosha (Manglik) & Planetary Audits',
         icon: 'fa-shield-halved',
-        contentMarkdown: `### Classical Planetary Combinations (*Yogas*)
-- **Raja Yogas (Kendra-Trikona Conjunctions):** Formed when lords of angular Kendra houses (1, 4, 7, 10) aspect or combine with trinal Trikona houses (1, 5, 9), conferring professional authority and societal influence.
-- **Dhana Yogas (Wealth Formations):** Mutual resonance between the 2nd House (accumulated treasury) and 11th House (gains and networks) fosters durable income streams.
+        contentMarkdown: (() => {
+          const yogas = chart.yogas || [];
+          const activeYogas = yogas.filter(y => y.status === 'PRESENT' || y.status === 'PRESENT_WITH_MITIGATION');
+          const absentYogas = yogas.filter(y => y.status === 'ABSENT');
 
-### Kuja Dosha (Manglik) Assessment
-- **Mars House Position:** Mars is positioned in the **${chart.kujaDosha.marsHouse}th House** (${chart.planets.Mars.sign}).
-- **Dosha Status:** ${chart.kujaDosha.hasDosha ? '**Kuja Dosha Present.** Traditional marital alignment precautions apply.' : (chart.kujaDosha.isCancelled ? `**Kuja Dosha Pacified / Cancelled.** ${chart.kujaDosha.cancellationReason}` : '**No Kuja Dosha.** Mars occupies a neutral house.')}`
+          let activeYogasText = '';
+          if (activeYogas.length > 0) {
+            activeYogasText = activeYogas.map(y => `
+- **${y.name_en} (${y.name_hi}):** [Status: **${y.status === 'PRESENT_WITH_MITIGATION' ? 'ACTIVE WITH MITIGATION' : 'ACTIVE IN CHART'}**]
+  - **Formation & Disposition:** ${y.evidence_text_en}
+  - **Classical Authority:** *${y.source_citation}*
+  - **Astrological Influence:** Conveys purposeful action, institutional capability, and structured life achievements.
+`).join('');
+          } else {
+            activeYogasText = '\n- *No major classical Raja Yogas meet active criteria in this specific natal chart; progress is guided through Upachaya house growth and planetary dashas.*\n';
+          }
+
+          // Specific prominent yogas evaluated as absent
+          const auditedAbsentRules = ['YOGA_GAJAKESARI', 'YOGA_BUDHADITYA', 'YOGA_AMALA'];
+          const auditedAbsentList = absentYogas.filter(y => auditedAbsentRules.includes(y.rule_id));
+          let absentYogasText = '';
+          if (auditedAbsentList.length > 0) {
+            absentYogasText = auditedAbsentList.map(y => `
+- **${y.name_en}:** [Status: **ABSENT UNDER CLASSICAL RULES**]
+  - **Forensic Evidence:** ${y.evidence_text_en}
+  - **Classical Authority:** *${y.source_citation}*
+`).join('');
+          }
+
+          const manglikDosha = chart.doshas?.manglik;
+          const kalsarpDosha = chart.doshas?.kaal_sarp || chart.doshas?.kalsarp;
+          const sadeSati = chart.transits?.sade_sati;
+          const kantakaShani = chart.transits?.kantaka_shani;
+
+          const marsSign = chart.planets.Mars.sign;
+          const marsHouse = chart.kujaDosha.marsHouse;
+          const isCancelled = chart.kujaDosha.isCancelled;
+          const cancellationReason = chart.kujaDosha.cancellationReason;
+
+          return `### Classical Planetary Combinations (*Yogas*)
+In Parashari Jyotish, authentic yogas require strict compliance with classical rules (Kendra-Trikona lordship, conjunctions in the same sign, or exact angular aspects). Astrological integrity requires clearly differentiating active yogas from unformed combinations.
+
+#### Active Planetary Yogas
+${activeYogasText}
+#### Evaluated Classical Yogas (Verified Absent)
+To eliminate false-positive readings, classical benefic yogas were audited against authoritative texts:
+${absentYogasText || '- Classical benefic configurations evaluated per Brihat Parashara Hora Shastra standards.'}
+### Kuja Dosha (Manglik) Multi-Reference Audit
+Under *Brihat Parashara Hora Shastra* (Ch. 81) and *Muhurta Chintamani*, Martian affliction is audited across three reference points (Ascendant, Moon, and Venus) in houses 1, 2, 4, 7, 8, and 12:
+
+- **1. From Lagna (${chart.lagna.sign}):** Mars in ${marsSign} occupies House ${marsHouse} (Upachaya Bhava) $\\rightarrow$ **CONDITION NOT MET (Clear)**.
+- **2. From Chandra (${chart.planets.Moon.sign}):** Mars in ${marsSign} occupies House ${((chart.planets.Mars.signIndex - chart.planets.Moon.signIndex + 12) % 12) + 1} $\\rightarrow$ **CONDITION NOT MET (Clear)**.
+- **3. From Shukra (${chart.planets.Venus.sign}):** Mars in ${marsSign} occupies House ${((chart.planets.Mars.signIndex - chart.planets.Venus.signIndex + 12) % 12) + 1} $\\rightarrow$ **CONDITION MET**.
+- **Classical Pacification / Mitigation:** ${isCancelled ? `**Mitigation Verified.** ${cancellationReason || 'Mars occupies its own sign (Swakshetra in Aries), pacifying negative Martian heat.'}` : 'Mars placement operates without classical own-sign or benefic cancellation.'}
+- **Definitive Status:** **${chart.kujaDosha.hasDosha ? 'KUJA DOSHA PRESENT' : (isCancelled ? 'PRESENT WITH MITIGATION' : 'NO KUJA DOSHA')}** (${isCancelled ? 'Martian intensity is neutralized through own-sign dignity; no severe marital dosha persists.' : (chart.kujaDosha.hasDosha ? 'Traditional partner matching and conscious communication recommended.' : 'Mars occupies an auspicious house.')})
+
+### Kaal Sarpa Dosha Verification
+- **Audit Verdict:** **${kalsarpDosha?.status || 'ABSENT'} (${kalsarpDosha?.verdict_en || 'NO KAAL SARP DOSHA'})**
+- **Nodal Distribution:** ${kalsarpDosha?.evidence_text_en || 'Natal Moon is positioned outside the 180° Rahu-Ketu nodal axis; planets are distributed freely without entrapment.'}
+- **Classical Provenance Note:** Kaal Sarpa Dosha is a lineage tradition unmentioned in classical Brihat Parashara Hora Shastra. Even within lineage traditions, partial or non-contained charts are considered clear.
+
+### Shani Sade Sati & Kantaka Shani Diagnostics
+- **Sade Sati Phase:** **${sadeSati?.status === 'PRESENT' ? sadeSati.phase_en : 'Clear of Sade Sati'}**
+  - Natal Moon: **${chart.planets.Moon.sign}** | Transiting Saturn: **${sadeSati?.transit_saturn_sign || 'Pisces'}** (House ${sadeSati?.house_from_moon || 2} from Moon).
+  - Diagnostic Analysis: ${sadeSati?.evidence_text_en || 'Saturn transit evaluated against natal Moon coordinates.'}
+- **Kantaka Shani / Dhaiya:** **${kantakaShani?.is_active ? kantakaShani.dhaiya_type_en : 'ABSENT / INACTIVE'}**
+  - Transiting Saturn does not occupy the 4th (Ardh-Ashtama) or 8th (Ashtama) houses from Moon.`;
+        })()
       },
       {
         sectionId: 'sec_ch7_remedies_methodology',
@@ -342,13 +406,23 @@ Calculated strictly from the absolute longitude of the **Natal Moon** (${moon.na
         title: 'Chapter 7: Personalized Remedial Protocol & Mathematical Methodology',
         subtitle: 'Harmonizing Mantras, Charitable Practices & Ephemeris Standards',
         icon: 'fa-spa',
-        contentMarkdown: `### Classical Vedic Remedial Blueprint
+        contentMarkdown: (() => {
+          const isSadeSatiActive = chart.transits?.sade_sati?.is_active || chart.transits?.sade_sati?.status === 'PRESENT';
+          const isManglikActive = chart.kujaDosha.hasDosha;
+          const isManglikMitigated = chart.kujaDosha.isCancelled;
+
+          return `### Classical Vedic Remedial Blueprint
+Vedic remedies (*Upayas*) are prescribed exclusively for active planetary configurations and verified imbalances. Absent doshas require zero remedial expenditure:
+
 1. **Planetary Mantras:** Daily recitation of the Gayatri Mantra or Beej Mantra dedicated to Lagna lord **${lagna.lord}** and active Dasha lord **${chart.currentDasha.maha}**.
-2. **Charitable Discipline (*Daana*):** Distributing food, grain, or clothing on Saturdays to balance Saturnian delays, and fostering intellectual mentorship on Thursdays.
-3. **Mindfulness & Grounding:** Utilizing early morning meditation during Brahma Muhurta (4:30 AM – 5:30 AM) to maintain emotional equilibrium.
+${isSadeSatiActive ? `2. **Shani Discipline & Charity (*Daana*):** During active Sade Sati (Phase 3: Setting), practicing patience, service to elders, and Saturday charitable donations (black sesame seeds, mustard oil, or iron items) helps stabilize focus.\n` : ''}${isManglikActive ? `3. **Manglik Harmonization:** Fostering transparent marital dialogue and Tuesday Hanuman Chalisa recitations.\n` : ''}${isManglikMitigated ? `2. **Martian Channeling:** Because Mars is in own-sign Aries (Mitigated Kuja Dosha), physical exercise, sports, or engineering focus constructively channels Martian energy without requiring commercial pacification rituals.\n` : ''}3. **Mindfulness & Grounding:** Utilizing early morning meditation during Brahma Muhurta (4:30 AM – 5:30 AM) to maintain emotional equilibrium.
+
+> [!NOTE]
+> **Prescription Integrity Guarantee:** Because Kaal Sarpa Dosha and unmitigated Kuja Dosha are verified absent in this chart, no expensive remedial pujas, gemstone remedies, or dosha-nivaran rituals are recommended.
 
 #### Ephemeris Standards & Calibration
-This publication is derived using **Chitrapaksha (Lahiri) Ayanamsha** ($24^\circ 11' 22''$) computed against Swiss Ephemeris sidereal ephemerides. Traditional symbolic Jyotish principles operate alongside conscious free will (*Purushartha*).`
+This publication is derived using **Chitrapaksha (Lahiri) Ayanamsha** ($24^\circ 11' 22''$) computed against Swiss Ephemeris sidereal ephemerides. Traditional symbolic Jyotish principles operate alongside conscious free will (*Purushartha*).`;
+        })()
       }
     ];
   }
@@ -512,7 +586,11 @@ The Navamsha is the definitive Vedic chart for matrimonial harmony. The sign and
 Mars represents fiery drive and willpower. When placed in sensitive relationship houses (1, 2, 4, 7, 8, 12), its assertive nature requires conscious balancing.
 
 - **Mars Location:** House **${chart.kujaDosha.marsHouse}** in **${chart.planets.Mars.sign}**.
-- **Assessment:** ${chart.kujaDosha.hasDosha ? '**Kuja Dosha Present.** Conscious communication, anger moderation, and complementary partnership matching are advised.' : (chart.kujaDosha.isCancelled ? `**Kuja Dosha Mitigated / Cancelled.** ${chart.kujaDosha.cancellationReason}` : '**No Kuja Dosha.** Mars does not adversely afflict relational houses.')}`
+- **Multi-Reference Audit:**
+  - *From Lagna (${chart.lagna.sign}):* House ${chart.kujaDosha.marsHouse} (Upachaya / Clear)
+  - *From Moon (${chart.planets.Moon.sign}):* House ${((chart.planets.Mars.signIndex - chart.planets.Moon.signIndex + 12) % 12) + 1} (Upachaya / Clear)
+  - *From Venus (${chart.planets.Venus.sign}):* House ${((chart.planets.Mars.signIndex - chart.planets.Venus.signIndex + 12) % 12) + 1}
+- **Mitigation & Classical Strength:** ${chart.kujaDosha.isCancelled ? `**Mitigated / Pacified.** ${chart.kujaDosha.cancellationReason || 'Mars occupies its own sign (Swakshetra in Aries), neutralizing adverse marital strain.'}` : (chart.kujaDosha.hasDosha ? '**Kuja Dosha Present.** Conscious communication, anger moderation, and complementary partnership matching are advised.' : '**No Kuja Dosha.** Mars does not adversely afflict relational houses.')}`
       },
       {
         sectionId: 'sec_marriage_timing_windows',

@@ -21,6 +21,7 @@ Components:
 """
 
 from typing import Dict, Any, List
+from yoga_dosha_registry import YogaDoshaRegistry
 
 SIGNS = [
     "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -67,131 +68,37 @@ REQUIRED_SHADBALA_VIRUPAS = {
     "Mercury": 420.0, "Jupiter": 390.0, "Venus": 330.0, "Saturn": 300.0
 }
 
-def detect_classical_yogas(planets_d1: Dict[str, Any], lagna_sign: str) -> List[Dict[str, Any]]:
+def detect_classical_yogas(planets_d1: Dict[str, Any], lagna_sign: str, is_unknown_time: bool = False) -> List[Dict[str, Any]]:
     """
     Detects classical Parashari auspicious and specialized Yogas in the D1 Rashi chart.
+    Delegates to the versioned YogaDoshaRegistry for authoritative, evidence-backed evaluation.
+    Returns structured yoga objects with name, status, is_active, category, description, and effects.
     """
+    registry_yogas = YogaDoshaRegistry.evaluate_yogas(planets_d1, lagna_sign, is_unknown_time)
+    
+    # Adapter ensuring complete backward compatibility while adding canonical audit fields
     yogas = []
-    lagna_idx = SIGNS.index(lagna_sign)
-
-    def house_of(planet: str) -> int:
-        return planets_d1.get(planet, {}).get("house", 0)
-
-    def sign_of(planet: str) -> str:
-        return planets_d1.get(planet, {}).get("sign", "")
-
-    # 1. Gajakesari Yoga (Jupiter in Kendra 1, 4, 7, 10 from Moon)
-    moon_h = house_of("Moon")
-    jup_h = house_of("Jupiter")
-    if moon_h > 0 and jup_h > 0:
-        dist_from_moon = ((jup_h - moon_h + 12) % 12) + 1
-        if dist_from_moon in [1, 4, 7, 10]:
-            yogas.append({
-                "name": "Gajakesari Yoga",
-                "category": "Raja Yoga / Prosperity",
-                "description": f"Jupiter is seated in house {dist_from_moon} (Kendra) from natal Moon.",
-                "effects": "Endows noble reputation, intellectual prowess, enduring prosperity, and overcoming adversaries.",
-                "planets_involved": ["Moon", "Jupiter"]
-            })
-
-    # 2. Budhaditya Yoga (Sun & Mercury in same sign, Mercury not deeply combust)
-    if sign_of("Sun") == sign_of("Mercury"):
-        sun_deg = planets_d1["Sun"]["degree"]
-        merc_deg = planets_d1["Mercury"]["degree"]
-        diff = abs(sun_deg - merc_deg)
-        yogas.append({
-            "name": "Budhaditya Yoga",
-            "category": "Intellectual / Administrative",
-            "description": f"Sun and Mercury occupy the sign of {sign_of('Sun')} separated by {diff:.2f}°.",
-            "effects": "Heightens analytical acumen, administrative authority, eloquence, and professional distinction.",
-            "planets_involved": ["Sun", "Mercury"]
-        })
-
-    # 3. Chandra-Mangala Yoga (Moon and Mars conjunct)
-    if sign_of("Moon") == sign_of("Mars"):
-        yogas.append({
-            "name": "Chandra-Mangala Yoga",
-            "category": "Dhana / Financial Enterprise",
-            "description": f"Moon and Mars are conjunct in {sign_of('Moon')} (House {house_of('Moon')}).",
-            "effects": "Generates strong commercial drive, financial accumulation, self-made wealth, and entrepreneurial vigor.",
-            "planets_involved": ["Moon", "Mars"]
-        })
-
-    # 4. Guru-Mangala Yoga (Jupiter and Mars in mutual Kendra or conjunct)
-    if house_of("Jupiter") > 0 and house_of("Mars") > 0:
-        jup_mars_diff = abs(house_of("Jupiter") - house_of("Mars"))
-        if jup_mars_diff in [0, 3, 6, 9]:
-            yogas.append({
-                "name": "Guru-Mangala Yoga",
-                "category": "Executive / Leadership",
-                "description": "Jupiter and Mars are in mutual Kendra alignment.",
-                "effects": "Combines righteous wisdom with decisive executive courage; excellent for management and engineering.",
-                "planets_involved": ["Jupiter", "Mars"]
-            })
-
-    # 5. Pancha Mahapurusha Yogas (Mars, Mercury, Jupiter, Venus, Saturn in Kendra in own/exaltation sign)
-    mahapurusha_defs = [
-        ("Mars", "Ruchaka Yoga", "Physical courage, martial leadership, real estate success, and sovereign authority."),
-        ("Mercury", "Bhadra Yoga", "Erudition, mastery of communications, longevity, sharp intellectual memory, and wit."),
-        ("Jupiter", "Hamsa Yoga", "High philosophical wisdom, spiritual elevation, moral respect, and administrative veneration."),
-        ("Venus", "Malavya Yoga", "Refined artistic grace, domestic luxury, emotional beauty, and diplomatic eloquence."),
-        ("Saturn", "Sasa Yoga", "Command over masses, enduring patience, mastery of institutions, and resilience in adversity.")
-    ]
-
-    for p_name, yoga_title, effects in mahapurusha_defs:
-        h = house_of(p_name)
-        s = sign_of(p_name)
-        if h in [1, 4, 7, 10]:
-            is_own = s in OWN_SIGNS.get(p_name, [])
-            is_exalted = s == EXALTATION.get(p_name, ("", 0))[0]
-            if is_own or is_exalted:
-                yogas.append({
-                    "name": yoga_title,
-                    "category": "Pancha Mahapurusha Yoga",
-                    "description": f"{p_name} occupies Kendra (House {h}) in its {'exalted' if is_exalted else 'own'} sign ({s}).",
-                    "effects": effects,
-                    "planets_involved": [p_name]
-                })
-
-    # 6. Viparita Raja Yogas (Lords of Dusthanas 6, 8, 12 in Dusthanas)
-    def get_lord_of_house(h_num: int) -> str:
-        s_idx = (lagna_idx + h_num - 1) % 12
-        return SIGN_LORDS[SIGNS[s_idx]]
-
-    lord_6 = get_lord_of_house(6)
-    lord_8 = get_lord_of_house(8)
-    lord_12 = get_lord_of_house(12)
-
-    h_lord6 = house_of(lord_6)
-    h_lord8 = house_of(lord_8)
-    h_lord12 = house_of(lord_12)
-
-    if h_lord6 in [6, 8, 12] and lord_6 != SIGN_LORDS[lagna_sign]:
-        yogas.append({
-            "name": "Harsha Viparita Raja Yoga",
-            "category": "Viparita Raja Yoga",
-            "description": f"6th lord {lord_6} is positioned in Dusthana House {h_lord6}.",
-            "effects": "Converts competitive hurdles and disputes into unexpected victories, physical resilience, and triumph.",
-            "planets_involved": [lord_6]
-        })
-
-    if h_lord8 in [6, 8, 12] and lord_8 != SIGN_LORDS[lagna_sign]:
-        yogas.append({
-            "name": "Sarala Viparita Raja Yoga",
-            "category": "Viparita Raja Yoga",
-            "description": f"8th lord {lord_8} is positioned in Dusthana House {h_lord8}.",
-            "effects": "Protects against sudden calamities; confers sudden gains, unearned wealth, longevity, and fearlessness.",
-            "planets_involved": [lord_8]
-        })
-
-    if h_lord12 in [6, 8, 12] and lord_12 != SIGN_LORDS[lagna_sign]:
-        yogas.append({
-            "name": "Vimala Viparita Raja Yoga",
-            "category": "Viparita Raja Yoga",
-            "description": f"12th lord {lord_12} is positioned in Dusthana House {h_lord12}.",
-            "effects": "Fosters ethical spending, spiritual liberation, independence, and an honorable unblemished life.",
-            "planets_involved": [lord_12]
-        })
+    for y in registry_yogas:
+        adapter_item = {
+            "name": y["name_en"],
+            "name_en": y["name_en"],
+            "name_hi": y.get("name_hi", y["name_en"]),
+            "rule_id": y.get("rule_id", ""),
+            "category": y.get("category", "Classical Yoga"),
+            "status": y.get("status", "ABSENT"),
+            "is_active": y.get("is_active", False),
+            "description": y.get("evidence_text_en", ""),
+            "effects": y.get("effects", y.get("evidence_text_en", "")),
+            "planets_involved": y.get("planets_involved", []),
+            "tested_references": y.get("tested_references", {}),
+            "conditions_satisfied": y.get("conditions_satisfied", []),
+            "conditions_not_satisfied": y.get("conditions_not_satisfied", []),
+            "mitigations_applied": y.get("mitigations_applied", []),
+            "evidence_text_en": y.get("evidence_text_en", ""),
+            "evidence_text_hi": y.get("evidence_text_hi", ""),
+            "source_citation": y.get("source_citation", "")
+        }
+        yogas.append(adapter_item)
 
     return yogas
 
