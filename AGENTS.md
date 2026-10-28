@@ -111,6 +111,22 @@ and affected validation current as work changes. The readiness check validates
 the filled declaration; CI and automated review results do not establish that
 human review occurred, maintainer scope approval, or merge permission.
 
+## AstroVerse Prompt-Driven Development & Agentic Skills
+
+This repository includes a curated stack of 23 engineering skills from `sickn33/agentic-awesome-skills` installed under `.agents/skills/`.
+
+When working on AstroVerse in prompt-driven development:
+1. **Skill Discovery & Routing**: Check `.agents/skills/SKILL_ROUTER.md` and `ASTROVERSE_AGENTIC_WORKFLOW.md` for task domain mappings and copy-paste prompt templates.
+2. **Explicit Playbook Execution**: Read the designated `SKILL.md` before generating or modifying code:
+   - Frontend UI/Tokens/a11y: `tailwind-design-system`, `tailwind-patterns`, `react-best-practices`, `nextjs-best-practices`, `accessibility-compliance-accessibility-audit`
+   - Database/Auth/RLS: `supabase`, `nextjs-supabase-auth`, `supabase-postgres-best-practices`, `postgresql`
+   - Security/Throttling: `007`, `api-security-best-practices`, `backend-security-coder`, `api-rate-limit-handler`, `upstash-ratelimit`
+   - Python Backend & Ephemeris: `fastapi-pro`, `python-fastapi-development`, `async-python-patterns`, `astropy`
+   - Testing & Debugging: `playwright-skill`, `systematic-debugging`
+3. **Execution Guardrails**:
+   - Zero hardcoded secrets in client-side code or git commits.
+   - All critical mutations require automated test validation before marking tasks complete.
+
 <!-- BEGIN:turborepo-agent-rules -->
 
 # This is NOT the Turborepo you know
