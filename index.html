@@ -148,18 +148,18 @@
       --av-spiritual-text: #581C87;
       --av-spiritual-bg: #F3E8FF;
 
-      /* Legacy Maroon & Brand Fallbacks (Guarantees Active Tab Contrast) */
-      --vedic-maroon: #4A0E17;
-      --deep-maroon: #380710;
-      --av-maroon-base: #380710;
-      --av-maroon-primary: #4A0E17;
-      --av-maroon-raised: #5A121D;
-      --av-maroon-surface: #6B1D2F;
-      --av-maroon-darkest: #380710;
+      /* Unified Brand & Legacy Variable Alignment (Midnight Indigo Authority) */
+      --vedic-maroon: #18213A;
+      --deep-maroon: #0F172A;
+      --av-maroon-base: #18213A;
+      --av-maroon-primary: #18213A;
+      --av-maroon-raised: #293452;
+      --av-maroon-surface: #293452;
+      --av-maroon-darkest: #0F172A;
       --av-maroon-card: #FFFFFF;
-      --av-maroon-light: #5A121D;
-      --av-maroon-glass: rgba(56, 7, 16, 0.94);
-      --av-maroon-gradient: linear-gradient(135deg, #380710 0%, #4A0E17 100%);
+      --av-maroon-light: #293452;
+      --av-maroon-glass: rgba(24, 33, 58, 0.94);
+      --av-maroon-gradient: linear-gradient(135deg, #0F172A 0%, #18213A 60%, #293452 100%);
 
       /* Color System Namespaces */
       --av-color-maroon-950: #380710;
@@ -515,9 +515,9 @@
       font-weight: 700;
       padding: 6px 12px;
       border-radius: 8px;
-      border: 1px solid rgba(212, 175, 55, 0.28);
-      background: rgba(56, 7, 16, 0.85);
-      color: var(--av-text-warm, #FFFBEB);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      background: #18213A;
+      color: #FFFFFF;
       cursor: pointer;
       transition: all 0.15s ease;
       min-height: 38px;
@@ -526,9 +526,9 @@
       text-decoration: none;
     }
     .rashi-quick-pill:hover, .rashi-quick-pill:focus {
-      background: rgba(212, 175, 55, 0.22);
+      background: #293452;
       color: var(--av-gold-bright, #F5C45E);
-      border-color: var(--av-gold-bright, #F5C45E);
+      border-color: var(--av-gold, #D4AF37);
       transform: translateY(-1px);
     }
 
@@ -672,7 +672,7 @@
     .cosmic-card-art-wrap {
       width: 100%;
       height: 165px;
-      background: linear-gradient(135deg, #180307 0%, #380710 50%, #4A0E17 100%);
+      background: linear-gradient(135deg, #0F172A 0%, #18213A 60%, #293452 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -805,8 +805,8 @@
 
     /* Top Announcement Promo Bar */
     .promo-ticker {
-      background: linear-gradient(90deg, var(--av-maroon-darkest, #380710) 0%, var(--av-maroon-primary, #4A0E17) 50%, var(--av-maroon-darkest, #380710) 100%);
-      color: var(--av-text-warm, #FFFBEB);
+      background: linear-gradient(90deg, #0F172A 0%, #18213A 50%, #0F172A 100%);
+      color: #FFFFFF;
       font-size: 12px;
       font-weight: 600;
       padding: 7px 16px;
@@ -815,7 +815,7 @@
       justify-content: center;
       align-items: center;
       gap: 12px;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.25);
     }
     .promo-badge {
       background: var(--av-gold-bright, #F5C45E);
@@ -1287,7 +1287,6 @@
     .dark-surface .btn-outline-secondary,
     .hero-banner .btn-outline-secondary,
     .cosmic-hero-banner .btn-outline-secondary,
-    .guidance-discovery-card .btn-outline-secondary,
     .main-navbar .btn-outline-secondary {
       background: rgba(255, 255, 255, 0.07) !important;
       color: #FAF7F0 !important;
@@ -1299,7 +1298,6 @@
     .dark-surface .btn-outline-secondary:hover,
     .hero-banner .btn-outline-secondary:hover,
     .cosmic-hero-banner .btn-outline-secondary:hover,
-    .guidance-discovery-card .btn-outline-secondary:hover,
     .main-navbar .btn-outline-secondary:hover {
       background: rgba(212, 175, 55, 0.12) !important;
       border-color: #D4AF37 !important;
@@ -1387,10 +1385,10 @@
     }
     .tier-sim-btn.active,
     .mob-sim-btn.active {
-      background: #4A0E17 !important;
+      background: #18213A !important;
       border-color: #D4AF37 !important;
       color: #FAF7F0 !important;
-      box-shadow: 0 2px 8px rgba(74, 14, 23, 0.35);
+      box-shadow: 0 2px 8px rgba(24, 33, 58, 0.35);
     }
 
     .chat-pill-action-btn {
@@ -1751,32 +1749,32 @@
       gap: 22px;
     }
     .astrologer-profile-card {
-      background: var(--av-maroon-gradient, linear-gradient(145deg, #4A0E17 0%, #6B1D2F 55%, #380710 100%));
-      border: 1px solid var(--av-border-subtle, rgba(212, 175, 55, 0.25));
+      background: #FFFFFF;
+      border: 1.5px solid var(--av-border, #D9DDE5);
       border-radius: var(--av-radius-card, 18px);
-      padding: 22px;
-      box-shadow: var(--av-shadow-card, 0 14px 36px rgba(12, 2, 7, 0.35));
+      padding: 24px;
+      box-shadow: var(--av-shadow-card, 0 8px 24px rgba(24, 33, 58, 0.08));
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      color: var(--av-text-light, #FFFFFF);
+      color: var(--av-text-primary, #20263A);
       position: relative;
       transition: transform 0.26s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.26s ease, border-color 0.26s ease;
     }
     .astrologer-profile-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 18px 42px rgba(12, 2, 7, 0.55), 0 0 22px rgba(212, 175, 55, 0.22);
-      border-color: var(--av-gold-bright, #F5C45E);
+      transform: translateY(-4px);
+      box-shadow: var(--av-shadow-elevated, 0 18px 44px rgba(24, 33, 58, 0.13));
+      border-color: var(--av-gold, #D4AF37);
     }
     .astro-portrait-wrap {
       width: 76px;
       height: 76px;
       border-radius: 50%;
       border: 2.5px solid var(--av-gold-primary, #D4AF37);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 14px rgba(212, 175, 55, 0.35);
+      box-shadow: 0 4px 14px rgba(24, 33, 58, 0.12), 0 0 12px rgba(212, 175, 55, 0.2);
       overflow: hidden;
       margin-bottom: 14px;
-      background: #140205;
+      background: #F8FAFC;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2095,26 +2093,27 @@
       border: 1px solid #E2E8F0;
       border-radius: 12px;
       padding: 18px 20px;
+      box-shadow: 0 4px 16px rgba(24, 33, 58, 0.04);
     }
     .guidance-section-box.supportive {
       border-left: 4px solid #10B981;
-      background: #F0FDF4;
+      background: #FFFFFF;
     }
     .guidance-section-box.cautions {
       border-left: 4px solid #EF4444;
-      background: #FEF2F2;
+      background: #FFFFFF;
     }
     .guidance-section-box.grounding-box {
       border-left: 4px solid var(--vedic-maroon);
-      background: #FFF1F2;
+      background: #FFFFFF;
     }
     .guidance-section-box.reflection {
       border-left: 4px solid #3B82F6;
-      background: #EFF6FF;
+      background: #FFFFFF;
     }
     .guidance-section-box.limitations {
       border-left: 4px solid #64748B;
-      background: #F8FAFC;
+      background: #FFFFFF;
     }
     .guidance-section-heading {
       display: flex;
@@ -2136,7 +2135,7 @@
     }
     .section-letter-tag.tag-supportive { background: #D1FAE5; color: #065F46; }
     .section-letter-tag.tag-caution { background: #FEE2E2; color: #991B1B; }
-    .section-letter-tag.tag-grounding { background: #FFE4E6; color: var(--vedic-maroon); }
+    .section-letter-tag.tag-grounding { background: rgba(24, 33, 58, 0.08); color: var(--vedic-maroon); }
     .section-letter-tag.tag-reflection { background: #DBEAFE; color: #1E40AF; }
     .section-letter-tag.tag-limitations { background: #E2E8F0; color: #475569; }
     .guidance-section-heading h4 {
@@ -2279,15 +2278,15 @@
     }
     .guidance-discovery-card:hover {
       transform: translateY(-4px);
-      box-shadow: 0 16px 36px rgba(12, 2, 7, 0.45), 0 0 18px rgba(212, 175, 55, 0.2);
-      border-color: var(--av-gold-bright, #F5C45E);
+      box-shadow: 0 16px 36px rgba(24, 33, 58, 0.12), 0 0 18px rgba(212, 175, 55, 0.2);
+      border-color: var(--av-gold, #D4AF37);
     }
     .guidance-discovery-img-wrap {
       width: 100%;
       height: 115px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #180307 0%, #380710 100%);
-      border: 1px solid rgba(212, 175, 55, 0.3);
+      background: linear-gradient(135deg, #0F172A 0%, #18213A 60%, #293452 100%);
+      border: 1px solid rgba(212, 175, 55, 0.35);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -3484,8 +3483,9 @@
       color: #B45309;
     }
     .chat-bubble-user {
-      background: linear-gradient(135deg, #7F1D1D 0%, #4C0519 100%);
+      background: linear-gradient(135deg, #18213A 0%, #293452 100%);
       color: #FFFFFF;
+      border: 1px solid rgba(212, 175, 55, 0.25);
       border-radius: 16px 16px 4px 16px;
       padding: 11px 16px;
       font-size: 13.5px;
@@ -3496,9 +3496,38 @@
       max-width: 85%;
       box-sizing: border-box;
       align-self: flex-end;
-      box-shadow: 0 2px 8px rgba(76, 5, 25, 0.25);
+      box-shadow: 0 2px 8px rgba(24, 33, 58, 0.25);
       word-break: normal;
       overflow-wrap: break-word;
+    }
+    .ai-lang-switch-group {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      border-radius: 9999px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .ai-lang-btn {
+      background: transparent;
+      border: none;
+      color: #CBD5E1;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      line-height: 1.2;
+    }
+    .ai-lang-btn:hover {
+      color: #FFFFFF;
+    }
+    .ai-lang-btn.active {
+      background: #D4AF37;
+      color: #0F172A;
+      box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3);
     }
     .chat-msg-meta {
       display: flex;
@@ -5274,7 +5303,7 @@
             <div style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.5px;">
               <i class="fa-solid fa-sun" style="color: #F59E0B;"></i> Today's Cosmic Rhythm
             </div>
-            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 19px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 2px 0 0;">
+            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 19px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 2px 0 0;">
               Daily Panchang &amp; Planetary Timing
             </h3>
           </div>
@@ -5285,26 +5314,26 @@
 
         <!-- 3 Metric Blocks -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 18px;">
-          <div style="background: rgba(56, 7, 16, 0.75); border: 1px solid rgba(212, 175, 55, 0.28); border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E); text-transform: uppercase;">Active Solar Hora</div>
-            <div style="font-size: 18px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 4px 0;" id="overview-daily-hora-name">Calculating...</div>
-            <div style="font-size: 11.5px; color: var(--av-text-subtle, #E2D9D2);" id="overview-daily-hora-action">Favorable for negotiations, study &amp; planning</div>
+          <div style="background: #18213A; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 12px; padding: 16px; box-shadow: 0 4px 16px rgba(24, 33, 58, 0.12);">
+            <div style="font-size: 11px; font-weight: 700; color: #F5C45E; text-transform: uppercase;">Active Solar Hora</div>
+            <div style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 4px 0;" id="overview-daily-hora-name">Calculating...</div>
+            <div style="font-size: 12px; color: #E2E7F0;" id="overview-daily-hora-action">Favorable for negotiations, study &amp; planning</div>
           </div>
-          <div style="background: rgba(56, 7, 16, 0.75); border: 1px solid rgba(212, 175, 55, 0.28); border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E); text-transform: uppercase;">Five Limbs of Time (Panchang)</div>
-            <div style="font-size: 14px; font-weight: 700; color: var(--av-text-light, #FFFFFF); margin: 4px 0;">Vara, Tithi, Nakshatra, Yoga, Karana</div>
-            <div style="font-size: 11.5px; color: var(--av-text-subtle, #E2D9D2);">Computed sidereally for your current coordinates</div>
+          <div style="background: #18213A; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 12px; padding: 16px; box-shadow: 0 4px 16px rgba(24, 33, 58, 0.12);">
+            <div style="font-size: 11px; font-weight: 700; color: #F5C45E; text-transform: uppercase;">Five Limbs of Time (Panchang)</div>
+            <div style="font-size: 14px; font-weight: 700; color: #FFFFFF; margin: 4px 0;">Vara, Tithi, Nakshatra, Yoga, Karana</div>
+            <div style="font-size: 12px; color: #E2E7F0;">Computed sidereally for your current coordinates</div>
           </div>
-          <div style="background: rgba(56, 7, 16, 0.75); border: 1px solid rgba(212, 175, 55, 0.28); border-radius: 12px; padding: 14px 16px;">
-            <div style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E); text-transform: uppercase;">Daily Gochar / Transits</div>
-            <div style="font-size: 14px; font-weight: 700; color: var(--av-text-light, #FFFFFF); margin: 4px 0;">Moon &amp; Planet Positions</div>
-            <div style="font-size: 11.5px; color: var(--av-text-subtle, #E2D9D2);">Real-time planetary longitude cross-correlations</div>
+          <div style="background: #18213A; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 12px; padding: 16px; box-shadow: 0 4px 16px rgba(24, 33, 58, 0.12);">
+            <div style="font-size: 11px; font-weight: 700; color: #F5C45E; text-transform: uppercase;">Daily Gochar / Transits</div>
+            <div style="font-size: 14px; font-weight: 700; color: #FFFFFF; margin: 4px 0;">Moon &amp; Planet Positions</div>
+            <div style="font-size: 12px; color: #E2E7F0;">Real-time planetary longitude cross-correlations</div>
           </div>
         </div>
 
         <!-- 12 Signs Quick Horoscope Picker -->
         <div>
-          <div style="font-size: 12px; font-weight: 700; color: var(--av-text-warm, #FFFBEB); margin-bottom: 8px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--av-text-primary, #20263A); margin-bottom: 8px;">
             <i class="fa-solid fa-star-and-crescent" style="color: #F59E0B;"></i> Explore Today's Rashi Horoscope:
           </div>
           <div class="rashi-quick-pills-row">
@@ -5331,11 +5360,11 @@
             <div style="font-size: 11px; font-weight: 800; color: #D97706; text-transform: uppercase; letter-spacing: 0.5px;">
               <i class="fa-solid fa-compass" style="color: #F59E0B;"></i> Complete Vedic Astrology Suite
             </div>
-            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 22px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 2px 0 0;">
+            <h3 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 22px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 2px 0 0;">
               Astrological Services &amp; Research Tools
             </h3>
           </div>
-          <span style="font-size: 12px; color: var(--av-text-subtle, #E2D9D2); font-weight: 600;">8 Core Vedic Disciplines • Swiss Ephemeris Precision</span>
+          <span style="font-size: 12px; color: var(--av-text-secondary, #566074); font-weight: 600;">8 Core Vedic Disciplines • Swiss Ephemeris Precision</span>
         </div>
       </div>
 
@@ -6231,7 +6260,28 @@
 
         <!-- Horizon Switcher: Hourly | Weekly | Monthly | Yearly -->
         <!-- Grounding Bar: Authoritative Profile Grounding Bar (Phase 1) -->
-        <div id="guidance-active-profile-bar" class="guidance-active-profile-bar" style="margin-bottom: 14px;"></div>
+        <div id="guidance-active-profile-bar" class="guidance-active-profile-bar" style="margin-bottom: 14px;">
+          <div class="guidance-profile-bar-inner no-profile-bar" style="background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px; color: #64748B;"><i class="fa-solid fa-circle-question"></i></span>
+              <div>
+                <div style="font-size: 13px; font-weight: 800; color: #1E1B4B;">No birth chart selected</div>
+                <div style="font-size: 12px; color: #64748B;">Enter birth details for 100% chart-grounded Parashari analysis, or select a saved profile.</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <button type="button" class="btn-gold-primary" style="padding: 7px 14px; font-size: 12px; min-height: 36px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+                <i class="fa-solid fa-sparkles"></i> Enter My Birth Details
+              </button>
+              <select id="guidance-bar-profile-select" class="form-input-text" style="width: auto; padding: 7px 12px; font-size: 12px; font-weight: 700; background: #FFFFFF; color: #1E1B4B; min-height: 36px;" onchange="handleGuidanceProfileSelect(this.value)">
+                <option value="">Choose Saved Profile...</option>
+              </select>
+              <button type="button" class="btn-outline-secondary" style="padding: 7px 12px; font-size: 12px; min-height: 36px; background: #FFFFFF;" onclick="enterGeneralTransitPreview('hourly')">
+                <i class="fa-solid fa-compass"></i> Explore General Transit Preview
+              </button>
+            </div>
+          </div>
+        </div>
 
         <!-- Horizon Switcher: Hourly | Weekly | Monthly | Yearly -->
         <div class="horizon-switcher-row">
@@ -6336,8 +6386,8 @@
                   <span style="font-size: 11px; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">Real-Time Astronomical</span>
                   <span style="font-size: 11px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Free Preview</span>
                 </div>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Hourly (Hora) Guidance</h4>
-                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">Hourly (Hora) Guidance</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-secondary, #566074); line-height: 1.5; margin: 0 0 12px;">
                   Chaldean planetary hour sequence mapping auspicious time windows for meetings, negotiations, and intellectual focus.
                 </p>
               </div>
@@ -6356,8 +6406,8 @@
                   <span style="font-size: 11px; font-weight: 800; color: #D97706; background: #FEF3C7; padding: 2px 8px; border-radius: 6px;">Diurnal Cycles</span>
                   <span style="font-size: 11px; font-weight: 700; color: #059669;"><i class="fa-solid fa-circle-check"></i> Free Preview</span>
                 </div>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Daily Forecast</h4>
-                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">Daily Forecast</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-secondary, #566074); line-height: 1.5; margin: 0 0 12px;">
                   Three diurnal phases (Morning, Midday Abhijit Muhurta, Evening) synthesized with solar and lunar transit energy.
                 </p>
               </div>
@@ -6373,11 +6423,11 @@
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #93C5FD; background: rgba(37, 99, 235, 0.2); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">7-Day Cycle</span>
-                  <span style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E);"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #1E40AF; background: #DBEAFE; padding: 2px 8px; border-radius: 6px; border: 1px solid #BFDBFE;">7-Day Cycle</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #B45309;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
                 </div>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Weekly (7 Days) Forecast</h4>
-                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">Weekly (7 Days) Forecast</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-secondary, #566074); line-height: 1.5; margin: 0 0 12px;">
                   Day-by-day transit map tracing transiting Moon across zodiacal houses, auspicious windows, and weekday planetary rulers.
                 </p>
               </div>
@@ -6393,11 +6443,11 @@
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #93C5FD; background: rgba(37, 99, 235, 0.2); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">4-Week Progression</span>
-                  <span style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E);"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #1E40AF; background: #DBEAFE; padding: 2px 8px; border-radius: 6px; border: 1px solid #BFDBFE;">4-Week Progression</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #B45309;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
                 </div>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Monthly (4 Weeks) Analysis</h4>
-                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">Monthly (4 Weeks) Analysis</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-secondary, #566074); line-height: 1.5; margin: 0 0 12px;">
                   Strategic 4-week progression mapping foundational inception, execution momentum, financial consolidation, and monthly review.
                 </p>
               </div>
@@ -6413,11 +6463,11 @@
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #A7F3D0; background: rgba(16, 185, 129, 0.2); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">12 Months + 4 Quarters</span>
-                  <span style="font-size: 11px; font-weight: 700; color: var(--av-gold-bright, #F5C45E);"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #047857; background: #D1FAE5; padding: 2px 8px; border-radius: 6px; border: 1px solid #A7F3D0;">12 Months + 4 Quarters</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #B45309;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
                 </div>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Yearly (12 Months) Outlook</h4>
-                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">Yearly (12 Months) Outlook</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-secondary, #566074); line-height: 1.5; margin: 0 0 12px;">
                   Comprehensive 12-month timeline detailing major planetary stations, Jupiter/Saturn ingress, and seasonal strategic quarters.
                 </p>
               </div>
@@ -6433,11 +6483,11 @@
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #FCA5A5; background: rgba(239, 68, 68, 0.2); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3);">100% Natal Grounded</span>
-                  <span style="font-size: 11px; font-weight: 700; color: #FEF08A;"><i class="fa-solid fa-certificate"></i> Chart Required</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #B91C1C; background: #FEE2E2; padding: 2px 8px; border-radius: 6px; border: 1px solid #FECACA;">100% Natal Grounded</span>
+                  <span style="font-size: 11px; font-weight: 700; color: #B45309;"><i class="fa-solid fa-certificate"></i> Chart Required</span>
                 </div>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin: 0 0 6px;">Mahadasha (5-Yr Arc)</h4>
-                <p style="font-size: 12.5px; color: var(--av-text-subtle, #E2D9D2); line-height: 1.5; margin: 0 0 12px;">
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">Mahadasha (5-Yr Arc)</h4>
+                <p style="font-size: 12.5px; color: var(--av-text-secondary, #566074); line-height: 1.5; margin: 0 0 12px;">
                   Vimshottari dasha arc derived from your natal Moon nakshatra. Tracks the active planetary era, antardasha shifts, and remedial mantras.
                 </p>
               </div>
@@ -6763,24 +6813,24 @@
         <!-- Astrologer 1 -->
         <div class="astrologer-profile-card av-card-3d">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(37, 99, 235, 0.2); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.35);">
+            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
               <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
             </span>
-            <span style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700;"><i class="fa-solid fa-scroll"></i> Parashari Model</span>
+            <span style="font-size: 11px; color: #B45309; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Parashari Model</span>
           </div>
           <div>
             <div class="astro-portrait-wrap">
               <img src="assets/illustrations/persona-devratan.svg" alt="Acharya Devratan - Parashari AI Astrologer" class="astro-portrait-img" loading="lazy" />
             </div>
-            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin-bottom: 4px;">Acharya Devratan (AI Persona)</h4>
-            <div style="font-size: 12.5px; color: var(--av-text-warm, #FFFBEB); margin-bottom: 4px;">Brihat Parashara Hora &amp; Career Architecture</div>
-            <div style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700; margin-top: 4px;">Languages: English, Hindi &bull; Brihat Parashara System</div>
-            <div style="font-size: 11px; color: var(--av-text-subtle, #E2D9D2); margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #60A5FA;"></i> Swiss Ephemeris &amp; D1/D9 Grounded
+            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-primary, #20263A); margin-bottom: 4px;">Acharya Devratan (AI Persona)</h4>
+            <div style="font-size: 12.5px; color: var(--av-text-secondary, #566074); margin-bottom: 4px;">Brihat Parashara Hora &amp; Career Architecture</div>
+            <div style="font-size: 11px; color: #92400E; font-weight: 700; margin-top: 4px;">Languages: English, Hindi &bull; Brihat Parashara System</div>
+            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
+              <i class="fa-solid fa-calculator" style="color: #2563EB;"></i> Swiss Ephemeris &amp; D1/D9 Grounded
             </div>
           </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(212, 175, 55, 0.2); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 12.5px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="font-size: 12.5px; font-weight: 700; color: #047857;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
               <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Acharya Devratan', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
@@ -6792,24 +6842,24 @@
         <!-- Astrologer 2 -->
         <div class="astrologer-profile-card av-card-3d">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(37, 99, 235, 0.2); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.35);">
+            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
               <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
             </span>
-            <span style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700;"><i class="fa-solid fa-scroll"></i> Jaimini Model</span>
+            <span style="font-size: 11px; color: #B45309; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Jaimini Model</span>
           </div>
           <div>
             <div class="astro-portrait-wrap">
               <img src="assets/illustrations/persona-sunita.svg" alt="Dr. Sunita Shastri - Jaimini AI Astrologer" class="astro-portrait-img" loading="lazy" />
             </div>
-            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin-bottom: 4px;">Dr. Sunita Shastri (AI Persona)</h4>
-            <div style="font-size: 12.5px; color: var(--av-text-warm, #FFFBEB); margin-bottom: 4px;">Jaimini Chara Karakas, Relationship &amp; D9 Synastry</div>
-            <div style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700; margin-top: 4px;">Languages: Hindi, Sanskrit, English &bull; Upadesha Sutras</div>
-            <div style="font-size: 11px; color: var(--av-text-subtle, #E2D9D2); margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #60A5FA;"></i> Chara Dasha &amp; Darakaraka Grounded
+            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-primary, #20263A); margin-bottom: 4px;">Dr. Sunita Shastri (AI Persona)</h4>
+            <div style="font-size: 12.5px; color: var(--av-text-secondary, #566074); margin-bottom: 4px;">Jaimini Chara Karakas, Relationship &amp; D9 Synastry</div>
+            <div style="font-size: 11px; color: #92400E; font-weight: 700; margin-top: 4px;">Languages: Hindi, Sanskrit, English &bull; Upadesha Sutras</div>
+            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
+              <i class="fa-solid fa-calculator" style="color: #2563EB;"></i> Chara Dasha &amp; Darakaraka Grounded
             </div>
           </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(212, 175, 55, 0.2); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 12.5px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="font-size: 12.5px; font-weight: 700; color: #047857;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
               <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Dr. Sunita Shastri', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
@@ -6821,24 +6871,24 @@
         <!-- Astrologer 3 -->
         <div class="astrologer-profile-card av-card-3d">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(37, 99, 235, 0.2); color: #93C5FD; border: 1px solid rgba(59, 130, 246, 0.35);">
+            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
               <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
             </span>
-            <span style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700;"><i class="fa-solid fa-scroll"></i> Classical Yogas</span>
+            <span style="font-size: 11px; color: #B45309; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Classical Yogas</span>
           </div>
           <div>
             <div class="astro-portrait-wrap">
               <img src="assets/illustrations/persona-raghavendra.svg" alt="Pandit Raghavendra - Classical Yogas AI Astrologer" class="astro-portrait-img" loading="lazy" />
             </div>
-            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-light, #FFFFFF); margin-bottom: 4px;">Pandit Raghavendra (AI Persona)</h4>
-            <div style="font-size: 12.5px; color: var(--av-text-warm, #FFFBEB); margin-bottom: 4px;">Classical Yogas, Wealth, Arudha &amp; Remedial Jyotish</div>
-            <div style="font-size: 11px; color: var(--av-gold-bright, #F5C45E); font-weight: 700; margin-top: 4px;">Languages: English, Hindi, Telugu &bull; Hora &amp; Shadbala System</div>
-            <div style="font-size: 11px; color: var(--av-text-subtle, #E2D9D2); margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #60A5FA;"></i> Planetary Dignity &amp; Transit Grounded
+            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-primary, #20263A); margin-bottom: 4px;">Pandit Raghavendra (AI Persona)</h4>
+            <div style="font-size: 12.5px; color: var(--av-text-secondary, #566074); margin-bottom: 4px;">Classical Yogas, Wealth, Arudha &amp; Remedial Jyotish</div>
+            <div style="font-size: 11px; color: #92400E; font-weight: 700; margin-top: 4px;">Languages: English, Hindi, Telugu &bull; Hora &amp; Shadbala System</div>
+            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
+              <i class="fa-solid fa-calculator" style="color: #2563EB;"></i> Planetary Dignity &amp; Transit Grounded
             </div>
           </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(212, 175, 55, 0.2); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 12.5px; font-weight: 700; color: #34D399;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
+          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+            <div style="font-size: 12.5px; font-weight: 700; color: #047857;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
             <div style="display: flex; gap: 6px;">
               <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Pandit Raghavendra', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
@@ -9092,9 +9142,9 @@
     <div class="modal-dialog-card" style="max-width: 820px; width: 95%; height: 86vh; max-height: 850px; display: flex; flex-direction: column; padding: 0; overflow: hidden; border-radius: 18px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1);">
 
       <!-- Header -->
-      <div style="background: linear-gradient(135deg, #4C0519 0%, #1E1B4B 100%); color: #FFFFFF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(245, 158, 11, 0.2);">
+      <div style="background: linear-gradient(135deg, #0F172A 0%, #18213A 60%, #293452 100%); color: #FFFFFF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(212, 175, 55, 0.25);">
         <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 44px; height: 44px; font-size: 19px; margin: 0; border: 2px solid #F59E0B; flex-shrink: 0; padding: 0; overflow: hidden; background: #380710;">
+          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 44px; height: 44px; font-size: 19px; margin: 0; border: 2px solid #D4AF37; flex-shrink: 0; padding: 0; overflow: hidden; background: #18213A;">
             <img src="assets/illustrations/persona-devratan.svg" alt="Acharya Devratan" class="ai-chat-avatar-img" />
           </div>
           <div style="min-width: 0;">
@@ -9110,6 +9160,12 @@
 
         <!-- Session Controls -->
         <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <!-- Bilingual Response Language Switcher (English | हिंदी) -->
+          <div class="ai-lang-switch-group" role="radiogroup" aria-label="AI Consultation Response Language">
+            <button type="button" class="ai-lang-btn active" id="btn-chat-lang-en" onclick="setChatResponseLanguage('en')" role="radio" aria-checked="true" title="Switch response language to English">English</button>
+            <button type="button" class="ai-lang-btn" id="btn-chat-lang-hi" onclick="setChatResponseLanguage('hi')" role="radio" aria-checked="false" title="प्रतिक्रिया भाषा हिंदी में बदलें">हिंदी</button>
+          </div>
+
           <!-- Audio Toggle -->
           <button id="ai-chat-sound-toggle" class="chat-header-icon-btn" aria-pressed="false" title="Toggle audio notification chime" onclick="toggleChatAudio()">
             <span id="ai-chat-sound-icon">🔇</span>
@@ -9217,6 +9273,8 @@
   <script>
     // 1. GLOBAL STATE & SESSION (Section 10: Guest default with ₹0.00 balance)
     window.RAZORPAY_KEY_ID = "rzp_test_Tt5BwadyapFq9T";
+    var currentLanguage = (typeof localStorage !== 'undefined' && localStorage.getItem('astroverse_lang')) || 'en';
+    window.currentLanguage = currentLanguage;
     let currentUserSession = JSON.parse(localStorage.getItem('astro_user_session') || 'null');
     let currentWalletBalance = parseFloat(localStorage.getItem('astro_wallet_bal') || '0.00');
     let currentDemoWalletBalance = parseFloat(localStorage.getItem('astro_demo_wallet_bal') || '0.00');
@@ -12730,6 +12788,48 @@
     let activeConsultationSession = null;
     let consultationTimerInterval = null;
     let chatAudioContext = null;
+    let activeChatLanguage = (typeof localStorage !== 'undefined' && localStorage.getItem('astro_chat_response_lang')) || (typeof currentLanguage !== 'undefined' ? currentLanguage : 'en');
+
+    function setChatResponseLanguage(lang) {
+      activeChatLanguage = (lang === 'hi') ? 'hi' : 'en';
+      try {
+        localStorage.setItem('astro_chat_response_lang', activeChatLanguage);
+      } catch (e) {}
+      updateChatLanguageUI();
+    }
+
+    function updateChatLanguageUI() {
+      const isHi = activeChatLanguage === 'hi';
+      const btnEn = document.getElementById('btn-chat-lang-en');
+      const btnHi = document.getElementById('btn-chat-lang-hi');
+      if (btnEn && btnHi) {
+        if (isHi) {
+          btnEn.classList.remove('active');
+          btnEn.setAttribute('aria-checked', 'false');
+          btnHi.classList.add('active');
+          btnHi.setAttribute('aria-checked', 'true');
+        } else {
+          btnHi.classList.remove('active');
+          btnHi.setAttribute('aria-checked', 'false');
+          btnEn.classList.add('active');
+          btnEn.setAttribute('aria-checked', 'true');
+        }
+      }
+
+      const input = document.getElementById('ai-chat-user-input');
+      if (input) {
+        input.placeholder = isHi 
+          ? "अपने जीवन, करियर, विवाह, उपायों से संबंधित कोई भी प्रश्न पूछें..." 
+          : "Ask anything about your life, career, marriage, remedies...";
+      }
+
+      const composerBtn = document.querySelector('#ai-chat-composer button');
+      if (composerBtn) {
+        composerBtn.innerHTML = isHi 
+          ? '<i class="fa-solid fa-paper-plane"></i> भेजें' 
+          : '<i class="fa-solid fa-paper-plane"></i> Send';
+      }
+    }
 
     // Web Audio API Synthesizer (Dependency-Free, Resilient, Accessible)
     function getChatAudioContext() {
@@ -13326,7 +13426,7 @@
 
     function renderInitialGreetingForPersona(astroName, personaId) {
       const d = currentCalculatedChart;
-      const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
+      const isHi = (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi') || (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi');
       let welcomeText = '';
       let initialChips = [];
 
@@ -13464,9 +13564,10 @@
       // Grounded Chart Pill & Context
       updateChatContextBar();
 
-      // Initialize Sound UI
+      // Initialize Sound & Language UI
       initChatAudioPreference();
       setupChatScrollListener();
+      updateChatLanguageUI();
 
       // Clear container and restore historical messages or initial greeting
       const msgBox = document.getElementById('ai-chat-messages-container');
@@ -13543,7 +13644,7 @@
       const q = (userQuery || '').toLowerCase();
       const hasChart = !!chart;
       const astro = (astroName || '').toLowerCase();
-      const isHi = (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi') || /[\u0900-\u097F]/.test(userQuery || '');
+      const isHi = (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi') || (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi') || /[\u0900-\u097F]/.test(userQuery || '');
 
       // Determine persona
       const isSunita = astro.includes('sunita');
@@ -14879,7 +14980,7 @@
           timezone: hasLinkedChart ? (currentCalculatedChart?.timezone || "Asia/Kolkata") : "Asia/Kolkata",
           astrologer_name: astro,
           session_history: historyPayload,
-          lang: (typeof currentLanguage !== 'undefined' && currentLanguage) ? currentLanguage : 'en'
+          lang: (typeof activeChatLanguage !== 'undefined' && activeChatLanguage) ? activeChatLanguage : ((typeof currentLanguage !== 'undefined' && currentLanguage) ? currentLanguage : 'en')
         };
 
         const controller = new AbortController();
@@ -15321,10 +15422,10 @@
       updateDemoWalletDisplay();
       renderSavedProfilesList();
       selectHoroscopeSign('Aries');
-      await loadHourlyHorasUI();
       if (typeof initGuidanceSuite === 'function') {
         initGuidanceSuite();
       }
+      await loadHourlyHorasUI();
       initLuxuryGSAP();
       init3DCardInteractions();
       if (currentUserSession && currentSessionToken) {
@@ -20218,7 +20319,7 @@
       const bubble = wrap.querySelector('.chat-bubble-agent');
       if (!bubble) return;
       const text = bubble.innerText;
-      const isHi = /[\u0900-\u097F]/.test(text) || (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi');
+      const isHi = /[\u0900-\u097F]/.test(text) || (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi') || (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi');
       AstroVerseVoiceEngine.speakText(text, btnEl, isHi ? 'hi' : 'en');
     }
 
@@ -20234,7 +20335,7 @@
     // ==============================================================================
     // SITE-WIDE LOCALIZATION & INTERNATIONALIZATION (ENGLISH & HINDI)
     // ==============================================================================
-    let currentLanguage = localStorage.getItem('astroverse_lang') || 'en';
+    currentLanguage = localStorage.getItem('astroverse_lang') || 'en';
 
     const ASTROVERSE_I18N = {
       en: {
@@ -20314,6 +20415,10 @@
       }
       currentLanguage = lang;
       localStorage.setItem('astroverse_lang', lang);
+      if (!localStorage.getItem('astro_chat_response_lang')) {
+        activeChatLanguage = lang;
+        if (typeof updateChatLanguageUI === 'function') updateChatLanguageUI();
+      }
       const dict = ASTROVERSE_I18N[lang] || ASTROVERSE_I18N.en;
 
       // Update Header Toggle Button Label
