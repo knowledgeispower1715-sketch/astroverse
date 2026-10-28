@@ -77,6 +77,45 @@
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(typeof initGoogleAuth==='function')initGoogleAuth();"></script>
   <!-- Razorpay Checkout SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <!-- Firebase App & Analytics SDK (v11 Modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAnalytics, isSupported, logEvent } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBd0EFdhLD3AAGsmBwGf12EGOI2lkAgW80",
+      authDomain: "astroverse-c0b90.firebaseapp.com",
+      projectId: "astroverse-c0b90",
+      storageBucket: "astroverse-c0b90.firebasestorage.app",
+      messagingSenderId: "719758726336",
+      appId: "1:719758726336:web:1e9ed188ed9651562e4925",
+      measurementId: "G-C2JVGQ8GH2"
+    };
+
+    try {
+      const app = initializeApp(firebaseConfig);
+      window.firebaseApp = app;
+      isSupported().then((supported) => {
+        if (supported) {
+          const analytics = getAnalytics(app);
+          window.firebaseAnalytics = analytics;
+          window.logAstroverseEvent = (eventName, params = {}) => {
+            try {
+              if (window.firebaseAnalytics) logEvent(window.firebaseAnalytics, eventName, params);
+            } catch (_) {}
+          };
+          window.logAstroverseEvent('page_view', { page_title: document.title, page_location: window.location.href });
+        } else {
+          window.logAstroverseEvent = () => {};
+        }
+      }).catch(() => {
+        window.logAstroverseEvent = () => {};
+      });
+    } catch (e) {
+      console.warn("Firebase initialization deferred:", e);
+      window.logAstroverseEvent = () => {};
+    }
+  </script>
 
   <style>
     :root {
@@ -9847,7 +9886,10 @@
         return 'http://localhost:5000';
       }
 
-      // 4. Production web origin (same-origin relative /api routes)
+      // 4. Production web origin (same-origin relative /api routes on Vercel, or Vercel backend if hosted on Firebase)
+      if (window.location.hostname.includes('firebaseapp.com') || window.location.hostname.includes('web.app')) {
+        return 'https://astroverse-eta.vercel.app';
+      }
       return '';
     }
 
