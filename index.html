@@ -1810,36 +1810,175 @@
       border-radius: var(--radius-full);
     }
 
-    /* Astrologer Directory */
+    /* Astrologer Directory & Showcase Grid */
+    .astrologers-directory-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+    }
     .astrologers-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 22px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      align-items: stretch;
+      width: 100%;
+    }
+    @media (max-width: 1080px) {
+      .astrologers-grid {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+        gap: 22px;
+      }
+    }
+    @media (max-width: 768px) {
+      .astrologers-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
     }
     .astrologer-profile-card {
       background: #FFFFFF;
-      border: 1.5px solid var(--av-border, #D9DDE5);
-      border-radius: var(--av-radius-card, 18px);
-      padding: 24px;
-      box-shadow: var(--av-shadow-card, 0 8px 24px rgba(24, 33, 58, 0.08));
+      border: 1.5px solid var(--av-border, #E2E8F0);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: 0 4px 20px rgba(24, 33, 58, 0.06);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       color: var(--av-text-primary, #20263A);
       position: relative;
-      transition: transform 0.26s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.26s ease, border-color 0.26s ease;
+      transition: transform 0.28s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+      overflow: hidden;
     }
     .astrologer-profile-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--av-shadow-elevated, 0 18px 44px rgba(24, 33, 58, 0.13));
+      transform: translateY(-5px);
+      box-shadow: 0 16px 40px rgba(24, 33, 58, 0.12);
       border-color: var(--av-gold, #D4AF37);
     }
+    .astrologer-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .astrologer-card-portrait {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      background: #F0EEE8;
+      border-radius: 14px;
+      border: 1px solid rgba(24, 33, 58, 0.08);
+      box-shadow: inset 0 0 1px rgba(0, 0, 0, 0.1);
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .astrologer-card-portrait img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 22%;
+      transition: transform 0.4s ease;
+    }
+    .astrologer-profile-card:hover .astrologer-card-portrait img {
+      transform: scale(1.03);
+    }
+    .astrologer-card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .astrologer-card-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .astrologer-card-name {
+      font-family: var(--av-font-display, 'Cinzel', serif);
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--av-text-primary, #18213A);
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+    .astrologer-card-tag {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #1E40AF;
+      background: rgba(30, 64, 175, 0.08);
+      border: 1px solid rgba(30, 64, 175, 0.2);
+      border-radius: 6px;
+      padding: 2px 7px;
+      white-space: nowrap;
+    }
+    .astrologer-card-specialty {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--av-text-secondary, #566074);
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .astrologer-card-description {
+      font-size: 12.5px;
+      color: #475569;
+      line-height: 1.55;
+      margin-bottom: 14px;
+      flex: 1;
+    }
+    .astrologer-card-metadata {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+      font-size: 11.5px;
+    }
+    .astrologer-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #334155;
+    }
+    .astrologer-card-footer {
+      padding-top: 14px;
+      border-top: 1px solid #E2E8F0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .astrologer-card-allowance {
+      font-size: 12px;
+      font-weight: 700;
+      color: #047857;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .astrologer-card-cta {
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 10px;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    /* Legacy / Puja Grid */
+    .pujas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+      gap: 22px;
+    }
     .astro-portrait-wrap {
-      width: 76px;
-      height: 76px;
-      border-radius: 50%;
-      border: 2.5px solid var(--av-gold-primary, #D4AF37);
-      box-shadow: 0 4px 14px rgba(24, 33, 58, 0.12), 0 0 12px rgba(212, 175, 55, 0.2);
+      width: 100%;
+      aspect-ratio: 4 / 3;
       overflow: hidden;
       margin-bottom: 14px;
       background: #F8FAFC;
@@ -1847,17 +1986,19 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      border-radius: 14px;
     }
     .astro-portrait-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: center 22%;
     }
     .ai-chat-avatar-img {
       width: 100%;
       height: 100%;
-      border-radius: 50%;
       object-fit: cover;
+      object-position: center 20%;
     }
     .astro-avatar-wrap {
       width: 60px;
@@ -6870,93 +7011,143 @@
 
     <!-- ==================== TAB 3: VERIFIED ASTROLOGERS ==================== -->
     <section id="view-astrologers" class="page-tab-view">
-      <div class="section-title-wrap">
-        <h2><i class="fa-solid fa-brain" style="color: var(--vedic-maroon);"></i> Consult Vedic AI Astrologer Personas</h2>
-        <p>Interactive 1-on-1 consultations powered by classical Parashari, Jaimini, and Swiss Ephemeris mathematical calculation engines. Receive real-time grounded guidance on career, marriage, remedies, and wealth.</p>
-      </div>
+      <div class="astrologers-directory-container">
+        <div class="section-title-wrap">
+          <h2><i class="fa-solid fa-brain" style="color: var(--vedic-maroon);"></i> Consult Vedic AI Astrologer Personas</h2>
+          <p>Interactive 1-on-1 consultations powered by classical Parashari, Jaimini, and Swiss Ephemeris mathematical calculation engines. Receive real-time grounded guidance on career, marriage, remedies, and wealth.</p>
+        </div>
 
-      <div class="astrologers-grid">
-        <!-- Astrologer 1 -->
-        <div class="astrologer-profile-card av-card-3d">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
-              <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
-            </span>
-            <span style="font-size: 11px; color: #B45309; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Parashari Model</span>
-          </div>
-          <div>
-            <div class="astro-portrait-wrap">
-              <img src="assets/illustrations/persona-devratan.svg" alt="Acharya Devratan - Parashari AI Astrologer" class="astro-portrait-img" loading="lazy" />
+        <div class="astrologers-grid">
+          <!-- Astrologer 1: Acharya Devratan -->
+          <div class="astrologer-profile-card av-card-3d" data-persona="acharya-devratan">
+            <div class="astrologer-card-header">
+              <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
+                <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
+              </span>
+              <span style="font-size: 11px; color: #B45309; font-weight: 700;">
+                <i class="fa-solid fa-scroll"></i> Parashari Model
+              </span>
             </div>
-            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-primary, #20263A); margin-bottom: 4px;">Acharya Devratan (AI Persona)</h4>
-            <div style="font-size: 12.5px; color: var(--av-text-secondary, #566074); margin-bottom: 4px;">Brihat Parashara Hora &amp; Career Architecture</div>
-            <div style="font-size: 11px; color: #92400E; font-weight: 700; margin-top: 4px;">Languages: English, Hindi &bull; Brihat Parashara System</div>
-            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #2563EB;"></i> Swiss Ephemeris &amp; D1/D9 Grounded
+            <div class="astrologer-card-portrait">
+              <img src="assets/astrologers/acharya-devratan.webp" alt="Portrait of the fictional AI persona Acharya Devratan" class="astrologer-card-portrait-img" loading="lazy" onerror="this.onerror=null;this.src='assets/illustrations/persona-devratan.svg';" />
             </div>
-          </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 12.5px; font-weight: 700; color: #047857;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
-            <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Acharya Devratan', 0)">
+
+            <div class="astrologer-card-body">
+              <div class="astrologer-card-title-row">
+                <h3 class="astrologer-card-name">Acharya Devratan</h3>
+                <span class="astrologer-card-tag">AI Astrologer</span>
+              </div>
+              <div class="astrologer-card-specialty">Brihat Parashara Hora &amp; Career Architecture</div>
+              <p class="astrologer-card-description">
+                Specializes in classical Parashari Jyotish, career architecture, D1/D9 divisional analysis, and strategic life decisions grounded in authentic Swiss Ephemeris calculations.
+              </p>
+              <div class="astrologer-card-metadata">
+                <div class="astrologer-meta-item">
+                  <i class="fa-solid fa-language" style="color: #D4AF37;"></i>
+                  <span>Languages: <strong>English, Hindi</strong> &bull; Brihat Parashara System</span>
+                </div>
+                <div class="astrologer-meta-item">
+                  <i class="fa-solid fa-calculator" style="color: #2563EB;"></i>
+                  <span>Swiss Ephemeris &amp; D1/D9 Grounded</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="astrologer-card-footer">
+              <div class="astrologer-card-allowance">
+                <i class="fa-solid fa-circle-check"></i> Daily Allowance Included
+              </div>
+              <button class="btn-gold-primary astrologer-card-cta" onclick="startConsultationSession('Acharya Devratan', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
           </div>
-        </div>
 
-        <!-- Astrologer 2 -->
-        <div class="astrologer-profile-card av-card-3d">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
-              <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
-            </span>
-            <span style="font-size: 11px; color: #B45309; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Jaimini Model</span>
-          </div>
-          <div>
-            <div class="astro-portrait-wrap">
-              <img src="assets/illustrations/persona-sunita.svg" alt="Dr. Sunita Shastri - Jaimini AI Astrologer" class="astro-portrait-img" loading="lazy" />
+          <!-- Astrologer 2: Dr. Sunita Shastri -->
+          <div class="astrologer-profile-card av-card-3d" data-persona="dr-sunita-shastri">
+            <div class="astrologer-card-header">
+              <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
+                <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
+              </span>
+              <span style="font-size: 11px; color: #B45309; font-weight: 700;">
+                <i class="fa-solid fa-scroll"></i> Jaimini Model
+              </span>
             </div>
-            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-primary, #20263A); margin-bottom: 4px;">Dr. Sunita Shastri (AI Persona)</h4>
-            <div style="font-size: 12.5px; color: var(--av-text-secondary, #566074); margin-bottom: 4px;">Jaimini Chara Karakas, Relationship &amp; D9 Synastry</div>
-            <div style="font-size: 11px; color: #92400E; font-weight: 700; margin-top: 4px;">Languages: Hindi, Sanskrit, English &bull; Upadesha Sutras</div>
-            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #2563EB;"></i> Chara Dasha &amp; Darakaraka Grounded
+            <div class="astrologer-card-portrait">
+              <img src="assets/astrologers/dr-sunita-shastri.webp" alt="Portrait of the fictional AI persona Dr. Sunita Shastri" class="astrologer-card-portrait-img" loading="lazy" onerror="this.onerror=null;this.src='assets/illustrations/persona-sunita.svg';" />
             </div>
-          </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 12.5px; font-weight: 700; color: #047857;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
-            <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Dr. Sunita Shastri', 0)">
+
+            <div class="astrologer-card-body">
+              <div class="astrologer-card-title-row">
+                <h3 class="astrologer-card-name">Dr. Sunita Shastri</h3>
+                <span class="astrologer-card-tag">AI Astrologer</span>
+              </div>
+              <div class="astrologer-card-specialty">Jaimini Chara Karakas, Relationship &amp; D9 Synastry</div>
+              <p class="astrologer-card-description">
+                Specializes in Jaimini Upadesha Sutras, Chara Dasha timing, 7th house relationship synastry, and D9 Navamsha chart harmony with mindful, empathetic guidance.
+              </p>
+              <div class="astrologer-card-metadata">
+                <div class="astrologer-meta-item">
+                  <i class="fa-solid fa-language" style="color: #D4AF37;"></i>
+                  <span>Languages: <strong>Hindi, Sanskrit, English</strong> &bull; Upadesha Sutras</span>
+                </div>
+                <div class="astrologer-meta-item">
+                  <i class="fa-solid fa-calculator" style="color: #2563EB;"></i>
+                  <span>Chara Dasha &amp; Darakaraka Grounded</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="astrologer-card-footer">
+              <div class="astrologer-card-allowance">
+                <i class="fa-solid fa-circle-check"></i> Daily Allowance Included
+              </div>
+              <button class="btn-gold-primary astrologer-card-cta" onclick="startConsultationSession('Dr. Sunita Shastri', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
           </div>
-        </div>
 
-        <!-- Astrologer 3 -->
-        <div class="astrologer-profile-card av-card-3d">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
-              <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
-            </span>
-            <span style="font-size: 11px; color: #B45309; font-weight: 700;"><i class="fa-solid fa-scroll"></i> Classical Yogas</span>
-          </div>
-          <div>
-            <div class="astro-portrait-wrap">
-              <img src="assets/illustrations/persona-raghavendra.svg" alt="Pandit Raghavendra - Classical Yogas AI Astrologer" class="astro-portrait-img" loading="lazy" />
+          <!-- Astrologer 3: Pandit Raghavendra -->
+          <div class="astrologer-profile-card av-card-3d" data-persona="pandit-raghavendra">
+            <div class="astrologer-card-header">
+              <span class="badge-grounded" style="font-size: 10px; display: inline-flex; align-items: center; background: rgba(30, 64, 175, 0.1); color: #1E40AF; border: 1px solid rgba(30, 64, 175, 0.25);">
+                <i class="fa-solid fa-microchip" style="margin-right: 4px;"></i> AI PERSONA
+              </span>
+              <span style="font-size: 11px; color: #B45309; font-weight: 700;">
+                <i class="fa-solid fa-scroll"></i> Classical Yogas
+              </span>
             </div>
-            <h4 style="font-size: 17px; font-weight: 800; color: var(--av-text-primary, #20263A); margin-bottom: 4px;">Pandit Raghavendra (AI Persona)</h4>
-            <div style="font-size: 12.5px; color: var(--av-text-secondary, #566074); margin-bottom: 4px;">Classical Yogas, Wealth, Arudha &amp; Remedial Jyotish</div>
-            <div style="font-size: 11px; color: #92400E; font-weight: 700; margin-top: 4px;">Languages: English, Hindi, Telugu &bull; Hora &amp; Shadbala System</div>
-            <div style="font-size: 11px; color: #475569; margin-top: 6px;">
-              <i class="fa-solid fa-calculator" style="color: #2563EB;"></i> Planetary Dignity &amp; Transit Grounded
+            <div class="astrologer-card-portrait">
+              <img src="assets/astrologers/pandit-raghavendra.webp" alt="Portrait of the fictional AI persona Pandit Raghavendra" class="astrologer-card-portrait-img" loading="lazy" onerror="this.onerror=null;this.src='assets/illustrations/persona-raghavendra.svg';" />
             </div>
-          </div>
-          <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-            <div style="font-size: 12.5px; font-weight: 700; color: #047857;"><i class="fa-solid fa-circle-check"></i> Daily Allowance Included</div>
-            <div style="display: flex; gap: 6px;">
-              <button class="btn-gold-primary" style="padding: 7px 16px; font-size: 12px;" onclick="startConsultationSession('Pandit Raghavendra', 0)">
+
+            <div class="astrologer-card-body">
+              <div class="astrologer-card-title-row">
+                <h3 class="astrologer-card-name">Pandit Raghavendra</h3>
+                <span class="astrologer-card-tag">AI Astrologer</span>
+              </div>
+              <div class="astrologer-card-specialty">Classical Yogas, Wealth, Arudha &amp; Remedial Jyotish</div>
+              <p class="astrologer-card-description">
+                Specializes in classical Raja and Dhana yogas, planetary dignity evaluation, Shadbala strength, and traditional scriptural remedies for karmic obstacles.
+              </p>
+              <div class="astrologer-card-metadata">
+                <div class="astrologer-meta-item">
+                  <i class="fa-solid fa-language" style="color: #D4AF37;"></i>
+                  <span>Languages: <strong>English, Hindi, Telugu</strong> &bull; Hora &amp; Shadbala</span>
+                </div>
+                <div class="astrologer-meta-item">
+                  <i class="fa-solid fa-calculator" style="color: #2563EB;"></i>
+                  <span>Planetary Dignity &amp; Transit Grounded</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="astrologer-card-footer">
+              <div class="astrologer-card-allowance">
+                <i class="fa-solid fa-circle-check"></i> Daily Allowance Included
+              </div>
+              <button class="btn-gold-primary astrologer-card-cta" onclick="startConsultationSession('Pandit Raghavendra', 0)">
                 <i class="fa-solid fa-comment-dots"></i> Start AI Chat
               </button>
             </div>
@@ -7733,7 +7924,7 @@
         <p>Remedial rituals coordinated with traditional Vedic priests with personalized sankalp and ritual completion certificate.</p>
       </div>
 
-      <div class="astrologers-grid">
+      <div class="pujas-grid">
         <div class="astrologer-profile-card">
           <div>
             <h4 style="font-size: 16px; font-weight: 800; color: #1E293B;">Maha Mrityunjaya Puja</h4>
@@ -9210,8 +9401,8 @@
       <!-- Header -->
       <div style="background: linear-gradient(135deg, #0F172A 0%, #18213A 60%, #293452 100%); color: #FFFFFF; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(212, 175, 55, 0.25);">
         <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 44px; height: 44px; font-size: 19px; margin: 0; border: 2px solid #D4AF37; flex-shrink: 0; padding: 0; overflow: hidden; background: #18213A;">
-            <img src="assets/illustrations/persona-devratan.svg" alt="Acharya Devratan" class="ai-chat-avatar-img" />
+          <div id="ai-chat-avatar" class="astro-avatar-wrap" style="width: 50px; height: 50px; font-size: 19px; margin: 0; border: 2.5px solid #D4AF37; flex-shrink: 0; padding: 0; overflow: hidden; background: #18213A; border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+            <img src="assets/astrologers/acharya-devratan.webp" alt="Portrait of the fictional AI persona Acharya Devratan" class="ai-chat-avatar-img" onerror="this.onerror=null;this.src='assets/illustrations/persona-devratan.svg';" />
           </div>
           <div style="min-width: 0;">
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -9243,6 +9434,11 @@
               <i class="fa-solid fa-ellipsis-vertical"></i>
             </button>
             <div id="ai-chat-options-menu" class="chat-options-menu" style="display: none;">
+              <div style="padding: 6px 12px 4px; font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.08);">Switch Astrologer Persona</div>
+              <button onclick="switchActivePersona('acharya-devratan')"><i class="fa-solid fa-user-tie"></i> Acharya Devratan (Parashari)</button>
+              <button onclick="switchActivePersona('dr-sunita-shastri')"><i class="fa-solid fa-user-graduate"></i> Dr. Sunita Shastri (Jaimini)</button>
+              <button onclick="switchActivePersona('pandit-raghavendra')"><i class="fa-solid fa-user-check"></i> Pandit Raghavendra (Classical Yogas)</button>
+              <div style="margin: 4px 0; border-top: 1px solid rgba(255,255,255,0.08);"></div>
               <button onclick="copyChatTranscript()"><i class="fa-solid fa-copy"></i> Copy Transcript</button>
               <button onclick="exportChatTranscript()"><i class="fa-solid fa-download"></i> Export Transcript</button>
               <button onclick="confirmClearChat()" style="color: #DC2626;"><i class="fa-solid fa-trash-can"></i> Clear Chat</button>
@@ -9347,6 +9543,86 @@
     let savedUserProfiles = JSON.parse(localStorage.getItem('astro_saved_profiles') || '[]');
     let currentCalculatedChart = null;
     window.astroGuidanceState = 'NO_PROFILE';
+
+    // ==============================================================================
+    // AUTHORITATIVE AI ASTROLOGER PERSONA REGISTRY (Phase 2 Master Configuration)
+    // ==============================================================================
+    const ASTROLOGER_PERSONAS = {
+      'acharya-devratan': {
+        id: 'acharya-devratan',
+        name: 'Acharya Devratan',
+        title: 'Acharya Devratan',
+        designation: 'AI Astrologer',
+        portrait: 'assets/astrologers/acharya-devratan.webp',
+        alt: 'Portrait of the fictional AI persona Acharya Devratan',
+        fallbackSvg: 'assets/illustrations/persona-devratan.svg',
+        methodology: 'Parashari Model',
+        specialty: 'Brihat Parashara Hora & Career Architecture',
+        focus: 'Brihat Parashara System • Career Architecture • Dhana Yogas',
+        grounding: 'Swiss Ephemeris & D1/D9 Grounded',
+        languages: ['English', 'Hindi'],
+        langCodes: ['en', 'hi'],
+        allowanceText: 'Daily Allowance Included',
+        rate: 0
+      },
+      'dr-sunita-shastri': {
+        id: 'dr-sunita-shastri',
+        name: 'Dr. Sunita Shastri',
+        title: 'Dr. Sunita Shastri',
+        designation: 'AI Astrologer',
+        portrait: 'assets/astrologers/dr-sunita-shastri.webp',
+        alt: 'Portrait of the fictional AI persona Dr. Sunita Shastri',
+        fallbackSvg: 'assets/illustrations/persona-sunita.svg',
+        methodology: 'Jaimini Model',
+        specialty: 'Jaimini Chara Karakas, Relationship & D9 Synastry',
+        focus: 'Upadesha Sutras • Relationship Harmony • D9 Navamsha',
+        grounding: 'Chara Dasha & Darakaraka Grounded',
+        languages: ['Hindi', 'Sanskrit', 'English'],
+        langCodes: ['hi', 'en'],
+        allowanceText: 'Daily Allowance Included',
+        rate: 0
+      },
+      'pandit-raghavendra': {
+        id: 'pandit-raghavendra',
+        name: 'Pandit Raghavendra',
+        title: 'Pandit Raghavendra',
+        designation: 'AI Astrologer',
+        portrait: 'assets/astrologers/pandit-raghavendra.webp',
+        alt: 'Portrait of the fictional AI persona Pandit Raghavendra',
+        fallbackSvg: 'assets/illustrations/persona-raghavendra.svg',
+        methodology: 'Classical Yogas',
+        specialty: 'Classical Yogas, Wealth, Arudha & Remedial Jyotish',
+        focus: 'Hora & Shadbala System • Planetary Dignity • Remedial Shastra',
+        grounding: 'Planetary Dignity & Transit Grounded',
+        languages: ['English', 'Hindi', 'Telugu'],
+        langCodes: ['en', 'hi'],
+        allowanceText: 'Daily Allowance Included',
+        rate: 0
+      }
+    };
+    window.ASTROLOGER_PERSONAS = ASTROLOGER_PERSONAS;
+
+    function getAstrologerPersona(key) {
+      if (!key) return ASTROLOGER_PERSONAS['acharya-devratan'];
+      const normalized = String(key).toLowerCase().trim();
+      if (ASTROLOGER_PERSONAS[normalized]) return ASTROLOGER_PERSONAS[normalized];
+      if (normalized.includes('sunita')) return ASTROLOGER_PERSONAS['dr-sunita-shastri'];
+      if (normalized.includes('raghavendra')) return ASTROLOGER_PERSONAS['pandit-raghavendra'];
+      return ASTROLOGER_PERSONAS['acharya-devratan'];
+    }
+    window.getAstrologerPersona = getAstrologerPersona;
+
+    function switchActivePersona(personaId) {
+      const persona = getAstrologerPersona(personaId);
+      if (!persona) return;
+      startConsultationSession(persona.name, 0);
+      const menu = document.getElementById('ai-chat-options-menu');
+      if (menu) menu.style.display = 'none';
+      if (typeof showToast === 'function') {
+        showToast(`Consultation connected to ${persona.name}`, 'info');
+      }
+    }
+    window.switchActivePersona = switchActivePersona;
 
     function getLocalDateString(tz = "Asia/Kolkata", d = new Date()) {
       try {
@@ -13349,7 +13625,8 @@
         meta.className = 'chat-msg-meta chat-msg-meta-agent';
         const senderName = (activeConsultationSession && activeConsultationSession.astrologerName) || 'AI Astrologer';
         const groundLabel = isChatKundliLinked ? 'Chart-Grounded' : 'Universal Transit';
-        meta.innerHTML = `<span style="font-weight: 700; color: #F5C45E;">${escapeHtml(senderName)}</span> &bull; <time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>${groundLabel}</span> <button class="btn-voice-listen" style="padding: 2px 8px; font-size: 10px; margin-left: 8px;" onclick="toggleChatVoiceNarration('${msg.id}', this)"><i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen</span></button>${summaryToggleBtn}`;
+        const activePersona = getAstrologerPersona(msg.personaId || activeConsultationSession?.personaId);
+        meta.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 6px;"><img src="${activePersona.portrait}" alt="${escapeHtml(activePersona.name)}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1.5px solid #D4AF37; vertical-align: middle;" onerror="this.onerror=null;this.src='${activePersona.fallbackSvg}';" /> <strong style="color: #F5C45E;">${escapeHtml(senderName)}</strong></span> &bull; <time datetime="${msg.timestamp}">${timeFormatted}</time> &bull; <span>${groundLabel}</span> <button class="btn-voice-listen" style="padding: 2px 8px; font-size: 10px; margin-left: 8px;" onclick="toggleChatVoiceNarration('${msg.id}', this)"><i class="fa-solid fa-volume-high"></i> <span class="voice-btn-text">Listen</span></button>${summaryToggleBtn}`;
 
         bubbleWrap.appendChild(bubble);
         bubbleWrap.appendChild(meta);
@@ -13648,40 +13925,29 @@
     }
 
     function startConsultationSession(astroName, rate) {
-      const astroMap = {
-        'Acharya Devratan': {
-          id: 'acharya-devratan',
-          specialty: 'Brihat Parashara Hora & Career Architecture',
-          avatar: '<img src="assets/illustrations/persona-devratan.svg" alt="Acharya Devratan" class="ai-chat-avatar-img" />'
-        },
-        'Dr. Sunita Shastri': {
-          id: 'dr-sunita-shastri',
-          specialty: 'Jaimini Astrology & Relationship Synastry',
-          avatar: '<img src="assets/illustrations/persona-sunita.svg" alt="Dr. Sunita Shastri" class="ai-chat-avatar-img" />'
-        },
-        'Pandit Raghavendra': {
-          id: 'pandit-raghavendra',
-          specialty: 'Classical Parashari & Remedial Jyotish',
-          avatar: '<img src="assets/illustrations/persona-raghavendra.svg" alt="Pandit Raghavendra" class="ai-chat-avatar-img" />'
-        }
-      };
-
-      const meta = astroMap[astroName] || astroMap['Acharya Devratan'];
-      const personaId = meta.id;
+      const persona = getAstrologerPersona(astroName);
+      const personaId = persona.id;
 
       activeConsultationSession = {
         personaId: personaId,
-        astrologerName: astroName,
+        astrologerName: persona.name,
         rate: rate,
-        specialty: meta.specialty,
+        specialty: persona.specialty,
+        portrait: persona.portrait,
         startTime: Date.now(),
         messages: []
       };
 
       // Header UI
-      document.getElementById('ai-chat-astrologer-name').textContent = astroName;
-      document.getElementById('ai-chat-specialty').textContent = meta.specialty;
-      document.getElementById('ai-chat-avatar').innerHTML = meta.avatar;
+      const nameEl = document.getElementById('ai-chat-astrologer-name');
+      const specEl = document.getElementById('ai-chat-specialty');
+      const avatarEl = document.getElementById('ai-chat-avatar');
+
+      if (nameEl) nameEl.textContent = persona.name;
+      if (specEl) specEl.textContent = persona.specialty;
+      if (avatarEl) {
+        avatarEl.innerHTML = `<img src="${persona.portrait}" alt="${persona.alt}" class="ai-chat-avatar-img" onerror="this.onerror=null;this.src='${persona.fallbackSvg}';" />`;
+      }
 
       // Grounded Chart Pill & Context
       updateChatContextBar();
