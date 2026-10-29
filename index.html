@@ -3466,8 +3466,26 @@
       }
       .auth-greeting-row {
         flex-direction: column !important;
-        align-items: flex-start !important;
+        align-items: stretch !important;
         gap: 12px !important;
+      }
+      .auth-greeting-actions {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+      }
+      .auth-greeting-actions button {
+        flex: 1 1 auto !important;
+        min-height: 36px !important;
+        justify-content: center !important;
+      }
+      #auth-active-chart-chip {
+        max-width: 100% !important;
+        font-size: 11px !important;
+        padding: 5px 10px !important;
       }
       .auth-quick-tiles-grid {
         grid-template-columns: 1fr !important;
@@ -3761,6 +3779,19 @@
         padding: 4px 7px !important;
         font-size: 11px !important;
         min-height: 32px !important;
+      }
+      .auth-user-avatar {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 16px !important;
+        flex-shrink: 0 !important;
+      }
+      #auth-greeting-heading {
+        font-size: clamp(17px, 4.6vw, 20px) !important;
+        line-height: 1.2 !important;
+      }
+      #auth-greeting-sub {
+        font-size: 11.5px !important;
       }
       .astro-card {
         padding: 14px 12px !important;
@@ -6037,22 +6068,23 @@
 
     <!-- ==================== TAB 0: OVERVIEW & COSMIC HUB ==================== -->
     <section id="view-overview" class="page-tab-view active">
-      <!-- Personalized Authenticated Command Center (Shown when user is logged in) -->
+      <!-- Personalized Cosmic Command Center (Personalized with User/Chart Identity) -->
       <div id="overview-authenticated-dashboard" class="authenticated-command-center" style="display: none;">
         <div class="auth-greeting-row">
           <div class="auth-greeting-user">
-            <div class="auth-user-avatar" id="auth-avatar-initial">U</div>
+            <div class="auth-user-avatar" id="auth-avatar-initial">ॐ</div>
             <div>
-              <div style="font-size: 12px; color: #F5C45E; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Welcome Back</div>
-              <h2 style="font-size: 22px; font-weight: 800; color: #FFFFFF; margin: 2px 0 0;" id="auth-greeting-heading">Namaste, User</h2>
+              <div style="font-size: 11px; color: #F5C45E; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;" id="auth-greeting-label">Active Vedic Profile</div>
+              <h2 style="font-size: 22px; font-weight: 800; color: #FFFFFF; margin: 2px 0 0;" id="auth-greeting-heading">Namaste, Seeker</h2>
+              <div id="auth-greeting-sub" style="font-size: 12px; color: #CBD5E1; margin-top: 3px; line-height: 1.4;">Enter your birth details in Janam Kundli to calculate your sidereal chart</div>
             </div>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <div id="auth-active-chart-chip" style="font-size: 12px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(212, 175, 55, 0.3); padding: 6px 14px; border-radius: 20px; color: #F8FAFC;">
-              <i class="fa-solid fa-user-check" style="color: #34D399;"></i> <span id="auth-active-chart-name">No Chart Selected</span>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;" class="auth-greeting-actions">
+            <div id="auth-active-chart-chip" style="font-size: 11.5px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(212, 175, 55, 0.3); padding: 6px 12px; border-radius: 20px; color: #F8FAFC; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+              <i class="fa-solid fa-circle-dot" id="auth-active-chart-icon" style="color: #F59E0B;"></i> <span id="auth-active-chart-name">No Chart Loaded</span>
             </div>
-            <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="switchNavSection('kundli')">
-              <i class="fa-solid fa-dharmachakra"></i> View My Kundli
+            <button class="btn-gold-primary" id="btn-auth-view-kundli" style="padding: 7px 16px; font-size: 12px; min-height: 36px;" onclick="switchNavSection('kundli')">
+              <i class="fa-solid fa-dharmachakra"></i> View Full Kundli
             </button>
           </div>
         </div>
@@ -15301,6 +15333,186 @@
       return await validateStoredSession();
     }
 
+    // ==================== PERSONALIZED VEDIC GREETING & COMMAND CENTER ====================
+    function updatePersonalizedGreetingUI() {
+      const authDash = document.getElementById('overview-authenticated-dashboard');
+      const avatarEl = document.getElementById('auth-avatar-initial');
+      const labelEl = document.getElementById('auth-greeting-label');
+      const headingEl = document.getElementById('auth-greeting-heading');
+      const subEl = document.getElementById('auth-greeting-sub');
+      const chartChip = document.getElementById('auth-active-chart-chip');
+      const chartNameEl = document.getElementById('auth-active-chart-name');
+      const chartIconEl = document.getElementById('auth-active-chart-icon');
+      const viewKundliBtn = document.getElementById('btn-auth-view-kundli');
+
+      const safeEscape = (str) => {
+        if (typeof str !== 'string') return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      };
+
+      const chart = (typeof currentCalculatedChart !== 'undefined' && currentCalculatedChart && currentCalculatedChart.lagnaSign)
+        ? currentCalculatedChart
+        : null;
+
+      const chartPersonName = (chart && typeof chart.name === 'string') ? chart.name.trim() : '';
+      const sessionUserName = (typeof currentUserSession !== 'undefined' && currentUserSession && typeof currentUserSession.name === 'string')
+        ? currentUserSession.name.trim()
+        : '';
+      const inputName = document.getElementById('input-k-name')?.value?.trim() || '';
+
+      const sanitize = (n) => {
+        if (!n) return '';
+        const lower = n.toLowerCase();
+        if (lower === 'user' || lower === 'namaste' || lower === 'namaste, user' || lower === 'undefined' || lower === 'null') return '';
+        return n;
+      };
+
+      const validChartName = sanitize(chartPersonName);
+      const validSessionName = sanitize(sessionUserName);
+      const validInputName = sanitize(inputName);
+
+      // Priority: Active Chart Person Name > Authenticated Account Name > Kundli Input Draft Name
+      const resolvedName = validChartName || validSessionName || validInputName || '';
+
+      // Determine visibility: Display command center if session is active OR if chart is loaded OR if name is provided
+      const shouldShow = Boolean(currentUserSession || chart || resolvedName);
+      if (authDash) {
+        authDash.style.display = shouldShow ? 'block' : 'none';
+      }
+
+      // Compute Authentic Vedic Monogram / Initials
+      let initials = 'ॐ';
+      if (resolvedName) {
+        const parts = resolvedName.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+          initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        } else if (parts.length === 1 && parts[0].length >= 1) {
+          initials = parts[0].slice(0, 2).toUpperCase();
+        }
+      } else if (currentUserSession?.identifier) {
+        initials = currentUserSession.identifier.charAt(0).toUpperCase();
+      }
+      if (avatarEl) avatarEl.textContent = initials;
+
+      // Personalized Heading (Never generic "User")
+      if (headingEl) {
+        headingEl.textContent = resolvedName ? `Namaste, ${resolvedName}` : 'Namaste, Seeker';
+      }
+
+      // Dynamic Astrological Contextualization
+      if (chart) {
+        if (labelEl) labelEl.textContent = 'Active Vedic Profile';
+        if (subEl) {
+          const lagna = chart.lagnaSign ? `${chart.lagnaSign} Lagna (H1)` : 'Sidereal Lagna';
+          const moon = chart.moonSign ? ` • Moon in ${chart.moonSign}` : '';
+          const nak = chart.nakName ? ` • ${chart.nakName} Nakshatra` : '';
+          subEl.textContent = `${lagna}${moon}${nak}`;
+          subEl.style.display = 'block';
+        }
+        if (chartNameEl) {
+          chartNameEl.textContent = `Active Chart: ${chart.name || 'Kundli'} (${chart.lagnaSign} Lagna)`;
+        }
+        if (chartIconEl) {
+          chartIconEl.className = 'fa-solid fa-circle-check';
+          chartIconEl.style.color = '#34D399';
+        }
+        if (chartChip) {
+          chartChip.style.borderColor = 'rgba(52, 211, 153, 0.4)';
+          chartChip.style.background = 'rgba(16, 185, 129, 0.12)';
+        }
+        if (viewKundliBtn) {
+          viewKundliBtn.innerHTML = '<i class="fa-solid fa-dharmachakra"></i> View Full Kundli';
+          viewKundliBtn.onclick = () => switchNavSection('kundli');
+        }
+      } else if (currentUserSession) {
+        if (labelEl) labelEl.textContent = 'Welcome Back';
+        if (subEl) {
+          subEl.textContent = 'Enter your birth details in Janam Kundli to calculate your sidereal chart';
+          subEl.style.display = 'block';
+        }
+        if (chartNameEl) {
+          chartNameEl.textContent = 'No Natal Chart Loaded';
+        }
+        if (chartIconEl) {
+          chartIconEl.className = 'fa-solid fa-circle-dot';
+          chartIconEl.style.color = '#F59E0B';
+        }
+        if (chartChip) {
+          chartChip.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+          chartChip.style.background = 'rgba(255, 255, 255, 0.08)';
+        }
+        if (viewKundliBtn) {
+          viewKundliBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i> Calculate Free Kundli';
+          viewKundliBtn.onclick = () => {
+            switchNavSection('kundli');
+            document.getElementById('input-k-name')?.focus();
+          };
+        }
+      } else {
+        if (labelEl) labelEl.textContent = 'Vedic Astrology Hub';
+        if (subEl) {
+          subEl.textContent = 'Enter your birth details to generate your sidereal Kundli';
+          subEl.style.display = 'block';
+        }
+        if (chartNameEl) {
+          chartNameEl.textContent = resolvedName ? `Draft Profile: ${resolvedName}` : 'No Chart Loaded';
+        }
+        if (chartIconEl) {
+          chartIconEl.className = resolvedName ? 'fa-solid fa-sparkles' : 'fa-solid fa-compass';
+          chartIconEl.style.color = '#F5C45E';
+        }
+        if (chartChip) {
+          chartChip.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+          chartChip.style.background = 'rgba(255, 255, 255, 0.08)';
+        }
+        if (viewKundliBtn) {
+          viewKundliBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i> Calculate Free Kundli';
+          viewKundliBtn.onclick = () => {
+            switchNavSection('kundli');
+            document.getElementById('input-k-name')?.focus();
+          };
+        }
+      }
+
+      // Synchronize Header Profile Pill
+      const profileDot = document.getElementById('header-profile-dot');
+      const profileLabel = document.getElementById('header-profile-label');
+      if (profileLabel) {
+        if (chart) {
+          if (profileDot) profileDot.classList.remove('empty');
+          const isSaved = Boolean(currentUserSession);
+          const saveBadge = isSaved
+            ? `<span style="color:#059669; font-weight:700;">Saved Cloud Profile</span>`
+            : `<span style="color:#F59E0B; font-weight:700;">Session Chart</span>`;
+          profileLabel.innerHTML = `${safeEscape(chart.name || 'Seeker')} (${safeEscape(chart.lagnaSign || 'Sidereal')} Lagna, Moon in ${safeEscape(chart.moonSign || 'Transit')}) &bull; ${saveBadge}`;
+        } else if (resolvedName) {
+          if (profileDot) profileDot.classList.add('empty');
+          profileLabel.innerHTML = `Profile in Progress: ${safeEscape(resolvedName)} &bull; <span style="color:#F59E0B;">Enter Birth Details</span>`;
+        } else {
+          if (profileDot) profileDot.classList.add('empty');
+          profileLabel.textContent = 'No Chart Loaded — Enter Birth Details';
+        }
+      }
+
+      // Synchronize Mobile Drawer Profile
+      const mobDrawerName = document.getElementById('mobile-drawer-profile-name');
+      const mobDrawerDetails = document.getElementById('mobile-drawer-profile-details');
+      if (mobDrawerName) {
+        mobDrawerName.textContent = resolvedName || (currentUserSession?.identifier) || 'No Chart Loaded';
+      }
+      if (mobDrawerDetails) {
+        if (chart) {
+          mobDrawerDetails.textContent = `${chart.lagnaSign} Lagna • Moon in ${chart.moonSign || ''}`;
+        } else if (currentUserSession) {
+          mobDrawerDetails.textContent = 'Tap to enter birth details';
+        } else if (resolvedName) {
+          mobDrawerDetails.textContent = 'Tap to calculate Janam Kundli';
+        } else {
+          mobDrawerDetails.textContent = 'Tap to enter birth details or switch';
+        }
+      }
+    }
+
     // Update UI Elements with Session State
     function updateUserSessionUI() {
       const authBtnText = document.getElementById('auth-btn-text');
@@ -15331,16 +15543,7 @@
         authBtnText.textContent = currentUserSession.name;
         if (unauthBox) unauthBox.style.display = 'none';
         if (authBox) authBox.style.display = 'block';
-        if (authDash) {
-          authDash.style.display = 'block';
-          const authName = document.getElementById('auth-overview-name');
-          const authAvatar = document.getElementById('auth-overview-avatar');
-          if (authName) authName.textContent = `Welcome back, ${currentUserSession.name || 'Seeker'}`;
-          if (authAvatar) {
-            const initial = (currentUserSession.name || 'A').trim().charAt(0).toUpperCase();
-            authAvatar.textContent = initial;
-          }
-        }
+        updatePersonalizedGreetingUI();
         const dName = document.getElementById('dash-user-name');
         const dIdent = document.getElementById('dash-user-ident');
         if (dName) dName.textContent = currentUserSession.name;
@@ -15357,7 +15560,7 @@
         authBtnText.textContent = "Sign In";
         if (unauthBox) unauthBox.style.display = 'block';
         if (authBox) authBox.style.display = 'none';
-        if (authDash) authDash.style.display = 'none';
+        updatePersonalizedGreetingUI();
         const tierBadge = document.getElementById('global-tier-name');
         if (tierBadge) tierBadge.textContent = 'Essentials';
       }
@@ -19743,6 +19946,10 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         `;
         container.style.display = 'block';
       }
+
+      if (typeof updatePersonalizedGreetingUI === 'function') {
+        updatePersonalizedGreetingUI();
+      }
     }
 
     function openChatWithActiveChart() {
@@ -19914,6 +20121,17 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       updateUserSessionUI();
       if (typeof updateOverviewActiveChartBanner === 'function') {
         updateOverviewActiveChartBanner();
+      }
+      const kundliNameInput = document.getElementById('input-k-name');
+      if (kundliNameInput) {
+        kundliNameInput.addEventListener('input', () => {
+          if (typeof updatePersonalizedGreetingUI === 'function') {
+            updatePersonalizedGreetingUI();
+          }
+        });
+      }
+      if (typeof updatePersonalizedGreetingUI === 'function') {
+        updatePersonalizedGreetingUI();
       }
       updateDemoWalletDisplay();
       syncPromotionalBannerState();
