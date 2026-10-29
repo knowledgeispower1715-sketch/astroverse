@@ -9719,27 +9719,35 @@
       <!-- Tab C: New Registration -->
       <div id="modal-panel-register" class="auth-modal-panel" role="tabpanel" style="display: none;">
         <div class="form-field-group">
-          <label class="form-field-label" style="color: #E2E8F0;">Full Name</label>
-          <input type="text" id="modal-reg-name" class="form-input-text" placeholder="Amitabh Sharma" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
+          <label class="form-field-label" style="color: #E2E8F0;">Full Name <span style="color: #64748B; font-weight: normal;">(Optional)</span></label>
+          <input type="text" id="modal-reg-name" class="form-input-text" placeholder="e.g. Amitabh Sharma" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
         </div>
         <div class="form-field-group">
-          <label class="form-field-label" style="color: #E2E8F0;">Mobile Number</label>
-          <input type="tel" id="modal-reg-phone" class="form-input-text" placeholder="+919876543210" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
+          <label class="form-field-label" style="color: #E2E8F0;">Email Address <span style="color: #F59E0B;">*</span></label>
+          <input type="email" id="modal-reg-email" class="form-input-text" placeholder="name@example.com" required style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
         </div>
         <div class="form-field-group">
-          <label class="form-field-label" style="color: #E2E8F0;">Email Address (Optional)</label>
-          <input type="email" id="modal-reg-email" class="form-input-text" placeholder="name@example.com" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
+          <label class="form-field-label" style="color: #E2E8F0;">Mobile Number <span style="color: #64748B; font-weight: normal;">(Optional for horoscope updates)</span></label>
+          <input type="tel" id="modal-reg-phone" class="form-input-text" placeholder="+91 98765 43210" style="background: #0F172A; color: #F8FAFC; border-color: #334155;">
         </div>
         <div class="form-field-group">
-          <label class="form-field-label" style="color: #E2E8F0;">Create Password (Min 8 characters)</label>
+          <label class="form-field-label" style="color: #E2E8F0;">Create Password <span style="color: #F59E0B;">*</span> <span style="color: #64748B; font-weight: normal;">(Min 8 characters)</span></label>
           <div style="position: relative;">
-            <input type="password" id="modal-reg-pwd" class="form-input-text" placeholder="Create a strong password" style="background: #0F172A; color: #F8FAFC; border-color: #334155; padding-right: 40px;" oninput="checkModalRegPwdStrength(this.value)">
+            <input type="password" id="modal-reg-pwd" class="form-input-text" placeholder="Create a secure password" style="background: #0F172A; color: #F8FAFC; border-color: #334155; padding-right: 40px;" oninput="checkModalRegPwdStrength(this.value)">
             <i class="fa-regular fa-eye" id="modal-reg-pwd-toggle" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; cursor: pointer;" onclick="togglePasswordVisibility('modal-reg-pwd', 'modal-reg-pwd-toggle')"></i>
           </div>
           <div id="modal-reg-pwd-strength" style="font-size: 11px; color: #94A3B8; margin-top: 4px;">Min 8 chars, 1 uppercase, 1 number</div>
-          <span id="modal-reg-error" style="font-size: 11px; color: #EF4444; display: none; margin-top: 4px;"></span>
         </div>
-        <button class="btn-gold-primary" id="btn-modal-reg-submit" style="width: 100%; justify-content: center; min-height: 44px;" onclick="handleModalRegister()">
+        <div class="form-field-group">
+          <label class="form-field-label" style="color: #E2E8F0;">Confirm Password <span style="color: #F59E0B;">*</span></label>
+          <div style="position: relative;">
+            <input type="password" id="modal-reg-pwd-confirm" class="form-input-text" placeholder="Re-enter your password" style="background: #0F172A; color: #F8FAFC; border-color: #334155; padding-right: 40px;" oninput="checkModalRegPwdMatch()">
+            <i class="fa-regular fa-eye" id="modal-reg-pwd-confirm-toggle" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94A3B8; cursor: pointer;" onclick="togglePasswordVisibility('modal-reg-pwd-confirm', 'modal-reg-pwd-confirm-toggle')"></i>
+          </div>
+          <div id="modal-reg-pwd-match" style="font-size: 11px; color: #94A3B8; margin-top: 4px;"></div>
+          <span id="modal-reg-error" style="font-size: 11px; color: #EF4444; display: none; margin-top: 6px;"></span>
+        </div>
+        <button class="btn-gold-primary" id="btn-modal-reg-submit" style="width: 100%; justify-content: center; min-height: 44px; margin-top: 4px;" onclick="handleModalRegister()">
           <i class="fa-solid fa-user-check"></i> Complete Registration
         </button>
       </div>
@@ -19867,7 +19875,14 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         } catch (err) {
           console.warn('[Supabase Google OAuth] Error, trying GIS fallback:', err);
           resetUnifiedGoogleButton();
-          showToast(err.message || 'Google OAuth failed.', 'error');
+          const msg = err?.message || String(err);
+          if (msg.includes('provider is not enabled') || msg.includes('Unsupported provider') || msg.includes('validation_failed')) {
+            showToast('Google Sign-In is being activated in cloud settings. Please sign in or register with email and password below.', 'info');
+            switchAuthModalTab('password');
+            document.getElementById('modal-pwd-ident')?.focus();
+          } else {
+            showToast(msg || 'Google OAuth failed.', 'error');
+          }
           return;
         }
       }
@@ -20325,6 +20340,26 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             password: password
           });
           if (error) {
+            if (error.message && (error.message.toLowerCase().includes('email not confirmed') || error.message.toLowerCase().includes('not confirmed'))) {
+              if (errEl) {
+                errEl.innerHTML = `
+                  <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 12px; border-radius: 8px; color: #FDE68A; margin-top: 8px;">
+                    <strong style="color: #F59E0B; display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 4px;">
+                      <i class="fa-solid fa-envelope-open-text"></i> Email Confirmation Pending
+                    </strong>
+                    <span style="font-size: 11.5px; line-height: 1.5; display: block; color: #FEF3C7;">
+                      Your email address requires confirmation before signing in. Check your inbox (or spam) for the activation link.
+                    </span>
+                    <div style="margin-top: 8px; display: flex; gap: 8px;">
+                      <button type="button" class="btn-outline-secondary" style="padding: 4px 10px; font-size: 11px; color: #CBD5E1; border-color: #64748B;" onclick="resendConfirmationEmail('${escapeHtml(ident)}')">Resend Activation Email</button>
+                    </div>
+                  </div>
+                `;
+                errEl.style.display = 'block';
+              }
+              showToast('Please confirm your email address before signing in.', 'warning');
+              return;
+            }
             if (errEl) { errEl.textContent = error.message; errEl.style.display = 'block'; }
             showToast(error.message, 'error');
             return;
@@ -20419,24 +20454,69 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       }
     }
 
+    function checkModalRegPwdMatch() {
+      const pwd = document.getElementById('modal-reg-pwd')?.value || '';
+      const confirm = document.getElementById('modal-reg-pwd-confirm')?.value || '';
+      const matchEl = document.getElementById('modal-reg-pwd-match');
+      if (!matchEl) return;
+      if (!confirm) {
+        matchEl.textContent = '';
+        return;
+      }
+      if (pwd === confirm) {
+        matchEl.textContent = '✓ Passwords match';
+        matchEl.style.color = '#10B981';
+      } else {
+        matchEl.textContent = '✗ Passwords do not match';
+        matchEl.style.color = '#EF4444';
+      }
+    }
+
+    async function resendConfirmationEmail(email) {
+      if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email address.', 'error');
+        return;
+      }
+      try {
+        if (supabaseClient && isSupabaseConfigured) {
+          const { error } = await supabaseClient.auth.resend({
+            type: 'signup',
+            email: email
+          });
+          if (error) throw error;
+          showToast(`Verification email resent to ${email}!`, 'success');
+        } else {
+          showToast('Email verification service unavailable.', 'warning');
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to resend confirmation email.', 'error');
+      }
+    }
+
     async function handleModalRegister() {
       const name = document.getElementById('modal-reg-name')?.value?.trim();
       const phone = document.getElementById('modal-reg-phone')?.value?.trim();
       const email = document.getElementById('modal-reg-email')?.value?.trim();
       const password = document.getElementById('modal-reg-pwd')?.value;
+      const confirm = document.getElementById('modal-reg-pwd-confirm')?.value;
       const errEl = document.getElementById('modal-reg-error');
       if (errEl) errEl.style.display = 'none';
 
-      if (!name) {
-        if (errEl) { errEl.textContent = 'Please enter your full name.'; errEl.style.display = 'block'; }
+      if (!email) {
+        if (errEl) { errEl.textContent = 'Please enter your email address.'; errEl.style.display = 'block'; }
         return;
       }
-      if (!phone && !email) {
-        if (errEl) { errEl.textContent = 'Please enter either a mobile phone number or email address.'; errEl.style.display = 'block'; }
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        if (errEl) { errEl.textContent = 'Please provide a valid email address (e.g. name@example.com).'; errEl.style.display = 'block'; }
         return;
       }
       if (!password || password.length < 8) {
         if (errEl) { errEl.textContent = 'Password must be at least 8 characters long and contain numbers and letters.'; errEl.style.display = 'block'; }
+        return;
+      }
+      if (confirm !== password) {
+        if (errEl) { errEl.textContent = 'Passwords do not match. Please verify your password.'; errEl.style.display = 'block'; }
         return;
       }
 
@@ -20451,8 +20531,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             password: password,
             options: {
               data: {
-                displayName: name,
-                full_name: name
+                displayName: name || email.split('@')[0],
+                full_name: name || email.split('@')[0]
               }
             }
           });
@@ -20465,21 +20545,34 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             if (data.session) {
               await handleSupabaseSessionSuccess(data.session);
               closeAuthModal();
-              showToast(`Welcome, ${name}! Your account is active.`, 'success');
+              showToast(`Welcome, ${name || 'Seeker'}! Your account is active.`, 'success');
               resumePendingActionAfterAuth();
             } else {
               if (errEl) {
                 errEl.innerHTML = `
-                  <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 12px; border-radius: 8px; color: #D1FAE5; margin-top: 6px;">
-                    <strong style="color: #34D399; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 14px; border-radius: 10px; color: #D1FAE5; margin-top: 8px;">
+                    <strong style="color: #34D399; display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px;">
                       <i class="fa-solid fa-envelope-circle-check"></i> Verification Email Dispatched
                     </strong>
-                    <span>We sent an activation link to <strong>${escapeHtml(email)}</strong>. Please verify your email, then return here to sign in.</span>
+                    <span style="font-size: 12px; line-height: 1.5; display: block; color: #E2E8F0;">
+                      We sent an activation link to <strong>${escapeHtml(email)}</strong>. Please verify your email, then return here to sign in.
+                    </span>
+                    <div style="margin-top: 10px; display: flex; gap: 8px;">
+                      <button type="button" class="btn-gold-primary" style="padding: 6px 12px; font-size: 11px;" onclick="switchAuthModalTab('password')">Go to Sign In</button>
+                      <button type="button" class="btn-outline-secondary" style="padding: 6px 12px; font-size: 11px; color: #CBD5E1; border-color: #64748B;" onclick="resendConfirmationEmail('${escapeHtml(email)}')">Resend Email</button>
+                    </div>
                   </div>
                 `;
                 errEl.style.display = 'block';
               }
               showToast('Verification email dispatched! Please check your inbox.', 'success');
+
+              // Seamlessly create background backend record so gateway has user profile ready
+              fetch(`${getAuthBase()}/api/auth/register-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ displayName: name || email.split('@')[0], phone: phone || undefined, email, password })
+              }).catch(() => {});
             }
             return;
           }
@@ -20494,7 +20587,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         const res = await fetch(`${getAuthBase()}/api/auth/register-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ displayName: name, phone: phone || undefined, email: email || undefined, password })
+          body: JSON.stringify({ displayName: name || (email ? email.split('@')[0] : 'Seeker'), phone: phone || undefined, email: email || undefined, password })
         });
         const data = await res.json();
         if (res.ok) {
@@ -20502,7 +20595,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           currentSessionToken = data.sessionToken;
           currentUserSession = {
             id: u.id,
-            name: u.displayName || name,
+            name: u.displayName || name || 'Seeker',
             identifier: u.email || u.phone || phone || email,
             email: u.email,
             phone: u.phone,
@@ -20522,7 +20615,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         updateOverviewActiveChartBanner();
       }
           closeAuthModal();
-          showToast(`Welcome, ${name}! Your account has been registered.`, 'success');
+          showToast(`Welcome, ${currentUserSession.name}! Your account has been registered.`, 'success');
           resumePendingActionAfterAuth();
         } else {
           if (res.status === 503 && data.error === 'DATABASE_CONFIGURATION_REQUIRED') {

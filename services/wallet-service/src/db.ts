@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails } from './security/permissions';
+import { bootstrapPostgresSchema } from './schemaBootstrap';
 export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails };
 
 export enum AccountStatus {
@@ -351,6 +352,7 @@ class ResilientDatabase {
   private isPostgresAvailable: boolean = false;
   private prisma: any = null;
   private dbFilePath: string;
+  private schemaBootstrapPromise: Promise<boolean> | null = null;
 
   constructor() {
     const paths = resolveDbPaths();
@@ -371,6 +373,7 @@ class ResilientDatabase {
         this.prisma = new PrismaClientConstructor();
         this.isPostgresAvailable = true;
         console.log('[DB] PostgreSQL URL detected. Configuring durable PostgreSQL via Prisma.');
+        this.ensurePostgresSchema().catch(e => console.warn('[DB] Background schema check warning:', e?.message || e));
       } catch (err: any) {
         console.error('[DB] Failed to initialize Prisma client:', err?.message || err);
         this.isPostgresAvailable = false;
@@ -386,6 +389,25 @@ class ResilientDatabase {
     if (!this.isPostgresAvailable) {
       this.seedDefaults();
     }
+  }
+
+  async ensurePostgresSchema(): Promise<boolean> {
+    if (!this.isPostgresAvailable || !this.prisma) return false;
+    if (this.schemaBootstrapPromise) return this.schemaBootstrapPromise;
+
+    this.schemaBootstrapPromise = bootstrapPostgresSchema(this.prisma)
+      .then((ok) => {
+        if (!ok) {
+          console.warn('[DB] PostgreSQL schema bootstrap returned false. Queries will use resilient fallback.');
+        }
+        return ok;
+      })
+      .catch((err) => {
+        console.error('[DB] Schema bootstrap promise rejected:', err?.message || err);
+        return false;
+      });
+
+    return this.schemaBootstrapPromise;
   }
 
   assertDurableStorage(): void {
@@ -699,11 +721,19 @@ class ResilientDatabase {
 
   async findUserById(id: string): Promise<UserRecord | null> {
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const u = await this.prisma.user.findUnique({ where: { id } });
-        return u ? this.mapPrismaUser(u) : null;
+        if (u) {
+          const mapped = this.mapPrismaUser(u);
+          const idx = this.data.users.findIndex(x => x.id === id);
+          if (idx !== -1) this.data.users[idx] = mapped;
+          else this.data.users.push(mapped);
+          return mapped;
+        }
+        return null;
       } catch (err: any) {
-        console.error('[DB] findUserById Prisma error:', err?.message || err);
+        console.error('[DB] findUserById Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
     return this.data.users.find(u => u.id === id) || null;
@@ -711,6 +741,7 @@ class ResilientDatabase {
 
   async findUserByIdentifier(identifier: string): Promise<UserRecord | null> {
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const clean = identifier.trim().toLowerCase();
         const u = await this.prisma.user.findFirst({
@@ -721,9 +752,16 @@ class ResilientDatabase {
             ]
           }
         });
-        return u ? this.mapPrismaUser(u) : null;
+        if (u) {
+          const mapped = this.mapPrismaUser(u);
+          const idx = this.data.users.findIndex(x => x.id === mapped.id);
+          if (idx !== -1) this.data.users[idx] = mapped;
+          else this.data.users.push(mapped);
+          return mapped;
+        }
+        return null;
       } catch (err: any) {
-        console.error('[DB] findUserByIdentifier Prisma error:', err?.message || err);
+        console.error('[DB] findUserByIdentifier Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
     const clean = identifier.trim().toLowerCase();
@@ -735,11 +773,19 @@ class ResilientDatabase {
 
   async findUserByPhone(phone: string): Promise<UserRecord | null> {
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const u = await this.prisma.user.findFirst({ where: { phone } });
-        return u ? this.mapPrismaUser(u) : null;
+        if (u) {
+          const mapped = this.mapPrismaUser(u);
+          const idx = this.data.users.findIndex(x => x.id === mapped.id);
+          if (idx !== -1) this.data.users[idx] = mapped;
+          else this.data.users.push(mapped);
+          return mapped;
+        }
+        return null;
       } catch (err: any) {
-        console.error('[DB] findUserByPhone Prisma error:', err?.message || err);
+        console.error('[DB] findUserByPhone Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
     const digits = phone.replace(/[\s\-\(\)\+]/g, '');
@@ -748,14 +794,22 @@ class ResilientDatabase {
 
   async findUserByEmail(email: string): Promise<UserRecord | null> {
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const clean = email.trim().toLowerCase();
         const u = await this.prisma.user.findFirst({
           where: { email: { equals: clean, mode: 'insensitive' } }
         });
-        return u ? this.mapPrismaUser(u) : null;
+        if (u) {
+          const mapped = this.mapPrismaUser(u);
+          const idx = this.data.users.findIndex(x => x.id === mapped.id);
+          if (idx !== -1) this.data.users[idx] = mapped;
+          else this.data.users.push(mapped);
+          return mapped;
+        }
+        return null;
       } catch (err: any) {
-        console.error('[DB] findUserByEmail Prisma error:', err?.message || err);
+        console.error('[DB] findUserByEmail Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
     const clean = email.trim().toLowerCase();
@@ -788,6 +842,7 @@ class ResilientDatabase {
     }
 
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const u = await this.prisma.user.create({
           data: {
@@ -808,11 +863,15 @@ class ResilientDatabase {
           }
         });
         const mapped = this.mapPrismaUser(u);
-        this.data.users.push(mapped);
+        const idx = this.data.users.findIndex(x => x.id === mapped.id);
+        if (idx !== -1) {
+          this.data.users[idx] = mapped;
+        } else {
+          this.data.users.push(mapped);
+        }
         return mapped;
       } catch (err: any) {
-        console.error('[DB] createUser Prisma error:', err?.message || err);
-        throw err;
+        console.error('[DB] createUser Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
 
@@ -901,6 +960,7 @@ class ResilientDatabase {
     this.assertDurableStorage();
 
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const dataToUpdate: any = { ...updates };
         delete dataToUpdate.id;
@@ -921,8 +981,7 @@ class ResilientDatabase {
         if (idx !== -1) this.data.users[idx] = mapped;
         return mapped;
       } catch (err: any) {
-        console.error('[DB] updateUser Prisma error:', err?.message || err);
-        throw err;
+        console.error('[DB] updateUser Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
 
@@ -1038,6 +1097,7 @@ class ResilientDatabase {
     this.assertDurableStorage();
 
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const s = await this.prisma.userSession.create({
           data: {
@@ -1052,8 +1112,7 @@ class ResilientDatabase {
         this.data.sessions.push(mapped);
         return mapped;
       } catch (err: any) {
-        console.error('[DB] createSession Prisma error:', err?.message || err);
-        throw err;
+        console.error('[DB] createSession Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
 
@@ -1439,6 +1498,7 @@ class ResilientDatabase {
     this.assertDurableStorage();
 
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const trimmedName = data.profileName.trim();
         const existing = await this.prisma.birthProfile.findFirst({
@@ -1470,8 +1530,7 @@ class ResilientDatabase {
         this.data.birthProfiles.unshift(mapped);
         return mapped;
       } catch (err: any) {
-        console.error('[DB] createProfile Prisma error:', err?.message || err);
-        throw err;
+        console.error('[DB] createProfile Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
 
@@ -1613,6 +1672,7 @@ class ResilientDatabase {
     this.assertDurableStorage();
 
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const created = await this.prisma.savedReport.create({
           data: {
@@ -1626,8 +1686,7 @@ class ResilientDatabase {
         this.data.savedReports.unshift(mapped);
         return mapped;
       } catch (err: any) {
-        console.error('[DB] createSavedReport Prisma error:', err?.message || err);
-        throw err;
+        console.error('[DB] createSavedReport Prisma error, falling back to resilient local store:', err?.message || err);
       }
     }
 
