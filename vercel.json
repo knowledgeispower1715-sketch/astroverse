@@ -129,6 +129,24 @@
       }
     },
     {
+      "source": "/api/config",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/ai-astrologer/consume-quota",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/ai-astrologer/ask",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/health",
       "destination": {
         "service": "wallet-service"
