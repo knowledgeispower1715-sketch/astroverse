@@ -12536,6 +12536,192 @@
           : `10th from Lagna (${h10LagnaSign}) contains ${planets.Sun.sign === h10LagnaSign ? 'Sun (malefic/krura)' : 'no natural benefic'}, and 10th from Moon is empty.`
       });
 
+      // 5. Pancha Mahapurusha Yogas (BPHS Ch. 35)
+      const kendraHouses = [1, 4, 7, 10];
+      const getPlanetHouseFromLagna = (p) => {
+        const pIdx = signsList.indexOf(planets[p]?.sign);
+        return pIdx >= 0 ? (((pIdx - lagnaSignIdx + 12) % 12) + 1) : 0;
+      };
+
+      // Ruchaka (Mars)
+      const marsH = getPlanetHouseFromLagna('Mars');
+      const isMarsKendra = kendraHouses.includes(marsH);
+      const isMarsDignified = ['Aries', 'Scorpio', 'Capricorn'].includes(planets.Mars?.sign);
+      const isRuchaka = isMarsKendra && isMarsDignified;
+      clientYogas.push({
+        rule_id: 'YOGA_RUCHAKA',
+        name: 'Ruchaka Mahapurusha Yoga',
+        name_en: 'Ruchaka Mahapurusha Yoga',
+        name_hi: 'रुचक महापुरुष योग',
+        status: isRuchaka ? 'PRESENT' : 'ABSENT',
+        is_active: isRuchaka,
+        planet: 'Mars',
+        source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 1-2',
+        evidence_text_en: isRuchaka
+          ? `Mangal in ${planets.Mars?.sign} occupies Kendra House ${marsH} in dignity (Swakshetra/Uchcha).`
+          : `Mangal in ${planets.Mars?.sign} (House ${marsH}) does not simultaneously satisfy Kendra (1, 4, 7, 10) and own/exalted dignity.`
+      });
+
+      // Bhadra (Mercury)
+      const mercH = getPlanetHouseFromLagna('Mercury');
+      const isMercKendra = kendraHouses.includes(mercH);
+      const isMercDignified = ['Gemini', 'Virgo'].includes(planets.Mercury?.sign);
+      const isBhadra = isMercKendra && isMercDignified;
+      clientYogas.push({
+        rule_id: 'YOGA_BHADRA',
+        name: 'Bhadra Mahapurusha Yoga',
+        name_en: 'Bhadra Mahapurusha Yoga',
+        name_hi: 'भद्र महापुरुष योग',
+        status: isBhadra ? 'PRESENT' : 'ABSENT',
+        is_active: isBhadra,
+        planet: 'Mercury',
+        source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 1-2',
+        evidence_text_en: isBhadra
+          ? `Budha in ${planets.Mercury?.sign} occupies Kendra House ${mercH} in dignity.`
+          : `Budha in ${planets.Mercury?.sign} (House ${mercH}) does not form Kendra with Swakshetra/Uchcha dignity.`
+      });
+
+      // Hamsa (Jupiter)
+      const jupH = getPlanetHouseFromLagna('Jupiter');
+      const isJupKendra = kendraHouses.includes(jupH);
+      const isJupDignified = ['Cancer', 'Sagittarius', 'Pisces'].includes(planets.Jupiter?.sign);
+      const isHamsa = isJupKendra && isJupDignified;
+      clientYogas.push({
+        rule_id: 'YOGA_HAMSA',
+        name: 'Hamsa Mahapurusha Yoga',
+        name_en: 'Hamsa Mahapurusha Yoga',
+        name_hi: 'हंस महापुरुष योग',
+        status: isHamsa ? 'PRESENT' : 'ABSENT',
+        is_active: isHamsa,
+        planet: 'Jupiter',
+        source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 1-2',
+        evidence_text_en: isHamsa
+          ? `Guru in ${planets.Jupiter?.sign} occupies Kendra House ${jupH} in dignity.`
+          : `Guru in ${planets.Jupiter?.sign} (House ${jupH}) does not form Kendra with Swakshetra/Uchcha dignity.`
+      });
+
+      // Malavya (Venus)
+      const venH = getPlanetHouseFromLagna('Venus');
+      const isVenKendra = kendraHouses.includes(venH);
+      const isVenDignified = ['Taurus', 'Libra', 'Pisces'].includes(planets.Venus?.sign);
+      const isMalavya = isVenKendra && isVenDignified;
+      clientYogas.push({
+        rule_id: 'YOGA_MALAVYA',
+        name: 'Malavya Mahapurusha Yoga',
+        name_en: 'Malavya Mahapurusha Yoga',
+        name_hi: 'मालव्य महापुरुष योग',
+        status: isMalavya ? 'PRESENT' : 'ABSENT',
+        is_active: isMalavya,
+        planet: 'Venus',
+        source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 1-2',
+        evidence_text_en: isMalavya
+          ? `Shukra in ${planets.Venus?.sign} occupies Kendra House ${venH} in dignity.`
+          : `Shukra in ${planets.Venus?.sign} (House ${venH}) does not form Kendra with Swakshetra/Uchcha dignity.`
+      });
+
+      // Sasa (Saturn)
+      const satH = getPlanetHouseFromLagna('Saturn');
+      const isSatKendra = kendraHouses.includes(satH);
+      const isSatDignified = ['Libra', 'Capricorn', 'Aquarius'].includes(planets.Saturn?.sign);
+      const isSasa = isSatKendra && isSatDignified;
+      clientYogas.push({
+        rule_id: 'YOGA_SASA',
+        name: 'Sasa Mahapurusha Yoga',
+        name_en: 'Sasa Mahapurusha Yoga',
+        name_hi: 'शश महापुरुष योग',
+        status: isSasa ? 'PRESENT' : 'ABSENT',
+        is_active: isSasa,
+        planet: 'Saturn',
+        source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 1-2',
+        evidence_text_en: isSasa
+          ? `Shani in ${planets.Saturn?.sign} occupies Kendra House ${satH} in dignity.`
+          : `Shani in ${planets.Saturn?.sign} (House ${satH}) does not form Kendra with Swakshetra/Uchcha dignity.`
+      });
+
+      // 6. Viparita Raja Yogas (Harsha, Sarala, Vimala - Phaladeepika Ch. 6)
+      const h6Sign = signsList[(lagnaSignIdx + 5) % 12];
+      const h8Sign = signsList[(lagnaSignIdx + 7) % 12];
+      const h12Sign = signsList[(lagnaSignIdx + 11) % 12];
+      const lord6 = SIGN_LORDS_MAP[h6Sign];
+      const lord8 = SIGN_LORDS_MAP[h8Sign];
+      const lord12 = SIGN_LORDS_MAP[h12Sign];
+      const hLord6 = getPlanetHouseFromLagna(lord6);
+      const hLord8 = getPlanetHouseFromLagna(lord8);
+      const hLord12 = getPlanetHouseFromLagna(lord12);
+      const dusthanas = [6, 8, 12];
+
+      const isHarsha = dusthanas.includes(hLord6);
+      clientYogas.push({
+        rule_id: 'YOGA_HARSHA',
+        name: 'Harsha Viparita Raja Yoga',
+        name_en: 'Harsha Viparita Raja Yoga',
+        name_hi: 'हर्ष विपरीत राजयोग',
+        status: isHarsha ? 'PRESENT' : 'ABSENT',
+        is_active: isHarsha,
+        planet: `${lord6} (6th Lord in House ${hLord6})`,
+        source_citation: 'Phaladeepika, Ch. 6, Sloka 58-62',
+        evidence_text_en: isHarsha
+          ? `6th Lord ${lord6} is situated in Dusthana House ${hLord6}, neutralizing conflict and bestowing resilience.`
+          : `6th Lord ${lord6} is placed in House ${hLord6} (not in Dusthana 6, 8, or 12).`
+      });
+
+      const isSarala = dusthanas.includes(hLord8);
+      clientYogas.push({
+        rule_id: 'YOGA_SARALA',
+        name: 'Sarala Viparita Raja Yoga',
+        name_en: 'Sarala Viparita Raja Yoga',
+        name_hi: 'सरल विपरीत राजयोग',
+        status: isSarala ? 'PRESENT' : 'ABSENT',
+        is_active: isSarala,
+        planet: `${lord8} (8th Lord in House ${hLord8})`,
+        source_citation: 'Phaladeepika, Ch. 6, Sloka 58-62',
+        evidence_text_en: isSarala
+          ? `8th Lord ${lord8} is situated in Dusthana House ${hLord8}, turning crisis into hidden fortitude.`
+          : `8th Lord ${lord8} is placed in House ${hLord8} (not in Dusthana 6, 8, or 12).`
+      });
+
+      const isVimala = dusthanas.includes(hLord12);
+      clientYogas.push({
+        rule_id: 'YOGA_VIMALA',
+        name: 'Vimala Viparita Raja Yoga',
+        name_en: 'Vimala Viparita Raja Yoga',
+        name_hi: 'विमल विपरीत राजयोग',
+        status: isVimala ? 'PRESENT' : 'ABSENT',
+        is_active: isVimala,
+        planet: `${lord12} (12th Lord in House ${hLord12})`,
+        source_citation: 'Phaladeepika, Ch. 6, Sloka 58-62',
+        evidence_text_en: isVimala
+          ? `12th Lord ${lord12} is situated in Dusthana House ${hLord12}, curbing unnecessary expenditures.`
+          : `12th Lord ${lord12} is placed in House ${hLord12} (not in Dusthana 6, 8, or 12).`
+      });
+
+      // 7. Kemadruma Yoga & Bhanga
+      const h2FromMoonSign = signsList[(moonIdx + 1) % 12];
+      const h12FromMoonSign = signsList[(moonIdx + 11) % 12];
+      const physicalPlanets = ['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const hasPlanet2Or12 = physicalPlanets.some(p => planets[p]?.sign === h2FromMoonSign || planets[p]?.sign === h12FromMoonSign);
+      const moonH = getPlanetHouseFromLagna('Moon');
+      const isMoonKendra = kendraHouses.includes(moonH);
+      const hasKendraPlanets = physicalPlanets.some(p => kendraHouses.includes(getPlanetHouseFromLagna(p)));
+      const isKemadrumaBhanga = !hasPlanet2Or12 && (isMoonKendra || hasKendraPlanets);
+      const isRawKemadruma = !hasPlanet2Or12 && !isKemadrumaBhanga;
+
+      clientYogas.push({
+        rule_id: 'YOGA_KEMADRUMA',
+        name: 'Kemadruma Yoga',
+        name_en: 'Kemadruma Yoga',
+        name_hi: 'केमद्रुम योग',
+        status: isRawKemadruma ? 'PRESENT' : (isKemadrumaBhanga ? 'PRESENT_WITH_MITIGATION' : 'ABSENT'),
+        is_active: isRawKemadruma || isKemadrumaBhanga,
+        planet: 'Moon flanking houses',
+        source_citation: 'Brihat Parashara Hora Shastra, Ch. 36 & Saravali Ch. 31',
+        evidence_text_en: isKemadrumaBhanga
+          ? `Houses 2 and 12 from Moon are unoccupied, but classical Kemadruma Bhanga applies due to Kendra support (${isMoonKendra ? 'Moon in Kendra' : 'benefic Kendra disposition'}).`
+          : (isRawKemadruma
+              ? `Houses 2 and 12 from Chandra (${planets.Moon.sign}) are empty of planets without Kendra cancellation.`
+              : `Flanking houses from Moon (${h2FromMoonSign} and ${h12FromMoonSign}) are supported by planetary placements.`)
+      });
+
       const clientAshtakavarga = calculateClientAshtakavarga(planets, signsList[lagnaSignIdx]);
       const clientAllVargas = calculateClientAllVargas(planets, lagnaSid);
       const clientShadbala = calculateClientShadbala(planets, signsList[lagnaSignIdx]);
@@ -24763,11 +24949,32 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const p = data?.precautions || {};
 
       if (remCard) {
-        const mantra = r.mantra || (isHi ? "ॐ ग्रां ग्रीं ग्रौं सः गुरुवे नमः" : "Om Graam Greem Graum Sah Guruve Namah");
-        const translit = r.transliteration || "Om Graam Greem Graum Sah Guruve Namah";
-        const trigger = r.trigger || (isHi ? "सक्रिय महादशा एवं होरा अधिपति" : "Active Mahadasha & Planetary Hour");
-        const timing = r.practice_timing || (isHi ? "प्रातः सूर्योदय अथवा शुभ होरा में १०८ बार जप करें।" : "Recite 108 times at dawn or during benefic planetary hours.");
-        const charity = r.charity || (isHi ? "सात्विक अन्न, काले तिल अथवा वस्त्रों का परोपकार करें।" : "Perform sattvic charity (Daan) of food or clothing.");
+        const beejMantras = {
+          Sun: { mantra: "ॐ ह्रीं ह्रीं सूर्याय नमः", transliteration: "Om Hreem Hreem Suryaya Namah" },
+          Moon: { mantra: "ॐ सों सोमाय नमः", transliteration: "Om Som Somaya Namah" },
+          Mars: { mantra: "ॐ क्रां क्रीं क्रौं सः भौमाय नमः", transliteration: "Om Kraam Kreem Kraum Sah Bhaumaya Namah" },
+          Mercury: { mantra: "ॐ ब्रां ब्रीं ब्रौं सः बुधाय नमः", transliteration: "Om Braam Breem Braum Sah Budhaya Namah" },
+          Jupiter: { mantra: "ॐ ग्रां ग्रीं ग्रौं सः गुरुवे नमः", transliteration: "Om Graam Greem Graum Sah Guruve Namah" },
+          Venus: { mantra: "ॐ द्रां द्रीं द्रौं सः शुक्राय नमः", transliteration: "Om Draam Dreem Draum Sah Shukraya Namah" },
+          Saturn: { mantra: "ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः", transliteration: "Om Praam Preem Praum Sah Shanaishcharaya Namah" },
+          Rahu: { mantra: "ॐ भ्रां भ्रीं भ्रौं सः राहवे नमः", transliteration: "Om Bhraam Bhreem Bhraum Sah Rahave Namah" },
+          Ketu: { mantra: "ॐ स्रां स्रीं स्रौं सः केतवे नमः", transliteration: "Om Sraam Sreem Sraum Sah Ketave Namah" }
+        };
+        const hindiPlanets = { Sun: "सूर्य", Moon: "चंद्र", Mars: "मंगल", Mercury: "बुध", Jupiter: "बृहस्पति", Venus: "शुक्र", Saturn: "शनि", Rahu: "राहु", Ketu: "केतु" };
+        const resolvedRemedyPlanet = r.planet || (currentGuidanceHorizon === 'hourly'
+          ? (window.currentActiveHoraPlanet || "Sun")
+          : (currentCalculatedChart?.fullData?.vimshottari_dasha?.active_now?.maha_dasha || window.currentActiveHoraPlanet || "Sun"));
+        const pDisp = isHi ? (hindiPlanets[resolvedRemedyPlanet] || resolvedRemedyPlanet) : resolvedRemedyPlanet;
+        const defaultMantra = beejMantras[resolvedRemedyPlanet] || beejMantras.Sun;
+        const mantra = r.mantra || defaultMantra.mantra;
+        const translit = r.transliteration || defaultMantra.transliteration;
+        const trigger = r.trigger || (currentGuidanceHorizon === 'hourly'
+          ? (isHi ? `सक्रिय ${pDisp} होरा प्रभाव` : `Active ${resolvedRemedyPlanet} Hora resonance`)
+          : (currentCalculatedChart ? (isHi ? `सक्रिय ${pDisp} महादशा प्रभाव` : `Active ${resolvedRemedyPlanet} Mahadasha resonance`) : (isHi ? `सार्वभौमिक ${pDisp} गोचर प्रभाव` : `Universal ${resolvedRemedyPlanet} Transit resonance`)));
+        const timing = r.practice_timing || (currentGuidanceHorizon === 'hourly'
+          ? (isHi ? `वर्तमान ${pDisp} होरा काल अथवा सूर्योदय में १०८ बार जप करें।` : `Recite 108 times during this ${resolvedRemedyPlanet} Hora window or at dawn.`)
+          : (isHi ? `प्रातः सूर्योदय अथवा ${pDisp} होरा में १०८ बार जप करें।` : `Recite 108 times at dawn or during ${resolvedRemedyPlanet} planetary hours.`));
+        const charity = r.charity || (isHi ? `${pDisp} के दिन सात्विक अन्न, फल अथवा वस्त्रों का परोपकार करें।` : `Perform sattvic charity (Daan) of food, grain, or clothing on ${resolvedRemedyPlanet}'s designated day.`);
         const gemNote = r.gemstone_guidance || (isHi ? "व्यक्तिगत रत्न हेतु जन्म कुंडली का संपूर्ण विश्लेषण आवश्यक है; केवल गोचर पर रत्न धारण न करें। जप व दान सर्वश्रेष्ठ हैं।" : "Chart-specific gemstone prescriptions require verified D1/D9 assessment. Avoid wearing gemstones based solely on transit Horas; reliance on Beej Mantra and Daan is recommended.");
 
         remCard.innerHTML = `
@@ -24923,11 +25130,14 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
         const isUnlocked = isPremiumReportUnlocked();
 
-        if (!window.currentActiveHoraPlanet && typeof calculateClientSolarHoras === 'function') {
+        if (typeof calculateClientSolarHoras === 'function') {
           const clientHoras = calculateClientSolarHoras(targetDate);
           if (clientHoras && clientHoras.active_hora) {
             window.currentActiveHoraPlanet = clientHoras.active_hora.planet;
             window.currentActiveHoraWindow = `${clientHoras.active_hora.start_time} – ${clientHoras.active_hora.end_time}`;
+            if (typeof syncHoraHeadings === 'function') {
+              syncHoraHeadings(window.currentActiveHoraPlanet, window.currentActiveHoraWindow);
+            }
           }
         }
 
@@ -25145,6 +25355,9 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
       const titleEl = document.getElementById('guidance-report-title');
       if (titleEl) titleEl.textContent = data.report_title || (isHi ? "व्यक्तिगत ज्योतिषीय मार्गदर्शन" : "Personal Astrological Guidance");
+      if (data.timing_metadata?.active_hora_planet && typeof syncHoraHeadings === 'function') {
+        syncHoraHeadings(data.timing_metadata.active_hora_planet, data.timing_metadata.hora_window);
+      }
 
       // 1. Executive Summary
       const summaryEl = document.getElementById('guidance-disp-summary');
@@ -25581,7 +25794,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             ? `दैनिक व्यक्तिगत फलादेश: ${targetDate} (सौर एवं चंद्र गोचर)`
             : `दैनिक सार्वभौमिक गोचर फलादेश: ${targetDate}`;
           const supportive = hasChart ? [
-            `प्रातः काल (सूर्योदय से मध्याह्न): ${activeMaha} एवं बुध होरा काल में रणनीतिक निर्णयों और महत्वपूर्ण कार्यों में सफलता।`,
+            `प्रातः काल (सूर्योदय से मध्याह्न): प्रातःकालीन शुभ होरा एवं सौर वेला में रणनीतिक निर्णयों और महत्वपूर्ण कार्यों में सफलता।`,
             `अपराह्न काल (मध्याह्न से सूर्यास्त): सहयोगात्मक समझौते, तकनीकी समीक्षा और व्यावसायिक प्रगति के लिए अनुकूल ग्रहीय स्थिति।`,
             `सायंकाल (सूर्यास्त से रात्रि): सौम्य चंद्र गोचर के प्रभाव से पारिवारिक सौहार्द, अध्ययन और मानसिक शांति।`
           ] : [
@@ -25626,7 +25839,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             ? `DAILY Personal Forecast: ${targetDate} (Solar & Lunar Transit)`
             : `DAILY Universal Transit Forecast: ${targetDate}`;
           const supportive = hasChart ? [
-            `Morning Window (Sunrise to Noon): Heightened focus for strategic decisions during benefic ${activeMaha} and Mercury Horas.`,
+            `Morning Window (Sunrise to Noon): Heightened focus for strategic decisions during benefic solar and morning planetary hours.`,
             `Afternoon Window (Noon to Sunset): Supportive planetary aspects assist in collaborative agreements, technical reviews, and project milestones.`,
             `Evening Window (Sunset to Night): Calming lunar alignment encourages domestic harmony, intellectual study, and contemplative rest.`
           ] : [
@@ -26129,6 +26342,51 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const isUnlocked = isPremiumReportUnlocked();
       const clientPeriodItems = buildClientPeriodItems(horizon, targetDate, isHi, hasChart, isUnlocked, lagna, moon);
 
+      const beejMantras = {
+        Sun: { mantra: "ॐ ह्रीं ह्रीं सूर्याय नमः", transliteration: "Om Hreem Hreem Suryaya Namah" },
+        Moon: { mantra: "ॐ सों सोमाय नमः", transliteration: "Om Som Somaya Namah" },
+        Mars: { mantra: "ॐ क्रां क्रीं क्रौं सः भौमाय नमः", transliteration: "Om Kraam Kreem Kraum Sah Bhaumaya Namah" },
+        Mercury: { mantra: "ॐ ब्रां ब्रीं ब्रौं सः बुधाय नमः", transliteration: "Om Braam Breem Braum Sah Budhaya Namah" },
+        Jupiter: { mantra: "ॐ ग्रां ग्रीं ग्रौं सः गुरुवे नमः", transliteration: "Om Graam Greem Graum Sah Guruve Namah" },
+        Venus: { mantra: "ॐ द्रां द्रीं द्रौं सः शुक्राय नमः", transliteration: "Om Draam Dreem Draum Sah Shukraya Namah" },
+        Saturn: { mantra: "ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः", transliteration: "Om Praam Preem Praum Sah Shanaishcharaya Namah" },
+        Rahu: { mantra: "ॐ भ्रां भ्रीं भ्रौं सः राहवे नमः", transliteration: "Om Bhraam Bhreem Bhraum Sah Rahave Namah" },
+        Ketu: { mantra: "ॐ स्रां स्रीं स्रौं सः केतवे नमः", transliteration: "Om Sraam Sreem Sraum Sah Ketave Namah" }
+      };
+      const hindiPlanets = { Sun: "सूर्य", Moon: "चंद्र", Mars: "मंगल", Mercury: "बुध", Jupiter: "बृहस्पति", Venus: "शुक्र", Saturn: "शनि", Rahu: "राहु", Ketu: "केतु" };
+      const activeRemedyPlanet = (horizon === 'hourly') ? horaPlanet : (hasChart && activeMaha ? activeMaha : horaPlanet);
+      const remedyPlanetDisp = isHi ? (hindiPlanets[activeRemedyPlanet] || activeRemedyPlanet) : activeRemedyPlanet;
+      const mInfo = beejMantras[activeRemedyPlanet] || beejMantras.Jupiter;
+      const remedyTrigger = (horizon === 'hourly')
+        ? (isHi ? `सक्रिय ${remedyPlanetDisp} होरा प्रभाव` : `Active ${activeRemedyPlanet} Hora resonance`)
+        : (hasChart && activeMaha
+            ? (isHi ? `सक्रिय ${remedyPlanetDisp} महादशा प्रभाव` : `Active ${activeRemedyPlanet} Mahadasha resonance`)
+            : (isHi ? `सार्वभौमिक ${remedyPlanetDisp} गोचर/होरा प्रभाव` : `Universal ${activeRemedyPlanet} Transit/Hora resonance`));
+      const practiceTiming = (horizon === 'hourly')
+        ? (isHi ? `वर्तमान ${remedyPlanetDisp} होरा काल अथवा सूर्योदय में १०८ बार जप करें।` : `Recite 108 times during this ${activeRemedyPlanet} Hora window or at dawn.`)
+        : (isHi ? `प्रातः सूर्योदय अथवा ${remedyPlanetDisp} होरा में १०८ बार जप करें।` : `Recite 108 times at sunrise or during ${activeRemedyPlanet} Hora.`);
+
+      const fallbackRemedies = {
+        title: isHi ? "शुभ वैदिक उपाय" : "Auspicious Vedic Remedies",
+        trigger: remedyTrigger,
+        planet: activeRemedyPlanet,
+        mantra: mInfo.mantra,
+        transliteration: mInfo.transliteration,
+        japa_count: 108,
+        practice_timing: practiceTiming,
+        charity: isHi ? `${remedyPlanetDisp} के दिन सात्विक अन्न, फल अथवा वस्त्रों का परोपकार करें।` : `Perform sattvic charity (Daan) of food, grain, or clothing on ${activeRemedyPlanet}'s designated day.`,
+        gemstone_guidance: isHi ? "व्यक्तिगत रत्न हेतु जन्म कुंडली का संपूर्ण विश्लेषण आवश्यक है; केवल गोचर पर रत्न धारण न करें। जप व दान सर्वश्रेष्ठ हैं।" : "Chart-specific gemstone prescriptions require verified D1/D9 assessment. Avoid wearing gemstones based solely on transit Horas; reliance on Beej Mantra and Daan is recommended."
+      };
+
+      const fallbackPrecautions = {
+        title: isHi ? "ज्योतिषीय सावधानियां एवं गोचर चेतावनी" : "Astrological Precautions & Transit Warnings",
+        rahu_kaal_guidance: isHi ? "स्थानीय राहुकाल के दौरान महत्वपूर्ण अनुबंध अथवा सट्टेबाजी से बचें।" : "Avoid initiating major speculative trades or signing contentious contracts during local Rahu Kaal.",
+        yamaganda_guidance: isHi ? "यमगंड काल में यात्रा अथवा महत्वपूर्ण संवाद में अतिरिक्त सतर्कता बरतें।" : "Exercise deliberate patience during Yamaganda; double-check transit documentation.",
+        transit_warnings: s.challenges_and_cautions || [],
+        behavioral_advice: s.practical_reflection || "",
+        disclaimer: isHi ? "ज्योतिषीय सावधानियां प्रवृत्तियों का दिग्दर्शन कराती हैं, किसी निश्चित अनिष्ट का नहीं। आपका सचेत पुरुषार्थ सर्वोच्च है।" : "Vedic planetary cautions outline qualitative atmospheric tendencies rather than deterministic harm. Personal diligence and ethical conduct govern lived outcomes."
+      };
+
       renderStructuredPredictionUI({
         time_horizon: horizon,
         report_title: reportTitle,
@@ -26151,7 +26409,13 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           sade_sati_phase: "General Saturn Transit in Pisces"
         },
         sections: s,
-        period_items: clientPeriodItems
+        period_items: clientPeriodItems,
+        remedies: fallbackRemedies,
+        precautions: fallbackPrecautions,
+        timing_metadata: {
+          active_hora_planet: horaPlanet,
+          hora_window: horaWindow
+        }
       });
     }
 
@@ -28939,20 +29203,26 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
       // Executive Yoga/Dosha Summary
       const executiveYogaSummary = `
-        <div style="background:#FFFDF8; border:1px solid #FCD34D; border-radius:var(--av-radius-md); padding:14px 16px; margin-bottom:14px;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-            <i class="fa-solid fa-shield-halved" style="color:#B45309; font-size:16px;"></i>
-            <h5 style="margin:0; font-size:14px; font-weight:800; color:#78350F;">Classical Jyotish Yoga &amp; Dosha Synthesis</h5>
+        <div style="background:#FFFDF8; border:1px solid #FCD34D; border-radius:var(--av-radius-md); padding:16px 18px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-shield-halved" style="color:#B45309; font-size:18px;"></i>
+              <h5 style="margin:0; font-size:15px; font-weight:800; color:#78350F;">Classical Jyotish Yoga &amp; Dosha Synthesis</h5>
+            </div>
+            <span style="font-size:10px; font-weight:700; color:#92400E; background:#FEF3C7; padding:2px 8px; border-radius:4px; border:1px solid #FDE68A;">
+              <i class="fa-solid fa-scroll" style="margin-right:3px;"></i> BPHS Ch. 35/36 &bull; Saravali Ch. 31 &bull; Phaladeepika Ch. 6
+            </span>
           </div>
-          <p style="font-size:12.5px; color:#451A03; line-height:1.5; margin:0 0 8px;">
+          <p style="font-size:12.5px; color:#451A03; line-height:1.55; margin:0 0 10px;">
             ${activeYogas.length > 0
               ? `Your chart activates <strong>${activeYogas.length} classical combination${activeYogas.length > 1 ? 's' : ''}</strong>, headlined by <strong>${escapeHtml(activeYogas[0].name_en || activeYogas[0].name)}</strong>. ${manglikData?.is_mitigated ? 'Martian tension is pacified through classical Swakshetra dignity. ' : ''}Combined with ${sadeSatiData?.is_active ? 'a reflective Shani Sade Sati transit, ' : ''}your natal blueprint channels ambition through sustained discipline rather than reckless impulse.`
               : 'Your chart operates on gradual Upachaya house growth and planetary dasha progressions. While major Raja Yogas are quiet, foundational planetary strengths provide steady, self-earned advancement.'}
           </p>
-          <div style="font-size:11px; color:#78350F; display:flex; gap:12px; flex-wrap:wrap;">
-            <span><i class="fa-solid fa-check" style="color:#047857;"></i> ${activeYogas.length} Active Yogas</span>
-            <span><i class="fa-solid fa-filter" style="color:#64748B;"></i> ${absentYogas.length} Audited Combinations</span>
-            <span><i class="fa-solid fa-shield" style="color:#B45309;"></i> Kuja: ${manglikData?.is_mitigated ? 'Mitigated' : (manglikData?.has_dosha ? 'Present' : 'Clear')}</span>
+          <div style="font-size:11.5px; color:#78350F; display:flex; gap:14px; flex-wrap:wrap; padding-top:8px; border-top:1px dashed #FDE68A;">
+            <span><i class="fa-solid fa-check" style="color:#047857;"></i> <strong>${activeYogas.length}</strong> Active Yogas</span>
+            <span><i class="fa-solid fa-filter" style="color:#64748B;"></i> <strong>${absentYogas.length}</strong> Audited Absent</span>
+            <span><i class="fa-solid fa-shield" style="color:#B45309;"></i> Kuja Dosha: <strong>${manglikData?.is_mitigated ? 'Mitigated (Swakshetra)' : (manglikData?.has_dosha ? 'Active' : 'Clear')}</strong></span>
+            <span><i class="fa-solid fa-ring" style="color:#4338CA;"></i> Sade Sati: <strong>${sadeSatiData?.is_active ? (sadeSatiData.phase || 'Active') : 'Clear'}</strong></span>
           </div>
         </div>
       `;
@@ -28962,19 +29232,25 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           No major classical Raja Yogas meet active criteria in this natal chart. Career and life achievements unfold through Upachaya house growth and dasha cycles.
         </div>
       ` : activeYogas.map(y => `
-        <div style="background:#FFFFFF; border:1px solid var(--av-color-border); border-radius:var(--av-radius-md); padding:14px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+        <div style="background:#FFFFFF; border:1px solid var(--av-color-border); border-radius:var(--av-radius-md); padding:15px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; flex-wrap:wrap; gap:6px;">
             <div>
               <strong style="font-size:14px; color:var(--av-color-maroon-800);">${escapeHtml(y.name_en || y.name)}</strong>
               ${y.name_hi ? `<span style="font-size:12px; color:var(--av-color-text-secondary); margin-left:6px;">(${escapeHtml(y.name_hi)})</span>` : ''}
+              ${y.category ? `<span style="font-size:10px; font-weight:700; background:#EEF2FF; color:#4338CA; padding:2px 7px; border-radius:6px; margin-left:6px;">${escapeHtml(y.category)}</span>` : ''}
             </div>
             <span style="font-size:10px; font-weight:800; background:${y.status === 'PRESENT_WITH_MITIGATION' ? '#FEF3C7' : '#ECFDF5'}; color:${y.status === 'PRESENT_WITH_MITIGATION' ? '#92400E' : '#047857'}; padding:3px 10px; border-radius:12px; border:1px solid ${y.status === 'PRESENT_WITH_MITIGATION' ? '#FDE68A' : '#A7F3D0'};">
               ${y.status === 'PRESENT_WITH_MITIGATION' ? 'ACTIVE WITH MITIGATION' : 'ACTIVE IN CHART'}
             </span>
           </div>
           <div style="font-size:12px; color:var(--av-color-ink); line-height:1.5; margin-bottom:6px;">
-            <strong>Formation:</strong> ${escapeHtml(y.evidence_text_en || y.planet || '')}
+            <strong>Formation &amp; Placement:</strong> ${escapeHtml(y.evidence_text_en || y.planet || '')}
           </div>
+          ${y.description_en || y.description ? `
+            <div style="font-size:11.5px; color:#475569; line-height:1.45; margin-bottom:6px;">
+              <strong>Classical Significance:</strong> ${escapeHtml(y.description_en || y.description)}
+            </div>
+          ` : ''}
           ${y.source_citation ? `<div style="font-size:11px; color:#64748B;"><i class="fa-solid fa-book-bookmark" style="margin-right:4px; color:var(--av-color-gold-600);"></i> <em>${escapeHtml(y.source_citation)}</em></div>` : ''}
         </div>
       `).join('');
@@ -28994,13 +29270,16 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
               ${absentYogas.map(y => `
                 <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-md); padding:12px;">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:6px;">
-                    <strong style="font-size:13px; color:#334155;">${escapeHtml(y.name_en || y.name)}</strong>
+                    <div>
+                      <strong style="font-size:13px; color:#334155;">${escapeHtml(y.name_en || y.name)}</strong>
+                      ${y.name_hi ? `<span style="font-size:11px; color:#64748B; margin-left:4px;">(${escapeHtml(y.name_hi)})</span>` : ''}
+                    </div>
                     <span style="font-size:10px; font-weight:700; background:#E2E8F0; color:#475569; padding:2px 8px; border-radius:10px;">ABSENT (RULE NOT MET)</span>
                   </div>
                   <div style="font-size:12px; color:#64748B; line-height:1.4;">
                     <strong>Diagnostic Evidence:</strong> ${escapeHtml(y.evidence_text_en || 'Planetary configuration does not satisfy classical criteria.')}
                   </div>
-                  ${y.source_citation ? `<div style="font-size:10px; color:#94A3B8; margin-top:4px;"><em>${escapeHtml(y.source_citation)}</em></div>` : ''}
+                  ${y.source_citation ? `<div style="font-size:10px; color:#94A3B8; margin-top:4px;"><i class="fa-solid fa-book" style="margin-right:3px;"></i> <em>${escapeHtml(y.source_citation)}</em></div>` : ''}
                 </div>
               `).join('')}
             </div>

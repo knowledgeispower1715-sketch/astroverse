@@ -21,7 +21,7 @@ All interpretations are strictly grounded in validated calculations:
 """
 
 from datetime import datetime, date, timedelta
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 PLANET_FRIENDS = {
     "Sun": {"friends": ["Moon", "Mars", "Jupiter"], "neutrals": ["Mercury"], "enemies": ["Venus", "Saturn"]},
@@ -1329,6 +1329,82 @@ def _build_period_items(
     return {"items": []}
 
 
+def _build_remedies_and_precautions(
+    horizon_lower: str,
+    is_hi: bool,
+    hora_planet: str,
+    active_maha: Optional[str] = None,
+    challenges: Optional[List[str]] = None,
+    reflection: Optional[str] = None,
+    has_chart: bool = False
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    """Constructs shastric remedies and precautions grounded in active hora or dasha ruler."""
+    if horizon_lower == "hourly":
+        active_remedy_planet = hora_planet
+        remedy_planet_disp = HINDI_PLANETS.get(active_remedy_planet, active_remedy_planet) if is_hi else active_remedy_planet
+        trigger = f"सक्रिय {remedy_planet_disp} होरा प्रभाव" if is_hi else f"Active {active_remedy_planet} Hora resonance"
+        practice_timing = (
+            f"वर्तमान {remedy_planet_disp} होरा काल अथवा प्रातः सूर्योदय में १०८ बार जप करें।" if is_hi
+            else f"Recite 108 times during this {active_remedy_planet} Hora window or at dawn."
+        )
+    elif has_chart and active_maha:
+        active_remedy_planet = active_maha
+        remedy_planet_disp = HINDI_PLANETS.get(active_remedy_planet, active_remedy_planet) if is_hi else active_remedy_planet
+        trigger = f"सक्रिय {remedy_planet_disp} महादशा प्रभाव" if is_hi else f"Active {active_remedy_planet} Mahadasha resonance"
+        practice_timing = (
+            f"प्रातः सूर्योदय अथवा {remedy_planet_disp} होरा में १०८ बार जप करें।" if is_hi
+            else f"Recite 108 times at sunrise or during {active_remedy_planet} Hora."
+        )
+    else:
+        active_remedy_planet = hora_planet
+        remedy_planet_disp = HINDI_PLANETS.get(active_remedy_planet, active_remedy_planet) if is_hi else active_remedy_planet
+        trigger = f"सार्वभौमिक {remedy_planet_disp} गोचर/होरा प्रभाव" if is_hi else f"Universal {active_remedy_planet} Transit/Hora resonance"
+        practice_timing = (
+            f"प्रातः सूर्योदय अथवा {remedy_planet_disp} होरा में १०८ बार जप करें।" if is_hi
+            else f"Recite 108 times at sunrise or during {active_remedy_planet} Hora."
+        )
+
+    remedy_mantra_info = BEEJ_MANTRAS.get(active_remedy_planet, BEEJ_MANTRAS.get("Jupiter", {}))
+
+    remedy_payload = {
+        "title": "शुभ वैदिक उपाय" if is_hi else "Auspicious Vedic Remedies",
+        "trigger": trigger,
+        "planet": active_remedy_planet,
+        "mantra": remedy_mantra_info.get("mantra", ""),
+        "transliteration": remedy_mantra_info.get("transliteration", ""),
+        "japa_count": 108,
+        "practice_timing": practice_timing,
+        "charity": (
+            f"{remedy_planet_disp} के दिन सात्विक अन्न, काले तिल, फल अथवा वस्त्रों का दान करें।" if is_hi
+            else f"Perform sattvic charity (Daan) of food, grain, fruits, or clothing on {active_remedy_planet}'s day."
+        ),
+        "gemstone_guidance": (
+            "व्यक्तिगत रत्न धारण हेतु जन्म कुंडली के लग्न, पंचम व नवम भावों का विश्लेषण अनिवार्य है। केवल गोचर अथवा होरा आधार पर रत्न धारण न करें; जप और दान सुरक्षित व प्रभावी हैं।" if is_hi
+            else "Chart-specific gemstone prescriptions require verified D1/D9 assessment. Avoid wearing gemstones based solely on daily transit Horas; reliance on Beej Mantra and Daan is recommended."
+        ),
+        "provenance": "Classical Parashari Jyotish Mantrokt Vidhi"
+    }
+
+    precaution_payload = {
+        "title": "ज्योतिषीय सावधानियां एवं गोचर चेतावनी" if is_hi else "Astrological Precautions & Transit Warnings",
+        "rahu_kaal_guidance": (
+            "स्थानीय दैनिक राहुकाल के दौरान नवीन वित्तीय अनुबंध, भूमि क्रय-विक्रय अथवा सट्टेबाजी के सौदों से परहेज करें।" if is_hi
+            else "Avoid initiating major speculative trades or signing contentious contracts during local Rahu Kaal."
+        ),
+        "yamaganda_guidance": (
+            "यमगंड काल में लंबी यात्रा अथवा महत्वपूर्ण वार्ताओं के शुभारंभ में विशेष सावधानी रखें।" if is_hi
+            else "Exercise deliberate patience during Yamaganda; double-check transit documentation."
+        ),
+        "transit_warnings": challenges or [],
+        "behavioral_advice": reflection or "",
+        "disclaimer": (
+            "ज्योतिषीय गोचर एवं होरा प्रवृत्तियां शुभ व सतर्कता कालखंड का मार्गदर्शन करती हैं, किसी निश्चित अनिष्ट का नहीं। सचेत पुरुषार्थ, नीति और एकाग्रता सर्वोच्च हैं।" if is_hi
+            else "Vedic planetary cautions outline qualitative atmospheric tendencies rather than deterministic harm. Personal diligence, ethical conduct, and clear priorities govern lived outcomes."
+        )
+    }
+    return remedy_payload, precaution_payload
+
+
 def generate_structured_prediction(
     horizon: str,
     target_date_str: str,
@@ -1755,6 +1831,12 @@ def generate_structured_prediction(
                 "limitations": limitations
             },
             "period_items": period_items,
+            "remedies": _build_remedies_and_precautions(
+                horizon_lower, is_hi, hora_planet, None, challenges, reflection, has_chart=False
+            )[0],
+            "precautions": _build_remedies_and_precautions(
+                horizon_lower, is_hi, hora_planet, None, challenges, reflection, has_chart=False
+            )[1],
             "timing_metadata": {
                 "active_hora_planet": hora_planet,
                 "hora_window": time_window_str,
@@ -2226,49 +2308,13 @@ def generate_structured_prediction(
                 "Outcomes require conscious personal initiative, moral discernment, and environmental cooperation."
             )
 
-    active_remedy_planet = active_maha if kundli else hora_planet
-    remedy_mantra_info = BEEJ_MANTRAS.get(active_remedy_planet, BEEJ_MANTRAS.get("Jupiter", {}))
-    remedy_planet_disp = HINDI_PLANETS.get(active_remedy_planet, active_remedy_planet) if is_hi else active_remedy_planet
-
     sade_sati_dict = doshas.get("sade_sati", {}) if doshas else {}
     sade_sati_status_clean = sade_sati_dict.get("sade_sati_status", "Clear of Sade Sati") if kundli else ("सार्वभौमिक गोचर" if is_hi else "Universal Transit")
     dhaiya_status_clean = sade_sati_dict.get("dhaiya_status", "Inactive: No Active Dhaiya") if kundli else ("सामान्य गोचर" if is_hi else "General Transit")
 
-    remedy_payload = {
-        "title": "शुभ वैदिक उपाय" if is_hi else "Auspicious Vedic Remedies",
-        "trigger": f"{maha_hi} महादशा एवं {hora_hi} होरा प्रभाव" if is_hi else f"{active_maha} Mahadasha & {hora_planet} Hora resonance",
-        "mantra": remedy_mantra_info.get("mantra", ""),
-        "transliteration": remedy_mantra_info.get("transliteration", ""),
-        "japa_count": 108,
-        "practice_timing": f"सूर्योदय काल अथवा {remedy_planet_disp} होरा में १०८ बार जप करें।" if is_hi else f"Recite 108 times at sunrise or during {active_remedy_planet} Hora.",
-        "charity": (
-            f"शनिवार अथवा {remedy_planet_disp} के दिन सात्विक अन्न, काले तिल अथवा वस्त्रों का दान करें।" if is_hi
-            else f"Perform sattvic charity (Daan) of food, grain, or clothing on {remedy_planet_disp}'s designated day."
-        ),
-        "gemstone_guidance": (
-            "व्यक्तिगत रत्न धारण हेतु जन्म कुंडली के लग्न, पंचम व नवम भावों का विश्लेषण अनिवार्य है। केवल गोचर अथवा होरा आधार पर रत्न धारण न करें; जप और दान सुरक्षित व प्रभावी हैं।" if is_hi
-            else "Chart-specific gemstone prescriptions require verified D1/D9 assessment. Avoid wearing gemstones based solely on daily transit Horas; reliance on Beej Mantra and Daan is recommended."
-        ),
-        "provenance": "Classical Parashari Jyotish Mantrokt Vidhi"
-    }
-
-    precaution_payload = {
-        "title": "ज्योतिषीय सावधानियां एवं गोचर चेतावनी" if is_hi else "Astrological Precautions & Transit Warnings",
-        "rahu_kaal_guidance": (
-            "स्थानीय दैनिक राहुकाल के दौरान नवीन वित्तीय अनुबंध, भूमि क्रय-विक्रय अथवा सट्टेबाजी के सौदों से परहेज करें।" if is_hi
-            else "Avoid initiating major speculative trades or signing contentious contracts during local Rahu Kaal."
-        ),
-        "yamaganda_guidance": (
-            "यमगंड काल में लंबी यात्रा अथवा महत्वपूर्ण वार्ताओं के शुभारंभ में विशेष सावधानी रखें।" if is_hi
-            else "Exercise deliberate patience during Yamaganda; double-check transit documentation."
-        ),
-        "transit_warnings": challenges,
-        "behavioral_advice": reflection,
-        "disclaimer": (
-            "ज्योतिषीय गोचर एवं होरा प्रवृत्तियां शुभ व सतर्कता कालखंड का मार्गदर्शन करती हैं, किसी निश्चित अनिष्ट का नहीं। सचेत पुरुषार्थ, नीति और एकाग्रता सर्वोच्च हैं।" if is_hi
-            else "Vedic planetary cautions outline qualitative atmospheric tendencies rather than deterministic harm. Personal diligence, ethical conduct, and clear priorities govern lived outcomes."
-        )
-    }
+    remedy_payload, precaution_payload = _build_remedies_and_precautions(
+        horizon_lower, is_hi, hora_planet, active_maha, challenges, reflection, has_chart=True
+    )
 
     return {
         "report_title": report_title,
