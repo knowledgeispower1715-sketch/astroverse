@@ -305,6 +305,329 @@ async function main() {
     assert('Customer public footer restored on customer pages', overviewState.footerRestored);
     assert('Customer bottom navigation dock restored on customer pages', overviewState.dockRestored);
 
+    console.log('\n--- TEST SUITE 8: Admin Subroute Resolution (Modules) ---');
+    // Re-authenticate as OWNER for subroute tests
+    await cdp.eval(`
+      currentUserSession = {
+        id: 'usr_owner_123',
+        name: 'Platform Owner',
+        email: 'tiwariji0028@gmail.com',
+        role: 'OWNER',
+        status: 'ACTIVE'
+      };
+      currentSessionToken = 'admin_session_test_token';
+      window.location.hash = '#/admin/modules/users';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const usersModState = await cdp.eval(`
+      (() => {
+        return {
+          activeMod: currentAdminActiveModule,
+          usersDisplay: document.getElementById('admin-module-users')?.style.display,
+          adminMode: document.body.classList.contains('admin-mode'),
+          adminActive: document.getElementById('view-admin')?.classList.contains('active')
+        };
+      })()
+    `);
+    assert('Subroute #/admin/modules/users activates users module', usersModState.activeMod === 'users');
+    assert('Module panel admin-module-users is displayed', usersModState.usersDisplay !== 'none');
+    assert('document.body has admin-mode active during subroute', usersModState.adminMode);
+    assert('#view-admin is active during subroute', usersModState.adminActive);
+
+    // Switch to database module via hash
+    await cdp.eval(`
+      window.location.hash = '#/admin/modules/database';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const dbModState = await cdp.eval(`
+      (() => {
+        return {
+          activeMod: currentAdminActiveModule,
+          dbDisplay: document.getElementById('admin-module-database')?.style.display
+        };
+      })()
+    `);
+    assert('Subroute #/admin/modules/database activates database module', dbModState.activeMod === 'database');
+    assert('Module panel admin-module-database is displayed', dbModState.dbDisplay !== 'none');
+
+    // Switch to qa module via hash
+    await cdp.eval(`
+      window.location.hash = '#/admin/modules/qa';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const qaModState = await cdp.eval(`
+      (() => {
+        return {
+          activeMod: currentAdminActiveModule,
+          qaDisplay: document.getElementById('admin-module-qa')?.style.display
+        };
+      })()
+    `);
+    assert('Subroute #/admin/modules/qa activates QA console module', qaModState.activeMod === 'qa');
+    assert('Module panel admin-module-qa is displayed', qaModState.qaDisplay !== 'none');
+
+    console.log('\n--- TEST SUITE 9: In-Admin Feature Test Harnesses ---');
+    // Test opening Kundli harness via hash
+    await cdp.eval(`
+      window.location.hash = '#/admin/tools/kundli';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const kundliToolState = await cdp.eval(`
+      (() => {
+        const kundliTool = document.getElementById('admin-tool-kundli');
+        const toolsContainer = document.getElementById('admin-tools-container');
+        const dashContent = document.getElementById('admin-dashboard-content');
+        const customerKundli = document.getElementById('view-kundli');
+        return {
+          activeTool: currentAdminActiveTool,
+          toolsContainerDisplay: toolsContainer?.style.display,
+          kundliToolDisplay: kundliTool?.style.display,
+          dashContentDisplay: dashContent?.style.display,
+          customerKundliActive: customerKundli?.classList.contains('active'),
+          adminActive: document.getElementById('view-admin')?.classList.contains('active')
+        };
+      })()
+    `);
+    assert('Subroute #/admin/tools/kundli sets active tool to kundli', kundliToolState.activeTool === 'kundli');
+    assert('Tools container is displayed', kundliToolState.toolsContainerDisplay !== 'none');
+    assert('admin-tool-kundli is displayed', kundliToolState.kundliToolDisplay !== 'none');
+    assert('admin-dashboard-content is hidden', kundliToolState.dashContentDisplay === 'none');
+    assert('Customer view #view-kundli is NOT active', !kundliToolState.customerKundliActive);
+    assert('#view-admin remains active', kundliToolState.adminActive);
+
+    // Test tier simulation switcher in Kundli harness
+    await cdp.eval(`adminSetPreviewTier('PREMIUM')`);
+    const tierSimResult = await cdp.eval(`
+      (() => {
+        return {
+          simTier: adminSimulatedTier,
+          previewTier: adminPreviewEntitlements?.tier,
+          activeBtnStyle: document.getElementById('tool-btn-tier-premium')?.style.boxShadow
+        };
+      })()
+    `);
+    assert('adminSetPreviewTier sets adminSimulatedTier to PREMIUM', tierSimResult.simTier === 'PREMIUM');
+    assert('adminPreviewEntitlements.tier is updated to PREMIUM', tierSimResult.previewTier === 'PREMIUM');
+
+    // Test Forecasts harness
+    await cdp.eval(`
+      window.location.hash = '#/admin/tools/forecasts';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const forecastsToolState = await cdp.eval(`
+      (() => {
+        return {
+          activeTool: currentAdminActiveTool,
+          forecastsDisplay: document.getElementById('admin-tool-forecasts')?.style.display,
+          customerHorasActive: document.getElementById('view-horas')?.classList.contains('active')
+        };
+      })()
+    `);
+    assert('Subroute #/admin/tools/forecasts sets active tool to forecasts', forecastsToolState.activeTool === 'forecasts');
+    assert('admin-tool-forecasts is displayed', forecastsToolState.forecastsDisplay !== 'none');
+    assert('Customer view #view-horas is NOT active', !forecastsToolState.customerHorasActive);
+
+    // Test AI Astrologer harness
+    await cdp.eval(`
+      window.location.hash = '#/admin/tools/ai-astrologer';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const aiToolState = await cdp.eval(`
+      (() => {
+        return {
+          activeTool: currentAdminActiveTool,
+          aiDisplay: document.getElementById('admin-tool-ai-astrologer')?.style.display,
+          customerAstrologersActive: document.getElementById('view-astrologers')?.classList.contains('active')
+        };
+      })()
+    `);
+    assert('Subroute #/admin/tools/ai-astrologer sets active tool to ai-astrologer', aiToolState.activeTool === 'ai-astrologer');
+    assert('admin-tool-ai-astrologer is displayed', aiToolState.aiDisplay !== 'none');
+    assert('Customer view #view-astrologers is NOT active', !aiToolState.customerAstrologersActive);
+
+    // Test Numerology harness
+    await cdp.eval(`
+      window.location.hash = '#/admin/tools/numerology';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const numToolState = await cdp.eval(`
+      (() => {
+        return {
+          activeTool: currentAdminActiveTool,
+          numDisplay: document.getElementById('admin-tool-numerology')?.style.display
+        };
+      })()
+    `);
+    assert('Subroute #/admin/tools/numerology sets active tool to numerology', numToolState.activeTool === 'numerology');
+    assert('admin-tool-numerology is displayed', numToolState.numDisplay !== 'none');
+
+    // Test Reports catalogue harness
+    await cdp.eval(`
+      window.location.hash = '#/admin/tools/reports';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const reportsToolState = await cdp.eval(`
+      (() => {
+        return {
+          activeTool: currentAdminActiveTool,
+          reportsDisplay: document.getElementById('admin-tool-reports')?.style.display
+        };
+      })()
+    `);
+    assert('Subroute #/admin/tools/reports sets active tool to reports', reportsToolState.activeTool === 'reports');
+    assert('admin-tool-reports is displayed', reportsToolState.reportsDisplay !== 'none');
+
+    // Test Billing & demo wallet harness
+    await cdp.eval(`
+      window.location.hash = '#/admin/tools/billing';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const billingToolState = await cdp.eval(`
+      (() => {
+        return {
+          activeTool: currentAdminActiveTool,
+          billingDisplay: document.getElementById('admin-tool-billing')?.style.display
+        };
+      })()
+    `);
+    assert('Subroute #/admin/tools/billing sets active tool to billing', billingToolState.activeTool === 'billing');
+    assert('admin-tool-billing is displayed', billingToolState.billingDisplay !== 'none');
+
+    console.log('\n--- TEST SUITE 10: Module 16 QA Feature Launchers (In-Admin Routing) ---');
+    // Navigate back to QA module and launch features from buttons
+    await cdp.eval(`
+      switchAdminModule('qa');
+      qaLaunchKundliTest();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const qaLaunchResult = await cdp.eval(`
+      (() => {
+        return {
+          hash: window.location.hash,
+          activeTool: currentAdminActiveTool,
+          kundliDisplay: document.getElementById('admin-tool-kundli')?.style.display,
+          adminMode: document.body.classList.contains('admin-mode'),
+          customerKundliActive: document.getElementById('view-kundli')?.classList.contains('active'),
+          navbarHidden: window.getComputedStyle(document.querySelector('.main-navbar')).display === 'none'
+        };
+      })()
+    `);
+    assert('qaLaunchKundliTest() routes to #/admin/tools/kundli', qaLaunchResult.hash === '#/admin/tools/kundli');
+    assert('qaLaunchKundliTest() sets active tool to kundli', qaLaunchResult.activeTool === 'kundli');
+    assert('qaLaunchKundliTest() keeps document.body in admin-mode', qaLaunchResult.adminMode);
+    assert('qaLaunchKundliTest() does NOT navigate to customer view-kundli', !qaLaunchResult.customerKundliActive);
+    assert('qaLaunchKundliTest() maintains customer top navbar hidden', qaLaunchResult.navbarHidden);
+
+    console.log('\n--- TEST SUITE 11: Return to QA Console Navigation ---');
+    await cdp.eval(`returnToAdminQaModule()`);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const returnState = await cdp.eval(`
+      (() => {
+        return {
+          hash: window.location.hash,
+          activeTool: currentAdminActiveTool,
+          activeMod: currentAdminActiveModule,
+          toolsContainerDisplay: document.getElementById('admin-tools-container')?.style.display,
+          dashContentDisplay: document.getElementById('admin-dashboard-content')?.style.display,
+          qaModDisplay: document.getElementById('admin-module-qa')?.style.display
+        };
+      })()
+    `);
+    assert('returnToAdminQaModule() resets activeTool to null', returnState.activeTool === null);
+    assert('returnToAdminQaModule() sets activeMod to qa', returnState.activeMod === 'qa');
+    assert('returnToAdminQaModule() updates hash to #/admin/modules/qa', returnState.hash === '#/admin/modules/qa');
+    assert('admin-tools-container is hidden', returnState.toolsContainerDisplay === 'none');
+    assert('admin-dashboard-content is restored', returnState.dashContentDisplay !== 'none');
+    assert('admin-module-qa is visible', returnState.qaModDisplay !== 'none');
+
+    console.log('\n--- TEST SUITE 12: In-Admin 404 Panel for Invalid Subroutes ---');
+    await cdp.eval(`
+      window.location.hash = '#/admin/modules/unknown_module_xyz';
+      handleHashRoute();
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const notFoundState = await cdp.eval(`
+      (() => {
+        const notFound = document.getElementById('admin-panel-notfound');
+        const dashContent = document.getElementById('admin-dashboard-content');
+        const toolsContainer = document.getElementById('admin-tools-container');
+        const overview = document.getElementById('view-overview');
+        return {
+          notFoundDisplay: notFound?.style.display,
+          dashContentDisplay: dashContent?.style.display,
+          toolsContainerDisplay: toolsContainer?.style.display,
+          adminMode: document.body.classList.contains('admin-mode'),
+          overviewActive: overview?.classList.contains('active'),
+          msgText: document.getElementById('admin-notfound-message')?.textContent
+        };
+      })()
+    `);
+    assert('Invalid admin subroute displays #admin-panel-notfound', notFoundState.notFoundDisplay !== 'none');
+    assert('admin-dashboard-content is hidden on 404', notFoundState.dashContentDisplay === 'none');
+    assert('admin-tools-container is hidden on 404', notFoundState.toolsContainerDisplay === 'none');
+    assert('document.body retains admin-mode on 404', notFoundState.adminMode);
+    assert('Public customer homepage is NOT displayed on admin 404', !notFoundState.overviewActive);
+    assert('Not-found message cites the invalid route', notFoundState.msgText.includes('admin/modules/unknown_module_xyz'));
+
+    console.log('\n--- TEST SUITE 13: Data & State Isolation (Zero Customer Contamination) ---');
+    await cdp.eval(`
+      // 1. Establish existing customer state
+      currentCalculatedChart = {
+        name: 'Genuine Customer Native',
+        dob: '1990-05-15',
+        ascendant: 'Taurus',
+        moonSign: 'Cancer'
+      };
+      currentUserEntitlements = {
+        tier: 'FREE',
+        source: 'subscription',
+        validUntil: null
+      };
+
+      // 2. Perform admin test harness actions
+      loadAdminSyntheticProfileToHarness();
+      adminSetPreviewTier('PREMIUM');
+    `);
+    await new Promise((r) => setTimeout(r, 200));
+
+    const isolationResult = await cdp.eval(`
+      (() => {
+        return {
+          adminPreviewChartName: adminPreviewChart?.name,
+          customerChartName: currentCalculatedChart?.name,
+          adminSimulatedTier: adminSimulatedTier,
+          adminPreviewTier: adminPreviewEntitlements?.tier,
+          customerEntitlementTier: currentUserEntitlements?.tier
+        };
+      })()
+    `);
+    assert('Admin synthetic profile loaded into adminPreviewChart', isolationResult.adminPreviewChartName === 'Synthetic Vedic Benchmark Native');
+    assert('Admin profile load does NOT overwrite customer currentCalculatedChart', isolationResult.customerChartName === 'Genuine Customer Native');
+    assert('adminSimulatedTier is set to PREMIUM', isolationResult.adminSimulatedTier === 'PREMIUM');
+    assert('adminPreviewEntitlements.tier is set to PREMIUM', isolationResult.adminPreviewTier === 'PREMIUM');
+    assert('Customer currentUserEntitlements.tier remains FREE (unpolluted)', isolationResult.customerEntitlementTier === 'FREE');
+
   } catch (err) {
     console.error('Test execution error:', err);
     passedAll = false;
