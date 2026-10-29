@@ -10963,6 +10963,11 @@
       if (targetSection === 'settings') loadSettingsViewData();
       if (targetSection === 'admin') loadAdminConsoleData();
       if (targetSection === 'dashboard') loadUserSavedReports();
+      if (targetSection === 'horoscope') {
+        if (!window.currentSelectedHoroscope && typeof selectHoroscopeSign === 'function') {
+          selectHoroscopeSign('Aries');
+        }
+      }
       if (targetSection === 'kundli') {
         if (currentCalculatedChart && !window.currentActivePrediction) {
           generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
@@ -13821,18 +13826,23 @@
       };
     }
 
+    let horaAbortController = null;
+
     async function loadHourlyHorasUI() {
-      if (isHourlyHorasLoading) return;
+      if (isHourlyHorasLoading && horaAbortController) {
+        try { horaAbortController.abort(); } catch (_) {}
+      }
       isHourlyHorasLoading = true;
+      horaAbortController = new AbortController();
 
       const tz = document.getElementById('k-resolved-tz')?.value || 'Asia/Kolkata';
       const dateInput = document.getElementById('input-hora-date');
       const todayStr = getLocalDateString(tz);
-      if (!dateInput.value) dateInput.value = todayStr;
+      if (dateInput && !dateInput.value) dateInput.value = todayStr;
 
-      const targetDate = dateInput.value;
-      const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 28.6139;
-      const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 77.2090;
+      const targetDate = dateInput ? dateInput.value : todayStr;
+      const lat = parseFloat(document.getElementById('k-resolved-lat')?.value) || 28.6139;
+      const lon = parseFloat(document.getElementById('k-resolved-lon')?.value) || 77.2090;
 
       const metricsEl = document.getElementById('disp-hora-sun-metrics');
       if (metricsEl) {
@@ -13841,7 +13851,9 @@
 
       try {
         const currentInstant = new Date().toISOString();
-        const res = await fetch(`/api/hora?date_str=${encodeURIComponent(targetDate)}&lat=${lat}&lon=${lon}&timezone=${encodeURIComponent(tz)}&current_instant=${encodeURIComponent(currentInstant)}`);
+        const res = await fetch(`/api/hora?date_str=${encodeURIComponent(targetDate)}&lat=${lat}&lon=${lon}&timezone=${encodeURIComponent(tz)}&current_instant=${encodeURIComponent(currentInstant)}`, {
+          signal: horaAbortController.signal
+        });
         if (res.ok) {
           const data = await res.json();
           // Validate required astronomical schema
@@ -13854,6 +13866,7 @@
         const fallbackData = calculateClientSolarHoras(targetDate, lat, lon, tz);
         render24HorasUI(fallbackData, targetDate);
       } catch (err) {
+        if (err.name === 'AbortError') return;
         console.warn("Backend hourly API offline, computing authentic client-side solar horas:", err);
         const fallbackData = calculateClientSolarHoras(targetDate, lat, lon, tz);
         render24HorasUI(fallbackData, targetDate);
@@ -15053,51 +15066,72 @@
     }
 
     // Sign Out
+    let isSigningOut = false;
     async function executeSignOut(notify = true) {
-      if (supabaseClient && isSupabaseConfigured) {
-        try {
-          await supabaseClient.auth.signOut();
-        } catch (_) {}
-      }
-      if (currentSessionToken) {
-        try {
-          await fetch(`${getAuthBase()}/api/auth/logout`, {
-            method: 'POST',
-            headers: getAuthHeaders()
-          });
-        } catch (e) {}
-      }
+      if (isSigningOut) return;
+      isSigningOut = true;
+      try {
+        if (supabaseClient && isSupabaseConfigured) {
+          try {
+            await supabaseClient.auth.signOut();
+          } catch (_) {}
+        }
+        if (currentSessionToken) {
+          try {
+            await fetch(`${getAuthBase()}/api/auth/logout`, {
+              method: 'POST',
+              headers: getAuthHeaders()
+            });
+          } catch (e) {}
+        }
 
-      currentUserSession = null;
-      currentSessionToken = '';
-      currentWalletBalance = 0.00;
-      localStorage.removeItem('astro_session_token');
-      localStorage.removeItem('astro_user_session');
-      localStorage.removeItem('astro_wallet_bal');
-      localStorage.removeItem('astro_admin_preview_active');
-      localStorage.removeItem('astro_admin_preview_tier');
-      localStorage.removeItem('astro_simulated_tier');
+        currentUserSession = null;
+        currentSessionToken = '';
+        currentWalletBalance = 0.00;
+        if (typeof lastSyncedSupabaseToken !== 'undefined') {
+          lastSyncedSupabaseToken = null;
+        }
+        localStorage.removeItem('astro_session_token');
+        localStorage.removeItem('astro_user_session');
+        localStorage.removeItem('astro_wallet_bal');
+        localStorage.removeItem('astro_admin_preview_active');
+        localStorage.removeItem('astro_admin_preview_tier');
+        localStorage.removeItem('astro_simulated_tier');
 
-      if (typeof resetNumerologyStudio === 'function') {
-        resetNumerologyStudio();
-      }
-      currentCalculatedChart = null;
-      window.currentCalculatedChart = null;
-      activeConsultationSession = null;
-      isChatKundliLinked = false;
-      if (typeof updateOverviewActiveChartBanner === 'function') {
-        updateOverviewActiveChartBanner();
-      }
-      if (typeof setGuidanceState === 'function') {
-        setGuidanceState('NO_PROFILE');
-      }
+        // Clear active intervals safely to prevent memory and timer leaks
+        if (horaCountdownInterval) {
+          clearInterval(horaCountdownInterval);
+          horaCountdownInterval = null;
+        }
+        if (authCountdownTimer) {
+          clearInterval(authCountdownTimer);
+          authCountdownTimer = null;
+        }
+        if (consultationTimerInterval) {
+          clearInterval(consultationTimerInterval);
+          consultationTimerInterval = null;
+        }
 
-      updateUserSessionUI();
-      if (typeof updateOverviewActiveChartBanner === 'function') {
-        updateOverviewActiveChartBanner();
+        if (typeof resetNumerologyStudio === 'function') {
+          resetNumerologyStudio();
+        }
+        currentCalculatedChart = null;
+        window.currentCalculatedChart = null;
+        activeConsultationSession = null;
+        isChatKundliLinked = false;
+        if (typeof setGuidanceState === 'function') {
+          setGuidanceState('NO_PROFILE');
+        }
+
+        updateUserSessionUI();
+        if (typeof updateOverviewActiveChartBanner === 'function') {
+          updateOverviewActiveChartBanner();
+        }
+        if (notify) showToast("Signed out successfully.", "info");
+        switchNavSection('kundli');
+      } finally {
+        isSigningOut = false;
       }
-      if (notify) showToast("Signed out successfully.", "info");
-      switchNavSection('kundli');
     }
 
     function handleAuthExpired(pendingAction = null) {
@@ -15129,53 +15163,75 @@
       }
     }
 
-    // Validate stored session with server on startup
-    async function validateStoredSession() {
-      if (!currentSessionToken) return;
-      try {
-        const res = await fetch(`${getAuthBase()}/api/user/me`, {
-          headers: getAuthHeaders()
-        });
-        if (res.ok) {
-          const u = await res.json();
-          currentUserSession = {
-            id: u.id,
-            name: u.displayName || u.email?.split('@')[0] || u.phone || 'User',
-            identifier: u.email || u.phone,
-            email: u.email,
-            phone: u.phone,
-            emailVerified: u.emailVerified,
-            phoneVerified: u.phoneVerified,
-            role: u.role,
-            status: u.status,
-            preferredLanguage: u.preferredLanguage,
-            preferredTimezone: u.preferredTimezone
-          };
-          currentWalletBalance = parseFloat(u.walletBalance || 0.00);
-          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
-          localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
-          try {
-            const walRes = await fetch(`${getAuthBase()}/api/wallet/me`, { headers: getAuthHeaders() });
-            if (walRes.ok) {
-              const walData = await walRes.json();
-              if (walData.demoBalance !== undefined) {
-                currentDemoWalletBalance = parseFloat(walData.demoBalance);
-                localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+    // Validate stored session with server on startup (Idempotent single-flight)
+    let inFlightValidateSessionPromise = null;
+    let lastValidatedSessionTime = 0;
+
+    async function validateStoredSession(force = false) {
+      if (!currentSessionToken) return null;
+      const now = Date.now();
+      if (!force && currentUserSession && (now - lastValidatedSessionTime < 45000)) {
+        return currentUserSession;
+      }
+      if (inFlightValidateSessionPromise) {
+        return await inFlightValidateSessionPromise;
+      }
+
+      inFlightValidateSessionPromise = (async () => {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/user/me`, {
+            headers: getAuthHeaders()
+          });
+          if (res.ok) {
+            const u = await res.json();
+            currentUserSession = {
+              id: u.id,
+              name: u.displayName || u.email?.split('@')[0] || u.phone || 'User',
+              identifier: u.email || u.phone,
+              email: u.email,
+              phone: u.phone,
+              emailVerified: u.emailVerified,
+              phoneVerified: u.phoneVerified,
+              role: u.role,
+              status: u.status,
+              preferredLanguage: u.preferredLanguage,
+              preferredTimezone: u.preferredTimezone
+            };
+            currentWalletBalance = parseFloat(u.walletBalance || 0.00);
+            localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+            localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+            lastValidatedSessionTime = Date.now();
+
+            try {
+              const walRes = await fetch(`${getAuthBase()}/api/wallet/me`, { headers: getAuthHeaders() });
+              if (walRes.ok) {
+                const walData = await walRes.json();
+                if (walData.demoBalance !== undefined) {
+                  currentDemoWalletBalance = parseFloat(walData.demoBalance);
+                  localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+                }
               }
+            } catch (_) {}
+            updateUserSessionUI();
+            if (typeof updateOverviewActiveChartBanner === 'function') {
+              updateOverviewActiveChartBanner();
             }
-          } catch (_) {}
-          updateUserSessionUI();
-      if (typeof updateOverviewActiveChartBanner === 'function') {
-        updateOverviewActiveChartBanner();
-      }
-          updateDemoWalletDisplay();
-      syncPromotionalBannerState();
-        } else if (res.status === 401 || res.status === 403) {
-          executeSignOut(false);
+            updateDemoWalletDisplay();
+            syncPromotionalBannerState();
+            return currentUserSession;
+          } else if (res.status === 401 || res.status === 403) {
+            executeSignOut(false);
+            return null;
+          }
+        } catch (err) {
+          console.warn("[SESSION] Offline validation fallback:", err);
+        } finally {
+          inFlightValidateSessionPromise = null;
         }
-      } catch (err) {
-        console.warn("[SESSION] Offline validation fallback:", err);
-      }
+        return currentUserSession;
+      })();
+
+      return await inFlightValidateSessionPromise;
     }
 
     async function validateSessionWithBackend() {
@@ -16127,32 +16183,52 @@
       showToast(`Profile for ${name} (${rel}) saved locally!`, "success");
     }
 
-    async function syncProfilesFromBackend(userId) {
+    let inFlightSyncProfilesPromise = null;
+    let lastSyncedProfileUserId = null;
+    let lastSyncedProfileTime = 0;
+
+    async function syncProfilesFromBackend(userId, force = false) {
       if (!userId || userId.startsWith('local_')) return;
-      try {
-        const res = await fetch(`${getAuthBase()}/api/profiles/${userId}`, {
-          headers: getAuthHeaders()
-        });
-        if (res.ok) {
-          const list = await res.json();
-          if (Array.isArray(list)) {
-            savedUserProfiles = list.map(p => ({
-              id: p.id,
-              name: p.profileName,
-              rel: p.relationship,
-              dob: p.dateOfBirth ? p.dateOfBirth.split('T')[0] : '',
-              tob: p.timeOfBirth,
-              city: p.birthplaceName,
-              lat: Number(p.latitude),
-              lon: Number(p.longitude)
-            }));
-            localStorage.setItem('astro_saved_profiles', JSON.stringify(savedUserProfiles));
-            renderSavedProfilesList();
-          }
-        }
-      } catch (err) {
-        console.warn("Could not sync profiles from backend:", err);
+      const now = Date.now();
+      if (!force && lastSyncedProfileUserId === userId && (now - lastSyncedProfileTime < 30000)) {
+        return;
       }
+      if (inFlightSyncProfilesPromise) {
+        return await inFlightSyncProfilesPromise;
+      }
+
+      inFlightSyncProfilesPromise = (async () => {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/profiles/${userId}`, {
+            headers: getAuthHeaders()
+          });
+          if (res.ok) {
+            const list = await res.json();
+            if (Array.isArray(list)) {
+              savedUserProfiles = list.map(p => ({
+                id: p.id,
+                name: p.profileName,
+                rel: p.relationship,
+                dob: p.dateOfBirth ? p.dateOfBirth.split('T')[0] : '',
+                tob: p.timeOfBirth,
+                city: p.birthplaceName,
+                lat: Number(p.latitude),
+                lon: Number(p.longitude)
+              }));
+              localStorage.setItem('astro_saved_profiles', JSON.stringify(savedUserProfiles));
+              lastSyncedProfileUserId = userId;
+              lastSyncedProfileTime = Date.now();
+              renderSavedProfilesList();
+            }
+          }
+        } catch (err) {
+          console.warn("Could not sync profiles from backend:", err);
+        } finally {
+          inFlightSyncProfilesPromise = null;
+        }
+      })();
+
+      return await inFlightSyncProfilesPromise;
     }
 
     function renderSavedProfilesList() {
@@ -17185,47 +17261,65 @@
       }
     }
 
-    async function syncPromotionalBannerState() {
-      try {
-        const guestTrialId = getOrInitGuestTrialId();
-        const res = await fetch(`${getAuthBase()}/api/promotions/active?guestTrialId=${encodeURIComponent(guestTrialId)}`, {
-          headers: getAuthHeaders()
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data.success || !data.offer) return;
+    let inFlightSyncPromoPromise = null;
+    let lastSyncPromoTime = 0;
 
-        const isHi = (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi') || (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi');
-        const headlineEl = document.getElementById('promo-offer-headline');
-        const badgeEl = document.getElementById('promo-offer-badge');
-        const descEl = document.getElementById('promo-offer-description');
-        const ctaLabel = document.getElementById('promo-cta-label');
-
-        if (data.isEligible) {
-          if (headlineEl) headlineEl.textContent = isHi ? data.offer.bannerHeadlineHi : data.offer.bannerHeadlineEn;
-          if (descEl) descEl.textContent = isHi ? data.offer.bannerDescriptionHi : data.offer.bannerDescriptionEn;
-          if (badgeEl) badgeEl.textContent = isHi ? 'निःशुल्क ऑफर' : 'FREE TRIAL OFFER';
-          if (ctaLabel) ctaLabel.textContent = isHi ? 'निःशुल्क मिनट शुरू करें' : 'Start Free Minute';
-        } else {
-          if (headlineEl) headlineEl.textContent = isHi ? '⚡ वैदिक AI परामर्श मात्र ₹15/मिनट' : '⚡ Vedic AI Astrologer at ₹15/min';
-          if (descEl) descEl.textContent = isHi ? 'प्रामाणिक स्विस एफिमेरिस गणनाओं पर आधारित परामर्श' : 'Authentic Swiss Ephemeris chart-grounded guidance';
-          if (badgeEl) badgeEl.textContent = isHi ? 'सत्यापित' : 'PROMOTIONAL OFFER';
-          if (ctaLabel) ctaLabel.textContent = isHi ? 'परामर्श करें' : 'Consult Now';
-        }
-
-        if (data.activeSession && data.activeSession.status === 'FREE_ACTIVE') {
-          const deadline = new Date(data.activeSession.freeDeadline).getTime();
-          const rem = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
-          if (rem > 0) {
-            const mins = Math.floor(rem / 60);
-            const secs = rem % 60;
-            const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-            if (ctaLabel) ctaLabel.textContent = isHi ? `परामर्श जारी रखें (${timeStr})` : `Resume Consultation (${timeStr})`;
-          }
-        }
-      } catch (err) {
-        console.warn('[PROMO] Failed to sync promotional banner:', err);
+    async function syncPromotionalBannerState(force = false) {
+      const now = Date.now();
+      if (!force && (now - lastSyncPromoTime < 25000)) {
+        return;
       }
+      if (inFlightSyncPromoPromise) {
+        return await inFlightSyncPromoPromise;
+      }
+
+      inFlightSyncPromoPromise = (async () => {
+        try {
+          const guestTrialId = getOrInitGuestTrialId();
+          const res = await fetch(`${getAuthBase()}/api/promotions/active?guestTrialId=${encodeURIComponent(guestTrialId)}`, {
+            headers: getAuthHeaders()
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          lastSyncPromoTime = Date.now();
+          if (!data.success || !data.offer) return;
+
+          const isHi = (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi') || (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi');
+          const headlineEl = document.getElementById('promo-offer-headline');
+          const badgeEl = document.getElementById('promo-offer-badge');
+          const descEl = document.getElementById('promo-offer-description');
+          const ctaLabel = document.getElementById('promo-cta-label');
+
+          if (data.isEligible) {
+            if (headlineEl) headlineEl.textContent = isHi ? data.offer.bannerHeadlineHi : data.offer.bannerHeadlineEn;
+            if (descEl) descEl.textContent = isHi ? data.offer.bannerDescriptionHi : data.offer.bannerDescriptionEn;
+            if (badgeEl) badgeEl.textContent = isHi ? 'निःशुल्क ऑफर' : 'FREE TRIAL OFFER';
+            if (ctaLabel) ctaLabel.textContent = isHi ? 'निःशुल्क मिनट शुरू करें' : 'Start Free Minute';
+          } else {
+            if (headlineEl) headlineEl.textContent = isHi ? '⚡ वैदिक AI परामर्श मात्र ₹15/मिनट' : '⚡ Vedic AI Astrologer at ₹15/min';
+            if (descEl) descEl.textContent = isHi ? 'प्रामाणिक स्विस एफिमेरिस गणनाओं पर आधारित परामर्श' : 'Authentic Swiss Ephemeris chart-grounded guidance';
+            if (badgeEl) badgeEl.textContent = isHi ? 'सत्यापित' : 'PROMOTIONAL OFFER';
+            if (ctaLabel) ctaLabel.textContent = isHi ? 'परामर्श करें' : 'Consult Now';
+          }
+
+          if (data.activeSession && data.activeSession.status === 'FREE_ACTIVE') {
+            const deadline = new Date(data.activeSession.freeDeadline).getTime();
+            const rem = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+            if (rem > 0) {
+              const mins = Math.floor(rem / 60);
+              const secs = rem % 60;
+              const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+              if (ctaLabel) ctaLabel.textContent = isHi ? `परामर्श जारी रखें (${timeStr})` : `Resume Consultation (${timeStr})`;
+            }
+          }
+        } catch (err) {
+          console.warn('[PROMO] Failed to sync promotional banner:', err);
+        } finally {
+          inFlightSyncPromoPromise = null;
+        }
+      })();
+
+      return await inFlightSyncPromoPromise;
     }
 
     let isContinuationModalVisible = false;
@@ -19694,14 +19788,15 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         return;
       }
 
-      const cards = document.querySelectorAll('.av-card-3d, .cosmic-service-card');
+      const cards = document.querySelectorAll('.av-card-3d:not([data-3d-bound="true"]), .cosmic-service-card:not([data-3d-bound="true"])');
       cards.forEach(card => {
+        card.setAttribute('data-3d-bound', 'true');
         let ticking = false;
         let bounds = null;
 
         card.addEventListener('mouseenter', () => {
           bounds = card.getBoundingClientRect();
-        });
+        }, { passive: true });
 
         card.addEventListener('mousemove', (e) => {
           if (!bounds) bounds = card.getBoundingClientRect();
@@ -19725,14 +19820,14 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             });
             ticking = true;
           }
-        });
+        }, { passive: true });
 
         card.addEventListener('mouseleave', () => {
           bounds = null;
           card.style.transform = '';
           card.style.removeProperty('--mouse-x');
           card.style.removeProperty('--mouse-y');
-        });
+        }, { passive: true });
       });
     }
 
@@ -19748,7 +19843,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       }
     }
 
-    // Initialization on Page Load
+    // Progressive Initialization on Page Load (Non-blocking, Lightweight Shell)
     window.addEventListener('DOMContentLoaded', async () => {
       try { await initSupabaseClient(); } catch (_) {}
       checkGoogleAuthRedirect();
@@ -19760,8 +19855,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       updateDemoWalletDisplay();
       syncPromotionalBannerState();
       renderSavedProfilesList();
-      selectHoroscopeSign('Aries');
-      if (typeof initGuidanceSuite === 'function') {
+      if (typeof currentCalculatedChart !== 'undefined' && currentCalculatedChart && typeof initGuidanceSuite === 'function') {
         initGuidanceSuite();
       }
       await loadHourlyHorasUI();
@@ -19779,88 +19873,106 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     // ==================== SUPABASE CLIENT & AUTH CONTROLLER ====================
     let supabaseClient = null;
     let isSupabaseConfigured = false;
+    let inFlightInitSupabasePromise = null;
+    let supabaseAuthStateListenerAttached = false;
+    let inFlightSupabaseSyncPromise = null;
+    let lastSyncedSupabaseToken = null;
 
     async function initSupabaseClient() {
       if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
         return null;
       }
       if (supabaseClient) return supabaseClient;
+      if (inFlightInitSupabasePromise) return await inFlightInitSupabasePromise;
 
-      let supaUrl = '';
-      let supaAnonKey = '';
+      inFlightInitSupabasePromise = (async () => {
+        let supaUrl = '';
+        let supaAnonKey = '';
 
-      // 1. Fetch public config from backend gateway
-      try {
-        const res = await fetch(`${getAuthBase()}/api/auth/supabase/config`, {
-          headers: { 'Accept': 'application/json' }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.supabaseUrl && data.supabaseAnonKey) {
-            supaUrl = data.supabaseUrl;
-            supaAnonKey = data.supabaseAnonKey;
-          }
-        }
-      } catch (_) {}
-
-      // 2. Check window.__ASTRO_CONFIG__ or localStorage overrides
-      if (!supaUrl && window.__ASTRO_CONFIG__?.supabaseUrl) {
-        supaUrl = window.__ASTRO_CONFIG__.supabaseUrl;
-        supaAnonKey = window.__ASTRO_CONFIG__.supabaseAnonKey;
-      }
-      if (!supaUrl) {
+        // 1. Fetch public config from backend gateway
         try {
-          supaUrl = localStorage.getItem('astro_supabase_url') || '';
-          supaAnonKey = localStorage.getItem('astro_supabase_anon_key') || '';
+          const res = await fetch(`${getAuthBase()}/api/auth/supabase/config`, {
+            headers: { 'Accept': 'application/json' }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.supabaseUrl && data.supabaseAnonKey) {
+              supaUrl = data.supabaseUrl;
+              supaAnonKey = data.supabaseAnonKey;
+            }
+          }
         } catch (_) {}
-      }
 
-      if (supaUrl && supaAnonKey) {
-        try {
-          supabaseClient = window.supabase.createClient(supaUrl, supaAnonKey, {
-            auth: {
-              autoRefreshToken: true,
-              persistSession: true,
-              detectSessionInUrl: true
-            }
-          });
-          isSupabaseConfigured = true;
-          console.log('[Supabase] Initialized client connected to', supaUrl);
-
-          // Listen for Supabase auth state transitions
-          supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            console.log('[Supabase Auth Event]', event, session ? session.user?.id : 'no session');
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-              if (session && session.user) {
-                await handleSupabaseSessionSuccess(session);
-              }
-            } else if (event === 'SIGNED_OUT') {
-              executeSignOut(false);
-            } else if (event === 'PASSWORD_RECOVERY') {
-              openAuthModal('password');
-              showToast('Password recovery detected. Please enter your new password.', 'info');
-            }
-          });
-
-          // Check current active session immediately
-          const { data: { session } } = await supabaseClient.auth.getSession();
-          if (session && session.user && (!currentUserSession || !currentSessionToken)) {
-            await handleSupabaseSessionSuccess(session);
-          }
-
-          const pill = document.getElementById('auth-status-pill');
-          if (pill) {
-            pill.innerHTML = '<span style="width: 7px; height: 7px; border-radius: 50%; background: #10B981; display: inline-block;"></span> <span id="auth-status-text" style="color: #34D399; font-weight: 600;">Supabase Auth Online</span>';
-          }
-          const noticeEl = document.getElementById('auth-db-notice');
-          if (noticeEl) noticeEl.style.display = 'none';
-
-          return supabaseClient;
-        } catch (err) {
-          console.warn('[Supabase] Client creation notice:', err);
+        // 2. Check window.__ASTRO_CONFIG__ or localStorage overrides
+        if (!supaUrl && window.__ASTRO_CONFIG__?.supabaseUrl) {
+          supaUrl = window.__ASTRO_CONFIG__.supabaseUrl;
+          supaAnonKey = window.__ASTRO_CONFIG__.supabaseAnonKey;
         }
+        if (!supaUrl) {
+          try {
+            supaUrl = localStorage.getItem('astro_supabase_url') || '';
+            supaAnonKey = localStorage.getItem('astro_supabase_anon_key') || '';
+          } catch (_) {}
+        }
+
+        if (supaUrl && supaAnonKey) {
+          try {
+            supabaseClient = window.supabase.createClient(supaUrl, supaAnonKey, {
+              auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true
+              }
+            });
+            isSupabaseConfigured = true;
+            console.log('[Supabase] Initialized client connected to', supaUrl);
+
+            // Listen for Supabase auth state transitions once
+            if (!supabaseAuthStateListenerAttached) {
+              supabaseAuthStateListenerAttached = true;
+              supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                console.log('[Supabase Auth Event]', event, session ? session.user?.id : 'no session');
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                  if (session && session.user) {
+                    await handleSupabaseSessionSuccess(session);
+                  }
+                } else if (event === 'SIGNED_OUT') {
+                  if (!isSigningOut) {
+                    executeSignOut(false);
+                  }
+                } else if (event === 'PASSWORD_RECOVERY') {
+                  openAuthModal('password');
+                  showToast('Password recovery detected. Please enter your new password.', 'info');
+                }
+              });
+            }
+
+            // Check current active session immediately if session is not yet loaded
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user && (!currentUserSession || !currentSessionToken)) {
+              await handleSupabaseSessionSuccess(session);
+            }
+
+            const pill = document.getElementById('auth-status-pill');
+            if (pill) {
+              pill.innerHTML = '<span style="width: 7px; height: 7px; border-radius: 50%; background: #10B981; display: inline-block;"></span> <span id="auth-status-text" style="color: #34D399; font-weight: 600;">Supabase Auth Online</span>';
+            }
+            const noticeEl = document.getElementById('auth-db-notice');
+            if (noticeEl) noticeEl.style.display = 'none';
+
+            return supabaseClient;
+          } catch (err) {
+            console.warn('[Supabase] Client creation notice:', err);
+          }
+        }
+        return null;
+      })();
+
+      try {
+        return await inFlightInitSupabasePromise;
+      } finally {
+        inFlightInitSupabasePromise = null;
       }
-      return null;
     }
 
     async function handleSupabaseSessionSuccess(session) {
@@ -19868,43 +19980,62 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const supaUser = session.user;
       const token = session.access_token;
 
-      let displayName = supaUser.user_metadata?.displayName || 
-                        supaUser.user_metadata?.full_name || 
-                        supaUser.user_metadata?.name || 
-                        (supaUser.email ? supaUser.email.split('@')[0] : 'User');
-
-      // Sync with backend to ensure wallet & profile records exist
-      try {
-        const res = await fetch(`${getAuthBase()}/api/auth/supabase/sync`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ accessToken: token })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.user) {
-            applyAuthenticatedSession(data.user, token);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn('[Supabase Sync] Backend sync notice:', err);
+      // Avoid duplicate re-sync if already authenticated with this token
+      if (currentSessionToken === token && currentUserSession && currentUserSession.id === supaUser.id && lastSyncedSupabaseToken === token) {
+        return;
       }
 
-      // Standalone authenticated session state fallback
-      const userObj = {
-        id: supaUser.id,
-        displayName: displayName,
-        email: supaUser.email,
-        phone: supaUser.phone,
-        role: 'USER',
-        status: 'ACTIVE',
-        walletBalance: 0.00
-      };
-      applyAuthenticatedSession(userObj, token);
+      if (inFlightSupabaseSyncPromise) {
+        return await inFlightSupabaseSyncPromise;
+      }
+
+      inFlightSupabaseSyncPromise = (async () => {
+        try {
+          let displayName = supaUser.user_metadata?.displayName || 
+                            supaUser.user_metadata?.full_name || 
+                            supaUser.user_metadata?.name || 
+                            (supaUser.email ? supaUser.email.split('@')[0] : 'User');
+
+          // Sync with backend to ensure wallet & profile records exist
+          try {
+            const res = await fetch(`${getAuthBase()}/api/auth/supabase/sync`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ accessToken: token })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.user) {
+                lastSyncedSupabaseToken = token;
+                applyAuthenticatedSession(data.user, token);
+                return;
+              }
+            }
+          } catch (err) {
+            console.warn('[Supabase Sync] Backend sync notice:', err);
+          }
+
+          // Standalone authenticated session state fallback
+          const userObj = {
+            id: supaUser.id,
+            displayName: displayName,
+            email: supaUser.email,
+            phone: supaUser.phone,
+            role: 'USER',
+            status: 'ACTIVE',
+            walletBalance: 0.00
+          };
+          lastSyncedSupabaseToken = token;
+          applyAuthenticatedSession(userObj, token);
+        } finally {
+          inFlightSupabaseSyncPromise = null;
+        }
+      })();
+
+      return await inFlightSupabaseSyncPromise;
     }
 
     // ==================== GOOGLE IDENTITY SERVICES & OAUTH 2.0 CONTROLLERS ====================
@@ -21298,42 +21429,61 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     let activeBuilderProduct = null;
     let activeReaderDoc = null;
 
-    async function fetchUserEntitlements() {
+    let inFlightEntitlementsPromise = null;
+    let lastEntitlementsFetchTime = 0;
+
+    async function fetchUserEntitlements(force = false) {
       const token = currentSessionToken || localStorage.getItem('astro_session_token');
       if (!token) {
         currentUserEntitlements = null;
         const tierBadge = document.getElementById('global-tier-name');
         if (tierBadge) tierBadge.textContent = 'Essentials';
         updateAdminPreviewBannerUI();
-        return;
+        return null;
       }
 
-      try {
-        const res = await fetch(`${getAuthBase()}/api/entitlements/me`, {
-          headers: getAuthHeaders()
-        });
-        if (res.ok) {
-          currentUserEntitlements = await res.json();
-          const tierBadge = document.getElementById('global-tier-name');
-          if (tierBadge && currentUserEntitlements.tierDisplayName) {
-            tierBadge.textContent = currentUserEntitlements.tierDisplayName.replace('AstroVerse ', '');
-          }
-          const pill = document.getElementById('plans-current-tier-pill');
-          if (pill) {
-            pill.textContent = `Current: ${currentUserEntitlements.tierDisplayName}`;
-          }
-          const discountLabel = document.getElementById('report-store-discount-label');
-          if (discountLabel) {
-            if (currentUserEntitlements.reportDiscountPercent > 0) {
-              discountLabel.textContent = `🎉 Active Member Discount: ${currentUserEntitlements.reportDiscountPercent}% OFF Applied!`;
-            } else {
-              discountLabel.textContent = `Member Benefits Active:`;
+      const now = Date.now();
+      if (!force && currentUserEntitlements && (now - lastEntitlementsFetchTime < 30000)) {
+        return currentUserEntitlements;
+      }
+      if (inFlightEntitlementsPromise) {
+        return await inFlightEntitlementsPromise;
+      }
+
+      inFlightEntitlementsPromise = (async () => {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/entitlements/me`, {
+            headers: getAuthHeaders()
+          });
+          if (res.ok) {
+            currentUserEntitlements = await res.json();
+            lastEntitlementsFetchTime = Date.now();
+            const tierBadge = document.getElementById('global-tier-name');
+            if (tierBadge && currentUserEntitlements.tierDisplayName) {
+              tierBadge.textContent = currentUserEntitlements.tierDisplayName.replace('AstroVerse ', '');
+            }
+            const pill = document.getElementById('plans-current-tier-pill');
+            if (pill) {
+              pill.textContent = `Current: ${currentUserEntitlements.tierDisplayName}`;
+            }
+            const discountLabel = document.getElementById('report-store-discount-label');
+            if (discountLabel) {
+              if (currentUserEntitlements.reportDiscountPercent > 0) {
+                discountLabel.textContent = `🎉 Active Member Discount: ${currentUserEntitlements.reportDiscountPercent}% OFF Applied!`;
+              } else {
+                discountLabel.textContent = `Member Benefits Active:`;
+              }
             }
           }
+        } catch (err) {
+          console.warn('[ENTITLEMENTS] Failed to fetch entitlements:', err);
+        } finally {
+          inFlightEntitlementsPromise = null;
         }
-      } catch (err) {
-        console.warn('[ENTITLEMENTS] Failed to fetch entitlements:', err);
-      }
+        return currentUserEntitlements;
+      })();
+
+      return await inFlightEntitlementsPromise;
     }
 
     // ==================== ASTROVERSE LEGAL & COMPLIANCE POLICIES ====================
@@ -27086,25 +27236,49 @@ ${upTable}
     // ==================== SAVED REPORTS & REPORT VIEWER ====================
 
     window.currentUserSavedReports = [];
+    let inFlightSavedReportsPromise = null;
+    let lastLoadedReportsUserId = null;
+    let lastLoadedReportsTime = 0;
 
-    async function loadUserSavedReports() {
-      if (!currentUserSession || !currentSessionToken) return;
-      try {
-        const res = await fetch(`${getAuthBase()}/api/reports/${currentUserSession.id}`, {
-          headers: getAuthHeaders()
-        });
-        if (res.ok) {
-          const list = await res.json();
-          window.currentUserSavedReports = list;
-          renderSavedReportsListUI(list);
-        } else if (res.status === 401 || res.status === 403) {
-          // Token is expired or invalid on the backend
-          console.warn("Session token expired or rejected by server when fetching saved reports.");
-          executeSignOut(false);
-        }
-      } catch (e) {
-        console.warn("Could not load user saved reports:", e);
+    async function loadUserSavedReports(force = false) {
+      if (!currentUserSession || !currentSessionToken) return [];
+      const uid = currentUserSession.id;
+      const now = Date.now();
+      if (!force && lastLoadedReportsUserId === uid && (now - lastLoadedReportsTime < 30000) && Array.isArray(window.currentUserSavedReports)) {
+        return window.currentUserSavedReports;
       }
+      if (inFlightSavedReportsPromise) {
+        return await inFlightSavedReportsPromise;
+      }
+
+      inFlightSavedReportsPromise = (async () => {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/reports/${uid}`, {
+            headers: getAuthHeaders()
+          });
+          if (res.ok) {
+            const list = await res.json();
+            const safeReports = Array.isArray(list) ? list : (Array.isArray(list?.reports) ? list.reports : []);
+            window.currentUserSavedReports = safeReports;
+            lastLoadedReportsUserId = uid;
+            lastLoadedReportsTime = Date.now();
+            renderSavedReportsListUI(safeReports);
+            return safeReports;
+          } else if (res.status === 401 || res.status === 403) {
+            // Token is expired or invalid on the backend
+            console.warn("Session token expired or rejected by server when fetching saved reports.");
+            executeSignOut(false);
+            return [];
+          }
+        } catch (e) {
+          console.warn("Could not load user saved reports:", e);
+        } finally {
+          inFlightSavedReportsPromise = null;
+        }
+        return window.currentUserSavedReports || [];
+      })();
+
+      return await inFlightSavedReportsPromise;
     }
 
     function renderSavedReportsListUI(reports) {
@@ -27113,13 +27287,14 @@ ${upTable}
       if (!listEl) return;
       listEl.innerHTML = '';
 
-      if (!reports || reports.length === 0) {
+      const safeReports = Array.isArray(reports) ? reports : [];
+      if (!safeReports || safeReports.length === 0) {
         if (emptyEl) emptyEl.style.display = 'block';
         return;
       }
       if (emptyEl) emptyEl.style.display = 'none';
 
-      reports.forEach(r => {
+      safeReports.forEach(r => {
         const card = document.createElement('div');
         card.className = 'astro-card';
         card.style.padding = '16px';
