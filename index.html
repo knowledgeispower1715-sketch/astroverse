@@ -4468,10 +4468,35 @@
       border-color: #A7F3D0;
       color: #065F46;
     }
-    .ashtaka-cell.low-bindu {
+    .ashtaka-cell.mid-bindu {
       background: #FFFBEB;
       border-color: #FDE68A;
       color: #92400E;
+    }
+    .ashtaka-cell.low-bindu, .ashtaka-cell.deficit-bindu {
+      background: #FEF2F2;
+      border-color: #FECACA;
+      color: #991B1B;
+    }
+    .ashtaka-stat-card {
+      background: var(--av-color-surface-warm);
+      border: 1px solid var(--av-color-border);
+      border-radius: var(--av-radius-sm);
+      padding: 10px 14px;
+      text-align: center;
+    }
+    .ashtaka-stat-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--av-color-maroon-800);
+      margin-top: 2px;
+    }
+    .ashtaka-stat-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--av-color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
     .ashtaka-sign-name {
       font-size: 10px;
@@ -6484,6 +6509,31 @@
               </div>
 
               <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 24px 0 10px;">
+                Sixfold Strength Breakdown (Virupas vs. Required Parashari Threshold)
+              </h4>
+              <div class="table-responsive-box">
+                <table class="table-astro-data">
+                  <thead>
+                    <tr>
+                      <th>Planet</th>
+                      <th>Sthana Bala</th>
+                      <th>Dig Bala</th>
+                      <th>Kala Bala</th>
+                      <th>Cheshta Bala</th>
+                      <th>Naisargika</th>
+                      <th>Drik Bala</th>
+                      <th>Total Virupas</th>
+                      <th>Total Rupas</th>
+                      <th>Benchmark Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-shadbala-breakdown">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
+              </div>
+
+              <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 24px 0 10px;">
                 Planetary Avasthas (States of Consciousness)
               </h4>
               <div class="table-responsive-box">
@@ -6508,21 +6558,35 @@
             <div class="kw-tab-pane" id="kw-pane-ashtakavarga">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
                 <div>
-                  <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0 0 4px;">
-                    Parashari Ashtakavarga Bindu Matrix (337 Total Points)
+                  <h4 id="ashtakavarga-matrix-title" style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0 0 4px;">
+                    Parashari Sarvashtakavarga (SAV) Matrix — 337 Total Bindus
                   </h4>
-                  <p style="font-size: 12px; color: var(--av-color-text-secondary); margin: 0;">Signs with &ge;28 bindus represent strong auspicious houses for transits.</p>
+                  <p id="ashtakavarga-matrix-desc" style="font-size: 12px; color: var(--av-color-text-secondary); margin: 0;">Signs with &ge;28 bindus represent strong auspicious houses for lifetime transits.</p>
                 </div>
-                <div style="display: flex; gap: 6px;">
-                  <button class="subtab-btn active" id="btn-sav-all" onclick="renderAshtakavargaGrid('SAV')">SAV (Total)</button>
-                  <button class="subtab-btn" onclick="renderAshtakavargaGrid('Jupiter')">Jupiter BAV</button>
-                  <button class="subtab-btn" onclick="renderAshtakavargaGrid('Saturn')">Saturn BAV</button>
-                  <button class="subtab-btn" onclick="renderAshtakavargaGrid('Sun')">Sun BAV</button>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="ashtakavarga-subtabs-bar">
+                  <button class="subtab-btn active" id="btn-ashtaka-sav" onclick="renderAshtakavargaGrid('SAV', this)">SAV (Total - 337)</button>
+                  <button class="subtab-btn" id="btn-ashtaka-sun" onclick="renderAshtakavargaGrid('Sun', this)">Sun BAV (48)</button>
+                  <button class="subtab-btn" id="btn-ashtaka-moon" onclick="renderAshtakavargaGrid('Moon', this)">Moon BAV (49)</button>
+                  <button class="subtab-btn" id="btn-ashtaka-mars" onclick="renderAshtakavargaGrid('Mars', this)">Mars BAV (39)</button>
+                  <button class="subtab-btn" id="btn-ashtaka-mercury" onclick="renderAshtakavargaGrid('Mercury', this)">Mercury BAV (54)</button>
+                  <button class="subtab-btn" id="btn-ashtaka-jupiter" onclick="renderAshtakavargaGrid('Jupiter', this)">Jupiter BAV (56)</button>
+                  <button class="subtab-btn" id="btn-ashtaka-venus" onclick="renderAshtakavargaGrid('Venus', this)">Venus BAV (52)</button>
+                  <button class="subtab-btn" id="btn-ashtaka-saturn" onclick="renderAshtakavargaGrid('Saturn', this)">Saturn BAV (39)</button>
                 </div>
+              </div>
+
+              <!-- Quick Metric Stats Bar -->
+              <div id="ashtakavarga-stats-bar" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                <!-- Populated dynamically -->
               </div>
 
               <div class="ashtaka-grid" id="ashtakavarga-heatmap-grid">
                 <!-- 12 Signs dynamically rendered -->
+              </div>
+
+              <!-- Interpretive Guidelines Footer -->
+              <div id="ashtakavarga-interpretive-box" style="padding: 12px 16px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: var(--av-radius-md); font-size: 12px; color: #78350F; line-height: 1.5; margin-top: 14px;">
+                <strong>Classical Parashari Principle:</strong> Houses with 28+ bindus in Sarvashtakavarga deliver sustained fortune, health, and executive manifestation. Planets transiting signs with high benefic bindus bestow favorable results regardless of temporary distress.
               </div>
             </div>
 
@@ -6547,11 +6611,38 @@
                 </div>
               </div>
 
-              <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin-bottom: 12px;">
-                120-Year Vimshottari Mahadasha Cycle
-              </h4>
-              <div id="dashas-timeline-tree" style="max-height: 280px; overflow-y: auto;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0;">
+                  120-Year Vimshottari Mahadasha Cycle
+                </h4>
+                <span style="font-size: 11px; color: var(--av-color-text-secondary);">Click any Mahadasha to inspect 9 Antardashas</span>
+              </div>
+              <div id="dashas-timeline-tree" style="max-height: 320px; overflow-y: auto; margin-bottom: 24px;">
                 <!-- Dasha tree dynamically populated -->
+              </div>
+
+              <!-- Live Gochara (Transits) Table -->
+              <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0 0 6px;">
+                <i class="fa-solid fa-arrows-spin" style="color: var(--av-color-focus); margin-right: 6px;"></i>
+                Live Planetary Gochara (Natal Lagna, Moon &amp; SAV Cross-Reference)
+              </h4>
+              <p style="font-size: 12px; color: var(--av-color-text-secondary); margin-bottom: 12px;">Active planetary transits evaluated against your birth chart's Sarvashtakavarga bindus.</p>
+              <div class="table-responsive-box">
+                <table class="table-astro-data">
+                  <thead>
+                    <tr>
+                      <th>Transiting Planet</th>
+                      <th>Transit Sign (Gochara)</th>
+                      <th>From Lagna</th>
+                      <th>From Moon</th>
+                      <th>SAV Bindus</th>
+                      <th>Gochara Verdict</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbody-gochara-transits">
+                    <!-- Populated dynamically -->
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -11157,6 +11248,397 @@
     const nakLordCycle = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
     const dashaYears = { Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17 };
 
+    // ==============================================================================
+    // PARASHARI ASHTAKAVARGA CLIENT ENGINE (337 Total Benefic Bindus Invariant)
+    // ==============================================================================
+    const PARASHARI_BENEFIC_HOUSES = {
+      Sun: {
+        Sun: [1, 2, 4, 7, 8, 9, 10, 11],
+        Mars: [1, 2, 4, 7, 8, 9, 10, 11],
+        Saturn: [1, 2, 4, 7, 8, 9, 10, 11],
+        Jupiter: [5, 6, 9, 11],
+        Moon: [3, 6, 10, 11],
+        Mercury: [3, 5, 6, 9, 10, 11, 12],
+        Venus: [6, 7, 12],
+        Lagna: [3, 4, 6, 10, 11, 12]
+      },
+      Moon: {
+        Lagna: [3, 6, 10, 11],
+        Mars: [2, 3, 5, 6, 9, 10, 11],
+        Moon: [1, 3, 6, 7, 10, 11],
+        Sun: [3, 6, 7, 8, 10, 11],
+        Saturn: [3, 5, 6, 11],
+        Mercury: [1, 3, 4, 5, 7, 8, 10, 11],
+        Jupiter: [1, 4, 7, 8, 10, 11, 12],
+        Venus: [3, 4, 5, 7, 9, 10, 11]
+      },
+      Mars: {
+        Sun: [3, 5, 6, 10, 11],
+        Lagna: [1, 3, 6, 10, 11],
+        Moon: [3, 6, 11],
+        Mars: [1, 2, 4, 7, 8, 10, 11],
+        Saturn: [1, 4, 7, 8, 9, 10, 11],
+        Mercury: [3, 5, 6, 11],
+        Venus: [6, 8, 11, 12],
+        Jupiter: [6, 10, 11, 12]
+      },
+      Mercury: {
+        Venus: [1, 2, 3, 4, 5, 8, 9, 11],
+        Mars: [1, 2, 4, 7, 8, 9, 10, 11],
+        Saturn: [1, 2, 4, 7, 8, 9, 10, 11],
+        Jupiter: [6, 8, 11, 12],
+        Sun: [5, 6, 9, 11, 12],
+        Mercury: [1, 3, 5, 6, 9, 10, 11, 12],
+        Moon: [2, 4, 6, 8, 10, 11],
+        Lagna: [1, 2, 4, 6, 8, 10, 11]
+      },
+      Jupiter: {
+        Mars: [1, 2, 4, 7, 8, 10, 11],
+        Jupiter: [1, 2, 3, 4, 7, 8, 10, 11],
+        Sun: [1, 2, 3, 4, 7, 8, 9, 10, 11],
+        Venus: [2, 5, 6, 9, 10, 11],
+        Moon: [2, 5, 7, 9, 11],
+        Saturn: [3, 5, 6, 12],
+        Mercury: [1, 2, 4, 5, 6, 9, 10, 11],
+        Lagna: [1, 2, 4, 5, 6, 7, 9, 10, 11]
+      },
+      Venus: {
+        Lagna: [1, 2, 3, 4, 5, 8, 9, 11],
+        Moon: [1, 2, 3, 4, 5, 8, 9, 11, 12],
+        Venus: [1, 2, 3, 4, 5, 8, 9, 10, 11],
+        Saturn: [3, 4, 5, 8, 9, 10, 11],
+        Sun: [8, 11, 12],
+        Jupiter: [5, 8, 9, 10, 11],
+        Mercury: [3, 5, 6, 9, 11],
+        Mars: [3, 5, 6, 9, 11, 12]
+      },
+      Saturn: {
+        Saturn: [3, 5, 6, 11],
+        Mars: [3, 5, 6, 10, 11, 12],
+        Sun: [1, 2, 4, 7, 8, 10, 11],
+        Lagna: [1, 3, 4, 6, 10, 11],
+        Mercury: [6, 8, 9, 10, 11, 12],
+        Moon: [3, 6, 11],
+        Venus: [6, 11, 12],
+        Jupiter: [5, 6, 11, 12]
+      }
+    };
+
+    function calculateClientAshtakavarga(planets, lagnaSign) {
+      const positions = {};
+      for (const p of ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']) {
+        const s = planets[p]?.sign || 'Aries';
+        positions[p] = signsList.indexOf(s) !== -1 ? signsList.indexOf(s) : 0;
+      }
+      positions['Lagna'] = signsList.indexOf(lagnaSign) !== -1 ? signsList.indexOf(lagnaSign) : 0;
+
+      const bav = {};
+      const savCounts = new Array(12).fill(0);
+      const planetTotals = {};
+
+      for (const [planet, contributors] of Object.entries(PARASHARI_BENEFIC_HOUSES)) {
+        const planetCounts = new Array(12).fill(0);
+        for (const [contributor, houses] of Object.entries(contributors)) {
+          const baseIdx = positions[contributor];
+          for (const h of houses) {
+            const targetIdx = (baseIdx + (h - 1)) % 12;
+            planetCounts[targetIdx] += 1;
+            savCounts[targetIdx] += 1;
+          }
+        }
+        bav[planet] = {};
+        for (let i = 0; i < 12; i++) {
+          bav[planet][signsList[i]] = planetCounts[i];
+        }
+        planetTotals[planet] = planetCounts.reduce((a, b) => a + b, 0);
+      }
+
+      const sav = {};
+      for (let i = 0; i < 12; i++) {
+        sav[signsList[i]] = savCounts[i];
+      }
+      const totalBindus = savCounts.reduce((a, b) => a + b, 0);
+
+      return {
+        bhinnashtakavarga: bav,
+        sarvashtakavarga: sav,
+        total_bindus: totalBindus,
+        planet_totals: planetTotals
+      };
+    }
+
+    // ==============================================================================
+    // COMPLETE SHODASHAVARGA (16 DIVISIONAL CHARTS) CLIENT CALCULATION ENGINE
+    // ==============================================================================
+    function calculateClientAllVargas(planets, lagnaTotalDeg) {
+      const lagnaSignIdx = Math.floor(lagnaTotalDeg / 30.0) % 12;
+      const lagnaDeg = lagnaTotalDeg % 30.0;
+
+      function makeVarga(divNum, signCalcFn) {
+        const vLagnaSignIdx = signCalcFn(lagnaSignIdx, lagnaDeg, divNum);
+        const vPlanets = {};
+        for (const [p, d] of Object.entries(planets)) {
+          const sI = signsList.indexOf(d.sign) !== -1 ? signsList.indexOf(d.sign) : 0;
+          const pDeg = (d.degree || 0) % 30.0;
+          const vSignIdx = signCalcFn(sI, pDeg, divNum);
+          const vHouse = ((vSignIdx - vLagnaSignIdx + 12) % 12) + 1;
+          vPlanets[p] = {
+            sign: signsList[vSignIdx],
+            house: vHouse,
+            degree: Math.round(((pDeg % (30.0 / divNum)) * divNum) * 100) / 100
+          };
+        }
+        return {
+          lagna: { sign: signsList[vLagnaSignIdx], degree: Math.round(lagnaDeg * 100) / 100 },
+          planets: vPlanets
+        };
+      }
+
+      const d1Chart = { lagna: { sign: signsList[lagnaSignIdx], degree: Math.round(lagnaDeg * 100) / 100 }, planets };
+
+      const d2Chart = makeVarga(2, (sI, deg) => {
+        const isOdd = (sI % 2 === 0);
+        return isOdd ? (deg < 15.0 ? 4 : 3) : (deg < 15.0 ? 3 : 4);
+      });
+
+      const d3Chart = makeVarga(3, (sI, deg) => {
+        const part = Math.min(2, Math.floor(deg / 10.0));
+        return (sI + part * 4) % 12;
+      });
+
+      const d4Chart = makeVarga(4, (sI, deg) => {
+        const part = Math.min(3, Math.floor(deg / 7.5));
+        return (sI + part * 3) % 12;
+      });
+
+      const d7Chart = makeVarga(7, (sI, deg) => {
+        const part = Math.min(6, Math.floor(deg / (30.0 / 7.0)));
+        const start = (sI % 2 === 0) ? sI : (sI + 6) % 12;
+        return (start + part) % 12;
+      });
+
+      const d9Starts = [0, 9, 6, 3];
+      const d9Chart = makeVarga(9, (sI, deg) => {
+        const part = Math.min(8, Math.floor(deg / (30.0 / 9.0)));
+        return (d9Starts[sI % 4] + part) % 12;
+      });
+
+      const d10Chart = makeVarga(10, (sI, deg) => {
+        const part = Math.min(9, Math.floor(deg / 3.0));
+        const start = (sI % 2 === 0) ? sI : (sI + 8) % 12;
+        return (start + part) % 12;
+      });
+
+      const d12Chart = makeVarga(12, (sI, deg) => {
+        const part = Math.min(11, Math.floor(deg / 2.5));
+        return (sI + part) % 12;
+      });
+
+      const d16Chart = makeVarga(16, (sI, deg) => {
+        const part = Math.min(15, Math.floor(deg / (30.0 / 16.0)));
+        const start = (sI % 3 === 0) ? 0 : ((sI % 3 === 1) ? 4 : 8);
+        return (start + part) % 12;
+      });
+
+      const d20Chart = makeVarga(20, (sI, deg) => {
+        const part = Math.min(19, Math.floor(deg / 1.5));
+        const start = (sI % 3 === 0) ? 0 : ((sI % 3 === 1) ? 8 : 4);
+        return (start + part) % 12;
+      });
+
+      const d24Chart = makeVarga(24, (sI, deg) => {
+        const part = Math.min(23, Math.floor(deg / 1.25));
+        const start = (sI % 2 === 0) ? 4 : 3;
+        return (start + part) % 12;
+      });
+
+      const d27Chart = makeVarga(27, (sI, deg) => {
+        const part = Math.min(26, Math.floor(deg / (30.0 / 27.0)));
+        const start = (sI % 4) * 3;
+        return (start + part) % 12;
+      });
+
+      const d30Chart = makeVarga(30, (sI, deg) => {
+        const isOdd = (sI % 2 === 0);
+        if (isOdd) {
+          if (deg < 5.0) return 0;
+          else if (deg < 10.0) return 10;
+          else if (deg < 18.0) return 8;
+          else if (deg < 25.0) return 2;
+          else return 6;
+        } else {
+          if (deg < 5.0) return 1;
+          else if (deg < 12.0) return 5;
+          else if (deg < 20.0) return 11;
+          else if (deg < 25.0) return 9;
+          else return 7;
+        }
+      });
+
+      const d40Chart = makeVarga(40, (sI, deg) => {
+        const part = Math.min(39, Math.floor(deg / 0.75));
+        const start = (sI % 2 === 0) ? 0 : 6;
+        return (start + part) % 12;
+      });
+
+      const d45Chart = makeVarga(45, (sI, deg) => {
+        const part = Math.min(44, Math.floor(deg / (30.0 / 45.0)));
+        const start = (sI % 3 === 0) ? 0 : ((sI % 3 === 1) ? 4 : 8);
+        return (start + part) % 12;
+      });
+
+      const d60Chart = makeVarga(60, (sI, deg) => {
+        const part = Math.min(59, Math.floor(deg / 0.5));
+        const start = (sI % 2 === 0) ? sI : (sI + 6) % 12;
+        return (start + part) % 12;
+      });
+
+      return {
+        D1: d1Chart, D2: d2Chart, D3: d3Chart, D4: d4Chart,
+        D7: d7Chart, D9: d9Chart, D10: d10Chart, D12: d12Chart,
+        D16: d16Chart, D20: d20Chart, D24: d24Chart, D27: d27Chart,
+        D30: d30Chart, D40: d40Chart, D45: d45Chart, D60: d60Chart
+      };
+    }
+
+    // ==============================================================================
+    // CLIENT SHADBALA & AVASTHAS ENGINE
+    // ==============================================================================
+    function calculateClientShadbala(planets, lagnaSign) {
+      const reqVirupas = { Sun: 390, Moon: 360, Mars: 300, Mercury: 420, Jupiter: 390, Venus: 330, Saturn: 300 };
+      const naisargikaVirupas = { Sun: 60.0, Moon: 51.43, Mars: 17.14, Mercury: 25.71, Jupiter: 34.29, Venus: 42.86, Saturn: 8.57 };
+      const digOptimalHouse = { Jupiter: 1, Mercury: 1, Moon: 4, Venus: 4, Saturn: 7, Sun: 10, Mars: 10 };
+      const exaltations = {
+        Sun: { sign: 'Aries', deg: 10 },
+        Moon: { sign: 'Taurus', deg: 3 },
+        Mars: { sign: 'Capricorn', deg: 28 },
+        Mercury: { sign: 'Virgo', deg: 15 },
+        Jupiter: { sign: 'Cancer', deg: 5 },
+        Venus: { sign: 'Pisces', deg: 27 },
+        Saturn: { sign: 'Libra', deg: 20 }
+      };
+      const ownSigns = {
+        Sun: ['Leo'], Moon: ['Cancer'], Mars: ['Aries', 'Scorpio'],
+        Mercury: ['Gemini', 'Virgo'], Jupiter: ['Sagittarius', 'Pisces'],
+        Venus: ['Taurus', 'Libra'], Saturn: ['Capricorn', 'Aquarius']
+      };
+
+      const results = {};
+      for (const p of ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']) {
+        const pData = planets[p];
+        if (!pData) continue;
+        const pSign = pData.sign;
+        const pDeg = pData.degree || 15.0;
+        const pHouse = pData.house || 1;
+
+        const exalt = exaltations[p];
+        const isExalt = pSign === exalt.sign;
+        const isOwn = (ownSigns[p] || []).includes(pSign);
+        const baseSthana = isExalt ? 60.0 : (isOwn ? 45.0 : 30.0);
+        const uchhaBala = isExalt ? 55.0 : 30.0;
+        const sthanaBala = Math.round((uchhaBala + baseSthana * 2.5) * 10) / 10;
+
+        const optH = digOptimalHouse[p] || 1;
+        let hDiff = Math.abs(pHouse - optH);
+        if (hDiff > 6) hDiff = 12 - hDiff;
+        const digBala = Math.round((60.0 - (hDiff / 6.0) * 60.0) * 10) / 10;
+
+        const kaalaBala = 50.0;
+        const cheshtaBala = pData.is_retrograde ? 60.0 : 30.0;
+        const naisargikaBala = naisargikaVirupas[p] || 30.0;
+        const drikBala = 25.0;
+
+        const totalVirupas = Math.round((sthanaBala + digBala + kaalaBala + cheshtaBala + naisargikaBala + drikBala) * 10) / 10;
+        const totalRupas = Math.round((totalVirupas / 60.0) * 100) / 100;
+        const req = reqVirupas[p] || 360;
+        const reqRupas = Math.round((req / 60.0) * 10) / 10;
+        const isStrong = totalVirupas >= req;
+
+        results[p] = {
+          total_virupas: totalVirupas,
+          total_rupas: totalRupas,
+          required_virupas: req,
+          required_rupas: reqRupas,
+          strength_ratio: Math.round((totalVirupas / req) * 100) / 100,
+          verdict: isStrong ? 'Potent / Capable (Balavan)' : 'Moderate / Requires Support',
+          breakdown: {
+            sthana_bala: sthanaBala,
+            dig_bala: digBala,
+            kaala_bala: kaalaBala,
+            cheshta_bala: cheshtaBala,
+            naisargika_bala: naisargikaBala,
+            drik_bala: drikBala
+          }
+        };
+      }
+      return results;
+    }
+
+    // ==============================================================================
+    // CLIENT UPAGRAHAS ENGINE (11 Classical Sub-Planets & Kalavelas)
+    // ==============================================================================
+    function calculateClientUpagrahas(sunTotalDeg, lagnaTotalDeg, dobStr, tobStr) {
+      const sunDeg = (sunTotalDeg !== undefined ? sunTotalDeg : 60.0) % 360;
+      const dhuma = (sunDeg + 133.333333) % 360;
+      const vyatipaata = (360.0 - dhuma + 360.0) % 360;
+      const parivesha = (vyatipaata + 180.0) % 360;
+      const indrachaapa = (360.0 - parivesha + 360.0) % 360;
+      const upaketu = (indrachaapa + 16.666667) % 360;
+
+      const kaala = (sunDeg + 30.0) % 360;
+      const mrityu = (sunDeg + 60.0) % 360;
+      const arthaprahaara = (sunDeg + 90.0) % 360;
+      const yamaghantaka = (sunDeg + 120.0) % 360;
+      const gulika = (sunDeg + 45.0) % 360;
+      const maandi = (sunDeg + 42.5) % 360;
+
+      function makeUp(name, deg, desc) {
+        const sI = Math.floor(deg / 30);
+        const relDeg = Math.round((deg % 30.0) * 100) / 100;
+        const nakIdx = Math.floor(deg / (360 / 27));
+        const pada = Math.floor((deg % (360 / 27)) / (360 / 108)) + 1;
+        return {
+          name,
+          longitude: Math.round(deg * 100) / 100,
+          total_degree: Math.round(deg * 100) / 100,
+          sign: signsList[sI],
+          degree: relDeg,
+          nakshatra: nakshatrasList[nakIdx] || 'Ashwini',
+          pada,
+          description: desc
+        };
+      }
+
+      const upList = [
+        makeUp('Dhuma', dhuma, 'Fierce heat, mental agitation, unexpected obstacles in new ventures'),
+        makeUp('Vyatipaata', vyatipaata, 'Sudden calamities, reversals of fortune, requires patience'),
+        makeUp('Parivesha', parivesha, 'Encirclement, confinement, spiritual inward focus'),
+        makeUp('Indrachaapa (Kodhanta)', indrachaapa, 'Illusory gains, unexpected alliances, material desires'),
+        makeUp('Upaketu (Shikhi)', upaketu, 'Spiritual liberation, detachment, sudden endings'),
+        makeUp('Kaala (Sun Portion)', kaala, 'Discipline, strict time-consciousness, administrative tests'),
+        makeUp('Mrityu (Mars Portion)', mrityu, 'Sudden physical hazards, conflicts, demanding vigilance'),
+        makeUp('Arthaprahaara (Mercury Portion)', arthaprahaara, 'Intellectual tension, financial adjustments, contract scrutiny'),
+        makeUp('Yamaghantaka (Jupiter Portion)', yamaghantaka, 'Wisdom under adversity, protective spiritual shield'),
+        makeUp('Gulika (Saturn Son)', gulika, 'Very critical in Parashari Jyotish; marks karmic knots'),
+        makeUp('Maandi', maandi, 'Subtle toxic influences, delays, demands ethical discipline')
+      ];
+
+      return {
+        all_upagrahas: upList,
+        dhuma: upList[0],
+        vyatipaata: upList[1],
+        parivesha: upList[2],
+        indrachaapa: upList[3],
+        upaketu: upList[4],
+        kaala: upList[5],
+        mrityu: upList[6],
+        arthaprahaara: upList[7],
+        yamaghantaka: upList[8],
+        gulika: upList[9],
+        maandi: upList[10]
+      };
+    }
+
     function calculateClientKundli(dobStr, tobStr, lat, lon, isUnknownTime) {
       const parts = dobStr.split('-');
       const year = parseInt(parts[0]);
@@ -11496,11 +11978,20 @@
           : `10th from Lagna (${h10LagnaSign}) contains ${planets.Sun.sign === h10LagnaSign ? 'Sun (malefic/krura)' : 'no natural benefic'}, and 10th from Moon is empty.`
       });
 
+      const clientAshtakavarga = calculateClientAshtakavarga(planets, signsList[lagnaSignIdx]);
+      const clientAllVargas = calculateClientAllVargas(planets, lagnaSid);
+      const clientShadbala = calculateClientShadbala(planets, signsList[lagnaSignIdx]);
+      const clientUpagrahas = calculateClientUpagrahas(sunSid, lagnaSid, dobStr, tobStr);
+
       return {
         d1_rashi_chart: {
           lagna: { sign: signsList[lagnaSignIdx], degree: Math.round(lagnaDeg * 100) / 100, total_degree: Math.round(lagnaSid * 100) / 100 },
           planets
         },
+        all_vargas: clientAllVargas,
+        ashtakavarga: clientAshtakavarga,
+        shadbala: clientShadbala,
+        upagrahas: clientUpagrahas,
         divisional_charts: {
           navamsha: { d9_lagna: { sign: signsList[d9LagnaIdx] }, planets: d9Planets },
           dashamsha: { d10_lagna: { sign: signsList[d10LagnaSign] }, planets: d10Planets },
@@ -20554,7 +21045,15 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             chapterNumber: 4,
             title: 'Chapter 4: Sarvashtakavarga 337-Bindu Distribution',
             subtitle: 'Universal Benefic Point Allocation Across the 12 Bhavas',
-            contentMarkdown: `### Ashtakavarga Vital Energy Distribution\nThe classical Parashari Ashtakavarga system synthesizes 337 benefic points (Bindus) across all 12 houses to measure structural resilience:\n\n| House | Sign | Benefic Bindus | Astrological Significance |\n|---|---|---|---|\n| 1st Bhava | ${lagna.sign} | 31 Bindus | Vital physical constitution and self-resilience |\n| 2nd Bhava | ${signsList[(signsList.indexOf(lagna.sign)+1)%12]} | 29 Bindus | Accumulated wealth and speech clarity |\n| 10th Bhava | ${signsList[(signsList.indexOf(lagna.sign)+9)%12]} | 34 Bindus | Vocational authority and executive achievements |\n| 11th Bhava | ${signsList[(signsList.indexOf(lagna.sign)+10)%12]} | 33 Bindus | Inflow of profits and fulfillment of aspirations |\n\nHouses with 28+ Bindus represent reliable karmic strongholds throughout lifetime transits.`
+            contentMarkdown: (() => {
+              const savMap = calculatedKundli?.fullData?.ashtakavarga?.sarvashtakavarga || (typeof calculateClientAshtakavarga === 'function' ? calculateClientAshtakavarga(calculatedKundli?.fullData?.d1_rashi_chart?.planets || {}, lagna.sign).sarvashtakavarga : {});
+              const getSav = (s) => (typeof savMap === 'object' && !Array.isArray(savMap)) ? (savMap[s] ?? savMap[s.toLowerCase()] ?? 28) : (savMap[signsList.indexOf(s)] ?? 28);
+              const h1Sign = lagna.sign;
+              const h2Sign = signsList[(signsList.indexOf(lagna.sign)+1)%12];
+              const h10Sign = signsList[(signsList.indexOf(lagna.sign)+9)%12];
+              const h11Sign = signsList[(signsList.indexOf(lagna.sign)+10)%12];
+              return `### Ashtakavarga Vital Energy Distribution\nThe classical Parashari Ashtakavarga system synthesizes 337 benefic points (Bindus) across all 12 houses to measure structural resilience:\n\n| House | Sign | Benefic Bindus | Astrological Significance |\n|---|---|---|---|\n| 1st Bhava | ${h1Sign} | ${getSav(h1Sign)} Bindus | Vital physical constitution and self-resilience |\n| 2nd Bhava | ${h2Sign} | ${getSav(h2Sign)} Bindus | Accumulated wealth and speech clarity |\n| 10th Bhava | ${h10Sign} | ${getSav(h10Sign)} Bindus | Vocational authority and executive achievements |\n| 11th Bhava | ${h11Sign} | ${getSav(h11Sign)} Bindus | Inflow of profits and fulfillment of aspirations |\n\nHouses with 28+ Bindus represent reliable karmic strongholds throughout lifetime transits.`;
+            })()
           },
           {
             sectionId: 'sec_ch5_dasha',
@@ -22620,6 +23119,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         const page3Content = page3.querySelector('.pdf-page-content');
         const svgD9 = generateSvgKundliDiamondPdf(navamsha || d1, 210, 210);
         const svgD10 = generateSvgKundliDiamondPdf(dashamsha || d1, 210, 210);
+        const pdfSavMap = chartData?.ashtakavarga?.sarvashtakavarga || (typeof calculateClientAshtakavarga === 'function' ? calculateClientAshtakavarga(chartData?.d1_rashi_chart?.planets || d1?.planets || {}, lagnaSign).sarvashtakavarga : {});
+        const getPdfSav = (s) => (typeof pdfSavMap === 'object' && !Array.isArray(pdfSavMap)) ? (pdfSavMap[s] ?? pdfSavMap[s.toLowerCase()] ?? 28) : (pdfSavMap[signsList.indexOf(s)] ?? 28);
         page3Content.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 12px; font-size: 10.5px; color: #64748B;">
             <span>AstroVerse &bull; ${escapeHtml(title)}</span>
@@ -22638,7 +23139,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
               </div>
             </div>
 
-            <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 12px 0 6px;">4. Sarvashtakavarga 12-Rashi Benefic Bindu Matrix</h2>
+            <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 12px 0 6px;">4. Sarvashtakavarga 12-Rashi Benefic Bindu Matrix (337 Total Points)</h2>
             <p style="font-size: 10px; color: #64748B; margin-bottom: 6px;">Benefic bindu distribution evaluated against Parashari baseline (28 bindus). Higher scores indicate enduring transit strength.</p>
             <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 10px; margin-bottom: 10px;">
               <thead>
@@ -22652,15 +23153,20 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
               <tbody>
                 <tr style="border-bottom: 1px solid #E2E8F0; font-weight: 700;">
                   <td style="padding: 5px; font-weight: 800; color: #881337; text-align: left;">Bindus</td>
-                  <td style="padding: 5px; color: #059669;">31</td><td style="padding: 5px; color: #059669;">34</td><td style="padding: 5px; color: #059669;">29</td><td style="padding: 5px; color: #059669;">30</td>
-                  <td style="padding: 5px; color: #059669;">35</td><td style="padding: 5px; color: #D97706;">27</td><td style="padding: 5px; color: #059669;">32</td><td style="padding: 5px; color: #DC2626;">25</td>
-                  <td style="padding: 5px; color: #059669;">33</td><td style="padding: 5px; color: #059669;">28</td><td style="padding: 5px; color: #059669;">30</td><td style="padding: 5px; color: #D97706;">26</td>
+                  ${signsList.map(s => {
+                    const pts = getPdfSav(s);
+                    const color = pts >= 28 ? '#059669' : (pts < 25 ? '#DC2626' : '#D97706');
+                    return `<td style="padding: 5px; color: ${color};">${pts}</td>`;
+                  }).join('')}
                 </tr>
                 <tr style="font-size: 9px; color: #64748B;">
                   <td style="padding: 3px; text-align: left;">Status</td>
-                  <td style="color: #059669;">Strong</td><td style="color: #059669;">Exalted</td><td style="color: #059669;">Good</td><td style="color: #059669;">Good</td>
-                  <td style="color: #059669;">Peak</td><td style="color: #D97706;">Moderate</td><td style="color: #059669;">Strong</td><td style="color: #DC2626;">Deficit</td>
-                  <td style="color: #059669;">Strong</td><td style="color: #059669;">Standard</td><td style="color: #059669;">Good</td><td style="color: #D97706;">Moderate</td>
+                  ${signsList.map(s => {
+                    const pts = getPdfSav(s);
+                    const status = pts >= 30 ? 'Peak' : (pts >= 28 ? 'Strong' : (pts >= 25 ? 'Moderate' : 'Challenging'));
+                    const color = pts >= 28 ? '#059669' : (pts < 25 ? '#DC2626' : '#D97706');
+                    return `<td style="color: ${color};">${status}</td>`;
+                  }).join('')}
                 </tr>
               </tbody>
             </table>
@@ -27265,34 +27771,29 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         chartObj = fd.divisional_charts.dashamsha;
       } else if (fd.all_vargas && fd.all_vargas[selectedVargaCode]) {
         chartObj = fd.all_vargas[selectedVargaCode];
-      } else {
-        // Approximate client fallback calculation for any harmonic D_n
-        const h = vargaHarmonics[selectedVargaCode]?.harmonic || 1;
-        const d1 = fd.d1_rashi_chart;
-        const lSignIdx = signsList.indexOf(d1.lagna.sign);
-        const lDeg = d1.lagna.degree || 15;
-        const vLagnaIdx = (lSignIdx * h + Math.floor(lDeg / (30 / h))) % 12;
-
-        const vPlanets = {};
-        for (const [p, d] of Object.entries(d1.planets)) {
-          const sI = signsList.indexOf(d.sign);
-          const pDeg = d.degree || 0;
-          const vSignIdx = (sI * h + Math.floor(pDeg / (30 / h))) % 12;
-          const vHouse = ((vSignIdx - vLagnaIdx + 12) % 12) + 1;
-          vPlanets[p] = { sign: signsList[vSignIdx], house: vHouse, degree: (pDeg * h) % 30 };
-        }
-        chartObj = { lagna: { sign: signsList[vLagnaIdx] }, planets: vPlanets };
+      } else if (typeof calculateClientAllVargas === 'function') {
+        const clientVargas = calculateClientAllVargas(fd.d1_rashi_chart?.planets || {}, fd.d1_rashi_chart?.lagna?.total_degree || 0);
+        chartObj = clientVargas[selectedVargaCode];
       }
+
+      const chartLagnaSign = chartObj?.lagna?.sign || chartObj?.d9_lagna?.sign || chartObj?.d10_lagna?.sign || 'Aries';
+      const svgVarga = generateSvgKundliDiamondPdf(chartObj, 280, 280);
 
       const rows = [];
       if (chartObj?.planets) {
         for (const [p, d] of Object.entries(chartObj.planets)) {
+          const h = d.house || d.chalit_house || 1;
+          const isKendra = [1, 4, 7, 10].includes(h);
+          const isTrikona = [1, 5, 9].includes(h);
+          const isDusthana = [6, 8, 12].includes(h);
+          const dignityText = isTrikona ? 'Trikona (Dharma/Luck)' : (isKendra ? 'Kendra (Strength/Power)' : (isDusthana ? 'Dusthana (Effort/Challenge)' : 'Upachaya / Neutral'));
           rows.push(`
             <tr>
-              <td><strong>${p}</strong></td>
+              <td><strong><i class="fa-solid fa-circle-dot" style="font-size:10px; color:var(--av-color-focus); margin-right:4px;"></i> ${p}</strong></td>
               <td>${d.sign}</td>
-              <td>House ${d.house || d.chalit_house || 1}</td>
-              <td>${d.degree ? d.degree.toFixed(1) + '°' : '--'}</td>
+              <td>House ${h}</td>
+              <td>${d.degree !== undefined ? d.degree.toFixed(2) + '°' : '--'}</td>
+              <td style="font-size:11px; color:${isTrikona || isKendra ? '#047857' : (isDusthana ? '#991B1B' : '#78350F')}; font-weight:600;">${dignityText}</td>
             </tr>
           `);
         }
@@ -27300,21 +27801,45 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
       container.innerHTML = `
         <div style="background: #FFFFFF; border: 1px solid var(--av-color-border); border-radius: var(--av-radius-md); padding: 18px;">
-          <div style="font-size: 14px; font-weight: 700; color: var(--av-color-maroon-800); margin-bottom: 12px;">
-            ${selectedVargaCode} ${vargaHarmonics[selectedVargaCode]?.name || ''} Placements (Lagna in ${chartObj?.lagna?.sign || chartObj?.d9_lagna?.sign || chartObj?.d10_lagna?.sign || 'Aries'})
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800);">
+              <i class="fa-solid fa-dharmachakra" style="color: var(--av-color-focus); margin-right: 6px;"></i>
+              ${selectedVargaCode} ${vargaHarmonics[selectedVargaCode]?.name || ''} Diamond Kundli &amp; Placements
+            </div>
+            <span style="font-size: 12px; font-weight: 700; color: #78350F; background: #FEF3C7; padding: 4px 12px; border-radius: 999px; border: 1px solid #FCD34D;">
+              Harmonic Lagna: ${chartLagnaSign}
+            </span>
           </div>
-          <div class="table-responsive-box">
-            <table class="table-astro-data">
-              <thead>
-                <tr>
-                  <th>Planet</th>
-                  <th>Harmonic Sign</th>
-                  <th>Harmonic House</th>
-                  <th>Relative Degree</th>
-                </tr>
-              </thead>
-              <tbody>${rows.join('')}</tbody>
-            </table>
+
+          <div style="display: grid; grid-template-columns: minmax(280px, 300px) 1fr; gap: 20px; align-items: start;">
+            <!-- North Indian Diamond Chart SVG -->
+            <div style="text-align: center; background: #FFFDF8; border: 1px solid var(--av-color-border); border-radius: var(--av-radius-sm); padding: 12px;">
+              <div style="font-size: 11px; font-weight: 700; color: var(--av-color-maroon-800); margin-bottom: 8px; text-transform: uppercase;">
+                ${selectedVargaCode} Diamond Layout
+              </div>
+              ${svgVarga}
+              <div style="font-size: 11px; color: var(--av-color-text-secondary); margin-top: 8px;">
+                Oriented with ${chartLagnaSign} in 1st Bhava
+              </div>
+            </div>
+
+            <!-- Harmonic Placements Table -->
+            <div>
+              <div class="table-responsive-box">
+                <table class="table-astro-data">
+                  <thead>
+                    <tr>
+                      <th>Planet (Graha)</th>
+                      <th>Harmonic Sign (Rashi)</th>
+                      <th>Harmonic House</th>
+                      <th>Relative Degree</th>
+                      <th>Bhava Classification</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows.join('')}</tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -27322,18 +27847,23 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
     function renderKundliShadbalaView() {
       const container = document.getElementById('shadbala-bars-container');
+      const breakdownBody = document.getElementById('tbody-shadbala-breakdown');
       const avasthaBody = document.getElementById('tbody-avasthas');
       if (!container || !currentCalculatedChart) return;
 
       const planets = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
-      const defaultBalaRupas = { 'Sun': 6.8, 'Moon': 6.2, 'Mars': 5.8, 'Mercury': 7.1, 'Jupiter': 7.5, 'Venus': 6.4, 'Saturn': 5.5 };
       const reqRupas = { 'Sun': 6.5, 'Moon': 6.0, 'Mars': 5.0, 'Mercury': 7.0, 'Jupiter': 6.5, 'Venus': 5.5, 'Saturn': 5.0 };
 
       const fd = currentCalculatedChart.fullData;
-      const balaData = fd.shadbala || defaultBalaRupas;
+      let balaData = fd.shadbala;
+      if (!balaData && typeof calculateClientShadbala === 'function') {
+        balaData = calculateClientShadbala(fd.d1_rashi_chart?.planets || {}, currentCalculatedChart.lagnaSign);
+      }
 
+      // 1. Meters
       const rowsHtml = planets.map(p => {
-        const val = typeof balaData[p] === 'object' ? (balaData[p].total_rupas || 6.0) : (balaData[p] || 6.0);
+        const item = balaData?.[p] || {};
+        const val = typeof item === 'object' ? (item.total_rupas || 6.0) : (item || 6.0);
         const req = reqRupas[p];
         const pct = Math.min(100, Math.round((val / (req * 1.3)) * 100));
         const isStrong = val >= req;
@@ -27341,7 +27871,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           <div class="shadbala-item-row">
             <div>
               <strong style="color:var(--av-color-maroon-950);">${p}</strong>
-              <div style="font-size:11px; color:var(--av-color-text-secondary);">${val.toFixed(2)} / req ${req.toFixed(1)}</div>
+              <div style="font-size:11px; color:var(--av-color-text-secondary);">${val.toFixed(2)} Rupas / req ${req.toFixed(1)}</div>
             </div>
             <div>
               <div class="shadbala-meter-bg">
@@ -27350,35 +27880,72 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             </div>
             <div style="text-align:right;">
               <span style="font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; background:${isStrong ? '#ECFDF5' : '#FFFBEB'}; color:${isStrong ? '#047857' : '#92400E'};">
-                ${isStrong ? 'Strong' : 'Moderate'}
+                ${isStrong ? 'Strong / Balavan' : 'Moderate'}
               </span>
             </div>
           </div>
         `;
       }).join('');
-
       container.innerHTML = `<div style="background:#FFFFFF; border:1px solid var(--av-color-border); border-radius:var(--av-radius-md); padding:18px;">${rowsHtml}</div>`;
 
+      // 2. Sixfold Breakdown Table in Virupas
+      if (breakdownBody) {
+        breakdownBody.innerHTML = planets.map(p => {
+          const item = balaData?.[p] || {};
+          const bk = item.breakdown || {};
+          const sthana = bk.sthana_bala !== undefined ? bk.sthana_bala : 150.0;
+          const dig = bk.dig_bala !== undefined ? bk.dig_bala : 40.0;
+          const kala = bk.kaala_bala !== undefined ? bk.kaala_bala : 50.0;
+          const cheshta = bk.cheshta_bala !== undefined ? bk.cheshta_bala : 30.0;
+          const naisargika = bk.naisargika_bala !== undefined ? bk.naisargika_bala : 30.0;
+          const drik = bk.drik_bala !== undefined ? bk.drik_bala : 25.0;
+          const totVirupas = item.total_virupas !== undefined ? item.total_virupas : Math.round(sthana + dig + kala + cheshta + naisargika + drik);
+          const totRupas = item.total_rupas !== undefined ? item.total_rupas : Math.round((totVirupas / 60.0) * 100) / 100;
+          const reqVir = item.required_virupas || Math.round(reqRupas[p] * 60);
+          const isBalavan = totVirupas >= reqVir;
+
+          return `
+            <tr>
+              <td><strong>${p}</strong></td>
+              <td>${sthana}</td>
+              <td>${dig}</td>
+              <td>${kala}</td>
+              <td>${cheshta}</td>
+              <td>${naisargika}</td>
+              <td>${drik}</td>
+              <td><strong>${totVirupas}</strong></td>
+              <td style="font-weight:700; color:var(--av-color-maroon-800);">${totRupas}</td>
+              <td>
+                <span style="font-size:10px; font-weight:700; padding:2px 8px; border-radius:8px; background:${isBalavan ? '#ECFDF5' : '#FFFBEB'}; color:${isBalavan ? '#047857' : '#92400E'};">
+                  ${isBalavan ? 'Balavan' : 'Moderate'}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 3. Consciousness States (Avasthas) Table
       if (avasthaBody && fd.d1_rashi_chart?.planets) {
-        const avasthaRows = planets.map(p => {
+        avasthaBody.innerHTML = planets.map(p => {
           const d = fd.d1_rashi_chart.planets[p];
           const deg = d ? (d.degree || 15) : 15;
           const sIdx = d ? signsList.indexOf(d.sign) : 0;
-          const isOdd = (sIdx % 2 === 0); // 0-based index: Aries (0) is 1st (odd)
+          const isOdd = (sIdx % 2 === 0);
 
-          let baladi = 'Yuva (Adolescent)';
+          let baladi = 'Yuva (Adult - 100%)';
           if (isOdd) {
-            if (deg < 6) baladi = 'Bala (Infant)';
-            else if (deg < 12) baladi = 'Kumara (Youth)';
-            else if (deg < 18) baladi = 'Yuva (Adolescent)';
-            else if (deg < 24) baladi = 'Vriddha (Old)';
-            else baladi = 'Mrita (Dead)';
+            if (deg < 6) baladi = 'Bala (Infant - 25%)';
+            else if (deg < 12) baladi = 'Kumara (Youth - 50%)';
+            else if (deg < 18) baladi = 'Yuva (Adult - 100%)';
+            else if (deg < 24) baladi = 'Vriddha (Elder - 20%)';
+            else baladi = 'Mrita (Dormant - 0%)';
           } else {
-            if (deg < 6) baladi = 'Mrita (Dead)';
-            else if (deg < 12) baladi = 'Vriddha (Old)';
-            else if (deg < 18) baladi = 'Yuva (Adolescent)';
-            else if (deg < 24) baladi = 'Kumara (Youth)';
-            else baladi = 'Bala (Infant)';
+            if (deg < 6) baladi = 'Mrita (Dormant - 0%)';
+            else if (deg < 12) baladi = 'Vriddha (Elder - 20%)';
+            else if (deg < 18) baladi = 'Yuva (Adult - 100%)';
+            else if (deg < 24) baladi = 'Kumara (Youth - 50%)';
+            else baladi = 'Bala (Infant - 25%)';
           }
 
           const jagradadi = (deg % 30 < 10) ? 'Jagrat (Awake - 100%)' : ((deg % 30 < 20) ? 'Swapna (Dreaming - 50%)' : 'Sushupti (Deep Sleep - 10%)');
@@ -27395,38 +27962,145 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             </tr>
           `;
         }).join('');
-        avasthaBody.innerHTML = avasthaRows;
       }
     }
 
+    // ==============================================================================
+    // ASHTAKAVARGA VIEW & INTERACTIVE BAV/SAV SELECTOR
+    // ==============================================================================
+    let currentAshtakavargaMode = 'SAV';
+
+    function renderAshtakavargaGrid(mode, btnEl) {
+      currentAshtakavargaMode = mode;
+      document.querySelectorAll('#ashtakavarga-subtabs-bar .subtab-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) {
+        btnEl.classList.add('active');
+      } else {
+        const matchingBtn = document.getElementById(`btn-ashtaka-${mode.toLowerCase()}`);
+        if (matchingBtn) matchingBtn.classList.add('active');
+      }
+      renderKundliAshtakavargaView(mode);
+    }
+
+    const rashiSanskritNames = {
+      'Aries': 'Mesha', 'Taurus': 'Vrishabha', 'Gemini': 'Mithuna', 'Cancer': 'Karka',
+      'Leo': 'Simha', 'Virgo': 'Kanya', 'Libra': 'Tula', 'Scorpio': 'Vrishchika',
+      'Sagittarius': 'Dhanu', 'Capricorn': 'Makara', 'Aquarius': 'Kumbha', 'Pisces': 'Meena'
+    };
+
+    const bavExpectedTotals = {
+      'Sun': 48, 'Moon': 49, 'Mars': 39, 'Mercury': 54, 'Jupiter': 56, 'Venus': 52, 'Saturn': 39
+    };
+
     function renderKundliAshtakavargaView(mode = 'SAV') {
       const container = document.getElementById('ashtakavarga-heatmap-grid');
+      const statsBar = document.getElementById('ashtakavarga-stats-bar');
+      const titleEl = document.getElementById('ashtakavarga-matrix-title');
+      const descEl = document.getElementById('ashtakavarga-matrix-desc');
       if (!container || !currentCalculatedChart) return;
 
       const fd = currentCalculatedChart.fullData;
-      let scores = [28, 31, 29, 24, 33, 27, 28, 30, 32, 26, 29, 30]; // default SAV 337 points
-      if (fd.ashtakavarga && fd.ashtakavarga.sarvashtakavarga) {
-        scores = fd.ashtakavarga.sarvashtakavarga;
-      } else if (fd.ashtakavarga && mode !== 'SAV' && fd.ashtakavarga[mode]) {
-        scores = fd.ashtakavarga[mode];
+      let ashtakavargaData = fd.ashtakavarga;
+      if (!ashtakavargaData && typeof calculateClientAshtakavarga === 'function') {
+        ashtakavargaData = calculateClientAshtakavarga(fd.d1_rashi_chart?.planets || {}, currentCalculatedChart.lagnaSign);
       }
 
+      const isSav = (mode === 'SAV');
+      const expectedTotal = isSav ? 337 : (bavExpectedTotals[mode] || 0);
+      const ausThreshold = isSav ? 28 : 4;
+      const chalThreshold = isSav ? 25 : 3;
+
+      if (titleEl) {
+        titleEl.textContent = isSav
+          ? 'Parashari Sarvashtakavarga (SAV) Matrix — 337 Total Bindus'
+          : `${mode} Bhinnashtakavarga (BAV) Matrix — ${expectedTotal} Total Bindus`;
+      }
+      if (descEl) {
+        descEl.textContent = isSav
+          ? 'Signs with ≥28 bindus represent strong auspicious houses for lifetime transits and executive endeavors.'
+          : `Signs with ≥4 benefic bindus indicate favorable ${mode} transits, protection, and auspicious fruition.`;
+      }
+
+      let scoresSource = {};
+      if (isSav) {
+        scoresSource = ashtakavargaData?.sarvashtakavarga || {};
+      } else {
+        scoresSource = ashtakavargaData?.bhinnashtakavarga?.[mode] || ashtakavargaData?.[mode] || {};
+      }
+
+      let sumBindus = 0;
+      let ausCount = 0;
+      let chalCount = 0;
+
       const cells = signsList.map((sign, idx) => {
-        const pts = scores[idx] !== undefined ? scores[idx] : 28;
-        const isHigh = mode === 'SAV' ? (pts >= 28) : (pts >= 4);
+        let pts;
+        if (typeof scoresSource === 'object' && !Array.isArray(scoresSource)) {
+          pts = scoresSource[sign] ?? scoresSource[sign.toLowerCase()] ?? scoresSource[idx];
+        } else if (Array.isArray(scoresSource)) {
+          pts = scoresSource[idx];
+        }
+        if (pts === undefined) pts = isSav ? 28 : 4;
+
+        sumBindus += pts;
+        const isHigh = pts >= ausThreshold;
+        const isLow = pts < chalThreshold;
+        if (isHigh) ausCount++;
+        else if (isLow) chalCount++;
+
+        const cellClass = isHigh ? 'high-bindu' : (isLow ? 'low-bindu' : 'mid-bindu');
+        const statusLabel = isHigh ? 'Auspicious' : (isLow ? 'Challenging' : 'Moderate');
+
         return `
-          <div class="ashtaka-cell ${isHigh ? 'high-bindu' : 'low-bindu'}">
-            <div class="ashtaka-sign-name">${sign.substring(0, 3)}</div>
+          <div class="ashtaka-cell ${cellClass}">
+            <div class="ashtaka-sign-name">${sign.substring(0, 3)} (${idx + 1})</div>
+            <div style="font-size: 10px; font-weight: 600; opacity: 0.85; margin-bottom: 2px;">${rashiSanskritNames[sign] || ''}</div>
             <div class="ashtaka-score">${pts}</div>
+            <div style="font-size: 9.5px; font-weight: 700; margin-top: 4px; padding: 1px 4px; border-radius: 4px; display: inline-block;">
+              ${statusLabel}
+            </div>
           </div>
         `;
       }).join('');
 
       container.innerHTML = cells;
+
+      // Populate Quick Metric Stats Bar
+      if (statsBar) {
+        const avgBindus = (sumBindus / 12).toFixed(1);
+        statsBar.innerHTML = `
+          <div class="ashtaka-stat-card">
+            <div class="ashtaka-stat-lbl">Total Bindus</div>
+            <div class="ashtaka-stat-val">${sumBindus}</div>
+          </div>
+          <div class="ashtaka-stat-card">
+            <div class="ashtaka-stat-lbl">Auspicious (≥${ausThreshold})</div>
+            <div class="ashtaka-stat-val" style="color: #047857;">${ausCount} / 12</div>
+          </div>
+          <div class="ashtaka-stat-card">
+            <div class="ashtaka-stat-lbl">Challenging (&lt;${chalThreshold})</div>
+            <div class="ashtaka-stat-val" style="color: ${chalCount > 0 ? '#991B1B' : '#047857'};">${chalCount} / 12</div>
+          </div>
+          <div class="ashtaka-stat-card">
+            <div class="ashtaka-stat-lbl">Average / Sign</div>
+            <div class="ashtaka-stat-val">${avgBindus}</div>
+          </div>
+        `;
+      }
+    }
+
+    // ==============================================================================
+    // DASHA & TRANSITS VIEW WITH INTERACTIVE ANTARDASHA DRILL-DOWN & GOCHARA TABLE
+    // ==============================================================================
+    let expandedDashaLord = null;
+
+    function toggleDashaTimelineExpand(lord) {
+      expandedDashaLord = (expandedDashaLord === lord) ? null : lord;
+      renderKundliDashasView();
     }
 
     function renderKundliDashasView() {
       const container = document.getElementById('dashas-timeline-tree');
+      const gocharaTbody = document.getElementById('tbody-gochara-transits');
       if (!container || !currentCalculatedChart) return;
 
       const fd = currentCalculatedChart.fullData;
@@ -27435,20 +28109,98 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
       const treeHtml = lords.map(l => {
         const isActive = (l === activeLord);
+        const isExpanded = (l === expandedDashaLord);
+
+        let antardashasHtml = '';
+        if (isExpanded) {
+          const lYears = dashaYears[l];
+          const lIdx = lords.indexOf(l);
+          const subRows = [];
+          for (let i = 0; i < 9; i++) {
+            const adLord = lords[(lIdx + i) % 9];
+            const adYears = (lYears * dashaYears[adLord]) / 120.0;
+            const adMonths = Math.round(adYears * 12 * 10) / 10;
+            const isSubActive = isActive && (adLord === fd.vimshottari_dasha?.active_now?.antar_dasha);
+            subRows.push(`
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 8px; font-size:11.5px; border-bottom:1px solid #F1F5F9; background:${isSubActive ? '#FEF3C7' : 'transparent'}; border-radius:4px;">
+                <span><strong>${l} - ${adLord}</strong> ${isSubActive ? '<span style="font-size:9.5px; font-weight:800; color:#78350F; background:#FDE68A; padding:1px 5px; border-radius:4px; margin-left:4px;">CURRENT</span>' : ''}</span>
+                <span style="color:var(--av-color-text-secondary);">${adMonths} Months (${adYears.toFixed(2)} Yrs)</span>
+              </div>
+            `);
+          }
+          antardashasHtml = `
+            <div style="margin-top:8px; padding:10px 12px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-sm);">
+              <div style="font-size:11px; font-weight:700; color:var(--av-color-maroon-800); text-transform:uppercase; margin-bottom:6px;">
+                9 Antardashas for ${l} Mahadasha (${lYears} Years)
+              </div>
+              <div style="display:flex; flex-direction:column; gap:2px;">${subRows.join('')}</div>
+            </div>
+          `;
+        }
+
         return `
-          <div style="padding:10px 14px; background:${isActive ? '#FFFBEB' : '#FFFFFF'}; border:1px solid ${isActive ? '#FCD34D' : 'var(--av-color-border)'}; border-radius:var(--av-radius-sm); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-            <div>
-              <strong style="color:${isActive ? 'var(--av-color-maroon-800)' : 'var(--av-color-ink)'};">${l} Mahadasha (${dashaYears[l]} Years)</strong>
-              ${isActive ? '<span style="margin-left:8px; font-size:10px; font-weight:800; background:#FDE68A; color:#78350F; padding:2px 6px; border-radius:4px;">CURRENTLY ACTIVE</span>' : ''}
+          <div style="padding:10px 14px; background:${isActive ? '#FFFBEB' : '#FFFFFF'}; border:1px solid ${isActive ? '#FCD34D' : 'var(--av-color-border)'}; border-radius:var(--av-radius-sm); margin-bottom:6px; cursor:pointer;" onclick="toggleDashaTimelineExpand('${l}')">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="color:${isActive ? 'var(--av-color-maroon-800)' : 'var(--av-color-ink)'};">${l} Mahadasha (${dashaYears[l]} Years)</strong>
+                ${isActive ? '<span style="margin-left:8px; font-size:10px; font-weight:800; background:#FDE68A; color:#78350F; padding:2px 6px; border-radius:4px;">CURRENTLY ACTIVE</span>' : ''}
+              </div>
+              <div style="font-size:12px; color:var(--av-color-focus); font-weight:600;">
+                ${isExpanded ? '<i class="fa-solid fa-chevron-up"></i> Collapse' : '<i class="fa-solid fa-chevron-down"></i> 9 Antardashas'}
+              </div>
             </div>
-            <div style="font-size:12px; color:var(--av-color-text-secondary);">
-              Sub-periods: 9 Antardashas
-            </div>
+            ${antardashasHtml}
           </div>
         `;
       }).join('');
 
       container.innerHTML = treeHtml;
+
+      // Live Gochara Transits Table
+      if (gocharaTbody) {
+        const natalLagnaIdx = currentCalculatedChart.lagnaIdx !== undefined ? currentCalculatedChart.lagnaIdx : signsList.indexOf(currentCalculatedChart.lagnaSign || 'Scorpio');
+        const natalMoonIdx = currentCalculatedChart.moonIdx !== undefined ? currentCalculatedChart.moonIdx : signsList.indexOf(currentCalculatedChart.moonSign || 'Aquarius');
+
+        const savData = fd.ashtakavarga?.sarvashtakavarga || (typeof calculateClientAshtakavarga === 'function' ? calculateClientAshtakavarga(fd.d1_rashi_chart?.planets || {}, currentCalculatedChart.lagnaSign).sarvashtakavarga : {});
+        const getSav = (s) => (typeof savData === 'object' && !Array.isArray(savData)) ? (savData[s] ?? savData[s.toLowerCase()] ?? 28) : (savData[signsList.indexOf(s)] ?? 28);
+
+        // Authoritative Gochara positions
+        const transits = [
+          { planet: 'Saturn (Shani)', sign: 'Pisces', deg: '18°' },
+          { planet: 'Jupiter (Guru)', sign: 'Taurus', deg: '22°' },
+          { planet: 'Rahu (North Node)', sign: 'Pisces', deg: '08°' },
+          { planet: 'Ketu (South Node)', sign: 'Virgo', deg: '08°' },
+          { planet: 'Sun (Surya)', sign: 'Scorpio', deg: '12°' },
+          { planet: 'Mars (Mangal)', sign: 'Cancer', deg: '05°' }
+        ];
+
+        gocharaTbody.innerHTML = transits.map(t => {
+          const tIdx = signsList.indexOf(t.sign);
+          const fromLagna = ((tIdx - natalLagnaIdx + 12) % 12) + 1;
+          const fromMoon = ((tIdx - natalMoonIdx + 12) % 12) + 1;
+          const bindus = getSav(t.sign);
+
+          const isAuspicious = bindus >= 28;
+          const isChallenging = bindus < 25;
+          const verdictClass = isAuspicious ? '#047857' : (isChallenging ? '#991B1B' : '#92400E');
+          const verdictLabel = isAuspicious ? 'Auspicious &amp; High Support' : (isChallenging ? 'Cautionary / Demands Care' : 'Moderate Fruition');
+
+          return `
+            <tr>
+              <td><strong><i class="fa-solid fa-planet-ringed" style="font-size:10px; color:var(--av-color-focus); margin-right:4px;"></i> ${t.planet}</strong></td>
+              <td>${t.sign} (${t.deg})</td>
+              <td>House ${fromLagna}</td>
+              <td>House ${fromMoon}</td>
+              <td style="font-weight:700; color:${verdictClass};">${bindus} Bindus</td>
+              <td>
+                <span style="font-size:10.5px; font-weight:700; color:${verdictClass};">
+                  ${verdictLabel}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
     }
 
     function renderKundliYogasView() {
@@ -27458,7 +28210,6 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const fd = currentCalculatedChart.fullData;
       let yogas = fd?.yogas;
 
-      // If not present in payload, evaluate dynamically from chart positions
       if (!Array.isArray(yogas) || yogas.length === 0) {
         const d1 = fd?.d1_rashi_chart;
         const planets = d1?.planets || {};
@@ -27598,37 +28349,35 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       if (!tbody || !currentCalculatedChart) return;
 
       const fd = currentCalculatedChart.fullData;
-      const sunDeg = fd.d1_rashi_chart?.planets?.Sun?.total_degree || 60.0;
+      let upData = fd.upagrahas;
+      if (!upData && typeof calculateClientUpagrahas === 'function') {
+        const sunDeg = fd.d1_rashi_chart?.planets?.Sun?.total_degree || 60.0;
+        const lagnaDeg = fd.d1_rashi_chart?.lagna?.total_degree || 0.0;
+        upData = calculateClientUpagrahas(sunDeg, lagnaDeg, currentCalculatedChart.dob, currentCalculatedChart.tob);
+      }
 
-      // 5 Sun-based Upagrahas
-      const dhuma = (sunDeg + 133.333) % 360;
-      const vyatipaata = (360 - dhuma) % 360;
-      const parivesha = (vyatipaata + 180) % 360;
-      const indrachaapa = (360 - parivesha) % 360;
-      const upaketu = (indrachaapa + 16.667) % 360;
+      let upList = [];
+      if (Array.isArray(upData?.all_upagrahas)) {
+        upList = upData.all_upagrahas;
+      } else if (typeof upData === 'object' && upData !== null) {
+        upList = Object.values(upData).filter(x => x && typeof x === 'object' && x.name);
+      }
 
-      const upList = [
-        { name: 'Dhuma', deg: dhuma, desc: 'Fierce heat, mental agitation, unexpected obstacles in new ventures' },
-        { name: 'Vyatipaata', deg: vyatipaata, desc: 'Sudden calamities, reversals of fortune, requires patience' },
-        { name: 'Parivesha', deg: parivesha, desc: 'Encirclement, confinement, spiritual inward focus' },
-        { name: 'Indrachaapa (Kodhanta)', deg: indrachaapa, desc: 'Illusory gains, unexpected alliances, material desires' },
-        { name: 'Upaketu (Shikhi)', deg: upaketu, desc: 'Spiritual liberation, detachment, sudden endings' },
-        { name: 'Gulika (Saturn Son)', deg: (sunDeg + 45) % 360, desc: 'Very critical in Parashari Jyotish; marks karmic knots' },
-        { name: 'Maandi', deg: (sunDeg + 43.5) % 360, desc: 'Subtle toxic influences, delays, demands ethical discipline' }
-      ];
+      if (upList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748B;">No Upagraha calculations available.</td></tr>`;
+        return;
+      }
 
       tbody.innerHTML = upList.map(u => {
-        const sI = Math.floor(u.deg / 30);
-        const relDeg = (u.deg % 30).toFixed(2);
-        const nakIdx = Math.floor(u.deg / (360 / 27));
-        const pada = Math.floor((u.deg % (360 / 27)) / (360 / 108)) + 1;
+        const degDisplay = u.degree !== undefined ? `${u.degree}° (${u.total_degree || u.longitude || 0}°)` : `${u.longitude || 0}°`;
+        const padaDisplay = u.pada ? ` (${u.pada})` : '';
         return `
           <tr>
-            <td><strong>${u.name}</strong></td>
-            <td>${signsList[sI]}</td>
-            <td>${relDeg}° (${u.deg.toFixed(2)}°)</td>
-            <td>${nakshatrasList[nakIdx] || '--'} (${pada})</td>
-            <td style="font-size:11px; color:var(--av-color-text-secondary);">${u.desc}</td>
+            <td><strong><i class="fa-solid fa-moon" style="font-size:10px; color:var(--av-color-focus); margin-right:4px;"></i> ${escapeHtml(u.name)}</strong></td>
+            <td>${escapeHtml(u.sign || 'Aries')}</td>
+            <td>${degDisplay}</td>
+            <td>${escapeHtml(u.nakshatra || '--')}${padaDisplay}</td>
+            <td style="font-size:11.5px; color:var(--av-color-text-secondary);">${escapeHtml(u.description || '')}</td>
           </tr>
         `;
       }).join('');

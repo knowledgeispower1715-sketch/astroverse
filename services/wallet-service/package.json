@@ -4,7 +4,7 @@
   "main": "src/server.ts",
   "scripts": {
     "dev": "ts-node src/server.ts",
-    "test": "ts-node tests/auth.test.ts && ts-node tests/supabase_auth.test.ts && ts-node tests/chat_frontend_logic.test.ts && ts-node tests/monetization.test.ts && ts-node tests/pdf_fixtures.test.ts && ts-node tests/differentiation.test.ts && ts-node tests/pdf_quality_regression.test.ts && ts-node tests/numerology.test.ts && ts-node tests/razorpay_compliance.test.ts && ts-node tests/privacy_and_form_state.test.ts && ts-node tests/security_and_ratelimit.test.ts && ts-node tests/dosha_yoga_parity.test.ts && ts-node tests/admin_security_mfa_and_modules.test.ts && ts-node tests/ai_astrologer_conversation_quality.test.ts && ts-node tests/promotions_and_free_minute.test.ts && ts-node tests/admin_tier_preview_and_security.test.ts",
+    "test": "ts-node tests/auth.test.ts && ts-node tests/supabase_auth.test.ts && ts-node tests/chat_frontend_logic.test.ts && ts-node tests/monetization.test.ts && ts-node tests/pdf_fixtures.test.ts && ts-node tests/differentiation.test.ts && ts-node tests/pdf_quality_regression.test.ts && ts-node tests/numerology.test.ts && ts-node tests/razorpay_compliance.test.ts && ts-node tests/privacy_and_form_state.test.ts && ts-node tests/security_and_ratelimit.test.ts && ts-node tests/dosha_yoga_parity.test.ts && ts-node tests/admin_security_mfa_and_modules.test.ts && ts-node tests/ai_astrologer_conversation_quality.test.ts && ts-node tests/promotions_and_free_minute.test.ts && ts-node tests/admin_tier_preview_and_security.test.ts && ts-node tests/kundli_analysis_and_ashtakavarga.test.ts",
     "build": "prisma generate",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",

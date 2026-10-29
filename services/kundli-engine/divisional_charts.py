@@ -260,6 +260,299 @@ def calculate_dwadashamsha(planets_d1: dict, lagna_d1_degree: float):
         "planets": d12_planets
     }
 
+def calculate_chaturthamsha(planets_d1: dict, lagna_d1_degree: float):
+    """
+    Calculates D4 (Chaturthamsha / Turyamsha) Chart for fixed assets, property & luck:
+    - 4 divisions of 7°30' each.
+    - Part 1: Sign itself (1st)
+    - Part 2: 4th from sign (+3 signs)
+    - Part 3: 7th from sign (+6 signs)
+    - Part 4: 10th from sign (+9 signs)
+    """
+    part_size = 7.5
+    lagna_sign_idx = int(lagna_d1_degree / 30.0) % 12
+    lagna_part = min(3, int((lagna_d1_degree % 30.0) / part_size))
+    d4_lagna_sign_idx = (lagna_sign_idx + lagna_part * 3) % 12
+
+    d4_planets = {}
+    for planet, data in planets_d1.items():
+        total_deg = (SIGNS.index(data["sign"]) * 30.0) + data["degree"]
+        sign_idx = int(total_deg / 30.0) % 12
+        deg_in_sign = total_deg % 30.0
+        part = min(3, int(deg_in_sign / part_size))
+        d4_sign = (sign_idx + part * 3) % 12
+        d4_house = ((d4_sign - d4_lagna_sign_idx) % 12) + 1
+
+        d4_planets[planet] = {
+            "sign": SIGNS[d4_sign],
+            "house": d4_house,
+            "degree": round((deg_in_sign % part_size) * 4, 2)
+        }
+
+    return {
+        "d4_lagna": {"sign": SIGNS[d4_lagna_sign_idx]},
+        "planets": d4_planets
+    }
+
+def calculate_shodashamsha(planets_d1: dict, lagna_d1_degree: float):
+    """
+    Calculates D16 (Shodashamsha / Kalamsa) Chart for conveyances, vehicles & happiness:
+    - 16 divisions of 1°52'30" (1.875°) each.
+    - Movable signs (Aries, Cancer, Libra, Cap): start from Aries (0).
+    - Fixed signs (Taurus, Leo, Scorpio, Aqua): start from Leo (4).
+    - Dual signs (Gemini, Virgo, Sag, Pisces): start from Sagittarius (8).
+    """
+    part_size = 30.0 / 16.0
+    lagna_sign_idx = int(lagna_d1_degree / 30.0) % 12
+    lagna_part = min(15, int((lagna_d1_degree % 30.0) / part_size))
+    l_mod = lagna_sign_idx % 3
+    l_start = 0 if l_mod == 0 else (4 if l_mod == 1 else 8)
+    d16_lagna_sign_idx = (l_start + lagna_part) % 12
+
+    d16_planets = {}
+    for planet, data in planets_d1.items():
+        total_deg = (SIGNS.index(data["sign"]) * 30.0) + data["degree"]
+        sign_idx = int(total_deg / 30.0) % 12
+        deg_in_sign = total_deg % 30.0
+        part = min(15, int(deg_in_sign / part_size))
+        p_mod = sign_idx % 3
+        p_start = 0 if p_mod == 0 else (4 if p_mod == 1 else 8)
+        d16_sign = (p_start + part) % 12
+        d16_house = ((d16_sign - d16_lagna_sign_idx) % 12) + 1
+
+        d16_planets[planet] = {
+            "sign": SIGNS[d16_sign],
+            "house": d16_house,
+            "degree": round((deg_in_sign % part_size) * 16, 2)
+        }
+
+    return {
+        "d16_lagna": {"sign": SIGNS[d16_lagna_sign_idx]},
+        "planets": d16_planets
+    }
+
+def calculate_vimshamsha(planets_d1: dict, lagna_d1_degree: float):
+    """
+    Calculates D20 (Vimshamsha) Chart for spiritual progress, upasana & devotion:
+    - 20 divisions of 1°30' (1.5°) each.
+    - Movable signs: starts from Aries (0).
+    - Fixed signs: starts from Sagittarius (8).
+    - Dual signs: starts from Leo (4).
+    """
+    part_size = 30.0 / 20.0
+    lagna_sign_idx = int(lagna_d1_degree / 30.0) % 12
+    lagna_part = min(19, int((lagna_d1_degree % 30.0) / part_size))
+    l_mod = lagna_sign_idx % 3
+    l_start = 0 if l_mod == 0 else (8 if l_mod == 1 else 4)
+    d20_lagna_sign_idx = (l_start + lagna_part) % 12
+
+    d20_planets = {}
+    for planet, data in planets_d1.items():
+        total_deg = (SIGNS.index(data["sign"]) * 30.0) + data["degree"]
+        sign_idx = int(total_deg / 30.0) % 12
+        deg_in_sign = total_deg % 30.0
+        part = min(19, int(deg_in_sign / part_size))
+        p_mod = sign_idx % 3
+        p_start = 0 if p_mod == 0 else (8 if p_mod == 1 else 4)
+        d20_sign = (p_start + part) % 12
+        d20_house = ((d20_sign - d20_lagna_sign_idx) % 12) + 1
+
+        d20_planets[planet] = {
+            "sign": SIGNS[d20_sign],
+            "house": d20_house,
+            "degree": round((deg_in_sign % part_size) * 20, 2)
+        }
+
+    return {
+        "d20_lagna": {"sign": SIGNS[d20_lagna_sign_idx]},
+        "planets": d20_planets
+    }
+
+def calculate_chaturvimshamsha(planets_d1: dict, lagna_d1_degree: float):
+    """
+    Calculates D24 (Chaturvimshamsha / Siddhamsa) Chart for learning, scholarship & skill:
+    - 24 divisions of 1°15' (1.25°) each.
+    - Odd signs: starts from Leo (4).
+    - Even signs: starts from Cancer (3).
+    """
+    part_size = 30.0 / 24.0
+    lagna_sign_idx = int(lagna_d1_degree / 30.0) % 12
+    lagna_part = min(23, int((lagna_d1_degree % 30.0) / part_size))
+    l_start = 4 if (lagna_sign_idx % 2 == 0) else 3
+    d24_lagna_sign_idx = (l_start + lagna_part) % 12
+
+    d24_planets = {}
+    for planet, data in planets_d1.items():
+        total_deg = (SIGNS.index(data["sign"]) * 30.0) + data["degree"]
+        sign_idx = int(total_deg / 30.0) % 12
+        deg_in_sign = total_deg % 30.0
+        part = min(23, int(deg_in_sign / part_size))
+        p_start = 4 if (sign_idx % 2 == 0) else 3
+        d24_sign = (p_start + part) % 12
+        d24_house = ((d24_sign - d24_lagna_sign_idx) % 12) + 1
+
+        d24_planets[planet] = {
+            "sign": SIGNS[d24_sign],
+            "house": d24_house,
+            "degree": round((deg_in_sign % part_size) * 24, 2)
+        }
+
+    return {
+        "d24_lagna": {"sign": SIGNS[d24_lagna_sign_idx]},
+        "planets": d24_planets
+    }
+
+def calculate_saptavimshamsha(planets_d1: dict, lagna_d1_degree: float):
+    """
+    Calculates D27 (Saptavimshamsha / Bhamsha / Nakshatramsha) Chart for vitality & subconscious:
+    - 27 divisions of 1°06'40" (30/27°) each.
+    - Fire signs: starts from Aries (0).
+    - Earth signs: starts from Cancer (3).
+    - Air signs: starts from Libra (6).
+    - Water signs: starts from Capricorn (9).
+    """
+    part_size = 30.0 / 27.0
+    lagna_sign_idx = int(lagna_d1_degree / 30.0) % 12
+    lagna_part = min(26, int((lagna_d1_degree % 30.0) / part_size))
+    l_start = (lagna_sign_idx % 4) * 3
+    d27_lagna_sign_idx = (l_start + lagna_part) % 12
+
+    d27_planets = {}
+    for planet, data in planets_d1.items():
+        total_deg = (SIGNS.index(data["sign"]) * 30.0) + data["degree"]
+        sign_idx = int(total_deg / 30.0) % 12
+        deg_in_sign = total_deg % 30.0
+        part = min(26, int(deg_in_sign / part_size))
+        p_start = (sign_idx % 4) * 3
+        d27_sign = (p_start + part) % 12
+        d27_house = ((d27_sign - d27_lagna_sign_idx) % 12) + 1
+
+        d27_planets[planet] = {
+            "sign": SIGNS[d27_sign],
+            "house": d27_house,
+            "degree": round((deg_in_sign % part_size) * 27, 2)
+        }
+
+    return {
+        "d27_lagna": {"sign": SIGNS[d27_lagna_sign_idx]},
+        "planets": d27_planets
+    }
+
+def calculate_trimshamsha(planets_d1: dict, lagna_d1_degree: float):
+    """
+    Calculates D30 (Trimshamsha) Chart for adversities, arishta & subconscious flaws:
+    - Unequal divisions based on classical Parashari degrees:
+      Odd signs: 0-5 Mars(Aries), 5-10 Sat(Aquarius), 10-18 Jup(Sagittarius), 18-25 Merc(Gemini), 25-30 Ven(Libra)
+      Even signs: 0-5 Ven(Taurus), 5-12 Merc(Virgo), 12-20 Jup(Pisces), 20-25 Sat(Capricorn), 25-30 Mars(Scorpio)
+    """
+    def _d30_sign_for(sign_idx: int, deg: float) -> int:
+        d = deg % 30.0
+        if sign_idx % 2 == 0:  # Odd sign (0-indexed: Aries=0)
+            if d < 5.0: return 0    # Aries (Mars)
+            elif d < 10.0: return 10 # Aquarius (Saturn)
+            elif d < 18.0: return 8  # Sagittarius (Jupiter)
+            elif d < 25.0: return 2  # Gemini (Mercury)
+            else: return 6           # Libra (Venus)
+        else:  # Even sign
+            if d < 5.0: return 1     # Taurus (Venus)
+            elif d < 12.0: return 5  # Virgo (Mercury)
+            elif d < 20.0: return 11 # Pisces (Jupiter)
+            elif d < 25.0: return 9  # Capricorn (Saturn)
+            else: return 7           # Scorpio (Mars)
+
+    lagna_sign_idx = int(lagna_d1_degree / 30.0) % 12
+    d30_lagna_sign_idx = _d30_sign_for(lagna_sign_idx, lagna_d1_degree)
+
+    d30_planets = {}
+    for planet, data in planets_d1.items():
+        total_deg = (SIGNS.index(data["sign"]) * 30.0) + data["degree"]
+        sign_idx = int(total_deg / 30.0) % 12
+        deg_in_sign = total_deg % 30.0
+        d30_sign = _d30_sign_for(sign_idx, deg_in_sign)
+        d30_house = ((d30_sign - d30_lagna_sign_idx) % 12) + 1
+
+        d30_planets[planet] = {
+            "sign": SIGNS[d30_sign],
+            "house": d30_house,
+            "degree": round(deg_in_sign, 2)
+        }
+
+    return {
+        "d30_lagna": {"sign": SIGNS[d30_lagna_sign_idx]},
+        "planets": d30_planets
+    }
+
+def calculate_khavedamsha(planets_d1: dict, lagna_d1_degree: float):
+    """
+    Calculates D40 (Khavedamsha / Chatvarimshamsha) Chart for maternal lineage & auspicious results:
+    - 40 divisions of 0°45' (0.75°) each.
+    - Odd signs: starts from Aries (0).
+    - Even signs: starts from Libra (6).
+    """
+    part_size = 0.75
+    lagna_sign_idx = int(lagna_d1_degree / 30.0) % 12
+    lagna_part = min(39, int((lagna_d1_degree % 30.0) / part_size))
+    l_start = 0 if (lagna_sign_idx % 2 == 0) else 6
+    d40_lagna_sign_idx = (l_start + lagna_part) % 12
+
+    d40_planets = {}
+    for planet, data in planets_d1.items():
+        total_deg = (SIGNS.index(data["sign"]) * 30.0) + data["degree"]
+        sign_idx = int(total_deg / 30.0) % 12
+        deg_in_sign = total_deg % 30.0
+        part = min(39, int(deg_in_sign / part_size))
+        p_start = 0 if (sign_idx % 2 == 0) else 6
+        d40_sign = (p_start + part) % 12
+        d40_house = ((d40_sign - d40_lagna_sign_idx) % 12) + 1
+
+        d40_planets[planet] = {
+            "sign": SIGNS[d40_sign],
+            "house": d40_house,
+            "degree": round((deg_in_sign % part_size) * 40, 2)
+        }
+
+    return {
+        "d40_lagna": {"sign": SIGNS[d40_lagna_sign_idx]},
+        "planets": d40_planets
+    }
+
+def calculate_akshavedamsha(planets_d1: dict, lagna_d1_degree: float):
+    """
+    Calculates D45 (Akshavedamsha) Chart for character, ethical rectitude & overall destiny:
+    - 45 divisions of 0°40' (2/3°) each.
+    - Movable signs: starts from Aries (0).
+    - Fixed signs: starts from Leo (4).
+    - Dual signs: starts from Sagittarius (8).
+    """
+    part_size = 30.0 / 45.0
+    lagna_sign_idx = int(lagna_d1_degree / 30.0) % 12
+    lagna_part = min(44, int((lagna_d1_degree % 30.0) / part_size))
+    l_mod = lagna_sign_idx % 3
+    l_start = 0 if l_mod == 0 else (4 if l_mod == 1 else 8)
+    d45_lagna_sign_idx = (l_start + lagna_part) % 12
+
+    d45_planets = {}
+    for planet, data in planets_d1.items():
+        total_deg = (SIGNS.index(data["sign"]) * 30.0) + data["degree"]
+        sign_idx = int(total_deg / 30.0) % 12
+        deg_in_sign = total_deg % 30.0
+        part = min(44, int(deg_in_sign / part_size))
+        p_mod = sign_idx % 3
+        p_start = 0 if p_mod == 0 else (4 if p_mod == 1 else 8)
+        d45_sign = (p_start + part) % 12
+        d45_house = ((d45_sign - d45_lagna_sign_idx) % 12) + 1
+
+        d45_planets[planet] = {
+            "sign": SIGNS[d45_sign],
+            "house": d45_house,
+            "degree": round((deg_in_sign % part_size) * 45, 2)
+        }
+
+    return {
+        "d45_lagna": {"sign": SIGNS[d45_lagna_sign_idx]},
+        "planets": d45_planets
+    }
+
 def calculate_shashtyamsha(planets_d1: dict, lagna_d1_degree: float):
     """
     Calculates D60 (Shashtyamsha) Chart for subtle karmic imprint & general potential:
@@ -296,14 +589,22 @@ def calculate_shashtyamsha(planets_d1: dict, lagna_d1_degree: float):
     }
 
 def calculate_all_vargas(planets_d1: dict, lagna_d1_degree: float) -> dict:
-    """Calculates all essential classical divisional charts (D1, D2, D3, D7, D9, D10, D12, D60)."""
+    """Calculates all 16 classical Parashari divisional charts (Complete Shodashavarga Suite D1 through D60)."""
     return {
         "D1": {"lagna": round(lagna_d1_degree, 2), "planets": planets_d1},
         "D2": calculate_hora(planets_d1, lagna_d1_degree),
         "D3": calculate_drekkana(planets_d1, lagna_d1_degree),
+        "D4": calculate_chaturthamsha(planets_d1, lagna_d1_degree),
         "D7": calculate_saptamsha(planets_d1, lagna_d1_degree),
         "D9": calculate_navamsha(planets_d1, lagna_d1_degree),
         "D10": calculate_dashamsha(planets_d1, lagna_d1_degree),
         "D12": calculate_dwadashamsha(planets_d1, lagna_d1_degree),
+        "D16": calculate_shodashamsha(planets_d1, lagna_d1_degree),
+        "D20": calculate_vimshamsha(planets_d1, lagna_d1_degree),
+        "D24": calculate_chaturvimshamsha(planets_d1, lagna_d1_degree),
+        "D27": calculate_saptavimshamsha(planets_d1, lagna_d1_degree),
+        "D30": calculate_trimshamsha(planets_d1, lagna_d1_degree),
+        "D40": calculate_khavedamsha(planets_d1, lagna_d1_degree),
+        "D45": calculate_akshavedamsha(planets_d1, lagna_d1_degree),
         "D60": calculate_shashtyamsha(planets_d1, lagna_d1_degree)
     }

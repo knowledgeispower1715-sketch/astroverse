@@ -416,6 +416,8 @@ def get_complete_kundli(req: BirthDetails):
     doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
     yogas = detect_classical_yogas(d1["planets"], d1["lagna"]["sign"])
     shadbala = calculate_shadbala(d1["planets"], d1["lagna"]["sign"])
+    avasthas = calculate_planetary_avasthas(d1["planets"])
+    upagrahas = calculate_upagrahas(req.dob, req.lat, req.lon, req.timezone)
     ghataka = get_ghataka_chakra(moon_sign_idx)
 
     return {
@@ -430,6 +432,8 @@ def get_complete_kundli(req: BirthDetails):
         "doshas_and_remedies": doshas,
         "yogas": yogas,
         "shadbala": shadbala,
+        "avasthas": avasthas,
+        "upagrahas": upagrahas,
         "ghataka_chakra": ghataka
     }
 
