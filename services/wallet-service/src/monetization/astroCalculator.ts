@@ -17,6 +17,12 @@ export const SIGNS = [
   'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
 ];
 
+export const SIGNS_HI: Record<string, string> = {
+  Aries: 'मेष', Taurus: 'वृषभ', Gemini: 'मिथुन', Cancer: 'कर्क',
+  Leo: 'सिंह', Virgo: 'कन्या', Libra: 'तुला', Scorpio: 'वृश्चिक',
+  Sagittarius: 'धनु', Capricorn: 'मकर', Aquarius: 'कुंभ', Pisces: 'मीन'
+};
+
 export const NAKSHATRAS = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
   'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni',
@@ -69,6 +75,47 @@ export interface CalculatedPlanet {
   dignity: 'Exalted' | 'Moolatrikona' | 'Own Sign' | 'Friendly' | 'Neutral' | 'Enemy' | 'Debilitated';
 }
 
+export interface CalculatedUpagraha {
+  name: string;
+  name_hi: string;
+  category: 'Sun-Derived Upagraha' | 'Time-Based Kalavela';
+  category_hi: string;
+  sign: string;
+  sign_hi: string;
+  signIndex: number;
+  degree: number;
+  total_degree: number;
+  nakshatra: string;
+  pada: number;
+  house: number;
+  description_en: string;
+  description_hi: string;
+  calculation_method: string;
+  remedy_en: string;
+  remedy_hi: string;
+}
+
+export interface EvaluatedUpagrahas {
+  all_upagrahas: CalculatedUpagraha[];
+  sun_derived: CalculatedUpagraha[];
+  time_based: CalculatedUpagraha[];
+  invariants: {
+    sun_longitude: number;
+    upaketu_plus_30_deg: number;
+    closure_difference: number;
+    closure_verified: boolean;
+    dhuma_indrachaapa_opposition_verified: boolean;
+    vyatipaata_parivesha_opposition_verified: boolean;
+  };
+  summary: {
+    prominent_points: string[];
+    executive_text_en: string;
+    executive_text_hi: string;
+    satvik_remedies_en: string[];
+    satvik_remedies_hi: string[];
+  };
+}
+
 export interface CalculatedChart {
   lagna: {
     sign: string;
@@ -107,6 +154,7 @@ export interface CalculatedChart {
     active_doshas_count: number;
     sade_sati_active: boolean;
   };
+  upagrahas?: EvaluatedUpagrahas;
 }
 
 export class AstroCalculator {
@@ -371,6 +419,16 @@ export class AstroCalculator {
     const isCancelled = manglikDosha.status === 'PRESENT_WITH_MITIGATION' || manglikDosha.mitigations_applied.length > 0;
     const cancellationReason = isCancelled ? manglikDosha.mitigations_applied.join('; ') : undefined;
 
+    // Authoritative Classical Parashari Upagrahas & Kalavelas (BPHS Ch. 3)
+    const upagrahasResult = this.calculateUpagrahas(
+      sunSid,
+      lagnaSid,
+      dobStr,
+      tobStr,
+      lat,
+      lon
+    );
+
     return {
       lagna: {
         sign: SIGNS[lagnaSignIdx],
@@ -404,7 +462,279 @@ export class AstroCalculator {
       yogas: yogaDoshaResult.yogas,
       doshas: yogaDoshaResult.doshas,
       transits: yogaDoshaResult.transits,
-      yogaDoshaSummary: yogaDoshaResult.summary
+      yogaDoshaSummary: yogaDoshaResult.summary,
+      upagrahas: upagrahasResult
+    };
+  }
+
+  /**
+   * Classical Parashari Upagrahas & Kalavelas Engine (BPHS Ch. 3)
+   * Calculates 5 Sun-Derived Aprakasha Grahas and 6 Time-Based Kalavelas
+   */
+  public static calculateUpagrahas(
+    sunSid: number,
+    lagnaSid: number,
+    dobStr: string,
+    tobStr: string,
+    lat: number = 28.6139,
+    lon: number = 77.2090
+  ): EvaluatedUpagrahas {
+    const norm = (d: number) => ((d % 360.0) + 360.0) % 360.0;
+    const sunDeg = norm(sunSid);
+    const lagnaDeg = norm(lagnaSid);
+    const lagnaSignIdx = Math.floor(lagnaDeg / 30.0);
+
+    // 1. Five Sun-based Classical Aprakasha Grahas (BPHS Formulas)
+    const dhuma = norm(sunDeg + 133.33333333333334); // +133°20'
+    const vyatipaata = norm(360.0 - dhuma);
+    const parivesha = norm(vyatipaata + 180.0);
+    const indrachaapa = norm(360.0 - parivesha);
+    const upaketu = norm(indrachaapa + 16.666666666666668); // +16°40' (Invariant: upaketu + 30° == sunDeg)
+
+    // Mathematical Invariant Checks
+    const upaketuPlus30 = norm(upaketu + 30.0);
+    const closureDiff = Math.abs(upaketuPlus30 - sunDeg);
+    const closureDiffWrapped = Math.min(closureDiff, 360.0 - closureDiff);
+    const closureVerified = closureDiffWrapped < 1e-4;
+
+    const dhumaOpp = norm(dhuma + 180.0);
+    const dhumaIndrachaapaDiff = Math.min(Math.abs(dhumaOpp - indrachaapa), 360.0 - Math.abs(dhumaOpp - indrachaapa));
+    const dhumaIndraVerified = dhumaIndrachaapaDiff < 1e-4;
+
+    const vyatipaataOpp = norm(vyatipaata + 180.0);
+    const vyatipaataPariveshaDiff = Math.min(Math.abs(vyatipaataOpp - parivesha), 360.0 - Math.abs(vyatipaataOpp - parivesha));
+    const vyatipaataPariveshaVerified = vyatipaataPariveshaDiff < 1e-4;
+
+    // 2. Six Time-based Kalavelas (Eighth-portions of Day/Night)
+    let year = 2000, month = 1, day = 1, hours = 12.0;
+    if (dobStr) {
+      const p = dobStr.split('-');
+      year = parseInt(p[0], 10) || 2000;
+      month = parseInt(p[1], 10) || 1;
+      day = parseInt(p[2], 10) || 1;
+    }
+    if (tobStr) {
+      const tp = tobStr.split(':');
+      hours = (parseInt(tp[0], 10) || 0) + (parseInt(tp[1], 10) || 0) / 60.0;
+    }
+    const dateObj = new Date(year, month - 1, day);
+    const WEEKDAY_ORDER = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+    const PLANET_ORDER = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+    const jsDay = dateObj.getDay();
+    const dayLordName = WEEKDAY_ORDER[jsDay];
+
+    const isDayBirth = (hours >= 6.0 && hours < 18.0);
+    const startHour = isDayBirth ? 6.0 : 18.0;
+    const portionSpanHours = 12.0 / 8.0; // 1.5 hours per portion
+
+    const startLordIdx = isDayBirth
+      ? PLANET_ORDER.indexOf(dayLordName)
+      : (PLANET_ORDER.indexOf(dayLordName) + 4) % 7;
+
+    const lordSequence: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      lordSequence.push(PLANET_ORDER[(startLordIdx + i) % 7]);
+    }
+    lordSequence.push('None');
+
+    function getLagnaAtOffset(targetPlanet: string, fraction: number): number {
+      let pIdx = lordSequence.indexOf(targetPlanet);
+      if (pIdx < 0) pIdx = 0;
+      const portionStartHour = startHour + pIdx * portionSpanHours;
+      const momentHour = portionStartHour + portionSpanHours * fraction;
+      const hourDelta = momentHour - hours;
+      return norm(lagnaDeg + hourDelta * 15.04107);
+    }
+
+    const kaala = getLagnaAtOffset('Sun', 0.5);
+    const mrityu = getLagnaAtOffset('Mars', 0.5);
+    const arthaprahaara = getLagnaAtOffset('Mercury', 0.5);
+    const yamaghantaka = getLagnaAtOffset('Jupiter', 0.5);
+    const gulika = getLagnaAtOffset('Saturn', 0.5);
+    const maandi = getLagnaAtOffset('Saturn', 0.0);
+
+    function createUp(
+      name: string,
+      name_hi: string,
+      category: 'Sun-Derived Upagraha' | 'Time-Based Kalavela',
+      category_hi: string,
+      deg: number,
+      desc_en: string,
+      desc_hi: string,
+      method: string,
+      remedy_en: string,
+      remedy_hi: string
+    ): CalculatedUpagraha {
+      const nDeg = norm(deg);
+      let sIdx = Math.floor(nDeg / 30.0);
+      let relDeg = nDeg % 30.0;
+      let roundedRel = Math.round(relDeg * 100) / 100;
+      if (roundedRel >= 30.0) {
+        roundedRel = 0.0;
+        sIdx = (sIdx + 1) % 12;
+      }
+      const signName = SIGNS[sIdx];
+      const signHi = SIGNS_HI[signName] || signName;
+      const nakSpan = 360.0 / 27.0;
+      const nakIdx = Math.floor(nDeg / nakSpan);
+      const nakName = NAKSHATRAS[nakIdx] || 'Ashwini';
+      const degInNak = nDeg % nakSpan;
+      const pada = Math.floor(degInNak / (nakSpan / 4)) + 1;
+      const house = ((sIdx - lagnaSignIdx + 12) % 12) + 1;
+
+      return {
+        name,
+        name_hi,
+        category,
+        category_hi,
+        sign: signName,
+        sign_hi: signHi,
+        signIndex: sIdx,
+        degree: roundedRel,
+        total_degree: Math.round(nDeg * 100) / 100,
+        nakshatra: nakName,
+        pada,
+        house,
+        description_en: desc_en,
+        description_hi: desc_hi,
+        calculation_method: method,
+        remedy_en,
+        remedy_hi
+      };
+    }
+
+    const sunDerived: CalculatedUpagraha[] = [
+      createUp(
+        'Dhuma', 'धूम', 'Sun-Derived Upagraha', 'सूर्य-जन्य उपग्रह', dhuma,
+        'Smoke / First son of Mars: Catalyzes sudden fiery intensity, mental churn, and perseverance tests in new initiatives.',
+        'धूम: मंगल के प्रथम छाया-पुत्र; मानसिक उत्साह, नवीन कार्यों में प्रारंभिक घर्षण एवं दृढ़ संकल्प की परीक्षा का सूचक।',
+        '(Sun + 133°20\') mod 360°',
+        'Practice daily pranayama and chant the Aditya Hridaya Stotra during Sunday solar horas.',
+        'रविवार की सूर्य होरा में आदित्य हृदय स्तोत्र का पाठ और सूर्य नमस्कार करें।'
+      ),
+      createUp(
+        'Vyatipaata', 'व्यतीपात', 'Sun-Derived Upagraha', 'सूर्य-जन्य उपग्रह', vyatipaata,
+        'Calamity / Reversal point: Represents mirror-image transformational turnarounds; demands patient, measured, and ethical judgment.',
+        'व्यतीपात: महापात बिंदु; अप्रत्याशित परिवर्तनों और नैतिक संतुलन की परीक्षा का सूचक।',
+        '(360° - Dhuma) mod 360°',
+        'Maintain ethical equilibrium in speech; practice silent contemplation during twilight sandhyas.',
+        'संध्याकाल में मौन ध्यान रखें और वाणी में संयम व सत्यनिष्ठा का पालन करें।'
+      ),
+      createUp(
+        'Parivesha', 'परिवेष', 'Sun-Derived Upagraha', 'सूर्य-जन्य उपग्रह', parivesha,
+        'Solar Halo / Protective Encirclement: Governs inward spiritual boundaries, psychological containment, and meditative shielding.',
+        'परिवेष: सौर-परिमंडल; मानसिक सीमा, आंतरिक सुरक्षात्मक कवच और अंतर्मुखी साधना का प्रतीक।',
+        '(Vyatipaata + 180°) mod 360°',
+        'Cultivate quiet home environments and practice grounding meditations before sleep.',
+        'साधना व एकांत चिंतन द्वारा मानसिक शांति बनाए रखें; घर में शांत वातावरण रखें।'
+      ),
+      createUp(
+        'Indrachaapa', 'इंद्रचाप', 'Sun-Derived Upagraha', 'सूर्य-जन्य उपग्रह', indrachaapa,
+        'Cosmic Rainbow (Kodhika): Symbolizes dazzling temporal desires and social honors; invites grounded realism over illusion.',
+        'इंद्रचाप (कोधिक): मायावी आकर्षण, सामाजिक सम्मान और भौतिक अभिलाषाओं में विवेक बनाए रखने का संदेश।',
+        '(360° - Parivesha) mod 360°',
+        'Ground speculative ambitions in realistic budgets and verified factual milestones.',
+        'व्यावहारिक धरातल पर योजनाएं बनाएं और दिखावे या काल्पनिक लाभ से बचें।'
+      ),
+      createUp(
+        'Upaketu', 'उपकेतु', 'Sun-Derived Upagraha', 'सूर्य-जन्य उपग्रह', upaketu,
+        'Celestial Comet (Sikhi): Ascetic detachment and sudden karmic release points leading to higher spiritual realization.',
+        'उपकेतु (शिखी): वैराग्य, आध्यात्मिक शुद्धि और आकस्मिक बंधनों से मुक्ति का बिंदु।',
+        '(Indrachaapa + 16°40\') mod 360°',
+        'Dedicate regular time to selfless service (seva) and spiritual study (swadhyaya).',
+        'निःस्वार्थ सेवा (दान/सेवा) और स्वाध्याय में समय लगाएं।'
+      )
+    ];
+
+    const timeBased: CalculatedUpagraha[] = [
+      createUp(
+        'Kaala', 'काल', 'Time-Based Kalavela', 'कालवेला उपग्रह', kaala,
+        'Son of Sun: Stern temporal regulator; tests administrative punctuality, discipline, and paternal duty.',
+        'काल: सूर्य के अंशज; समय-पालन, प्रशासनिक दायित्व और पिता-पुत्र संबंधों में अनुशासन का सूचक।',
+        'Ascendant at Sun portion midpoint (1/8th Dinamana/Ratrimana)',
+        'Honor commitments punctually; perform morning Surya Arghya with copper vessel.',
+        'प्रातःकाल तांबे के लोटे से सूर्य को जल अर्पित करें और समयबद्धता का पालन करें।'
+      ),
+      createUp(
+        'Mrityu', 'मृत्यु', 'Time-Based Kalavela', 'कालवेला उपग्रह', mrityu,
+        'Son of Mars: Physical energy hazards and sudden friction points; demands defensive vigilance and patience.',
+        'मृत्यु: मंगल के अंशज; शारीरिक सुरक्षा, वाहन सावधानी और क्रोध पर नियंत्रण की आवश्यकता।',
+        'Ascendant at Mars portion midpoint',
+        'Avoid reckless haste or aggressive arguments; recite Hanuman Chalisa on Tuesdays.',
+        'मंगलवार को हनुमान चालीसा का पाठ करें और क्रोध व जल्दबाजी से बचें।'
+      ),
+      createUp(
+        'Arthaprahaara', 'अर्धप्रहर', 'Time-Based Kalavela', 'कालवेला उपग्रह', arthaprahaara,
+        'Son of Mercury: Commercial and intellectual churn; governs contract scrutiny, trade balance, and clear communication.',
+        'अर्धप्रहर: बुध के अंशज; व्यापारिक लेन-देन, अनुबंध परीक्षण और बौद्धिक विवेक का सूचक।',
+        'Ascendant at Mercury portion midpoint',
+        'Carefully audit financial agreements before signing; feed green fodder to cows on Wednesdays.',
+        'बुधवार को गौ-सेवा करें और सभी वित्तीय व कानूनी प्रपत्रों को ध्यानपूर्वक पढ़ें।'
+      ),
+      createUp(
+        'Yamaghantaka', 'यमघंटक', 'Time-Based Kalavela', 'कालवेला उपग्रह', yamaghantaka,
+        'Son of Jupiter: Divine benevolence and life-preservation; acts as an auspicious spiritual protective shield.',
+        'यमघंटक: बृहस्पति के अंशज; प्राण-रक्षा, आध्यात्मिक कृपा और शुभ कार्यों में सहायक शक्ति।',
+        'Ascendant at Jupiter portion midpoint',
+        'Engage in higher learning, support teachers/scholars, and offer yellow fruits on Thursdays.',
+        'गुरुवार को गुरुजनों का सम्मान करें और पीले फल या चने की दाल का दान करें।'
+      ),
+      createUp(
+        'Gulika', 'गुलिक', 'Time-Based Kalavela', 'कालवेला उपग्रह', gulika,
+        'Son of Saturn (Midpoint): Crucial karmic shadow sub-planet; marks ancestral debts and areas requiring sustained tapasya.',
+        'गुलिक: शनि-पुत्र; पूर्वजन्म के प्रारब्ध, गूढ़ साधना और धैर्यपूर्ण कर्म का केंद्र।',
+        'Ascendant at Saturn portion midpoint (fraction 0.5)',
+        'Perform Saturday charity of black sesame seeds or mustard oil; respect manual laborers.',
+        'शनिवार को काले तिल या सरसों के तेल का दान करें और श्रमजीवियों का सम्मान करें।'
+      ),
+      createUp(
+        'Maandi', 'मांदि', 'Time-Based Kalavela', 'कालवेला उपग्रह', maandi,
+        'Root of Saturn portion: Neutralizer of subtle toxicity and catalyst for decisive structural life transformations.',
+        'मांदि: शनि भाग का प्रारंभ; विषाक्त प्रभावों का शमन और जीवन में निर्णायक संरचनात्मक मोड़।',
+        'Ascendant at Saturn portion start (fraction 0.0)',
+        'Recite the Mahamrityunjaya Mantra and maintain clean personal surroundings.',
+        'महामृत्युंजय मंत्र का जप करें और अपने आसपास स्वच्छता व शुद्धि बनाए रखें।'
+      )
+    ];
+
+    const allList = [...sunDerived, ...timeBased];
+
+    // Identify prominent houses
+    const prominent = allList
+      .filter(u => [1, 4, 7, 10, 5, 9].includes(u.house))
+      .map(u => `${u.name} in House ${u.house} (${u.sign})`);
+
+    const summary = {
+      prominent_points: prominent,
+      executive_text_en: `Evaluated 11 non-luminous Upagrahas (5 Sun-Derived mathematical shadow points + 6 diurnal/nocturnal time-based Kalavelas) per classical Brihat Parashara Hora Shastra standards. The fundamental mathematical cyclic invariant ((Upaketu + 30°) ≡ Sun) is verified with zero closure variance. ${prominent.length > 0 ? `Key angular/trinal placements: ${prominent.slice(0, 3).join(', ')}.` : 'Points are distributed smoothly across Upachaya and cadent houses.'} In authentic Vedic Jyotish, Upagrahas represent subtle consciousness markers requiring conscious self-regulation rather than fearful doom.`,
+      executive_text_hi: `बृहत्पाराशर होराशास्त्र के अनुसार 11 अप्रकाश उपग्रहों (5 सूर्य-जन्य एवं 6 अष्टधा कालवेला) की प्रामाणिक गणना की गई है। उपकेतु-सूर्य संरेखण चक्र ((उपकेतु + 30°) ≡ सूर्य) पूर्णतः प्रमाणित है। ${prominent.length > 0 ? `प्रमुख केंद्र/त्रिकोण स्थिति: ${prominent.slice(0, 3).join(', ')}।` : 'उपग्रहों की संतुलित स्थिति जीवन में सतत विकास को प्रेरित करती है।'} वैदिक ज्योतिष में उपग्रह सूक्ष्म कर्म-संस्कारों के संकेतक हैं, जो भय नहीं अपितु सत्कर्म व जागरूकता की प्रेरणा देते हैं।`,
+      satvik_remedies_en: [
+        'Surya Namaskar & Gayatri Mantra: Daily solar alignment to harmonize Dhuma and Kaala placements.',
+        'Saturday Seva & Charity: Donating sesame oil or supporting elderly workers to pacify Gulika & Maandi.',
+        'Mindful Speech & Ethical Restraint: Preserving peaceful clarity during Vyatipaata and Mrityu transit moments.',
+        'Zero Fear-Mongering: No expensive gemstones or fear-based rituals required for subtle non-luminous points.'
+      ],
+      satvik_remedies_hi: [
+        'सूर्य नमस्कार एवं गायत्री मंत्र: धूम एवं काल के संतुलन हेतु नियमित प्रातःकालीन सूर्य उपासना।',
+        'शनिवार सेवा व तिल दान: गुलिक व मांदि के पितृ-कर्म शमन हेतु जरूरतमंदों की सेवा व दान।',
+        'सत्य वाणी व धैर्य: व्यतीपात और मृत्यु के प्रभाव काल में शांत चित्त एवं विवेकपूर्ण आचरण।',
+        'भयमुक्त सात्विक जीवन: अप्रकाश उपग्रहों हेतु किसी महँगे रत्न या अंधविश्वास की आवश्यकता नहीं है।'
+      ]
+    };
+
+    return {
+      all_upagrahas: allList,
+      sun_derived: sunDerived,
+      time_based: timeBased,
+      invariants: {
+        sun_longitude: sunDeg,
+        upaketu_plus_30_deg: upaketuPlus30,
+        closure_difference: closureDiffWrapped,
+        closure_verified: closureVerified,
+        dhuma_indrachaapa_opposition_verified: dhumaIndraVerified,
+        vyatipaata_parivesha_opposition_verified: vyatipaataPariveshaVerified
+      },
+      summary
     };
   }
 

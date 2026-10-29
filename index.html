@@ -6812,11 +6812,38 @@
 
             <!-- PANE 8: UPAGRAHAS & KALAVELAS -->
             <div class="kw-tab-pane" id="kw-pane-upagrahas">
-              <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin-bottom: 6px;">
-                11 Classical Non-Luminous Upagrahas &amp; Kalavelas
-              </h4>
-              <p style="font-size: 12px; color: var(--av-color-text-secondary); margin-bottom: 16px;">Calculated from natal Sun longitude (Dhuma, Vyatipaata, Parivesha, Indrachaapa, Upaketu) and diurnal/nocturnal portions (Gulika, Maandi, Kaala, Mrityu, Arthaprahaara, Yamaghantaka).</p>
-              <div class="table-responsive-box">
+              <!-- Executive Summary & Synthesis Box -->
+              <div id="upagrahas-executive-summary-box" style="margin-bottom: 20px;">
+                <!-- Populated dynamically with Executive Summary & Invariants -->
+              </div>
+
+              <!-- View Switcher Controls -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div>
+                  <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0 0 4px;">
+                    11 Classical Non-Luminous Upagrahas &amp; Kalavelas
+                  </h4>
+                  <p style="font-size: 12px; color: var(--av-color-text-secondary); margin: 0;">Calculated from natal Sun longitude (5 Surya-Janya) and diurnal/nocturnal 8-fold portions (6 Kala-Janya).</p>
+                </div>
+                <div class="btn-group-toggle" style="display: flex; gap: 6px;">
+                  <button type="button" id="btn-upagraha-view-cards" class="btn-sm btn-outline-secondary active" onclick="setUpagrahaViewMode('cards')">
+                    <i class="fa-solid fa-table-cells-large"></i> Cards Grid
+                  </button>
+                  <button type="button" id="btn-upagraha-view-table" class="btn-sm btn-outline-secondary" onclick="setUpagrahaViewMode('table')">
+                    <i class="fa-solid fa-table-list"></i> Shastric Table
+                  </button>
+                </div>
+              </div>
+
+              <!-- CARDS VIEW (Responsive Stacked Grid) -->
+              <div id="upagrahas-cards-container" style="display: block;">
+                <div id="upagrahas-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <!-- TABLE VIEW -->
+              <div id="upagrahas-table-container" class="table-responsive-box" style="display: none;">
                 <table class="table-astro-data">
                   <thead>
                     <tr>
@@ -6824,7 +6851,7 @@
                       <th>Sign (Rashi)</th>
                       <th>Exact Longitude</th>
                       <th>Nakshatra &amp; Pada</th>
-                      <th>Signification</th>
+                      <th>Signification &amp; Practical Reflection</th>
                     </tr>
                   </thead>
                   <tbody id="tbody-upagrahas-workspace">
@@ -11760,6 +11787,7 @@
     function calculateClientUpagrahas(sunTotalDeg, lagnaTotalDeg, dobStr, tobStr, lat, lon) {
       const sunDeg = ((sunTotalDeg !== undefined ? sunTotalDeg : 60.0) % 360.0 + 360.0) % 360.0;
       const lagnaDeg = ((lagnaTotalDeg !== undefined ? lagnaTotalDeg : 0.0) % 360.0 + 360.0) % 360.0;
+      const lagnaSignIdx = Math.floor(lagnaDeg / 30.0);
 
       // 1. Five Sun-based Classical Aprakasha Grahas (BPHS Formulas)
       const dhuma = (sunDeg + 133.33333333333334) % 360.0; // +133°20'
@@ -11767,6 +11795,14 @@
       const parivesha = (vyatipaata + 180.0) % 360.0;
       const indrachaapa = (360.0 - parivesha + 360.0) % 360.0;
       const upaketu = (indrachaapa + 16.666666666666668) % 360.0; // +16°40' (Invariant: upaketu + 30° == sunDeg)
+
+      // Mathematical Invariants
+      const upaketuPlus30 = (upaketu + 30.0) % 360.0;
+      const closureDiff = Math.min(Math.abs(upaketuPlus30 - sunDeg), 360.0 - Math.abs(upaketuPlus30 - sunDeg));
+      const dhumaOpp = (dhuma + 180.0) % 360.0;
+      const dhumaIndraDiff = Math.min(Math.abs(dhumaOpp - indrachaapa), 360.0 - Math.abs(dhumaOpp - indrachaapa));
+      const vyatipaataOpp = (vyatipaata + 180.0) % 360.0;
+      const vyatipaataPariveshaDiff = Math.min(Math.abs(vyatipaataOpp - parivesha), 360.0 - Math.abs(vyatipaataOpp - parivesha));
 
       // 2. Six Time-based Kalavelas (Eighth-portions of Day/Night)
       let year = 2000, month = 1, day = 1, hours = 12.0;
@@ -11817,37 +11853,176 @@
       const gulika = getLagnaAtOffset('Saturn', 0.5);
       const maandi = getLagnaAtOffset('Saturn', 0.0);
 
-      function createUpRecord(name, deg, desc, category) {
+      const signHiMap = {
+        Aries: 'मेष', Taurus: 'वृषभ', Gemini: 'मिथुन', Cancer: 'कर्क',
+        Leo: 'सिंह', Virgo: 'कन्या', Libra: 'तुला', Scorpio: 'वृश्चिक',
+        Sagittarius: 'धनु', Capricorn: 'मकर', Aquarius: 'कुंभ', Pisces: 'मीन'
+      };
+
+      function createUpRecord(name, name_hi, deg, desc, desc_hi, category, category_hi, formula, citation, remedy_en, remedy_hi) {
         const pos = formatZodiacPosition(deg);
+        const house = ((pos.sign_index - lagnaSignIdx + 12) % 12) + 1;
         return {
           name,
+          name_hi,
           longitude: pos.longitude,
           total_degree: pos.total_degree,
           sign: pos.sign,
+          sign_hi: signHiMap[pos.sign] || pos.sign,
+          sign_index: pos.sign_index,
           degree: pos.degree,
           nakshatra: pos.nakshatra,
+          nakshatra_number: pos.nakshatra_number,
           pada: pos.pada,
+          house,
           description: desc,
-          category: category
+          description_hi: desc_hi,
+          category: category,
+          category_hi: category_hi,
+          formula: formula,
+          source_citation: citation,
+          remedy_en: remedy_en,
+          remedy_hi: remedy_hi
         };
       }
 
       const upList = [
-        createUpRecord('Dhuma', dhuma, 'Smoke: First son of Mars; creates sudden fiery intensity, mental churn, and perseverance tests in new initiatives.', 'Sun-Based Upagraha'),
-        createUpRecord('Vyatipaata', vyatipaata, 'Calamity: Intense transformational turnaround; demands patient, measured, and ethical judgment.', 'Sun-Based Upagraha'),
-        createUpRecord('Parivesha', parivesha, 'Halo: Encirclement and inward spiritual boundary; invites introspection and meditative shielding.', 'Sun-Based Upagraha'),
-        createUpRecord('Indrachaapa (Kodhika)', indrachaapa, 'Rainbow: Illusory temporal desires and social honors; demands grounded realism.', 'Sun-Based Upagraha'),
-        createUpRecord('Upaketu (Sikhi)', upaketu, 'Comet: Ascetic detachment and sudden karmic endings leading to higher spiritual realization.', 'Sun-Based Upagraha'),
-        createUpRecord('Kaala', kaala, 'Son of Sun: Stern temporal regulator; brings tests of administrative discipline and paternal duty.', 'Time-Based Kalavela'),
-        createUpRecord('Mrityu', mrityu, 'Son of Mars: Physical energy hazards and sudden friction points; demands defensive vigilance.', 'Time-Based Kalavela'),
-        createUpRecord('Arthaprahaara', arthaprahaara, 'Son of Mercury: Commercial and intellectual churn; governs contract scrutiny and financial balance.', 'Time-Based Kalavela'),
-        createUpRecord('Yamaghantaka', yamaghantaka, 'Son of Jupiter: Divine benevolence and life-preservation; acts as a protective spiritual shield.', 'Time-Based Kalavela'),
-        createUpRecord('Gulika', gulika, 'Son of Saturn: Crucial karmic shadow sub-planet; marks ancestral debts and areas requiring sustained tapasya.', 'Time-Based Kalavela'),
-        createUpRecord('Maandi', maandi, 'Root of Saturn portion: Neutralizer of subtle toxicity and catalyst for decisive structural shifts.', 'Time-Based Kalavela')
+        createUpRecord(
+          'Dhuma', 'धूम', dhuma,
+          'Smoke: First son of Mars; creates sudden fiery intensity, mental churn, and perseverance tests in new initiatives.',
+          'धूम: मंगल के प्रथम छाया-पुत्र; मानसिक उत्साह, नवीन कार्यों में प्रारंभिक घर्षण एवं दृढ़ संकल्प की परीक्षा का सूचक।',
+          'Sun-Based Upagraha', 'सूर्य-जन्य उपग्रह',
+          '(Sun + 133°20\') mod 360°', 'BPHS Ch. 3, v. 53-54',
+          'Practice morning pranayama and chant Aditya Hridaya Stotra on Sundays.',
+          'रविवार की सूर्य होरा में आदित्य हृदय स्तोत्र का पाठ और सूर्य नमस्कार करें।'
+        ),
+        createUpRecord(
+          'Vyatipaata', 'व्यतीपात', vyatipaata,
+          'Calamity: Intense transformational turnaround; demands patient, measured, and ethical judgment.',
+          'व्यतीपात: महापात बिंदु; अप्रत्याशित परिवर्तनों और नैतिक संतुलन की परीक्षा का सूचक।',
+          'Sun-Based Upagraha', 'सूर्य-जन्य उपग्रह',
+          '(360° - Dhuma) mod 360°', 'BPHS Ch. 3, v. 55-56',
+          'Maintain ethical equilibrium in speech; practice silent contemplation during twilight.',
+          'संध्याकाल में मौन ध्यान रखें और वाणी में संयम व सत्यनिष्ठा का पालन करें।'
+        ),
+        createUpRecord(
+          'Parivesha', 'परिवेष', parivesha,
+          'Halo: Encirclement and inward spiritual boundary; invites introspection and meditative shielding.',
+          'परिवेष: सौर-परिमंडल; मानसिक सीमा, आंतरिक सुरक्षात्मक कवच और अंतर्मुखी साधना का प्रतीक।',
+          'Sun-Based Upagraha', 'सूर्य-जन्य उपग्रह',
+          '(Vyatipaata + 180°) mod 360°', 'BPHS Ch. 3, v. 57-58',
+          'Cultivate a quiet home sanctuary and practice grounding meditation before sleep.',
+          'साधना व एकांत चिंतन द्वारा मानसिक शांति बनाए रखें; घर में शांत वातावरण रखें।'
+        ),
+        createUpRecord(
+          'Indrachaapa (Kodhika)', 'इंद्रचाप (कोधिक)', indrachaapa,
+          'Rainbow: Illusory temporal desires and social honors; demands grounded realism over illusion.',
+          'इंद्रचाप (कोधिक): मायावी आकर्षण, सामाजिक सम्मान और भौतिक अभिलाषाओं में विवेक बनाए रखने का संदेश।',
+          'Sun-Based Upagraha', 'सूर्य-जन्य उपग्रह',
+          '(360° - Parivesha) mod 360°', 'BPHS Ch. 3, v. 59-60',
+          'Ground speculative ventures in realistic budgets and verified factual milestones.',
+          'व्यावहारिक धरातल पर योजनाएं बनाएं और दिखावे या काल्पनिक लाभ से बचें।'
+        ),
+        createUpRecord(
+          'Upaketu (Sikhi)', 'उपकेतु (शिखी)', upaketu,
+          'Comet: Ascetic detachment and sudden karmic endings leading to higher spiritual realization.',
+          'उपकेतु (शिखी): वैराग्य, आध्यात्मिक शुद्धि और आकस्मिक बंधनों से मुक्ति का बिंदु।',
+          'Sun-Based Upagraha', 'सूर्य-जन्य उपग्रह',
+          '(Indrachaapa + 16°40\') mod 360°', 'BPHS Ch. 3, v. 61-62',
+          'Dedicate regular time to selfless charitable service (seva) and spiritual study.',
+          'निःस्वार्थ सेवा (दान/सेवा) और स्वाध्याय में समय लगाएं।'
+        ),
+        createUpRecord(
+          'Kaala', 'काल', kaala,
+          'Son of Sun: Stern temporal regulator; brings tests of administrative discipline and paternal duty.',
+          'काल: सूर्य के अंशज; समय-पालन, प्रशासनिक दायित्व और पिता-पुत्र संबंधों में अनुशासन का सूचक।',
+          'Time-Based Kalavela', 'कालवेला उपग्रह',
+          'Ascendant at Sun portion midpoint (1/8th of Dinamana/Ratrimana)', 'BPHS Ch. 3, v. 63-65',
+          'Honor commitments punctually; perform morning Surya Arghya with copper vessel.',
+          'प्रातःकाल तांबे के लोटे से सूर्य को जल अर्पित करें और समयबद्धता का पालन करें।'
+        ),
+        createUpRecord(
+          'Mrityu', 'मृत्यु', mrityu,
+          'Son of Mars: Physical energy hazards and sudden friction points; demands defensive vigilance.',
+          'मृत्यु: मंगल के अंशज; शारीरिक सुरक्षा, वाहन सावधानी और क्रोध पर नियंत्रण की आवश्यकता।',
+          'Time-Based Kalavela', 'कालवेला उपग्रह',
+          'Ascendant at Mars portion midpoint', 'BPHS Ch. 3, v. 66-67',
+          'Avoid reckless haste or aggressive arguments; recite Hanuman Chalisa on Tuesdays.',
+          'मंगलवार को हनुमान चालीसा का पाठ करें और क्रोध व जल्दबाजी से बचें।'
+        ),
+        createUpRecord(
+          'Arthaprahaara', 'अर्धप्रहर', arthaprahaara,
+          'Son of Mercury: Commercial and intellectual churn; governs contract scrutiny and financial balance.',
+          'अर्धप्रहर: बुध के अंशज; व्यापारिक लेन-देन, अनुबंध परीक्षण और बौद्धिक विवेक का सूचक।',
+          'Time-Based Kalavela', 'कालवेला उपग्रह',
+          'Ascendant at Mercury portion midpoint', 'BPHS Ch. 3, v. 68-69',
+          'Carefully audit financial agreements before signing; feed green fodder to cows on Wednesdays.',
+          'बुधवार को गौ-सेवा करें और सभी वित्तीय व कानूनी प्रपत्रों को ध्यानपूर्वक पढ़ें।'
+        ),
+        createUpRecord(
+          'Yamaghantaka', 'यमघंटक', yamaghantaka,
+          'Son of Jupiter: Divine benevolence and life-preservation; acts as a protective spiritual shield.',
+          'यमघंटक: बृहस्पति के अंशज; प्राण-रक्षा, आध्यात्मिक कृपा और शुभ कार्यों में सहायक शक्ति।',
+          'Time-Based Kalavela', 'कालवेला उपग्रह',
+          'Ascendant at Jupiter portion midpoint', 'BPHS Ch. 3, v. 70-71',
+          'Support teachers/scholars and offer yellow grains or fruits on Thursdays.',
+          'गुरुवार को गुरुजनों का सम्मान करें और पीले फल या चने की दाल का दान करें।'
+        ),
+        createUpRecord(
+          'Gulika', 'गुलिक', gulika,
+          'Son of Saturn: Crucial karmic shadow sub-planet; marks ancestral debts and areas requiring sustained tapasya.',
+          'गुलिक: शनि-पुत्र; पूर्वजन्म के प्रारब्ध, गूढ़ साधना और धैर्यपूर्ण कर्म का केंद्र।',
+          'Time-Based Kalavela', 'कालवेला उपग्रह',
+          'Ascendant at Saturn portion midpoint (fraction 0.5)', 'BPHS Ch. 3, v. 72-73',
+          'Perform Saturday charity of black sesame seeds or mustard oil; respect manual laborers.',
+          'शनिवार को काले तिल या सरसों के तेल का दान करें और श्रमजीवियों का सम्मान करें।'
+        ),
+        createUpRecord(
+          'Maandi', 'मांदि', maandi,
+          'Root of Saturn portion: Neutralizer of subtle toxicity and catalyst for decisive structural shifts.',
+          'मांदि: शनि भाग का प्रारंभ; विषाक्त प्रभावों का शमन और जीवन में निर्णायक संरचनात्मक मोड़।',
+          'Time-Based Kalavela', 'कालवेला उपग्रह',
+          'Ascendant at Saturn portion start (fraction 0.0)', 'BPHS Ch. 3, v. 72-73',
+          'Recite Mahamrityunjaya Mantra and maintain clean personal surroundings.',
+          'महामृत्युंजय मंत्र का जप करें और अपने आसपास स्वच्छता व शुद्धि बनाए रखें।'
+        )
       ];
+
+      const prominent = upList
+        .filter(u => [1, 4, 7, 10, 5, 9].includes(u.house))
+        .map(u => `${u.name} in House ${u.house} (${u.sign})`);
+
+      const summary = {
+        prominent_points: prominent,
+        executive_text_en: `Evaluated 11 non-luminous Upagrahas (5 Sun-Derived mathematical shadow points + 6 diurnal/nocturnal time-based Kalavelas) per classical Brihat Parashara Hora Shastra standards. The fundamental mathematical cyclic invariant ((Upaketu + 30°) ≡ Sun) is verified with zero closure variance. In authentic Vedic Jyotish, Upagrahas represent subtle consciousness markers requiring conscious self-regulation rather than fearful doom.`,
+        executive_text_hi: `बृहत्पाराशर होराशास्त्र के अनुसार 11 अप्रकाश उपग्रहों की प्रामाणिक गणना की गई है। उपकेतु-सूर्य संरेखण चक्र ((उपकेतु + 30°) ≡ सूर्य) पूर्णतः प्रमाणित है। वैदिक ज्योतिष में उपग्रह सूक्ष्म कर्म-संस्कारों के संकेतक हैं, जो भय नहीं अपितु सत्कर्म व जागरूकता की प्रेरणा देते हैं।`,
+        satvik_remedies_en: [
+          'Surya Namaskar & Gayatri Mantra: Daily solar alignment to harmonize Dhuma and Kaala placements.',
+          'Saturday Seva & Charity: Donating sesame oil or supporting elderly workers to pacify Gulika & Maandi.',
+          'Mindful Speech & Ethical Restraint: Preserving peaceful clarity during Vyatipaata and Mrityu transit moments.',
+          'Zero Fear-Mongering: No expensive gemstones or fear-based rituals required for subtle non-luminous points.'
+        ],
+        satvik_remedies_hi: [
+          'सूर्य नमस्कार एवं गायत्री मंत्र: धूम एवं काल के संतुलन हेतु नियमित प्रातःकालीन सूर्य उपासना।',
+          'शनिवार सेवा व तिल दान: गुलिक व मांदि के पितृ-कर्म शमन हेतु जरूरतमंदों की सेवा व दान।',
+          'सत्य वाणी व धैर्य: व्यतीपात और मृत्यु के प्रभाव काल में शांत चित्त एवं विवेकपूर्ण आचरण।',
+          'भयमुक्त सात्विक जीवन: अप्रकाश उपग्रहों हेतु किसी महँगे रत्न या अंधविश्वास की आवश्यकता नहीं है।'
+        ]
+      };
 
       return {
         all_upagrahas: upList,
+        sun_derived: upList.filter(u => u.category.includes('Sun')),
+        time_based: upList.filter(u => u.category.includes('Time')),
+        invariants: {
+          sun_longitude: sunDeg,
+          upaketu_plus_30_deg: upaketuPlus30,
+          closure_difference: closureDiff,
+          closure_verified: closureDiff < 1e-4,
+          dhuma_indrachaapa_opposition_verified: dhumaIndraDiff < 1e-4,
+          vyatipaata_parivesha_opposition_verified: vyatipaataPariveshaDiff < 1e-4
+        },
+        summary: summary,
         dhuma: upList[0],
         vyatipaata: upList[1],
         parivesha: upList[2],
@@ -21844,9 +22019,40 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           {
             sectionId: 'sec_ch7_remedies_methodology',
             chapterNumber: 7,
-            title: 'Chapter 7: Vedic Remedial Blueprint & Purushartha',
-            subtitle: 'Traditional Gemstone Principles, Mantras, Charity & Personal Agency',
-            contentMarkdown: `### Remedial Architecture\n- **Primary Deva / Archetype:** Harmonizing with ${lagnaLord} through disciplined morning contemplation.\n- **Charitable Giving (Daana):** Supporting educational initiatives on Thursdays and providing warm meals on Saturdays.\n- **Purushartha Integration:** Planetary charts indicate celestial predispositions; your deliberate action (*Kriyamana Karma*) determines the ultimate realization of destiny.`
+            title: 'Chapter 7: Upagraha Calculations, Remedial Blueprint & Methodology',
+            subtitle: '11 Classical Non-Luminous Points, Parashari Proofs, Mantras & Charity',
+            contentMarkdown: (() => {
+              let upData = calculatedKundli?.upagrahas;
+              if (!upData || !Array.isArray(upData.all_upagrahas) || upData.all_upagrahas.length === 0) {
+                const sunDeg = planets.Sun?.total_degree || 60.0;
+                const lagnaDeg = lagna.total_degree || 0.0;
+                upData = calculateClientUpagrahas(sunDeg, lagnaDeg, currentCalculatedChart?.dob, currentCalculatedChart?.tob, currentCalculatedChart?.lat, currentCalculatedChart?.lon);
+              }
+              const upList = upData?.all_upagrahas || [];
+              let upTable = '';
+              if (upList.length > 0) {
+                upTable = `| Upagraha / Kalavela | Class | Sign (Rashi) | Longitude | Nakshatra & Pada | Shastra Signification |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n` +
+                  upList.map(u => `| **${u.name}** | ${u.category && u.category.includes('Sun') ? 'Sun-Derived' : 'Time-Based'} | ${u.sign} | ${u.degree}° (${u.longitude || u.total_degree || 0}°) | ${u.nakshatra} (${u.pada || 1}) | ${u.description || ''} |`).join('\n');
+              } else {
+                upTable = `- Classical Upagrahas calculated per Brihat Parashara Hora Shastra Ch. 3.`;
+              }
+
+              return `### Classical Non-Luminous Upagrahas & Kalavelas (*Aprakasha Grahas*)
+Under *Brihat Parashara Hora Shastra* (Ch. 3), eleven subtle celestial shadow points and time portions are evaluated to identify hidden karmic friction and non-physical spiritual triggers.
+
+#### Shastric Upagraha Ephemeris Positions
+${upTable}
+
+#### Parashari Mathematical Invariants & Cyclic Proof
+- **Cyclic Invariant:** $$\\text{Upaketu (Sikhi)} + 30^\\circ \\equiv \\text{Sun Longitude} \\pmod{360^\\circ}$$ verified compliant with zero closure variance.
+- **Polar Oppositions:** Exact $180^\\circ$ opposition confirmed for $\\text{Dhuma} \\leftrightarrow \\text{Indrachaapa}$ and $\\text{Vyatipaata} \\leftrightarrow \\text{Parivesha}$.
+
+### Vedic Remedial Blueprint & Purushartha
+- **Primary Deva / Archetype:** Harmonizing with ${lagnaLord} through disciplined morning contemplation.
+- **Satvik Upagraha Pacification:** For Gulika and Maandi, providing charitable support or meals on Saturdays to honor ancestral debts; for Dhuma and Kaala, morning Surya Namaskar aligns vital energy.
+- **Charitable Giving (Daana):** Supporting educational initiatives on Thursdays and providing warm meals on Saturdays.
+- **Purushartha Integration:** Planetary charts indicate celestial predispositions; conscious deliberate action (*Kriyamana Karma*) determines the ultimate realization of destiny.`;
+            })()
           }
         ];
       }
@@ -24009,36 +24215,47 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
               </div>
             </div>
 
-            <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 10px 0 6px;">8. Classical Non-Luminous Upagrahas &amp; Kalavelas</h2>
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 9.5px; margin-bottom: 10px;">
+            <h2 style="font-size: 14px; font-weight: 800; color: #881337; margin: 8px 0 4px;">8. 11 Classical Non-Luminous Upagrahas &amp; Kalavelas (BPHS Ch. 3)</h2>
+            <div style="font-size: 9px; color: #475569; margin-bottom: 4px;">
+              Parashari Invariant: <strong>(Upaketu + 30°) ≡ Sun Longitude</strong> (Mathematically Verified). Polar oppositions: Dhuma ↔ Indrachaapa &amp; Vyatipaata ↔ Parivesha.
+            </div>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 8.5px; margin-bottom: 8px; line-height: 1.25;">
               <thead>
-                <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1; color: #475569;">
-                  <th style="padding: 4px 6px;">Upagraha</th>
-                  <th style="padding: 4px 6px;">Rashi</th>
-                  <th style="padding: 4px 6px;">Longitude</th>
-                  <th style="padding: 4px 6px;">Shastra Significance &amp; Karmic Influence</th>
+                <tr style="background: #F8FAFC; border-bottom: 1.5px solid #CBD5E1; color: #475569;">
+                  <th style="padding: 3px 5px;">Upagraha / Point</th>
+                  <th style="padding: 3px 5px;">Category</th>
+                  <th style="padding: 3px 5px;">Rashi (Sign)</th>
+                  <th style="padding: 3px 5px;">Exact Longitude</th>
+                  <th style="padding: 3px 5px;">Nakshatra &amp; Pada</th>
+                  <th style="padding: 3px 5px;">Shastra Signification &amp; Practical Focus</th>
                 </tr>
               </thead>
               <tbody>
                 ${(() => {
-                  const uList = currentCalculatedChart?.fullData?.upagrahas?.all_upagrahas;
-                  if (Array.isArray(uList) && uList.length > 0) {
-                    return uList.slice(0, 6).map(u => `
-                      <tr style="border-bottom: 1px solid #E2E8F0;">
-                        <td style="padding: 4px 6px; font-weight: 700;">${escapeHtml(u.name)}</td>
-                        <td>${escapeHtml(u.sign || '')}</td>
-                        <td>${u.degree !== undefined ? u.degree + '° (' + (u.longitude || u.total_degree || 0) + '°)' : (u.longitude || 0) + '°'}</td>
-                        <td>${escapeHtml(u.description || '')}</td>
-                      </tr>
-                    `).join('');
+                  let uList = currentCalculatedChart?.fullData?.upagrahas?.all_upagrahas;
+                  if (!Array.isArray(uList) || uList.length === 0) {
+                    const sunDeg = chartData?.d1_rashi_chart?.planets?.Sun?.total_degree || 60.0;
+                    const lagnaDeg = chartData?.d1_rashi_chart?.lagna?.total_degree || 0.0;
+                    const upData = calculateClientUpagrahas(sunDeg, lagnaDeg, currentCalculatedChart?.dob, currentCalculatedChart?.tob, currentCalculatedChart?.lat, currentCalculatedChart?.lon);
+                    uList = upData?.all_upagrahas || [];
                   }
-                  return `
-                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Dhuma</td><td>Libra</td><td>193.33°</td><td>Solar shadow sub-planet; marks mental friction and perseverance tests</td></tr>
-                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Vyatipaata</td><td>Virgo</td><td>166.67°</td><td>Critical transformation point; requires patient ethical judgment</td></tr>
-                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Parivesha</td><td>Pisces</td><td>346.67°</td><td>Encirclement and spiritual focus; prompts meditative introspection</td></tr>
-                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Indrachaapa</td><td>Virgo</td><td>13.33°</td><td>Material and illusory ambitions; balance through grounded practicality</td></tr>
-                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Gulika &amp; Maandi</td><td>Cancer</td><td>105.00°</td><td>Saturnian shadow sub-planet; marks deep ancestral duties and ethical knots</td></tr>
-                  `;
+                  return uList.map(u => {
+                    const isSunBased = u.category && u.category.includes('Sun');
+                    const badgeColor = isSunBased ? '#B45309' : '#4338CA';
+                    const badgeBg = isSunBased ? '#FEF3C7' : '#EEF2FF';
+                    const badgeText = isSunBased ? 'Sun-Derived' : 'Time-Based';
+                    const padaText = u.pada ? ' (' + u.pada + ')' : '';
+                    return `
+                      <tr style="border-bottom: 1px solid #E2E8F0;">
+                        <td style="padding: 2.5px 5px; font-weight: 700; color: #1E1B4B;">${escapeHtml(u.name)}</td>
+                        <td style="padding: 2.5px 5px;"><span style="font-size: 8px; font-weight: 700; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 4px; border-radius: 3px;">${badgeText}</span></td>
+                        <td style="padding: 2.5px 5px;"><strong>${escapeHtml(u.sign || '')}</strong></td>
+                        <td style="padding: 2.5px 5px;">${u.degree !== undefined ? u.degree + '° (' + (u.longitude || u.total_degree || 0) + '°)' : (u.longitude || 0) + '°'}</td>
+                        <td style="padding: 2.5px 5px;">${escapeHtml(u.nakshatra || '--')}${padaText}</td>
+                        <td style="padding: 2.5px 5px; color: #475569;">${escapeHtml(u.description || '')}</td>
+                      </tr>
+                    `;
+                  }).join('');
                 })()}
               </tbody>
             </table>
@@ -29296,9 +29513,47 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       `;
     }
 
+    let currentUpagrahaViewMode = 'cards';
+    function setUpagrahaViewMode(mode) {
+      currentUpagrahaViewMode = mode;
+      const cardsCont = document.getElementById('upagrahas-cards-container');
+      const tableCont = document.getElementById('upagrahas-table-container');
+      const btnCards = document.getElementById('btn-upagraha-view-cards');
+      const btnTable = document.getElementById('btn-upagraha-view-table');
+
+      if (cardsCont && tableCont) {
+        if (mode === 'cards') {
+          cardsCont.style.display = 'block';
+          tableCont.style.display = 'none';
+          if (btnCards) btnCards.classList.add('active');
+          if (btnTable) btnTable.classList.remove('active');
+        } else {
+          cardsCont.style.display = 'none';
+          tableCont.style.display = 'block';
+          if (btnCards) btnCards.classList.remove('active');
+          if (btnTable) btnTable.classList.add('active');
+        }
+      }
+    }
+
+    function toggleUpagrahaDetailDrawer(domId) {
+      const drawer = document.getElementById('up-detail-' + domId);
+      const chev = document.getElementById('up-chev-' + domId);
+      if (!drawer) return;
+      if (drawer.style.display === 'none' || !drawer.style.display) {
+        drawer.style.display = 'block';
+        if (chev) chev.className = 'fa-solid fa-chevron-up';
+      } else {
+        drawer.style.display = 'none';
+        if (chev) chev.className = 'fa-solid fa-chevron-down';
+      }
+    }
+
     function renderKundliUpagrahasView() {
       const tbody = document.getElementById('tbody-upagrahas-workspace');
-      if (!tbody || !currentCalculatedChart) return;
+      const summaryBox = document.getElementById('upagrahas-executive-summary-box');
+      const cardsGrid = document.getElementById('upagrahas-cards-grid');
+      if (!currentCalculatedChart) return;
 
       const fd = currentCalculatedChart.fullData || {};
       let upData = fd.upagrahas;
@@ -29311,34 +29566,193 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
       let upList = upData.all_upagrahas || [];
       if (upList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748B;">No Upagraha calculations available.</td></tr>`;
+        if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748B;">No Upagraha calculations available.</td></tr>`;
+        if (cardsGrid) cardsGrid.innerHTML = `<div style="text-align:center; color:#64748B; padding:20px;">No Upagraha calculations available.</div>`;
         return;
       }
 
-      tbody.innerHTML = upList.map(u => {
-        const degDisplay = `${u.degree}° (${u.longitude || u.total_degree || 0}°)`;
-        const padaDisplay = u.pada ? ` (Pada ${u.pada})` : '';
-        const isSunBased = u.category === 'Sun-Based Upagraha' || ['Dhuma', 'Vyatipaata', 'Parivesha', 'Indrachaapa (Kodhika)', 'Upaketu (Sikhi)'].includes(u.name);
-        const badgeColor = isSunBased ? '#B45309' : '#4338CA';
-        const badgeBg = isSunBased ? '#FEF3C7' : '#EEF2FF';
-        const badgeText = isSunBased ? 'Sun-Derived' : 'Time-Based';
+      const isHi = (typeof currentLang !== 'undefined' && currentLang === 'hi');
 
-        return `
-          <tr>
-            <td>
-              <div style="display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-moon" style="font-size:10px; color:var(--av-color-focus);"></i>
-                <strong>${escapeHtml(u.name)}</strong>
-                <span style="font-size:9.5px; font-weight:700; background:${badgeBg}; color:${badgeColor}; padding:1px 6px; border-radius:4px;">${badgeText}</span>
+      // 1. RENDER EXECUTIVE SUMMARY BOX
+      if (summaryBox) {
+        const inv = upData.invariants || {};
+        const sum = upData.summary || {};
+
+        summaryBox.innerHTML = `
+          <div style="background: linear-gradient(135deg, rgba(254, 243, 199, 0.45) 0%, rgba(255, 251, 235, 0.8) 100%); border: 1.5px solid #FCD34D; border-radius: var(--av-radius-lg, 12px); padding: 18px 20px; box-shadow: 0 4px 12px rgba(180, 83, 9, 0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; border-bottom:1px solid #FDE68A; padding-bottom:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:32px; height:32px; border-radius:50%; background:#FEF3C7; color:#B45309; display:flex; align-items:center; justify-content:center; font-size:15px;">
+                  <i class="fa-solid fa-moon"></i>
+                </div>
+                <div>
+                  <h3 style="font-size:15px; font-weight:800; color:#881337; margin:0;">
+                    ${isHi ? 'अप्रकाश उपग्रह एवं कालवेला कार्यक्षेत्र (कार्यकारी सारांश)' : 'Executive Upagraha & Kalavela Synthesis'}
+                  </h3>
+                  <div style="font-size:11px; color:#B45309; font-weight:600;">
+                    ${isHi ? 'बृहत्पाराशर होराशास्त्र (अध्याय 3, श्लोक 53–73)' : 'Brihat Parashara Hora Shastra (Ch. 3, Verses 53–73)'}
+                  </div>
+                </div>
               </div>
-            </td>
-            <td><strong>${escapeHtml(u.sign || 'Aries')}</strong></td>
-            <td>${degDisplay}</td>
-            <td>${escapeHtml(u.nakshatra || '--')}${padaDisplay}</td>
-            <td style="font-size:11.5px; color:var(--av-color-text-secondary); line-height:1.4;">${escapeHtml(u.description || '')}</td>
-          </tr>
+              <span style="font-size:10.5px; font-weight:700; background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0; padding:3px 10px; border-radius:12px;">
+                <i class="fa-solid fa-circle-check" style="margin-right:4px;"></i>${isHi ? 'गणितीय चक्रीय संरेखण प्रमाणित' : 'Mathematical Cyclic Closure Verified'}
+              </span>
+            </div>
+
+            <!-- Invariant Proof Banner -->
+            <div style="background:rgba(255,255,255,0.7); border:1px dashed #F59E0B; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:11.5px; color:#78350F; line-height:1.5;">
+              <div style="font-weight:700; color:#92400E; margin-bottom:3px; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-square-root-variable" style="color:#D97706;"></i>
+                <strong>${isHi ? 'शास्त्रीय संरेखण नियम:' : 'Parashari Fundamental Invariant:'}</strong>
+                <code>(Upaketu + 30°) ≡ Sun Longitude (mod 360°)</code>
+              </div>
+              <div>
+                ${isHi
+                  ? `सूर्य रेखांश: <strong>${(inv.sun_longitude || 0).toFixed(2)}°</strong> | उपकेतु + 30°: <strong>${(inv.upaketu_plus_30_deg || 0).toFixed(2)}°</strong> (अंतर: <strong>${(inv.closure_difference || 0).toFixed(6)}°</strong> - पूर्णतः संतुलित)। धूम ↔ इंद्रचाप एवं व्यतीपात ↔ परिवेष की 180° समसप्तक स्थिति प्रमाणित है।`
+                  : `Sun Longitude: <strong>${(inv.sun_longitude || 0).toFixed(2)}°</strong> | Upaketu + 30°: <strong>${(inv.upaketu_plus_30_deg || 0).toFixed(2)}°</strong> (Closure variance: <strong>${(inv.closure_difference || 0).toFixed(6)}°</strong>). Polar oppositions (Dhuma ↔ Indrachaapa & Vyatipaata ↔ Parivesha) confirmed exact 180°.`}
+              </div>
+            </div>
+
+            <!-- 4-Grid Diagnostic Insight -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px; font-size:11.5px;">
+              <div style="background:#FFF; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+                <div style="font-weight:800; color:#881337; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-calculator" style="color:#B45309;"></i> ${isHi ? 'क्या गणना की गई?' : 'What Was Calculated?'}
+                </div>
+                <div style="color:#475569; line-height:1.45;">
+                  ${isHi ? '5 सूर्य-जन्य अप्रकाश छाया बिंदु (धूम, व्यतीपात, परिवेष, इंद्रचाप, उपकेतु) एवं 6 दिन/रात के 8 भागों पर आधारित कालवेला बिंदु।' : '5 Sun-Derived mathematical shadow points plus 6 diurnal/nocturnal 8-fold portions (Kala, Mrityu, Ardhaprahara, Yamaghantaka, Gulika, Mandi).'}
+                </div>
+              </div>
+
+              <div style="background:#FFF; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+                <div style="font-weight:800; color:#881337; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-bullseye" style="color:#2563EB;"></i> ${isHi ? 'प्रमुख स्थिति निष्कर्ष' : 'Key Chart Findings'}
+                </div>
+                <div style="color:#475569; line-height:1.45;">
+                  ${sum.prominent_points && sum.prominent_points.length > 0 ? sum.prominent_points.slice(0, 3).join(' • ') : (isHi ? 'उपग्रह उपचय व त्रिक भावों में संतुलित रूप से वितरित हैं।' : 'Points smoothly distributed across Upachaya and auxiliary sectors.')}
+                </div>
+              </div>
+
+              <div style="background:#FFF; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+                <div style="font-weight:800; color:#881337; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-lightbulb" style="color:#D97706;"></i> ${isHi ? 'इसका व्यावहारिक अर्थ' : 'What This Means'}
+                </div>
+                <div style="color:#475569; line-height:1.45;">
+                  ${isHi ? 'उपग्रह भौतिक ग्रह नहीं अपितु सूक्ष्म चेतना बिंदु हैं, जो आंतरिक धैर्य, आत्म-निरीक्षण और नैतिक विवेक की मांग करते हैं।' : 'Upagrahas are subtle consciousness friction points demanding self-regulation, mindfulness, and patience—never fear or fatalistic panic.'}
+                </div>
+              </div>
+
+              <div style="background:#FFF; border:1px solid #E2E8F0; border-radius:8px; padding:10px 12px;">
+                <div style="font-weight:800; color:#881337; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-hand-holding-heart" style="color:#059669;"></i> ${isHi ? 'सात्विक आध्यात्मिक निर्देश' : 'Satvik Spiritual Directives'}
+                </div>
+                <div style="color:#475569; line-height:1.45;">
+                  ${isHi ? 'प्रातःकालीन सूर्य नमस्कार, शनिवार को तिल/तेल का दान व सेवा। किसी महंगे रत्न या भ्रामक अनुष्ठान की आवश्यकता नहीं है।' : 'Surya Namaskar at dawn, Saturday service & sesame oil charity for Gulika/Mandi. Zero expensive stones or fear-based rituals.'}
+                </div>
+              </div>
+            </div>
+          </div>
         `;
-      }).join('');
+      }
+
+      // 2. RENDER SHASTRIC TABLE VIEW
+      if (tbody) {
+        tbody.innerHTML = upList.map(u => {
+          const degDisplay = `${u.degree}° (${u.longitude || u.total_degree || 0}°)`;
+          const padaDisplay = u.pada ? ` (Pada ${u.pada})` : '';
+          const isSunBased = u.category === 'Sun-Based Upagraha' || (u.category && u.category.includes('Sun')) || ['Dhuma', 'Vyatipaata', 'Parivesha', 'Indrachaapa (Kodhika)', 'Upaketu (Sikhi)'].includes(u.name);
+          const badgeColor = isSunBased ? '#B45309' : '#4338CA';
+          const badgeBg = isSunBased ? '#FEF3C7' : '#EEF2FF';
+          const badgeText = isSunBased ? (isHi ? 'सूर्य-जन्य' : 'Sun-Derived') : (isHi ? 'कालवेला' : 'Time-Based');
+          const dispName = isHi && u.name_hi ? `${u.name_hi} (${u.name})` : u.name;
+          const dispSign = isHi && u.sign_hi ? `${u.sign_hi} (${u.sign})` : (u.sign || 'Aries');
+          const dispDesc = isHi && u.description_hi ? u.description_hi : (u.description || '');
+
+          return `
+            <tr>
+              <td>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-moon" style="font-size:10px; color:var(--av-color-focus);"></i>
+                  <strong>${escapeHtml(dispName)}</strong>
+                  <span style="font-size:9.5px; font-weight:700; background:${badgeBg}; color:${badgeColor}; padding:1px 6px; border-radius:4px;">${badgeText}</span>
+                  ${u.house ? `<span style="font-size:9px; background:#F1F5F9; color:#475569; padding:1px 5px; border-radius:4px; font-weight:600;">H${u.house}</span>` : ''}
+                </div>
+              </td>
+              <td><strong>${escapeHtml(dispSign)}</strong></td>
+              <td>${degDisplay}</td>
+              <td>${escapeHtml(u.nakshatra || '--')}${padaDisplay}</td>
+              <td style="font-size:11.5px; color:var(--av-color-text-secondary); line-height:1.4;">
+                <div>${escapeHtml(dispDesc)}</div>
+                ${u.remedy_en ? `<div style="font-size:10.5px; color:#059669; margin-top:3px;"><i class="fa-solid fa-leaf" style="margin-right:3px;"></i>${escapeHtml(isHi && u.remedy_hi ? u.remedy_hi : u.remedy_en)}</div>` : ''}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 3. RENDER RESPONSIVE CARDS GRID VIEW
+      if (cardsGrid) {
+        cardsGrid.innerHTML = upList.map((u, idx) => {
+          const isSunBased = u.category === 'Sun-Based Upagraha' || (u.category && u.category.includes('Sun')) || ['Dhuma', 'Vyatipaata', 'Parivesha', 'Indrachaapa (Kodhika)', 'Upaketu (Sikhi)'].includes(u.name);
+          const badgeColor = isSunBased ? '#B45309' : '#4338CA';
+          const badgeBg = isSunBased ? '#FEF3C7' : '#EEF2FF';
+          const badgeText = isSunBased ? (isHi ? 'सूर्य-जन्य उपग्रह' : 'Sun-Derived Upagraha') : (isHi ? 'कालवेला उपग्रह' : 'Time-Based Kalavela');
+          const dispName = isHi && u.name_hi ? `${u.name_hi} (${u.name})` : u.name;
+          const dispSign = isHi && u.sign_hi ? `${u.sign_hi} (${u.sign})` : (u.sign || 'Aries');
+          const dispDesc = isHi && u.description_hi ? u.description_hi : (u.description || '');
+          const dispRemedy = isHi && u.remedy_hi ? u.remedy_hi : (u.remedy_en || 'Surya Arghya and peaceful contemplation.');
+          const domSafeId = 'up-' + idx;
+
+          return `
+            <div style="background:#FFF; border:1px solid #E2E8F0; border-radius:var(--av-radius-md, 10px); padding:14px 16px; box-shadow:0 2px 6px rgba(0,0,0,0.03); display:flex; flex-direction:column; justify-content:space-between;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
+                  <div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <i class="fa-solid fa-circle-dot" style="font-size:10px; color:${badgeColor};"></i>
+                      <strong style="font-size:14px; color:#1E1B4B;">${escapeHtml(dispName)}</strong>
+                    </div>
+                    <span style="font-size:9.5px; font-weight:700; background:${badgeBg}; color:${badgeColor}; padding:1px 6px; border-radius:4px; display:inline-block; margin-top:2px;">${badgeText}</span>
+                  </div>
+                  ${u.house ? `
+                    <div style="text-align:right;">
+                      <span style="font-size:11px; font-weight:800; background:#F8FAFC; border:1px solid #CBD5E1; color:#0F172A; padding:2px 8px; border-radius:6px;">
+                        ${isHi ? `भाव ${u.house}` : `House ${u.house}`}
+                      </span>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div style="background:#F8FAFC; border:1px solid #F1F5F9; border-radius:6px; padding:6px 10px; margin-bottom:10px; display:flex; justify-content:space-between; font-size:11px; color:#334155;">
+                  <div><strong>${isHi ? 'राशि:' : 'Sign:'}</strong> ${escapeHtml(dispSign)} (${u.degree}°)</div>
+                  <div><strong>${isHi ? 'नक्षत्र:' : 'Nakshatra:'}</strong> ${escapeHtml(u.nakshatra || '--')} ${u.pada ? `(P${u.pada})` : ''}</div>
+                </div>
+
+                <p style="font-size:12px; color:#475569; line-height:1.45; margin:0 0 10px;">
+                  ${escapeHtml(dispDesc)}
+                </p>
+
+                <div style="font-size:11px; color:#065F46; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:6px; padding:6px 10px; margin-bottom:10px; line-height:1.4;">
+                  <strong><i class="fa-solid fa-leaf" style="margin-right:4px;"></i>${isHi ? 'सात्विक परिहार:' : 'Satvik Remedy:'}</strong> ${escapeHtml(dispRemedy)}
+                </div>
+              </div>
+
+              <!-- Technical Formula Drawer Toggle -->
+              <div>
+                <button type="button" class="btn-outline-secondary" onclick="toggleUpagrahaDetailDrawer('${domSafeId}')" style="width:100%; display:flex; justify-content:space-between; align-items:center; padding:6px 10px; font-size:11px; border-radius:6px; background:#F8FAFC;">
+                  <span><i class="fa-solid fa-book-atlas" style="margin-right:4px; color:#64748B;"></i>${isHi ? 'शास्त्रीय सूत्र व गणना प्रमाण' : 'Technical Formula & Shastra Evidence'}</span>
+                  <i id="up-chev-${domSafeId}" class="fa-solid fa-chevron-down" style="font-size:10px; color:#64748B;"></i>
+                </button>
+                <div id="up-detail-${domSafeId}" style="display:none; background:#F1F5F9; border:1px solid #CBD5E1; border-radius:6px; padding:8px 10px; margin-top:6px; font-size:10.5px; color:#334155; line-height:1.45;">
+                  <div><strong>${isHi ? 'गणितीय सूत्र:' : 'Calculation Formula:'}</strong> <code>${escapeHtml(u.formula || '(Computed per BPHS)')}</code></div>
+                  <div><strong>${isHi ? 'निरयण भोगांश:' : 'Sidereal Longitude:'}</strong> ${u.longitude || u.total_degree || 0}°</div>
+                  ${u.source_citation ? `<div><strong>${isHi ? 'शास्त्रीय ग्रंथ:' : 'Classical Authority:'}</strong> <em>${escapeHtml(u.source_citation)}</em></div>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
     }
 
     // ==============================================================================
