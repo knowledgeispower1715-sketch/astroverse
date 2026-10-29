@@ -488,3 +488,29 @@ export function calculateReportPrice(productId: string, userTier: SubscriptionTi
     finalPriceRupees
   };
 }
+
+/**
+ * Authoritative AI Astrologer Consultation Rate Specification
+ * Governs billing and session monetization across Parashari and Jaimini personas.
+ */
+export interface AiConsultationRateDefinition {
+  serviceId: string;
+  displayName: string;
+  ratePerMinuteRupees: number;
+  ratePerMinutePaise: number;
+  billingMode: 'PER_STARTED_MINUTE';
+  roundingPolicy: 'CEIL_MINUTE';
+  currency: 'INR';
+  disclaimer: string;
+}
+
+export const AI_CONSULTATION_SERVICE: AiConsultationRateDefinition = {
+  serviceId: 'ai_astrologer_consultation',
+  displayName: 'AI Vedic Astrologer Consultation',
+  ratePerMinuteRupees: 15.00,
+  ratePerMinutePaise: 1500,
+  billingMode: 'PER_STARTED_MINUTE',
+  roundingPolicy: 'CEIL_MINUTE',
+  currency: 'INR',
+  disclaimer: 'Billed in Indian Rupees at ₹15 per started minute after promotional free allowance.'
+};

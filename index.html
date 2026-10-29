@@ -871,17 +871,27 @@
 
     /* Top Announcement Promo Bar */
     .promo-ticker {
-      background: linear-gradient(90deg, #0F172A 0%, #18213A 50%, #0F172A 100%);
+      background: linear-gradient(90deg, #090D16 0%, #111A2E 50%, #090D16 100%);
       color: #FFFFFF;
       font-size: 12px;
-      font-weight: 600;
-      padding: 7px 16px;
+      font-weight: 500;
+      padding: 6px 16px;
       text-align: center;
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-wrap: wrap;
       gap: 12px;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+      position: relative;
+      z-index: 101;
+    }
+    .promo-content-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
     .promo-badge {
       background: var(--av-gold-bright, #F5C45E);
@@ -891,6 +901,201 @@
       padding: 2px 8px;
       border-radius: var(--radius-full);
       letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    .promo-headline {
+      font-weight: 700;
+      color: #F8FAFC;
+    }
+    .promo-separator {
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 11px;
+    }
+    .promo-description {
+      color: #E2E8F0;
+    }
+    .promo-trust {
+      color: #FBBF24;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .promo-actions-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .promo-btn-cta {
+      background: linear-gradient(135deg, #F5C45E 0%, #D4AF37 100%);
+      color: #0F172A;
+      border: 1px solid rgba(212, 175, 55, 0.6);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease-in-out;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    }
+    .promo-btn-cta:hover {
+      background: #FDE047;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(245, 196, 94, 0.35);
+    }
+    .promo-btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #F1F5F9;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .promo-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Billing Timer Badges */
+    .badge-free-timer {
+      background: rgba(217, 119, 6, 0.15);
+      color: #92400E;
+      border: 1px solid rgba(217, 119, 6, 0.3);
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-expired-timer {
+      background: rgba(220, 38, 38, 0.12);
+      color: #B91C1C;
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-paid-timer {
+      background: rgba(16, 185, 129, 0.15);
+      color: #065F46;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* In-Chat Consultation Continuation Card */
+    .consultation-continuation-card {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #F8FAFC;
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin: 12px 0;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .continuation-card-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .continuation-icon {
+      background: rgba(245, 196, 94, 0.15);
+      color: #F5C45E;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+      border: 1px solid rgba(245, 196, 94, 0.3);
+    }
+    .continuation-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 800;
+      color: #F8FAFC;
+    }
+    .continuation-subtitle {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: #CBD5E1;
+      line-height: 1.4;
+    }
+    .continuation-pricing-summary {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .continuation-pricing-summary .pricing-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #E2E8F0;
+    }
+    .policy-tag {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93C5FD;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+    .continuation-disclosure {
+      font-size: 11.5px;
+      color: #94A3B8;
+      margin: 0 0 14px;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .continuation-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-secondary-chat {
+      background: transparent;
+      color: #E2E8F0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 9px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-secondary-chat:hover {
+      background: rgba(255, 255, 255, 0.08);
     }
 
     /* Main Navigation Header */
@@ -5206,9 +5411,22 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Top Announcement Promo Bar -->
-  <div class="promo-ticker">
-    <span class="promo-badge">PROMOTIONAL OFFER</span>
-    <span>⚡ First 5 Minutes at Flat <strong>₹1/min</strong> with Verified Vedic Gurus | 100% Private & Verified Calculations</span>
+  <div id="top-promotional-banner" class="promo-ticker" role="banner" aria-label="Promotional Consultation Offer">
+    <div class="promo-content-wrap">
+      <span class="promo-badge" id="promo-offer-badge">FREE TRIAL OFFER</span>
+      <span class="promo-headline" id="promo-offer-headline">⚡ Your First 60 Seconds Free</span>
+      <span class="promo-separator">|</span>
+      <span class="promo-description" id="promo-offer-description">Try an AI Vedic astrology consultation. Recharge to continue at ₹15/min.</span>
+      <span class="promo-trust" id="promo-offer-trust"><i class="fa-solid fa-shield-heart"></i> Chart-grounded calculations</span>
+    </div>
+    <div class="promo-actions-wrap">
+      <button type="button" class="promo-btn-cta" id="promo-banner-cta" onclick="handlePromoBannerAction()">
+        <span id="promo-cta-label">Start Free Minute</span>
+      </button>
+      <button type="button" class="promo-btn-secondary" id="promo-banner-pricing-btn" onclick="openPricingPlansModal()">
+        <span>View Rates</span>
+      </button>
+    </div>
   </div>
 
   <!-- Main Navigation Header -->
@@ -7055,10 +7273,10 @@
 
             <div class="astrologer-card-footer">
               <div class="astrologer-card-allowance">
-                <i class="fa-solid fa-circle-check"></i> Daily Allowance Included
+                <i class="fa-solid fa-gift" style="color: #F5C45E;"></i> 1st Minute Free &bull; ₹15/min continuation
               </div>
               <button class="btn-gold-primary astrologer-card-cta" onclick="startConsultationSession('Acharya Devratan', 0)">
-                <i class="fa-solid fa-comment-dots"></i> Start AI Chat
+                <i class="fa-solid fa-comment-dots"></i> Start Free Consultation
               </button>
             </div>
           </div>
@@ -7100,10 +7318,10 @@
 
             <div class="astrologer-card-footer">
               <div class="astrologer-card-allowance">
-                <i class="fa-solid fa-circle-check"></i> Daily Allowance Included
+                <i class="fa-solid fa-gift" style="color: #F5C45E;"></i> 1st Minute Free &bull; ₹15/min continuation
               </div>
               <button class="btn-gold-primary astrologer-card-cta" onclick="startConsultationSession('Dr. Sunita Shastri', 0)">
-                <i class="fa-solid fa-comment-dots"></i> Start AI Chat
+                <i class="fa-solid fa-comment-dots"></i> Start Free Consultation
               </button>
             </div>
           </div>
@@ -7145,10 +7363,10 @@
 
             <div class="astrologer-card-footer">
               <div class="astrologer-card-allowance">
-                <i class="fa-solid fa-circle-check"></i> Daily Allowance Included
+                <i class="fa-solid fa-gift" style="color: #F5C45E;"></i> 1st Minute Free &bull; ₹15/min continuation
               </div>
               <button class="btn-gold-primary astrologer-card-cta" onclick="startConsultationSession('Pandit Raghavendra', 0)">
-                <i class="fa-solid fa-comment-dots"></i> Start AI Chat
+                <i class="fa-solid fa-comment-dots"></i> Start Free Consultation
               </button>
             </div>
           </div>
@@ -10245,6 +10463,7 @@
       }
       localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
       updateDemoWalletDisplay();
+      syncPromotionalBannerState();
       showToast(`🎉 Credited ₹${rupees} demo money! Demo balance: ₹${currentDemoWalletBalance.toFixed(2)}`, "success");
       updateBuilderPriceEstimate();
     }
@@ -10260,6 +10479,7 @@
       currentDemoWalletBalance = 0.00;
       localStorage.setItem('astro_demo_wallet_bal', '0.00');
       updateDemoWalletDisplay();
+      syncPromotionalBannerState();
       showToast("Demo wallet balance reset to ₹0.00", "info");
       updateBuilderPriceEstimate();
     }
@@ -12908,6 +13128,7 @@
         updateOverviewActiveChartBanner();
       }
           updateDemoWalletDisplay();
+      syncPromotionalBannerState();
         } else if (res.status === 401 || res.status === 403) {
           executeSignOut(false);
         }
@@ -14010,6 +14231,7 @@
     function openWalletModal() {
       selectWalletRechargePack(250, 35);
       updateDemoWalletDisplay();
+      syncPromotionalBannerState();
       document.getElementById('modal-wallet').style.display = 'flex';
     }
     function closeWalletModal() {
@@ -14891,6 +15113,357 @@
       renderDynamicChips(initialChips);
     }
 
+    function getOrInitGuestTrialId() {
+      let tid = '';
+      try {
+        tid = localStorage.getItem('astro_guest_trial_id') || '';
+        if (!tid) {
+          tid = 'guest_trial_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+          localStorage.setItem('astro_guest_trial_id', tid);
+        }
+      } catch (e) {
+        tid = 'guest_trial_' + Date.now();
+      }
+      return tid;
+    }
+
+    function handlePromoBannerAction() {
+      if (activeConsultationSession && activeConsultationSession.sessionId) {
+        document.body.classList.add('consultation-modal-open');
+        const modal = document.getElementById('modal-ai-consultation');
+        if (modal) modal.style.display = 'flex';
+        return;
+      }
+      switchNavSection('astrologers');
+      const section = document.getElementById('section-astrologers');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    async function syncPromotionalBannerState() {
+      try {
+        const guestTrialId = getOrInitGuestTrialId();
+        const res = await fetch(`${getAuthBase()}/api/promotions/active?guestTrialId=${encodeURIComponent(guestTrialId)}`, {
+          headers: getAuthHeaders()
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success || !data.offer) return;
+
+        const isHi = (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi') || (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi');
+        const headlineEl = document.getElementById('promo-offer-headline');
+        const badgeEl = document.getElementById('promo-offer-badge');
+        const descEl = document.getElementById('promo-offer-description');
+        const ctaLabel = document.getElementById('promo-cta-label');
+
+        if (data.isEligible) {
+          if (headlineEl) headlineEl.textContent = isHi ? data.offer.bannerHeadlineHi : data.offer.bannerHeadlineEn;
+          if (descEl) descEl.textContent = isHi ? data.offer.bannerDescriptionHi : data.offer.bannerDescriptionEn;
+          if (badgeEl) badgeEl.textContent = isHi ? 'निःशुल्क ऑफर' : 'FREE TRIAL OFFER';
+          if (ctaLabel) ctaLabel.textContent = isHi ? 'निःशुल्क मिनट शुरू करें' : 'Start Free Minute';
+        } else {
+          if (headlineEl) headlineEl.textContent = isHi ? '⚡ वैदिक AI परामर्श मात्र ₹15/मिनट' : '⚡ Vedic AI Astrologer at ₹15/min';
+          if (descEl) descEl.textContent = isHi ? 'प्रामाणिक स्विस एफिमेरिस गणनाओं पर आधारित परामर्श' : 'Authentic Swiss Ephemeris chart-grounded guidance';
+          if (badgeEl) badgeEl.textContent = isHi ? 'सत्यापित' : 'PROMOTIONAL OFFER';
+          if (ctaLabel) ctaLabel.textContent = isHi ? 'परामर्श करें' : 'Consult Now';
+        }
+
+        if (data.activeSession && data.activeSession.status === 'FREE_ACTIVE') {
+          const deadline = new Date(data.activeSession.freeDeadline).getTime();
+          const rem = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+          if (rem > 0) {
+            const mins = Math.floor(rem / 60);
+            const secs = rem % 60;
+            const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            if (ctaLabel) ctaLabel.textContent = isHi ? `परामर्श जारी रखें (${timeStr})` : `Resume Consultation (${timeStr})`;
+          }
+        }
+      } catch (err) {
+        console.warn('[PROMO] Failed to sync promotional banner:', err);
+      }
+    }
+
+    let isContinuationModalVisible = false;
+
+    function handleFreeMinuteExpired(errorData) {
+      if (!activeConsultationSession) return;
+      if (isContinuationModalVisible) return;
+
+      const typingEl = document.getElementById('ai-chat-typing-indicator');
+      if (typingEl && typingEl.style.display !== 'none') {
+        activeConsultationSession.pendingExpiredPrompt = true;
+        return;
+      }
+
+      if (document.getElementById('chat-continuation-card')) return;
+
+      isContinuationModalVisible = true;
+      const isHi = (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi') || (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi');
+      const astroName = activeConsultationSession.astrologerName || 'Acharya Devratan';
+
+      const realBalance = typeof currentWalletBalance === 'number' ? currentWalletBalance : 0;
+      const demoBalance = typeof currentDemoWalletBalance === 'number' ? currentDemoWalletBalance : 0;
+      const isDemoActive = typeof isDemoModeActive !== 'undefined' && isDemoModeActive && demoBalance >= 15;
+      const effectiveBalance = isDemoActive ? demoBalance : realBalance;
+      const hasSufficientFunds = effectiveBalance >= 15.00;
+
+      const card = document.createElement('div');
+      card.className = 'consultation-continuation-card';
+      card.id = 'chat-continuation-card';
+      card.innerHTML = `
+        <div class="continuation-card-header">
+          <div class="continuation-icon"><i class="fa-solid fa-hourglass-end"></i></div>
+          <div>
+            <h4 class="continuation-title">${isHi ? 'आपका 1 निःशुल्क परामर्श मिनट पूर्ण हुआ' : 'Your 60-Second Free Minute Has Concluded'}</h4>
+            <p class="continuation-subtitle">
+              ${isHi
+                ? `${astroName} के साथ आपका 1 मिनट का निःशुल्क वैदिक परामर्श सत्र संपन्न हो चुका है। आगे की बातचीत जारी रखने हेतु पारदर्शी प्रीपेड दर लागू होगी।`
+                : `You have completed your complimentary 60-second trial with ${astroName}. Continue your Vedic conversation with clear, transparent prepaid pricing.`}
+            </p>
+          </div>
+        </div>
+
+        <div class="continuation-pricing-summary">
+          <div class="pricing-row">
+            <span>${isHi ? 'मानक परामर्श दर' : 'Consultation Rate'}</span>
+            <strong>₹15.00 / ${isHi ? 'मिनट' : 'minute'}</strong>
+          </div>
+          <div class="pricing-row">
+            <span>${isHi ? 'बिलिंग नीति' : 'Billing Policy'}</span>
+            <span class="policy-tag">${isHi ? 'प्रारंभित मिनट अनुसार' : 'Per Started Minute'}</span>
+          </div>
+          <div class="pricing-row">
+            <span>${isHi ? 'वर्तमान वॉलेट बैलेंस' : 'Current Wallet Balance'}</span>
+            <strong style="color: ${hasSufficientFunds ? '#10B981' : '#F59E0B'};">₹${effectiveBalance.toFixed(2)}${isDemoActive ? ' (Demo)' : ''}</strong>
+          </div>
+        </div>
+
+        <p class="continuation-disclosure">
+          <i class="fa-solid fa-shield-halved"></i> ${isHi
+            ? 'एस्ट्रोवर्स कभी भी स्वतः डेबिट नहीं करता। प्रत्येक अगले मिनट हेतु आपकी स्पष्ट सहमति आवश्यक है।'
+            : 'AstroVerse never auto-debits your wallet. Explicit consent is required before any paid continuation.'}
+        </p>
+
+        <div class="continuation-actions">
+          ${hasSufficientFunds ? `
+            <button class="btn-gold-primary" id="btn-continue-consultation" onclick="confirmContinuePaidConsultation('${isDemoActive ? 'DEMO_WALLET' : 'REAL_WALLET'}')">
+              <i class="fa-solid fa-play"></i> ${isHi ? '₹15/मिनट पर जारी रखें' : 'Continue at ₹15/min'}
+            </button>
+          ` : `
+            <button class="btn-gold-primary" id="btn-recharge-consultation" onclick="openWalletModal()">
+              <i class="fa-solid fa-bolt"></i> ${isHi ? 'वॉलेट रिचार्ज करें (न्यूनतम ₹50)' : 'Recharge Wallet to Continue (Min ₹50)'}
+            </button>
+          `}
+          <button class="btn-secondary-chat" onclick="closeConsultationModal()">
+            <i class="fa-solid fa-xmark"></i> ${isHi ? 'परामर्श समाप्त करें' : 'End Consultation & Save'}
+          </button>
+        </div>
+      `;
+
+      const container = document.getElementById('ai-chat-messages-container');
+      if (container) {
+        container.appendChild(card);
+        scrollChatToBottom(true);
+      }
+    }
+
+    async function confirmContinuePaidConsultation(paymentMethod) {
+      if (!activeConsultationSession) return;
+      const btn = document.getElementById('btn-continue-consultation');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+      }
+
+      try {
+        const guestTrialId = getOrInitGuestTrialId();
+        const res = await fetch(`${getAuthBase()}/api/consultation/continue-paid`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            sessionId: activeConsultationSession.sessionId,
+            paymentMethod: paymentMethod || 'REAL_WALLET',
+            guestTrialId: guestTrialId
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          isContinuationModalVisible = false;
+          activeConsultationSession.sessionStatus = 'PAID_ACTIVE';
+          activeConsultationSession.paidMinutesConsumed = data.paidMinutesConsumed || 1;
+
+          if (paymentMethod === 'DEMO_WALLET') {
+            if (typeof currentDemoWalletBalance === 'number') {
+              currentDemoWalletBalance = data.newBalance;
+              updateDemoWalletDisplay();
+      syncPromotionalBannerState();
+            }
+          } else {
+            if (typeof currentWalletBalance === 'number') {
+              currentWalletBalance = data.newBalance;
+              updateWalletDisplay();
+            }
+          }
+
+          const card = document.getElementById('chat-continuation-card');
+          if (card) card.remove();
+
+          const isHi = (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi') || (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi');
+          const paidMsg = {
+            id: 'msg_sys_' + Date.now(),
+            role: 'assistant',
+            content: isHi
+              ? `✅ **परामर्श सत्र सक्रिय:** आपके वॉलेट से ₹15 डेबिट किए गए हैं। अब आप अपने प्रश्न बेझिझक पूछ सकते हैं।`
+              : `✅ **Consultation Confirmed:** ₹15 debited for your continued consultation minute. You may proceed with your questions.`,
+            timestamp: new Date().toISOString(),
+            status: 'completed',
+            personaId: activeConsultationSession.personaId
+          };
+          activeConsultationSession.messages.push(paidMsg);
+          savePersonaChatHistory(activeConsultationSession.personaId, activeConsultationSession.messages);
+          renderMessageBubble(paidMsg);
+          scrollChatToBottom(true);
+
+          const billingPill = document.getElementById('ai-chat-billing-pill');
+          if (billingPill) {
+            billingPill.innerHTML = `
+              <span class="badge-paid-timer">
+                <i class="fa-solid fa-circle-check"></i> ${isHi ? 'सक्रिय परामर्श (₹15/मिनट)' : 'Paid Consultation: ₹15/min'}
+              </span>
+            `;
+          }
+          showToast(isHi ? "सत्र सफलतापूर्वक बढ़ाया गया।" : "Consultation minute confirmed.", "success");
+        } else if (res.status === 402) {
+          showToast("Insufficient balance. Please recharge your wallet to continue.", "error");
+          openWalletModal();
+        } else {
+          const errData = await res.json();
+          showToast(errData.message || "Failed to continue consultation.", "error");
+        }
+      } catch (err) {
+        console.error('[CONSULTATION] Continuation failed:', err);
+        showToast("Network error. Please try again.", "error");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    function startConsultationTimer(session) {
+      if (consultationTimerInterval) {
+        clearInterval(consultationTimerInterval);
+        consultationTimerInterval = null;
+      }
+
+      const deadlineMs = new Date(session.freeDeadline).getTime();
+
+      function tick() {
+        if (!activeConsultationSession) {
+          if (consultationTimerInterval) clearInterval(consultationTimerInterval);
+          return;
+        }
+
+        const now = Date.now();
+        const remainingSeconds = Math.max(0, Math.ceil((deadlineMs - now) / 1000));
+        activeConsultationSession.remainingFreeSeconds = remainingSeconds;
+
+        const isHi = (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi') || (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi');
+        const billingPill = document.getElementById('ai-chat-billing-pill');
+
+        if (activeConsultationSession.sessionStatus === 'PAID_ACTIVE') {
+          if (billingPill) {
+            billingPill.innerHTML = `
+              <span class="badge-paid-timer">
+                <i class="fa-solid fa-circle-check"></i> ${isHi ? 'सक्रिय परामर्श (₹15/मिनट)' : 'Paid Consultation: ₹15/min'}
+              </span>
+            `;
+          }
+          return;
+        }
+
+        if (remainingSeconds > 0) {
+          const mins = Math.floor(remainingSeconds / 60);
+          const secs = remainingSeconds % 60;
+          const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+          if (billingPill) {
+            billingPill.innerHTML = `
+              <span class="badge-free-timer">
+                <i class="fa-solid fa-clock"></i> ${isHi ? 'निःशुल्क समय:' : 'Free Minute:'} <strong>${timeStr}</strong>
+              </span>
+            `;
+          }
+
+          const ctaLabel = document.getElementById('promo-cta-label');
+          if (ctaLabel) {
+            ctaLabel.textContent = isHi ? `परामर्श जारी रखें (${timeStr})` : `Resume Free Minute (${timeStr})`;
+          }
+        } else {
+          activeConsultationSession.sessionStatus = 'FREE_EXHAUSTED';
+          if (billingPill) {
+            billingPill.innerHTML = `
+              <span class="badge-expired-timer">
+                <i class="fa-solid fa-hourglass-end"></i> ${isHi ? 'निःशुल्क समय समाप्त · ₹15/मिनट' : 'Free Minute Ended · ₹15/min'}
+              </span>
+            `;
+          }
+
+          const ctaLabel = document.getElementById('promo-cta-label');
+          if (ctaLabel) {
+            ctaLabel.textContent = isHi ? 'परामर्श फिर से शुरू करें' : 'Resume Consultation';
+          }
+
+          if (consultationTimerInterval) {
+            clearInterval(consultationTimerInterval);
+            consultationTimerInterval = null;
+          }
+
+          handleFreeMinuteExpired();
+        }
+      }
+
+      tick();
+      consultationTimerInterval = setInterval(tick, 1000);
+    }
+
+    async function initConsultationBackendSession(personaId, astroName) {
+      try {
+        const guestTrialId = getOrInitGuestTrialId();
+        const res = await fetch(`${getAuthBase()}/api/consultation/start-session`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            personaId: personaId,
+            astrologerName: astroName,
+            guestTrialId: guestTrialId
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (activeConsultationSession && data.session) {
+            activeConsultationSession.sessionId = data.session.id;
+            activeConsultationSession.sessionStatus = data.session.status;
+            activeConsultationSession.freeDeadline = data.session.freeDeadline;
+            activeConsultationSession.isFreeMinuteGranted = data.session.isFreeMinuteGranted;
+            activeConsultationSession.ratePerMinute = data.session.ratePerMinute || 15.00;
+            startConsultationTimer(data.session);
+            syncPromotionalBannerState();
+          }
+        }
+      } catch (err) {
+        console.warn('[CONSULTATION] Backend session sync fallback:', err);
+        if (activeConsultationSession && !activeConsultationSession.freeDeadline) {
+          activeConsultationSession.freeDeadline = new Date(Date.now() + 60 * 1000).toISOString();
+          startConsultationTimer({
+            freeDeadline: activeConsultationSession.freeDeadline,
+            status: 'FREE_ACTIVE',
+            ratePerMinute: 15.00
+          });
+        }
+      }
+    }
+
     function startConsultationSession(astroName, rate) {
       const persona = getAstrologerPersona(astroName);
       const personaId = persona.id;
@@ -14986,6 +15559,9 @@
       document.body.classList.add('consultation-modal-open');
       document.getElementById('modal-ai-consultation').style.display = 'flex';
 
+      // Connect or retrieve server-authoritative consultation session
+      initConsultationBackendSession(personaId, persona.name);
+
       setTimeout(() => {
         const inp = document.getElementById('ai-chat-user-input');
         if (inp) inp.focus();
@@ -14994,10 +15570,26 @@
     }
 
     function closeConsultationModal() {
-      if (consultationTimerInterval) clearInterval(consultationTimerInterval);
+      if (consultationTimerInterval) {
+        clearInterval(consultationTimerInterval);
+        consultationTimerInterval = null;
+      }
       if (typeof AstroVerseVoiceEngine !== 'undefined' && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
         AstroVerseVoiceEngine.stop();
       }
+      if (activeConsultationSession && activeConsultationSession.sessionId) {
+        try {
+          fetch(`${getAuthBase()}/api/consultation/end-session`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              sessionId: activeConsultationSession.sessionId,
+              guestTrialId: getOrInitGuestTrialId()
+            })
+          }).catch(() => {});
+        } catch (_) {}
+      }
+      isContinuationModalVisible = false;
       document.body.classList.remove('consultation-modal-open');
       const modal = document.getElementById('modal-ai-consultation');
       if (modal) modal.style.display = 'none';
@@ -16669,6 +17261,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           timezone: hasLinkedChart ? (currentCalculatedChart?.timezone || "Asia/Kolkata") : "Asia/Kolkata",
           astrologer_name: astro,
           session_history: historyPayload,
+          sessionId: activeConsultationSession?.sessionId || null,
           lang: (typeof activeChatLanguage !== 'undefined' && activeChatLanguage) ? activeChatLanguage : ((typeof currentLanguage !== 'undefined' && currentLanguage) ? currentLanguage : 'en')
         };
 
@@ -16682,6 +17275,13 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           signal: controller.signal
         });
         clearTimeout(timeoutId);
+
+        if (res.status === 402) {
+          const errData = await res.json();
+          if (typingEl) typingEl.style.display = 'none';
+          handleFreeMinuteExpired(errData);
+          return;
+        }
 
         if (res.ok) {
           const data = await res.json();
@@ -16747,6 +17347,12 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
         // Update follow-up chips
         renderDynamicChips(assistantResponse.suggestedQuestions);
+
+        // If free minute expired while generating, prompt continuation now
+        if (activeConsultationSession && activeConsultationSession.pendingExpiredPrompt) {
+          activeConsultationSession.pendingExpiredPrompt = false;
+          handleFreeMinuteExpired();
+        }
       }, remainingWait);
     }
 
@@ -17109,6 +17715,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         updateOverviewActiveChartBanner();
       }
       updateDemoWalletDisplay();
+      syncPromotionalBannerState();
       renderSavedProfilesList();
       selectHoroscopeSign('Aries');
       if (typeof initGuidanceSuite === 'function') {
@@ -20412,6 +21019,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
             localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
             updateDemoWalletDisplay();
+      syncPromotionalBannerState();
             closeReportBuilderModal();
             closeReportStoreModal();
             showToast("🎉 Demo report compiled successfully! Opening private reader...", "success");
@@ -20436,6 +21044,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
             localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
             updateDemoWalletDisplay();
+      syncPromotionalBannerState();
           } else if (orderData.paidVia === 'WALLET') {
             currentWalletBalance = Math.max(0, currentWalletBalance - finalRupees);
             localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
@@ -20483,6 +21092,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           currentDemoWalletBalance = Math.max(0, currentDemoWalletBalance - finalRupees);
           localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
           updateDemoWalletDisplay();
+      syncPromotionalBannerState();
           closeReportBuilderModal();
           closeReportStoreModal();
           showToast("🎉 Demo report compiled successfully! Opening private reader...", "success");

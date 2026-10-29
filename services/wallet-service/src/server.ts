@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { db, UserRecord, Role, AccountStatus, OrderStatus, isDemoModeActive } from './db';
+import { db, UserRecord, Role, AccountStatus, OrderStatus, isDemoModeActive, ConsultationSessionStatus, ConsultationSessionRecord } from './db';
 import {
   AdminPermission,
   ROLE_PERMISSIONS,
@@ -27,8 +27,10 @@ import {
   REPORT_CATALOGUE,
   SubscriptionTier,
   BillingPeriod,
-  calculateReportPrice
+  calculateReportPrice,
+  AI_CONSULTATION_SERVICE
 } from './monetization/catalog';
+import { ACTIVE_PROMOTIONAL_OFFER, isEligibleForFreeMinute } from './monetization/promotions';
 import { EntitlementManager } from './monetization/entitlements';
 import { ReportDocumentGenerator } from './monetization/reportGenerator';
 import {
@@ -241,6 +243,43 @@ async function authenticate(req: AuthenticatedRequest, res: Response, next: Next
 
   req.user = user;
   req.sessionToken = token;
+  next();
+}
+
+async function resolveOptionalUser(req: Request): Promise<UserRecord | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.split(' ')[1].trim();
+  const tokenHash = hashToken(token);
+  let session = await db.findSessionByTokenHash(tokenHash);
+  let user: UserRecord | null = null;
+  if (session) {
+    user = await db.findUserById(session.userId);
+  } else {
+    const supaResult = await verifySupabaseToken(token);
+    if (supaResult.user) {
+      user = await db.syncSupabaseUser({
+        id: supaResult.user.id,
+        email: supaResult.user.email,
+        phone: supaResult.user.phone,
+        user_metadata: supaResult.user.user_metadata
+      });
+    }
+  }
+  return user && user.status === AccountStatus.ACTIVE ? user : null;
+}
+
+async function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
+  try {
+    const user = await resolveOptionalUser(req);
+    if (user) {
+      req.user = user;
+    }
+  } catch (_) {
+    // Continue unauthenticated if token resolution encounters an error
+  }
   next();
 }
 
@@ -3979,12 +4018,235 @@ app.post('/api/ai-astrologer/consume-quota', authenticate, async (req: Authentic
   }
 });
 
+// ==================== PROMOTIONS & CONSULTATION SESSION APIS ====================
+
+// GET /api/promotions/active
+app.get('/api/promotions/active', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user;
+    const guestTrialId = typeof req.query.guestTrialId === 'string' ? req.query.guestTrialId : undefined;
+    const lookupId = user ? user.id : (guestTrialId ? `guest_${guestTrialId}` : null);
+
+    let isEligible = true;
+    let activeSession: ConsultationSessionRecord | null = null;
+
+    if (user) {
+      isEligible = isEligibleForFreeMinute(user);
+      activeSession = await db.findActiveConsultationSession(user.id);
+    } else if (lookupId) {
+      activeSession = await db.findActiveConsultationSession(lookupId);
+      const rawUser = guestTrialId ? (db as any).data?.users?.find((u: any) => u.id === guestTrialId) : null;
+      if (rawUser && rawUser.freeMinuteConsumed) {
+        isEligible = false;
+      } else if (!activeSession) {
+        const prior = (db as any).data?.consultationSessions?.find(
+          (cs: any) => (cs.userId === lookupId || (guestTrialId && cs.userId === guestTrialId)) && cs.freeConsumedAt != null
+        );
+        if (prior) {
+          isEligible = false;
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      offer: ACTIVE_PROMOTIONAL_OFFER,
+      isEligible,
+      activeSession: activeSession ? {
+        id: activeSession.id,
+        personaId: activeSession.personaId,
+        astrologerName: activeSession.astrologerName,
+        status: activeSession.status,
+        freeDeadline: activeSession.freeDeadline,
+        ratePerMinute: activeSession.ratePerMinute
+      } : null
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to fetch active promotion');
+  }
+});
+
+// POST /api/consultation/start-session
+app.post('/api/consultation/start-session', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { personaId, astrologerName, guestTrialId } = req.body || {};
+    const isGuest = !req.user;
+    const sanitizedGuestId = guestTrialId && typeof guestTrialId === 'string'
+      ? guestTrialId.trim().replace(/[^a-zA-Z0-9_-]/g, '')
+      : null;
+    const userId = req.user ? req.user.id : `guest_${sanitizedGuestId || crypto.randomUUID()}`;
+
+    const persona = typeof personaId === 'string' && personaId.trim() ? personaId.trim() : 'acharya_devratan';
+    const astrologer = typeof astrologerName === 'string' && astrologerName.trim() ? astrologerName.trim() : 'Acharya Devratan';
+
+    const result = await db.createOrGetConsultationSession({
+      userId,
+      personaId: persona,
+      astrologerName: astrologer,
+      isGuest,
+      guestTrialId: sanitizedGuestId || undefined
+    });
+
+    res.json({
+      success: true,
+      session: result.session,
+      isNew: result.isNew,
+      remainingFreeSeconds: result.remainingFreeSeconds,
+      billingConfig: {
+        ratePerMinuteRupees: AI_CONSULTATION_SERVICE.ratePerMinuteRupees,
+        billingMode: AI_CONSULTATION_SERVICE.billingMode,
+        freeAllowanceSeconds: ACTIVE_PROMOTIONAL_OFFER.freeAllowanceSeconds
+      }
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to start consultation session');
+  }
+});
+
+// GET /api/consultation/session/:sessionId
+app.get('/api/consultation/session/:sessionId', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+    const sessionRecord = await db.findConsultationSessionById(sessionId);
+    if (!sessionRecord) {
+      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
+    }
+
+    const guestTrialId = typeof req.query.guestTrialId === 'string' ? req.query.guestTrialId : undefined;
+    const userId = req.user ? req.user.id : (guestTrialId ? `guest_${guestTrialId}` : sessionRecord.userId);
+
+    const result = await db.checkConsultationSession(sessionId, userId);
+    res.json({
+      success: true,
+      session: result.session,
+      remainingFreeSeconds: result.remainingFreeSeconds,
+      isFreeActive: result.isFreeActive,
+      isExpired: result.isExpired,
+      ratePerMinuteRupees: AI_CONSULTATION_SERVICE.ratePerMinuteRupees,
+      billingMode: AI_CONSULTATION_SERVICE.billingMode
+    });
+  } catch (err: any) {
+    if (err.message === 'SESSION_NOT_FOUND') {
+      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
+    }
+    if (err.message === 'FORBIDDEN_SESSION_ACCESS') {
+      return res.status(403).json({ error: 'FORBIDDEN_SESSION_ACCESS', message: 'Not authorized to access this session.' });
+    }
+    handleServiceError(res, err, 'Failed to check consultation session');
+  }
+});
+
+// POST /api/consultation/continue-paid
+app.post('/api/consultation/continue-paid', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sessionId, paymentMethod, guestTrialId } = req.body || {};
+    if (!sessionId || typeof sessionId !== 'string') {
+      return res.status(400).json({ error: 'SESSION_ID_REQUIRED', message: 'Session ID is required.' });
+    }
+
+    const sessionRecord = await db.findConsultationSessionById(sessionId);
+    if (!sessionRecord) {
+      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
+    }
+
+    const userId = req.user ? req.user.id : (guestTrialId ? `guest_${guestTrialId}` : sessionRecord.userId);
+    const method = paymentMethod === 'DEMO_WALLET' ? 'DEMO_WALLET' : 'REAL_WALLET';
+
+    try {
+      const result = await db.confirmPaidConsultation({
+        sessionId,
+        userId,
+        method
+      });
+      return res.json({
+        success: true,
+        session: result.session,
+        newBalance: result.newBalance,
+        rateDeducted: result.session.ratePerMinute,
+        paidMinutesConsumed: result.session.paidMinutesConsumed
+      });
+    } catch (payErr: any) {
+      if (payErr.message === 'INSUFFICIENT_FUNDS') {
+        return res.status(402).json({
+          error: 'INSUFFICIENT_WALLET_BALANCE',
+          message: 'Insufficient balance to continue consultation. Please recharge your wallet to proceed.',
+          requiredAmount: payErr.requiredAmount,
+          currentBalance: payErr.currentBalance,
+          ratePerMinute: payErr.requiredAmount,
+          isDemo: Boolean(payErr.isDemo),
+          rechargeRequired: true
+        });
+      }
+      throw payErr;
+    }
+  } catch (err: any) {
+    if (err.message === 'SESSION_NOT_FOUND') {
+      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
+    }
+    if (err.message === 'FORBIDDEN_SESSION_ACCESS') {
+      return res.status(403).json({ error: 'FORBIDDEN_SESSION_ACCESS', message: 'Not authorized to modify this session.' });
+    }
+    handleServiceError(res, err, 'Failed to confirm paid consultation');
+  }
+});
+
+// POST /api/consultation/end-session
+app.post('/api/consultation/end-session', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { sessionId, guestTrialId } = req.body || {};
+    if (!sessionId || typeof sessionId !== 'string') {
+      return res.status(400).json({ error: 'SESSION_ID_REQUIRED', message: 'Session ID is required.' });
+    }
+
+    const sessionRecord = await db.findConsultationSessionById(sessionId);
+    if (!sessionRecord) {
+      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
+    }
+
+    const userId = req.user ? req.user.id : (guestTrialId ? `guest_${guestTrialId}` : sessionRecord.userId);
+    const session = await db.endConsultationSession(sessionId, userId);
+
+    res.json({
+      success: true,
+      session
+    });
+  } catch (err: any) {
+    if (err.message === 'SESSION_NOT_FOUND') {
+      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
+    }
+    if (err.message === 'FORBIDDEN_SESSION_ACCESS') {
+      return res.status(403).json({ error: 'FORBIDDEN_SESSION_ACCESS', message: 'Not authorized to modify this session.' });
+    }
+    handleServiceError(res, err, 'Failed to end consultation session');
+  }
+});
+
 // POST /api/ai-astrologer/ask (Multi-turn, chart-grounded conversational AI astrologer)
 app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
   try {
-    const { category, question, dob, lat, lon, timezone, astrologer_name, session_history, lang } = req.body;
+    const { category, question, dob, lat, lon, timezone, astrologer_name, session_history, lang, sessionId } = req.body;
     if (!question || typeof question !== 'string' || !question.trim()) {
       return res.status(400).json({ error: 'QUESTION_REQUIRED', message: 'Question string is required.' });
+    }
+
+    let activeConsultationSession: ConsultationSessionRecord | null = null;
+    if (sessionId && typeof sessionId === 'string') {
+      const sessionRecord = await db.findConsultationSessionById(sessionId);
+      if (sessionRecord) {
+        const checked = await db.checkConsultationSession(sessionId, sessionRecord.userId);
+        if (checked.isExpired && checked.session.status === ConsultationSessionStatus.FREE_EXHAUSTED) {
+          return res.status(402).json({
+            error: 'FREE_TRIAL_EXHAUSTED',
+            message: 'Your free consultation minute has concluded. Please confirm continuation at ₹15/minute to proceed.',
+            sessionId: checked.session.id,
+            freeDeadline: checked.session.freeDeadline,
+            ratePerMinuteRupees: AI_CONSULTATION_SERVICE.ratePerMinuteRupees,
+            billingMode: AI_CONSULTATION_SERVICE.billingMode,
+            continuationRequired: true
+          });
+        }
+        activeConsultationSession = checked.session;
+      }
     }
 
     // Try Python kundli-engine first if available
@@ -3993,11 +4255,15 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
       const r = await fetch(`${kundliUrl}/api/ai-astrologer/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, question, dob, lat, lon, timezone, astrologer_name, session_history, lang }),
+        body: JSON.stringify({ category, question, dob, lat, lon, timezone, astrologer_name, session_history, lang, sessionId }),
         signal: AbortSignal.timeout(2500)
       });
       if (r.ok) {
         const data = await r.json();
+        if (activeConsultationSession) {
+          data.sessionId = activeConsultationSession.id;
+          data.sessionStatus = activeConsultationSession.status;
+        }
         return res.json(data);
       }
     } catch (_) {
@@ -4421,6 +4687,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     return res.json({
       mode: hasChart ? 'PERSONALIZED_CHART_GROUNDED' : 'GENERAL_TRANSIT_UNPERSONALIZED',
       profile_loaded: hasChart,
+      sessionId: activeConsultationSession ? activeConsultationSession.id : undefined,
+      sessionStatus: activeConsultationSession ? activeConsultationSession.status : undefined,
       category: intent,
       intent,
       message,

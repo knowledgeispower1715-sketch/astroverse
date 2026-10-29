@@ -84,7 +84,41 @@ export interface UserRecord {
   mfaSecret?: string | null;
   mfaRecoveryCodes?: string[] | null;
   mfaEnforced?: boolean;
+  freeMinuteGranted?: boolean;
+  freeMinuteConsumed?: boolean;
+  freeMinuteGrantedAt?: string | null;
+  freeMinuteConsumedAt?: string | null;
   lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export enum ConsultationSessionStatus {
+  READY = 'READY',
+  FREE_ACTIVE = 'FREE_ACTIVE',
+  FREE_EXHAUSTED = 'FREE_EXHAUSTED',
+  PAID_CONFIRMATION_PENDING = 'PAID_CONFIRMATION_PENDING',
+  PAID_ACTIVE = 'PAID_ACTIVE',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface ConsultationSessionRecord {
+  id: string;
+  userId: string;
+  personaId: string;
+  astrologerName: string;
+  status: ConsultationSessionStatus;
+  isFreeMinuteGranted: boolean;
+  freeAllowanceSeconds: number;
+  startTime: string;
+  freeDeadline: string;
+  freeConsumedAt: string | null;
+  paidStartedAt: string | null;
+  paidMinutesConsumed: number;
+  ratePerMinute: number;
+  totalDeducted: number;
+  lastActiveAt: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -250,6 +284,7 @@ interface DatabaseSchema {
   featureFlags: FeatureFlagRecord[];
   privacyRequests: PrivacyRequestRecord[];
   contentBanners: ContentBannerRecord[];
+  consultationSessions: ConsultationSessionRecord[];
 }
 
 function resolveDbPaths(): { dataDir: string; dbFile: string } {
@@ -411,6 +446,10 @@ class ResilientDatabase {
       mfaSecret: u.mfaSecret || null,
       mfaRecoveryCodes: Array.isArray(u.mfaRecoveryCodes) ? u.mfaRecoveryCodes : null,
       mfaEnforced: Boolean(u.mfaEnforced),
+      freeMinuteGranted: Boolean(u.freeMinuteGranted),
+      freeMinuteConsumed: Boolean(u.freeMinuteConsumed),
+      freeMinuteGrantedAt: u.freeMinuteGrantedAt ? (typeof u.freeMinuteGrantedAt === 'string' ? u.freeMinuteGrantedAt : u.freeMinuteGrantedAt.toISOString()) : null,
+      freeMinuteConsumedAt: u.freeMinuteConsumedAt ? (typeof u.freeMinuteConsumedAt === 'string' ? u.freeMinuteConsumedAt : u.freeMinuteConsumedAt.toISOString()) : null,
       subscriptionTier: u.subscriptionTier || 'FREE',
       subscriptionStatus: u.subscriptionStatus || 'NONE',
       subscriptionBillingPeriod: u.subscriptionBillingPeriod || null,
@@ -490,7 +529,8 @@ class ResilientDatabase {
       incidents: Array.isArray(d?.incidents) ? d.incidents : [],
       featureFlags: Array.isArray(d?.featureFlags) ? d.featureFlags : [],
       privacyRequests: Array.isArray(d?.privacyRequests) ? d.privacyRequests : [],
-      contentBanners: Array.isArray(d?.contentBanners) ? d.contentBanners : []
+      contentBanners: Array.isArray(d?.contentBanners) ? d.contentBanners : [],
+      consultationSessions: Array.isArray(d?.consultationSessions) ? d.consultationSessions : []
     });
 
     if (fs.existsSync(this.dbFilePath)) {
@@ -2530,6 +2570,271 @@ class ResilientDatabase {
 
   async listAstrologers(): Promise<AstrologerRecord[]> {
     return this.data.astrologers;
+  }
+
+  // ==================== CONSULTATION SESSIONS & FREE TRIAL ENTITLEMENTS ====================
+
+  async findConsultationSessionById(sessionId: string): Promise<ConsultationSessionRecord | null> {
+    const s = this.data.consultationSessions.find(cs => cs.id === sessionId);
+    return s ? { ...s } : null;
+  }
+
+  async findActiveConsultationSession(userId: string): Promise<ConsultationSessionRecord | null> {
+    const s = this.data.consultationSessions.find(
+      cs => cs.userId === userId &&
+      (cs.status === ConsultationSessionStatus.FREE_ACTIVE ||
+       cs.status === ConsultationSessionStatus.PAID_ACTIVE ||
+       cs.status === ConsultationSessionStatus.PAID_CONFIRMATION_PENDING)
+    );
+    return s ? { ...s } : null;
+  }
+
+  async createOrGetConsultationSession(params: {
+    userId: string;
+    personaId: string;
+    astrologerName: string;
+    isGuest?: boolean;
+    guestTrialId?: string;
+  }): Promise<{ session: ConsultationSessionRecord; isNew: boolean; remainingFreeSeconds: number }> {
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    // Check for existing active session for this user/guest
+    const existing = this.data.consultationSessions.find(
+      cs => cs.userId === params.userId &&
+      (cs.status === ConsultationSessionStatus.FREE_ACTIVE ||
+       cs.status === ConsultationSessionStatus.PAID_ACTIVE ||
+       cs.status === ConsultationSessionStatus.PAID_CONFIRMATION_PENDING)
+    );
+
+    if (existing) {
+      let remaining = 0;
+      if (existing.status === ConsultationSessionStatus.FREE_ACTIVE) {
+        const deadlineMs = new Date(existing.freeDeadline).getTime();
+        remaining = Math.max(0, Math.ceil((deadlineMs - now.getTime()) / 1000));
+        if (remaining <= 0) {
+          existing.status = ConsultationSessionStatus.FREE_EXHAUSTED;
+          existing.freeConsumedAt = nowIso;
+          existing.updatedAt = nowIso;
+
+          const user = this.data.users.find(u => u.id === existing.userId);
+          if (user) {
+            user.freeMinuteConsumed = true;
+            user.freeMinuteConsumedAt = nowIso;
+            user.updatedAt = nowIso;
+          }
+          this.saveToFile();
+        }
+      }
+      return { session: { ...existing }, isNew: false, remainingFreeSeconds: remaining };
+    }
+
+    // Determine eligibility for free minute
+    let isEligible = true;
+    let user: UserRecord | undefined;
+
+    const normalizedUserId = params.userId.replace(/^guest_/, '');
+    user = this.data.users.find(u => u.id === params.userId || u.id === normalizedUserId || (params.guestTrialId && u.id === params.guestTrialId));
+    if (user && user.freeMinuteConsumed) {
+      isEligible = false;
+    } else if (params.isGuest) {
+      // Guest: check if any prior session under this guest ID or trial ID consumed free minute
+      const prior = this.data.consultationSessions.find(
+        cs => (cs.userId === params.userId || cs.userId === `guest_${params.guestTrialId}` || cs.userId === params.guestTrialId) && cs.freeConsumedAt != null
+      );
+      if (prior) {
+        isEligible = false;
+      }
+    }
+
+    const freeAllowance = isEligible ? 60 : 0;
+    const deadlineMs = isEligible ? now.getTime() + 60 * 1000 : now.getTime();
+    const freeDeadlineIso = new Date(deadlineMs).toISOString();
+
+    const newSession: ConsultationSessionRecord = {
+      id: `cs_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      userId: params.userId,
+      personaId: params.personaId,
+      astrologerName: params.astrologerName,
+      status: isEligible ? ConsultationSessionStatus.FREE_ACTIVE : ConsultationSessionStatus.PAID_CONFIRMATION_PENDING,
+      isFreeMinuteGranted: isEligible,
+      freeAllowanceSeconds: freeAllowance,
+      startTime: nowIso,
+      freeDeadline: freeDeadlineIso,
+      freeConsumedAt: null,
+      paidStartedAt: null,
+      paidMinutesConsumed: 0,
+      ratePerMinute: 15.00,
+      totalDeducted: 0,
+      lastActiveAt: nowIso,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    this.data.consultationSessions.push(newSession);
+
+    if (user && isEligible) {
+      user.freeMinuteGranted = true;
+      user.freeMinuteGrantedAt = nowIso;
+      user.updatedAt = nowIso;
+    }
+
+    this.saveToFile();
+
+    return {
+      session: { ...newSession },
+      isNew: true,
+      remainingFreeSeconds: isEligible ? 60 : 0
+    };
+  }
+
+  async checkConsultationSession(sessionId: string, userId: string): Promise<{
+    session: ConsultationSessionRecord;
+    remainingFreeSeconds: number;
+    isFreeActive: boolean;
+    isExpired: boolean;
+  }> {
+    const session = this.data.consultationSessions.find(cs => cs.id === sessionId);
+    if (!session) {
+      throw new Error('SESSION_NOT_FOUND');
+    }
+    const normSessionUser = session.userId.replace(/^guest_/, '');
+    const normUser = userId.replace(/^guest_/, '');
+    if (session.userId !== userId && normSessionUser !== normUser) {
+      throw new Error('FORBIDDEN_SESSION_ACCESS');
+    }
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+    let remainingFreeSeconds = 0;
+
+    if (session.status === ConsultationSessionStatus.FREE_ACTIVE) {
+      const deadlineMs = new Date(session.freeDeadline).getTime();
+      remainingFreeSeconds = Math.max(0, Math.ceil((deadlineMs - now.getTime()) / 1000));
+
+      if (remainingFreeSeconds <= 0) {
+        session.status = ConsultationSessionStatus.FREE_EXHAUSTED;
+        session.freeConsumedAt = nowIso;
+        session.updatedAt = nowIso;
+
+        const user = this.data.users.find(u => u.id === session.userId);
+        if (user) {
+          user.freeMinuteConsumed = true;
+          user.freeMinuteConsumedAt = nowIso;
+          user.updatedAt = nowIso;
+        }
+
+        this.saveToFile();
+      }
+    }
+
+    session.lastActiveAt = nowIso;
+    this.saveToFile();
+
+    return {
+      session: { ...session },
+      remainingFreeSeconds,
+      isFreeActive: session.status === ConsultationSessionStatus.FREE_ACTIVE,
+      isExpired: session.status === ConsultationSessionStatus.FREE_EXHAUSTED
+    };
+  }
+
+  async confirmPaidConsultation(params: {
+    sessionId: string;
+    userId: string;
+    method: 'REAL_WALLET' | 'DEMO_WALLET';
+  }): Promise<{ success: boolean; session: ConsultationSessionRecord; newBalance: number }> {
+    const session = this.data.consultationSessions.find(cs => cs.id === params.sessionId);
+    if (!session) {
+      throw new Error('SESSION_NOT_FOUND');
+    }
+    const normSessionUser = session.userId.replace(/^guest_/, '');
+    const normUser = params.userId.replace(/^guest_/, '');
+    if (session.userId !== params.userId && normSessionUser !== normUser) {
+      throw new Error('FORBIDDEN_SESSION_ACCESS');
+    }
+
+    const user = this.data.users.find(u => u.id === params.userId || u.id === normUser);
+    const requiredAmount = session.ratePerMinute; // ₹15.00 for the first paid started minute
+
+    if (params.method === 'DEMO_WALLET') {
+      const demoBal = user ? (user.demoWalletBalance || 0) : 0;
+      if (demoBal < requiredAmount) {
+        const err: any = new Error('INSUFFICIENT_FUNDS');
+        err.requiredAmount = requiredAmount;
+        err.currentBalance = demoBal;
+        err.isDemo = true;
+        throw err;
+      }
+      if (user) {
+        user.demoWalletBalance = Math.round((demoBal - requiredAmount) * 100) / 100;
+        user.updatedAt = new Date().toISOString();
+      }
+    } else {
+      const realBal = user ? user.walletBalance : 0;
+      if (realBal < requiredAmount) {
+        const err: any = new Error('INSUFFICIENT_FUNDS');
+        err.requiredAmount = requiredAmount;
+        err.currentBalance = realBal;
+        err.isDemo = false;
+        throw err;
+      }
+      if (user) {
+        user.walletBalance = Math.round((realBal - requiredAmount) * 100) / 100;
+        user.updatedAt = new Date().toISOString();
+
+        this.data.walletLedgers.push({
+          id: `led_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          userId: user.id,
+          astrologerId: null,
+          amount: -requiredAmount,
+          entryType: EntryType.CONSULTATION_DEBIT,
+          idempotencyKey: `cs_pay_${session.id}_${(session.paidMinutesConsumed || 0) + 1}`,
+          description: `AI Astrologer consultation with ${session.astrologerName} (1 paid minute at ₹${requiredAmount})`,
+          referenceId: session.id,
+          isDemo: false,
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    session.status = ConsultationSessionStatus.PAID_ACTIVE;
+    session.paidStartedAt = session.paidStartedAt || nowIso;
+    session.paidMinutesConsumed = (session.paidMinutesConsumed || 0) + 1;
+    session.totalDeducted = Math.round(((session.totalDeducted || 0) + requiredAmount) * 100) / 100;
+    session.updatedAt = nowIso;
+    session.lastActiveAt = nowIso;
+
+    this.saveToFile();
+
+    const newBalance = params.method === 'DEMO_WALLET'
+      ? (user?.demoWalletBalance || 0)
+      : (user?.walletBalance || 0);
+
+    return {
+      success: true,
+      session: { ...session },
+      newBalance
+    };
+  }
+
+  async endConsultationSession(sessionId: string, userId: string): Promise<ConsultationSessionRecord> {
+    const session = this.data.consultationSessions.find(cs => cs.id === sessionId);
+    if (!session) {
+      throw new Error('SESSION_NOT_FOUND');
+    }
+    const normSessionUser = session.userId.replace(/^guest_/, '');
+    const normUser = userId.replace(/^guest_/, '');
+    if (session.userId !== userId && normSessionUser !== normUser) {
+      throw new Error('FORBIDDEN_SESSION_ACCESS');
+    }
+
+    session.status = ConsultationSessionStatus.COMPLETED;
+    session.updatedAt = new Date().toISOString();
+    this.saveToFile();
+
+    return { ...session };
   }
 
   // ==================== SYSTEM METRICS (FOR ADMIN) ====================
