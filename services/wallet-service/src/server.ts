@@ -1512,7 +1512,9 @@ app.post('/api/user/migrate-guest', authenticate, async (req: AuthenticatedReque
 
     for (const p of profiles) {
       if (!p.profileName || !p.dateOfBirth || !p.timeOfBirth || !p.birthplaceName ||
-          !Number.isFinite(Number(p.latitude)) || !Number.isFinite(Number(p.longitude))) {
+          !Number.isFinite(Number(p.latitude)) || !Number.isFinite(Number(p.longitude)) ||
+          Number(p.latitude) < -90 || Number(p.latitude) > 90 ||
+          Number(p.longitude) < -180 || Number(p.longitude) > 180) {
         skipped.push({ profileName: p.profileName || 'Unknown', reason: 'MISSING_OR_INVALID_COORDINATES' });
         continue;
       }
@@ -1585,10 +1587,10 @@ app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: R
 
   const numLat = Number(latitude);
   const numLon = Number(longitude);
-  if (!Number.isFinite(numLat) || !Number.isFinite(numLon)) {
+  if (!Number.isFinite(numLat) || !Number.isFinite(numLon) || numLat < -90 || numLat > 90 || numLon < -180 || numLon > 180) {
     return res.status(400).json({
       error: 'INVALID_COORDINATES',
-      message: 'latitude and longitude must be valid finite numbers.'
+      message: 'latitude must be between -90 and 90, and longitude between -180 and 180.'
     });
   }
 

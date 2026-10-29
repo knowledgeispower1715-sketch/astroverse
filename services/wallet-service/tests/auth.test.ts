@@ -241,6 +241,24 @@ async function runAuthTestSuite() {
       assert.strictEqual(res.data.error, 'REQUIRED_FIELDS_MISSING');
     });
 
+    await test('Birth Profile creation rejects out-of-range coordinates', async () => {
+      const res = await request('/api/profiles', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${sessionToken}` },
+        body: {
+          profileName: 'Invalid Coords Profile',
+          relationship: 'Self',
+          dateOfBirth: '1990-05-15',
+          timeOfBirth: '14:30',
+          birthplaceName: 'Invalid Coordinates Place',
+          latitude: 95.5,
+          longitude: 200.0
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data.error, 'INVALID_COORDINATES');
+    });
+
     let profileId = '';
     await test('Birth Profile creation succeeds with valid complete payload deriving owner ID from session', async () => {
       const res = await request('/api/profiles', {
