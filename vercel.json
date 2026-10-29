@@ -117,6 +117,18 @@
       }
     },
     {
+      "source": "/api/promotions/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/consultation/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/health",
       "destination": {
         "service": "wallet-service"
