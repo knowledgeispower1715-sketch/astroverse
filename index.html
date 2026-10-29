@@ -15114,20 +15114,7 @@
     }
 
     // ==================== ADMIN CONSOLE CONTROLLER (15 MODULES & MFA) ====================
-
-    const CANONICAL_ADMIN_ROLES = [
-      'OWNER',
-      'SECURITY_ADMIN',
-      'SUPPORT_ADMIN',
-      'CONTENT_EDITOR',
-      'FINANCE_ADMIN',
-      'ASTROLOGY_OPS_ADMIN',
-      'READONLY_ANALYST',
-      'SUPER_ADMIN',
-      'SUPPORT',
-      'OPERATIONS',
-      'ANALYST'
-    ];
+    // Note: CANONICAL_ADMIN_ROLES is defined above at line 10779 for consistent admin preview and role authorization
 
     let currentAdminActiveModule = 'overview';
     let adminSearchDebounce = null;
@@ -21789,9 +21776,16 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       if (finalEl) finalEl.textContent = `₹${finalRupees}`;
 
       const payRadios = document.getElementsByName('builder_pay_method');
-      let method = 'DEMO_WALLET';
+      const demoWrap = document.getElementById('builder-pay-demo-wrap');
+      if (demoWrap) {
+        demoWrap.style.display = (isAdminUser() && isAdminPreviewActive()) ? 'flex' : 'none';
+      }
+      let method = 'WALLET';
       for (const r of payRadios) {
         if (r.checked) method = r.value;
+      }
+      if (method === 'DEMO_WALLET' && (!isAdminUser() || !isAdminPreviewActive())) {
+        method = 'WALLET';
       }
 
       if (method === 'DEMO_WALLET') {
@@ -22677,9 +22671,16 @@ ${upTable}
       }
 
       const payRadios = document.getElementsByName('builder_pay_method');
-      let method = 'DEMO_WALLET';
+      const demoWrap = document.getElementById('builder-pay-demo-wrap');
+      if (demoWrap) {
+        demoWrap.style.display = (isAdminUser() && isAdminPreviewActive()) ? 'flex' : 'none';
+      }
+      let method = 'WALLET';
       for (const r of payRadios) {
         if (r.checked) method = r.value;
+      }
+      if (method === 'DEMO_WALLET' && (!isAdminUser() || !isAdminPreviewActive())) {
+        method = 'WALLET';
       }
 
       let token = currentSessionToken || localStorage.getItem('astro_session_token');
