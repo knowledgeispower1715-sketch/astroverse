@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { db, UserRecord, Role, AccountStatus, OrderStatus, isDemoModeActive, ConsultationSessionStatus, ConsultationSessionRecord } from './db';
+import { db, UserRecord, Role, AccountStatus, OrderStatus, isDemoModeActive, ConsultationSessionStatus, ConsultationSessionRecord, AdminPreviewSessionRecord } from './db';
 import {
   AdminPermission,
   ROLE_PERMISSIONS,
@@ -353,6 +353,36 @@ function requireAdminAssurance() {
     // In dev / test where admin user has not enabled MFA yet, allow mutation with warning
     next();
   };
+}
+
+/**
+ * Server-authoritative subscription tier resolution for user requests.
+ * Ensures simulated tiers and x-simulated-tier headers are honored ONLY
+ * for authenticated administrators with an active preview session.
+ * For ordinary customers and unauthenticated visitors, simulated tiers are strictly rejected.
+ */
+function resolveRequestTier(user: any, req: Request): SubscriptionTier {
+  const { tier } = EntitlementManager.resolveEffectiveTier(user);
+
+  // Simulation is strictly allowed ONLY for verified administrative callers
+  if (user && isAnyAdmin(user.role)) {
+    // 1. Check server-authoritative Admin Preview Session in DB
+    const previewSession = db.getAdminPreviewSession(user.id);
+    if (previewSession && previewSession.isActive) {
+      return previewSession.simulatedTier as SubscriptionTier;
+    }
+
+    // 2. In non-production testing, allow admin caller header override
+    if (process.env.NODE_ENV !== 'production' && req.headers['x-simulated-tier']) {
+      const headerTier = String(req.headers['x-simulated-tier']).toUpperCase();
+      if (['FREE', 'PLUS', 'PREMIUM'].includes(headerTier)) {
+        return headerTier as SubscriptionTier;
+      }
+    }
+  }
+
+  // For non-admin users, guest callers, or expired sessions, return genuine tier
+  return tier;
 }
 
 // ==================== 1. AUTHENTICATION & SESSIONS ====================
@@ -2308,8 +2338,8 @@ app.get('/api/demo/status', (req: Request, res: Response) => {
   });
 });
 
-// POST /api/demo/credit - issue controlled demo credits to authenticated test account
-app.post('/api/demo/credit', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+// POST /api/demo/credit - issue controlled demo credits to authenticated test account (strictly admin-only)
+app.post('/api/demo/credit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
   if (!isDemoModeActive()) {
     return res.status(403).json({
       error: 'DEMO_MODE_DISABLED',
@@ -2336,8 +2366,8 @@ app.post('/api/demo/credit', authenticate, async (req: AuthenticatedRequest, res
   }
 });
 
-// POST /api/demo/reset - reset demo wallet balance to 0.00
-app.post('/api/demo/reset', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+// POST /api/demo/reset - reset demo wallet balance to 0.00 (strictly admin-only)
+app.post('/api/demo/reset', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
   if (!isDemoModeActive()) {
     return res.status(403).json({
       error: 'DEMO_MODE_DISABLED',
@@ -2353,8 +2383,8 @@ app.post('/api/demo/reset', authenticate, async (req: AuthenticatedRequest, res:
   }
 });
 
-// POST /api/demo/set-tier - simulate subscription tier for entitlement testing
-app.post('/api/demo/set-tier', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+// POST /api/demo/set-tier - simulate subscription tier for entitlement testing (strictly admin-only)
+app.post('/api/demo/set-tier', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
   if (!isDemoModeActive()) {
     return res.status(403).json({
       error: 'DEMO_MODE_DISABLED',
@@ -2371,10 +2401,159 @@ app.post('/api/demo/set-tier', authenticate, async (req: AuthenticatedRequest, r
   }
 
   try {
-    const result = await db.setSimulatedTier(req.user!.id, String(tier).toUpperCase() as any);
-    res.json(result);
+    const normTier = String(tier).toUpperCase() as 'FREE' | 'PLUS' | 'PREMIUM';
+    const previewSession = db.createOrUpdateAdminPreviewSession(req.user!.id, normTier);
+    const result = await db.setSimulatedTier(req.user!.id, normTier);
+    res.json({
+      ...result,
+      previewSession
+    });
   } catch (err: any) {
     handleServiceError(res, err, 'Simulated tier update failed');
+  }
+});
+
+// ==============================================================================
+// DEDICATED ADMIN PREVIEW SESSION & QA TESTING APIS
+// ==============================================================================
+
+// POST /api/admin/preview/set-tier - Start or switch admin preview mode
+app.post('/api/admin/preview/set-tier', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  const { tier, demoBalance, syntheticProfileId } = req.body;
+  const normTier = String(tier || 'FREE').toUpperCase();
+
+  if (!['FREE', 'PLUS', 'PREMIUM'].includes(normTier)) {
+    return res.status(400).json({
+      error: 'INVALID_TIER',
+      message: 'Simulated tier must be FREE, PLUS, or PREMIUM.'
+    });
+  }
+
+  try {
+    const previewSession = db.createOrUpdateAdminPreviewSession(
+      req.user!.id,
+      normTier as 'FREE' | 'PLUS' | 'PREMIUM',
+      typeof demoBalance === 'number' ? demoBalance : undefined,
+      syntheticProfileId
+    );
+
+    if (isDemoModeActive()) {
+      await db.setSimulatedTier(req.user!.id, normTier as any);
+    }
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      action: 'ADMIN_TIER_PREVIEW_ACTIVATED',
+      targetType: 'ADMIN_PREVIEW',
+      targetId: previewSession.id,
+      outcome: 'SUCCESS',
+      metadata: {
+        adminUserId: req.user!.id,
+        adminRole: req.user!.role,
+        simulatedTier: normTier,
+        syntheticProfileId: previewSession.syntheticProfileId
+      },
+      ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
+    });
+
+    res.json({
+      success: true,
+      previewSession,
+      message: `Admin preview mode activated for ${normTier} tier.`
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to activate admin preview mode');
+  }
+});
+
+// GET /api/admin/preview/status - Query current active admin preview session
+app.get('/api/admin/preview/status', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const previewSession = db.getAdminPreviewSession(req.user!.id);
+    res.json({
+      success: true,
+      previewSession: previewSession || null,
+      isPreviewActive: Boolean(previewSession && previewSession.isActive)
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to fetch admin preview status');
+  }
+});
+
+// POST /api/admin/preview/exit - Terminate admin preview session and restore genuine entitlements
+app.post('/api/admin/preview/exit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const terminated = db.terminateAdminPreviewSession(req.user!.id);
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      action: 'ADMIN_TIER_PREVIEW_EXITED',
+      targetType: 'ADMIN_PREVIEW',
+      targetId: req.user!.id,
+      outcome: 'SUCCESS',
+      metadata: {
+        adminUserId: req.user!.id,
+        adminRole: req.user!.role
+      },
+      ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
+    });
+
+    res.json({
+      success: true,
+      terminated,
+      message: 'Admin preview mode terminated. Genuine customer entitlements restored.'
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to exit admin preview mode');
+  }
+});
+
+// POST /api/admin/demo-wallet/credit - Credit demo funds to isolated admin preview wallet
+app.post('/api/admin/demo-wallet/credit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  const { amount } = req.body;
+  const validAmounts = [100, 500, 1000];
+  const numAmount = Number(amount);
+
+  if (!Number.isFinite(numAmount) || !validAmounts.includes(numAmount)) {
+    return res.status(400).json({
+      error: 'INVALID_DEMO_AMOUNT',
+      message: 'Demo credit amount must be exactly 100, 500, or 1000.'
+    });
+  }
+
+  try {
+    const result = await db.addDemoCredits(req.user!.id, numAmount);
+    res.json(result);
+  } catch (err: any) {
+    handleServiceError(res, err, 'Admin demo credit issuance failed');
+  }
+});
+
+// POST /api/admin/demo-wallet/reset - Reset isolated admin preview wallet balance to 0.00
+app.post('/api/admin/demo-wallet/reset', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const result = await db.resetDemoWallet(req.user!.id);
+    res.json(result);
+  } catch (err: any) {
+    handleServiceError(res, err, 'Admin demo wallet reset failed');
+  }
+});
+
+// POST /api/subscriptions/simulate-tier - Protected endpoint requiring admin
+app.post('/api/subscriptions/simulate-tier', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  const { tier } = req.body;
+  const normTier = String(tier || 'FREE').toUpperCase();
+  if (!['FREE', 'PLUS', 'PREMIUM'].includes(normTier)) {
+    return res.status(400).json({ error: 'INVALID_TIER', message: 'Simulated tier must be FREE, PLUS, or PREMIUM.' });
+  }
+  try {
+    const previewSession = db.createOrUpdateAdminPreviewSession(req.user!.id, normTier as any);
+    if (isDemoModeActive()) {
+      await db.setSimulatedTier(req.user!.id, normTier as any);
+    }
+    res.json({ success: true, previewSession });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Simulation failed');
   }
 });
 
@@ -3304,8 +3483,22 @@ app.get('/api/entitlements/me', authenticate, async (req: AuthenticatedRequest, 
     const user = await db.findUserById(req.user!.id);
     if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
 
+    let effectiveUser = user;
+    if (isAnyAdmin(user.role)) {
+      const previewSession = db.getAdminPreviewSession(user.id);
+      if (previewSession && previewSession.isActive) {
+        effectiveUser = {
+          ...user,
+          subscriptionTier: previewSession.simulatedTier,
+          subscriptionStatus: 'ACTIVE',
+          subscriptionExpiresAt: previewSession.expiresAt,
+          simulatedSubscriptionTier: previewSession.simulatedTier
+        };
+      }
+    }
+
     const profiles = await db.getProfilesByUserId(user.id);
-    const snapshot = EntitlementManager.getEntitlementSnapshot(user, profiles.length);
+    const snapshot = EntitlementManager.getEntitlementSnapshot(effectiveUser, profiles.length);
     res.json(snapshot);
   } catch (err: any) {
     handleServiceError(res, err, 'Failed to fetch entitlements');
@@ -3988,10 +4181,7 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
 app.post('/api/ai-astrologer/consume-quota', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = await db.findUserById(req.user!.id);
-    let { tier } = EntitlementManager.resolveEffectiveTier(user);
-  if (process.env.NODE_ENV !== 'production' && req.headers['x-simulated-tier']) {
-    tier = String(req.headers['x-simulated-tier']).toUpperCase() as any;
-  }
+    const tier = resolveRequestTier(user, req);
     const result = EntitlementManager.consumeAiQuery(req.user!.id, tier);
     res.json({
       success: true,
@@ -4752,10 +4942,7 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
     }
   }
 
-  let { tier } = EntitlementManager.resolveEffectiveTier(user);
-  if (process.env.NODE_ENV !== 'production' && req.headers['x-simulated-tier']) {
-    tier = String(req.headers['x-simulated-tier']).toUpperCase() as any;
-  }
+  const tier = resolveRequestTier(user, req);
 
   try {
     if (analysisTarget === 'business_name' || analysisTarget === 'mobile_number') {
@@ -4926,10 +5113,7 @@ app.post('/api/numerology/correct-name', authenticate, async (req: Authenticated
   }
 
   const user = await db.findUserById(req.user!.id);
-  let { tier } = EntitlementManager.resolveEffectiveTier(user);
-  if (process.env.NODE_ENV !== 'production' && req.headers['x-simulated-tier']) {
-    tier = String(req.headers['x-simulated-tier']).toUpperCase() as any;
-  }
+  const tier = resolveRequestTier(user, req);
 
   try {
     EntitlementManager.assertNameCorrectionAllowed(tier);

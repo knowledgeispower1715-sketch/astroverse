@@ -435,27 +435,34 @@ test('Google OAuth 2.0 & GIS client configuration in index.html is valid and com
   assert.strictEqual(parsedUrl.searchParams.get('scope'), 'openid email profile');
 });
 
-test('Tier Simulator UI (Header & Drawer) is present, configured, and functional in index.html', async () => {
+test('Tier Simulator UI is securely isolated to Admin Console and removed from public header and drawer in index.html', async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const indexPath = path.resolve(__dirname, '../../../index.html');
   const htmlContent = fs.readFileSync(indexPath, 'utf-8');
 
-  // 1. Header simulator bar
-  assert(htmlContent.includes('id="header-tier-simulator"'), 'Header must contain #header-tier-simulator');
-  assert(htmlContent.includes('id="sim-tier-free"'), 'Header must have Free simulator button');
-  assert(htmlContent.includes('id="sim-tier-plus"'), 'Header must have Plus simulator button');
-  assert(htmlContent.includes('id="sim-tier-premium"'), 'Header must have Premium simulator button');
+  // 1. Public header simulator bar must be eliminated
+  assert(!htmlContent.includes('id="header-tier-simulator"'), 'Header must not contain #header-tier-simulator');
+  assert(!htmlContent.includes('id="sim-tier-free"'), 'Header must not have public Free simulator button');
+  assert(!htmlContent.includes('id="sim-tier-plus"'), 'Header must not have public Plus simulator button');
+  assert(!htmlContent.includes('id="sim-tier-premium"'), 'Header must not have public Premium simulator button');
 
-  // 2. Mobile drawer simulator
-  assert(htmlContent.includes('class="mobile-drawer-sim-box"'), 'Mobile drawer must contain .mobile-drawer-sim-box');
-  assert(htmlContent.includes('id="mob-sim-tier-free"'), 'Mobile drawer must have Free simulator button');
-  assert(htmlContent.includes('id="mob-sim-tier-plus"'), 'Mobile drawer must have Plus simulator button');
-  assert(htmlContent.includes('id="mob-sim-tier-premium"'), 'Mobile drawer must have Premium simulator button');
+  // 2. Public mobile drawer simulator must be eliminated
+  assert(!htmlContent.includes('class="mobile-drawer-sim-box"'), 'Mobile drawer must not contain .mobile-drawer-sim-box');
+  assert(!htmlContent.includes('id="mob-sim-tier-free"'), 'Mobile drawer must not have public Free simulator button');
+  assert(!htmlContent.includes('id="mob-sim-tier-plus"'), 'Mobile drawer must not have public Plus simulator button');
+  assert(!htmlContent.includes('id="mob-sim-tier-premium"'), 'Mobile drawer must not have public Premium simulator button');
 
-  // 3. Controller functions
-  assert(htmlContent.includes('function updateTierSimulatorButtonsUI('), 'index.html must define updateTierSimulatorButtonsUI');
-  assert(htmlContent.includes('function simulateTierFromUI('), 'index.html must define simulateTierFromUI');
+  // 3. Dedicated Admin Module 16 QA console must be present
+  assert(htmlContent.includes('id="admin-panel-qa"'), 'Admin console must contain #admin-panel-qa');
+  assert(htmlContent.includes('id="admin-btn-sim-free"'), 'Admin QA console must have Free simulator button');
+  assert(htmlContent.includes('id="admin-btn-sim-plus"'), 'Admin QA console must have Plus simulator button');
+  assert(htmlContent.includes('id="admin-btn-sim-premium"'), 'Admin QA console must have Premium simulator button');
+
+  // 4. Controller functions
+  assert(htmlContent.includes('function adminSetPreviewTier('), 'index.html must define adminSetPreviewTier');
+  assert(htmlContent.includes('function exitAdminPreviewMode('), 'index.html must define exitAdminPreviewMode');
+  assert(htmlContent.includes('function updateAdminPreviewBannerUI('), 'index.html must define updateAdminPreviewBannerUI');
 });
 
 test('Streamlined Report Purchase & Confirmation dialog replaced 5-step customizer in index.html', async () => {

@@ -49,20 +49,29 @@ export class EntitlementManager {
       };
     }
 
-    // Support simulated subscription tier in non-production demo mode
+    // Support simulated subscription tier in non-production demo mode strictly for authorized administrators
     const isDemo = process.env.DEMO_MODE === 'true' || 
                    process.env.NODE_ENV === 'test' || 
                    process.env.NODE_ENV === 'development' || 
                    process.env.VERCEL_ENV === 'preview';
     if (isDemo && user.simulatedSubscriptionTier) {
-      const simTier = user.simulatedSubscriptionTier as SubscriptionTier;
-      if (SUBSCRIPTION_PLANS[simTier]) {
-        return {
-          tier: simTier,
-          status: 'ACTIVE',
-          expiresAt: new Date(Date.now() + 86400000 * 30).toISOString(),
-          billingPeriod: 'MONTHLY'
-        };
+      const userRole = (user.role || '').toUpperCase();
+      const isAdminUser = [
+        'OWNER', 'SUPER_ADMIN', 'ADMIN', 'SECURITY_ADMIN', 'TECH_OPS_ADMIN',
+        'FINANCE_ADMIN', 'CUSTOMER_OPS_ADMIN', 'ASTROLOGY_OPS_ADMIN',
+        'DATA_OFFICER', 'SUPPORT_ADMIN', 'CONTENT_EDITOR', 'READONLY_ANALYST'
+      ].includes(userRole);
+
+      if (isAdminUser) {
+        const simTier = user.simulatedSubscriptionTier as SubscriptionTier;
+        if (SUBSCRIPTION_PLANS[simTier]) {
+          return {
+            tier: simTier,
+            status: 'ACTIVE',
+            expiresAt: new Date(Date.now() + 86400000 * 30).toISOString(),
+            billingPeriod: 'MONTHLY'
+          };
+        }
       }
     }
 

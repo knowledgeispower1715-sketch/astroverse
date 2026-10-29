@@ -123,6 +123,18 @@ export interface ConsultationSessionRecord {
   updatedAt: string;
 }
 
+export interface AdminPreviewSessionRecord {
+  id: string;
+  adminUserId: string;
+  simulatedTier: 'FREE' | 'PLUS' | 'PREMIUM';
+  demoWalletBalance: number;
+  syntheticProfileId?: string;
+  isActive: boolean;
+  createdAt: string;
+  expiresAt: string;
+  updatedAt: string;
+}
+
 export interface UserSessionRecord {
   id: string;
   userId: string;
@@ -285,6 +297,7 @@ interface DatabaseSchema {
   privacyRequests: PrivacyRequestRecord[];
   contentBanners: ContentBannerRecord[];
   consultationSessions: ConsultationSessionRecord[];
+  adminPreviewSessions: AdminPreviewSessionRecord[];
 }
 
 function resolveDbPaths(): { dataDir: string; dbFile: string } {
@@ -530,7 +543,8 @@ class ResilientDatabase {
       featureFlags: Array.isArray(d?.featureFlags) ? d.featureFlags : [],
       privacyRequests: Array.isArray(d?.privacyRequests) ? d.privacyRequests : [],
       contentBanners: Array.isArray(d?.contentBanners) ? d.contentBanners : [],
-      consultationSessions: Array.isArray(d?.consultationSessions) ? d.consultationSessions : []
+      consultationSessions: Array.isArray(d?.consultationSessions) ? d.consultationSessions : [],
+      adminPreviewSessions: Array.isArray(d?.adminPreviewSessions) ? d.adminPreviewSessions : []
     });
 
     if (fs.existsSync(this.dbFilePath)) {
@@ -2378,6 +2392,16 @@ class ResilientDatabase {
     user.demoWalletBalance = Math.round(((user.demoWalletBalance || 0) + amount) * 100) / 100;
     user.updatedAt = new Date().toISOString();
 
+    const activePreview = this.getAdminPreviewSession(userId);
+    if (activePreview) {
+      activePreview.demoWalletBalance = user.demoWalletBalance;
+      activePreview.updatedAt = new Date().toISOString();
+      if (this.data.adminPreviewSessions) {
+        const idx = this.data.adminPreviewSessions.findIndex(s => s.id === activePreview.id);
+        if (idx !== -1) this.data.adminPreviewSessions[idx] = activePreview;
+      }
+    }
+
     const ledgerId = 'demo_led_' + crypto.randomBytes(8).toString('hex');
     const idemKey = `DEMO_CREDIT_${userId}_${amount}_${Date.now()}`;
     this.data.walletLedgers.unshift({
@@ -2476,6 +2500,16 @@ class ResilientDatabase {
     user.demoWalletBalance = 0.00;
     user.updatedAt = new Date().toISOString();
 
+    const activePreview = this.getAdminPreviewSession(userId);
+    if (activePreview) {
+      activePreview.demoWalletBalance = 0.00;
+      activePreview.updatedAt = new Date().toISOString();
+      if (this.data.adminPreviewSessions) {
+        const idx = this.data.adminPreviewSessions.findIndex(s => s.id === activePreview.id);
+        if (idx !== -1) this.data.adminPreviewSessions[idx] = activePreview;
+      }
+    }
+
     const ledgerId = 'demo_led_' + crypto.randomBytes(8).toString('hex');
     this.data.walletLedgers.unshift({
       id: ledgerId,
@@ -2514,6 +2548,139 @@ class ResilientDatabase {
       simulatedTier: tier,
       isDemo: true
     };
+  }
+
+  // ============================================================================
+  // ADMIN PREVIEW SESSIONS (ISOLATED ROLE-GATED FEATURE TESTING CONSOLE)
+  // ============================================================================
+
+  createOrUpdateAdminPreviewSession(
+    adminUserId: string,
+    tier: 'FREE' | 'PLUS' | 'PREMIUM',
+    demoWalletBalance?: number,
+    syntheticProfileId?: string
+  ): AdminPreviewSessionRecord {
+    if (!this.data.adminPreviewSessions) {
+      this.data.adminPreviewSessions = [];
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(); // 2-hour TTL
+    const nowIso = now.toISOString();
+
+    let session = this.data.adminPreviewSessions.find(
+      s => s.adminUserId === adminUserId && s.isActive
+    );
+
+    if (session) {
+      session.simulatedTier = tier;
+      session.isActive = true;
+      session.expiresAt = expiresAt;
+      session.updatedAt = nowIso;
+      if (typeof demoWalletBalance === 'number') {
+        session.demoWalletBalance = demoWalletBalance;
+      }
+      if (syntheticProfileId !== undefined) {
+        session.syntheticProfileId = syntheticProfileId;
+      }
+    } else {
+      session = {
+        id: `prev_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        adminUserId,
+        simulatedTier: tier,
+        demoWalletBalance: typeof demoWalletBalance === 'number' ? demoWalletBalance : 500,
+        syntheticProfileId: syntheticProfileId || 'synth_aryan_tiwari',
+        isActive: true,
+        createdAt: nowIso,
+        expiresAt,
+        updatedAt: nowIso
+      };
+      this.data.adminPreviewSessions.unshift(session);
+    }
+
+    this.saveToFile();
+    return { ...session };
+  }
+
+  getAdminPreviewSession(adminUserId: string): AdminPreviewSessionRecord | null {
+    if (!this.data.adminPreviewSessions) {
+      return null;
+    }
+
+    const session = this.data.adminPreviewSessions.find(
+      s => s.adminUserId === adminUserId && s.isActive
+    );
+
+    if (!session) {
+      return null;
+    }
+
+    // Check expiration
+    if (new Date(session.expiresAt).getTime() <= Date.now()) {
+      session.isActive = false;
+      session.updatedAt = new Date().toISOString();
+      this.saveToFile();
+      return null;
+    }
+
+    return { ...session };
+  }
+
+  terminateAdminPreviewSession(adminUserId: string): boolean {
+    if (!this.data.adminPreviewSessions) {
+      return false;
+    }
+
+    const session = this.data.adminPreviewSessions.find(
+      s => s.adminUserId === adminUserId && s.isActive
+    );
+
+    if (session) {
+      session.isActive = false;
+      session.updatedAt = new Date().toISOString();
+    }
+
+    const user = this.data.users.find(u => u.id === adminUserId);
+    if (user) {
+      user.simulatedSubscriptionTier = null;
+      user.updatedAt = new Date().toISOString();
+    }
+
+    this.saveToFile();
+    return Boolean(session);
+  }
+
+  updateAdminPreviewDemoWallet(adminUserId: string, deltaOrAmount: number, isDelta: boolean): number {
+    const session = this.getAdminPreviewSession(adminUserId);
+    const user = this.data.users.find(u => u.id === adminUserId);
+
+    let newBalance = 0;
+    if (session) {
+      if (isDelta) {
+        newBalance = Math.max(0, Math.round(((session.demoWalletBalance || 0) + deltaOrAmount) * 100) / 100);
+      } else {
+        newBalance = Math.max(0, Math.round(deltaOrAmount * 100) / 100);
+      }
+      session.demoWalletBalance = newBalance;
+      session.updatedAt = new Date().toISOString();
+      if (this.data.adminPreviewSessions) {
+        const idx = this.data.adminPreviewSessions.findIndex(s => s.id === session.id);
+        if (idx !== -1) this.data.adminPreviewSessions[idx] = session;
+      }
+    }
+
+    if (user) {
+      if (isDelta) {
+        user.demoWalletBalance = Math.max(0, Math.round(((user.demoWalletBalance || 0) + deltaOrAmount) * 100) / 100);
+      } else {
+        user.demoWalletBalance = Math.max(0, Math.round(deltaOrAmount * 100) / 100);
+      }
+      user.updatedAt = new Date().toISOString();
+      if (!session) newBalance = user.demoWalletBalance;
+    }
+
+    this.saveToFile();
+    return newBalance;
   }
 
   async updateSubscription(

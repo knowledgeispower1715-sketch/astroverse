@@ -2,9 +2,14 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test_secret_key_numerology_test_12345';
 import assert from 'assert';
 import http from 'http';
+import crypto from 'crypto';
 import app from '../src/server';
+import { db } from '../src/db';
+import { Role } from '../src/security/permissions';
 import { NumerologyCalculator } from '../src/monetization/numerologyCalculator';
 import { ReportDocumentGenerator } from '../src/monetization/reportGenerator';
+
+const hashToken = (token: string): string => crypto.createHash('sha256').update(token).digest('hex');
 
 async function runNumerologyTests() {
   console.log('===============================================================');
@@ -197,6 +202,20 @@ async function runNumerologyTests() {
   await new Promise<void>((resolve) => server.listen(0, resolve));
   const port = (server.address() as any).port;
 
+  // Set up authorized admin caller for testing premium business analysis
+  const adminUser = await db.createUser({
+    email: `num_admin_${Date.now()}@astroverse.app`,
+    displayName: 'Numerology Admin'
+  });
+  await db.updateUser(adminUser.id, { role: Role.OWNER });
+  const adminToken = 'num_admin_token_' + crypto.randomBytes(16).toString('hex');
+  await db.createSession({
+    userId: adminUser.id,
+    tokenHash: hashToken(adminToken),
+    expiresAt: new Date(Date.now() + 86400000)
+  });
+  db.createOrUpdateAdminPreviewSession(adminUser.id, 'PLUS');
+
   async function request(path: string, options: any = {}) {
     const url = `http://127.0.0.1:${port}${path}`;
     const headers = options.headers || {};
@@ -276,7 +295,10 @@ async function runNumerologyTests() {
   await test('POST /api/numerology/analyze handles business_name without birthDate and omits founderSynergy', async () => {
     const res = await request('/api/numerology/analyze', {
       method: 'POST',
-      headers: { 'x-simulated-tier': 'PLUS' },
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'x-simulated-tier': 'PLUS'
+      },
       body: {
         name: 'AstroVerse Technologies',
         analysisTarget: 'business_name',
@@ -295,7 +317,10 @@ async function runNumerologyTests() {
   await test('POST /api/numerology/analyze handles business_name with valid founder DOB and computes founderSynergy', async () => {
     const res = await request('/api/numerology/analyze', {
       method: 'POST',
-      headers: { 'x-simulated-tier': 'PLUS' },
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'x-simulated-tier': 'PLUS'
+      },
       body: {
         name: 'AstroVerse Technologies',
         analysisTarget: 'business_name',
@@ -314,7 +339,10 @@ async function runNumerologyTests() {
   await test('POST /api/numerology/analyze rejects business_name with future founder DOB with 400', async () => {
     const res = await request('/api/numerology/analyze', {
       method: 'POST',
-      headers: { 'x-simulated-tier': 'PLUS' },
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'x-simulated-tier': 'PLUS'
+      },
       body: {
         name: 'AstroVerse Technologies',
         analysisTarget: 'business_name',

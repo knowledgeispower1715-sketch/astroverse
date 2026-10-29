@@ -23,6 +23,20 @@ export enum Role {
   ANALYST = 'ANALYST'            // Aliased to READONLY_ANALYST
 }
 
+export const CANONICAL_ADMIN_ROLES: Role[] = [
+  Role.OWNER,
+  Role.SECURITY_ADMIN,
+  Role.SUPPORT_ADMIN,
+  Role.CONTENT_EDITOR,
+  Role.FINANCE_ADMIN,
+  Role.ASTROLOGY_OPS_ADMIN,
+  Role.READONLY_ANALYST,
+  Role.SUPER_ADMIN,
+  Role.SUPPORT,
+  Role.OPERATIONS,
+  Role.ANALYST
+];
+
 export enum AdminPermission {
   // 1. Platform Overview & Metrics
   VIEW_OVERVIEW = 'VIEW_OVERVIEW',

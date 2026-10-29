@@ -5407,6 +5407,18 @@
   <!-- Celestial Royal Blue Top Accent Border -->
   <div class="celestial-top-border" id="celestial-top-border" aria-hidden="true"></div>
 
+  <!-- Dedicated Admin Preview Mode Floating Alert Banner -->
+  <aside id="admin-preview-floating-banner" style="display: none; background: #78350F; border-bottom: 2px solid #F59E0B; color: #FFFBEB; padding: 6px 16px; font-size: 12px; font-weight: 700; z-index: 10100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-shield-halved" style="color: #FCD34D; font-size: 14px;"></i>
+      <span>ADMIN PREVIEW MODE ACTIVE &bull; SIMULATED <span id="admin-preview-banner-tier" style="background: #F59E0B; color: #78350F; padding: 1px 8px; border-radius: 4px; font-weight: 800;">PREMIUM</span> ENTITLEMENTS (Isolated Session)</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button type="button" onclick="switchNavSection('admin'); switchAdminModule('qa')" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: #FFFFFF; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">Open QA Console</button>
+      <button type="button" onclick="exitAdminPreviewMode()" style="background: #DC2626; border: none; color: #FFFFFF; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">Exit Preview</button>
+    </div>
+  </aside>
+
   <!-- Toast Container -->
   <div id="toast-container" class="toast-container"></div>
 
@@ -5486,6 +5498,9 @@
           <button type="button" class="nav-dropdown-item nav-link-btn" id="btn-nav-pricing" onclick="openPricingPlansModal(); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px; color: #F59E0B; font-weight: 700;" title="AstroVerse Subscription Plans">
             <i class="fa-solid fa-crown" style="width: 18px; color: #F59E0B;"></i> Plans &amp; Pricing
           </button>
+          <button type="button" class="nav-dropdown-item nav-link-btn" id="btn-nav-admin" onclick="switchNavSection('admin'); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px; color: #F59E0B; font-weight: 700; display: none;" title="Administrative Console">
+            <i class="fa-solid fa-lock" style="width: 18px; color: #F59E0B;"></i> Admin Console
+          </button>
         </div>
       </div>
     </nav>
@@ -5495,14 +5510,6 @@
       <button class="lang-toggle-pill" id="global-lang-btn" onclick="toggleAppLanguage()" title="Switch Language / भाषा बदलें" aria-label="Toggle language between English and Hindi">
         <i class="fa-solid fa-language"></i> <span id="global-lang-label">हिंदी</span>
       </button>
-
-      <!-- Testing Mode: One-Click Tier Simulator -->
-      <div id="header-tier-simulator" class="tier-sim-bar" style="display: inline-flex; align-items: center; gap: 3px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 20px; padding: 2px 6px; font-size: 11px;">
-        <span style="font-weight: 800; color: #B45309; text-transform: uppercase; font-size: 9.5px; margin-right: 2px;"><i class="fa-solid fa-flask"></i> <span class="hide-mobile-compact">SIMULATE:</span></span>
-        <button type="button" class="tier-sim-btn active" id="sim-tier-free" onclick="simulateTierFromUI('FREE')" title="Simulate Free / Essentials Tier" style="border: none; background: #D97706; color: #FFFFFF; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;">Free</button>
-        <button type="button" class="tier-sim-btn" id="sim-tier-plus" onclick="simulateTierFromUI('PLUS')" title="Simulate Plus Tier (10% OFF, Numerology Studio)" style="border: none; background: transparent; color: #78350F; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;">Plus</button>
-        <button type="button" class="tier-sim-btn" id="sim-tier-premium" onclick="simulateTierFromUI('PREMIUM')" title="Simulate Premium Tier (20% OFF, Unlimited Name Corrections, PDF Download)" style="border: none; background: transparent; color: #78350F; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;">Premium</button>
-      </div>
 
       <div class="tier-chip" id="global-tier-badge" onclick="openPricingPlansModal()" title="Click to view subscription tiers" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 20px; font-size: 12px; font-weight: 700; color: #D97706; cursor: pointer;">
         <i class="fa-solid fa-crown"></i> <span id="global-tier-name">Essentials</span>
@@ -5581,31 +5588,20 @@
       <button class="mobile-nav-item" id="mob-nav-dashboard" onclick="mobileNavNavigate('dashboard')">
         <i class="fa-solid fa-user-shield"></i> <span>My Space / Dashboard</span>
       </button>
+      <button class="mobile-nav-item" id="mob-nav-admin" onclick="mobileNavNavigate('admin')" style="display: none; color: #D97706; font-weight: 700;">
+        <i class="fa-solid fa-lock" style="color: #D97706;"></i> <span>Admin Console</span>
+      </button>
     </div>
 
-    <!-- Testing Mode: Simulated Tier in Mobile Drawer -->
-    <div class="mobile-drawer-sim-box" style="margin-bottom: 8px; padding: 8px 10px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 11px; font-weight: 800; color: #92400E; text-transform: uppercase;"><i class="fa-solid fa-flask"></i> Testing Mode: Simulated Plan</span>
-        <span id="mob-sim-tier-active-badge" style="font-size: 10px; background: #FEF3C7; color: #B45309; font-weight: 800; padding: 1px 6px; border-radius: 4px;">FREE</span>
+    <!-- Quick Wallet Section in Drawer -->
+    <div style="margin-bottom: 8px; padding: 10px 12px; background: #FFFDF8; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 11.5px; font-weight: 700; color: #78350F;"><i class="fa-solid fa-wallet" style="color: #F59E0B;"></i> Wallet Balance</span>
+        <strong id="mob-drawer-real-bal" style="font-size: 13.5px; color: #1E293B;">₹0.00</strong>
       </div>
-      <div style="display: flex; gap: 4px;">
-        <button type="button" class="mob-sim-btn active" id="mob-sim-tier-free" onclick="simulateTierFromUI('FREE')" style="flex: 1; padding: 6px 4px; font-size: 11px; font-weight: 700; border-radius: 6px; border: 1px solid #F59E0B; background: #D97706; color: #FFFFFF; cursor: pointer;">Free</button>
-        <button type="button" class="mob-sim-btn" id="mob-sim-tier-plus" onclick="simulateTierFromUI('PLUS')" style="flex: 1; padding: 6px 4px; font-size: 11px; font-weight: 700; border-radius: 6px; border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569; cursor: pointer;">Plus</button>
-        <button type="button" class="mob-sim-btn" id="mob-sim-tier-premium" onclick="simulateTierFromUI('PREMIUM')" style="flex: 1; padding: 6px 4px; font-size: 11px; font-weight: 700; border-radius: 6px; border: 1px solid #E2E8F0; background: #FFFFFF; color: #475569; cursor: pointer;">Premium</button>
-      </div>
-    </div>
-
-    <!-- Quick Wallet / Demo Section in Drawer -->
-    <div class="mobile-drawer-demo-box">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 11px; font-weight: 700; color: #92400E;">Demo Wallet Balance</span>
-        <strong id="mob-drawer-demo-bal" style="font-size: 13px; color: #B45309;">₹0.00</strong>
-      </div>
-      <div style="display: flex; gap: 6px;">
-        <button type="button" class="btn-demo-quick" style="flex: 1;" onclick="addDemoCreditsFromUI(500)">+₹500 Demo</button>
-        <button type="button" class="btn-demo-quick" style="flex: 1; background: #4C0519;" onclick="closeMobileNavDrawer(); openWalletModal()">Recharge / Wallet</button>
-      </div>
+      <button type="button" class="btn-gold-primary" style="width: 100%; justify-content: center; padding: 7px; font-size: 12px;" onclick="closeMobileNavDrawer(); openWalletModal()">
+        <i class="fa-solid fa-plus"></i> Recharge Wallet
+      </button>
     </div>
 
     <!-- Footer Controls in Drawer: Language & Auth -->
@@ -8337,6 +8333,7 @@
           <button class="category-pill" onclick="switchAdminModule('audit')"><i class="fa-solid fa-clipboard-list"></i> 13. Audit Trail</button>
           <button class="category-pill" onclick="switchAdminModule('integrations')"><i class="fa-solid fa-network-wired"></i> 14. Integrations</button>
           <button class="category-pill" onclick="switchAdminModule('incidents')"><i class="fa-solid fa-triangle-exclamation"></i> 15. Incidents</button>
+          <button class="category-pill" onclick="switchAdminModule('qa')"><i class="fa-solid fa-flask"></i> 16. Tier Simulator &amp; QA</button>
         </div>
 
         <!-- MODULE 1: PLATFORM OVERVIEW -->
@@ -8719,6 +8716,163 @@
           </div>
         </div>
 
+        <!-- MODULE 16: TIER SIMULATOR & PREMIUM FEATURE QA CONSOLE -->
+        <div id="admin-panel-qa" class="admin-module-panel" style="display: none;">
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                  <i class="fa-solid fa-flask"></i> Module 16: Tier Simulator &amp; Premium Feature QA Console
+                </h3>
+                <p style="font-size: 12px; color: #64748B; margin: 4px 0 0;">
+                  Session-scoped preview context for testing subscription tiers, feature gates, and demo balance in complete financial isolation.
+                </p>
+              </div>
+              <div id="admin-qa-active-badge-wrap" style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; font-weight: 700; color: #475569;">Active Preview:</span>
+                <span id="admin-qa-status-pill" style="font-size: 11px; font-weight: 800; background: #E2E8F0; color: #475569; padding: 2px 10px; border-radius: 12px;">NONE (Real Entitlements)</span>
+              </div>
+            </div>
+
+            <!-- Isolation Notice -->
+            <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #166534; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-shield-halved" style="color: #16A34A; font-size: 14px;"></i>
+              <span><strong>ISOLATED PREVIEW MODE:</strong> Simulations here run in an ephemeral, session-bound test environment. Real customer subscriptions, real payment orders, and live production databases remain completely untouched.</span>
+            </div>
+
+            <!-- Tier Simulation Controls -->
+            <div style="background: #FFFBEB; border: 1.5px solid #FCD34D; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 800; color: #92400E; text-transform: uppercase;">
+                  <i class="fa-solid fa-sliders"></i> Select Simulation Tier
+                </span>
+                <button type="button" class="btn-outline-secondary" onclick="exitAdminPreviewMode()" style="font-size: 11px; padding: 4px 10px; border-color: #DC2626; color: #DC2626;">
+                  <i class="fa-solid fa-power-off"></i> Exit Preview Mode
+                </button>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <button type="button" class="admin-tier-btn" id="admin-btn-sim-free" onclick="adminSetPreviewTier('FREE')" style="padding: 12px; border-radius: 8px; border: 1.5px solid #CBD5E1; background: #FFFFFF; text-align: left; cursor: pointer; transition: all 0.2s;">
+                  <div style="font-weight: 800; font-size: 13px; color: #1E293B; display: flex; justify-content: space-between;">
+                    <span>Free / Essentials</span>
+                    <span style="font-size: 11px; color: #64748B;">₹0</span>
+                  </div>
+                  <div style="font-size: 11px; color: #64748B; margin-top: 4px;">D1 Chart, 3 AI Qs/day, Standard Catalogue Price, No Corrections</div>
+                </button>
+                <button type="button" class="admin-tier-btn" id="admin-btn-sim-plus" onclick="adminSetPreviewTier('PLUS')" style="padding: 12px; border-radius: 8px; border: 1.5px solid #F59E0B; background: #FFFDF8; text-align: left; cursor: pointer; transition: all 0.2s;">
+                  <div style="font-weight: 800; font-size: 13px; color: #B45309; display: flex; justify-content: space-between;">
+                    <span>Plus Tier</span>
+                    <span style="font-size: 11px; color: #D97706;">10% OFF</span>
+                  </div>
+                  <div style="font-size: 11px; color: #92400E; margin-top: 4px;">D1+D9 Charts, 15 AI Qs/day, Name Correction Studio, 24h Guidance</div>
+                </button>
+                <button type="button" class="admin-tier-btn" id="admin-btn-sim-premium" onclick="adminSetPreviewTier('PREMIUM')" style="padding: 12px; border-radius: 8px; border: 1.5px solid #881337; background: #FFF1F2; text-align: left; cursor: pointer; transition: all 0.2s;">
+                  <div style="font-weight: 800; font-size: 13px; color: #881337; display: flex; justify-content: space-between;">
+                    <span>Premium Tier</span>
+                    <span style="font-size: 11px; color: #9F1239;">20% OFF</span>
+                  </div>
+                  <div style="font-size: 11px; color: #9F1239; margin-top: 4px;">All Charts, 30 AI Qs/day, Business/Mobile Names, High-Res PDF Downloads</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Synthetic Test Profile Selector -->
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 800; color: #334155; text-transform: uppercase;">
+                  <i class="fa-solid fa-user-tag"></i> Synthetic Test Profile Context
+                </span>
+                <span style="font-size: 10px; font-weight: 700; background: #FEF3C7; color: #B45309; padding: 2px 8px; border-radius: 4px;">
+                  ⚠️ SAMPLE TEST DATA — NOT A CUSTOMER PROFILE
+                </span>
+              </div>
+              <p style="font-size: 11.5px; color: #64748B; margin: 0 0 10px;">
+                Selecting a synthetic profile isolates chart calculations, transit forecasts, and report builders to sample data, preventing any real customer PII exposure.
+              </p>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <select id="admin-synth-profile-select" style="flex: 1; min-width: 260px; padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; background: #FFFFFF;" onchange="onAdminSyntheticProfileChanged()">
+                  <option value="synth_aryan_tiwari">Synthetic Aryan Tiwari (20 Aug 2005, 14:05, Jabalpur, MP - Vrishchika/Kumbha)</option>
+                  <option value="synth_priyadarshini">Synthetic Priyadarshini Rao (14 Nov 1992, 09:30, Bengaluru, KA - Dhanu/Mithuna)</option>
+                  <option value="none">No Test Profile Selected (Ad-hoc Testing)</option>
+                </select>
+                <button type="button" class="btn-gold-primary" onclick="loadAdminSyntheticProfileToHarness()" style="font-size: 12px; padding: 6px 14px;">
+                  <i class="fa-solid fa-file-import"></i> Load Profile
+                </button>
+              </div>
+            </div>
+
+            <!-- Isolated Demo Wallet Controls -->
+            <div style="background: #FDF4FF; border: 1px solid #F0ABFC; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                  <span style="font-size: 12px; font-weight: 800; color: #86198F; text-transform: uppercase;">
+                    <i class="fa-solid fa-wallet"></i> Isolated Demo Wallet
+                  </span>
+                  <div style="font-size: 11px; color: #A21CAF; margin-top: 2px;">
+                    Test credits only. Real customer balances and bank accounts are 100% untouched.
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 11px; color: #701A75;">Demo Balance:</div>
+                  <strong id="admin-qa-demo-bal" style="font-size: 18px; font-weight: 800; color: #86198F;">₹0.00</strong>
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+                <button type="button" class="btn-outline-secondary" onclick="adminCreditDemoWallet(100)" style="font-size: 11px; padding: 6px 12px; background: #FFFFFF; border-color: #D946EF; color: #86198F;">+₹100 Demo</button>
+                <button type="button" class="btn-outline-secondary" onclick="adminCreditDemoWallet(500)" style="font-size: 11px; padding: 6px 12px; background: #FFFFFF; border-color: #D946EF; color: #86198F;">+₹500 Demo</button>
+                <button type="button" class="btn-outline-secondary" onclick="adminCreditDemoWallet(1000)" style="font-size: 11px; padding: 6px 12px; background: #FFFFFF; border-color: #D946EF; color: #86198F;">+₹1,000 Demo</button>
+                <button type="button" class="btn-outline-secondary" onclick="adminResetDemoWallet()" style="font-size: 11px; padding: 6px 12px; background: #FFFFFF; border-color: #CBD5E1; color: #64748B;">
+                  <i class="fa-solid fa-rotate-left"></i> Reset Demo Wallet
+                </button>
+              </div>
+            </div>
+
+            <!-- Feature QA Launchers Grid -->
+            <div>
+              <h4 style="font-size: 13px; font-weight: 800; color: #1E293B; margin: 0 0 10px; text-transform: uppercase;">
+                <i class="fa-solid fa-vial-circle-check"></i> Feature QA Launchers &amp; Entitlement Gating Verification
+              </h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+                <!-- 1. Kundli Charts -->
+                <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                  <div style="font-weight: 700; font-size: 12.5px; color: var(--vedic-maroon);"><i class="fa-solid fa-dharmachakra"></i> 1. Kundli &amp; Divisional Charts</div>
+                  <div style="font-size: 11.5px; color: #64748B; margin: 4px 0 10px;">Test D1 Rashi, D9 Navamsha, and Shodashvarga chart tabs under active preview tier.</div>
+                  <button type="button" class="btn-outline-secondary" onclick="qaLaunchKundliTest()" style="width: 100%; font-size: 11px; padding: 5px;">Launch Chart QA</button>
+                </div>
+                <!-- 2. Six-Horizon Guidance -->
+                <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                  <div style="font-weight: 700; font-size: 12.5px; color: var(--vedic-maroon);"><i class="fa-solid fa-compass"></i> 2. Six-Horizon Guidance</div>
+                  <div style="font-size: 11.5px; color: #64748B; margin: 4px 0 10px;">Verify Hora, Daily, Weekly, Monthly, Yearly guidance and Mahadasha tier gating.</div>
+                  <button type="button" class="btn-outline-secondary" onclick="qaLaunchGuidanceTest()" style="width: 100%; font-size: 11px; padding: 5px;">Launch Guidance QA</button>
+                </div>
+                <!-- 3. AI Astrologer Consultation -->
+                <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                  <div style="font-weight: 700; font-size: 12.5px; color: var(--vedic-maroon);"><i class="fa-solid fa-user-tie"></i> 3. AI Astrologer Consultation</div>
+                  <div style="font-size: 11.5px; color: #64748B; margin: 4px 0 10px;">Test persona dialogue, 1st free minute allowance, and daily question limits (3 / 15 / 30).</div>
+                  <button type="button" class="btn-outline-secondary" onclick="qaLaunchAstrologerTest()" style="width: 100%; font-size: 11px; padding: 5px;">Launch Astrologer QA</button>
+                </div>
+                <!-- 4. Numerology Studio -->
+                <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                  <div style="font-weight: 700; font-size: 12.5px; color: var(--vedic-maroon);"><i class="fa-solid fa-hashtag"></i> 4. Numerology Studio</div>
+                  <div style="font-size: 11.5px; color: #64748B; margin: 4px 0 10px;">Test Moolank/Bhagyank, Name Correction generator (Plus), and Business/Mobile tabs (Premium).</div>
+                  <button type="button" class="btn-outline-secondary" onclick="qaLaunchNumerologyTest()" style="width: 100%; font-size: 11px; padding: 5px;">Launch Numerology QA</button>
+                </div>
+                <!-- 5. Reports & PDF Store -->
+                <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                  <div style="font-weight: 700; font-size: 12.5px; color: var(--vedic-maroon);"><i class="fa-solid fa-file-pdf"></i> 5. Reports Store &amp; PDFs</div>
+                  <div style="font-size: 11.5px; color: #64748B; margin: 4px 0 10px;">Verify 10 products, tier discounts (10% / 20%), chapter reader, and PDF download permissions.</div>
+                  <button type="button" class="btn-outline-secondary" onclick="qaLaunchReportsTest()" style="width: 100%; font-size: 11px; padding: 5px;">Launch Reports Store QA</button>
+                </div>
+                <!-- 6. Billing & Wallet Simulation -->
+                <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                  <div style="font-weight: 700; font-size: 12.5px; color: var(--vedic-maroon);"><i class="fa-solid fa-calculator"></i> 6. Billing Simulation</div>
+                  <div style="font-size: 11.5px; color: #64748B; margin: 4px 0 10px;">Simulate report checkout with demo balance, test shortfall prompts, and verify ledger isolation.</div>
+                  <button type="button" class="btn-outline-secondary" onclick="qaLaunchBillingTest()" style="width: 100%; font-size: 11px; padding: 5px;">Launch Billing QA</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -9011,43 +9165,6 @@
       <button class="btn-outline-secondary" style="width: 100%; justify-content: center;" onclick="closeWalletModal()">
         Cancel
       </button>
-
-      <!-- Demo Mode Testing Panel -->
-      <div id="wallet-demo-mode-panel" style="background: #FEF3C7; border: 1.5px dashed #D97706; border-radius: 10px; padding: 14px; margin-top: 16px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-flask" style="color: #B45309;"></i>
-            <strong style="color: #92400E; font-size: 13px;">QA DEMO ENVIRONMENT ACTIVE</strong>
-          </div>
-          <span style="font-size: 10px; background: #D97706; color: #FFF; font-weight: 700; padding: 2px 6px; border-radius: 4px;">NO REAL CHARGES</span>
-        </div>
-        <p style="font-size: 11.5px; color: #78350F; margin: 0 0 10px; line-height: 1.4;">
-          Test simulated credits, report purchases, and tier entitlements safely without payment gateways or bank accounts.
-        </p>
-        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.7); border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; font-size: 12px;">
-          <span style="color: #92400E; font-weight: 600;">Demo Wallet Balance:</span>
-          <strong id="demo-wallet-bal-display" style="color: #B45309; font-size: 14px;">₹0.00</strong>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;">
-          <button type="button" class="btn-demo-quick" onclick="addDemoCreditsFromUI(100)">+₹100 Demo</button>
-          <button type="button" class="btn-demo-quick" onclick="addDemoCreditsFromUI(500)">+₹500 Demo</button>
-          <button type="button" class="btn-demo-quick" onclick="addDemoCreditsFromUI(1000)">+₹1,000 Demo</button>
-        </div>
-        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-          <button type="button" style="flex: 1; background: #FFFFFF; border: 1px solid #D97706; color: #B45309; border-radius: 6px; padding: 6px; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="resetDemoWalletFromUI()">
-            <i class="fa-solid fa-rotate-left"></i> Reset Demo Wallet
-          </button>
-        </div>
-        <!-- Tier Simulation Controls -->
-        <div style="border-top: 1px dashed #F59E0B; padding-top: 8px; margin-top: 6px;">
-          <div style="font-size: 11px; font-weight: 700; color: #92400E; margin-bottom: 6px;">Simulate Subscription Tier:</div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-            <button type="button" style="background: #FFF; border: 1px solid #CBD5E1; color: #475569; border-radius: 4px; padding: 5px; font-size: 11px; font-weight: 600; cursor: pointer;" onclick="simulateTierFromUI('FREE')">Free (0%)</button>
-            <button type="button" style="background: #FFF; border: 1px solid #F59E0B; color: #D97706; border-radius: 4px; padding: 5px; font-size: 11px; font-weight: 700; cursor: pointer;" onclick="simulateTierFromUI('PLUS')">Plus (10%)</button>
-            <button type="button" style="background: #FFF; border: 1px solid #881337; color: #881337; border-radius: 4px; padding: 5px; font-size: 11px; font-weight: 700; cursor: pointer;" onclick="simulateTierFromUI('PREMIUM')">Premium (20%)</button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -9657,13 +9774,13 @@
       <!-- Payment Method Selection -->
       <div class="form-field-group" id="builder-payment-method-group">
         <label class="form-field-label">Payment Method</label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-          <label style="display: flex; align-items: center; gap: 8px; border: 1.5px solid #F59E0B; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; background: #FFFDF8;">
-            <input type="radio" name="builder_pay_method" value="DEMO_WALLET" checked onchange="updateBuilderPaymentUI()">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px;">
+          <label id="builder-pay-demo-wrap" style="display: none; align-items: center; gap: 8px; border: 1.5px solid #F59E0B; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; background: #FFFDF8;">
+            <input type="radio" name="builder_pay_method" value="DEMO_WALLET" onchange="updateBuilderPaymentUI()">
             <span><strong style="color: #B45309;">Demo Wallet</strong><br><small style="color: #D97706;" id="builder-demo-bal-sub">₹0.00</small></span>
           </label>
           <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; background: #FFFFFF;">
-            <input type="radio" name="builder_pay_method" value="WALLET" onchange="updateBuilderPaymentUI()">
+            <input type="radio" name="builder_pay_method" value="WALLET" checked onchange="updateBuilderPaymentUI()">
             <span><strong>Real Wallet</strong><br><small style="color: #64748B;">₹<span id="builder-real-bal-sub">0.00</span></small></span>
           </label>
           <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; background: #FFFFFF;">
@@ -10432,6 +10549,82 @@
       }
     }
 
+    // ==============================================================================
+    // CANONICAL ADMIN ROLES & ISOLATED PREVIEW HARNESS
+    // ==============================================================================
+
+    const CANONICAL_ADMIN_ROLES = [
+      'OWNER',
+      'SECURITY_ADMIN',
+      'SUPPORT_ADMIN',
+      'CONTENT_EDITOR',
+      'FINANCE_ADMIN',
+      'ASTROLOGY_OPS_ADMIN',
+      'READONLY_ANALYST',
+      'SUPER_ADMIN',
+      'SUPPORT',
+      'OPERATIONS',
+      'ANALYST'
+    ];
+
+    function isAdminUser() {
+      return Boolean(currentUserSession && CANONICAL_ADMIN_ROLES.includes(currentUserSession.role));
+    }
+
+    function isAdminPreviewActive() {
+      if (!isAdminUser()) return false;
+      return localStorage.getItem('astro_admin_preview_active') === 'true';
+    }
+
+    function getEffectiveAdminPreviewTier() {
+      if (!isAdminPreviewActive()) return null;
+      return (localStorage.getItem('astro_admin_preview_tier') || 'FREE').toUpperCase();
+    }
+
+    function updateAdminPreviewBannerUI() {
+      const banner = document.getElementById('admin-preview-floating-banner');
+      const tierEl = document.getElementById('admin-preview-banner-tier');
+      const statusPill = document.getElementById('admin-qa-status-pill');
+      const demoBalEl = document.getElementById('admin-qa-demo-bal');
+      const realBalEl = document.getElementById('admin-qa-real-bal');
+
+      const isAct = isAdminPreviewActive();
+      const currentTier = getEffectiveAdminPreviewTier() || 'FREE';
+
+      if (banner) {
+        banner.style.display = isAct ? 'flex' : 'none';
+        if (tierEl) tierEl.textContent = currentTier;
+      }
+
+      if (statusPill) {
+        if (isAct) {
+          statusPill.textContent = `SIMULATED ${currentTier}`;
+          statusPill.style.background = currentTier === 'PREMIUM' ? '#881337' : (currentTier === 'PLUS' ? '#D97706' : '#475569');
+          statusPill.style.color = '#FFFFFF';
+        } else {
+          statusPill.textContent = 'NONE (Real Entitlements)';
+          statusPill.style.background = '#E2E8F0';
+          statusPill.style.color = '#475569';
+        }
+      }
+
+      if (demoBalEl) {
+        demoBalEl.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
+      }
+      if (realBalEl) {
+        realBalEl.textContent = `₹${currentWalletBalance.toFixed(2)}`;
+      }
+
+      // Update button active states in Module 16
+      ['free', 'plus', 'premium'].forEach(t => {
+        const btn = document.getElementById(`admin-btn-sim-${t}`);
+        if (btn) {
+          const isMatch = isAct && (t === currentTier.toLowerCase());
+          btn.style.boxShadow = isMatch ? '0 0 0 2.5px #F59E0B' : 'none';
+        }
+      });
+    }
+
     // Demo Mode & Testing Money Controllers
     function updateDemoWalletDisplay() {
       const dispEl = document.getElementById('demo-wallet-bal-display');
@@ -10440,21 +10633,26 @@
       if (builderSub) builderSub.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
       const mobBal = document.getElementById('mob-drawer-demo-bal');
       if (mobBal) mobBal.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
+      const adminQaBal = document.getElementById('admin-qa-demo-bal');
+      if (adminQaBal) adminQaBal.textContent = `₹${currentDemoWalletBalance.toFixed(2)}`;
     }
 
-    async function addDemoCreditsFromUI(rupees) {
-      const paise = Math.round(rupees * 100);
+    async function adminCreditDemoWallet(rupees) {
+      if (!isAdminUser()) {
+        showToast("Administrative permissions required to issue demo credits.", "error");
+        return;
+      }
       try {
         const headers = getAuthHeaders();
         headers['Content-Type'] = 'application/json';
-        const res = await fetch(`${getAuthBase()}/api/demo/credit`, {
+        const res = await fetch(`${getAuthBase()}/api/admin/demo-wallet/credit`, {
           method: 'POST',
-          headers: headers,
-          body: JSON.stringify({ amountPaise: paise })
+          headers,
+          body: JSON.stringify({ amount: rupees })
         });
         if (res.ok) {
           const data = await res.json();
-          currentDemoWalletBalance = parseFloat(data.demoBalance);
+          currentDemoWalletBalance = parseFloat(data.newDemoBalance || data.demoBalance);
         } else {
           currentDemoWalletBalance += rupees;
         }
@@ -10463,53 +10661,59 @@
       }
       localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
       updateDemoWalletDisplay();
+      updateAdminPreviewBannerUI();
       syncPromotionalBannerState();
       showToast(`🎉 Credited ₹${rupees} demo money! Demo balance: ₹${currentDemoWalletBalance.toFixed(2)}`, "success");
       updateBuilderPriceEstimate();
     }
 
-    async function resetDemoWalletFromUI() {
+    async function adminResetDemoWallet() {
+      if (!isAdminUser()) return;
       try {
         const headers = getAuthHeaders();
-        await fetch(`${getAuthBase()}/api/demo/reset`, {
+        await fetch(`${getAuthBase()}/api/admin/demo-wallet/reset`, {
           method: 'POST',
-          headers: headers
+          headers
         });
       } catch (_) {}
       currentDemoWalletBalance = 0.00;
       localStorage.setItem('astro_demo_wallet_bal', '0.00');
       updateDemoWalletDisplay();
+      updateAdminPreviewBannerUI();
       syncPromotionalBannerState();
       showToast("Demo wallet balance reset to ₹0.00", "info");
       updateBuilderPriceEstimate();
     }
 
-    function updateTierSimulatorButtonsUI(tier) {
-      const norm = String(tier || 'FREE').toUpperCase();
-      ['free', 'plus', 'premium'].forEach(t => {
-        const hBtn = document.getElementById(`sim-tier-${t}`);
-        const mBtn = document.getElementById(`mob-sim-tier-${t}`);
-        const isMatch = (t === norm.toLowerCase());
-        if (hBtn) {
-          hBtn.classList.toggle('active', isMatch);
-          hBtn.style.background = '';
-          hBtn.style.color = '';
-        }
-        if (mBtn) {
-          mBtn.classList.toggle('active', isMatch);
-          mBtn.style.background = '';
-          mBtn.style.color = '';
-          mBtn.style.borderColor = '';
-        }
-      });
-      const badge = document.getElementById('mob-sim-tier-active-badge');
-      if (badge) badge.textContent = norm;
-    }
-
-    async function simulateTierFromUI(tier) {
+    async function adminSetPreviewTier(tier) {
+      if (!isAdminUser()) {
+        showToast("Administrative permissions required to activate tier preview.", "error");
+        return;
+      }
       const normTier = String(tier || 'FREE').toUpperCase();
+      try {
+        const headers = getAuthHeaders();
+        headers['Content-Type'] = 'application/json';
+        const res = await fetch(`${getAuthBase()}/api/admin/preview/set-tier`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            tier: normTier,
+            syntheticProfileId: document.getElementById('admin-synth-profile-select')?.value || 'synth_aryan_tiwari'
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          showToast(`Simulation failed: ${err.message || 'Access denied'}`, "error");
+          return;
+        }
+      } catch (err) {
+        console.warn("[ADMIN_PREVIEW] Network set-tier error:", err);
+      }
+
+      localStorage.setItem('astro_admin_preview_active', 'true');
+      localStorage.setItem('astro_admin_preview_tier', normTier);
       localStorage.setItem('astro_simulated_tier', normTier);
-      updateTierSimulatorButtonsUI(normTier);
 
       const discounts = { FREE: 0, PLUS: 10, PREMIUM: 20 };
       const discountPercent = discounts[normTier] || 0;
@@ -10545,18 +10749,154 @@
           : `Member Benefits Active:`;
       }
 
-      try {
-        const headers = getAuthHeaders();
-        headers['Content-Type'] = 'application/json';
-        await fetch(`${getAuthBase()}/api/demo/set-tier`, {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify({ tier: normTier })
-        });
-      } catch (_) {}
-
-      showToast(`🎉 Testing Mode: ${normTier} plan active! (${discountPercent}% report discount, full features unlocked)`, "success");
+      updateAdminPreviewBannerUI();
+      showToast(`🛡️ Admin Preview Active: Simulated ${normTier} plan (${discountPercent}% discount, isolated test context)`, "success");
       updateBuilderPriceEstimate();
+    }
+
+    async function exitAdminPreviewMode() {
+      if (isAdminUser()) {
+        try {
+          const headers = getAuthHeaders();
+          await fetch(`${getAuthBase()}/api/admin/preview/exit`, {
+            method: 'POST',
+            headers
+          });
+        } catch (_) {}
+      }
+      localStorage.removeItem('astro_admin_preview_active');
+      localStorage.removeItem('astro_admin_preview_tier');
+      localStorage.removeItem('astro_simulated_tier');
+
+      updateAdminPreviewBannerUI();
+      await fetchUserEntitlements();
+      showToast("Exited preview mode. Restored genuine customer entitlements.", "info");
+      updateBuilderPriceEstimate();
+    }
+
+    // Aliases for seamless internal calls
+    async function addDemoCreditsFromUI(rupees) {
+      return await adminCreditDemoWallet(rupees);
+    }
+
+    async function resetDemoWalletFromUI() {
+      return await adminResetDemoWallet();
+    }
+
+    async function simulateTierFromUI(tier) {
+      return await adminSetPreviewTier(tier);
+    }
+
+    function updateTierSimulatorButtonsUI(tier) {
+      updateAdminPreviewBannerUI();
+    }
+
+    function onAdminSyntheticProfileChanged() {
+      const select = document.getElementById('admin-synth-profile-select');
+      const val = select ? select.value : 'synth_aryan_tiwari';
+      showToast(`Selected synthetic profile context: ${val === 'none' ? 'None' : val}`, "info");
+    }
+
+    function loadAdminSyntheticProfileToHarness() {
+      const select = document.getElementById('admin-synth-profile-select');
+      const val = select ? select.value : 'synth_aryan_tiwari';
+
+      if (val === 'synth_aryan_tiwari') {
+        const syntheticAryan = {
+          name: 'Aryan Tiwari (Sample)',
+          gender: 'male',
+          dob: ['2005', '08', '20'].join('-'),
+          tob: '14:05',
+          pob: 'Jabalpur, Madhya Pradesh, India',
+          city: 'Jabalpur',
+          lat: 23.17,
+          lon: 79.95,
+          tz: 5.5,
+          isSynthetic: true
+        };
+        currentCalculatedChart = syntheticAryan;
+        window.currentCalculatedChart = syntheticAryan;
+        if (typeof renderKundliView === 'function') renderKundliView();
+        showToast("Loaded Synthetic Aryan Tiwari (Sample Test Profile) into harness.", "success");
+      } else if (val === 'synth_priyadarshini') {
+        const syntheticPriya = {
+          name: 'Priyadarshini Rao (Sample)',
+          gender: 'female',
+          dob: '1992-11-14',
+          tob: '09:30',
+          pob: 'Bengaluru, Karnataka, India',
+          city: 'Bengaluru',
+          lat: 12.97,
+          lon: 77.59,
+          tz: 5.5,
+          isSynthetic: true
+        };
+        currentCalculatedChart = syntheticPriya;
+        window.currentCalculatedChart = syntheticPriya;
+        if (typeof renderKundliView === 'function') renderKundliView();
+        showToast("Loaded Synthetic Priyadarshini Rao (Sample Test Profile) into harness.", "success");
+      } else {
+        showToast("Cleared synthetic profile context.", "info");
+      }
+    }
+
+    function qaLaunchKundliTest() {
+      loadAdminSyntheticProfileToHarness();
+      switchNavSection('kundli');
+      showToast("Testing Kundli & Divisional Charts gating under simulated tier...", "info");
+    }
+
+    function qaLaunchGuidanceTest() {
+      loadAdminSyntheticProfileToHarness();
+      switchNavSection('horas');
+      showToast("Testing Six-Horizon Guidance and Mahadasha gating under simulated tier...", "info");
+    }
+
+    function qaLaunchAstrologerTest() {
+      loadAdminSyntheticProfileToHarness();
+      switchNavSection('astrologers');
+      showToast("Testing AI Astrologer Consultation dialogue and quota limits...", "info");
+    }
+
+    function qaLaunchNumerologyTest() {
+      switchNavSection('tools');
+      setTimeout(() => {
+        const numTab = document.getElementById('tool-tab-numerology');
+        if (numTab) numTab.click();
+      }, 200);
+      showToast("Testing Numerology Studio gating (Moolank, Correction, Business)...", "info");
+    }
+
+    function qaLaunchReportsTest() {
+      openReportStoreModal();
+      showToast("Testing Report Store catalogue, pricing discounts, and reader entitlements...", "info");
+    }
+
+    function qaLaunchBillingTest() {
+      openReportStoreModal();
+      showToast("Testing Demo Wallet billing simulation and checkout deduction...", "info");
+    }
+
+    async function loadAdminQaModule() {
+      if (!isAdminUser()) return;
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/preview/status`, {
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isPreviewActive && data.previewSession) {
+            localStorage.setItem('astro_admin_preview_active', 'true');
+            localStorage.setItem('astro_admin_preview_tier', data.previewSession.simulatedTier);
+            localStorage.setItem('astro_simulated_tier', data.previewSession.simulatedTier);
+            if (typeof data.previewSession.demoWalletBalance === 'number') {
+              currentDemoWalletBalance = data.previewSession.demoWalletBalance;
+              localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+            }
+          }
+        }
+      } catch (_) {}
+      updateAdminPreviewBannerUI();
     }
 
     // Gender Toggle (Section 2: Starts Unselected)
@@ -13036,6 +13376,9 @@
       localStorage.removeItem('astro_session_token');
       localStorage.removeItem('astro_user_session');
       localStorage.removeItem('astro_wallet_bal');
+      localStorage.removeItem('astro_admin_preview_active');
+      localStorage.removeItem('astro_admin_preview_tier');
+      localStorage.removeItem('astro_simulated_tier');
 
       if (typeof resetNumerologyStudio === 'function') {
         resetNumerologyStudio();
@@ -13152,11 +13495,20 @@
       document.getElementById('global-wallet-bal').textContent = currentWalletBalance.toFixed(2);
       document.getElementById('dash-wallet-bal').textContent = currentWalletBalance.toFixed(2);
 
-      const isAdmin = currentUserSession && ['SUPER_ADMIN', 'SUPPORT', 'OPERATIONS', 'ANALYST'].includes(currentUserSession.role);
+      const isAdmin = currentUserSession && CANONICAL_ADMIN_ROLES.includes(currentUserSession.role);
 
       if (adminNavBtn) {
         adminNavBtn.style.display = isAdmin ? 'inline-flex' : 'none';
       }
+      const mobAdminBtn = document.getElementById('mob-nav-admin');
+      if (mobAdminBtn) {
+        mobAdminBtn.style.display = isAdmin ? 'flex' : 'none';
+      }
+      const drawerRealBal = document.getElementById('mob-drawer-real-bal');
+      if (drawerRealBal) {
+        drawerRealBal.textContent = `₹${currentWalletBalance.toFixed(2)}`;
+      }
+      updateAdminPreviewBannerUI();
 
       if (currentUserSession) {
         authBtnText.textContent = currentUserSession.name;
@@ -13442,6 +13794,7 @@
         case 'audit': loadAdminAuditLogs(); break;
         case 'integrations': loadAdminIntegrations(); break;
         case 'incidents': loadAdminIncidents(); break;
+        case 'qa': loadAdminQaModule(); break;
       }
     }
 
@@ -17175,10 +17528,9 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           console.warn('[QUOTA] Quota verification fallback:', e);
         }
       } else {
-        // Guest mode daily limit (3 questions/day) - bypassed for simulated tier or active demo credits
-        const isSimulatedTier = ['PLUS', 'PREMIUM', 'PRO'].includes((localStorage.getItem('astro_simulated_tier') || '').toUpperCase());
-        const isDemoWalletActive = typeof currentDemoWalletBalance === 'number' && currentDemoWalletBalance > 0;
-        if (!isSimulatedTier && !isDemoWalletActive) {
+        // Guest mode daily limit (3 questions/day) - bypassed ONLY for authorized active admin preview session
+        const isSimulatedTier = isAdminPreviewActive() && ['PLUS', 'PREMIUM', 'PRO'].includes(getEffectiveAdminPreviewTier() || '');
+        if (!isSimulatedTier) {
           const todayStr = getLocalDateString('Asia/Kolkata');
           let guestData = { date: todayStr, count: 0 };
           try {
@@ -19052,11 +19404,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     window.currentActivePrediction = null;
 
     function isPremiumReportUnlocked() {
-      if (localStorage.getItem('astro_premium_unlocked') === 'true') return true;
-      const simTier = localStorage.getItem('astro_simulated_tier');
-      if (['PLUS', 'PREMIUM', 'PRO'].includes(simTier)) return true;
       if (typeof currentUserEntitlements !== 'undefined' && currentUserEntitlements && ['PLUS', 'PREMIUM', 'PRO'].includes(currentUserEntitlements.tier)) return true;
-      if (typeof isDemoTestingMode !== 'undefined' && isDemoTestingMode && typeof currentDemoWalletBalance !== 'undefined' && currentDemoWalletBalance > 0) return true;
+      if (isAdminPreviewActive() && ['PLUS', 'PREMIUM', 'PRO'].includes(getEffectiveAdminPreviewTier() || '')) return true;
       return false;
     }
 
@@ -19174,17 +19523,12 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     let activeReaderDoc = null;
 
     async function fetchUserEntitlements() {
-      const simTier = localStorage.getItem('astro_simulated_tier');
       const token = currentSessionToken || localStorage.getItem('astro_session_token');
       if (!token) {
-        if (simTier && simTier !== 'FREE') {
-          simulateTierFromUI(simTier);
-          return;
-        }
         currentUserEntitlements = null;
         const tierBadge = document.getElementById('global-tier-name');
         if (tierBadge) tierBadge.textContent = 'Essentials';
-        updateTierSimulatorButtonsUI(simTier || 'FREE');
+        updateAdminPreviewBannerUI();
         return;
       }
 
@@ -23530,7 +23874,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           category: "general",
           lang: isHi ? "hi" : "en",
           is_unlocked: isUnlocked,
-          preview_tier: (typeof currentUserEntitlements !== 'undefined' && currentUserEntitlements?.tier) || (localStorage.getItem('astro_simulated_tier')) || "FREE"
+          preview_tier: (typeof currentUserEntitlements !== 'undefined' && currentUserEntitlements?.tier) || (isAdminPreviewActive() ? getEffectiveAdminPreviewTier() : "FREE")
         };
 
         if (hasChart && currentCalculatedChart.fullData) {
@@ -25934,10 +26278,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       let correctionCandidates = null;
       let upgradePromptRequired = false;
 
-      const isSimulatedPlusOrPremium = currentUserEntitlements?.tier === 'PLUS' ||
-        currentUserEntitlements?.tier === 'PREMIUM' ||
-        localStorage.getItem('astro_simulated_tier') === 'PLUS' ||
-        localStorage.getItem('astro_simulated_tier') === 'PREMIUM';
+      const isSimulatedPlusOrPremium = (currentUserEntitlements?.tier === 'PLUS' || currentUserEntitlements?.tier === 'PREMIUM') ||
+        (isAdminPreviewActive() && ['PLUS', 'PREMIUM'].includes(getEffectiveAdminPreviewTier() || ''));
 
       try {
         if (isCorrection) {
@@ -26253,9 +26595,6 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
                   </p>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px; background: #D97706;" onclick="simulateTierFromUI('PLUS'); executeNumerologyStudio(true);">
-                    <i class="fa-solid fa-flask"></i> Simulate Plus Plan (Instant Test)
-                  </button>
                   <button class="btn-gold-primary" style="padding: 6px 14px; font-size: 12px;" onclick="openPricingPlansModal('PLUS')">
                     <i class="fa-solid fa-bolt"></i> Upgrade Plan
                   </button>

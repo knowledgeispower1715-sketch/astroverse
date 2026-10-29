@@ -648,6 +648,9 @@ async function runMonetizationTestSuite() {
       assert.strictEqual(res.status, 401);
     });
 
+    // Elevate userB to administrator for isolated admin demo wallet and simulation operations
+    await db.updateUser(userB.id, { role: Role.OWNER });
+
     await test('POST /api/demo/credit rejects invalid demo amounts with HTTP 400', async () => {
       const res = await request('/api/demo/credit', {
         method: 'POST',
