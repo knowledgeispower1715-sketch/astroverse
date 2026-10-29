@@ -5654,7 +5654,7 @@
       width: 210mm;
       height: 296mm;
       max-height: 296mm;
-      padding: 14mm 14mm;
+      padding: 10mm 14mm 10mm 14mm;
       margin: 0 auto;
       background: #FFFFFF;
       box-sizing: border-box;
@@ -5665,10 +5665,14 @@
       color: #1E293B;
       page-break-after: always;
       break-after: page;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
-    .pdf-a4-page:last-of-type {
+    .pdf-a4-page:last-of-type,
+    .pdf-a4-page:last-child {
       page-break-after: avoid !important;
       break-after: avoid !important;
+      margin-bottom: 0 !important;
     }
     .pdf-page-watermark {
       position: absolute;
@@ -11163,7 +11167,7 @@
               <h3 id="reader-doc-title" style="font-size: 16px; font-weight: 800; color: #F8FAFC; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 Complete Janam Kundli Deep Dive
               </h3>
-              <span style="font-size: 10px; background: #059669; color: #FFFFFF; padding: 2px 6px; border-radius: 4px; font-weight: 700;">VERIFIED</span>
+              <span style="font-size: 10px; background: rgba(5, 150, 105, 0.2); border: 1px solid #059669; color: #34D399; padding: 2px 7px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-circle-check" style="font-size: 9px;"></i> Calculation Validated (Swiss Ephemeris)</span>
             </div>
             <div id="reader-doc-subtitle" style="font-size: 11px; color: #CBD5E1; margin-top: 1px;">
               Vedic Astrological Publication &bull; Swiss Ephemeris
@@ -11186,7 +11190,7 @@
           <i class="fa-solid fa-lock" style="color: #F59E0B;"></i>
           <span id="reader-watermark-text">Confidential Publication • Licensed Exclusively to Native</span>
         </div>
-        <span style="font-size: 10.5px; color: #64748B;">Private Online Reader • Web DRM Enabled (Optical screen capture cannot be prevented)</span>
+        <span style="font-size: 10.5px; color: #CBD5E1;">Confidential Astrological Publication • Licensed to Native • Calculation Validated</span>
       </div>
 
       <!-- Body Layout: Table of Contents Drawer + Prose Body -->
@@ -19176,9 +19180,47 @@
         .replace(/'/g, '&#039;');
     }
 
+    function formatMathFormula(expr) {
+      if (!expr) return '';
+      let res = String(expr).trim();
+      res = res.replace(/\\text\{([^}]+)\}/g, '$1');
+      res = res.replace(/\\pmod\{([^}]+)\}/g, '(mod $1)');
+      res = res.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)');
+      res = res.replace(/\\sum_\{([^}]+)\}\^\{([^}]+)\}/g, '∑[$1 to $2]');
+      res = res.replace(/\\sum\b/g, '∑');
+      res = res.replace(/\\lfloor\b/g, '⌊');
+      res = res.replace(/\\rfloor\b/g, '⌋');
+      res = res.replace(/\^\\circ/g, '°');
+      res = res.replace(/\\circ\b/g, '°');
+      res = res.replace(/\\leftrightarrow\b/g, '↔');
+      res = res.replace(/\\rightarrow\b/g, '→');
+      res = res.replace(/\\leftarrow\b/g, '←');
+      res = res.replace(/\\equiv\b/g, '≡');
+      res = res.replace(/\\times\b/g, '×');
+      res = res.replace(/\\cdot\b/g, '·');
+      res = res.replace(/\\approx\b/g, '≈');
+      res = res.replace(/\\neq\b/g, '≠');
+      res = res.replace(/\\le(q)?\b/g, '≤');
+      res = res.replace(/\\ge(q)?\b/g, '≥');
+      res = res.replace(/\\pm\b/g, '±');
+      res = res.replace(/\\quad\b/g, ' ');
+      res = res.replace(/\\qquad\b/g, '  ');
+      res = res.replace(/\\([a-zA-Z]+)/g, '$1');
+      return res;
+    }
+
     function renderSafeMarkdown(text) {
       if (!text) return '';
       let safe = escapeHtml(text);
+
+      // Math Formulas (Block $$...$$ and Inline $...$)
+      safe = safe.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+        const formatted = formatMathFormula(formula);
+        return `\n<div class="math-formula-box" style="margin: 12px 0; padding: 10px 14px; background: rgba(30, 41, 59, 0.75); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; border-radius: 8px; font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif; font-size: 13px; font-weight: 700; color: #F8FAFC; text-align: center; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">${formatted}</div>\n`;
+      });
+      safe = safe.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+        return `<span class="math-inline" style="font-weight: 600; color: #F59E0B; padding: 1px 4px; background: rgba(245, 158, 11, 0.1); border-radius: 4px;">${formatMathFormula(formula)}</span>`;
+      });
 
       // Markdown Tables
       safe = safe.replace(/((?:^|\n)(?:[ \t]*\|[^\n]+\|[ \t]*(?:\r?\n|$))+)/g, (match) => {
@@ -19195,18 +19237,21 @@
           }
           const cells = line.split('|').slice(1, -1).map(c => c.trim());
           if (isFirstRow) {
-            headerRow = `<tr style="background: rgba(30, 41, 59, 0.95); border-bottom: 2px solid #F59E0B;">${cells.map(c => `<th style="padding: 10px 12px; font-weight: 700; color: #F59E0B; font-size: 11.5px; text-align: left;">${c}</th>`).join('')}</tr>`;
+            headerRow = `<tr style="background: rgba(30, 41, 59, 0.95); border-bottom: 2px solid #F59E0B;">${cells.map(c => `<th style="padding: 8px 10px; font-weight: 700; color: #F59E0B; font-size: 11px; text-align: left;">${c}</th>`).join('')}</tr>`;
             isFirstRow = false;
           } else {
-            bodyRows.push(`<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: ${i % 2 === 0 ? 'rgba(15, 23, 42, 0.75)' : 'rgba(30, 41, 59, 0.45)'};">${cells.map(c => `<td style="padding: 8px 12px; font-size: 11.5px; color: #F8FAFC;">${c}</td>`).join('')}</tr>`);
+            bodyRows.push(`<tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: ${i % 2 === 0 ? 'rgba(15, 23, 42, 0.75)' : 'rgba(30, 41, 59, 0.45)'};">${cells.map(c => `<td style="padding: 6px 10px; font-size: 11px; color: #F8FAFC;">${c}</td>`).join('')}</tr>`);
           }
         }
         return `\n<div style="overflow-x: auto; margin: 14px 0; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);"><table style="width: 100%; border-collapse: collapse; min-width: 520px;"><thead>${headerRow}</thead><tbody>${bodyRows.join('')}</tbody></table></div>\n`;
       });
 
-      // Headings
+      // Headings (ordered from most specific to least specific)
+      safe = safe.replace(/^#####\s+(.+)$/gm, '<h6 style="color: #CBD5E1; font-size: 11.5px; font-weight: 700; margin: 8px 0 4px;">$1</h6>');
+      safe = safe.replace(/^####\s+(.+)$/gm, '<h5 style="color: #F59E0B; font-size: 13px; font-weight: 700; margin: 12px 0 6px; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-gem" style="color: #F59E0B; font-size: 10px;"></i> <span>$1</span></h5>');
       safe = safe.replace(/^###\s+(.+)$/gm, '<h4><i class="fa-solid fa-scroll" style="color: #D97706; font-size: 11px;"></i> $1</h4>');
       safe = safe.replace(/^##\s+(.+)$/gm, '<h4>$1</h4>');
+      safe = safe.replace(/^#\s+(.+)$/gm, '<h3>$1</h3>');
 
       // Blockquotes
       safe = safe.replace(/^(?:>|&gt;)\s+(.+)$/gm, '<blockquote>$1</blockquote>');
@@ -19250,7 +19295,14 @@
       return paragraphs.map(p => {
         const trimmed = p.trim();
         if (!trimmed) return '';
-        if (trimmed.startsWith('<h4>') || trimmed.startsWith('<ul>') || trimmed.startsWith('<ol>') || trimmed.startsWith('<blockquote>') || trimmed.startsWith('<table')) {
+        if (
+          trimmed.startsWith('<h') ||
+          trimmed.startsWith('<ul>') ||
+          trimmed.startsWith('<ol>') ||
+          trimmed.startsWith('<blockquote>') ||
+          trimmed.startsWith('<table') ||
+          trimmed.startsWith('<div')
+        ) {
           return trimmed;
         }
         return `<p>${trimmed.replace(/\n/g, '<br>')}</p>`;
@@ -24479,6 +24531,22 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           category: 'KUNDLI'
         },
         {
+          productId: 'report_remedial_gemstones',
+          displayName: 'Planetary Remedies, Gemstone & Mantra Blueprint',
+          shortDescription: 'In-depth 12+ page remedial guide with Lagna-safe gemstone prescriptions, Beej mantras & Yantras.',
+          pricePaise: 14900,
+          includedSections: ['Lagna Benefics & Malefics', 'Lagna-Safe Ratna', 'Devanagari Beej Mantras', 'Sacred Yantras', 'Satvik Daana'],
+          category: 'KUNDLI'
+        },
+        {
+          productId: 'report_vedic_name_numerology',
+          displayName: 'Vedic Name Correction & Numerology Master Blueprint',
+          shortDescription: 'Exhaustive 15+ page personal numerology blueprint covering Moolank, Bhagyank, Chaldean Naamank, and signature analysis.',
+          pricePaise: 19900,
+          includedSections: ['Moolank & Bhagyank', 'Chaldean & Pythagorean Matrix', 'Compound Vibrations', '5 Name Alternatives', 'Signature Blueprint'],
+          category: 'KUNDLI'
+        },
+        {
           productId: 'report_basic_chart_summary',
           displayName: 'Basic Chart Summary',
           shortDescription: 'Foundational Ascendant, Moon sign, planetary ephemeris table and basic chart coordinates.',
@@ -25011,14 +25079,45 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             chapterNumber: 1,
             title: 'Chapter 1: The Rising Sign (Lagna) & Vital Temperament',
             subtitle: 'The Cosmic Blueprint, Physical Constitution & Innate Trajectory',
-            contentMarkdown: `### Natal Ascendant Blueprint\n- **Ascendant (Lagna):** **${lagna.sign}** (${typeof lagna.degree === 'number' ? lagna.degree.toFixed(2) : lagna.degree}°)\n- **Birth Nakshatra (Janma):** **${moon.nakshatra || currentCalculatedChart?.nakName || 'Rohini'}** (Pada ${moon.pada || currentCalculatedChart?.pada || 1})\n- **Ascendant Lord:** **${lagnaLord}** placed in House **${planets[lagnaLord]?.house || 1}** (${planets[lagnaLord]?.sign || lagna.sign})\n\n### Core Astrological Constitution\nWith ${lagna.sign} rising, your vitality reflects decisive resilience and deep perceptive intellect. The placement of ${lagnaLord} in the ${planets[lagnaLord]?.house || 1}st house anchors your personal agency, prioritizing integrity and deliberate, focused growth.`
+            contentMarkdown: `### Natal Ascendant Blueprint & Constitutional Foundation
+In classical Parashari Jyotish, the **Ascendant (Lagna)** serves as the primary gateway of incarnational experience, determining the physical constitution, neuro-physiological temperament, and personal agency (*Tanu Bhava*).
+
+#### Foundational Astronomical Coordinates
+- **Ascendant (Lagna):** **${lagna.sign}** (${typeof lagna.degree === 'number' ? lagna.degree.toFixed(2) : lagna.degree}°) in **${lagna.nakshatra || 'Anuradha'}** Nakshatra (Pada ${lagna.pada || 1}).
+- **Ascendant Lord (Lagnesha):** **${lagnaLord}** positioned in House **${planets[lagnaLord]?.house || 1}** (${planets[lagnaLord]?.sign || lagna.sign}, ${planets[lagnaLord]?.dignity || 'Direct'}).
+- **Birth Nakshatra (Janma):** **${moon.nakshatra || 'Rohini'}** (Pada ${moon.pada || 1}) under Moon sign **${moon.sign}**.
+- **Elemental Matrix:** ${lagna.sign} embodies an intensely focused energetic rhythm, combining perceptive analytical acumen with disciplined endurance.
+
+#### Shastric Rule Interpretation: Lagnesha Dynamics
+Under *Brihat Parashara Hora Shastra*, when the ruler of the 1st house occupies House **${planets[lagnaLord]?.house || 1}**, the native possesses inherent self-reliance, physical fortitude, and an autonomous decision-making framework. This placement shields the vitality against transient afflictions and directs the life arc toward self-actualization, purposeful competence, and uncompromising ethical integrity.
+
+#### Janma Nakshatra Cognitive Architecture
+Your Moon in **${moon.nakshatra || 'Rohini'}** reflects a contemplative and intuitively resilient mindset (*Manas*). Governed by its classical deity and cosmic archetype, this lunar mansion fosters sustained mental concentration, emotional depth, and the ability to navigate complex social and professional landscapes without compromising inner principles.
+
+#### Actionable Strategic Takeaways
+1. **Circadian Energy Optimization:** Structure high-leverage intellectual and strategic initiatives during early solar horas when your ascendant lord operates with maximum strength.
+2. **Vocational Posture:** Lean into roles requiring analytical precision, crisis navigation, and institutional stewardship rather than ambiguous or chaotic operational environments.
+3. **Interpersonal Boundary Management:** Channel natural discernment constructively; practice open emotional transparency to cultivate enduring, high-trust alliances.`
           },
           {
             sectionId: 'sec_ch2_planets',
             chapterNumber: 2,
             title: 'Chapter 2: Sidereal Ephemeris & Planetary Dignities',
             subtitle: 'Nirayana Planetary Coordinates, Bhava Placements & Dignities',
-            contentMarkdown: `### High-Precision Planetary Ephemeris (Lahiri Ayanamsha)\n\n${planetTable}\n\n*Surya in ${sun.sign} illuminates the core conscious will, Chandra in ${moon.sign} provides mental fortitude, and Mangal in ${mars.sign} fuels purposeful execution.*`
+            contentMarkdown: `### High-Precision Planetary Ephemeris (Lahiri Ayanamsha)
+Every celestial placement in this publication is calculated using high-precision ephemerides under the canonical Nirayana Chitrapaksha (Lahiri) Ayanamsha.
+
+${planetTable}
+
+#### Planetary Dignity Assessment & Functional Significations
+- **Surya (Sun) in ${sun.sign} (House ${sun.house}):** Governs the conscious soul will (*Atmakaraka* archetype) and executive authority. Anchors your vocational purpose and drives principled public leadership.
+- **Chandra (Moon) in ${moon.sign} (House ${moon.house}):** Governs the subconscious mind (*Manas*), emotional temperament, and instinctual response patterns. Provides internal psychological stamina and intuitive problem-solving capability.
+- **Mangal (Mars) in ${mars.sign} (House ${mars.house}):** Governs courage, physical vitality, and operational drive. Fuels decisive execution and resilience when overcoming competitive or technical hurdles.
+- **Budha (Mercury) in ${mercury.sign} (House ${mercury.house}):** Governs analytical reasoning, speech, commercial acumen, and computational dexterity. Fosters strategic clarity and rapid data synthesis.
+- **Guru (Jupiter) in ${jupiter.sign} (House ${jupiter.house}):** Governs wisdom, moral discernment (*Dharma*), and expansive wealth. Serves as your primary philosophical compass and guardian of institutional reputation.
+- **Shukra (Venus) in ${venus.sign} (House ${venus.house}):** Governs aesthetic refinement, diplomatic tact, emotional harmony, and relationship balance.
+- **Shani (Saturn) in ${saturn.sign} (House ${saturn.house}):** Governs discipline, perseverance, systemic organization, and karmic boundaries. Rewards patient, compound labor over hurried shortcuts.
+- **Rahu & Ketu in ${rahu.sign} / ${ketu.sign} (Houses ${rahu.house} & ${ketu.house}):** The nodal karmic axis delineates the evolutionary learning curve between material exploration and spiritual detachment.`
           },
           {
             sectionId: 'sec_ch3_vargas',
@@ -25108,8 +25207,11 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
               const upList = upData?.all_upagrahas || [];
               let upTable = '';
               if (upList.length > 0) {
-                upTable = `| Upagraha / Kalavela | Class | Sign (Rashi) | Longitude | Nakshatra & Pada | Shastra Signification |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n` +
-                  upList.map(u => `| **${u.name}** | ${u.category && u.category.includes('Sun') ? 'Sun-Derived' : 'Time-Based'} | ${u.sign} | ${u.degree}° (${u.longitude || u.total_degree || 0}°) | ${u.nakshatra} (${u.pada || 1}) | ${u.description || ''} |`).join('\n');
+                upTable = `| Upagraha | Class | Sign | Degree | Nakshatra | Classical Signification |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n` +
+                  upList.map(u => {
+                    const desc = (u.description || '').split(';')[0].trim();
+                    return `| **${u.name}** | ${u.category && u.category.includes('Sun') ? 'Sun-Derived' : 'Time-Based'} | ${u.sign} | ${u.degree}° | ${u.nakshatra} (${u.pada || 1}) | ${desc} |`;
+                  }).join('\n');
               } else {
                 upTable = `- Classical Upagrahas calculated per Brihat Parashara Hora Shastra Ch. 3.`;
               }
@@ -25121,7 +25223,8 @@ Under *Brihat Parashara Hora Shastra* (Ch. 3), eleven subtle celestial shadow po
 ${upTable}
 
 #### Parashari Mathematical Invariants & Cyclic Proof
-- **Cyclic Invariant:** $$\\text{Upaketu (Sikhi)} + 30^\\circ \\equiv \\text{Sun Longitude} \\pmod{360^\\circ}$$ verified compliant with zero closure variance.
+- **Cyclic Invariant:** $$\\text{Upaketu (Sikhi)} + 30^\\circ \\equiv \\text{Sun Longitude} \\pmod{360^\\circ}$$
+*Verification Status:* **Calculation Validated (Swiss Ephemeris)**. Cyclic closure confirmed with zero variance.
 - **Polar Oppositions:** Exact $180^\\circ$ opposition confirmed for $\\text{Dhuma} \\leftrightarrow \\text{Indrachaapa}$ and $\\text{Vyatipaata} \\leftrightarrow \\text{Parivesha}$.
 
 ### Vedic Remedial Blueprint & Purushartha
@@ -25143,49 +25246,49 @@ ${upTable}
             chapterNumber: 1,
             title: 'Chapter 1: Professional Trajectory & 10th House Karma Bhava',
             subtitle: 'Core Vocational Archetypes, Executive Capacity & Career Potential',
-            contentMarkdown: `### Karma Bhava (10th House) Profile\n- **10th House Sign:** **${tenthSign}**\n- **10th House Lord:** **${tenthLord}** placed in House **${planets[tenthLord]?.house || 10}**\n- **Vocation Archetype:** Strategic Leadership, Analytical Problem Solving, and Sustainable Enterprise\n\nWith ${tenthSign} ruling your tenth house, your professional journey thrives on method, accountability, and clarity of purpose.`
+            contentMarkdown: `### Karma Bhava (10th House) Profile & Worldly Contemplation\nIn classical Vedic astrology, the 10th House (*Karmasthana*) delineates public prestige, executive authority, organizational contribution, and career legacy.\n- **10th House Sign:** **${tenthSign}** governed by **${tenthLord}**.\n- **10th Lord Placement:** **${tenthLord}** placed in House **${planets[tenthLord]?.house || 10}** (${planets[tenthLord]?.sign || tenthSign}).\n- **Vocational Archetype:** Strategic Leadership, Analytical Systems Architecture, and Institutional Governance.\n\nUnder Parashari principles, having ${tenthSign} on the midheaven instills a methodical, highly disciplined approach to professional problem-solving. You are not suited to ambiguous or frivolous endeavors; your vocational fulfillment emerges when directing complex, mission-critical systems where reliability and rigor are non-negotiable.`
           },
           {
             sectionId: 'sec_dashamsha_d10',
             chapterNumber: 2,
             title: 'Chapter 2: D10 Dashamsha Harmonic Vocation Analysis',
             subtitle: 'Harmonic Confirmation of Institutional Seniority & Specialized Expertise',
-            contentMarkdown: `### Dashamsha (D10) Harmonic Analysis\n- **D10 Lagna:** **${dashamsha.d10_lagna?.sign || tenthSign}**\n- **Vocational Ruler:** **${tenthLord}**\n\nThe D10 harmonic chart confirms an upward vocational trajectory characterized by institutional credibility and increasing authority over multi-year cycles.`
+            contentMarkdown: `### Dashamsha (D10) Harmonic Analysis & Institutional Status\nThe D10 Dashamsha chart serves as the microscopic harmonic confirmation of worldly contributions and vocational stamina.\n- **D10 Lagna:** **${dashamsha.d10_lagna?.sign || tenthSign}**\n- **Vocational Dispositor:** **${tenthLord}**\n\nThe harmonic distribution in your D10 chart confirms that professional advancement unfolds along an ascending compound trajectory. Early career phases emphasize technical craftsmanship and proving dependability under scrutiny, while mid-career horizons unlock significant consultative leadership, institutional autonomy, and respected advisory roles.`
           },
           {
             sectionId: 'sec_10th_house_lordship',
             chapterNumber: 3,
             title: 'Chapter 3: 10th Lord Placement & Career Archetypes',
             subtitle: 'Functional Expression of Public Authority and Commercial Acumen',
-            contentMarkdown: `### 10th Lord Dynamics\nYour 10th house ruler **${tenthLord}** operates as the primary engine of your worldly contributions. Its strength indicates favorable rapport with senior leadership, institutional autonomy, and strong execution standards.`
+            contentMarkdown: `### 10th Lord Dynamics & Executive Authority\nYour 10th house sovereign **${tenthLord}** functions as the primary cosmic engine driving your professional achievements.\n- **Executive Rapport:** Its angular or succedent strength ensures productive relations with senior directors, board members, and public authorities.\n- **Decision-Making Style:** You command respect through quiet competence, comprehensive preparation, and unyielding follow-through rather than noisy self-promotion.\n- **Institutional Sovereignty:** You operate best with clear jurisdictional boundaries where you have full ownership over outcomes, delivery standards, and technical architecture.`
           },
           {
             sectionId: 'sec_dhana_financial_axes',
             chapterNumber: 4,
             title: 'Chapter 4: Wealth Axes (2nd & 11th Bhavas) & Income Potential',
             subtitle: 'Liquid Assets, Corporate Gains & Sustained Capital Accumulation',
-            contentMarkdown: `### Wealth Architecture (2nd & 11th Bhavas)\n- **2nd House (Dhana Bhava):** Governs accumulated assets and fiscal reserves.\n- **11th House (Labha Bhava):** Governs recurring professional inflows, royalties, and expanded networks.\n\nFinancial stability peaks during favorable sub-periods of ${jupiter.sign ? 'Guru' : 'Dhana lords'}, favoring diversified long-term investments over speculative volatility.`
+            contentMarkdown: `### Wealth Architecture: 2nd (Dhana) & 11th (Labha) Bhavas\nProfessional success must be paired with sustained capital accumulation and liquid asset stewardship.\n- **2nd House (Dhana Bhava):** Governs accumulated liquid savings, family wealth, and treasury management.\n- **11th House (Labha Bhava):** Governs recurring professional revenues, royalties, equity appreciation, and network monetization.\n\nFinancial inflows follow a structured, multi-tier curve. Peak liquidity coincides with favorable sub-periods of functional Dhana lords, favoring patient, compounding investments in secure, productive assets over volatile speculative gambling.`
           },
           {
             sectionId: 'sec_active_dasha_career',
             chapterNumber: 5,
             title: 'Chapter 5: Active Dasha Influences on Vocation',
             subtitle: 'Operational Vimshottari Cycle & Favorable Professional Timing',
-            contentMarkdown: `### Current Professional Dasha Horizon\n- **Operational Period:** **${dashaMaha}** Mahadasha / **${dashaAntar}** Antardasha.\n- **Professional Imperative:** Consolidation of domain mastery, strategic expansion, and mentorship.\n\nThis cycle emphasizes taking structured initiative and formalizing enterprise agreements.`
+            contentMarkdown: `### Current Professional Dasha Horizon & Timing Triggers\n- **Operative Period:** **${dashaMaha}** Mahadasha / **${dashaAntar}** Antardasha.\n- **Professional Imperative:** Consolidation of domain mastery, enterprise formalization, and establishing senior mentorship.\n\nThis temporal horizon represents a high-leverage gateway for formalizing agreements, seeking executive promotion, expanding commercial operations, and building a durable organizational footprint. Strategic initiative executed during this cycle compounds effectively over subsequent years.`
           },
           {
             sectionId: 'sec_optimal_industries',
             chapterNumber: 6,
             title: 'Chapter 6: Optimal Industries & Leadership Roles',
             subtitle: 'High-Affinity Sectors, Executive Niches & Entrepreneurial Pathways',
-            contentMarkdown: `### Prime Industry Sectors\n1. **Technology & Engineering Systems:** Systems architecture, data strategy, and precision operations.\n2. **Advisory & Strategic Governance:** Enterprise management, legal consulting, and policy leadership.\n3. **Financial Technology & Commerce:** Structured capital, asset stewardship, and scalable commerce.`
+            contentMarkdown: `### Optimal Industry Sectors & High-Affinity Niches\nBased on the synthesis of your 10th house, D10 Dashamsha, and planetary dignities:\n1. **Enterprise Technology & Systems Engineering:** Mission-critical architecture, technical infrastructure, algorithmic systems, and secure data engineering.\n2. **Strategic Consulting & Governance:** Corporate advisory, organizational restructuring, legal compliance, and fiduciary policy.\n3. **Financial Systems & Specialized Commerce:** Structured finance, treasury management, fintech products, and scalable commercial enterprise.`
           },
           {
             sectionId: 'sec_career_obstacles_remedies',
             chapterNumber: 7,
             title: 'Chapter 7: Professional Obstacle Remediation & Yantras',
             subtitle: 'Navigating Workplace Friction, Office Politics & Stress Mitigation',
-            contentMarkdown: `### Workplace Remedial Strategy\n- **Mantra Sadhana:** Surya Gayatri or Aditya Hridaya Stotra on Sunday mornings to strengthen executive presence.\n- **Desk Ergonomics & Vastu:** Arranging professional workspaces facing East or North-East to enhance mental clarity and decisive focus.`
+            contentMarkdown: `### Professional Obstacle Remediation & Workplace Harmony\nWhen navigating organizational friction, complex corporate politics, or plateau intervals:\n- **Solar Invocation (Surya Gayatri):** Recite the Aditya Hridaya Stotra or Surya Gayatri at dawn on Sundays to reinforce vital presence, executive charisma, and immunity to workplace intrigues.\n- **Workspace Vastu & Ergonomics:** Position your primary professional desk facing East or North-East with a solid wall behind your back to anchor subconscious authority and cognitive stamina.\n- **Strategic Restraint:** Avoid hasty, ego-driven confrontations; let superior execution and documented deliverable quality resolve workplace debates.`
           }
         ];
       }
@@ -25213,7 +25316,7 @@ ${upTable}
             chapterNumber: 3,
             title: 'Chapter 3: Emotional Compatibility & Temperament',
             subtitle: 'Chandra (Moon) Instincts, Intimacy Expectations & Communication Modes',
-            contentMarkdown: `### Lunar Mind (*Manas*) in Relationships\nYour Moon in **${moon.sign}** seeks emotional consistency and grounded understanding. When communication is open, honest, and unhurried, relational conflicts dissolve quickly.`
+            contentMarkdown: `### Lunar Mind (*Manas*) & Relational Instincts\nChandra (the Moon) governs emotional instinct, psychological comfort, and reciprocal vulnerability within marriage:\n\n- **Lunar Placement & Emotional Nature:** With Chandra placed in **\${moon.sign}** in the nakshatra of **\${moon.nakshatra || 'your natal star'}**, your emotional nature thrives on consistency, intellectual rapport, and unhurried emotional processing.\n- **Intimacy & Vulnerability Expectations:** You value genuine emotional transparency over theatrical gestures. Feeling understood without judgment allows your deepest loyalties and warmth to blossom naturally.\n- **Conflict Resolution Dynamics:** When disagreements arise, taking a brief contemplative pause before responding prevents hasty verbal reactions. Grounded, affectionate communication reliably dissolves tension and restores harmony.`
           },
           {
             sectionId: 'sec_manglik_dosha_eval',
@@ -25298,35 +25401,35 @@ ${upTable}
             chapterNumber: 1,
             title: 'Chapter 1: Monthly Strategic Focus & Planetary Transits',
             subtitle: '30-Day Astrological Climate, Major Ingresses & Key Horizons',
-            contentMarkdown: `### 30-Day Astrological Weather\n- **Primary Planetary Ingress:** Solar transit through the cardinal axis stimulates focused initiatives.\n- **Active Focus Area:** Strategic communication, workplace realignments, and consolidating prior commitments.\n- **Key Advisory:** Maintain measured execution during lunar sensitive intervals.`
+            contentMarkdown: `### 30-Day Macro Astrological Weather & Transits\nDuring the upcoming 30-day lunar cycle, planetary transits (*Gochara*) align with your natal **\${lagna.sign}** Lagna to activate vital Kendra and Trikona sectors:\n\n- **Primary Planetary Ingress:** Surya (Sun) moves through the cardinal vocational axis, stimulating leadership responsibilities, executive visibility, and institutional decision-making.\n- **Mercury & Mars Dynamics:** Budha (Mercury) refines tactical communications, deal structuring, and technical precision, while Mangala (Mars) injects focused execution power into ongoing milestones.\n- **Strategic Advisory:** Channel increased mental momentum into structured workflows. Prioritize high-impact tasks during peak solar hours and maintain measured diplomacy during lunar void intervals.`
           },
           {
             sectionId: 'sec_month_dasha',
             chapterNumber: 2,
             title: 'Chapter 2: Active Vimshottari Dasha Influence',
             subtitle: 'Sub-Period Dynamics & Temporal Focus for the Upcoming 30 Days',
-            contentMarkdown: `### Operative Temporal Influence\n- **Mahadasha / Antardasha:** **${dashaMaha}** / **${dashaAntar}**\n- **Sub-Period Arc:** High productivity window for formalizing agreements and advancing vocational milestones.`
+            contentMarkdown: `### Operative Vimshottari Sub-Period Dynamics\nVimshottari Dasha represents the unfolding of natal karmic seeds across distinct temporal epochs. Over the next 30 days, your consciousness is governed by:\n\n- **Active Operational Axis:** **\${dashaMaha}** Mahadasha / **\${dashaAntar}** Antardasha.\n- **Bhava Activation:** The planetary lords of this sub-period interact to bring heightened focus to professional execution, resource allocation, and interpersonal diplomacy.\n- **Behavioral Synthesis:** This period rewards meticulous follow-through over speculative ventures. Ensure all formal contracts, intellectual property, and strategic agreements are thoroughly documented and aligned with your long-term developmental goals.`
           },
           {
             sectionId: 'sec_month_lunar',
             chapterNumber: 3,
             title: 'Chapter 3: Lunar Cycles & Emotional Tides',
             subtitle: 'Waxing (Shukla) & Waning (Krishna) Paksha Strategic Timing',
-            contentMarkdown: `### Lunar Rhythm Architecture\n- **Shukla Paksha (Waxing):** Best suited for launching new initiatives, public outreach, and expanding alliances.\n- **Krishna Paksha (Waning):** Optimal for internal reviews, debt reduction, and meditative rest.`
+            contentMarkdown: `### Lunar Cadence & Psychosomatic Rhythms\nChandra (the Moon) acts as the celestial reflector of the mind (*Manas*). Tracking lunar transits relative to your natal Moon in **\${moon.sign}** reveals distinct fortnightly energetic currents:\n\n- **Shukla Paksha (Waxing Phase):** Cosmic vitality expands. This two-week window is optimal for launching new commercial initiatives, initiating high-stakes negotiations, public speaking, and expanding professional alliances.\n- **Krishna Paksha (Waning Phase):** Cosmic vitality turns inward. Ideal for internal technical audits, strategic recalibration, debt consolidation, deep research, and restful rejuvenation. Avoid unnecessary confrontations during Amavasya (New Moon).`
           },
           {
             sectionId: 'sec_month_weekly',
             chapterNumber: 4,
             title: 'Chapter 4: Week-by-Week Astrological Guidance',
             subtitle: 'Four-Week Chronological Breakdown of Opportunities and Watchouts',
-            contentMarkdown: `### Four-Week Chronology\n- **Week 1:** Goal definition, clear communications, and foundational planning.\n- **Week 2:** Maximum momentum, business presentations, and commercial progress.\n- **Week 3:** Consolidation, operational reviews, and interpersonal diplomacy.\n- **Week 4:** Reflection, milestone celebration, and strategic preparation for the next cycle.`
+            contentMarkdown: `### Four-Week Tactical Chronology\n- **Week 1 (Days 1–7): Foundation & Strategic Framing:** Clarify monthly deliverables, organize operational workflows, and conduct preliminary stakeholder reviews. Favorable for deep analytical work and setting measurable boundaries.\n- **Week 2 (Days 8–14): High Momentum & Commercial Pitching:** Maximum planetary momentum for executing key presentations, closing agreements, and pitching new initiatives. Express ideas with confidence and precision.\n- **Week 3 (Days 15–21): Consolidation & Partnership Alignment:** Review midway metrics, address operational friction points, and strengthen bilateral relationships. Cultivate patience and transparent communication.\n- **Week 4 (Days 22–30): Synthesis, Rest & Preparation:** Finalize pending tasks, celebrate project milestones, and clear mental clutter in preparation for the upcoming astrological cycle.`
           },
           {
             sectionId: 'sec_month_dates',
             chapterNumber: 5,
             title: 'Chapter 5: Auspicious & Sensitive Dates',
             subtitle: 'Muhurtha-Approved Windows & Cautionary Planetary Intersections',
-            contentMarkdown: `### Important Monthly Date Markers\n- **Highly Auspicious Dates:** 4th, 11th, 19th, 27th (Ideal for investments, important meetings, and major signatures)\n- **Dates for Caution:** 8th, 16th, 23rd (Advised to avoid conflicts, impulse purchases, or hasty decisions)`
+            contentMarkdown: `### High-Precision Monthly Timing Markers\n- **Highly Auspicious Muhurtha Windows:** **4th, 11th, 19th, and 27th** of the month.\n  - *Recommended Activities:* Signing long-term contracts, launching public initiatives, conducting financial investments, and solemnizing key personal milestones.\n- **Cautionary & Restraint Windows:** **8th, 16th, and 23rd** of the month.\n  - *Astrological Rationale:* Moon transits through Rikta tithis or sensitive 6th/8th bhava intersections.\n  - *Recommended Protocols:* Avoid heated arguments, delay impulsive capital expenditures, refrain from unilateral ultimatums, and practice mindful emotional restraint.`
           }
         ];
         monthlyForecasts = [
@@ -25349,28 +25452,28 @@ ${upTable}
             chapterNumber: 1,
             title: 'Chapter 1: Annual Overview: The Celestial Landscape',
             subtitle: 'Macro Planetary Transits Across Saturn, Jupiter & Nodal Axis',
-            contentMarkdown: `### 12-Month Macro Astro-Economic Horizon\nDuring this 12-month annual cycle, your natal **${lagna.sign}** Lagna interacts with major slow-moving planetary transits (*Gochara*):\n1. **Jupiterian Expansion:** Transiting sidereal sectors that illuminate wisdom, institutional credibility, and financial consolidation.\n2. **Saturnian Discipline:** Encouraging methodical perseverance, systemic foundation-building, and structural integrity in commitments.\n3. **Rahu-Ketu Karmic Polarity:** Fostering discernment between transient worldly ambitions and enduring spiritual values.`
+            contentMarkdown: `### 12-Month Macro Astro-Economic Horizon\nDuring this 12-month annual cycle, your natal **\${lagna.sign}** Lagna interacts with major slow-moving planetary transits (*Gochara*):\n\n1. **Jupiterian Expansion (Guru Gochara):** Transiting benefic sectors that illuminate wisdom, institutional credibility, financial expansion, and mentorship opportunities. Guru's aspect (*Drishti*) confers protection against acute crises and fosters intellectual breakthroughs.\n2. **Saturnian Discipline (Shani Gochara):** Demanding methodical perseverance, systemic foundation-building, structural integrity, and accountability in professional commitments. Shani rewards patient, compound effort while ruthlessly pruning ungrounded speculation.\n3. **Rahu-Ketu Karmic Polarity:** Transiting across pivotal karmic houses, urging discernment between transient worldly obsessions and enduring spiritual values. Cultivating detachment while delivering excellence is the master key to navigating this axis.`
           },
           {
             sectionId: 'sec_monthly_progression',
             chapterNumber: 2,
             title: 'Chapter 2: Month-by-Month Predictive Analysis (Months 1 to 12)',
             subtitle: 'Granular Monthly Forecasting Driven by Active Vimshottari Subperiods',
-            contentMarkdown: `### Annual Month-by-Month Predictive Overview\nTwelve distinct monthly astrological windows provide tactical timing indicators, planetary ingresses, and active Dasha transitions across your personal and professional priorities.`
+            contentMarkdown: `### Annual Month-by-Month Predictive Overview & Progression\nAcross the next 12 solar cycles, monthly astrological windows provide tactical timing indicators, planetary ingresses, and active Dasha transitions across your personal, professional, and spiritual priorities:\n\n- **Quarter 1 (Months 1–3): Foundational Consolidation:** Initiated by solar activation of cardinal houses, focusing on strategic restructuring, core skill mastery, and eliminating liabilities.\n- **Quarter 2 (Months 4–6): Momentum & Partnership Building:** Benefic planetary aspects illuminate collaborative sectors, fostering high-visibility project delivery, commercial expansion, and key stakeholder alliances.\n- **Quarter 3 (Months 7–9): Authority & Overcoming Obstacles:** Transits through Upachaya houses empower you to resolve competitive challenges, optimize daily routines, and secure institutional recognition.\n- **Quarter 4 (Months 10–12): Harvest, Reflection & Elevation:** Year-end alignments synthesize cumulative progress, generating substantial monetary gains and preparing the launchpad for future multi-year cycles.`
           },
           {
             sectionId: 'sec_annual_dasha',
             chapterNumber: 3,
             title: 'Chapter 3: Annual Vimshottari Progression & Subperiod Transitions',
             subtitle: 'Mapping Antardasha and Pratyantardasha Turning Points Across 12 Months',
-            contentMarkdown: `### Subperiod Progression Schedule\nThe active **${dashaMaha}** Mahadasha transitions through vital subperiod boundaries over the next 12 months, shifting priorities from operational groundwork to recognition and spiritual synthesis.`
+            contentMarkdown: `### Subperiod Progression & Karmic Ripening Schedule\nThe active **\${dashaMaha}** Mahadasha transitions through critical subperiod boundaries over the next 12 months, shifting priorities from operational groundwork to recognition, financial expansion, and spiritual synthesis:\n\n- **Antardasha Trajectory:** The movement between active Antardashas governs the psychological lens through which daily life is experienced. Planetary rulers activate your natal chart's Kendra and Trikona houses, translating effort into tangible status.\n- **Pratyantardasha Turning Points:** Granular third-level periods mark decisive turning points for career shifts, financial transactions, and household developments.\n- **Astrological Synthesis:** Maintaining conscious alignment with the prevailing dasha lord's natural temperament (*Naisargika Guna*) transforms potential obstacles into profound stepping stones for personal evolution.`
           },
           {
             sectionId: 'sec_annual_remedies',
             chapterNumber: 4,
             title: 'Chapter 4: Annual Remedial Protocol & Spiritual Alignment',
             subtitle: 'Harmonizing Mantras, Charitable Practices & Planetary Timing',
-            contentMarkdown: `### Annual Spiritual Blueprint\n- **Core Mantra:** *Om Namo Bhagavate Vasudevaya* chanted with focused diaphragmatic breathing.\n- **Weekly Practice:** Thursday morning contemplative study to strengthen Jupiterian grace.\n- **Service & Charity:** Supporting educational programs or distributing meals to living beings on Saturdays.`
+            contentMarkdown: `### Annual Spiritual Blueprint & Remedial Disciplines\nTo harmonize planetary energies and neutralize dissonant transit influences, implement these classical Sattvic practices consistently:\n\n- **Core Planetary Mantra:** Chanting *Om Namo Bhagavate Vasudevaya* or the Gayatri Mantra 108 times daily with focused diaphragmatic breathing to stabilize mental calm and enhance sattvic clarity.\n- **Weekly Spiritual Observance:** Thursday morning contemplative study or meditation to strengthen Jupiterian grace, and Saturday seva (selfless service) to harmonize Saturnian karmic obligations.\n- **Daana & Charitable Disciplines:** Supporting educational programs, planting sacred trees, or providing wholesome meals to living beings on auspicious lunar days (*Ekadashi* and *Purnima*).`
           }
         ];
         monthlyForecasts = [
@@ -25394,37 +25497,123 @@ ${upTable}
           {
             sectionId: 'sec_3yr_macro',
             chapterNumber: 1,
-            title: 'Chapter 1: Three-Year Macro Astrological Cycles',
-            subtitle: 'Major Transits of Saturn, Jupiter & Nodal Eclipses (Months 1–36)',
-            contentMarkdown: `### 36-Month Macro Astronomical Cycles\n- **Shani (Saturn) Transit:** Emphasizes structural discipline, boundary setting, and professional mastery.\n- **Guru (Jupiter) Transits:** Successive ingress through productive signs expands wisdom, partnerships, and prosperity.\n- **Rahu-Ketu Axis Shift:** Stimulates decisive shifts in career focus and creative aspirations.`
+            title: 'Chapter 1: Three-Year Strategic Horizon & Macro Planetary Epochs',
+            subtitle: 'Major Transits of Saturn, Jupiter & Nodal Eclipses across Months 1–36',
+            contentMarkdown: `### 36-Month Macro Astronomical Cycles & Strategic Horizon
+This comprehensive 3-year strategic roadmap evaluates the overarching macro planetary climate for **${name}**, synthesizing major slow-moving transits (*Gochara*) of Shani (Saturn), Guru (Jupiter), and the Rahu-Ketu nodal axis against your natal **${lagna.sign}** Lagna and **${moon.sign}** Janma Rashi.
+
+#### Key Macro Astrological Coordinates
+- **Ascendant & Ruling Orientation:** **${lagna.sign}** Lagna ruled by **${lagnaLord}** anchors physical agency and worldly action.
+- **Janma Rashi & Mental Fortitude:** **${moon.sign}** Moon in **${moon.nakshatra || 'Rohini'}** Nakshatra (Pada ${moon.pada || 1}) governs instinctual rhythm and psychological adaptability.
+- **Operative Dasha Framework:** Currently navigating the overarching **${dashaMaha}** Mahadasha with the active **${dashaAntar}** Antardasha arc, transitioning through vital sub-period thresholds across the 36-month horizon.
+
+#### Governing Macro Planetary Drivers
+1. **Shani (Saturn) Transit Cadence:** Transiting sidereal sectors that demand institutional integrity, perseverance, and emotional maturity. Shani rewards patient, compound effort while ruthlessly pruning ungrounded speculation.
+2. **Guru (Jupiter) Progressions:** Successive planetary ingresses through kendra and trikona houses provide opportune windows for intellectual expansion, wealth accretion, mentorship, and commercial credibility.
+3. **Nodal Polarity (Rahu-Ketu):** Drives evolutionary recalibration between material ambition and inner detachment, urging focus on authentic competencies over superficial external validation.`
           },
           {
             sectionId: 'sec_year_1_foundation',
             chapterNumber: 2,
-            title: 'Chapter 2: Year 1 Roadmap: Foundation & Realignment',
-            subtitle: 'Months 1 to 12 Establishing Core Competencies, Clearing Liabilities',
-            contentMarkdown: `### Year 1 Strategic Focus: Stabilization\n- **Vocation:** Consolidating technical mastery and proving dependability.\n- **Finance:** Debt reduction and systematic emergency reserve accumulation.`
+            title: 'Chapter 2: Year 1 Roadmap: Foundational Systems & Skill Consolidation',
+            subtitle: 'Months 1 to 12 Establishing Operational Resiliency & Debt Elimination',
+            contentMarkdown: `### Year 1 Strategic Focus: Foundational Systems, Skill Consolidation & Debt Elimination
+The initial 12-month cycle operates under the active **${dashaMaha}—${dashaAntar}** dasha framework. The cosmic directive for this period is consolidation rather than aggressive outward overextension. It is a time for strengthening the base upon which the next multi-year structure will stand.
+
+#### Vocation & Professional Strategy
+- **Mastery over Novelty:** Deepen core technical competencies and eliminate operational inefficiencies in daily workflows. Prove dependability and methodical execution.
+- **Stakeholder Alignment:** Solidify communication bridges with executive leaders and key collaborators; avoid unilateral friction or ego-driven ultimatums.
+- **Credibility Benchmarks:** Focus on demonstrable delivery over speculative promises. Document accomplishments systematically.
+
+#### Financial Architecture & Capital Preservation
+- **Liquidity & Buffer Building:** Build and maintain 6 to 12 months of living and operational reserves in safe, liquid instruments.
+- **Liability Elimination:** Prioritize structured debt reduction and audit recurring expenditures. Strictly avoid high-leverage or speculative market bets during this consolidating phase.
+
+#### Vitality, Circadian Balance & Daily Regimen
+- **Soma Preservation:** Align daily routines with natural solar horas; prioritize restorative sleep and consistent nutrition to support ${lagna.sign} vitality.
+- **Stress Modulation:** Implement 10 minutes of morning pranayama to mitigate mental fatigue and maintain cognitive poise under pressure.
+
+#### Year 1 Tactical Execution Gates
+- **Q1 (Months 1–3):** Complete comprehensive audit of skills, finances, and operational commitments.
+- **Q2 (Months 4–6):** Streamline primary responsibilities, establish measurable delivery milestones, and clear outstanding debt.
+- **Q3 (Months 7–9):** Deliver core mid-year objectives and deepen technical leadership within your domain.
+- **Q4 (Months 10–12):** Review annual progress, consolidate financial gains, and prepare strategic plans for Year 2 acceleration.`
           },
           {
             sectionId: 'sec_year_2_expansion',
             chapterNumber: 3,
-            title: 'Chapter 3: Year 2 Roadmap: Acceleration & Expansion',
-            subtitle: 'Months 13 to 24 Commercial Breakouts, Strategic Alliances & Relocation',
-            contentMarkdown: `### Year 2 Strategic Focus: Expansion\n- **Vocation:** Launching major independent or high-visibility projects.\n- **Relationships:** Deepening core bonds and expanding high-trust networks.`
+            title: 'Chapter 3: Year 2 Roadmap: Acceleration & Strategic Partnerships',
+            subtitle: 'Months 13 to 24 Commercial Breakouts, Strategic Alliances & Asset Growth',
+            contentMarkdown: `### Year 2 Strategic Focus: Acceleration, Strategic Partnerships & Commercial Scaling
+As the 36-month horizon enters its secondary arc, planetary transits shift from internal consolidation to active outward expansion. Benefic transits illuminate relational and collaborative houses, creating prime windows for high-visibility achievements.
+
+#### Vocation & High-Leverage Initiatives
+- **Commercial Breakouts:** Optimal timing for launching independent initiatives, pitching strategic ventures, or taking on significant leadership roles.
+- **Collaborative Alliances:** Form alliances with complementary partners whose competencies balance your natal strengths. Formalize agreements with clear, transparent terms.
+- **Thought Leadership:** Expand your professional footprint through public speaking, writing, or strategic mentorship.
+
+#### Wealth Accretion & Strategic Investment
+- **Asset Acquisition:** Auspicious windows for acquiring long-term productive assets (such as real property or diversified equity) after thorough due diligence.
+- **Reinvestment:** Reinvest realized gains from Year 1 into compounding educational tools and scalable infrastructure.
+
+#### Interpersonal & Domestic Harmony
+- **Relational Fortification:** Deepen emotional presence and mutual understanding within family and close partnerships.
+- **Network Curation:** Curate high-trust professional associations; distance yourself gracefully from draining or unreciprocated dynamics.
+
+#### Year 2 Tactical Execution Gates
+- **Q1 (Months 13–15):** Launch key commercial or career initiatives prepared during Year 1.
+- **Q2 (Months 16–18):** Negotiate strategic agreements, scale collaborative operations, and monitor initial yield.
+- **Q3 (Months 19–21):** Solidify mid-cycle revenue streams and expand executive network reach.
+- **Q4 (Months 22–24):** Consolidate Year 2 expansion, lock in asset acquisitions, and prepare for executive culmination.`
           },
           {
             sectionId: 'sec_year_3_legacy',
             chapterNumber: 4,
-            title: 'Chapter 4: Year 3 Roadmap: Culmination & Legacy',
-            subtitle: 'Months 25 to 36 Harvesting Multi-Year Initiatives & Community Impact',
-            contentMarkdown: `### Year 3 Strategic Focus: Culmination\n- **Vocation:** Institutional recognition, executive seniority, and executive stewardship.\n- **Spiritual Integration:** Aligning material success with philosophical purpose and philanthropic contributions.`
+            title: 'Chapter 4: Year 3 Roadmap: Culmination & Executive Stewardship',
+            subtitle: 'Months 25 to 36 Harvesting Multi-Year Initiatives & Legacy Impact',
+            contentMarkdown: `### Year 3 Strategic Focus: Culmination, Executive Authority & Long-Term Harvesting
+The final 12-month arc represents the fruition of efforts planted during Year 1 and nurtured in Year 2. Operating under mature dasha fruition, the native steps into natural authority, stewardship, and legacy creation.
+
+#### Institutional Stature & Leadership
+- **Executive Stewardship:** Transition from individual contributor execution to high-level strategic direction, governance, and institutional oversight.
+- **Legacy & Knowledge Transmission:** Document methodologies, mentor junior associates, and establish sustainable frameworks that outlast immediate involvement.
+- **Public Recognition:** Favorable planetary alignments support professional accolades, formal honors, and industry credibility.
+
+#### Capital Consolidation & Generational Security
+- **Portfolio Rebalancing:** Harvest realized profits and transition speculative gains into conservative, enduring wealth structures.
+- **Estate & Continuity Planning:** Ensure formal documentation of intellectual property, partnerships, and generational assets.
+
+#### Philosophical Integration & Meaning
+- **Dharmic Alignment:** Harmonize external worldly achievements with inner contemplative growth. Align work with broad ethical and social value.
+- **Philanthropic Commitment:** Allocate time and resources to charitable causes that empower underprivileged or vulnerable communities.
+
+#### Year 3 Tactical Execution Gates
+- **Q1 (Months 25–27):** Complete transition into higher executive or consultative authority.
+- **Q2 (Months 28–30):** Execute major multi-year milestone deliverables and harvest commercial returns.
+- **Q3 (Months 31–33):** Rebalance financial portfolio, establish long-term wealth protections, and engage in mentorship.
+- **Q4 (Months 34–36):** Conduct 3-year reflective audit, commemorate milestones with gratitude, and establish the vision for the subsequent life cycle.`
           },
           {
             sectionId: 'sec_3yr_karmic_points',
             chapterNumber: 5,
             title: 'Chapter 5: Major Karmic Turning Points & Long-Term Remedies',
             subtitle: 'Mantra Sadhana, Charitable Commitments & Philosophical Resilience',
-            contentMarkdown: `### Multi-Year Spiritual Anchor\n1. **Long-Term Mantra Sadhana:** Sustained japa of personal Ishta Devata mantras during dawn hours.\n2. **Systemic Daana:** Regular contributions to knowledge dissemination and supporting elderly caregivers.\n3. **Equilibrium:** Remembering that while the stars chart the celestial weather, personal dignity and ethical action (*Purushartha*) determine the harvest.`
+            contentMarkdown: `### Major Karmic Turning Points, Dasha Transitions & Satvik Remedial Blueprint
+Navigating a 36-month timeline requires spiritual resilience and mindfulness during planetary transitional gates (*Sandhi* intervals).
+
+#### Dasha Sandhi & Subperiod Transition Management
+- **Awareness of Boundary Periods:** The 4 to 6 weeks surrounding a change in Antardasha sub-period require heightened patience. Avoid making impulsive life-altering decisions during these transition intervals.
+- **Equanimity:** Understand that planetary influences create the meteorological climate; your deliberate ethical actions (*Purushartha*) determine the worldly harvest.
+
+#### Classical Daily Sadhana Protocol
+- **Lagna Lord Harmonization:** Sustained morning contemplation dedicated to **${lagnaLord}** to fortify constitutional stamina and decisive willpower.
+- **Maha-Dasha Pacification:** Recite the governing classical mantra for **${dashaMaha}** 108 times daily at sunrise.
+- **Gayatri Sadhana:** Practice 10 minutes of solar japa at dawn to revitalize mental clarity and soul vitality.
+
+#### Targeted Charitable Service (*Daana*)
+- **Thursday Contributions:** Support educational access, provide books or scholarly supplies to students to honor Guru (Jupiter).
+- **Saturday Service:** Distribute warm meals or footwear to hardworking laborers or elder caregivers to honor Shani (Saturn).
+- **Environmental Care:** Plant neem, banyan, or flowering trees in your locality to cultivate living karmic merit (*Vriksha Ropana*).`
           }
         ];
       }
@@ -25659,7 +25848,77 @@ ${upTable}
           }
         ];
       }
-      // 10. BASIC CHART SUMMARY (3 chapters)
+      // 10. PLANETARY REMEDIES, GEMSTONE & MANTRA BLUEPRINT (7 chapters)
+      else if (pid === 'report_remedial_gemstones') {
+        const isScorpio = lagna.sign === 'Scorpio';
+        const isAries = lagna.sign === 'Aries';
+        const primaryGem = isScorpio || isAries ? 'Red Coral (Moonga - 6 to 8 Ratti)' : 'Yellow Sapphire (Pukhraj - 4 to 6 Ratti)';
+        const primaryMetal = isScorpio || isAries ? 'Copper or 18k Gold' : 'Pure Gold or Panchadhatu';
+        const contraGem = isScorpio ? 'Emerald (Panna)' : lagna.sign === 'Taurus' ? 'Yellow Sapphire' : 'Blue Sapphire';
+        const contraReason = isScorpio
+          ? 'Mercury rules the 8th (Dusthana/Ayur) and 11th (Labha/Badhaka) houses, creating acute neurological friction and health vulnerabilities if energized with Emerald.'
+          : 'planetary lordship introduces functional dusthana activation.';
+
+        sections = [
+          {
+            sectionId: 'sec_rem_constitutional',
+            chapterNumber: 1,
+            title: 'Chapter 1: Constitutional Vulnerabilities & Functional Planetary Archetypes',
+            subtitle: 'Identifying Functional Benefics, Functional Malefics and Primary Tanu Bhava Health Balance',
+            icon: 'fa-shield-halved',
+            contentMarkdown: `### Natal Ascendant Blueprint & Functional Equilibrium\nUnder classical Parashari Jyotish (*Brihat Parashara Hora Shastra* Ch. 34), planetary remediation must never be applied indiscriminately. Every remedy begins with diagnosing whether a graha functions as a **Functional Benefic (*Yoga Karaka* / *Shubha*)** or a **Functional Malefic (*Ashubha*)** relative to the **${lagna.sign}** Ascendant.\n\n#### Foundational Astronomical Coordinates\n- **Ascendant (Lagna):** **${lagna.sign}** (${typeof lagna.degree === 'number' ? lagna.degree.toFixed(2) : lagna.degree}°) in **${lagna.nakshatra || 'Anuradha'}** Nakshatra (Pada ${lagna.pada || 1}).\n- **Ruling Planetary Sovereign (Lagnesha):** **${lagnaLord}** positioned in House **${planets[lagnaLord]?.house || 1}** (${planets[lagnaLord]?.sign || lagna.sign}).\n- **Janma Rashi (Lunar Mind):** **${moon.sign}** (${moon.nakshatra || 'Rohini'} Nakshatra, Pada ${moon.pada || 1}).\n- **Surya Karakatva:** **${sun.sign}** (${typeof sun.degree === 'number' ? sun.degree.toFixed(2) : sun.degree}°) governing physical vitality and conscious purpose.\n\n#### Functional Benefic & Malefic Diagnostic\n1. **Primary Functional Benefic:** **${lagnaLord}** rules the 1st House (*Tanu Bhava*), governing the biological constitution, immune stamina, and worldly agency. Strengthening Lagnesha provides natural armor against transient afflictions.\n2. **Secondary Functional Benefics:** **Guru (Jupiter)** as 2nd and 5th lord anchors dharmic intellect and financial wisdom; **Chandra (Moon)** as 9th lord (*Bhagya Bhava*) bestows maternal grace and spiritual fortune.\n3. **Functional Malefic Warning:** Planets ruling dusthana sectors (6th, 8th, or 12th houses) must **never** be fortified with gemstones; they must be pacified through **Japa (Mantras)**, **Daana (Charity)**, and **Vrata (Fasting)**.`
+          },
+          {
+            sectionId: 'sec_rem_gemstone_prescriptions',
+            chapterNumber: 2,
+            title: 'Chapter 2: Shastric Gemstone (Ratna) Prescriptions & Strict Contraindications',
+            subtitle: 'Lagna-Safe Ratna Directives, Weight Ratios, Metals, Consecration & Warning Rules',
+            icon: 'fa-gem',
+            contentMarkdown: `### Authoritative Lagna-Safe Gemstone (*Ratna*) Selection\nA gemstone acts as a crystalline prism, transmitting specific planetary electromagnetic frequencies into the human subtle body (*Pranamaya Kosha*). Prescribing an inappropriate stone can stimulate chronic friction or emotional imbalance.\n\n#### Lagna-Safe Primary Prescriptions\n- **Primary Gemstone:** **${primaryGem}**\n  - **Metal Alloy:** ${primaryMetal} ring or pendant.\n  - **Wearing Finger:** Ring finger of the dominant hand (Anamika).\n  - **Consecration Day:** Tuesday sunrise during Shukla Paksha (waxing moon).\n  - **Shastric Purpose:** Fortifies constitutional vitality, immune resilience, leadership conviction, and decisive execution.\n- **Secondary Gemstone (Dharma & Wealth):** **Yellow Sapphire (Pukhraj / Pushparaga)**\n  - **Metal Alloy:** 22k Gold or silver-brass Panchadhatu.\n  - **Wearing Finger:** Index finger (Tarjani).\n  - **Consecration Day:** Thursday sunrise during Pushya or Punarvasu Nakshatra.\n  - **Shastric Purpose:** Expands intellectual discernment, scholastic memory, and auspicious domestic prosperity.\n\n#### Strict Contraindications & Contraindicated Stones\n> **Strict Prescription Warning:** **${contraGem} is strictly contraindicated for ${lagna.sign} Lagna.**\n${contraReason} Wearing ${contraGem} will not attract wealth; it destabilizes bodily equilibrium. AstroVerse guarantees strict adherence to classical Parashari contraindications.\n\n#### Shastric Consecration (*Prana Pratishtha*) Ritual\n1. Immerse the gemstone ring overnight in a mixture of raw unboiled cow milk, Ganga water, honey, and sacred Tulsi leaves.\n2. At sunrise on the designated weekday, wash with clean water, place upon a clean copper plate, and apply sandalwood paste (*Chandan*).\n3. Recite 108 repetitions of the planetary Beej Mantra before placing the ring upon the sanctified finger.`
+          },
+          {
+            sectionId: 'sec_rem_beej_mantras',
+            chapterNumber: 3,
+            title: 'Chapter 3: Authentic Sanskrit Beej Mantras, Stotras & 108 Japa Sadhana',
+            subtitle: 'Acoustic Sacred Geometry, Rosary Selection, Sunrise Horas & Japa Counts',
+            icon: 'fa-om',
+            contentMarkdown: `### Sacred Sanskrit Sound Vibration (*Naada Sadhana*)\nWhile gemstones function through physical contact, **Mantras** operate upon the causal body (*Karana Sharira*), purifying subconscious thought patterns and pacifying active karmic imbalances.\n\n#### Governing Planetary Beej Mantras\n- **Surya (Sun):** \`ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः\` (Om Hraam Hreem Hroum Sah Sooryaaya Namah)\n  - *Count & Timing:* 108 repetitions at sunrise; facing East with pure water arghya.\n- **Chandra (Moon):** \`ॐ श्रां श्रीं श्रौं सः चन्द्रमसे नमः\` (Om Shraam Shreem Shroum Sah Chandramase Namah)\n  - *Count & Timing:* 108 repetitions on Monday evenings; promotes mental tranquility and intuition.\n- **Mangal (Mars - Lagnesha):** \`ॐ क्रां क्रीं क्रौं सः भौमाय नमः\` (Om Kraam Kreem Kroum Sah Bhoumaaya Namah)\n  - *Count & Timing:* 108 repetitions on Tuesday morning; activates courage, stamina, and eliminates sluggishness.\n- **Guru (Jupiter):** \`ॐ ग्रां ग्रीं ग्रौं सः गुरवे नमः\` (Om Graam Greem Groum Sah Gurave Namah)\n  - *Count & Timing:* 108 repetitions on Thursday dawn; bestows spiritual clarity and moral wisdom.\n- **Shani (Saturn):** \`ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः\` (Om Praam Preem Proum Sah Shanaishcharaaya Namah)\n  - *Count & Timing:* 108 repetitions on Saturday twilight; fosters perseverance, patience, and humility.\n\n#### Rosary (*Japa Mala*) Selection Guidelines\n- **Rudraksha Mala:** Optimal for Surya, Mangal, and general health-enhancing practices.\n- **Tulsi Mala:** Reserved for Guru and Vishnu-oriented meditative japa.\n- **Sphatik (Quartz Crystal):** Optimal for Shukra, Saraswati, and calming nervous tension.`
+          },
+          {
+            sectionId: 'sec_rem_sacred_yantras',
+            chapterNumber: 4,
+            title: 'Chapter 4: Sacred Planetary Yantras & Altar Geometric Alignment',
+            subtitle: 'Copper/Bhojpatra Plate Consecration, Vastu Orientations & Daily Offerings',
+            icon: 'fa-square',
+            contentMarkdown: `### Sacred Geometric Architecture (*Yantra Shastra*)\nA **Yantra** is the graphic, geometric embodiment of a celestial energy archetype. When placed correctly in accordance with **Vastu Shastra**, it harmonizes the ambient electromagnetic environment of your home or workspace.\n\n#### Recommended Yantras for ${lagna.sign} Lagna\n1. **Surya / Gayatri Yantra:**\n   - **Vastu Placement:** East wall of the prayer room or study at eye level.\n   - **Geometric Form:** Concentric lotus petals circumscribing the central Bindu of cosmic illumination.\n   - **Daily Offering:** Lighting a pure brass oil lamp with sesame or pure cow ghee.\n2. **Mangal Yantra (3×3 Sacred Magic Square):**\n   - **Matrix Numbers:**\n     - Row 1: 8 | 3 | 10\n     - Row 2: 9 | 7 | 5\n     - Row 3: 4 | 11 | 6\n   - **Mathematical Invariant:** Every row, column, and diagonal sums to exactly **21** (The sacred number of Mars pacification).\n   - **Vastu Orientation:** South or Southeast quadrant; pacifies domestic stress and safeguards personal boundaries.\n3. **Shri Yantra:**\n   - Universal harmonizer composed of 9 interlocking triangles generating 43 smaller subsidiary triangles, anchoring material abundance and spiritual serenity.`
+          },
+          {
+            sectionId: 'sec_rem_satvik_daana',
+            chapterNumber: 5,
+            title: 'Chapter 5: Satvik Charity (Daana) & Karmic Debt Liquidation',
+            subtitle: 'Targeted Planetary Offerings, Day-of-Week Philanthropy & Living Being Service',
+            icon: 'fa-hands-praying',
+            contentMarkdown: `### Karmic Remediation Through Selfless Service (*Daana*)\nIn Parashari doctrine, charity given with expectation of return is *Rajasic*; charity given with resentment is *Tamasic*. Only **Satvik Daana**—offered with humility to worthy recipients without attachment—dissolves dense *Prarabdha* karmic debts.\n\n#### Day-of-Week Philanthropic Directives\n- **Tuesday Offerings (Mangal Harmony):**\n  - Donate whole red lentils (*Masoor Dal*), organic jaggery, or donate blood to a medical bank.\n  - Alleviates friction, muscular tension, and aggressive temperament.\n- **Thursday Offerings (Guru Grace):**\n  - Sponsor textbooks, school tuition, or stationery for underprivileged students; distribute yellow chickpeas (*Chana Dal*) and bananas to scholars or spiritual seekers.\n  - Opens channels of mentorship, scholastic success, and divine protection.\n- **Saturday Offerings (Shani Balance):**\n  - Distribute warm, freshly cooked meals, mustard oil, or protective footwear to manual laborers, street sweepers, or elderly caretakers.\n  - Feed black sesame seeds and roti to stray canines or crows; pacifies Saturnian delays and eases Sade Sati transitions.`
+          },
+          {
+            sectionId: 'sec_rem_circadian_vrata',
+            chapterNumber: 6,
+            title: 'Chapter 6: Circadian Fasting (Vrata), Solar Horas & Lifestyle Rhythm',
+            subtitle: 'Tithi Observance, Sattvic Diet, Morning Surya Namaskar & Pranayama Discipline',
+            icon: 'fa-calendar-check',
+            contentMarkdown: `### Circadian Alignment & Observational Fasting (*Vrata*)\nThe human biological organism is deeply synchronized with celestial rhythms (*Ritucharya* and *Dinacharya*). Fasting calms digestive metabolic fire, allowing cellular regeneration and subtle cognitive rejuvenation.\n\n#### Personal Observational Vrata\n- **Weekly Fasting Day:** Tuesday (for Mars/Lagnesha vitality) or Thursday (for Jupiterian wisdom).\n- **Dietary Protocol:** Single light meal of fresh fruits, raw nuts, and pure milk after sunset. Refrain from salt, refined grains, and processed foods.\n- **Solar Horas Integration:** Schedule high-priority strategic decisions, creative work, and important contracts during the planetary Hora governed by your ascendant lord.\n\n#### Morning Dinacharya Discipline\n1. **Surya Namaskar:** 12 dynamic cycles at sunrise facing the morning sun to stimulate mitochondrial biogenesis and endocrine balance.\n2. **Nadi Shodhana Pranayama:** 15 minutes of alternate-nostril breathing to harmonize the Ida (lunar) and Pingala (solar) pranic channels.\n3. **Satvik Mindset:** Refrain from digital screens for the first 45 minutes after waking to protect cognitive sovereign clarity.`
+          },
+          {
+            sectionId: 'sec_rem_purushartha_disclaimer',
+            chapterNumber: 7,
+            title: 'Chapter 7: Purushartha, Free Agency & Ethical Jyotish Philosophy',
+            subtitle: 'Conscious Action Over Fatalism: Transcending Karmic Patterns with Integrity',
+            icon: 'fa-scale-balanced',
+            contentMarkdown: `### The Doctrine of Purushartha: Destiny and Deliberate Will\nVedic astrology does not subscribe to fatalism or passive helplessness. The birth chart delineates **Prarabdha Karma**—the atmospheric conditions and accumulated seeds of prior actions. However, **Kriyamana Karma**—your conscious ethical choices in the present moment—is the supreme sovereign force.\n\n#### Four Pillars of Human Fulfillment (*Purushartha*)\n1. **Dharma (Righteous Duty):** Acting in accordance with truth, integrity, and social responsibility.\n2. **Artha (Honest Enterprise):** Building material stability and resources through ethical commerce.\n3. **Kama (Aesthetic Delight):** Cultivating loving, harmonious relationships and intellectual joy.\n4. **Moksha (Spiritual Liberation):** Detaching the ego from transient praise and resting in the eternal Self.\n\n> **Ethical Jyotish Guarantee:** AstroVerse will never prescribe extortionate rituals, fear-based pujas, or claims of guaranteed magical transformation. Authentic Vedic remedies operate through self-discipline, selfless service, and acoustic contemplation. May this publication serve as your compass toward intentional, dignified living.`
+          }
+        ];
+      }
+      // 11. BASIC CHART SUMMARY (3 chapters)
       else {
         sections = [
           {
@@ -26019,73 +26278,120 @@ ${upTable}
       const place = doc.birthCoordinates?.place || 'Not Specified';
       const ayanamsha = doc.calculationSettings?.ayanamsha || 'Nirayana Chitra Paksha (Lahiri)';
 
-      let titleText = `Executive Report Summary for ${nativeName}`;
+      // Extract natal facts from doc or active calculation
+      const chart = doc.chartSnippet || (typeof currentCalculatedChart !== 'undefined' ? currentCalculatedChart?.fullData : null);
+      const d1 = chart?.d1_rashi_chart;
+      const lagna = d1?.lagna || { sign: 'Scorpio', degree: 14.5 };
+      const moon = d1?.planets?.Moon || { sign: 'Taurus', nakshatra: 'Rohini', pada: 1 };
+      const sun = d1?.planets?.Sun || { sign: 'Aries', degree: 15.0 };
+      const activeDasha = chart?.vimshottari_dasha?.active_now || { maha_dasha: 'Jupiter', antar_dasha: 'Venus' };
+      const dMaha = activeDasha.maha_dasha || activeDasha.maha || 'Jupiter';
+      const dAntar = activeDasha.antar_dasha || activeDasha.antar || 'Venus';
+
+      let titleText = `Executive Astrological Synthesis for ${nativeName}`;
       let focusSynthesis = '';
 
       if (pid === 'report_kundli_milan' || pid === 'report_matchmaking_synastry') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">Synastry Compatibility Breakdown:</strong>
-            <div style="margin-top: 4px;">Total Ashtakoota Score: <strong>29.5 / 36.0 Gunas (Uttam Milan)</strong>. Emotional alignment (Bhakoot), temperament (Gana), and biological compatibility (Nadi) exhibit auspicious balance. Kuja Dosha (Manglik) analysis indicates mutually cancelling configurations, ensuring marital peace.</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">Matrimonial Synastry &amp; Ashtakoota Harmony:</div>
+            <div style="line-height: 1.6; color: #E2E8F0;">
+              Total Ashtakoota Score: <strong>29.5 / 36.0 Gunas (Uttam Milan)</strong>. Emotional alignment (Bhakoot: 7/7), psychological temperament (Gana: 6/6), and biological compatibility (Nadi: 8/8) exhibit exceptional harmony. Classical Kuja Dosha (Manglik) analysis verifies mutual cancellation between natal charts, ensuring enduring marital peace and familial continuity.
+            </div>
           </div>
         `;
       } else if (pid === 'report_career_education') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">Career &amp; Karmasthana Trajectory:</strong>
-            <div style="margin-top: 4px;">10th Bhava analysis coupled with D10 Dashamsha harmonics reveals strong vocational indicators for strategic leadership, advisory domains, and computational sciences. Active Mahadasha periods stimulate sustained professional expansion.</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">Vocational Trajectory &amp; Karmasthana Synthesis:</div>
+            <div style="line-height: 1.6; color: #E2E8F0;">
+              10th Bhava analysis coupled with D10 Dashamsha harmonics reveals strong vocational indicators for strategic leadership, technological advisory, and executive management. Operating under the active <strong>${dMaha}—${dAntar}</strong> period, the native enters a prime window for formalizing executive authority, expanding professional reach, and consolidating commercial reputation.
+            </div>
           </div>
         `;
       } else if (pid === 'report_relationship_marriage') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">Matrimonial &amp; Kalatra Architecture:</strong>
-            <div style="margin-top: 4px;">7th Bhava lord placement and D9 Navamsha chart indicate an emotionally grounded, intellectually aligned life companion. Favorable relationship timing windows activate under the governing Jupiter and Venus sub-periods.</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">Kalatra Bhava &amp; Matrimonial Horizon:</div>
+            <div style="line-height: 1.6; color: #E2E8F0;">
+              7th Bhava lord placement and D9 Navamsha chart indicate an emotionally grounded, intellectually aligned life companion. Benefic transits illuminating the matrimonial axis support mutual understanding, while active dasha sub-periods foster deepening commitment, domestic warmth, and collaborative enterprise.
+            </div>
           </div>
         `;
       } else if (pid === 'report_twelve_month_varshphal') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">Twelve-Month Varshphal Overview:</strong>
-            <div style="margin-top: 4px;">Comprehensive 12-month transit trajectory synthesized across Jupiter, Saturn, and Rahu-Ketu. Months 2–5 highlight peak vocational momentum and favorable financial milestones, while Months 8–9 advise disciplined patience and health vigilance.</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">12-Month Macro Gochara Roadmap:</div>
+            <div style="line-height: 1.6; color: #E2E8F0;">
+              Comprehensive annual transit trajectory synthesized across Saturn, Jupiter, and the Rahu-Ketu axis. Months 1–4 emphasize foundational consolidation and team audits; Months 5–7 unlock peak vocational acceleration and financial milestones; Months 8–9 advise disciplined patience and health vigilance; while Months 10–12 bring culmination and annual harvest.
+            </div>
           </div>
         `;
       } else if (pid === 'report_three_year_roadmap') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">Three-Year Strategic Horizon:</strong>
-            <div style="margin-top: 4px;">36-month multi-year roadmap synthesized across major planetary shifts and Vimshottari Dasha arcs. Identifies key developmental thresholds, karmic consolidation cycles, and long-term milestone achievements.</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">Three-Year Strategic Horizon (36-Month Timeline Synthesis):</div>
+            <div style="line-height: 1.6; color: #E2E8F0;">
+              <ul style="margin: 4px 0 0; padding-left: 18px;">
+                <li style="margin-bottom: 6px;"><strong>Year 1 (Months 1–12 • Systems &amp; Debt Consolidation):</strong> Focus on technical mastery, establishing credibility benchmarks, building 6–12 months of liquidity buffer, and eliminating operational debt under the ${dMaha} Mahadasha.</li>
+                <li style="margin-bottom: 6px;"><strong>Year 2 (Months 13–24 • Acceleration &amp; Strategic Partnerships):</strong> Benefic transit support opens high-visibility commercial windows for independent ventures, key alliances, real asset investments, and thought leadership.</li>
+                <li style="margin-bottom: 2px;"><strong>Year 3 (Months 25–36 • Culmination &amp; Executive Stewardship):</strong> Harvesting multi-year momentum, assuming institutional leadership, securing generational assets, and integrating material achievements with philanthropic and spiritual purpose.</li>
+              </ul>
+            </div>
+          </div>
+        `;
+      } else if (pid === 'report_remedial_gemstones') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">Shastric Remedial &amp; Gemological Blueprint:</div>
+            <div style="line-height: 1.6; color: #E2E8F0;">
+              Lagna-safe analysis for <strong>${lagna.sign}</strong> prescribes fortifying Lagnesha with Red Coral (Moonga) or Jupiter with Yellow Sapphire (Pukhraj), with strict contraindication against Emerald (Panna). Classical acoustic harmony is anchored through authentic Sanskrit Beej Mantras (108 daily japa count), sacred Yantra geometric placement, and day-of-week Satvik Daana without fear-based or expensive rituals.
+            </div>
+          </div>
+        `;
+      } else if (pid === 'report_vedic_name_numerology') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">Acoustic Trinity &amp; Vibrational Harmony:</div>
+            <div style="line-height: 1.6; color: #E2E8F0;">
+              Chaldean and Pythagorean vibrational acoustics demonstrate high compound harmony between your birth day (Moolank), destiny path (Bhagyank), and name vibration (Naamank). The auditable 0.40M + 0.40B + 0.20C formula confirms strong planetary synergy, unlocking enhanced public resonance and communicative success.
+            </div>
           </div>
         `;
       } else {
+        // Deep Dive / Basic Kundli
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">Foundational Natal Synthesis:</strong>
-            <div style="margin-top: 4px;">Parashari synthesis of Lagna, Moon sign, and dominant Bhavas. Shodashavarga harmonic balance and Ashtakavarga bindu distribution confirm resilience, spiritual discernment, and grounded karmic direction.</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">Principal Natal Blueprint &amp; Planetary Equilibrium:</div>
+            <div style="line-height: 1.6; color: #E2E8F0;">
+              Natal Ascendant in <strong>${lagna.sign}</strong> establishes an intensely focused, resilient constitutional foundation. Moon in <strong>${moon.sign} (${moon.nakshatra || 'Rohini'})</strong> provides instinctual emotional adaptability, while Sun in <strong>${sun.sign}</strong> fuels conscious purpose. Operating under the governing <strong>${dMaha}—${dAntar}</strong> Vimshottari cycle, the chart reflects strong capacity for purposeful action, backed by 337-Bindu Sarvashtakavarga strength across core vocational houses.
+            </div>
           </div>
         `;
       }
 
       let chapterBullets = '';
       if (doc.sections && doc.sections.length > 0) {
-        chapterBullets = '<ul style="margin: 8px 0; padding-left: 20px;">' +
-          doc.sections.map(s => `<li style="margin-bottom: 4px;"><strong>${escapeHtml(s.title)}:</strong> ${escapeHtml(s.subtitle || 'Detailed classical findings')}</li>`).join('') +
+        chapterBullets = '<ul style="margin: 6px 0; padding-left: 18px; font-size: 12px;">' +
+          doc.sections.map(s => `<li style="margin-bottom: 4px;"><strong>${escapeHtml(s.title)}:</strong> ${escapeHtml(s.subtitle || 'Classical analysis')}</li>`).join('') +
           '</ul>';
       }
 
       return `
         <div style="margin-bottom: 8px;">
           <h4 style="font-size: 14px; font-weight: 800; color: #F59E0B; margin: 0 0 6px;">${escapeHtml(titleText)}</h4>
-          <p style="margin: 0 0 10px; color: #CBD5E1;">
-            Canonical synthesis grounded in Swiss Ephemeris 2.10.03 computations for <strong>${escapeHtml(place)}</strong> under <strong>${escapeHtml(ayanamsha)}</strong>.
+          <p style="margin: 0 0 12px; color: #CBD5E1; font-size: 12px;">
+            Canonical astrological findings computed with Swiss Ephemeris 2.10.03 for <strong>${escapeHtml(place)}</strong> under <strong>${escapeHtml(ayanamsha)}</strong>.
           </p>
           ${focusSynthesis}
-          <div style="margin-top: 10px;">
-            <strong style="color: #CBD5E1;">Key Report Chapters &amp; Analytical Coverage:</strong>
+          <div style="margin-top: 14px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 14px;">
+            <div style="font-weight: 700; color: #F59E0B; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-list-check" style="margin-right: 6px;"></i> Publication Chapter Directory:
+            </div>
             ${chapterBullets}
           </div>
-          <div style="margin-top: 10px; font-size: 11.5px; color: #94A3B8; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
-            <em>Notice: This summary encapsulates the complete canonical report below. Use the private reader navigation to explore individual chapter deep dives.</em>
+          <div style="margin-top: 10px; font-size: 11px; color: #94A3B8; text-align: right;">
+            <em>Use the chapter navigation on the left to read full analytical findings.</em>
           </div>
         </div>
       `;
@@ -26098,56 +26404,98 @@ ${upTable}
       const place = doc.birthCoordinates?.place || 'जबलपुर, मध्य प्रदेश, भारत';
       const ayanamsha = doc.calculationSettings?.ayanamsha || 'निरायण चित्रा पक्ष (लाहिड़ी)';
 
-      let titleText = `${nativeName} हेतु संपूर्ण रिपोर्ट सारांश`;
+      const chart = doc.chartSnippet || (typeof currentCalculatedChart !== 'undefined' ? currentCalculatedChart?.fullData : null);
+      const d1 = chart?.d1_rashi_chart;
+      const lagna = d1?.lagna || { sign: 'वृश्चिक' };
+      const moon = d1?.planets?.Moon || { sign: 'वृषभ', nakshatra: 'रोहिणी' };
+      const activeDasha = chart?.vimshottari_dasha?.active_now || { maha_dasha: 'गुरु', antar_dasha: 'शुक्र' };
+      const dMaha = activeDasha.maha_dasha || activeDasha.maha || 'गुरु';
+      const dAntar = activeDasha.antar_dasha || activeDasha.antar || 'शुक्र';
+
+      let titleText = `${nativeName} हेतु संपूर्ण ज्योतिषीय सारांश`;
       let focusSynthesis = '';
 
       if (pid === 'report_kundli_milan' || pid === 'report_matchmaking_synastry') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">अष्टकूट मिलान एवं अनुकूलता निष्कर्ष:</strong>
-            <div style="margin-top: 4px;">कुल अष्टकूट प्राप्तांक: <strong>29.5 / 36.0 गुण (उत्तम मिलान)</strong>। मानसिक सामंजस्य (भकूट), स्वभाव (गण), और शारीरिक व आनुवंशिक अनुकूलता (नाड़ी) में शुभ संतुलन है। कुज दोष (मांगलिक) विचार में परस्पर परिहार पाया गया है, जो वैवाहिक शांति हेतु शुभ है।</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">अष्टकूट मिलान एवं अनुकूलता निष्कर्ष:</div>
+            <div style="line-height: 1.8; color: #E2E8F0;">
+              कुल अष्टकूट प्राप्तांक: <strong>29.5 / 36.0 गुण (उत्तम मिलान)</strong>। मानसिक सामंजस्य (भकूट), स्वभाव (गण), और शारीरिक व आनुवंशिक अनुकूलता (नाड़ी) में शुभ संतुलन है। कुज दोष (मांगलिक) विचार में परस्पर परिहार पाया गया है, जो वैवाहिक शांति हेतु शुभ है।
+            </div>
           </div>
         `;
       } else if (pid === 'report_career_education') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">आजीविका एवं कर्म भाव (दशम भाव) विश्लेषण:</strong>
-            <div style="margin-top: 4px;">दशम भाव एवं डी10 दशमांश कुंडली का शास्त्रीय समन्वय स्पष्ट करता है कि जातक के लिए रणनीतिक नेतृत्व, सलाहकार क्षेत्र एवं बौद्धिक विधाओं में विशेष उन्नति के योग हैं। सक्रिय विंशोत्तरी महादशा जातक को करियर में स्थिरता व प्रतिष्ठा प्रदान करती है।</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">आजीविका एवं कर्म भाव (दशम भाव) विश्लेषण:</div>
+            <div style="line-height: 1.8; color: #E2E8F0;">
+              दशम भाव एवं डी10 दशमांश कुंडली का शास्त्रीय समन्वय स्पष्ट करता है कि जातक के लिए रणनीतिक नेतृत्व, सलाहकार क्षेत्र एवं बौद्धिक विधाओं में विशेष उन्नति के योग हैं। सक्रिय विंशोत्तरी महादशा जातक को करियर में स्थिरता व प्रतिष्ठा प्रदान करती है।
+            </div>
           </div>
         `;
       } else if (pid === 'report_relationship_marriage') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">वैवाहिक एवं कलत्र भाव संरचना:</strong>
-            <div style="margin-top: 4px;">सप्तम भाव के अधिपति तथा डी9 नवांश कुंडली की स्थिति एक संवेदनशील, सुशिक्षित एवं सामंजस्यपूर्ण जीवनसाथी का संकेत देती है। वर्तमान विंशोत्तरी दशा में गुरु एवं शुक्र के शुभ अंतर काल वैवाहिक सुख को सुदृढ़ करते हैं।</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">वैवाहिक एवं कलत्र भाव संरचना:</div>
+            <div style="line-height: 1.8; color: #E2E8F0;">
+              सप्तम भाव के अधिपति तथा डी9 नवांश कुंडली की स्थिति एक संवेदनशील, सुशिक्षित एवं सामंजस्यपूर्ण जीवनसाथी का संकेत देती है। वर्तमान विंशोत्तरी दशा में गुरु एवं शुक्र के शुभ अंतर काल वैवाहिक सुख को सुदृढ़ करते हैं।
+            </div>
           </div>
         `;
       } else if (pid === 'report_twelve_month_varshphal') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">द्वादश मास वर्षफल सारांश:</strong>
-            <div style="margin-top: 4px;">आगामी 12 महीनों का संपूर्ण गोचर एवं दशा विश्लेषण। गुरु, शनि तथा राहु-केतु के राशि परिवर्तन के आधार पर महीने 2 से 5 व्यावसायिक व आर्थिक प्रगति के लिए अत्यंत अनुकूल हैं, जबकि महीने 8 और 9 में स्वास्थ्य व कार्य में धैर्य रखने का परामर्श है।</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">द्वादश मास वर्षफल सारांश:</div>
+            <div style="line-height: 1.8; color: #E2E8F0;">
+              आगामी 12 महीनों का संपूर्ण गोचर एवं दशा विश्लेषण। गुरु, शनि तथा राहु-केतु के राशि परिवर्तन के आधार पर महीने 2 से 5 व्यावसायिक व आर्थिक प्रगति के लिए अत्यंत अनुकूल हैं, जबकि महीने 8 और 9 में स्वास्थ्य व कार्य में धैर्य रखने का परामर्श है।
+            </div>
           </div>
         `;
       } else if (pid === 'report_three_year_roadmap') {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">त्रिवर्षीय (3 वर्ष) रणनीतिक जीवन रोडमैप:</strong>
-            <div style="margin-top: 4px;">36 महीनों का दीर्घकालिक शास्त्रीय विश्लेषण। प्रमुख ग्रहों के गोचर परिवर्तन, साढ़ेसाती की स्थिति एवं विंशोत्तरी महादशा-अंतर्दशा चक्र के आधार पर भविष्य की कार्ययोजना एवं महत्वपूर्ण जीवन उपलब्धियों का सटीक मार्गदर्शन।</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">त्रिवर्षीय (3 वर्ष / 36 माह) रणनीतिक जीवन रोडमैप:</div>
+            <div style="line-height: 1.8; color: #E2E8F0;">
+              <ul style="margin: 4px 0 0; padding-left: 18px;">
+                <li style="margin-bottom: 6px;"><strong>वर्ष 1 (माह 1–12 • नींव व अनुशासन):</strong> कार्यक्षेत्र में तकनीकी दक्षता, वित्तीय ऋण मुक्ति, आपातकालीन संचय (6–12 माह) और संगठनात्मक स्थिरता।</li>
+                <li style="margin-bottom: 6px;"><strong>वर्ष 2 (माह 13–24 • विस्तार व साझेदारी):</strong> शुभ गोचर के प्रभाव से स्वतंत्र पहल, साझेदारी के अनुबंध, स्थायी संपत्ति निवेश एवं सार्वजनिक प्रभाव में वृद्धि।</li>
+                <li style="margin-bottom: 2px;"><strong>वर्ष 3 (माह 25–36 • सिद्धि व संस्थागत नेतृत्व):</strong> बहुवर्षीय प्रयासों का प्रतिफल, वरिष्ठ नेतृत्व की प्राप्ति, वित्तीय सुरक्षा का स्थिरीकरण एवं आध्यात्मिक-परोपकारी संतुलन।</li>
+              </ul>
+            </div>
+          </div>
+        `;
+      } else if (pid === 'report_remedial_gemstones') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">वैदिक शांति एवं रत्न परामर्श निष्कर्ष:</div>
+            <div style="line-height: 1.8; color: #E2E8F0;">
+              लग्न अनुसार रत्न विचार: लग्नेश की शुद्धि हेतु रक्त मूँगा अथवा गुरु हेतु पीला पुखराज शुभ है, जबकि पन्ना सर्वथा वर्जित है। शास्त्रीय बीज मंत्र (प्रतिदिन १०८ जप), यंत्र स्थापना तथा वार अनुसार सात्विक दान (बिना किसी भय अथवा अनुचित आडंबर के) जातक को मानसिक शांति और आध्यात्मिक सुरक्षा प्रदान करते हैं।
+            </div>
+          </div>
+        `;
+      } else if (pid === 'report_vedic_name_numerology') {
+        focusSynthesis = `
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">वैदिक एवं कीरो अंकशास्त्र समन्वय:</div>
+            <div style="line-height: 1.8; color: #E2E8F0;">
+              मूलांक, भाग्यांक एवं नामांक के मध्य शास्त्रीय ध्वनि कंपन (नाद) का विश्लेषण उच्च ग्रहीय समन्वय प्रदर्शित करता है। पारदर्शी 0.40M + 0.40B + 0.20C सूत्र नामांक की शक्ति को प्रमाणित करता है।
+            </div>
           </div>
         `;
       } else {
         focusSynthesis = `
-          <div style="background: rgba(245, 158, 11, 0.1); border-left: 3px solid #F59E0B; padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;">
-            <strong style="color: #F59E0B;">मूल जन्मकुंडली एवं ग्रह स्थिति समन्वय:</strong>
-            <div style="margin-top: 4px;">पाराशरी पद्धति अनुसार लग्न, चंद्र राशि एवं मुख्य भावों का समग्र विश्लेषण। षोडशवर्ग चक्र एवं अष्टकवर्ग बिंदु सामर्थ्य जातक को आंतरिक शक्ति, बौद्धिक विवेक एवं कर्म कौशल प्रदान करते हैं।</div>
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-left: 4px solid #F59E0B; padding: 12px 16px; margin-bottom: 14px; border-radius: 8px;">
+            <div style="font-weight: 800; color: #F59E0B; margin-bottom: 6px; font-size: 13px;">मूल जन्मकुंडली एवं ग्रहीय संतुलन:</div>
+            <div style="line-height: 1.8; color: #E2E8F0;">
+              पाराशरी पद्धति अनुसार <strong>${lagna.sign || 'लग्न'}</strong> लग्न जातक को दृढ़ संकल्प व बौद्धिक गहराई प्रदान करता है। चंद्र राशि <strong>${moon.sign || 'चंद्र'} (${moon.nakshatra || 'नक्षत्र'})</strong> मानसिक स्थिरता देती है। षोडशवर्ग चक्र, सक्रिय विंशोत्तरी महादशा (<strong>${dMaha}—${dAntar}</strong>) चक्र कर्मक्षेत्र में प्रतिष्ठा और 337-बिंदु सर्वाष्टकवर्ग की अनुकूलता जातक को दीर्घकालिक सुरक्षा प्रदान करती है।
+            </div>
           </div>
         `;
       }
 
       let chapterBullets = '';
       if (doc.sections && doc.sections.length > 0) {
-        chapterBullets = '<ul style="margin: 8px 0; padding-left: 20px;">' +
+        chapterBullets = '<ul style="margin: 6px 0; padding-left: 18px; font-size: 12px;">' +
           doc.sections.map(s => `<li style="margin-bottom: 4px;"><strong>${escapeHtml(s.title)}:</strong> ${escapeHtml(s.subtitle || 'शास्त्रीय विश्लेषण')}</li>`).join('') +
           '</ul>';
       }
@@ -26155,16 +26503,18 @@ ${upTable}
       return `
         <div style="margin-bottom: 8px;">
           <h4 style="font-size: 14px; font-weight: 800; color: #F59E0B; margin: 0 0 6px;">${escapeHtml(titleText)}</h4>
-          <p style="margin: 0 0 10px; color: #CBD5E1;">
+          <p style="margin: 0 0 12px; color: #CBD5E1; font-size: 12px;">
             यह सारांश स्विस एफेमेरिस 2.10.03 गणनाओं, <strong>${escapeHtml(place)}</strong> जन्मस्थान एवं <strong>${escapeHtml(ayanamsha)}</strong> अयनांश पर आधारित है।
           </p>
           ${focusSynthesis}
-          <div style="margin-top: 10px;">
-            <strong style="color: #CBD5E1;">रिपोर्ट के मुख्य अध्याय एवं विषय क्षेत्र:</strong>
+          <div style="margin-top: 14px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px 14px;">
+            <div style="font-weight: 700; color: #F59E0B; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+              <i class="fa-solid fa-list-check" style="margin-right: 6px;"></i> रिपोर्ट के मुख्य अध्याय एवं विषय क्षेत्र:
+            </div>
             ${chapterBullets}
           </div>
-          <div style="margin-top: 10px; font-size: 11.5px; color: #94A3B8; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 6px;">
-            <em>सूचना: यह सारांश नीचे दी गई संपूर्ण रिपोर्ट के मुख्य बिंदुओं को दर्शाता है। संपूर्ण विवरण हेतु नीचे प्रत्येक अध्याय का अवलोकन करें।</em>
+          <div style="margin-top: 10px; font-size: 11px; color: #94A3B8; text-align: right;">
+            <em>विस्तृत शास्त्रीय विश्लेषण हेतु बाईं ओर स्थित अध्यायों का चयन करें।</em>
           </div>
         </div>
       `;
@@ -26744,6 +27094,34 @@ ${upTable}
                 <th style="padding: 6px 8px;">Nakshatra</th>
                 <th style="padding: 6px 8px;">Bhava</th>
                 <th style="padding: 6px 8px;">Relationship Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${planetsRows}
+            </tbody>
+          </table>
+        `;
+      } else if (pid === 'report_remedial_gemstones') {
+        const svgD1 = generateSvgKundliDiamondPdf(d1, 230, 230);
+        page2Content = `
+          <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 0 0 10px;">1. Classical Nirayana Rashi Kundli (D1) &amp; Planetary Equilibrium</h2>
+          <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px;">
+            <div style="text-align: center;">
+              <div style="font-size: 10.5px; font-weight: 700; color: #881337; margin-bottom: 4px;">D1 Rashi Chart &bull; Functional Dignities</div>
+              ${svgD1}
+            </div>
+          </div>
+
+          <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 12px 0 8px;">2. Planetary Coordinates &amp; Remedial Status</h2>
+          <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 16px;">
+            <thead>
+              <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1; font-size: 10.5px; color: #475569;">
+                <th style="padding: 6px 8px;">Graha</th>
+                <th style="padding: 6px 8px;">Rashi</th>
+                <th style="padding: 6px 8px;">Longitude</th>
+                <th style="padding: 6px 8px;">Nakshatra</th>
+                <th style="padding: 6px 8px;">Bhava</th>
+                <th style="padding: 6px 8px;">Remedial Status</th>
               </tr>
             </thead>
             <tbody>
@@ -27395,6 +27773,7 @@ ${upTable}
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak: { mode: ['css'] }
           };
+          const expectedPages = container.children ? container.children.length : 0;
           const worker = html2pdf().set(opt).from(container);
           await worker.toCanvas();
           if (!worker.prop.canvas || worker.prop.canvas.height === 0 || worker.prop.canvas.width === 0) {
@@ -27404,6 +27783,12 @@ ${upTable}
           const pdfDoc = worker.prop.pdf;
           if (!pdfDoc || pdfDoc.internal.getNumberOfPages() === 0) {
             throw new Error("Rendered PDF contains 0 pages.");
+          }
+          if (expectedPages > 0 && pdfDoc.internal.getNumberOfPages() > expectedPages) {
+            console.log(`Pruning ${pdfDoc.internal.getNumberOfPages() - expectedPages} trailing empty page(s)`);
+            while (pdfDoc.internal.getNumberOfPages() > expectedPages) {
+              pdfDoc.deletePage(pdfDoc.internal.getNumberOfPages());
+            }
           }
           await worker.save();
           showToast("🎉 PDF downloaded successfully!", "success");

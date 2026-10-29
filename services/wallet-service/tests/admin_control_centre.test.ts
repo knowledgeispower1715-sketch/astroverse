@@ -65,9 +65,10 @@ function hashPassword(password: string, salt: string): string {
 
 describe('ASTROVERSE ADMINISTRATIVE CONTROL CENTRE & DEDICATED LOGIN SUITE', () => {
   let server: http.Server;
-  const testOwnerEmail = 'owner.control@astroverse.app';
-  const testCustomerEmail = 'customer.seeker@astroverse.app';
-  const testMfaAdminEmail = 'mfa.security@astroverse.app';
+  const ts = Date.now();
+  const testOwnerEmail = `owner.control.${ts}@astroverse.app`;
+  const testCustomerEmail = `customer.seeker.${ts}@astroverse.app`;
+  const testMfaAdminEmail = `mfa.security.${ts}@astroverse.app`;
   const adminPassword = 'SuperSecretAdmin123!';
   const customerPassword = 'CustomerSecretPass123!';
   let mfaSecret: string;
@@ -257,7 +258,7 @@ describe('ASTROVERSE ADMINISTRATIVE CONTROL CENTRE & DEDICATED LOGIN SUITE', () 
 
   // Test 10: CLI Provisioning Script Integrity
   it('10. provisionAdmin CLI script successfully provisions and updates roles', async () => {
-    const cliEmail = 'cli.audit.owner@astroverse.app';
+    const cliEmail = `cli.audit.owner.${Date.now()}@astroverse.app`;
     const result = await provisionAdmin({
       email: cliEmail,
       role: 'OWNER',

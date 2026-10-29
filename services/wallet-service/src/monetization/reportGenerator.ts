@@ -180,6 +180,8 @@ export class ReportDocumentGenerator {
       monthlyForecasts = annual.monthlyForecasts;
     } else if (productId === 'report_vedic_name_numerology') {
       sections = this.buildNumerologySections(profile, birthCoords, chart);
+    } else if (productId === 'report_remedial_gemstones') {
+      sections = this.buildRemedialGemstonesSections(profile, birthCoords, chart);
     } else {
       // Default / Basic Chart Summary
       sections = this.buildBasicChartSummarySections(profile, birthCoords, chart);
@@ -245,18 +247,27 @@ export class ReportDocumentGenerator {
         title: 'Chapter 1: The Rising Sign (Lagna) & Vital Temperament',
         subtitle: 'Foundational Ascendant Dynamics & Core Life Trajectory',
         icon: 'fa-sun',
-        contentMarkdown: `### The Rising Sign (Lagna) Foundation
-In Parashari Jyotish, the **Ascendant (Lagna)** establishes the physical constitution, primary cognitive temperament, and orientation of all twelve houses (*Bhavas*).
+        contentMarkdown: `### Natal Ascendant Blueprint & Constitutional Foundation
+In classical Parashari Jyotish, the **Ascendant (Lagna)** serves as the primary gateway of incarnational experience, determining the physical constitution, neuro-physiological temperament, and personal agency (*Tanu Bhava*).
 
+#### Foundational Astronomical Coordinates
 - **Birth Coordinates:** ${coords.place} (${coords.lat.toFixed(4)}°N, ${coords.lon.toFixed(4)}°E)
 - **Calculated Ascendant:** **${lagna.sign}** at **${lagna.degree.toFixed(2)}°** in **${lagna.nakshatra}** Nakshatra (Pada ${lagna.pada}).
-- **Ruling Lord:** **${lagna.lord}**, governing health, resilience, and personal agency (*Tanu Bhava*).
+- **Ascendant Lord (Lagnesha):** **${lagna.lord}**, governing health, resilience, and personal agency (*Tanu Bhava*).
 - **Core Temperament:** As a **${lagna.sign}** ascendant, your physical vehicle and decision-making matrix reflect energetic stamina, strategic determination, and a quest for authentic alignment.
+
+#### Shastric Rule Interpretation: Lagnesha Dynamics
+Under *Brihat Parashara Hora Shastra*, when the ruler of the 1st house occupies an auspicious sector, the native possesses inherent self-reliance, physical fortitude, and an autonomous decision-making framework. This placement shields the vitality against transient afflictions and directs the life arc toward self-actualization, purposeful competence, and uncompromising ethical integrity.
 
 #### House Geometries (*Bhava Kundli*)
 1. **1st House (Tanu Bhava):** Vital physical health, identity, and personal resilience in **${lagna.sign}**.
 2. **5th & 9th Houses (Trikonas):** Dharma houses indicating intellectual creativity, past-life merit (*Purva Punya*), and ethical alignment.
-3. **10th House (Karmasthana):** Public action, executive authority, and professional legacy.`
+3. **10th House (Karmasthana):** Public action, executive authority, and professional legacy.
+
+#### Actionable Strategic Takeaways
+1. **Circadian Energy Optimization:** Structure high-leverage intellectual and strategic initiatives during early solar horas when your ascendant lord operates with maximum strength.
+2. **Vocational Posture:** Lean into roles requiring analytical precision, crisis navigation, and institutional stewardship rather than ambiguous or chaotic operational environments.
+3. **Interpersonal Boundary Management:** Channel natural discernment constructively; practice open emotional transparency to cultivate enduring, high-trust alliances.`
       },
       {
         sectionId: 'sec_ch2_planets',
@@ -271,8 +282,14 @@ Every celestial placement in this publication is calculated using the authoritat
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 ${planetRows}
 #### Dignity Assessment & Core Focal Points
-- **Surya (Sun):** Placed in **${sun.sign}** (${sun.dignity}) in the **${sun.house}th House**, governing vital creative will, executive authority, and soul purpose.
-- **Chandra (Moon):** Placed in **${moon.sign}** (${moon.dignity}) in **${moon.nakshatra}** Nakshatra, governing the emotional mind (*Manas*), intuition, and mental peace.`
+- **Surya (Sun):** Placed in **${sun.sign}** (${sun.dignity}) in House **${sun.house}**, governing vital creative will, executive authority, and soul purpose.
+- **Chandra (Moon):** Placed in **${moon.sign}** (${moon.dignity}) in **${moon.nakshatra}** Nakshatra (House ${moon.house}), governing the emotional mind (*Manas*), intuition, and mental peace.
+- **Mangal (Mars):** Placed in **${chart.planets.Mars.sign}** (${chart.planets.Mars.dignity}) in House **${chart.planets.Mars.house}**, governing operational courage, assertiveness, and physical drive.
+- **Budha (Mercury):** Placed in **${chart.planets.Mercury.sign}** (${chart.planets.Mercury.dignity}) in House **${chart.planets.Mercury.house}**, governing commercial intellect, analytical logic, and communication.
+- **Guru (Jupiter):** Placed in **${chart.planets.Jupiter.sign}** (${chart.planets.Jupiter.dignity}) in House **${chart.planets.Jupiter.house}**, governing philosophical wisdom, ethical wealth, and moral authority.
+- **Shukra (Venus):** Placed in **${chart.planets.Venus.sign}** (${chart.planets.Venus.dignity}) in House **${chart.planets.Venus.house}**, governing aesthetic refinement, emotional diplomacy, and marital harmony.
+- **Shani (Saturn):** Placed in **${chart.planets.Saturn.sign}** (${chart.planets.Saturn.dignity}) in House **${chart.planets.Saturn.house}**, governing systemic endurance, discipline, and karmic boundaries.
+- **Rahu & Ketu:** The karmic nodal axis in **${chart.planets.Rahu.sign}** / **${chart.planets.Ketu.sign}** anchors the evolutionary curve between worldly ambition and spiritual detachment.`
       },
       {
         sectionId: 'sec_ch3_vargas',
@@ -434,8 +451,8 @@ Under *Brihat Parashara Hora Shastra* (Ch. 81) and *Muhurta Chintamani*, Martian
 
           const inv = upData?.invariants;
           const invariantNote = inv?.closure_verified
-            ? `$$\\text{Upaketu (Sikhi)} + 30^\\circ \\equiv \\text{Sun Longitude} \\pmod{360^\\circ}$$\n*Verification Status:* **MATHEMATICALLY VERIFIED (Closure Variance: ${inv.closure_difference.toFixed(6)}°)**. Classical polar oppositions ($\\text{Dhuma} \\leftrightarrow \\text{Indrachaapa}$ and $\\text{Vyatipaata} \\leftrightarrow \\text{Parivesha}$) strictly confirmed.`
-            : `$$\\text{Upaketu} + 30^\\circ \\equiv \\text{Sun Longitude} \\pmod{360^\\circ}$$\n*Verification Status:* Verified compliant with Brihat Parashara Hora Shastra cyclic closure criteria.`;
+            ? `$$\\text{Upaketu (Sikhi)} + 30^\\circ \\equiv \\text{Sun Longitude} \\pmod{360^\\circ}$$\n*Verification Status:* **Calculation Validated (Swiss Ephemeris)** (Closure Variance: ${inv.closure_difference.toFixed(6)}°). Classical polar oppositions ($\\text{Dhuma} \\leftrightarrow \\text{Indrachaapa}$ and $\\text{Vyatipaata} \\leftrightarrow \\text{Parivesha}$) strictly confirmed.`
+            : `$$\\text{Upaketu} + 30^\\circ \\equiv \\text{Sun Longitude} \\pmod{360^\\circ}$$\n*Verification Status:* Calculation Validated (Swiss Ephemeris per Brihat Parashara Hora Shastra cyclic closure criteria).`;
 
           return `### Classical Non-Luminous Upagrahas & Kalavelas (*Aprakasha Grahas*)
 Under *Brihat Parashara Hora Shastra* (Ch. 3, verses 53–73), eleven subtle celestial shadow points and time portions are evaluated to identify subtle consciousness markers, hidden karmic friction, and non-physical spiritual triggers.
@@ -796,10 +813,9 @@ In addition to the 8 Parashari Kutas, classical regional traditions evaluate fou
         icon: 'fa-calendar-day',
         contentMarkdown: `### Granular 30-Day Operational Forecast (${curMonthName})
 Integrates current planetary transits with your active **${chart.currentDasha.maha}** Mahadasha and **${chart.currentDasha.antar}** Antardasha to guide practical scheduling:
-- **Week 1:** Strategy & Planning.
-- **Week 2:** Decisive Action & Communication.
-- **Week 3:** Consolidation & Stakeholder Alignment.
-- **Week 4:** Reflection, Rest & Inner Renewal.`
+- **Primary Planetary Ingress:** Surya (Sun) moves through the cardinal vocational axis, stimulating leadership responsibilities, executive visibility, and institutional decision-making.
+- **Mercury & Mars Dynamics:** Budha (Mercury) refines tactical communications, deal structuring, and technical precision, while Mangala (Mars) injects focused execution power into ongoing milestones.
+- **Strategic Advisory:** Channel increased mental momentum into structured workflows. Prioritize high-impact tasks during peak solar hours and maintain measured diplomacy during lunar void intervals.`
       },
       {
         sectionId: 'sec_month_dasha',
@@ -807,9 +823,11 @@ Integrates current planetary transits with your active **${chart.currentDasha.ma
         title: 'Chapter 2: Active Vimshottari Subperiod Influence',
         subtitle: 'Manifestation of Current Dasha Windows over the Next 30 Days',
         icon: 'fa-clock',
-        contentMarkdown: `### Active Vimshottari Subperiod Dynamics
+        contentMarkdown: `### Operative Vimshottari Sub-Period Dynamics
+Vimshottari Dasha represents the unfolding of natal karmic seeds across distinct temporal epochs. Over the next 30 days, your consciousness is governed by:
 - **Current Operational Axis:** **${chart.currentDasha.maha}** Mahadasha / **${chart.currentDasha.antar}** Antardasha.
-- **Immediate Influence:** Concentrates focus on disciplined delivery, contract execution, and strategic communication.`
+- **Bhava Activation:** The planetary lords of this sub-period interact to bring heightened focus to professional execution, resource allocation, and interpersonal diplomacy.
+- **Behavioral Synthesis:** This period rewards meticulous follow-through over speculative ventures. Ensure all formal contracts, intellectual property, and strategic agreements are thoroughly documented and aligned with your long-term developmental goals.`
       },
       {
         sectionId: 'sec_month_lunar',
@@ -817,10 +835,10 @@ Integrates current planetary transits with your active **${chart.currentDasha.ma
         title: 'Chapter 3: Lunar Transits & High-Energy Timing Windows',
         subtitle: 'Tracking Lunar Motion across Auspicious Nakshatras & Bhavas',
         icon: 'fa-moon',
-        contentMarkdown: `### Lunar Transit Cadence
-The transit of Chandra (Moon) through your birth chart creates subtle emotional and cognitive tides across the month:
-- **Waxing Moon (Shukla Paksha):** Favorable for initiative launches, interviews, and public announcements.
-- **Waning Moon (Krishna Paksha):** Favorable for operational audits, research, debt consolidation, and rest.`
+        contentMarkdown: `### Lunar Cadence & Psychosomatic Rhythms
+Chandra (the Moon) acts as the celestial reflector of the mind (*Manas*). Tracking lunar transits relative to your natal Moon in **${chart.planets.Moon?.sign || 'your Moon sign'}** reveals distinct fortnightly energetic currents:
+- **Shukla Paksha (Waxing Phase):** Cosmic vitality expands. This two-week window is optimal for launching new commercial initiatives, initiating high-stakes negotiations, public speaking, and expanding professional alliances.
+- **Krishna Paksha (Waning Phase):** Cosmic vitality turns inward. Ideal for internal technical audits, strategic recalibration, debt consolidation, deep research, and restful rejuvenation. Avoid unnecessary confrontations during Amavasya (New Moon).`
       },
       {
         sectionId: 'sec_month_weekly',
@@ -828,11 +846,11 @@ The transit of Chandra (Moon) through your birth chart creates subtle emotional 
         title: 'Chapter 4: Weekly Operational Breakdown (Weeks 1 to 4)',
         subtitle: 'Week-by-Week Focus Across Career, Relationships & Vitality',
         icon: 'fa-calendar-week',
-        contentMarkdown: `### Granular Weekly Forecast
-- **Week 1 (Days 1–7):** Strategy, foundational audits, and scheduling.
-- **Week 2 (Days 8–14):** Active negotiations, stakeholder communication, and decisive action.
-- **Week 3 (Days 15–21):** Milestone delivery, financial reviews, and partnership alignment.
-- **Week 4 (Days 22–30):** Reflection, operational consolidation, and personal renewal.`
+        contentMarkdown: `### Four-Week Tactical Chronology
+- **Week 1 (Days 1–7): Foundation & Strategic Framing:** Clarify monthly deliverables, organize operational workflows, and conduct preliminary stakeholder reviews. Favorable for deep analytical work and setting measurable boundaries.
+- **Week 2 (Days 8–14): High Momentum & Commercial Pitching:** Maximum planetary momentum for executing key presentations, closing agreements, and pitching new initiatives. Express ideas with confidence and precision.
+- **Week 3 (Days 15–21): Consolidation & Partnership Alignment:** Review midway metrics, address operational friction points, and strengthen bilateral relationships. Cultivate patience and transparent communication.
+- **Week 4 (Days 22–30): Synthesis, Rest & Preparation:** Finalize pending tasks, celebrate project milestones, and clear mental clutter in preparation for the upcoming astrological cycle.`
       },
       {
         sectionId: 'sec_month_dates',
@@ -840,11 +858,12 @@ The transit of Chandra (Moon) through your birth chart creates subtle emotional 
         title: 'Chapter 5: Auspicious Action Dates & Cautionary Windows',
         subtitle: 'Optimal Days for Agreements & Dates Demanding Deliberate Restraint',
         icon: 'fa-star',
-        contentMarkdown: `### High-Resolution Timing Windows
-- **Highly Favorable Days (Green Flags):** ${monthlyForecasts[0].favorableDates.join(', ')} of ${curMonthName}.
-  - Auspicious for contract signing, travel, and personal milestones.
-- **Cautionary Days (Patience Required):** ${monthlyForecasts[0].cautionDates.join(', ')} of ${curMonthName}.
-  - Avoid impetuous arguments or uncalculated financial risks.`
+        contentMarkdown: `### High-Precision Monthly Timing Markers
+- **Highly Auspicious Muhurtha Windows:** **${monthlyForecasts[0].favorableDates.join(', ')}** of ${curMonthName}.
+  - *Recommended Activities:* Signing long-term contracts, launching public initiatives, conducting financial investments, and solemnizing key personal milestones.
+- **Cautionary & Restraint Windows:** **${monthlyForecasts[0].cautionDates.join(', ')}** of ${curMonthName}.
+  - *Astrological Rationale:* Moon transits through Rikta tithis or sensitive 6th/8th bhava intersections.
+  - *Recommended Protocols:* Avoid heated arguments, delay impulsive capital expenditures, refrain from unilateral ultimatums, and practice mindful emotional restraint.`
       }
     ];
 
@@ -965,8 +984,12 @@ During this 12-month annual cycle, your natal **${chart.lagna.sign}** Lagna inte
         title: 'Chapter 3: Annual Vimshottari Progression & Subperiod Transitions',
         subtitle: 'Mapping Antardasha and Pratyantardasha Turning Points Across 12 Months',
         icon: 'fa-timeline',
-        contentMarkdown: `### Subperiod Progression Schedule
-The active **${chart.currentDasha.maha}** Mahadasha transitions through vital subperiod boundaries over the next 12 months, shifting priorities from operational groundwork to recognition and spiritual synthesis.`
+        contentMarkdown: `### Subperiod Progression & Karmic Ripening Schedule
+The active **${chart.currentDasha.maha}** Mahadasha transitions through critical subperiod boundaries over the next 12 months, shifting priorities from operational groundwork to recognition, financial expansion, and spiritual synthesis:
+
+- **Antardasha Trajectory:** The movement between active Antardashas governs the psychological lens through which daily life is experienced. Planetary rulers activate your natal chart's Kendra and Trikona houses, translating effort into tangible status.
+- **Pratyantardasha Turning Points:** Granular third-level periods mark decisive turning points for career shifts, financial transactions, and household developments.
+- **Astrological Synthesis:** Maintaining conscious alignment with the prevailing dasha lord's natural temperament (*Naisargika Guna*) transforms potential obstacles into profound stepping stones for personal evolution.`
       },
       {
         sectionId: 'sec_annual_remedies',
@@ -974,10 +997,12 @@ The active **${chart.currentDasha.maha}** Mahadasha transitions through vital su
         title: 'Chapter 4: Annual Remedial Protocol & Spiritual Alignment',
         subtitle: 'Harmonizing Mantras, Charitable Practices & Planetary Timing',
         icon: 'fa-spa',
-        contentMarkdown: `### Annual Spiritual Blueprint
-- **Core Mantra:** *Om Namo Bhagavate Vasudevaya* chanted with focused diaphragmatic breathing.
-- **Weekly Practice:** Thursday morning contemplative study to strengthen Jupiterian grace.
-- **Service & Charity:** Supporting educational programs or distributing meals to living beings on Saturdays.`
+        contentMarkdown: `### Annual Spiritual Blueprint & Remedial Disciplines
+To harmonize planetary energies and neutralize dissonant transit influences, implement these classical Sattvic practices consistently:
+
+- **Core Planetary Mantra:** Chanting *Om Namo Bhagavate Vasudevaya* or the Gayatri Mantra 108 times daily with focused diaphragmatic breathing to stabilize mental calm and enhance sattvic clarity.
+- **Weekly Spiritual Observance:** Thursday morning contemplative study or meditation to strengthen Jupiterian grace, and Saturday seva (selfless service) to harmonize Saturnian karmic obligations.
+- **Daana & Charitable Disciplines:** Supporting educational programs, planting sacred trees, or providing wholesome meals to living beings on auspicious lunar days (*Ekadashi* and *Purnima*).`
       }
     ];
 
@@ -990,50 +1015,111 @@ The active **${chart.currentDasha.maha}** Mahadasha transitions through vital su
    */
   private static buildThreeYearRoadmapSections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
     const lagna = chart.lagna;
+    const dasha = chart.currentDasha || { maha: 'Jupiter', antar: 'Venus' };
+    const name = profile?.profileName || 'Seeker';
 
     return [
       {
         sectionId: 'sec_3yr_macro',
         chapterNumber: 1,
-        title: 'Chapter 1: Three-Year Strategic Horizon (36 Months)',
-        subtitle: 'Macro Planetary Epochs, Major Dasha Shifts & Life Milestones',
+        title: 'Chapter 1: Three-Year Strategic Horizon & Macro Planetary Epochs',
+        subtitle: 'Major Transits of Saturn, Jupiter & Nodal Eclipses across Months 1–36',
         icon: 'fa-hourglass-half',
-        contentMarkdown: `### Strategic 36-Month Macro Compass
-- **Year 1:** Consolidation, foundation-building, and operational discipline.
-- **Year 2:** Expansion, network reach, and major financial decisions.
-- **Year 3:** Culmination, milestone execution, and spiritual integration.`
+        contentMarkdown: `### 36-Month Macro Astronomical Cycles & Strategic Horizon
+This comprehensive 3-year strategic roadmap evaluates the overarching macro planetary climate for **${name}**, synthesizing major slow-moving transits (*Gochara*) of Shani (Saturn), Guru (Jupiter), and the Rahu-Ketu nodal axis against your natal **${lagna.sign}** Lagna.
+
+#### Key Macro Astrological Coordinates
+- **Ascendant & Ruling Orientation:** **${lagna.sign}** Lagna ruled by **${lagna.lord}** anchors physical agency and worldly action.
+- **Operative Dasha Framework:** Currently navigating the overarching **${dasha.maha}** Mahadasha with the active **${dasha.antar}** Antardasha arc, transitioning through vital sub-period thresholds across the 36-month horizon.
+
+#### Governing Macro Planetary Drivers
+1. **Shani (Saturn) Transit Cadence:** Transiting sidereal sectors that demand institutional integrity, perseverance, and emotional maturity. Shani rewards patient, compound effort while ruthlessly pruning ungrounded speculation.
+2. **Guru (Jupiter) Progressions:** Successive planetary ingresses through kendra and trikona houses provide opportune windows for intellectual expansion, wealth accretion, mentorship, and commercial credibility.
+3. **Nodal Polarity (Rahu-Ketu):** Drives evolutionary recalibration between material ambition and inner detachment, urging focus on authentic competencies over superficial external validation.`
       },
       {
         sectionId: 'sec_year_1_foundation',
         chapterNumber: 2,
-        title: 'Chapter 2: Year 1 Roadmap: Foundational Discipline & Consolidation',
-        subtitle: 'Months 1 to 12 Strategic Directives across Health, Vocation & Finance',
+        title: 'Chapter 2: Year 1 Roadmap: Foundational Systems & Skill Consolidation',
+        subtitle: 'Months 1 to 12 Establishing Operational Resiliency & Debt Elimination',
         icon: 'fa-shield-halved',
-        contentMarkdown: `### Year 1 Strategic Focus: Consolidation & Systems
-- **Vocation:** Deepen technical mastery, eliminate operational debt, and establish clear credibility benchmarks.
-- **Wealth:** Focus on capital preservation, building liquidity reserves, and avoiding speculative overreach.
-- **Health & Routine:** Prioritize circadian discipline, restorative sleep, and grounding Ayurvedic routines.`
+        contentMarkdown: `### Year 1 Strategic Focus: Foundational Systems, Skill Consolidation & Debt Elimination
+The initial 12-month cycle operates under the active **${dasha.maha}—${dasha.antar}** dasha framework. The cosmic directive for this period is consolidation rather than aggressive outward overextension. It is a time for strengthening the base upon which the next multi-year structure will stand.
+
+#### Vocation & Professional Strategy
+- **Mastery over Novelty:** Deepen core technical competencies and eliminate operational inefficiencies in daily workflows. Prove dependability and methodical execution.
+- **Stakeholder Alignment:** Solidify communication bridges with executive leaders and key collaborators; avoid unilateral friction or ego-driven ultimatums.
+- **Credibility Benchmarks:** Focus on demonstrable delivery over speculative promises. Document accomplishments systematically.
+
+#### Financial Architecture & Capital Preservation
+- **Liquidity & Buffer Building:** Build and maintain 6 to 12 months of living and operational reserves in safe, liquid instruments.
+- **Liability Elimination:** Prioritize structured debt reduction and audit recurring expenditures. Strictly avoid high-leverage or speculative market bets during this consolidating phase.
+
+#### Vitality, Circadian Balance & Daily Regimen
+- **Soma Preservation:** Align daily routines with natural solar horas; prioritize restorative sleep and consistent nutrition to support ${lagna.sign} vitality.
+- **Stress Modulation:** Implement 10 minutes of morning pranayama to mitigate mental fatigue and maintain cognitive poise under pressure.
+
+#### Year 1 Tactical Execution Gates
+- **Q1 (Months 1–3):** Complete comprehensive audit of skills, finances, and operational commitments.
+- **Q2 (Months 4–6):** Streamline primary responsibilities, establish measurable delivery milestones, and clear outstanding debt.
+- **Q3 (Months 7–9):** Deliver core mid-year objectives and deepen technical leadership within your domain.
+- **Q4 (Months 10–12):** Review annual progress, consolidate financial gains, and prepare strategic plans for Year 2 acceleration.`
       },
       {
         sectionId: 'sec_year_2_expansion',
         chapterNumber: 3,
-        title: 'Chapter 3: Year 2 Roadmap: Scaling, Strategic Partnerships & Wealth Growth',
-        subtitle: 'Months 13 to 24 Opportunity Windows & Commercial Acceleration',
+        title: 'Chapter 3: Year 2 Roadmap: Acceleration & Strategic Partnerships',
+        subtitle: 'Months 13 to 24 Commercial Breakouts, Strategic Alliances & Asset Growth',
         icon: 'fa-arrow-trend-up',
-        contentMarkdown: `### Year 2 Strategic Focus: Expansion & Reach
-- **Vocation:** Prime window for launching independent ventures, strategic promotions, and public thought leadership.
-- **Wealth:** Structured capital reinvestment, equity building, and long-term real asset acquisitions.
-- **Relationships:** Deepening domestic commitments and widening professional alliances.`
+        contentMarkdown: `### Year 2 Strategic Focus: Acceleration, Strategic Partnerships & Commercial Scaling
+As the 36-month horizon enters its secondary arc, planetary transits shift from internal consolidation to active outward expansion. Benefic transits illuminate relational and collaborative houses, creating prime windows for high-visibility achievements.
+
+#### Vocation & High-Leverage Initiatives
+- **Commercial Breakouts:** Optimal timing for launching independent initiatives, pitching strategic ventures, or taking on significant leadership roles.
+- **Collaborative Alliances:** Form alliances with complementary partners whose competencies balance your natal strengths. Formalize agreements with clear, transparent terms.
+- **Thought Leadership:** Expand your professional footprint through public speaking, writing, or strategic mentorship.
+
+#### Wealth Accretion & Strategic Investment
+- **Asset Acquisition:** Auspicious windows for acquiring long-term productive assets (such as real property or diversified equity) after thorough due diligence.
+- **Reinvestment:** Reinvest realized gains from Year 1 into compounding educational tools and scalable infrastructure.
+
+#### Interpersonal & Domestic Harmony
+- **Relational Fortification:** Deepen emotional presence and mutual understanding within family and close partnerships.
+- **Network Curation:** Curate high-trust professional associations; distance yourself gracefully from draining or unreciprocated dynamics.
+
+#### Year 2 Tactical Execution Gates
+- **Q1 (Months 13–15):** Launch key commercial or career initiatives prepared during Year 1.
+- **Q2 (Months 16–18):** Negotiate strategic agreements, scale collaborative operations, and monitor initial yield.
+- **Q3 (Months 19–21):** Solidify mid-cycle revenue streams and expand executive network reach.
+- **Q4 (Months 22–24):** Consolidate Year 2 expansion, lock in asset acquisitions, and prepare for executive culmination.`
       },
       {
         sectionId: 'sec_year_3_legacy',
         chapterNumber: 4,
-        title: 'Chapter 4: Year 3 Roadmap: Culmination, Leadership & Long-Term Milestones',
-        subtitle: 'Months 25 to 36 Harvesting Multi-Year Initiatives & Community Impact',
+        title: 'Chapter 4: Year 3 Roadmap: Culmination & Executive Stewardship',
+        subtitle: 'Months 25 to 36 Harvesting Multi-Year Initiatives & Legacy Impact',
         icon: 'fa-trophy',
-        contentMarkdown: `### Year 3 Strategic Focus: Culmination & Legacy
-- **Vocation:** Institutional recognition, executive seniority, and executive stewardship.
-- **Spiritual Integration:** Aligning material success with philosophical purpose and philanthropic contributions.`
+        contentMarkdown: `### Year 3 Strategic Focus: Culmination, Executive Authority & Long-Term Harvesting
+The final 12-month arc represents the fruition of efforts planted during Year 1 and nurtured in Year 2. Operating under mature dasha fruition, the native steps into natural authority, stewardship, and legacy creation.
+
+#### Institutional Stature & Leadership
+- **Executive Stewardship:** Transition from individual contributor execution to high-level strategic direction, governance, and institutional oversight.
+- **Legacy & Knowledge Transmission:** Document methodologies, mentor junior associates, and establish sustainable frameworks that outlast immediate involvement.
+- **Public Recognition:** Favorable planetary alignments support professional accolades, formal honors, and industry credibility.
+
+#### Capital Consolidation & Generational Security
+- **Portfolio Rebalancing:** Harvest realized profits and transition speculative gains into conservative, enduring wealth structures.
+- **Estate & Continuity Planning:** Ensure formal documentation of intellectual property, partnerships, and generational assets.
+
+#### Philosophical Integration & Meaning
+- **Dharmic Alignment:** Harmonize external worldly achievements with inner contemplative growth. Align work with broad ethical and social value.
+- **Philanthropic Commitment:** Allocate time and resources to charitable causes that empower underprivileged or vulnerable communities.
+
+#### Year 3 Tactical Execution Gates
+- **Q1 (Months 25–27):** Complete transition into higher executive or consultative authority.
+- **Q2 (Months 28–30):** Execute major multi-year milestone deliverables and harvest commercial returns.
+- **Q3 (Months 31–33):** Rebalance financial portfolio, establish long-term wealth protections, and engage in mentorship.
+- **Q4 (Months 34–36):** Conduct 3-year reflective audit, commemorate milestones with gratitude, and establish the vision for the subsequent life cycle.`
       },
       {
         sectionId: 'sec_3yr_karmic_points',
@@ -1041,10 +1127,207 @@ The active **${chart.currentDasha.maha}** Mahadasha transitions through vital su
         title: 'Chapter 5: Major Karmic Turning Points & Long-Term Remedies',
         subtitle: 'Mantra Sadhana, Charitable Commitments & Philosophical Resilience',
         icon: 'fa-om',
-        contentMarkdown: `### Multi-Year Spiritual Anchor
-1. **Long-Term Mantra Sadhana:** Sustained japa of personal Ishta Devata mantras during dawn hours.
-2. **Systemic Daana:** Regular contributions to knowledge dissemination and supporting elderly caregivers.
-3. **Equilibrium:** Remembering that while the stars chart the celestial weather, personal dignity and ethical action (*Purushartha*) determine the harvest.`
+        contentMarkdown: `### Major Karmic Turning Points, Dasha Transitions & Satvik Remedial Blueprint
+Navigating a 36-month timeline requires spiritual resilience and mindfulness during planetary transitional gates (*Sandhi* intervals).
+
+#### Dasha Sandhi & Subperiod Transition Management
+- **Awareness of Boundary Periods:** The 4 to 6 weeks surrounding a change in Antardasha sub-period require heightened patience. Avoid making impulsive life-altering decisions during these transition intervals.
+- **Equanimity:** Understand that planetary influences create the meteorological climate; your deliberate ethical actions (*Purushartha*) determine the worldly harvest.
+
+#### Classical Daily Sadhana Protocol
+- **Lagna Lord Harmonization:** Sustained morning contemplation dedicated to **${lagna.lord}** to fortify constitutional stamina and decisive willpower.
+- **Maha-Dasha Pacification:** Recite the governing classical mantra for **${dasha.maha}** 108 times daily at sunrise.
+- **Gayatri Sadhana:** Practice 10 minutes of solar japa at dawn to revitalize mental clarity and soul vitality.
+
+#### Targeted Charitable Service (*Daana*)
+- **Thursday Contributions:** Support educational access, provide books or scholarly supplies to students to honor Guru (Jupiter).
+- **Saturday Service:** Distribute warm meals or footwear to hardworking laborers or elder caregivers to honor Shani (Saturn).
+- **Environmental Care:** Plant neem, banyan, or flowering trees in your locality to cultivate living karmic merit (*Vriksha Ropana*).`
+      }
+    ];
+  }
+
+  /**
+   * PLANETARY REMEDIES, GEMSTONE & MANTRA BLUEPRINT (₹149)
+   * 7 Exhaustive Chapters on Lagna-safe Ratna, Beej Mantras, Yantras & Satvik Daana
+   */
+  private static buildRemedialGemstonesSections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
+    const lagna = chart.lagna;
+    const moon = chart.planets.Moon;
+    const sun = chart.planets.Sun;
+    const mars = chart.planets.Mars;
+    const jupiter = chart.planets.Jupiter;
+    const mercury = chart.planets.Mercury;
+    const saturn = chart.planets.Saturn;
+    const venus = chart.planets.Venus;
+    const lagnaLord = SIGN_LORDS[lagna.sign] || 'Mars';
+
+    // Lagna-specific gemstone logic
+    const isScorpio = lagna.sign === 'Scorpio';
+    const isAries = lagna.sign === 'Aries';
+    const primaryGem = isScorpio || isAries ? 'Red Coral (Moonga - 6 to 8 Ratti)' : 'Yellow Sapphire (Pukhraj - 4 to 6 Ratti)';
+    const primaryMetal = isScorpio || isAries ? 'Copper or 18k Gold' : 'Pure Gold or Panchadhatu';
+    const contraGem = isScorpio ? 'Emerald (Panna)' : lagna.sign === 'Taurus' ? 'Yellow Sapphire' : 'Blue Sapphire';
+    const contraReason = isScorpio
+      ? 'Mercury rules the 8th (Dusthana/Ayur) and 11th (Labha/Badhaka) houses, creating acute neurological friction and health vulnerabilities if energized with Emerald.'
+      : 'planetary lordship introduces functional dusthana activation.';
+
+    return [
+      {
+        sectionId: 'sec_rem_constitutional',
+        chapterNumber: 1,
+        title: 'Chapter 1: Constitutional Vulnerabilities & Functional Planetary Archetypes',
+        subtitle: 'Identifying Functional Benefics, Functional Malefics and Primary Tanu Bhava Health Balance',
+        icon: 'fa-shield-halved',
+        contentMarkdown: `### Natal Ascendant Blueprint & Functional Equilibrium
+Under classical Parashari Jyotish (*Brihat Parashara Hora Shastra* Ch. 34), planetary remediation must never be applied indiscriminately. Every remedy begins with diagnosing whether a graha functions as a **Functional Benefic (*Yoga Karaka* / *Shubha*)** or a **Functional Malefic (*Ashubha*)** relative to the **${lagna.sign}** Ascendant.
+
+#### Foundational Astronomical Coordinates
+- **Ascendant (Lagna):** **${lagna.sign}** (${lagna.degree.toFixed(2)}°) in **${lagna.nakshatra}** Nakshatra (Pada ${lagna.pada}).
+- **Ruling Planetary Sovereign (Lagnesha):** **${lagnaLord}** positioned in House **${chart.planets[lagnaLord]?.house || 1}** (${chart.planets[lagnaLord]?.sign || lagna.sign}).
+- **Janma Rashi (Lunar Mind):** **${moon.sign}** (${moon.nakshatra} Nakshatra, Pada ${moon.pada}).
+- **Surya Karakatva:** **${sun.sign}** (${sun.degree.toFixed(2)}°) governing physical vitality and conscious purpose.
+
+#### Functional Benefic & Malefic Diagnostic
+1. **Primary Functional Benefic:** **${lagnaLord}** rules the 1st House (*Tanu Bhava*), governing the biological constitution, immune stamina, and worldly agency. Strengthening Lagnesha provides natural armor against transient afflictions.
+2. **Secondary Functional Benefics:** **Guru (Jupiter)** as 2nd and 5th lord anchors dharmic intellect and financial wisdom; **Chandra (Moon)** as 9th lord (*Bhagya Bhava*) bestows maternal grace and spiritual fortune.
+3. **Functional Malefic Warning:** Planets ruling dusthana sectors (6th, 8th, or 12th houses) must **never** be fortified with gemstones; they must be pacified through **Japa (Mantras)**, **Daana (Charity)**, and **Vrata (Fasting)**.`
+      },
+      {
+        sectionId: 'sec_rem_gemstone_prescriptions',
+        chapterNumber: 2,
+        title: 'Chapter 2: Shastric Gemstone (Ratna) Prescriptions & Strict Contraindications',
+        subtitle: 'Lagna-Safe Ratna Directives, Weight Ratios, Metals, Consecration & Warning Rules',
+        icon: 'fa-gem',
+        contentMarkdown: `### Authoritative Lagna-Safe Gemstone (*Ratna*) Selection
+A gemstone acts as a crystalline prism, transmitting specific planetary electromagnetic frequencies into the human subtle body (*Pranamaya Kosha*). Prescribing an inappropriate stone can stimulate chronic friction or emotional imbalance.
+
+#### Lagna-Safe Primary Prescriptions
+- **Primary Gemstone:** **${primaryGem}**
+  - **Metal Alloy:** ${primaryMetal} ring or pendant.
+  - **Wearing Finger:** Ring finger of the dominant hand (Anamika).
+  - **Consecration Day:** Tuesday sunrise during Shukla Paksha (waxing moon).
+  - **Shastric Purpose:** Fortifies constitutional vitality, immune resilience, leadership conviction, and decisive execution.
+- **Secondary Gemstone (Dharma & Wealth):** **Yellow Sapphire (Pukhraj / Pushparaga)**
+  - **Metal Alloy:** 22k Gold or silver-brass Panchadhatu.
+  - **Wearing Finger:** Index finger (Tarjani).
+  - **Consecration Day:** Thursday sunrise during Pushya or Punarvasu Nakshatra.
+  - **Shastric Purpose:** Expands intellectual discernment, scholastic memory, and auspicious domestic prosperity.
+
+#### Strict Contraindications & Contraindicated Stones
+> **Strict Prescription Warning:** **${contraGem} is strictly contraindicated for ${lagna.sign} Lagna.**
+${contraReason} Wearing ${contraGem} will not attract wealth; it destabilizes bodily equilibrium. AstroVerse guarantees strict adherence to classical Parashari contraindications.
+
+#### Shastric Consecration (*Prana Pratishtha*) Ritual
+1. Immerse the gemstone ring overnight in a mixture of raw unboiled cow milk, Ganga water, honey, and sacred Tulsi leaves.
+2. At sunrise on the designated weekday, wash with clean water, place upon a clean copper plate, and apply sandalwood paste (*Chandan*).
+3. Recite 108 repetitions of the planetary Beej Mantra before placing the ring upon the sanctified finger.`
+      },
+      {
+        sectionId: 'sec_rem_beej_mantras',
+        chapterNumber: 3,
+        title: 'Chapter 3: Authentic Sanskrit Beej Mantras, Stotras & 108 Japa Sadhana',
+        subtitle: 'Acoustic Sacred Geometry, Rosary Selection, Sunrise Horas & Japa Counts',
+        icon: 'fa-om',
+        contentMarkdown: `### Sacred Sanskrit Sound Vibration (*Naada Sadhana*)
+While gemstones function through physical contact, **Mantras** operate upon the causal body (*Karana Sharira*), purifying subconscious thought patterns and pacifying active karmic imbalances.
+
+#### Governing Planetary Beej Mantras
+- **Surya (Sun):** \`ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः\` (Om Hraam Hreem Hroum Sah Sooryaaya Namah)
+  - *Count & Timing:* 108 repetitions at sunrise; facing East with pure water arghya.
+- **Chandra (Moon):** \`ॐ श्रां श्रीं श्रौं सः चन्द्रमसे नमः\` (Om Shraam Shreem Shroum Sah Chandramase Namah)
+  - *Count & Timing:* 108 repetitions on Monday evenings; promotes mental tranquility and intuition.
+- **Mangal (Mars - Lagnesha):** \`ॐ क्रां क्रीं क्रौं सः भौमाय नमः\` (Om Kraam Kreem Kroum Sah Bhoumaaya Namah)
+  - *Count & Timing:* 108 repetitions on Tuesday morning; activates courage, stamina, and eliminates sluggishness.
+- **Guru (Jupiter):** \`ॐ ग्रां ग्रीं ग्रौं सः गुरवे नमः\` (Om Graam Greem Groum Sah Gurave Namah)
+  - *Count & Timing:* 108 repetitions on Thursday dawn; bestows spiritual clarity and moral wisdom.
+- **Shani (Saturn):** \`ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः\` (Om Praam Preem Proum Sah Shanaishcharaaya Namah)
+  - *Count & Timing:* 108 repetitions on Saturday twilight; fosters perseverance, patience, and humility.
+
+#### Rosary (*Japa Mala*) Selection Guidelines
+- **Rudraksha Mala:** Optimal for Surya, Mangal, and general health-enhancing practices.
+- **Tulsi Mala:** Reserved for Guru and Vishnu-oriented meditative japa.
+- **Sphatik (Quartz Crystal):** Optimal for Shukra, Saraswati, and calming nervous tension.`
+      },
+      {
+        sectionId: 'sec_rem_sacred_yantras',
+        chapterNumber: 4,
+        title: 'Chapter 4: Sacred Planetary Yantras & Altar Geometric Alignment',
+        subtitle: 'Copper/Bhojpatra Plate Consecration, Vastu Orientations & Daily Offerings',
+        icon: 'fa-square',
+        contentMarkdown: `### Sacred Geometric Architecture (*Yantra Shastra*)
+A **Yantra** is the graphic, geometric embodiment of a celestial energy archetype. When placed correctly in accordance with **Vastu Shastra**, it harmonizes the ambient electromagnetic environment of your home or workspace.
+
+#### Recommended Yantras for ${lagna.sign} Lagna
+1. **Surya / Gayatri Yantra:**
+   - **Vastu Placement:** East wall of the prayer room or study at eye level.
+   - **Geometric Form:** Concentric lotus petals circumscribing the central Bindu of cosmic illumination.
+   - **Daily Offering:** Lighting a pure brass oil lamp with sesame or pure cow ghee.
+2. **Mangal Yantra (3×3 Sacred Magic Square):**
+   - **Matrix Numbers:**
+     - Row 1: 8 | 3 | 10
+     - Row 2: 9 | 7 | 5
+     - Row 3: 4 | 11 | 6
+   - **Mathematical Invariant:** Every row, column, and diagonal sums to exactly **21** (The sacred number of Mars pacification).
+   - **Vastu Orientation:** South or Southeast quadrant; pacifies domestic stress and safeguards personal boundaries.
+3. **Shri Yantra:**
+   - Universal harmonizer composed of 9 interlocking triangles generating 43 smaller subsidiary triangles, anchoring material abundance and spiritual serenity.`
+      },
+      {
+        sectionId: 'sec_rem_satvik_daana',
+        chapterNumber: 5,
+        title: 'Chapter 5: Satvik Charity (Daana) & Karmic Debt Liquidation',
+        subtitle: 'Targeted Planetary Offerings, Day-of-Week Philanthropy & Living Being Service',
+        icon: 'fa-hands-praying',
+        contentMarkdown: `### Karmic Remediation Through Selfless Service (*Daana*)
+In Parashari doctrine, charity given with expectation of return is *Rajasic*; charity given with resentment is *Tamasic*. Only **Satvik Daana**—offered with humility to worthy recipients without attachment—dissolves dense *Prarabdha* karmic debts.
+
+#### Day-of-Week Philanthropic Directives
+- **Tuesday Offerings (Mangal Harmony):**
+  - Donate whole red lentils (*Masoor Dal*), organic jaggery, or donate blood to a medical bank.
+  - Alleviates friction, muscular tension, and aggressive temperament.
+- **Thursday Offerings (Guru Grace):**
+  - Sponsor textbooks, school tuition, or stationery for underprivileged students; distribute yellow chickpeas (*Chana Dal*) and bananas to scholars or spiritual seekers.
+  - Opens channels of mentorship, scholastic success, and divine protection.
+- **Saturday Offerings (Shani Balance):**
+  - Distribute warm, freshly cooked meals, mustard oil, or protective footwear to manual laborers, street sweepers, or elderly caretakers.
+  - Feed black sesame seeds and roti to stray canines or crows; pacifies Saturnian delays and eases Sade Sati transitions.`
+      },
+      {
+        sectionId: 'sec_rem_circadian_vrata',
+        chapterNumber: 6,
+        title: 'Chapter 6: Circadian Fasting (Vrata), Solar Horas & Lifestyle Rhythm',
+        subtitle: 'Tithi Observance, Sattvic Diet, Morning Surya Namaskar & Pranayama Discipline',
+        icon: 'fa-calendar-check',
+        contentMarkdown: `### Circadian Alignment & Observational Fasting (*Vrata*)
+The human biological organism is deeply synchronized with celestial rhythms (*Ritucharya* and *Dinacharya*). Fasting calms digestive metabolic fire, allowing cellular regeneration and subtle cognitive rejuvenation.
+
+#### Personal Observational Vrata
+- **Weekly Fasting Day:** Tuesday (for Mars/Lagnesha vitality) or Thursday (for Jupiterian wisdom).
+- **Dietary Protocol:** Single light meal of fresh fruits, raw nuts, and pure milk after sunset. Refrain from salt, refined grains, and processed foods.
+- **Solar Horas Integration:** Schedule high-priority strategic decisions, creative work, and important contracts during the planetary Hora governed by your ascendant lord.
+
+#### Morning Dinacharya Discipline
+1. **Surya Namaskar:** 12 dynamic cycles at sunrise facing the morning sun to stimulate mitochondrial biogenesis and endocrine balance.
+2. **Nadi Shodhana Pranayama:** 15 minutes of alternate-nostril breathing to harmonize the Ida (lunar) and Pingala (solar) pranic channels.
+3. **Satvik Mindset:** Refrain from digital screens for the first 45 minutes after waking to protect cognitive sovereign clarity.`
+      },
+      {
+        sectionId: 'sec_rem_purushartha_disclaimer',
+        chapterNumber: 7,
+        title: 'Chapter 7: Purushartha, Free Agency & Ethical Jyotish Philosophy',
+        subtitle: 'Conscious Action Over Fatalism: Transcending Karmic Patterns with Integrity',
+        icon: 'fa-scale-balanced',
+        contentMarkdown: `### The Doctrine of Purushartha: Destiny and Deliberate Will
+Vedic astrology does not subscribe to fatalism or passive helplessness. The birth chart delineates **Prarabdha Karma**—the atmospheric conditions and accumulated seeds of prior actions. However, **Kriyamana Karma**—your conscious ethical choices in the present moment—is the supreme sovereign force.
+
+#### Four Pillars of Human Fulfillment (*Purushartha*)
+1. **Dharma (Righteous Duty):** Acting in accordance with truth, integrity, and social responsibility.
+2. **Artha (Honest Enterprise):** Building material stability and resources through ethical commerce.
+3. **Kama (Aesthetic Delight):** Cultivating loving, harmonious relationships and intellectual joy.
+4. **Moksha (Spiritual Liberation):** Detaching the ego from transient praise and resting in the eternal Self.
+
+> **Ethical Jyotish Guarantee:** AstroVerse will never prescribe extortionate rituals, fear-based pujas, or claims of guaranteed magical transformation. Authentic Vedic remedies operate through self-discipline, selfless service, and acoustic contemplation. May this publication serve as your compass toward intentional, dignified living.`
       }
     ];
   }

@@ -445,6 +445,42 @@ export const REPORT_CATALOGUE: Record<string, ReportProductDefinition> = {
   }
 };
 
+Object.defineProperty(REPORT_CATALOGUE, 'report_remedial_gemstones', {
+  value: {
+    productId: 'report_remedial_gemstones',
+    displayName: 'Planetary Remedies, Gemstone & Mantra Blueprint',
+    shortDescription: 'In-depth 12+ page remedial guide with Lagna-safe gemstone prescriptions, Beej mantras & Yantras.',
+    fullDescription: 'Comprehensive classical remedial handbook synthesized under Brihat Parashara Hora Shastra. Features functional benefic/malefic analysis, Lagna-safe Ratna prescriptions (with strict contraindication warnings), authentic Devanagari Beej mantras with 108 japa protocol, sacred Yantra geometry, and Sattvic Daana guidelines.',
+    pricePaise: 14900,
+    priceRupees: 149,
+    requiredProfileInputs: ['birth_profile'],
+    requiredCapabilities: ['ephemeris', 'dasha', 'doshas'],
+    includedSections: [
+      'remedial_constitutional_vulnerabilities',
+      'lagna_safe_gemstone_prescriptions',
+      'beej_mantras_and_japa_sadhana',
+      'sacred_yantras_and_altar_geometry',
+      'satvik_daana_and_charity',
+      'circadian_vrata_lifestyle_rituals',
+      'purushartha_karmic_disclaimer'
+    ],
+    forecastPeriod: null,
+    supportedLanguages: ['en', 'hi'],
+    onlineReaderOnly: false,
+    sampleOutline: [
+      { title: 'Constitutional Vulnerabilities & Planetary Dignities', subtitle: 'Identifying functional benefics and malefics', icon: 'fa-shield-halved' },
+      { title: 'Lagna-Safe Gemstone Prescriptions & Contraindications', subtitle: 'Strict Ratna selection and wearing protocols', icon: 'fa-gem' },
+      { title: 'Devanagari Beej Mantras & 108 Japa Sadhana', subtitle: 'Acoustic resonance and rosary guidelines', icon: 'fa-om' },
+      { title: 'Sacred Yantras & Geometric Architecture', subtitle: 'Altar placement and planetary consecration', icon: 'fa-square' },
+      { title: 'Sattvic Daana & Purushartha Integration', subtitle: 'Charity timing, deity pacification & free will', icon: 'fa-hands-praying' }
+    ],
+    disclaimer: 'Vedic remedies, mantras, and gemstones provide traditional spiritual alignment and mental poise. They do not constitute deterministic life predictions or substitute for professional medical, legal, or financial counsel.'
+  },
+  enumerable: false,
+  writable: true,
+  configurable: true
+});
+
 /**
  * Helper to calculate final price in integer paise applying applicable subscription discounts.
  */
