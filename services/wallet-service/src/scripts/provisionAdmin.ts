@@ -17,10 +17,11 @@ export interface ProvisionAdminOptions {
   email: string;
   role?: string;
   displayName?: string;
+  password?: string;
 }
 
 export async function provisionAdmin(options: ProvisionAdminOptions) {
-  const { email, role = 'OWNER', displayName } = options;
+  const { email, role = 'OWNER', displayName, password } = options;
 
   if (!email || typeof email !== 'string' || !email.includes('@')) {
     throw new Error('A valid email address is required (e.g. --email owner@example.com).');
@@ -36,6 +37,17 @@ export async function provisionAdmin(options: ProvisionAdminOptions) {
     );
   }
 
+  let passwordHash: string | undefined;
+  let passwordSalt: string | undefined;
+  if (password && typeof password === 'string') {
+    if (password.length < 8) {
+      throw new Error('Password must be at least 8 characters long.');
+    }
+    const crypto = await import('crypto');
+    passwordSalt = crypto.randomBytes(16).toString('hex');
+    passwordHash = crypto.scryptSync(password, passwordSalt, 64).toString('hex');
+  }
+
   let user = await db.findUserByIdentifier(cleanEmail);
   let action: 'CREATED' | 'PROMOTED';
 
@@ -48,16 +60,23 @@ export async function provisionAdmin(options: ProvisionAdminOptions) {
       phoneVerified: false,
       role: targetRole,
       status: AccountStatus.ACTIVE,
+      passwordHash: passwordHash || null,
+      passwordSalt: passwordSalt || null,
       walletBalance: 0.00
     });
     action = 'CREATED';
   } else {
-    user = await db.updateUser(user.id, {
+    const updateData: any = {
       role: targetRole,
       emailVerified: true,
       status: AccountStatus.ACTIVE,
       lastLoginAt: new Date().toISOString()
-    });
+    };
+    if (passwordHash && passwordSalt) {
+      updateData.passwordHash = passwordHash;
+      updateData.passwordSalt = passwordSalt;
+    }
+    user = await db.updateUser(user.id, updateData);
     action = 'PROMOTED';
   }
 
@@ -94,6 +113,7 @@ if (require.main === module) {
   let email = '';
   let role = 'OWNER';
   let displayName = '';
+  let password = '';
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -109,16 +129,20 @@ if (require.main === module) {
       displayName = args[++i];
     } else if (arg.startsWith('--name=')) {
       displayName = arg.split('=')[1];
+    } else if (arg === '--password' || arg === '-p') {
+      password = args[++i];
+    } else if (arg.startsWith('--password=')) {
+      password = arg.split('=')[1];
     }
   }
 
   if (!email) {
     console.error('Error: --email parameter is required.');
-    console.error('Usage: npm run admin:provision -- --email <email> [--role OWNER|SECURITY_ADMIN|...] [--name "Admin Name"]');
+    console.error('Usage: npm run admin:provision -- --email <email> [--password <pwd>] [--role OWNER|SECURITY_ADMIN|...] [--name "Admin Name"]');
     process.exit(1);
   }
 
-  provisionAdmin({ email, role, displayName })
+  provisionAdmin({ email, role, displayName, password })
     .then((result) => {
       console.log(`[AstroVerse Provisioning] Successfully ${result.action.toLowerCase()} administrator:`);
       console.log(`  User ID:      ${result.user.id}`);

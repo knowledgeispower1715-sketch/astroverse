@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-dotenv.config();
+if (process.env.NODE_ENV !== 'test') dotenv.config();
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
