@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails } from './security/permissions';
+import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled } from './security/permissions';
 import { bootstrapPostgresSchema } from './schemaBootstrap';
-export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails };
+export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled };
 
 export enum AccountStatus {
   ACTIVE = 'ACTIVE',
@@ -2576,7 +2576,7 @@ class ResilientDatabase {
   // ============================================================================
 
   async addDemoCredits(userId: string, amount: number) {
-    if (!isDemoModeActive()) {
+    if (!isDemoModeActive() && !isAdminPreviewEnabled()) {
       throw new Error('DEMO_MODE_DISABLED');
     }
     const user = await this.findUserById(userId);
@@ -2689,7 +2689,7 @@ class ResilientDatabase {
   }
 
   async resetDemoWallet(userId: string) {
-    if (!isDemoModeActive()) {
+    if (!isDemoModeActive() && !isAdminPreviewEnabled()) {
       throw new Error('DEMO_MODE_DISABLED');
     }
     const user = await this.findUserById(userId);
@@ -2731,7 +2731,7 @@ class ResilientDatabase {
   }
 
   async setSimulatedTier(userId: string, tier: 'FREE' | 'PLUS' | 'PREMIUM') {
-    if (!isDemoModeActive()) {
+    if (!isDemoModeActive() && !isAdminPreviewEnabled()) {
       throw new Error('DEMO_MODE_DISABLED');
     }
     const user = await this.findUserById(userId);

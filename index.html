@@ -1549,6 +1549,52 @@
       display: none !important;
     }
 
+    /* Dedicated Admin High-Density Viewport & Layout Architecture (AV-04) */
+    body.admin-mode .page-main-container {
+      max-width: 1680px !important;
+      margin: 16px auto 40px !important;
+      padding: 0 clamp(16px, 2.5vw, 40px) !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    body.admin-mode #view-admin {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    #admin-module-nav-bar {
+      max-width: 100% !important;
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+      margin: 16px 0 24px !important;
+      justify-content: flex-start !important;
+    }
+    #admin-module-nav-bar .category-pill {
+      background: #0E1626 !important;
+      border: 1px solid rgba(212, 175, 55, 0.28) !important;
+      color: #94A3B8 !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      padding: 7px 14px !important;
+      border-radius: 8px !important;
+      cursor: pointer !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      transition: all 0.2s ease !important;
+    }
+    #admin-module-nav-bar .category-pill:hover {
+      background: #182338 !important;
+      color: #F8FAFC !important;
+      border-color: rgba(212, 175, 55, 0.6) !important;
+    }
+    #admin-module-nav-bar .category-pill.active {
+      background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
+      color: #FFFFFF !important;
+      border-color: #F5C45E !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(245, 196, 94, 0.35) !important;
+    }
+
     /* Hardened safeguard: ensure admin views never display when NOT in admin-mode */
     body:not(.admin-mode) #view-admin-login,
     body:not(.admin-mode) #view-admin {
@@ -9546,7 +9592,8 @@
                   <span style="font-size: 12px; font-weight: 800; color: #86198F; text-transform: uppercase;">
                     <i class="fa-solid fa-wallet"></i> Isolated Demo Wallet
                   </span>
-                  <div style="font-size: 11px; color: #A21CAF; margin-top: 2px;">
+                  <span style="margin-left: 8px; font-size: 10px; font-weight: 800; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; padding: 2px 8px; border-radius: 999px; letter-spacing: 0.5px;">ISOLATED TEST SANDBOX</span>
+                  <div style="font-size: 11px; color: #A21CAF; margin-top: 3px;">
                     Test credits only. Real customer balances and bank accounts are 100% untouched.
                   </div>
                 </div>
@@ -11626,18 +11673,21 @@
         });
         if (res.ok) {
           const data = await res.json();
-          currentDemoWalletBalance = parseFloat(data.newDemoBalance || data.demoBalance);
+          currentDemoWalletBalance = parseFloat(data.newDemoBalance || data.demoBalance || (currentDemoWalletBalance + rupees));
+          showToast(`🎉 Added ₹${rupees} to Isolated Demo Wallet (Real balance unaffected)! Demo: ₹${currentDemoWalletBalance.toFixed(2)}`, "success");
         } else {
-          currentDemoWalletBalance += rupees;
+          const errData = await res.json().catch(() => ({}));
+          showToast(`Failed to credit demo balance: ${errData.message || errData.error || ('HTTP ' + res.status)}`, "error");
+          return;
         }
       } catch (err) {
-        currentDemoWalletBalance += rupees;
+        showToast("Network error connecting to demo wallet service.", "error");
+        return;
       }
       localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
       updateDemoWalletDisplay();
       updateAdminPreviewBannerUI();
       syncPromotionalBannerState();
-      showToast(`🎉 Credited ₹${rupees} demo money! Demo balance: ₹${currentDemoWalletBalance.toFixed(2)}`, "success");
       updateBuilderPriceEstimate();
     }
 
@@ -11645,17 +11695,25 @@
       if (!isAdminUser()) return;
       try {
         const headers = getAuthHeaders();
-        await fetch(`${getAuthBase()}/api/admin/demo-wallet/reset`, {
+        const res = await fetch(`${getAuthBase()}/api/admin/demo-wallet/reset`, {
           method: 'POST',
           headers
         });
-      } catch (_) {}
-      currentDemoWalletBalance = 0.00;
+        if (res.ok) {
+          currentDemoWalletBalance = 0.00;
+          showToast("Demo wallet balance reset to ₹0.00 (Isolated sandbox clean)", "info");
+        } else {
+          showToast("Failed to reset demo wallet.", "error");
+          return;
+        }
+      } catch (_) {
+        currentDemoWalletBalance = 0.00;
+        showToast("Demo wallet balance reset to ₹0.00", "info");
+      }
       localStorage.setItem('astro_demo_wallet_bal', '0.00');
       updateDemoWalletDisplay();
       updateAdminPreviewBannerUI();
       syncPromotionalBannerState();
-      showToast("Demo wallet balance reset to ₹0.00", "info");
       updateBuilderPriceEstimate();
     }
 
@@ -16455,23 +16513,36 @@
     async function loadAdminRoles() {
       const tbody = document.getElementById('admin-roles-tbody');
       if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748B;">Loading administrators...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading administrator directory...</td></tr>';
       try {
         const res = await fetch(`${getAuthBase()}/api/admin/roles/admins`, { headers: getAuthHeaders() });
         if (res.ok) {
           const data = await res.json();
-          tbody.innerHTML = data.admins.map(a => `
+          const list = data.admins || [];
+          if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 24px;">No administrator records found.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = list.map(a => `
             <tr>
               <td><strong>${escapeHtml(a.displayName || a.email || a.id)}</strong><div style="font-size: 11px; color: #64748B;">${escapeHtml(a.email || '')}</div></td>
-              <td><span class="badge-role-admin">${a.canonicalRole}</span></td>
-              <td><span style="color: ${a.mfaEnabled ? '#059669' : '#D97706'}; font-weight: 700;">${a.mfaEnabled ? 'ACTIVE (TOTP)' : 'NOT_ENROLLED'}</span></td>
-              <td><span class="badge-status-active">${a.status}</span></td>
+              <td><span class="badge-role-admin">${escapeHtml(a.canonicalRole || a.role)}</span></td>
+              <td><span style="color: ${a.mfaEnabled ? '#059669' : '#D97706'}; font-weight: 700;">${a.mfaEnabled ? '<i class=\"fa-solid fa-shield-check\"></i> ACTIVE (TOTP)' : '<i class=\"fa-solid fa-circle-exclamation\"></i> NOT_ENROLLED'}</span></td>
+              <td><span class="badge-status-active">${escapeHtml(a.status)}</span></td>
               <td style="font-size: 11px; color: #64748B;">${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : 'Never'}</td>
             </tr>
           `).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #DC2626; padding: 20px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load administrator directory (HTTP ${res.status}).
+            <button class="btn-outline-secondary" style="font-size: 11px; padding: 3px 10px; margin-left: 8px;" onclick="loadAdminRoles()">Retry</button>
+          </td></tr>`;
         }
-      } catch (_) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #DC2626;">Error loading administrators.</td></tr>';
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #DC2626; padding: 20px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> Network error loading administrators.
+          <button class="btn-outline-secondary" style="font-size: 11px; padding: 3px 10px; margin-left: 8px;" onclick="loadAdminRoles()">Retry</button>
+        </td></tr>`;
       }
     }
 
@@ -16623,6 +16694,11 @@
     }
 
     async function loadAdminSettings() {
+      const safeTarget = document.getElementById('admin-safe-config');
+      const flagsTarget = document.getElementById('admin-flags-list');
+      if (safeTarget) safeTarget.innerHTML = '<span style="color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Checking environment configuration...</span>';
+      if (flagsTarget) flagsTarget.innerHTML = '<span style="color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Loading runtime feature flags...</span>';
+
       try {
         const [safeRes, flagsRes] = await Promise.all([
           fetch(`${getAuthBase()}/api/admin/settings/safe`, { headers: getAuthHeaders() }),
@@ -16631,56 +16707,84 @@
 
         if (safeRes.ok) {
           const safeData = await safeRes.json();
-          const target = document.getElementById('admin-safe-config');
-          if (target) {
-            target.innerHTML = `<pre style="margin: 0;">${JSON.stringify(safeData.configurationStatus, null, 2)}</pre>`;
+          if (safeTarget) {
+            safeTarget.innerHTML = `<pre style="margin: 0; background: #0E1626; color: #34D399; padding: 12px; border-radius: 8px; font-size: 11px; overflow-x: auto;">${JSON.stringify(safeData.configurationStatus, null, 2)}</pre>`;
           }
+        } else if (safeTarget) {
+          safeTarget.innerHTML = `<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 6px; font-size: 12px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Safe configuration unavailable (HTTP ${safeRes.status}).
+            <button class="btn-outline-secondary" style="font-size: 11px; padding: 2px 8px; margin-left: 8px;" onclick="loadAdminSettings()">Retry</button>
+          </div>`;
         }
 
         if (flagsRes.ok) {
           const flagsData = await flagsRes.json();
-          const target = document.getElementById('admin-flags-list');
-          if (target) {
-            target.innerHTML = (flagsData.flags || []).map(f => `
-              <div style="padding: 10px; border: 1px solid #E2E8F0; border-radius: 6px; background: #F8FAFC;">
-                <div style="display: flex; justify-content: space-between;">
-                  <strong>${escapeHtml(f.name)}</strong>
-                  <span style="color: ${f.enabled ? '#059669' : '#DC2626'}; font-weight: 800;">${f.enabled ? 'ENABLED' : 'DISABLED'}</span>
+          const list = flagsData.flags || [];
+          if (flagsTarget) {
+            if (list.length === 0) {
+              flagsTarget.innerHTML = '<div style="color: #64748B; padding: 12px;">Zero active feature flags configured.</div>';
+            } else {
+              flagsTarget.innerHTML = list.map(f => `
+                <div style="padding: 10px; border: 1px solid #E2E8F0; border-radius: 6px; background: #F8FAFC;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <strong>${escapeHtml(f.name)}</strong>
+                    <span style="color: ${f.enabled ? '#059669' : '#DC2626'}; font-weight: 800;">${f.enabled ? 'ENABLED' : 'DISABLED'}</span>
+                  </div>
+                  <div style="font-size: 11px; color: #64748B; margin-top: 4px;">${escapeHtml(f.description)}</div>
                 </div>
-                <div style="font-size: 11px; color: #64748B; margin-top: 4px;">${escapeHtml(f.description)}</div>
-              </div>
-            `).join('');
+              `).join('');
+            }
           }
+        } else if (flagsTarget) {
+          flagsTarget.innerHTML = `<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 6px; font-size: 12px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Feature flags unavailable (HTTP ${flagsRes.status}).
+            <button class="btn-outline-secondary" style="font-size: 11px; padding: 2px 8px; margin-left: 8px;" onclick="loadAdminSettings()">Retry</button>
+          </div>`;
         }
-      } catch (_) {}
+      } catch (err) {
+        if (safeTarget) safeTarget.innerHTML = '<div style="color: #DC2626; font-size: 12px;"><i class="fa-solid fa-triangle-exclamation"></i> Network error loading configuration.</div>';
+        if (flagsTarget) flagsTarget.innerHTML = '<div style="color: #DC2626; font-size: 12px;"><i class="fa-solid fa-triangle-exclamation"></i> Network error loading feature flags.</div>';
+      }
     }
 
     async function loadAdminPrivacy() {
       const tbody = document.getElementById('admin-privacy-tbody');
       if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 16px;"><i class="fa-solid fa-spinner fa-spin"></i> Checking privacy request queue...</td></tr>';
       try {
         const res = await fetch(`${getAuthBase()}/api/admin/privacy/requests`, { headers: getAuthHeaders() });
         if (res.ok) {
           const data = await res.json();
-          if ((data.requests || []).length > 0) {
-            tbody.innerHTML = data.requests.map(r => `
-              <tr>
-                <td><code>${escapeHtml(r.id)}</code></td>
-                <td>${escapeHtml(r.userId)}</td>
-                <td><strong>${escapeHtml(r.type)}</strong></td>
-                <td><span class="badge-status-active">${r.status}</span></td>
-                <td>${new Date(r.createdAt).toLocaleString()}</td>
-                <td><button class="btn-outline-secondary" style="font-size: 11px; padding: 2px 6px;">Manage</button></td>
-              </tr>
-            `).join('');
+          const list = data.requests || [];
+          if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #059669; padding: 20px; font-weight: 700;"><i class="fa-solid fa-circle-check"></i> Zero pending DPDP / GDPR requests. All data export and deletion requests fulfilled.</td></tr>';
+            return;
           }
+          tbody.innerHTML = list.map(r => `
+            <tr>
+              <td><code>${escapeHtml(r.id)}</code></td>
+              <td>${escapeHtml(r.userId)}</td>
+              <td><strong>${escapeHtml(r.type)}</strong></td>
+              <td><span class="badge-status-active">${r.status}</span></td>
+              <td>${new Date(r.createdAt).toLocaleString()}</td>
+              <td><button class="btn-outline-secondary" style="font-size: 11px; padding: 2px 6px;">Manage</button></td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #DC2626; padding: 16px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Privacy requests unavailable (HTTP ${res.status}).
+            <button class="btn-outline-secondary" style="font-size: 11px; padding: 2px 8px; margin-left: 8px;" onclick="loadAdminPrivacy()">Retry</button>
+          </td></tr>`;
         }
-      } catch (_) {}
+      } catch (_) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #DC2626; padding: 16px;">Network error loading privacy requests.</td></tr>';
+      }
     }
 
     async function loadAdminIntegrations() {
       const target = document.getElementById('admin-integrations-list');
       if (!target) return;
+      target.innerHTML = '<div style="color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Pinging external providers...</div>';
       try {
         const res = await fetch(`${getAuthBase()}/api/admin/integrations`, { headers: getAuthHeaders() });
         if (res.ok) {
@@ -16688,32 +16792,48 @@
           target.innerHTML = (data.integrations || []).map(i => `
             <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;">
               <strong>${escapeHtml(i.name)}</strong>
-              <div style="margin-top: 4px; font-weight: 700; color: ${i.status === 'HEALTHY' || i.status === 'CONNECTED' ? '#059669' : '#2563EB'};">${i.status}</div>
+              <div style="margin-top: 4px; font-weight: 700; color: ${i.status === 'HEALTHY' || i.status === 'CONNECTED' ? '#059669' : '#2563EB'};"><i class="fa-solid fa-circle-dot"></i> ${i.status}</div>
             </div>
           `).join('');
+        } else {
+          target.innerHTML = `<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border-radius: 8px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> External integrations status unavailable (HTTP ${res.status}).
+            <button class="btn-outline-secondary" style="font-size: 11px; padding: 2px 8px; margin-left: 8px;" onclick="loadAdminIntegrations()">Retry</button>
+          </div>`;
         }
-      } catch (_) {}
+      } catch (_) {
+        target.innerHTML = '<div style="color: #DC2626; padding: 12px;">Network error checking integrations.</div>';
+      }
     }
 
     async function loadAdminIncidents() {
       const target = document.getElementById('admin-incidents-list');
       if (!target) return;
+      target.innerHTML = '<div style="color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Inspecting system incident ledger...</div>';
       try {
         const res = await fetch(`${getAuthBase()}/api/admin/monitoring/incidents`, { headers: getAuthHeaders() });
         if (res.ok) {
           const data = await res.json();
-          if ((data.incidents || []).length === 0) {
-            target.innerHTML = '<div style="color: #059669; font-weight: 700;">✓ All systems operational. Zero active incidents.</div>';
+          const list = data.incidents || [];
+          if (list.length === 0) {
+            target.innerHTML = '<div style="color: #059669; font-weight: 700; padding: 14px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px;"><i class="fa-solid fa-circle-check"></i> All systems operational. Zero active incidents reported.</div>';
           } else {
-            target.innerHTML = data.incidents.map(inc => `
-              <div style="padding: 10px; border: 1px solid #E2E8F0; border-radius: 6px; margin-bottom: 8px;">
-                <strong>${escapeHtml(inc.title)}</strong> (${inc.severity}) - <span style="font-weight: 700;">${inc.status}</span><br>
-                <span style="color: #64748B;">${escapeHtml(inc.summary)}</span>
+            target.innerHTML = list.map(inc => `
+              <div style="padding: 10px; border: 1px solid #E2E8F0; border-radius: 6px; margin-bottom: 8px; background: #FFFFFF;">
+                <strong>${escapeHtml(inc.title)}</strong> (${escapeHtml(inc.severity)}) - <span style="font-weight: 700; color: ${inc.status === 'OPEN' ? '#D97706' : '#059669'};">${escapeHtml(inc.status)}</span><br>
+                <span style="color: #64748B; font-size: 11.5px;">${escapeHtml(inc.summary)}</span>
               </div>
             `).join('');
           }
+        } else {
+          target.innerHTML = `<div style="color: #DC2626; padding: 12px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Incident feed unavailable (HTTP ${res.status}).
+            <button class="btn-outline-secondary" style="font-size: 11px; padding: 2px 8px; margin-left: 8px;" onclick="loadAdminIncidents()">Retry</button>
+          </div>`;
         }
-      } catch (_) {}
+      } catch (_) {
+        target.innerHTML = '<div style="color: #DC2626; padding: 12px;">Network error loading incidents.</div>';
+      }
     }
 
     async function loadAdminAuditLogs() {
@@ -16917,10 +17037,15 @@
 
     async function loadAdminDatabaseMonitor() {
       const pingEl = document.getElementById('admin-db-ping-ms');
+      const pingPill = document.getElementById('admin-db-ping-pill');
       const engineEl = document.getElementById('admin-db-engine-name');
       const modeEl = document.getElementById('admin-db-mode-desc');
       const recordsEl = document.getElementById('admin-db-total-records');
       const tbody = document.getElementById('admin-db-tables-tbody');
+
+      if (pingEl) pingEl.textContent = '...';
+      if (engineEl) engineEl.textContent = 'Pinging telemetry...';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="padding: 16px; text-align: center; color: #64748B;"><i class="fa-solid fa-spinner fa-spin"></i> Polling database tables and storage footprint...</td></tr>';
 
       try {
         const res = await fetch(`${getAuthBase()}/api/admin/database/monitor`, {
@@ -16928,31 +17053,78 @@
         });
         if (res.ok) {
           const data = await res.json();
-          if (pingEl) pingEl.textContent = data.pingMs || '< 1';
-          if (engineEl) engineEl.textContent = data.engine || 'PostgreSQL / Standalone Store';
-          if (modeEl) modeEl.textContent = data.mode === 'PRODUCTION_PERSISTENT' ? 'PostgreSQL Persistent' : 'Durable Local Store';
+          const latency = Number(data.pingMs) || 1;
+          if (pingEl) pingEl.textContent = latency;
+          if (pingPill) {
+            if (latency < 60) {
+              pingPill.style.background = '#ECFDF5';
+              pingPill.style.borderColor = '#A7F3D0';
+              pingPill.style.color = '#065F46';
+              pingPill.innerHTML = `<i class="fa-solid fa-circle-check" style="color: #059669;"></i> Ping: <span id="admin-db-ping-ms">${latency}</span> ms &bull; HEALTHY`;
+            } else if (latency < 250) {
+              pingPill.style.background = '#FFFBEB';
+              pingPill.style.borderColor = '#FCD34D';
+              pingPill.style.color = '#92400E';
+              pingPill.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #D97706;"></i> Ping: <span id="admin-db-ping-ms">${latency}</span> ms &bull; DEGRADED`;
+            } else {
+              pingPill.style.background = '#FEF2F2';
+              pingPill.style.borderColor = '#FECACA';
+              pingPill.style.color = '#991B1B';
+              pingPill.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color: #DC2626;"></i> Ping: <span id="admin-db-ping-ms">${latency}</span> ms &bull; HIGH_LATENCY`;
+            }
+          }
+          if (engineEl) engineEl.textContent = data.engine || 'PostgreSQL (Cloud Supabase)';
+          if (modeEl) modeEl.textContent = data.mode === 'PRODUCTION_PERSISTENT' ? 'PostgreSQL Persistent (Active)' : 'Durable Local Store';
           if (recordsEl) recordsEl.textContent = (data.storageFootprint?.totalRecords || 0).toLocaleString();
 
-          if (tbody && data.tables) {
-            tbody.innerHTML = data.tables.map(t => `
-              <tr style="border-bottom: 1px solid #E2E8F0;">
-                <td style="padding: 10px; font-weight: 700; color: #1E293B;">
-                  <i class="fa-solid fa-table" style="color: #64748B; margin-right: 6px;"></i> ${escapeHtml(t.name)}
-                </td>
-                <td style="padding: 10px; font-family: monospace; color: #475569;">${escapeHtml(t.primaryKey || 'id')}</td>
-                <td style="padding: 10px; color: #64748B;">${escapeHtml(t.description || '')}</td>
-                <td style="padding: 10px; text-align: right; font-weight: 800; color: #0F172A;">${t.records.toLocaleString()}</td>
-                <td style="padding: 10px; text-align: center;">
-                  <span style="font-size: 10.5px; font-weight: 800; background: #D1FAE5; color: #065F46; padding: 2px 8px; border-radius: 12px;">
-                    <i class="fa-solid fa-check"></i> ${t.status || 'HEALTHY'}
-                  </span>
-                </td>
-              </tr>
-            `).join('');
+          const tables = data.tables || [];
+          if (tbody) {
+            if (tables.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="5" style="padding: 16px; text-align: center; color: #64748B;">No tables returned by storage driver.</td></tr>';
+            } else {
+              tbody.innerHTML = tables.map(t => `
+                <tr style="border-bottom: 1px solid #E2E8F0;">
+                  <td style="padding: 10px; font-weight: 700; color: #1E293B;">
+                    <i class="fa-solid fa-table" style="color: #64748B; margin-right: 6px;"></i> ${escapeHtml(t.name)}
+                  </td>
+                  <td style="padding: 10px; font-family: monospace; color: #475569;">${escapeHtml(t.primaryKey || 'id')}</td>
+                  <td style="padding: 10px; color: #64748B;">${escapeHtml(t.description || '')}</td>
+                  <td style="padding: 10px; text-align: right; font-weight: 800; color: #0F172A;">${Number(t.records || 0).toLocaleString()}</td>
+                  <td style="padding: 10px; text-align: center;">
+                    <span style="font-size: 10.5px; font-weight: 800; background: #D1FAE5; color: #065F46; padding: 2px 8px; border-radius: 12px;">
+                      <i class="fa-solid fa-check"></i> ${escapeHtml(t.status || 'HEALTHY')}
+                    </span>
+                  </td>
+                </tr>
+              `).join('');
+            }
+          }
+        } else {
+          if (pingPill) {
+            pingPill.style.background = '#FEF2F2';
+            pingPill.style.borderColor = '#FECACA';
+            pingPill.style.color = '#991B1B';
+            pingPill.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color: #DC2626;"></i> Status: UNHEALTHY (HTTP ${res.status})`;
+          }
+          if (engineEl) engineEl.textContent = 'Service Degraded';
+          if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #DC2626;">
+              <i class="fa-solid fa-triangle-exclamation"></i> Database monitor endpoint returned HTTP ${res.status}.
+              <button class="btn-outline-secondary" style="font-size: 11px; padding: 2px 8px; margin-left: 8px;" onclick="loadAdminDatabaseMonitor()">Retry Telemetry</button>
+            </td></tr>`;
           }
         }
       } catch (err) {
-        console.error('Failed to load database monitor metrics:', err);
+        if (pingPill) {
+          pingPill.style.background = '#FEF2F2';
+          pingPill.style.borderColor = '#FECACA';
+          pingPill.style.color = '#991B1B';
+          pingPill.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: #DC2626;"></i> Status: DISCONNECTED';
+        }
+        if (engineEl) engineEl.textContent = 'Connection Offline';
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="5" style="padding: 16px; text-align: center; color: #DC2626;"><i class="fa-solid fa-triangle-exclamation"></i> Network error connecting to database monitor.</td></tr>';
+        }
       }
     }
 

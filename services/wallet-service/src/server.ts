@@ -1051,8 +1051,13 @@ app.post('/api/auth/admin-login', authLimiter, async (req: Request, res: Respons
       userAgent: req.headers['user-agent'] || null
     });
 
+    const sanitizedName = (user.displayName && (user.displayName.toLowerCase().includes('aryan') || user.displayName.toLowerCase().includes('tiwari')))
+      ? 'Platform Owner'
+      : (user.displayName || 'Platform Owner');
+
     const finalUser = await db.updateUser(user.id, {
-      lastLoginAt: new Date().toISOString()
+      lastLoginAt: new Date().toISOString(),
+      displayName: sanitizedName
     });
 
     const assuranceToken = issueAdminAssuranceToken(finalUser.id, finalUser.role);
@@ -3140,18 +3145,24 @@ app.get('/api/admin/roles/matrix', authenticate, requireAdmin(AdminPermission.VI
 app.get('/api/admin/roles/admins', authenticate, requireAdmin(AdminPermission.VIEW_ROLES), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const allUsers = await db.listUsers({ limit: 1000 });
-    const admins = allUsers.users.filter(u => isAnyAdmin(u.role)).map(u => ({
-      id: u.id,
-      displayName: u.displayName,
-      email: u.email,
-      phone: u.phone,
-      role: u.role,
-      canonicalRole: normalizeRole(u.role),
-      status: u.status,
-      mfaEnabled: Boolean(u.mfaEnabled),
-      lastLoginAt: u.lastLoginAt,
-      createdAt: u.createdAt
-    }));
+    const admins = allUsers.users.filter(u => isAnyAdmin(u.role)).map(u => {
+      let displayName = u.displayName || u.email || 'Administrator';
+      if (displayName.toLowerCase().includes('aryan') || displayName.toLowerCase().includes('tiwari')) {
+        displayName = u.role === Role.OWNER ? 'Platform Owner' : 'Platform Administrator';
+      }
+      return {
+        id: u.id,
+        displayName,
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+        canonicalRole: normalizeRole(u.role),
+        status: u.status,
+        mfaEnabled: Boolean(u.mfaEnabled),
+        lastLoginAt: u.lastLoginAt,
+        createdAt: u.createdAt
+      };
+    });
     res.json({ success: true, admins, total: admins.length });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
