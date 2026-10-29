@@ -179,8 +179,8 @@ async function runDifferentiationTests() {
   assert.strictEqual(threeYear.sections[2].sectionId, 'sec_year_2_expansion');
   assert.strictEqual(threeYear.sections[3].sectionId, 'sec_year_3_legacy');
   assert.strictEqual(threeYear.sections[4].sectionId, 'sec_3yr_karmic_points');
-  assert.strictEqual(threeYear.monthlyForecasts, undefined, '3-Year Roadmap must NOT have monthlyForecasts');
-  console.log('[PASS] 3-Year Roadmap contains all 5 multi-year horizon chapters and no monthlyForecasts');
+  assert(Array.isArray(threeYear.monthlyForecasts) && threeYear.monthlyForecasts.length === 36, '3-Year Roadmap must contain all 36 forecast months');
+  console.log('[PASS] 3-Year Roadmap contains all 5 multi-year horizon chapters and all 36 forecast months');
 
   // Kundli + Varshphal Bundle (11 chapters + 12 months)
   const bundle = generatedReports['report_bundle_kundli_varshphal'];

@@ -5655,7 +5655,7 @@
       height: 296mm;
       max-height: 296mm;
       padding: 10mm 14mm 10mm 14mm;
-      margin: 0 auto;
+      margin: 0 !important;
       background: #FFFFFF;
       box-sizing: border-box;
       position: relative;
@@ -5664,14 +5664,12 @@
       font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', Inter, sans-serif;
       color: #1E293B;
       page-break-after: always;
-      break-after: page;
       page-break-inside: avoid;
       break-inside: avoid;
     }
     .pdf-a4-page:last-of-type,
     .pdf-a4-page:last-child {
       page-break-after: avoid !important;
-      break-after: avoid !important;
       margin-bottom: 0 !important;
     }
     .pdf-page-watermark {
@@ -25616,6 +25614,128 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
 - **Environmental Care:** Plant neem, banyan, or flowering trees in your locality to cultivate living karmic merit (*Vriksha Ropana*).`
           }
         ];
+
+        const monthsList = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const nowObj = new Date();
+        const startYearNum = nowObj.getFullYear();
+        const startMonthNum = nowObj.getMonth();
+
+        const careerThemes3Yr = [
+          'Q1 Foundation: Strategic skill consolidation, workflow audits, and technical debt elimination.',
+          'Q1 Systems: Streamlining team documentation, clarifying individual accountability, and setting deliverables.',
+          'Q1 Delivery: Favorable window for delivering foundational project milestones and securing manager alignment.',
+          'Q2 Momentum: Cross-functional collaboration, internal stakeholder pitches, and operational refinement.',
+          'Q2 Governance: Standardizing reporting mechanisms, eliminating workflow bottlenecks, and budget reviews.',
+          'Q2 Mid-Year Review: Favorable window for performance reviews, credential certifications, and skill upgrades.',
+          'Q3 Execution: Deepening domain expertise, establishing dependability benchmarks, and leading focused sprints.',
+          'Q3 Authority: Strategic visibility window. Excellent for executive presentations and technical publications.',
+          'Q3 Consolidation: Reviewing resource allocation, mentoring junior contributors, and stabilizing processes.',
+          'Q4 Acceleration: Preparing business cases for upcoming expansions, closing yearly project deliverables.',
+          'Q4 Compensation: Auspicious timing for performance reviews, bonus alignments, and career trajectory reviews.',
+          'Q4 Year 1 Synthesis: Consolidating foundational career wins and mapping strategic multi-year objectives.',
+
+          'Q5 Launch: Commercial breakout window. Optimal timing for independent ventures or high-stakes leadership.',
+          'Q5 Expansion: Widening market reach, strategic partner onboarding, and executing commercial contracts.',
+          'Q5 Scaling: Negotiating strategic alliances, expanding team scope, and securing executive sponsorships.',
+          'Q6 Capital: Institutional backing and venture pitch window. High planetary momentum for contract signatures.',
+          'Q6 Visibility: Thought leadership window. Optimal for industry conferences, keynote speaking, and PR.',
+          'Q6 Optimization: Operational scaling, managing increased responsibility, and delegating tactical tasks.',
+          'Q7 Momentum: Securing enterprise agreements, scaling operational capacity, and cross-sector ventures.',
+          'Q7 Leadership: High-visibility milestone delivery; excellent window for lateral moves or elevated titles.',
+          'Q7 Governance: Reviewing scaling metrics, refining quality standards, and protecting intellectual property.',
+          'Q8 Strategic Assets: Favorable window for corporate asset building, contract renewals, and equity negotiations.',
+          'Q8 Network Growth: Expanding advisory networks, connecting with industry mentors, and high-trust alliances.',
+          'Q8 Year 2 Synthesis: Harvesting commercial momentum and solidifying institutional standing for Year 3.',
+
+          'Q9 Executive Transition: Stepping into high-level advisory, governance, and institutional leadership roles.',
+          'Q9 Vision Alignment: Establishing multi-year organizational roadmaps and aligning board-level objectives.',
+          'Q9 Knowledge Transfer: Structuring training frameworks, documenting proprietary methodologies, and coaching.',
+          'Q10 Culmination: High planetary fruition. Reaping the commercial and professional rewards of 3-year efforts.',
+          'Q10 Public Honor: Auspicious window for receiving industry accolades, public awards, and formal honors.',
+          'Q10 Stewardship: Focusing on organizational sustainability, ethical leadership, and stakeholder trust.',
+          'Q11 Enterprise Maturity: Directing high-level strategic pivots, M&A considerations, or enterprise scaling.',
+          'Q11 Philanthropic Impact: Aligning institutional achievements with social responsibility and charitable initiatives.',
+          'Q11 Succession Planning: Identifying future leaders, establishing advisory positions, and delegating.',
+          'Q12 Strategic Harvest: Rebalancing responsibilities, celebrating 36-month milestones, and financial fruition.',
+          'Q12 Legacy Architecture: Documenting career achievements, patenting innovations, and institutional memory.',
+          'Q12 Tri-Year Summit: Final 36-month reflective synthesis, gratitude, and setting the next decade vision.'
+        ];
+
+        const relThemes3Yr = [
+          'Empathetic listening and setting healthy work-life boundaries with your partner.',
+          'Patience during mid-month lunar conjunctions. Maintain calm and affectionate dialogue.',
+          'Auspicious for shared family celebrations, quiet dinners, and reciprocal appreciation.',
+          'Domestic upgrades and home stabilization. Collaborative decisions deepen marital trust.',
+          'Open dialogue dissolves subtle friction. Prioritize quality presence over distractions.',
+          'Shared cultural, spiritual, or travel experiences rekindle mutual inspiration.',
+          'Supportive solidarity during career transitions. Mutual backing solidifies covenants.',
+          'Harmonious discussions regarding family budgeting and shared household investments.',
+          'Introspective space needed for personal contemplation. Give each other emotional grace.',
+          'Celebratory social gatherings and kinfolk interactions foster goodwill and collective joy.',
+          'Warm domestic atmosphere. Optimal timing for resolving long-standing kin misunderstandings.',
+          'Year 1 relationship milestone reflection. Express heartfelt gratitude for mutual loyalty.',
+
+          'Shared travel or educational retreats strengthen spiritual and intellectual intimacy.',
+          'Collaborative alignment on property discussions or home renovations with life partner.',
+          'Mindful communication during Mars horas. Practice verbal restraint and deep listening.',
+          'Joyous family milestones and festive gatherings bring renewed vitality to the hearth.',
+          'Emotional transparency strengthens marital covenants. Mutual vulnerability is rewarded.',
+          'Auspicious for celebrating relationship anniversaries or renewing romantic intentions.',
+          'Balancing high-intensity professional expansion with devoted, unhurried home presence.',
+          'Deepening trust through mutual financial transparency and collaborative goal-setting.',
+          'Peaceful domestic environment supports cognitive clarity and restorative rest.',
+          'Auspicious for family blessings, religious ceremonies, or pilgrimages with loved ones.',
+          'Cultivating mutual hobbies and creative pursuits that rekindle youthful joy.',
+          'Year 2 relationship consolidation. Deepening lifelong companionship and emotional security.',
+
+          'Stepping into elder or mentor roles within the extended family with dignity and warmth.',
+          'Shared philanthropic or charitable projects with life partner cultivate deep soul connection.',
+          'Harmonious domestic peace. Enjoying the fruits of multi-year shared labor and perseverance.',
+          'Celebrating children’s or younger family members’ milestones with collective pride.',
+          'Tranquil home sanctuary. Cultivating serene, meditative morning routines together.',
+          'Auspicious for family reunions, commemorative gatherings, and honoring ancestors.',
+          'Spiritual companionship deepens. Joint meditation or scripture study enriches bonds.',
+          'Emotional equanimity and mutual respect anchor the household amidst worldly busyness.',
+          'Generational wisdom transmission: spending meaningful quality time with younger kin.',
+          'Gratitude retreats: taking unhurried time together in natural, serene environments.',
+          'Deep mutual reverence and serene contentment in long-term partnership.',
+          'Tri-Year relationship summit: heartfelt celebration of enduring love, loyalty, and peace.'
+        ];
+
+        const subperiods3Yr = ['Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury', 'Ketu'];
+
+        monthlyForecasts = [];
+        for (let i = 0; i < 36; i++) {
+          const curMIdx = (startMonthNum + i) % 12;
+          const curY = startYearNum + Math.floor((startMonthNum + i) / 12);
+          const mName = `${monthsList[curMIdx]} ${curY}`;
+          const lastD = new Date(curY, curMIdx + 1, 0).getDate();
+          const dRange = `${monthsList[curMIdx]} 01, ${curY} – ${monthsList[curMIdx]} ${lastD}, ${curY}`;
+
+          const yearNum = Math.floor(i / 12) + 1;
+          const dashaMahaVal = yearNum === 1 ? dashaMaha : (yearNum === 2 ? dashaMaha : (dashaMaha === 'Jupiter' ? 'Saturn' : dashaMaha));
+          const dashaAntarVal = subperiods3Yr[i % subperiods3Yr.length];
+
+          monthlyForecasts.push({
+            monthIndex: i + 1,
+            monthName: `Month ${i + 1}: ${mName}`,
+            dateRange: dRange,
+            activeDasha: { maha: dashaMahaVal, antar: dashaAntarVal },
+            transitHighlights: `Transit Sun activating House ${((i % 12) + 1)} with lunar cycles optimizing strategic timing.`,
+            careerGuidance: careerThemes3Yr[i],
+            relationshipGuidance: relThemes3Yr[i],
+            financialReflection: yearNum === 1
+              ? 'Maintain 6-12 month operational buffer; eliminate high-interest liabilities; conservative savings.'
+              : (yearNum === 2
+                ? 'Strategic capital deployment; auspicious for productive property or equity asset acquisition.'
+                : 'Consolidate realized gains; rebalance into low-volatility capital preservation and estate structures.'),
+            favorableDates: [`${monthsList[curMIdx]} 04`, `${monthsList[curMIdx]} 11`, `${monthsList[curMIdx]} 19`, `${monthsList[curMIdx]} 27`],
+            cautionDates: [`${monthsList[curMIdx]} 08`, `${monthsList[curMIdx]} 16`, `${monthsList[curMIdx]} 23`]
+          });
+        }
       }
       // 8. BUNDLE: KUNDLI + VARSHPHAL (11 chapters + 12 months)
       else if (pid === 'report_bundle_kundli_varshphal') {
@@ -25946,7 +26066,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       }
 
       return {
-        reportId: `rep_demo_${Date.now()}`,
+        reportId: `rep_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
         productId: pid,
         productName: displayName,
         profileName: name,
@@ -25973,9 +26093,9 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
         },
         watermark: {
           ownerName: name,
-          accountHash: 'AV-DEMO-ACCOUNT',
-          documentVerificationHash: `DEMO-AUTH-${Date.now()}`,
-          isDemo: true
+          accountHash: 'AV-CLIENT-ACCOUNT',
+          documentVerificationHash: `AV-AUTH-${Date.now().toString(16).toUpperCase()}`,
+          isDemo: false
         },
         allowPdfDownload: true,
         ethicalNotice: 'Classical Vedic astrology represents an interpretive science of tendencies, karmic potentials, and cosmic archetypes, operating alongside personal agency (Purushartha).',
@@ -26650,15 +26770,23 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           `;
         });
 
-        // If 12-Month Varshphal, render Month Cards Grid
+        // If Monthly Forecasts exist (1-Month, 12-Month, 3-Year, or Bundle), render Month Cards Grid
         if (doc.monthlyForecasts && doc.monthlyForecasts.length > 0) {
+          const fCount = doc.monthlyForecasts.length;
+          const matrixTitle = fCount === 1
+            ? 'One-Month High-Resolution Forecast Matrix'
+            : (fCount > 12 ? 'Three-Year Granular Forecast Timeline (36 Months)' : 'Twelve-Month Granular Forecast Matrix');
+          const matrixSub = fCount === 1
+            ? 'Daily and weekly timing cadence for the upcoming 30 days'
+            : (fCount > 12 ? '36-Month chronological progression, transit milestones, and dasha subperiod transitions' : 'Month-by-month timing arcs and planetary transit alignments');
+
           contentHtml += `
             <div class="reader-chapter-card" id="sec_monthly_grid">
               <div class="reader-chapter-title">
                 <i class="fa-solid fa-calendar-days" style="color: #F59E0B;"></i>
-                <span>Twelve-Month Granular Forecast Matrix</span>
+                <span>${matrixTitle}</span>
               </div>
-              <div class="reader-chapter-sub">Month-by-month timing arcs and planetary transit alignments</div>
+              <div class="reader-chapter-sub">${matrixSub}</div>
               <div style="display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 16px;">
           `;
 
@@ -26666,14 +26794,18 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             contentHtml += `
               <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <strong style="color: #F8FAFC; font-size: 15px;">${m.monthName}</strong>
+                  <div>
+                    <strong style="color: #F8FAFC; font-size: 15px;">${m.monthName}</strong>
+                    ${m.dateRange ? `<div style="font-size: 11.5px; color: #94A3B8; margin-top: 2px;">${m.dateRange}</div>` : ''}
+                  </div>
                   <span style="font-size: 11px; color: #F59E0B; background: rgba(245, 158, 11, 0.12); padding: 2px 8px; border-radius: 4px; font-weight: 700;">
                     ${m.activeDasha?.maha || 'Major'} / ${m.activeDasha?.antar || 'Sub'} Dasha
                   </span>
                 </div>
                 <div style="font-size: 12px; color: #94A3B8; margin-bottom: 8px;"><strong>Transit Highlight:</strong> ${m.transitHighlights}</div>
                 <div style="font-size: 12.5px; color: #CBD5E1; margin-bottom: 6px;"><strong>Career &amp; Purpose:</strong> ${m.careerGuidance}</div>
-                <div style="font-size: 12.5px; color: #CBD5E1; margin-bottom: 10px;"><strong>Emotional Harmony:</strong> ${m.relationshipGuidance}</div>
+                ${m.relationshipGuidance ? `<div style="font-size: 12.5px; color: #CBD5E1; margin-bottom: 6px;"><strong>Emotional Harmony:</strong> ${m.relationshipGuidance}</div>` : ''}
+                ${m.financialReflection ? `<div style="font-size: 12px; color: #E2E8F0; margin-bottom: 10px;"><strong>Financial Prudence:</strong> ${m.financialReflection}</div>` : ''}
                 <div style="display: flex; justify-content: space-between; font-size: 11.5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
                   <span style="color: #10B981;"><strong>Auspicious Days:</strong> ${(m.favorableDates || []).join(', ')}</span>
                   <span style="color: #F87171;"><strong>Caution Days:</strong> ${(m.cautionDates || []).join(', ')}</span>
@@ -27404,9 +27536,59 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       `;
       container.appendChild(chartPage);
 
+      if (pid === 'report_three_year_roadmap') {
+        const svgD1 = generateSvgKundliDiamondPdf(d1, 230, 230);
+        const svgD9 = generateSvgKundliDiamondPdf(navamsha || d1, 230, 230);
+        const natalPage = createPdfPageElement();
+        const natalContent = natalPage.querySelector('.pdf-page-content');
+        natalContent.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 12px; font-size: 10.5px; color: #64748B;">
+            <span>AstroVerse &bull; ${escapeHtml(title)}</span>
+            <span>Natal Kundli &amp; Planetary Ephemeris Table</span>
+          </div>
+
+          <div style="flex: 1; overflow: hidden;">
+            <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 0 0 10px;">2. Natal Rashi (D1) &amp; Navamsha (D9) Foundation Kundlis</h2>
+            <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 14px;">
+              <div style="text-align: center;">
+                <div style="font-size: 10.5px; font-weight: 700; color: #881337; margin-bottom: 4px;">D1 Rashi Natal Kundli</div>
+                ${svgD1}
+              </div>
+              <div style="text-align: center;">
+                <div style="font-size: 10.5px; font-weight: 700; color: #881337; margin-bottom: 4px;">D9 Navamsha (Soul &amp; Dharma)</div>
+                ${svgD9}
+              </div>
+            </div>
+
+            <h2 style="font-size: 15px; font-weight: 800; color: #881337; margin: 12px 0 8px;">3. Sidereal Planetary Ephemeris Positions (Nirayana Lahiri)</h2>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; margin-bottom: 12px;">
+              <thead>
+                <tr style="background: #F8FAFC; border-bottom: 2px solid #CBD5E1; font-size: 10.5px; color: #475569;">
+                  <th style="padding: 5px 8px;">Graha</th>
+                  <th style="padding: 5px 8px;">Rashi</th>
+                  <th style="padding: 5px 8px;">Longitude</th>
+                  <th style="padding: 5px 8px;">Nakshatra (Pada)</th>
+                  <th style="padding: 5px 8px;">Bhava</th>
+                  <th style="padding: 5px 8px;">Dignity &amp; Motion</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${planetsRows}
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin-top: 14px; border-top: 1px solid #E2E8F0; padding-top: 8px; display: flex; justify-content: space-between; font-size: 9.5px; color: #94A3B8;">
+            <span>Nirayana Chitra Paksha Lahiri Ayanamsha &bull; Ref: ${verificationRef}</span>
+            <span>Page 3</span>
+          </div>
+        `;
+        container.appendChild(natalPage);
+      }
+
       // 3. CHAPTER SECTIONS
       if (isDoc && docOrChart.sections && docOrChart.sections.length > 0) {
-        let pageNum = 3;
+        let pageNum = (pid === 'report_three_year_roadmap') ? 4 : 3;
         docOrChart.sections.forEach((sec, idx) => {
           const secPage = createPdfPageElement();
           const secContent = secPage.querySelector('.pdf-page-content');
@@ -27441,7 +27623,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           container.appendChild(secPage);
         });
 
-        // Monthly Forecast Calendar (Handles single-month and 12-month publications)
+        // Monthly Forecast Calendar (Handles single-month, 12-month, and 36-month publications)
         if (docOrChart.monthlyForecasts && docOrChart.monthlyForecasts.length > 0) {
           const forecasts = docOrChart.monthlyForecasts;
           const isSingleMonth = (forecasts.length === 1);
@@ -27454,16 +27636,19 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             let monthRows = '';
             chunk.forEach(m => {
               monthRows += `
-                <div style="border: 1px solid #E2E8F0; border-radius: 6px; padding: ${isSingleMonth ? '12px 14px' : '8px 10px'}; margin-bottom: 8px; background: #FFFDF8;">
-                  <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: ${isSingleMonth ? '13px' : '11.5px'}; color: #881337;">
-                    <span>${escapeHtml(m.monthName)}</span>
-                    <span style="font-size: ${isSingleMonth ? '11.5px' : '10.5px'}; color: #D97706;">${escapeHtml(m.activeDasha?.maha || '')} / ${escapeHtml(m.activeDasha?.antar || '')}</span>
+                <div style="border: 1px solid #E2E8F0; border-radius: 6px; padding: ${isSingleMonth ? '12px 14px' : '6px 8px'}; margin-bottom: 6px; background: #FFFDF8;">
+                  <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: ${isSingleMonth ? '13px' : '11px'}; color: #881337;">
+                    <div>
+                      <span>${escapeHtml(m.monthName)}</span>
+                      ${m.dateRange ? `<span style="font-size: 9.5px; color: #64748B; font-weight: 600; margin-left: 6px;">(${escapeHtml(m.dateRange)})</span>` : ''}
+                    </div>
+                    <span style="font-size: ${isSingleMonth ? '11.5px' : '10px'}; color: #D97706;">${escapeHtml(m.activeDasha?.maha || '')} / ${escapeHtml(m.activeDasha?.antar || '')}</span>
                   </div>
-                  <div style="font-size: ${isSingleMonth ? '11px' : '10.5px'}; color: #334155; margin: 3px 0;"><strong>Transit Highlights:</strong> ${escapeHtml(m.transitHighlights)}</div>
-                  <div style="font-size: ${isSingleMonth ? '11px' : '10.5px'}; color: #475569; margin: 3px 0;"><strong>Career &amp; Vocation:</strong> ${escapeHtml(m.careerGuidance)}</div>
-                  ${m.relationshipGuidance ? `<div style="font-size: ${isSingleMonth ? '11px' : '10.5px'}; color: #475569; margin: 3px 0;"><strong>Relationships &amp; Home:</strong> ${escapeHtml(m.relationshipGuidance)}</div>` : ''}
-                  ${m.financialReflection ? `<div style="font-size: ${isSingleMonth ? '11px' : '10.5px'}; color: #475569; margin: 3px 0;"><strong>Financial Reflection:</strong> ${escapeHtml(m.financialReflection)}</div>` : ''}
-                  <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 6px; padding-top: 5px; border-top: 1px dashed #E2E8F0;">
+                  <div style="font-size: ${isSingleMonth ? '11px' : '10px'}; color: #334155; margin: 2px 0;"><strong>Transit Highlights:</strong> ${escapeHtml(m.transitHighlights)}</div>
+                  <div style="font-size: ${isSingleMonth ? '11px' : '10px'}; color: #475569; margin: 2px 0;"><strong>Career &amp; Vocation:</strong> ${escapeHtml(m.careerGuidance)}</div>
+                  ${m.relationshipGuidance ? `<div style="font-size: ${isSingleMonth ? '11px' : '10px'}; color: #475569; margin: 2px 0;"><strong>Relationships &amp; Home:</strong> ${escapeHtml(m.relationshipGuidance)}</div>` : ''}
+                  ${m.financialReflection ? `<div style="font-size: ${isSingleMonth ? '11px' : '10px'}; color: #475569; margin: 2px 0;"><strong>Financial Reflection:</strong> ${escapeHtml(m.financialReflection)}</div>` : ''}
+                  <div style="display: flex; justify-content: space-between; font-size: 9px; margin-top: 4px; padding-top: 3px; border-top: 1px dashed #E2E8F0;">
                     <span style="color: #059669; font-weight: 700;"><strong>Favorable Days:</strong> ${(m.favorableDates || []).join(', ')}</span>
                     <span style="color: #DC2626; font-weight: 700;"><strong>Cautionary Days:</strong> ${(m.cautionDates || []).join(', ')}</span>
                   </div>
@@ -27471,12 +27656,14 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
               `;
             });
 
+            const is3Year = (forecasts.length > 12);
+            const rangeStr = `Months ${c + 1}–${c + chunk.length}`;
             const subtitleText = isSingleMonth
               ? `High-Resolution 30-Day Transit Cadence`
-              : `Twelve-Month Roadmap (${isFirst ? 'Months 1–6' : 'Months 7–12'})`;
+              : (is3Year ? `Three-Year Personal Roadmap (${rangeStr})` : `Twelve-Month Roadmap (${rangeStr})`);
             const headerTitle = isSingleMonth
               ? `Personalized 30-Day Transit &amp; Dasha Calendar`
-              : `Twelve-Month Transit &amp; Dasha Calendar (${isFirst ? 'Months 1 to 6' : 'Months 7 to 12'})`;
+              : (is3Year ? `Three-Year Transit &amp; Dasha Timeline (${rangeStr})` : `Twelve-Month Transit &amp; Dasha Calendar (${rangeStr})`);
 
             monthContent.innerHTML = `
               <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; margin-bottom: 12px; font-size: 10.5px; color: #64748B;">

@@ -172,7 +172,9 @@ export class ReportDocumentGenerator {
       sections = forecastRes.sections;
       monthlyForecasts = forecastRes.monthlyForecasts;
     } else if (productId === 'report_three_year_roadmap') {
-      sections = this.buildThreeYearRoadmapSections(profile, birthCoords, chart);
+      const threeYearRes = this.buildThreeYearRoadmapSections(profile, birthCoords, chart);
+      sections = threeYearRes.sections;
+      monthlyForecasts = threeYearRes.monthlyForecasts;
     } else if (productId === 'report_bundle_kundli_varshphal') {
       const deepDive = this.buildJanamKundliDeepDiveSections(profile, birthCoords, chart);
       const annual = this.buildTwelveMonthVarshphalSections(profile, birthCoords, chart);
@@ -1012,13 +1014,144 @@ To harmonize planetary energies and neutralize dissonant transit influences, imp
   /**
    * 7. THREE-YEAR PERSONAL ROADMAP (₹499)
    * 5 Strategic Chapters mapping multi-year macro horizon, Year 1, Year 2, Year 3, and long-term remedies
+   * along with complete 36-month granular monthly roadmap
    */
-  private static buildThreeYearRoadmapSections(profile: any, coords: any, chart: CalculatedChart): ReportChapterSection[] {
+  private static buildThreeYearRoadmapSections(profile: any, coords: any, chart: CalculatedChart): {
+    sections: ReportChapterSection[];
+    monthlyForecasts: MonthlyForecastChapter[];
+  } {
     const lagna = chart.lagna;
     const dasha = chart.currentDasha || { maha: 'Jupiter', antar: 'Venus' };
     const name = profile?.profileName || 'Seeker';
 
-    return [
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const now = new Date();
+    const startYear = now.getFullYear();
+    const startMonthIdx = now.getMonth();
+
+    const monthlyForecasts: MonthlyForecastChapter[] = [];
+
+    const careerThemes = [
+      'Q1 Foundation: Strategic skill consolidation, workflow audits, and technical debt elimination.',
+      'Q1 Systems: Streamlining team documentation, clarifying individual accountability, and setting deliverables.',
+      'Q1 Delivery: Favorable window for delivering foundational project milestones and securing manager alignment.',
+      'Q2 Momentum: Cross-functional collaboration, internal stakeholder pitches, and operational refinement.',
+      'Q2 Governance: Standardizing reporting mechanisms, eliminating workflow bottlenecks, and budget reviews.',
+      'Q2 Mid-Year Review: Favorable window for performance reviews, credential certifications, and skill upgrades.',
+      'Q3 Execution: Deepening domain expertise, establishing dependability benchmarks, and leading focused sprints.',
+      'Q3 Authority: Strategic visibility window. Excellent for executive presentations and technical publications.',
+      'Q3 Consolidation: Reviewing resource allocation, mentoring junior contributors, and stabilizing processes.',
+      'Q4 Acceleration: Preparing business cases for upcoming expansions, closing yearly project deliverables.',
+      'Q4 Compensation: Auspicious timing for performance reviews, bonus alignments, and career trajectory reviews.',
+      'Q4 Year 1 Synthesis: Consolidating foundational career wins and mapping strategic multi-year objectives.',
+
+      'Q5 Launch: Commercial breakout window. Optimal timing for independent ventures or high-stakes leadership.',
+      'Q5 Expansion: Widening market reach, strategic partner onboarding, and executing commercial contracts.',
+      'Q5 Scaling: Negotiating strategic alliances, expanding team scope, and securing executive sponsorships.',
+      'Q6 Capital: Institutional backing and venture pitch window. High planetary momentum for contract signatures.',
+      'Q6 Visibility: Thought leadership window. Optimal for industry conferences, keynote speaking, and PR.',
+      'Q6 Optimization: Operational scaling, managing increased responsibility, and delegating tactical tasks.',
+      'Q7 Momentum: Securing enterprise agreements, scaling operational capacity, and cross-sector ventures.',
+      'Q7 Leadership: High-visibility milestone delivery; excellent window for lateral moves or elevated titles.',
+      'Q7 Governance: Reviewing scaling metrics, refining quality standards, and protecting intellectual property.',
+      'Q8 Strategic Assets: Favorable window for corporate asset building, contract renewals, and equity negotiations.',
+      'Q8 Network Growth: Expanding advisory networks, connecting with industry mentors, and high-trust alliances.',
+      'Q8 Year 2 Synthesis: Harvesting commercial momentum and solidifying institutional standing for Year 3.',
+
+      'Q9 Executive Transition: Stepping into high-level advisory, governance, and institutional leadership roles.',
+      'Q9 Vision Alignment: Establishing multi-year organizational roadmaps and aligning board-level objectives.',
+      'Q9 Knowledge Transfer: Structuring training frameworks, documenting proprietary methodologies, and coaching.',
+      'Q10 Culmination: High planetary fruition. Reaping the commercial and professional rewards of 3-year efforts.',
+      'Q10 Public Honor: Auspicious window for receiving industry accolades, public awards, and formal honors.',
+      'Q10 Stewardship: Focusing on organizational sustainability, ethical leadership, and stakeholder trust.',
+      'Q11 Enterprise Maturity: Directing high-level strategic pivots, M&A considerations, or enterprise scaling.',
+      'Q11 Philanthropic Impact: Aligning institutional achievements with social responsibility and charitable initiatives.',
+      'Q11 Succession Planning: Identifying future leaders, establishing advisory positions, and delegating.',
+      'Q12 Strategic Harvest: Rebalancing responsibilities, celebrating 36-month milestones, and financial fruition.',
+      'Q12 Legacy Architecture: Documenting career achievements, patenting innovations, and institutional memory.',
+      'Q12 Tri-Year Summit: Final 36-month reflective synthesis, gratitude, and setting the next decade vision.'
+    ];
+
+    const relationshipThemes = [
+      'Empathetic listening and setting healthy work-life boundaries with your partner.',
+      'Patience during mid-month lunar conjunctions. Maintain calm and affectionate dialogue.',
+      'Auspicious for shared family celebrations, quiet dinners, and reciprocal appreciation.',
+      'Domestic upgrades and home stabilization. Collaborative decisions deepen marital trust.',
+      'Open dialogue dissolves subtle friction. Prioritize quality presence over distractions.',
+      'Shared cultural, spiritual, or travel experiences rekindle mutual inspiration.',
+      'Supportive solidarity during career transitions. Mutual backing solidifies covenants.',
+      'Harmonious discussions regarding family budgeting and shared household investments.',
+      'Introspective space needed for personal contemplation. Give each other emotional grace.',
+      'Celebratory social gatherings and kinfolk interactions foster goodwill and collective joy.',
+      'Warm domestic atmosphere. Optimal timing for resolving long-standing kin misunderstandings.',
+      'Year 1 relationship milestone reflection. Express heartfelt gratitude for mutual loyalty.',
+
+      'Shared travel or educational retreats strengthen spiritual and intellectual intimacy.',
+      'Collaborative alignment on property discussions or home renovations with life partner.',
+      'Mindful communication during Mars horas. Practice verbal restraint and deep listening.',
+      'Joyous family milestones and festive gatherings bring renewed vitality to the hearth.',
+      'Emotional transparency strengthens marital covenants. Mutual vulnerability is rewarded.',
+      'Auspicious for celebrating relationship anniversaries or renewing romantic intentions.',
+      'Balancing high-intensity professional expansion with devoted, unhurried home presence.',
+      'Deepening trust through mutual financial transparency and collaborative goal-setting.',
+      'Peaceful domestic environment supports cognitive clarity and restorative rest.',
+      'Auspicious for family blessings, religious ceremonies, or pilgrimages with loved ones.',
+      'Cultivating mutual hobbies and creative pursuits that rekindle youthful joy.',
+      'Year 2 relationship consolidation. Deepening lifelong companionship and emotional security.',
+
+      'Stepping into elder or mentor roles within the extended family with dignity and warmth.',
+      'Shared philanthropic or charitable projects with life partner cultivate deep soul connection.',
+      'Harmonious domestic peace. Enjoying the fruits of multi-year shared labor and perseverance.',
+      'Celebrating children’s or younger family members’ milestones with collective pride.',
+      'Tranquil home sanctuary. Cultivating serene, meditative morning routines together.',
+      'Auspicious for family reunions, commemorative gatherings, and honoring ancestors.',
+      'Spiritual companionship deepens. Joint meditation or scripture study enriches bonds.',
+      'Emotional equanimity and mutual respect anchor the household amidst worldly busyness.',
+      'Generational wisdom transmission: spending meaningful quality time with younger kin.',
+      'Gratitude retreats: taking unhurried time together in natural, serene environments.',
+      'Deep mutual reverence and serene contentment in long-term partnership.',
+      'Tri-Year relationship summit: heartfelt celebration of enduring love, loyalty, and peace.'
+    ];
+
+    const subperiods = [
+      'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury', 'Ketu'
+    ];
+
+    for (let i = 0; i < 36; i++) {
+      const curMonthIdx = (startMonthIdx + i) % 12;
+      const curYear = startYear + Math.floor((startMonthIdx + i) / 12);
+      const mName = `${months[curMonthIdx]} ${curYear}`;
+      const lastDay = new Date(curYear, curMonthIdx + 1, 0).getDate();
+      const dRange = `${months[curMonthIdx]} 01, ${curYear} – ${months[curMonthIdx]} ${lastDay}, ${curYear}`;
+
+      const yearNum = Math.floor(i / 12) + 1;
+      const dashaMaha = yearNum === 1 ? dasha.maha : (yearNum === 2 ? dasha.maha : (dasha.maha === 'Jupiter' ? 'Saturn' : dasha.maha));
+      const dashaAntar = subperiods[i % subperiods.length];
+
+      const forecastItem: MonthlyForecastChapter = {
+        monthIndex: i + 1,
+        monthName: `Month ${i + 1}: ${mName}`,
+        dateRange: dRange,
+        activeDasha: { maha: dashaMaha, antar: dashaAntar },
+        transitHighlights: `Transit Sun activating House ${((i % 12) + 1)} with lunar cycles optimizing strategic timing.`,
+        careerGuidance: careerThemes[i],
+        relationshipGuidance: relationshipThemes[i],
+        financialReflection: yearNum === 1
+          ? 'Maintain 6-12 month operational buffer; eliminate high-interest liabilities; conservative savings.'
+          : (yearNum === 2
+            ? 'Strategic capital deployment; auspicious for productive property or equity asset acquisition.'
+            : 'Consolidate realized gains; rebalance into low-volatility capital preservation and estate structures.'),
+        favorableDates: [`${months[curMonthIdx]} 04`, `${months[curMonthIdx]} 11`, `${months[curMonthIdx]} 19`, `${months[curMonthIdx]} 27`],
+        cautionDates: [`${months[curMonthIdx]} 08`, `${months[curMonthIdx]} 16`, `${months[curMonthIdx]} 23`]
+      };
+
+      monthlyForecasts.push(forecastItem);
+    }
+
+    const sections: ReportChapterSection[] = [
       {
         sectionId: 'sec_3yr_macro',
         chapterNumber: 1,
@@ -1145,6 +1278,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
 - **Environmental Care:** Plant neem, banyan, or flowering trees in your locality to cultivate living karmic merit (*Vriksha Ropana*).`
       }
     ];
+
+    return { sections, monthlyForecasts };
   }
 
   /**
