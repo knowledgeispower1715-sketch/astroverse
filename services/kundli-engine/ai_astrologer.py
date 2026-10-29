@@ -172,7 +172,8 @@ def generate_astrological_reading(
             dasha=dasha,
             doshas=doshas,
             astrologer_name=astrologer_name,
-            lang=lang
+            lang=lang,
+            session_history=session_history
         )
         grounded_res["astrologer_name"] = persona_display
         grounded_res["scope"] = scope
@@ -198,43 +199,48 @@ def generate_astrological_reading(
         "good morning", "good evening", "good afternoon", "greetings", "om"
     ]) and len(q.split()) <= 4
 
-    is_career = any(w in q for w in [
+    q_trimmed = q.strip()
+    is_ambiguous_future = q_trimmed in ["future", "bhavishya", "mera bhavishya", "भविष्य", "मेरा भविष्य"] or (("future" in q or "भविष्य" in q) and len(q.split()) <= 2)
+    is_career_transit = any(w in q for w in ["transit", "gochar", "गोचर"]) and any(w in q for w in ["career", "switch", "job", "business", "नौकरी", "व्यापार", "व्यवसाय", "परिवर्तन"])
+    is_dasha_stability = any(w in q for w in ["dasha", "दशा"]) and any(w in q for w in ["stability", "career", "professional", "work", "job", "स्थिरता", "कार्यक्षेत्र", "नौकरी"])
+
+    is_career = not is_career_transit and not is_dasha_stability and not is_ambiguous_future and (any(w in q for w in [
         "career", "job", "promot", "profession", "business", "work", "boss",
-        "interview", "office", "10th", "transfer", "startup", "colleague", "vocation"
-    ]) or (cat == "career" and not is_greeting)
+        "interview", "office", "10th", "transfer", "startup", "colleague", "vocation", "करियर", "नौकरी", "पदोन्नति"
+    ]) or (cat == "career" and not is_greeting))
 
     is_marriage = any(w in q for w in [
         "marri", "love", "partner", "spouse", "husband", "wife", "relationship",
-        "compatibility", "7th", "divorce", "wedding", "romance", "synastry", "navamsha", "d9"
+        "compatibility", "7th", "divorce", "wedding", "romance", "synastry", "navamsha", "d9", "विवाह", "शादी", "जीवनसाथी"
     ]) or (cat in ["marriage", "relationship"] and not is_greeting)
 
     is_wealth = any(w in q for w in [
         "wealth", "money", "financ", "invest", "stock", "debt", "loan", "property",
-        "income", "gains", "11th", "2nd", "dhana", "asset", "crypto", "savings"
+        "income", "gains", "11th", "2nd", "dhana", "asset", "crypto", "savings", "धन", "दौलत", "निवेश"
     ]) or (cat in ["wealth", "finance"] and not is_greeting)
 
     is_health = any(w in q for w in [
         "health", "disease", "illness", "sick", "hospital", "pain", "stress",
-        "mental", "vitality", "energy", "6th", "8th", "anxiety", "depression"
+        "mental", "vitality", "energy", "6th", "8th", "anxiety", "depression", "स्वास्थ्य", "रोग"
     ]) or (cat == "health" and not is_greeting)
 
     is_remedy = any(w in q for w in [
         "remed", "mantra", "gem", "stone", "pukhraj", "ruby", "emerald", "sapphire",
-        "puja", "sade", "sati", "dosha", "daan", "fast", "charity", "rudraksha"
+        "puja", "sade", "sati", "dosha", "daan", "fast", "charity", "rudraksha", "उपाय", "मन्त्र", "रत्न"
     ]) or (cat in ["remedies", "remedy"] and not is_greeting)
 
-    is_timing = any(w in q for w in [
+    is_timing = not is_career_transit and not is_dasha_stability and any(w in q for w in [
         "when", "timing", "dates", "period", "year", "month", "soon", "how long",
-        "future", "timeline", "2026", "2027", "dasha", "transit"
+        "future", "timeline", "2026", "2027", "dasha", "transit", "कब", "समय"
     ])
 
     is_explanation = any(w in q for w in [
         "why", "explain", "logic", "how come", "reason", "scripture", "basis",
-        "source", "shastra", "parashar", "principle", "rule"
+        "source", "shastra", "parashar", "principle", "rule", "क्यों", "समझाएं"
     ])
 
     # Context Resolution: If user asked a generic timing or explanation question, inherit prior topic
-    if (is_timing or is_explanation or len(q.split()) <= 4) and not (is_career or is_marriage or is_wealth or is_health or is_remedy or is_greeting):
+    if (is_timing or is_explanation or len(q.split()) <= 4) and not (is_career or is_marriage or is_wealth or is_health or is_remedy or is_greeting or is_ambiguous_future or is_career_transit or is_dasha_stability):
         if prior_touched("career", "job", "work", "promot", "business"):
             is_career = True
         elif prior_touched("marri", "love", "partner", "spouse", "relationship"):
@@ -247,6 +253,12 @@ def generate_astrological_reading(
     # Determine primary intent
     if is_greeting:
         intent = "greeting"
+    elif is_ambiguous_future:
+        intent = "ambiguous_future"
+    elif is_career_transit:
+        intent = "career_transit_timing"
+    elif is_dasha_stability:
+        intent = "dasha_career_stability"
     elif is_career:
         intent = "career"
     elif is_marriage:
@@ -278,7 +290,19 @@ def generate_astrological_reading(
         active_antar = dasha.get("active_now", {}).get("antar_dasha", active_maha) if dasha else "Venus"
 
         sadesati = doshas.get("sade_sati", {}).get("phase", "Free") if doshas else "Free"
-        manglik = doshas.get("manglik", {}).get("verdict", "No Manglik Dosha") if doshas else "No Manglik Dosha"
+        raw_manglik = doshas.get("manglik", {}).get("verdict", "No Manglik Dosha") if doshas else "No Manglik Dosha"
+        is_manglik_mitigated = False
+        if doshas and isinstance(doshas, dict):
+            m_info = doshas.get("manglik", {})
+            if isinstance(m_info, dict):
+                is_manglik_mitigated = m_info.get("is_mitigated", False) or "mitigated" in str(raw_manglik).lower() or m_info.get("status") == "PRESENT_WITH_MITIGATION"
+
+        if is_manglik_mitigated:
+            manglik = "Mitigated / Pacified (Aries Swakshetra BPHS Cancellation)"
+        elif doshas and doshas.get("manglik", {}).get("has_dosha", False):
+            manglik = "Manglik Dosha Detected (Unmitigated)"
+        else:
+            manglik = "No Manglik Dosha Present"
 
         planets = kundli.get("planets", {})
         h10_planets = [p for p, d in planets.items() if d.get("house") == 10]
@@ -385,25 +409,25 @@ def generate_astrological_reading(
     if intent in ["remedy", "health", "marriage", "career"]:
         if persona_id == "dr-sunita-shastri" or intent == "marriage":
             remedy_card = {
-                "title": "Venusian Harmony & Emotional Balance",
+                "title": f"Venusian Harmony & Emotional Balance ({lagna} Lagna)",
                 "mantra": "Om Kleem Shukraya Namah (Chant 108 times on Friday dawn)",
-                "gemstone_note": "Natural White Zircon or Diamond set in silver (after verifying Lagna lordship)",
+                "gemstone_note": f"Natural White Zircon set in silver (subject to Lagna dignity trial). Note: Emerald (Panna) is strictly contraindicated for {lagna} Lagna as Mercury rules the 8th & 11th houses." if lagna.lower() == "scorpio" else "Natural White Zircon or Diamond set in silver (after verifying Lagna lordship)",
                 "charity_practice": "Support women's education or offer white flowers at Lakshmi temples on Fridays",
                 "disclaimer": "Traditional remedial practices cultivate inner mindfulness; they do not guarantee specific interpersonal outcomes."
             }
         elif persona_id == "pandit-raghavendra" or intent == "remedy":
             remedy_card = {
-                "title": "Classical Parashari Remedial Discipline",
+                "title": f"Classical Parashari Remedial Discipline ({lagna} Lagna)",
                 "mantra": "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe (108 times at sunrise)",
-                "gemstone_note": "Fortify functional Trikona lords (Pukhraj or Manik) only after inspecting 6th/8th house lordships",
+                "gemstone_note": f"Red Coral (Mars, Lagna Lord) or Yellow Sapphire (Jupiter, 5th Lord). Emerald is strictly contraindicated for {lagna} Lagna." if lagna.lower() == "scorpio" else "Fortify functional Trikona lords (Pukhraj or Manik) only after inspecting 6th/8th house lordships",
                 "charity_practice": "Light a pure sesame oil lamp under a Peepal tree on Saturdays; feed cows with green fodder",
                 "disclaimer": "Vedic remedies are sacred traditional disciplines for mental peace; they carry no commercial guarantees."
             }
         else:
             remedy_card = {
-                "title": "Solar Vitality & Professional Elevation",
+                "title": f"Solar Vitality & Professional Elevation ({lagna} Lagna)",
                 "mantra": "Aditya Hridaya Stotra or Gayatri Mantra (Chant 11 times during morning Brahma Muhurta)",
-                "gemstone_note": "Natural Ruby (Manik) or Emerald (Panna) for Lagna vigor",
+                "gemstone_note": f"Natural Ruby (Manik) or Red Coral (Moonga). Emerald is strictly contraindicated for {lagna} Lagna as Mercury rules 8th/11th houses." if lagna.lower() == "scorpio" else "Natural Ruby (Manik) or functional benefic gemstone",
                 "charity_practice": "Offer copper water vessel Arghya to the rising Sun; maintain ethical workplace leadership",
                 "disclaimer": "Spiritual remedies align focus and discipline; they do not replace diligent professional execution."
             }
@@ -528,46 +552,169 @@ def generate_astrological_reading(
             )
     else:
         # Personalized, Chart-Grounded Mode
-        if intent == "greeting":
+        has_prior_turn = bool(session_history and any(isinstance(m, dict) and m.get("role") == "assistant" for m in session_history))
+        is_hi = (lang == "hi")
+
+        if has_prior_turn:
+            greeting_prefix = ""
+        else:
             if persona_id == "dr-sunita-shastri":
-                body_md = (
-                    f"Namaste! I am {persona_display}.\n\n"
-                    f"I have connected to your natal chart: **{lagna} Lagna** ({lagna_deg:.2f}°), Moon in **{moon_sign}** "
-                    f"({moon_nak} Nakshatra), under active **{active_maha} Mahadasha** and **{active_antar} Antardasha**.\n\n"
-                    f"### Relational & Emotional Geometry\n"
-                    f"Your 7th House of partnership is {h7_str}, and your emotional perception is anchored in lunar {moon_sign}. "
-                    f"Whether you are seeking guidance on romantic timing, partner compatibility, marital harmony, or emotional healing, "
-                    f"I am here to explore your chart's geometry with empathy and respect.\n\n"
-                    f"What specific relationship question or personal milestone can I illuminate for you today?"
-                )
+                greeting_salutation = "नमस्ते!" if is_hi else "Namaste!"
             elif persona_id == "pandit-raghavendra":
+                greeting_salutation = "ॐ नमः शिवाय!" if is_hi else "Om Namah Shivaya!"
+            else:
+                greeting_salutation = "प्रणाम!" if is_hi else "Pranam!"
+
+            greeting_prefix = (
+                f"{greeting_salutation} मैं {persona_display} हूँ।\n\n"
+                if is_hi else
+                f"{greeting_salutation} I am {persona_display}.\n\n"
+            )
+
+        lagna_display = HINDI_SIGNS.get(lagna, lagna) if is_hi else lagna
+        moon_display = HINDI_SIGNS.get(moon_sign, moon_sign) if is_hi else moon_sign
+        dasha_maha_display = HINDI_PLANETS.get(active_maha, active_maha) if is_hi else active_maha
+        dasha_antar_display = HINDI_PLANETS.get(active_antar, active_antar) if is_hi else active_antar
+
+        if intent == "greeting":
+            if has_prior_turn:
+                if is_hi:
+                    body_md = f"प्रणाम! मैं आपकी क्या सहायता कर सकता हूँ? आप अपनी **{lagna_display} लग्न** पत्रिका (सक्रिय **{dasha_maha_display}-{dasha_antar_display} दशा**) के आधार पर करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर प्रश्न पूछ सकते हैं।"
+                else:
+                    body_md = f"Pranam! How may I assist your astrological exploration today? Feel free to ask about your career, marriage timing, Dhana Yogas, or remedies for your **{lagna} Lagna** chart (**{active_maha}-{active_antar}** Dasha)."
+            else:
+                if is_hi:
+                    body_md = (
+                        f"{greeting_prefix}मैंने आपकी जन्म कुंडली (**{lagna_display} लग्न**, **{moon_display} राशि**, सक्रिय **{dasha_maha_display}-{dasha_antar_display} दशा**) का विश्लेषण कर लिया है।\n\n"
+                        f"### जीवन एवं करियर मार्गदर्शन\n"
+                        f"आपकी जन्म कुंडली हमारे परामर्श सत्र से जुड़ चुकी है। मैं करियर, निर्णय, व्यापार और वित्तीय प्रगति में आपका शास्त्रीय मार्गदर्शन करने के लिए तैयार हूँ।\n\n"
+                        f"आज आप किस विषय, कार्ययोजना या जीवन के प्रश्न पर विचार करना चाहते हैं?"
+                    )
+                elif persona_id == "dr-sunita-shastri":
+                    body_md = (
+                        f"Namaste! I am {persona_display}.\n\n"
+                        f"I have connected to your natal chart: **{lagna} Lagna** ({lagna_deg:.2f}°), Moon in **{moon_sign}** "
+                        f"({moon_nak} Nakshatra), under active **{active_maha} Mahadasha** and **{active_antar} Antardasha**.\n\n"
+                        f"### Relational & Emotional Geometry\n"
+                        f"Your 7th House of partnership is {h7_str}, and your emotional perception is anchored in lunar {moon_sign}. "
+                        f"Whether you are seeking guidance on romantic timing, partner compatibility, marital harmony, or emotional healing, "
+                        f"I am here to explore your chart's geometry with empathy and respect.\n\n"
+                        f"What specific relationship question or personal milestone can I illuminate for you today?"
+                    )
+                elif persona_id == "pandit-raghavendra":
+                    body_md = (
+                        f"Om Namah Shivaya! I am {persona_display}.\n\n"
+                        f"I have reviewed your sacred natal planetary coordinates: **{lagna} Lagna** with Sun in **{sun_sign}** and "
+                        f"Moon in **{moon_sign}** ({moon_nak} Nakshatra). You are currently navigating your **{active_maha}-{active_antar}** Dasha, "
+                        f"with Saturn in **{sadesati}**.\n\n"
+                        f"### Classical Shastra Foundation\n"
+                        f"In Brihat Parashara Hora Shastra, every planetary placement reflects accumulated Prarabdha Karma. "
+                        f"Classical remedies, stotras, and disciplined fasting do not erase destiny; rather, they grant spiritual resilience "
+                        f"and divine grace to navigate life with wisdom.\n\n"
+                        f"What karmic inquiry, remedial clarification, or traditional practice would you like to explore?"
+                    )
+                else:
+                    body_md = (
+                        f"Pranam! I am {persona_display}, specializing in classical Parashari Jyotish, career architecture, and strategic life decisions.\n\n"
+                        f"I have connected to your calculated chart: **{lagna} Lagna** ({lagna_deg:.2f}°), **{moon_sign} Moon**, "
+                        f"and active **{active_maha} Mahadasha** with **{active_antar} Antardasha**.\n\n"
+                        f"### Astrological Foundation & Guidance\n"
+                        f"Under your {lagna} Ascendant, your chart carries distinct potential for purposeful achievement and structured growth. "
+                        f"Whether you wish to examine professional direction, timing of opportunities, Dhana Yogas, or personal life balance, I am here to guide you with clarity and scriptural integrity.\n\n"
+                        f"What strategic milestone, question, or goal would you like to explore today?"
+                    )
+
+        elif intent == "ambiguous_future":
+            if is_hi:
                 body_md = (
-                    f"Om Namah Shivaya! I am {persona_display}.\n\n"
-                    f"I have reviewed your sacred natal planetary coordinates: **{lagna} Lagna** with Sun in **{sun_sign}** and "
-                    f"Moon in **{moon_sign}** ({moon_nak} Nakshatra). You are currently navigating your **{active_maha}-{active_antar}** Dasha, "
-                    f"with Saturn in **{sadesati}**.\n\n"
-                    f"### Classical Shastra Foundation\n"
-                    f"In Brihat Parashara Hora Shastra, every planetary placement reflects accumulated Prarabdha Karma. "
-                    f"Classical remedies, stotras, and disciplined fasting do not erase destiny; rather, they grant spiritual resilience "
-                    f"and divine grace to navigate life with wisdom.\n\n"
-                    f"What karmic inquiry, remedial clarification, or traditional practice would you like to explore?"
+                    f"{greeting_prefix}आपकी जन्म कुंडली (**{lagna_display} लग्न**, **{moon_display} चंद्र राशि**, सक्रिय **{dasha_maha_display}-{dasha_antar_display} दशा**) के आधार पर सटीक और सार्थक फलादेश हेतु, आप भविष्य के किस विशिष्ट क्षेत्र पर पहले विचार करना चाहते हैं?\n\n"
+                    f"1. **करियर एवं आजीविका:** पदोन्नति का समय, नेतृत्व की भूमिका और व्यापार या नौकरी में परिवर्तन।\n"
+                    f"2. **आर्थिक स्थिति एवं धन योग:** आय में वृद्धि, निवेश का समय और संपत्ति संचय।\n"
+                    f"3. **विवाह एवं पारिवारिक सामंजस्य:** विवाह का समय, जीवनसाथी का स्वभाव और वैवाहिक स्थिरता।\n"
+                    f"4. **ग्रह गोचर एवं आध्यात्मिक उपाय:** मीन राशि में शनि गोचर, साढ़े साती की स्थिति और सुरक्षात्मक शास्त्रीय उपाय।"
                 )
             else:
                 body_md = (
-                    f"Pranam! I am {persona_display}, specializing in classical Parashari Jyotish, career architecture, and strategic life decisions.\n\n"
-                    f"I have connected to your calculated chart: **{lagna} Lagna** ({lagna_deg:.2f}°), **{moon_sign} Moon**, "
-                    f"and active **{active_maha} Mahadasha** with **{active_antar} Antardasha**.\n\n"
-                    f"### Astrological Foundation & Guidance\n"
-                    f"Under your {lagna} Ascendant, your chart carries distinct potential for purposeful achievement and structured growth. "
-                    f"Whether you wish to examine professional direction, timing of opportunities, Dhana Yogas, or personal life balance, I am here to guide you with clarity and scriptural integrity.\n\n"
-                    f"What strategic milestone, question, or goal would you like to explore today?"
+                    f"{greeting_prefix}To give you the most accurate and meaningful astrological forecast from your chart (**{lagna} Lagna**, **{moon_sign} Moon**, active **{active_maha}-{active_antar}** Dasha), which specific domain of your future would you like to explore first?\n\n"
+                    f"1. **Career & Professional Trajectory:** Promotion timing, leadership roles, and business switch.\n"
+                    f"2. **Financial Accumulation & Dhana Yogas:** Income growth, investment timing, and asset stability.\n"
+                    f"3. **Marriage & Relationship Milestones:** Partnership timing, compatibility, and family harmony.\n"
+                    f"4. **Spiritual Path & Transit Remedies:** Saturn in Pisces transit, Sade Sati phase, and protective mantras."
+                )
+
+        elif intent == "career_transit_timing":
+            if is_hi:
+                body_md = (
+                    f"{greeting_prefix}**{lagna_display} लग्न** हेतु कार्यक्षेत्र परिवर्तन एवं व्यापार संवर्धन में आगामी ग्रहीय गोचर का सूक्ष्म विश्लेषण:\n\n"
+                    f"### 1. वृहस्पति (गुरु) का गोचर चक्र\n"
+                    f"वर्तमान में वृहस्पति आपके सप्तम भाव (वृषभ राशि) से संचरण करते हुए आपके लग्न ({lagna_display}), तृतीय भाव (पराक्रम) और एकादश भाव (लाभ) पर अमृतमय दृष्टि डाल रहे हैं। इसके पश्चात मिथुन और विशेष रूप से कर्क राशि (नवम भाव - उच्च राशि) में गुरु का आगामी गोचर आपके भाग्य को जागृत करेगा और नए स्वतंत्र उपक्रम अथवा पदोन्नति हेतु अत्यंत शुभ समय खिड़की का निर्माण करेगा।\n\n"
+                    f"### 2. शनि देव का मीन राशि में गोचर (पंचम भाव)\n"
+                    f"शनि देव आपकी कुंडली के पंचम भाव से गोचर करते हुए एकादश भाव (आय), द्वितीय भाव (संचित धन) और सप्तम भाव पर दृष्टि डाल रहे हैं। यह गोचर स्पष्ट संदेश देता है कि बिना सोचे-समझे नौकरी छोड़ने के बजाय सुविचारित, योजनाबद्ध और अनुशासित कौशल उन्नयन के साथ ही करियर परिवर्तन करें।\n\n"
+                    f"### 3. राहु-केतु अक्ष का प्रभाव\n"
+                    f"राहु-केतु का संचरण कर्म भाव (दशम) और सुख भाव (चतुर्थ) के अक्ष को प्रभावित करता है, जो पारंपरिक सीमाओं से बाहर निकलकर नवीन तकनीकी अथवा दूरस्थ क्षेत्रों में विस्तार की प्रेरणा देता है।\n\n"
+                    f"### रणनीतिक सिफारिश एवं शुभ समय\n"
+                    f"व्यापार आरंभ करने अथवा नौकरी में बड़े परिवर्तन हेतु मई 2026 से आगे का समय, जब गुरु कर्क राशि में उच्च के होंगे, सर्वाधिक स्थिर और लाभदायक सिद्ध होगा।"
+                )
+            else:
+                body_md = (
+                    f"{greeting_prefix}Evaluating upcoming planetary transits supporting a career switch or business venture for **{lagna} Lagna**:\n\n"
+                    f"### 1. Jupiter (Guru) Transit Dynamics\n"
+                    f"Currently, Jupiter transits through your 7th house (Taurus), casting auspicious trinal aspects on your 11th house of gains (Virgo) and 1st house ({lagna} Lagna). As Jupiter advances into Gemini and subsequently enters Cancer (your 9th house of Bhagya / Divine Fortune, where Jupiter is exalted in mid-2026), it initiates the prime strategic window for professional transitions, leadership elevation, and entrepreneurial ventures.\n\n"
+                    f"### 2. Saturn (Shani) in Pisces (5th House)\n"
+                    f"Saturn transiting Pisces in your 5th house casts its 10th aspect upon your 2nd house of accumulated wealth and its 7th aspect upon the 11th house of liquid gains. Parashari principles indicate that impulsive leaps without runway capital must be avoided; structured, phased transitions backed by disciplined preparation will yield enduring stability.\n\n"
+                    f"### 3. Rahu-Ketu Axis & Professional Alignment\n"
+                    f"The nodal axis transiting your 4th/10th and 5th/11th houses sparks ambition for innovative, tech-enabled, or cross-border ventures.\n\n"
+                    f"### Strategic Timing Window\n"
+                    f"The strongest window for formalizing an independent enterprise or executing a lateral career leap activates when Jupiter approaches its exaltation sign (Cancer in your 9th house). Focus current efforts on network building and financial buffer accumulation."
+                )
+
+        elif intent == "dasha_career_stability":
+            if is_hi:
+                body_md = (
+                    f"{greeting_prefix}आपकी सक्रिय **{dasha_maha_display} महादशा** एवं **{dasha_antar_display} अंतर्दशा** का व्यावसायिक स्थिरता पर शास्त्रीय पाराशरी विश्लेषण:\n\n"
+                    f"### 1. विंशोत्तरी दशा स्वामियों का संबंध (गुरु-शुक्र)\n"
+                    f"आपके **{lagna_display} लग्न** हेतु:\n"
+                    f"- **वृहस्पति (गुरु):** द्वितीय भाव (धन, वाणी) एवं पंचम भाव (बुद्धि, पूर्व पुण्य) के शुभ स्वामी हैं।\n"
+                    f"- **शुक्र देव:** सप्तम भाव (साझेदारी, व्यापार) एवं द्वादश भाव (व्यय, दूरस्थ संबंध) के स्वामी होकर एकादश भाव में स्थित हैं।\n"
+                    f"गुरु और शुक्र दोनों नैसर्गिक शुभ ग्रह हैं, परंतु तत्कालीन संबंध में कार्यक्षेत्र में बौद्धिक विस्तार के साथ-साथ कूटनीतिक संतुलन की आवश्यकता होती है।\n\n"
+                    f"### 2. व्यावसायिक स्थिरता पर प्रत्यक्ष प्रभाव\n"
+                    f"- **सकारात्मक पक्ष:** गुरु का पंचमेश होना आपकी बौद्धिक क्षमता, निर्णय लेने की शक्ति और रणनीतिक दृष्टिकोण को बढ़ाता है।\n"
+                    f"- **सावधानी के बिंदु:** शुक्र का द्वादशेश होना यह दर्शाता है कि कार्यस्थल पर अनावश्यक राजनीति अथवा गोपनीय असंतोष से बचें। वित्तीय खर्चों पर कठोर नियंत्रण रखें।\n\n"
+                    f"### 3. स्थिरता बनाए रखने के व्यावहारिक सूत्र\n"
+                    f"1. संस्थागत नीतियों और लिखित समझौतों का पूर्ण पालन करें।\n"
+                    f"2. कार्यस्थल पर मौखिक वादों के बजाय पारदर्शी ईमेल और लिखित रिकॉर्ड रखें।"
+                )
+            else:
+                body_md = (
+                    f"{greeting_prefix}Scriptural Parashari evaluation of professional stability under your active **{active_maha} Mahadasha** and **{active_antar} Antardasha**:\n\n"
+                    f"### 1. Planetary Lordship Dynamics for {lagna} Lagna\n"
+                    f"In your natal chart:\n"
+                    f"- **Jupiter (Guru):** Rules the 2nd House (accumulated wealth, speech) and 5th House (intellect, discernment, Purva Punya), functioning as a premier functional benefic.\n"
+                    f"- **Venus (Shukra):** Rules the 7th House (partnerships, contracts) and 12th House (expenditures, foreign relations), placed in your 11th House of gains (Virgo).\n"
+                    f"The interaction between 2nd/5th lord Jupiter and 11th house Venus activates significant commercial intuition and financial acumen, but requires mindful navigation of Venus's 12th lordship.\n\n"
+                    f"### 2. Concrete Impact on Professional Stability\n"
+                    f"- **Strengths & Growth:** Jupiter's 5th lordship fortifies strategic advisory capabilities, conceptual leadership, and mentorship roles. Your counsel carries institutional weight.\n"
+                    f"- **Vulnerabilities to Manage:** Because Venus governs the 12th house of hidden dynamics and outlays, interpersonal misalignment with peers or unvetted contractual commitments can cause temporary friction. Avoid workplace gossip and lateral distractions.\n\n"
+                    f"### 3. Actionable Directives for Maximum Stability\n"
+                    f"1. **Consolidate Core Authority:** Focus on delivering measurable institutional outcomes before petitioning for external expansions.\n"
+                    f"2. **Written Documentation:** Keep commercial and operational agreements strictly documented in writing.\n"
+                    f"3. **Disciplined Boundaries:** Maintain ethical neutrality during departmental reorganizations."
                 )
 
         elif intent == "career":
-            if persona_id == "dr-sunita-shastri":
+            if is_hi:
                 body_md = (
-                    f"Namaste! I am {persona_display}.\n\n"
-                    f"Analyzing your professional horizon through an empathetic and Jaimini lens for **{lagna} Lagna**:\n\n"
+                    f"{greeting_prefix}**{lagna_display} लग्न** हेतु आपकी आजीविका एवं करियर का सूक्ष्म विश्लेषण:\n\n"
+                    f"### ज्योतिषीय निदान एवं 10th House (दशम भाव)\n"
+                    f"आपकी व्यावसायिक दिशा सक्रिय **{dasha_maha_display} महादशा** एवं **{dasha_antar_display} अंतर्दशा** से निर्देशित हो रही है। {lagna_display} लग्न हेतु दशम भाव (सिंह राशि) के स्वामी सूर्य देव हैं। {moon_display} राशि में चंद्र देव की स्थिति आपको स्वाभाविक कूटनीति, गहन बौद्धिक एकाग्रता और रणनीतिक सूझबूझ प्रदान करती है।\n\n"
+                    f"### पदोन्नति एवं सामंजस्य का समय\n"
+                    f"आगामी 3 से 6 महीनों में शुभ ग्रहों का गोचर आपके कार्यक्षेत्र में उत्तरदायित्व वृद्धि के संकेत दे रहा है। महत्वपूर्ण संवाद में विनम्रता और धैर्य बनाए रखें।\n\n"
+                    f"### व्यावहारिक परामर्श\n"
+                    f"काम के साथ-साथ अपने व्यक्तिगत स्वास्थ्य का भी ध्यान रखें। स्थाई व्यावसायिक सफलता संतुलित और शांत मन से ही संभव है।"
+                )
+            elif persona_id == "dr-sunita-shastri":
+                body_md = (
+                    f"{greeting_prefix}Analyzing your professional horizon through an empathetic and Jaimini lens for **{lagna} Lagna**:\n\n"
                     f"### Astrological Diagnosis\n"
                     f"Your 10th House of career is {h10_str}, guided under your active **{active_maha} Mahadasha** and **{active_antar} Antardasha**. "
                     f"With your Moon in {moon_sign} ({moon_nak} Nakshatra), your intuitive intelligence and interpersonal diplomacy are your greatest professional assets. "
@@ -580,8 +727,7 @@ def generate_astrological_reading(
                 )
             elif persona_id == "pandit-raghavendra":
                 body_md = (
-                    f"Om Namah Shivaya! I am {persona_display}.\n\n"
-                    f"According to classical Parashari Jyotish for **{lagna} Lagna**:\n\n"
+                    f"{greeting_prefix}According to classical Parashari Jyotish for **{lagna} Lagna**:\n\n"
                     f"### Scriptural Evaluation of the 10th House (Karma Bhava)\n"
                     f"Sage Parashara states that the 10th house governs *Kirti* (reputation), *Pratishtha* (authority), and *Vyapara* (commerce). "
                     f"In your chart, the 10th house is {h10_str}. Your active Dasha lord **{active_maha}** commands current professional karma.\n\n"
@@ -594,8 +740,7 @@ def generate_astrological_reading(
                 )
             else:
                 body_md = (
-                    f"Pranam! I am {persona_display}.\n\n"
-                    f"Analyzing the executive trajectory of your **{lagna} Lagna** ({lagna_deg:.2f}°):\n\n"
+                    f"{greeting_prefix}Analyzing the executive trajectory of your **{lagna} Lagna** ({lagna_deg:.2f}°):\n\n"
                     f"### Professional Diagnosis & 10th House Axis\n"
                     f"Your 10th House of professional authority is {h10_str}. You are operating under the influential **{active_maha} Mahadasha** "
                     f"and **{active_antar} Antardasha**. In Parashari doctrine, this planetary combination acts as an institutional accelerator, "
@@ -609,11 +754,22 @@ def generate_astrological_reading(
                 )
 
         elif intent == "marriage":
-            if persona_id == "acharya-devratan":
+            if is_hi:
                 body_md = (
-                    f"Pranam! I am {persona_display}.\n\n"
-                    f"Evaluating relationship stability and marriage timing for **{lagna} Lagna**:\n\n"
-                    f"### 7th House & Partnership Analysis\n"
+                    f"{greeting_prefix}**{lagna_display} लग्न** हेतु संबंध एवं वैवाहिक विश्लेषण:\n\n"
+                    f"### 7th House of Kalatra एवं वैवाहिक संरचना\n"
+                    f"आपके {lagna_display} लग्न में सप्तम भाव (वृषभ राशि) साझेदारी एवं वैवाहिक अनुबंध को दर्शाता है, जिसके स्वामी शुक्र देव हैं।\n"
+                    f"- **मांगलिक सत्यापन स्थिति:** **{manglik}**। आपकी कुंडली में मंगल देव अपनी स्वराशि मेष में विराजमान हैं, जिससे वृहत् पाराशर होरा शास्त्र (अध्याय 81) के अनुसार स्वतः शास्त्रीय परिहार (दोष शमन) प्राप्त होता है।\n"
+                    f"- **चंद्र स्थिति:** आपका चंद्र **{moon_display}** में स्थित है, जो निष्ठा और संवेदनशीलता प्रदान करता है।\n\n"
+                    f"### D9 नवांश एवं जीवनसाथी के गुण\n"
+                    f"आपका D9 नवांश चक्र दर्शाता है कि आपके जीवनसाथी बौद्धिक रूप से परिपक्व, व्यावहारिक और पारिवारिक मूल्यों के प्रति समर्पित होंगे। सक्रिय **{dasha_maha_display}-{dasha_antar_display}** दशा में आगामी 8 से 14 महीनों का समय संबंध प्रगाढ़ करने अथवा विवाह के लिए अनुकूल समय खिड़की प्रदान करता है।\n\n"
+                    f"### व्यावहारिक परामर्श\n"
+                    f"आपसी संवाद में पारदर्शिता रखें। सौम्य संवाद से संबंधों में मधुरता बनी रहती है।"
+                )
+            elif persona_id == "acharya-devratan":
+                body_md = (
+                    f"{greeting_prefix}Evaluating relationship stability and marriage timing for **{lagna} Lagna**:\n\n"
+                    f"### 7th House of Kalatra & Partnership Analysis\n"
                     f"Your 7th House of Kalatra is {h7_str}, and your marital verification status is: **{manglik}**. "
                     f"Under active **{active_maha}-{active_antar}** Dasha, planetary transits create a structured, supportive window "
                     f"over the next 6 to 12 months for formalizing alliances or stabilizing long-term commitments.\n\n"
@@ -623,8 +779,7 @@ def generate_astrological_reading(
                 )
             elif persona_id == "pandit-raghavendra":
                 body_md = (
-                    f"Om Namah Shivaya! I am {persona_display}.\n\n"
-                    f"In sacred classical Jyotish for **{lagna} Lagna** and **{moon_sign} Moon**:\n\n"
+                    f"{greeting_prefix}In sacred classical Jyotish for **{lagna} Lagna** and **{moon_sign} Moon**:\n\n"
                     f"### Scriptural Evaluation of Kalatra Bhava\n"
                     f"The 7th House governs sacred marital vows (*Vivaha Samskara*). Your 7th house is {h7_str}, and dosha evaluation reflects: **{manglik}**. "
                     f"Your current cycle is guided by **{active_maha} Mahadasha** and **{active_antar} Antardasha**.\n\n"
@@ -636,8 +791,7 @@ def generate_astrological_reading(
                 )
             else:
                 body_md = (
-                    f"Namaste! I am {persona_display}.\n\n"
-                    f"Examining your relationship architecture through Jaimini and Parashari synastry for **{lagna} Lagna**:\n\n"
+                    f"{greeting_prefix}Examining your relationship architecture through Jaimini and Parashari synastry for **{lagna} Lagna**:\n\n"
                     f"### Emotional & Partnership Geometry\n"
                     f"Under your {lagna} Lagna, your 7th House of partnership is {h7_str}. Regarding marital doshas: **{manglik}**. "
                     f"Your emotional core is rooted in **{moon_sign}** ({moon_nak} Nakshatra), giving you deep empathy, loyalty, and discernment.\n\n"

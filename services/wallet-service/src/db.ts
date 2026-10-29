@@ -1,14 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-
-export enum Role {
-  USER = 'USER',
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  SUPPORT = 'SUPPORT',
-  OPERATIONS = 'OPERATIONS',
-  ANALYST = 'ANALYST'
-}
+import { Role } from './security/permissions';
+export { Role };
 
 export enum AccountStatus {
   ACTIVE = 'ACTIVE',
@@ -86,6 +80,10 @@ export interface UserRecord {
   subscriptionBillingPeriod?: 'MONTHLY' | 'ANNUAL' | null;
   subscriptionExpiresAt?: string | null;
   subscriptionStatus?: 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'TRIAL' | 'NONE';
+  mfaEnabled?: boolean;
+  mfaSecret?: string | null;
+  mfaRecoveryCodes?: string[] | null;
+  mfaEnforced?: boolean;
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -104,12 +102,59 @@ export interface UserSessionRecord {
 export interface AuditEventRecord {
   id: string;
   userId: string | null;
+  actorId?: string | null;
+  actorRole?: string | null;
   action: string;
   targetType: string | null;
   targetId: string | null;
+  outcome?: 'SUCCESS' | 'DENIED' | 'FAILED';
+  requestId?: string | null;
+  reason?: string | null;
   metadata: any;
   ipAddress: string | null;
   createdAt: string;
+}
+
+export interface IncidentRecord {
+  id: string;
+  title: string;
+  severity: 'P1_CRITICAL' | 'P2_MAJOR' | 'P3_MINOR' | 'INFO';
+  status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED';
+  summary: string;
+  reportedBy: string;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FeatureFlagRecord {
+  key: string;
+  name: string;
+  enabled: boolean;
+  description: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+export interface PrivacyRequestRecord {
+  id: string;
+  userId: string;
+  type: 'DATA_EXPORT' | 'ACCOUNT_DELETION' | 'DATA_CORRECTION';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'REJECTED';
+  notes?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export interface ContentBannerRecord {
+  id: string;
+  key: string;
+  title: string;
+  body: string;
+  type: 'BANNER' | 'NOTICE' | 'ANNOUNCEMENT';
+  isActive: boolean;
+  updatedAt: string;
+  updatedBy: string;
 }
 
 export interface BirthProfileRecord {
@@ -201,6 +246,10 @@ interface DatabaseSchema {
   walletLedgers: WalletLedgerRecord[];
   paymentOrders: PaymentOrderRecord[];
   pujaBookings: PujaBookingRecord[];
+  incidents: IncidentRecord[];
+  featureFlags: FeatureFlagRecord[];
+  privacyRequests: PrivacyRequestRecord[];
+  contentBanners: ContentBannerRecord[];
 }
 
 function resolveDbPaths(): { dataDir: string; dbFile: string } {
@@ -358,6 +407,14 @@ class ResilientDatabase {
       preferredLanguage: u.preferredLanguage,
       preferredTimezone: u.preferredTimezone,
       walletBalance: Number(u.walletBalance),
+      mfaEnabled: Boolean(u.mfaEnabled),
+      mfaSecret: u.mfaSecret || null,
+      mfaRecoveryCodes: Array.isArray(u.mfaRecoveryCodes) ? u.mfaRecoveryCodes : null,
+      mfaEnforced: Boolean(u.mfaEnforced),
+      subscriptionTier: u.subscriptionTier || 'FREE',
+      subscriptionStatus: u.subscriptionStatus || 'NONE',
+      subscriptionBillingPeriod: u.subscriptionBillingPeriod || null,
+      subscriptionExpiresAt: u.subscriptionExpiresAt ? (typeof u.subscriptionExpiresAt === 'string' ? u.subscriptionExpiresAt : u.subscriptionExpiresAt.toISOString()) : null,
       lastLoginAt: u.lastLoginAt ? (typeof u.lastLoginAt === 'string' ? u.lastLoginAt : u.lastLoginAt.toISOString()) : null,
       createdAt: typeof u.createdAt === 'string' ? u.createdAt : u.createdAt.toISOString(),
       updatedAt: typeof u.updatedAt === 'string' ? u.updatedAt : u.updatedAt.toISOString()
@@ -420,10 +477,26 @@ class ResilientDatabase {
   }
 
   private loadFromFile(): DatabaseSchema {
+    const ensureSchema = (d: any): DatabaseSchema => ({
+      users: Array.isArray(d?.users) ? d.users : [],
+      sessions: Array.isArray(d?.sessions) ? d.sessions : [],
+      auditEvents: Array.isArray(d?.auditEvents) ? d.auditEvents : [],
+      birthProfiles: Array.isArray(d?.birthProfiles) ? d.birthProfiles : [],
+      savedReports: Array.isArray(d?.savedReports) ? d.savedReports : [],
+      astrologers: Array.isArray(d?.astrologers) ? d.astrologers : [],
+      walletLedgers: Array.isArray(d?.walletLedgers) ? d.walletLedgers : [],
+      paymentOrders: Array.isArray(d?.paymentOrders) ? d.paymentOrders : [],
+      pujaBookings: Array.isArray(d?.pujaBookings) ? d.pujaBookings : [],
+      incidents: Array.isArray(d?.incidents) ? d.incidents : [],
+      featureFlags: Array.isArray(d?.featureFlags) ? d.featureFlags : [],
+      privacyRequests: Array.isArray(d?.privacyRequests) ? d.privacyRequests : [],
+      contentBanners: Array.isArray(d?.contentBanners) ? d.contentBanners : []
+    });
+
     if (fs.existsSync(this.dbFilePath)) {
       try {
         const raw = fs.readFileSync(this.dbFilePath, 'utf-8');
-        return JSON.parse(raw);
+        return ensureSchema(JSON.parse(raw));
       } catch (err) {
         console.warn('[DB] Could not parse DB file, checking packaged seed:', err);
       }
@@ -432,22 +505,12 @@ class ResilientDatabase {
     if (packagedFile !== this.dbFilePath && fs.existsSync(packagedFile)) {
       try {
         const raw = fs.readFileSync(packagedFile, 'utf-8');
-        return JSON.parse(raw);
+        return ensureSchema(JSON.parse(raw));
       } catch (err) {
         console.warn('[DB] Could not parse packaged DB file:', err);
       }
     }
-    return {
-      users: [],
-      sessions: [],
-      auditEvents: [],
-      birthProfiles: [],
-      savedReports: [],
-      astrologers: [],
-      walletLedgers: [],
-      paymentOrders: [],
-      pujaBookings: []
-    };
+    return ensureSchema({});
   }
 
   private saveToFile(): void {
@@ -547,6 +610,28 @@ class ResilientDatabase {
       ];
       modified = true;
     }
+
+    // Seed default feature flags if empty
+    if (!this.data.featureFlags || this.data.featureFlags.length === 0) {
+      this.data.featureFlags = [
+        { key: 'enable_phone_otp', name: 'Phone OTP Authentication', enabled: true, description: 'Allow mobile number login via SMS OTP', updatedAt: new Date().toISOString(), updatedBy: 'system' },
+        { key: 'enable_google_oauth', name: 'Google OAuth 2.0', enabled: true, description: 'Enable one-tap Google authentication', updatedAt: new Date().toISOString(), updatedBy: 'system' },
+        { key: 'enable_numerology_paid', name: 'Paid Numerology Studio', enabled: true, description: 'Monetize comprehensive 15-chapter name numerology reports', updatedAt: new Date().toISOString(), updatedBy: 'system' },
+        { key: 'enable_ai_consultation', name: 'AI Astrologer Personas', enabled: true, description: 'Enable Acharya Devratan, Dr. Sunita, and Pandit Raghavendra consultations', updatedAt: new Date().toISOString(), updatedBy: 'system' },
+        { key: 'enable_pujas', name: 'Vedic Puja Bookings', enabled: true, description: 'Allow temple puja bookings and sankalps', updatedAt: new Date().toISOString(), updatedBy: 'system' },
+        { key: 'maintenance_mode', name: 'Platform Maintenance Mode', enabled: false, description: 'Fail-closed maintenance gate for emergency migrations', updatedAt: new Date().toISOString(), updatedBy: 'system' }
+      ];
+      modified = true;
+    }
+
+    // Seed default content banners if empty
+    if (!this.data.contentBanners || this.data.contentBanners.length === 0) {
+      this.data.contentBanners = [
+        { id: 'banner_001', key: 'homepage_announcement', title: 'AstroVerse Public Launch Edition', body: 'Experience research-grade Parashari Jyotish calculations and photorealistic AI astrologer consultations.', type: 'BANNER', isActive: true, updatedAt: new Date().toISOString(), updatedBy: 'system' }
+      ];
+      modified = true;
+    }
+
     if (modified && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
       try {
         this.saveToFile();
@@ -979,32 +1064,51 @@ class ResilientDatabase {
 
   async recordAuditEvent(event: {
     userId?: string | null;
+    actorId?: string | null;
+    actorRole?: string | null;
     action: string;
     targetType?: string | null;
     targetId?: string | null;
+    outcome?: 'SUCCESS' | 'DENIED' | 'FAILED';
+    requestId?: string | null;
+    reason?: string | null;
     metadata?: any;
     ipAddress?: string | null;
   }): Promise<AuditEventRecord> {
     this.assertDurableStorage();
 
+    const actorId = event.actorId || event.userId || null;
+    const outcome = event.outcome || 'SUCCESS';
+
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const a = await this.prisma.auditEvent.create({
           data: {
-            userId: event.userId || null,
+            userId: actorId,
             action: event.action,
             targetType: event.targetType || null,
             targetId: event.targetId || null,
-            metadata: event.metadata || null,
+            metadata: {
+              ...(event.metadata || {}),
+              actorRole: event.actorRole,
+              outcome,
+              requestId: event.requestId,
+              reason: event.reason
+            },
             ipAddress: event.ipAddress || null
           }
         });
         const mapped: AuditEventRecord = {
           id: a.id,
           userId: a.userId,
+          actorId: a.userId,
+          actorRole: event.actorRole || null,
           action: a.action,
           targetType: a.targetType,
           targetId: a.targetId,
+          outcome,
+          requestId: event.requestId || null,
+          reason: event.reason || null,
           metadata: a.metadata,
           ipAddress: a.ipAddress,
           createdAt: a.createdAt.toISOString()
@@ -1018,18 +1122,23 @@ class ResilientDatabase {
 
     const record: AuditEventRecord = {
       id: 'aud_' + crypto.randomBytes(8).toString('hex'),
-      userId: event.userId || null,
+      userId: actorId,
+      actorId,
+      actorRole: event.actorRole || null,
       action: event.action,
       targetType: event.targetType || null,
       targetId: event.targetId || null,
+      outcome,
+      requestId: event.requestId || null,
+      reason: event.reason || null,
       metadata: event.metadata || null,
       ipAddress: event.ipAddress || null,
       createdAt: new Date().toISOString()
     };
     this.data.auditEvents.unshift(record);
-    // Keep max 1000 events in store
-    if (this.data.auditEvents.length > 1000) {
-      this.data.auditEvents = this.data.auditEvents.slice(0, 1000);
+    // Keep max 2000 events in memory store
+    if (this.data.auditEvents.length > 2000) {
+      this.data.auditEvents = this.data.auditEvents.slice(0, 2000);
     }
     this.saveToFile();
     return record;
@@ -1038,54 +1147,213 @@ class ResilientDatabase {
   async listAuditEvents(options?: {
     userId?: string;
     action?: string;
+    targetType?: string;
+    outcome?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<{ events: AuditEventRecord[]; total: number }> {
-    if (this.isPostgresAvailable && this.prisma) {
-      try {
-        const where: any = {};
-        if (options?.userId) where.userId = options.userId;
-        if (options?.action) where.action = options.action;
-        const total = await this.prisma.auditEvent.count({ where });
-        const page = Math.max(1, options?.page || 1);
-        const limit = Math.max(1, options?.limit || 50);
-        const skip = (page - 1) * limit;
-        const rows = await this.prisma.auditEvent.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy: { createdAt: 'desc' }
-        });
-        return {
-          events: rows.map((a: any) => ({
-            id: a.id,
-            userId: a.userId,
-            action: a.action,
-            targetType: a.targetType,
-            targetId: a.targetId,
-            metadata: a.metadata,
-            ipAddress: a.ipAddress,
-            createdAt: a.createdAt.toISOString()
-          })),
-          total
-        };
-      } catch (err: any) {
-        console.error('[DB] listAuditEvents Prisma error:', err?.message || err);
-      }
+    let filtered = [...this.data.auditEvents];
+
+    if (options?.userId) {
+      filtered = filtered.filter(e => e.userId === options.userId || e.actorId === options.userId);
+    }
+    if (options?.action && options.action !== 'ALL') {
+      filtered = filtered.filter(e => e.action.toLowerCase().includes(options.action!.toLowerCase()));
+    }
+    if (options?.targetType && options.targetType !== 'ALL') {
+      filtered = filtered.filter(e => e.targetType === options.targetType);
+    }
+    if (options?.outcome && options.outcome !== 'ALL') {
+      filtered = filtered.filter(e => e.outcome === options.outcome);
+    }
+    if (options?.search) {
+      const q = options.search.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.action.toLowerCase().includes(q) ||
+        (e.targetId && e.targetId.toLowerCase().includes(q)) ||
+        (e.targetType && e.targetType.toLowerCase().includes(q)) ||
+        (e.reason && e.reason.toLowerCase().includes(q)) ||
+        (e.ipAddress && e.ipAddress.includes(q))
+      );
     }
 
-    let result = [...this.data.auditEvents];
-    if (options?.userId) {
-      result = result.filter(e => e.userId === options.userId);
-    }
-    if (options?.action) {
-      result = result.filter(e => e.action === options.action);
-    }
-    const total = result.length;
+    const total = filtered.length;
     const page = Math.max(1, options?.page || 1);
     const limit = Math.max(1, options?.limit || 50);
-    const start = (page - 1) * limit;
-    return { events: result.slice(start, start + limit), total };
+    const skip = (page - 1) * limit;
+    const paginated = filtered.slice(skip, skip + limit);
+
+    return { events: paginated, total };
+  }
+
+  // ==================== INCIDENTS & ERROR MONITORING ====================
+
+  async listIncidents(): Promise<IncidentRecord[]> {
+    return [...this.data.incidents];
+  }
+
+  async createIncident(incident: {
+    title: string;
+    severity: 'P1_CRITICAL' | 'P2_MAJOR' | 'P3_MINOR' | 'INFO';
+    summary: string;
+    reportedBy: string;
+  }): Promise<IncidentRecord> {
+    const record: IncidentRecord = {
+      id: 'inc_' + crypto.randomBytes(6).toString('hex'),
+      title: incident.title,
+      severity: incident.severity,
+      status: 'OPEN',
+      summary: incident.summary,
+      reportedBy: incident.reportedBy,
+      resolvedAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.data.incidents.unshift(record);
+    this.saveToFile();
+    return record;
+  }
+
+  async updateIncident(id: string, updates: Partial<IncidentRecord>): Promise<IncidentRecord | null> {
+    const inc = this.data.incidents.find(i => i.id === id);
+    if (!inc) return null;
+    if (updates.status) inc.status = updates.status;
+    if (updates.summary) inc.summary = updates.summary;
+    if (updates.severity) inc.severity = updates.severity;
+    if (updates.status === 'RESOLVED' && !inc.resolvedAt) {
+      inc.resolvedAt = new Date().toISOString();
+    }
+    inc.updatedAt = new Date().toISOString();
+    this.saveToFile();
+    return inc;
+  }
+
+  // ==================== FEATURE FLAGS & PLATFORM SETTINGS ====================
+
+  async listFeatureFlags(): Promise<FeatureFlagRecord[]> {
+    return [...this.data.featureFlags];
+  }
+
+  async setFeatureFlag(key: string, enabled: boolean, updatedBy = 'admin'): Promise<FeatureFlagRecord | null> {
+    let flag = this.data.featureFlags.find(f => f.key === key);
+    if (!flag) {
+      flag = {
+        key,
+        name: key,
+        enabled,
+        description: 'Dynamically configured flag',
+        updatedAt: new Date().toISOString(),
+        updatedBy
+      };
+      this.data.featureFlags.push(flag);
+    } else {
+      flag.enabled = enabled;
+      flag.updatedAt = new Date().toISOString();
+      flag.updatedBy = updatedBy;
+    }
+    this.saveToFile();
+    return flag;
+  }
+
+  // ==================== PRIVACY REQUESTS (GDPR / DPDP) ====================
+
+  async listPrivacyRequests(userId?: string): Promise<PrivacyRequestRecord[]> {
+    if (userId) {
+      return this.data.privacyRequests.filter(r => r.userId === userId);
+    }
+    return [...this.data.privacyRequests];
+  }
+
+  async createPrivacyRequest(req: {
+    userId: string;
+    type: 'DATA_EXPORT' | 'ACCOUNT_DELETION' | 'DATA_CORRECTION';
+    notes?: string | null;
+  }): Promise<PrivacyRequestRecord> {
+    const record: PrivacyRequestRecord = {
+      id: 'prv_' + crypto.randomBytes(6).toString('hex'),
+      userId: req.userId,
+      type: req.type,
+      status: 'PENDING',
+      notes: req.notes || null,
+      createdAt: new Date().toISOString(),
+      completedAt: null
+    };
+    this.data.privacyRequests.unshift(record);
+    this.saveToFile();
+    return record;
+  }
+
+  async updatePrivacyRequest(id: string, status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'REJECTED', notes?: string): Promise<PrivacyRequestRecord | null> {
+    const r = this.data.privacyRequests.find(x => x.id === id);
+    if (!r) return null;
+    r.status = status;
+    if (notes) r.notes = notes;
+    if (status === 'COMPLETED' || status === 'REJECTED') {
+      r.completedAt = new Date().toISOString();
+    }
+    this.saveToFile();
+    return r;
+  }
+
+  async exportUserData(userId: string): Promise<any> {
+    const user = await this.findUserById(userId);
+    if (!user) return null;
+
+    const birthProfiles = await this.listBirthProfiles(userId);
+    const savedReports = await this.listSavedReports(userId);
+    const ledgers = this.data.walletLedgers.filter(l => l.userId === userId);
+    const orders = this.data.paymentOrders.filter(o => o.userId === userId);
+    const pujas = this.data.pujaBookings.filter(p => p.userId === userId);
+
+    // Sanitize credentials from export
+    const { passwordHash, passwordSalt, resetTokenHash, mfaSecret, ...cleanUser } = user;
+
+    return {
+      exportMetadata: {
+        exportDate: new Date().toISOString(),
+        platform: 'AstroVerse Enterprise Vedic Software',
+        compliance: 'India DPDP Act 2023 / GDPR Chapter III Rights'
+      },
+      user: cleanUser,
+      birthProfiles,
+      savedReports,
+      walletLedgerEntries: ledgers,
+      paymentOrders: orders,
+      pujaBookings: pujas
+    };
+  }
+
+  // ==================== CONTENT BANNERS ====================
+
+  async listContentBanners(): Promise<ContentBannerRecord[]> {
+    return [...this.data.contentBanners];
+  }
+
+  async updateContentBanner(key: string, updates: Partial<ContentBannerRecord>): Promise<ContentBannerRecord | null> {
+    let b = this.data.contentBanners.find(x => x.key === key);
+    if (!b) {
+      b = {
+        id: 'ban_' + crypto.randomBytes(6).toString('hex'),
+        key,
+        title: updates.title || 'Platform Notice',
+        body: updates.body || '',
+        type: updates.type || 'BANNER',
+        isActive: updates.isActive !== undefined ? updates.isActive : true,
+        updatedAt: new Date().toISOString(),
+        updatedBy: updates.updatedBy || 'admin'
+      };
+      this.data.contentBanners.push(b);
+    } else {
+      if (updates.title) b.title = updates.title;
+      if (updates.body) b.body = updates.body;
+      if (updates.type) b.type = updates.type;
+      if (updates.isActive !== undefined) b.isActive = updates.isActive;
+      b.updatedAt = new Date().toISOString();
+      if (updates.updatedBy) b.updatedBy = updates.updatedBy;
+    }
+    this.saveToFile();
+    return b;
   }
 
   // ==================== BIRTH PROFILES ====================
@@ -1188,6 +1456,10 @@ class ResilientDatabase {
       }
     }
     return this.data.birthProfiles.filter(p => p.userId === userId);
+  }
+
+  async listBirthProfiles(userId: string): Promise<BirthProfileRecord[]> {
+    return this.getProfilesByUserId(userId);
   }
 
   async getProfileById(id: string): Promise<BirthProfileRecord | null> {
@@ -1318,6 +1590,10 @@ class ResilientDatabase {
       }
     }
     return this.data.savedReports.filter(r => r.userId === userId);
+  }
+
+  async listSavedReports(userId: string): Promise<SavedReportRecord[]> {
+    return this.getSavedReportsByUserId(userId);
   }
 
   async getSavedReportById(id: string): Promise<SavedReportRecord | null> {
@@ -2270,6 +2546,9 @@ class ResilientDatabase {
       .reduce((sum, l) => sum + Math.abs(l.amount), 0);
     const totalProfiles = this.data.birthProfiles.length;
     const totalSessions = this.data.sessions.length;
+    const activeSubscriptions = this.data.users.filter(u => u.subscriptionStatus === 'ACTIVE' || u.subscriptionTier === 'PLUS' || u.subscriptionTier === 'PREMIUM').length;
+    const openIncidents = this.data.incidents.filter(i => i.status !== 'RESOLVED').length;
+    const pendingPrivacyRequests = this.data.privacyRequests.filter(p => p.status === 'PENDING').length;
 
     return {
       totalUsers,
@@ -2279,7 +2558,16 @@ class ResilientDatabase {
       totalConsultationSpent: Math.round(totalConsultationSpent * 100) / 100,
       totalProfiles,
       activeSessions: totalSessions,
-      astrologerCount: this.data.astrologers.length
+      astrologerCount: this.data.astrologers.length,
+      activeSubscriptions,
+      openIncidents,
+      pendingPrivacyRequests,
+      systemHealth: {
+        walletService: 'ONLINE',
+        kundliEngine: 'ONLINE',
+        database: this.isPostgresAvailable ? 'POSTGRESQL_CONNECTED' : 'RESILIENT_STORAGE_ONLINE'
+      },
+      uptimeSeconds: Math.floor(process.uptime())
     };
   }
 }

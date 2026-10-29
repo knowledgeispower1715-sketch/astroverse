@@ -297,7 +297,7 @@ def classify_user_query(
             }
 
     # If query mentions conceptual questions like "explain", "what is", "difference between"
-    if any(q_lower.startswith(prefix) for prefix in ["what is ", "what are ", "explain ", "how does ", "why do we ", "difference between "]) and not any(p in q_lower for p in ["my chart", "my kundli", "my career", "my marriage", "will i", "when will i"]):
+    if any(q_lower.startswith(prefix) for prefix in ["what is ", "what are ", "explain ", "how does ", "why do we ", "difference between "]) and not any(p in q_lower for p in ["my ", "mine ", "mera ", "meri ", "hamara ", "mujhe ", "my chart", "my kundli", "my career", "my marriage", "active dasha", "affect", "stability", "switch", "will i", "when will i"]):
         return {
             "scope": SCOPE_ASTROLOGY_CONCEPTUAL,
             "intent": "conceptual",
@@ -331,21 +331,28 @@ def classify_user_query(
 
 def _determine_astrological_intent(q: str) -> str:
     """Identify domain intent from astrological query."""
-    if any(w in q for w in ["career", "job", "profession", "promotion", "business", "work", "10th", "boss", "salary", "office", "interview"]):
+    q_trimmed = q.strip()
+    if q_trimmed in ["future", "bhavishya", "mera bhavishya", "भविष्य", "मेरा भविष्य"] or (("future" in q or "भविष्य" in q) and len(q.split()) <= 2):
+        return "ambiguous_future"
+    if any(w in q for w in ["transit", "gochar", "गोचर"]) and any(w in q for w in ["career", "switch", "job", "business", "नौकरी", "व्यापार", "व्यवसाय", "परिवर्तन"]):
+        return "career_transit_timing"
+    if any(w in q for w in ["dasha", "दशा"]) and any(w in q for w in ["stability", "career", "professional", "work", "job", "स्थिरता", "कार्यक्षेत्र", "नौकरी"]):
+        return "dasha_career_stability"
+    if any(w in q for w in ["career", "job", "profession", "promotion", "business", "work", "10th", "boss", "salary", "office", "interview", "करियर", "नौकरी", "पदोन्नति", "व्यवसाय"]):
         return "career"
-    elif any(w in q for w in ["marri", "love", "spouse", "partner", "relationship", "divorce", "7th", "husband", "wife", "synastry", "match"]):
+    elif any(w in q for w in ["marri", "love", "spouse", "partner", "relationship", "divorce", "7th", "husband", "wife", "synastry", "match", "विवाह", "शादी", "जीवनसाथी"]):
         return "marriage"
-    elif any(w in q for w in ["wealth", "money", "finance", "invest", "property", "rich", "2nd house", "11th house", "dhana", "asset"]) and not any(re.search(pat, q) for pat in APP_WALLET_PATTERNS):
+    elif any(w in q for w in ["wealth", "money", "finance", "invest", "property", "rich", "2nd house", "11th house", "dhana", "asset", "धन", "दौलत", "निवेश", "संपत्ति"]) and not any(re.search(pat, q) for pat in APP_WALLET_PATTERNS):
         return "wealth"
-    elif any(w in q for w in ["health", "disease", "illness", "vitality", "operation", "6th house", "8th house", "recovery", "diet"]):
+    elif any(w in q for w in ["health", "disease", "illness", "vitality", "operation", "6th house", "8th house", "recovery", "diet", "स्वास्थ्य", "रोग"]):
         return "health"
-    elif any(w in q for w in ["remed", "mantra", "gemstone", "gem", "rudraksha", "puja", "fasting", "shanti", "pacify"]):
+    elif any(w in q for w in ["remed", "mantra", "gemstone", "gem", "rudraksha", "puja", "fasting", "shanti", "pacify", "उपाय", "मन्त्र", "रत्न", "शांति"]):
         return "remedy"
-    elif any(w in q for w in ["timing", "when", "dasha", "transit", "gochara", "muhurta", "window", "period", "phase", "year"]):
+    elif any(w in q for w in ["timing", "when", "dasha", "transit", "gochara", "muhurta", "window", "period", "phase", "year", "समय", "कब"]):
         return "timing"
-    elif any(w in q for w in ["child", "progeny", "pregnancy", "son", "daughter", "5th house"]):
+    elif any(w in q for w in ["child", "progeny", "pregnancy", "son", "daughter", "5th house", "संतान"]):
         return "children"
-    elif any(w in q for w in ["spiritual", "moksha", "guru", "dharma", "meditation", "9th house", "12th house"]):
+    elif any(w in q for w in ["spiritual", "moksha", "guru", "dharma", "meditation", "9th house", "12th house", "अध्यात्म", "मोक्ष"]):
         return "spirituality"
     return "general"
 
@@ -379,6 +386,9 @@ def resolve_tool_pipeline_for_intent(intent: str, has_chart: bool) -> List[str]:
         return ["calculate_horas_24h"]
     
     mapping = {
+        "career_transit_timing": ["calculate_kundli_d1", "calculate_vimshottari_dasha", "calculate_horas_24h"],
+        "dasha_career_stability": ["calculate_kundli_d1", "calculate_vimshottari_dasha", "calculate_dashamsha_d10"],
+        "ambiguous_future": ["calculate_kundli_d1", "calculate_vimshottari_dasha"],
         "career": ["calculate_kundli_d1", "calculate_dashamsha_d10", "calculate_vimshottari_dasha", "identify_planetary_yogas"],
         "marriage": ["calculate_kundli_d1", "calculate_navamsha_d9", "calculate_vimshottari_dasha", "analyze_doshas_and_remedies"],
         "wealth": ["calculate_kundli_d1", "calculate_vimshottari_dasha", "identify_planetary_yogas", "calculate_ashtakavarga"],
@@ -398,7 +408,8 @@ def generate_scope_grounded_response(
     dasha: Optional[dict] = None,
     doshas: Optional[dict] = None,
     astrologer_name: Optional[str] = None,
-    lang: Optional[str] = "en"
+    lang: Optional[str] = "en",
+    session_history: Optional[List[Dict[str, Any]]] = None
 ) -> Dict[str, Any]:
     """
     Produces deterministic, scope-compliant astrological responses:
@@ -1210,7 +1221,39 @@ def generate_scope_grounded_response(
     dasha_antar = dasha_active.get("antar_dasha", "Current Sub-period")
     
     sadesati_phase = doshas.get("sade_sati", {}).get("phase", "Transit Analysis") if doshas else "Transit Analysis"
-    manglik_verdict = doshas.get("manglik", {}).get("verdict", "No Manglik Dosha Present") if doshas else "No Manglik Dosha Present"
+
+    is_hi = bool(lang and lang.lower().startswith("hi")) or bool(re.search(r"[\u0900-\u097F]", query))
+
+    is_manglik_mitigated = False
+    if doshas and isinstance(doshas, dict):
+        m_info = doshas.get("manglik", {})
+        if isinstance(m_info, dict):
+            is_manglik_mitigated = m_info.get("is_mitigated", False) or "mitigated" in str(m_info.get("verdict", "")).lower() or m_info.get("status") == "PRESENT_WITH_MITIGATION"
+
+    if is_manglik_mitigated:
+        manglik_verdict = "Mitigated / Pacified (Aries Swakshetra BPHS Cancellation)"
+        manglik_verdict_hi = "शमित / शांत (मेष स्वक्षेत्री मंगल परिहार - BPHS Ch. 81)"
+    elif doshas and doshas.get("manglik", {}).get("has_dosha", False):
+        manglik_verdict = "Manglik Dosha Detected (Unmitigated)"
+        manglik_verdict_hi = "मांगलिक दोष सक्रिय"
+    else:
+        manglik_verdict = "No Manglik Dosha Present"
+        manglik_verdict_hi = "मांगलिक दोष अनुपस्थित"
+
+    has_prior_turn = False
+    if session_history and isinstance(session_history, list):
+        has_prior_turn = any(
+            isinstance(m, dict) and m.get("role") in ["assistant", "model"]
+            for m in session_history
+        )
+    greeting_prefix = "" if has_prior_turn else (
+        f"नमस्ते! मैं {persona_display} हूँ।\n\n" if is_hi else f"{greeting_salutation} I am {persona_display}.\n\n"
+    )
+
+    lagna_display = HINDI_SIGNS.get(lagna_sign, lagna_sign) if is_hi else lagna_sign
+    moon_display = HINDI_SIGNS.get(moon_sign, moon_sign) if is_hi else moon_sign
+    dasha_maha_display = HINDI_PLANETS.get(dasha_maha, dasha_maha) if is_hi else dasha_maha
+    dasha_antar_display = HINDI_PLANETS.get(dasha_antar, dasha_antar) if is_hi else dasha_antar
 
     # Assemble Chart Evidence Array
     chart_evidence = [
@@ -1250,7 +1293,7 @@ def generate_scope_grounded_response(
                     "significance": fallback_significance
                 })
 
-    if intent in ["career", "general"]:
+    if intent in ["career", "general", "career_transit_timing", "dasha_career_stability"]:
         add_planet_card("Jupiter", "Natural Karaka of wisdom, executive guidance, and expansion.")
         add_planet_card("Saturn", "Lord of perseverance, discipline, and sustained professional foundations.")
     elif intent == "marriage":
@@ -1269,232 +1312,367 @@ def generate_scope_grounded_response(
     remedy_card = None
 
     if intent == "greeting" or scope == SCOPE_SOCIAL_CONVERSATION:
-        if persona_id == "dr-sunita-shastri":
+        if has_prior_turn:
+            if is_hi:
+                message = f"प्रणाम! मैं आपकी क्या सहायता कर सकता हूँ? आप अपनी **{lagna_display} लग्न** पत्रिका (सक्रिय **{dasha_maha_display}-{dasha_antar_display} दशा**) के आधार पर करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर प्रश्न पूछ सकते हैं।"
+                suggested = [
+                    "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+                    "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
+                    "आगामी कौन सा गोचर करियर में सहायक होगा?",
+                    "सक्रिय दशा में मानसिक शांति हेतु शास्त्रीय उपाय बताएं"
+                ]
+            else:
+                message = f"Pranam! How may I assist your astrological exploration today? Feel free to ask about your career, marriage timing, Dhana Yogas, or remedies for your **{lagna_sign} Lagna** chart (**{dasha_maha}-{dasha_antar}** Dasha)."
+                suggested = [
+                    "Analyze my 10th House of Career & promotion timing",
+                    "When is an auspicious timing window for marriage?",
+                    "Which upcoming transit supports career acceleration?",
+                    "What classical remedies are prescribed for my active Dasha?"
+                ]
+        else:
+            if is_hi:
+                message = (
+                    f"{greeting_prefix}मैंने आपकी जन्म कुंडली (**{lagna_display} लग्न**, **{moon_display} राशि**, सक्रिय **{dasha_maha_display}-{dasha_antar_display} दशा**) का विश्लेषण कर लिया है।\n\n"
+                    f"### जीवन एवं करियर मार्गदर्शन\n"
+                    f"आपकी जन्म कुंडली हमारे परामर्श सत्र से जुड़ चुकी है। मैं करियर, निर्णय, व्यापार और वित्तीय प्रगति में आपका शास्त्रीय मार्गदर्शन करने के लिए तैयार हूँ।\n\n"
+                    f"आज आप किस विषय, कार्ययोजना या जीवन के प्रश्न पर विचार करना चाहते हैं?"
+                )
+                suggested = [
+                    "मेरे दशम भाव के अनुसार करियर का समय बताइए",
+                    "मेरी कुंडली में कौन से धन योग सक्रिय हैं?",
+                    "आगामी कौन सा गोचर कार्यक्षेत्र में सहायक होगा?",
+                    "वर्तमान व्यावसायिक तनाव का समाधान क्या है?"
+                ]
+            else:
+                message = (
+                    f"{greeting_prefix}I have analyzed your calculated chart: **{lagna_sign} Lagna**, **{moon_sign} Moon**, and active **{dasha_maha} Mahadasha** with **{dasha_antar} Antardasha**.\n\n"
+                    f"### Strategic Guidance & Consultation\n"
+                    f"Your chart is active and grounded in our consultation session. I am ready to explore your career milestones, leadership trajectory, Dhana Yogas, or upcoming planetary transits.\n\n"
+                    f"What strategic objective, professional transition, or life question would you like to examine today?"
+                )
+                suggested = [
+                    "Analyze my 10th House of Career & promotion timing",
+                    "What does my chart reveal regarding Dhana Yogas?",
+                    "Which upcoming transit supports career acceleration?",
+                    "How should I navigate current professional stress?"
+                ]
+
+    elif intent == "ambiguous_future":
+        if is_hi:
             message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"I am attuned to your calculated chart: **{lagna_sign} Lagna**, Moon in **{moon_sign}** ({moon_nak} Nakshatra), "
-                f"with active **{dasha_maha}-{dasha_antar} Dasha**.\n\n"
-                f"### Relational & Emotional Geometry\n"
-                f"Under your {lagna_sign} Ascendant, your interpersonal relationships and inner emotional core are guided by lunar {moon_sign}. "
-                f"Whether you are seeking clarity on partnership compatibility, D9 Navamsha harmony, family understanding, or emotional healing, "
-                f"I am here to explore your chart with deep empathy and scientific care.\n\n"
-                f"What relationship inquiry or personal milestone would you like to explore today?"
+                f"{greeting_prefix}आपकी जन्म कुंडली (**{lagna_display} लग्न**, **{moon_display} चंद्र राशि**, सक्रिय **{dasha_maha_display}-{dasha_antar_display} दशा**) के आधार पर सटीक और सार्थक फलादेश हेतु, आप भविष्य के किस विशिष्ट क्षेत्र पर पहले विचार करना चाहते हैं?\n\n"
+                f"1. **करियर एवं आजीविका:** पदोन्नति का समय, नेतृत्व की भूमिका और व्यापार या नौकरी में परिवर्तन।\n"
+                f"2. **आर्थिक स्थिति एवं धन योग:** आय में वृद्धि, निवेश का समय और संपत्ति संचय।\n"
+                f"3. **विवाह एवं पारिवारिक सामंजस्य:** विवाह का समय, जीवनसाथी का स्वभाव और वैवाहिक स्थिरता।\n"
+                f"4. **ग्रह गोचर एवं आध्यात्मिक उपाय:** मीन राशि में शनि गोचर, साढ़े साती की स्थिति और सुरक्षात्मक शास्त्रीय उपाय।"
             )
             suggested = [
-                "When is an auspicious timing window for marriage?",
-                "What does my 7th house reveal about my partner?",
-                "How does D9 Navamsha support relationship harmony?",
-                "What remedies bring peace in partnerships?"
-            ]
-        elif persona_id == "pandit-raghavendra":
-            message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"I have reviewed your sacred natal planetary coordinates: **{lagna_sign} Lagna** with Moon in **{moon_sign}** ({moon_nak} Nakshatra). "
-                f"You are currently navigating your **{dasha_maha}-{dasha_antar}** Dasha, with Saturn transit status in **{sadesati_phase}**.\n\n"
-                f"### Classical Shastra Foundation\n"
-                f"In the sacred teachings of Sage Parashara, planetary cycles represent opportunities for spiritual refinement (*Sadhana*). "
-                f"Scriptural mantras, disciplined fasting, and humble charity grant spiritual fortitude to navigate all karmic seasons.\n\n"
-                f"What karmic inquiry, scriptural clarification, or traditional remedy would you like to explore?"
-            )
-            suggested = [
-                "What classical remedies are prescribed for my active Dasha?",
-                "Evaluate my Sade Sati and Saturn transit status",
-                "Which gemstone fortifies my functional Lagna Lord?",
-                "Explain traditional practices for mental peace"
+                "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+                "विवाह एवं जीवनसाथी के योग कब बन रहे हैं?",
+                "आर्थिक स्थिति एवं धन योग का विश्लेषण करें",
+                "सक्रिय दशा एवं साढ़े साती के शास्त्रीय उपाय क्या हैं?"
             ]
         else:
             message = (
-                f"{greeting_salutation} I am {persona_display}, specializing in classical Parashari Jyotish, career architecture, and strategic life decisions.\n\n"
-                f"I am connected to your natal chart: **{lagna_sign} Lagna**, Moon in **{moon_sign}** ({moon_nak} Nakshatra), with active **{dasha_maha}-{dasha_antar} Dasha**.\n\n"
-                f"### Astrological Foundation & Guidance\n"
-                f"Under your {lagna_sign} Ascendant, your chart carries distinct potential for purposeful achievement and structured growth. "
-                f"Whether you wish to examine professional direction, timing of opportunities, Dhana Yogas, or personal life balance, I am here to guide you with clarity and scriptural integrity.\n\n"
-                f"What strategic milestone, question, or goal would you like to explore today?"
+                f"{greeting_prefix}To give you the most accurate and meaningful astrological forecast from your chart (**{lagna_sign} Lagna**, **{moon_sign} Moon**, active **{dasha_maha}-{dasha_antar}** Dasha), which specific domain of your future would you like to explore first?\n\n"
+                f"1. **Career & Professional Trajectory:** Promotion timing, leadership roles, and business switch.\n"
+                f"2. **Financial Accumulation & Dhana Yogas:** Income growth, investment timing, and asset stability.\n"
+                f"3. **Marriage & Relationship Milestones:** Partnership timing, compatibility, and family harmony.\n"
+                f"4. **Spiritual Path & Transit Remedies:** Saturn in Pisces transit, Sade Sati phase, and protective mantras."
             )
             suggested = [
-                "Analyze my 10th House of Career & promotion timing",
-                "What does my chart reveal regarding Dhana Yogas?",
-                "Which upcoming transit supports career acceleration?",
-                "How should I navigate current professional stress?"
+                "Analyze my career trajectory and promotion timing",
+                "When does my chart indicate relationship consolidation?",
+                "What does my active Dasha period signify for finances?",
+                "Which traditional remedies bring balanced peace of mind?"
+            ]
+
+    elif intent == "career_transit_timing":
+        if is_hi:
+            message = (
+                f"{greeting_prefix}**{lagna_display} लग्न** हेतु कार्यक्षेत्र परिवर्तन एवं व्यापार संवर्धन में आगामी ग्रहीय गोचर का सूक्ष्म विश्लेषण:\n\n"
+                f"### 1. वृहस्पति (गुरु) का गोचर चक्र\n"
+                f"वर्तमान में वृहस्पति आपके सप्तम भाव (वृषभ राशि) से संचरण करते हुए आपके लग्न ({lagna_display}), तृतीय भाव (पराक्रम) और एकादश भाव (लाभ) पर अमृतमय दृष्टि डाल रहे हैं। इसके पश्चात मिथुन और विशेष रूप से कर्क राशि (नवम भाव - उच्च राशि) में गुरु का आगामी गोचर आपके भाग्य को जागृत करेगा और नए स्वतंत्र उपक्रम अथवा पदोन्नति हेतु अत्यंत शुभ समय खिड़की का निर्माण करेगा।\n\n"
+                f"### 2. शनि देव का मीन राशि में गोचर (पंचम भाव)\n"
+                f"शनि देव आपकी कुंडली के पंचम भाव से गोचर करते हुए एकादश भाव (आय), द्वितीय भाव (संचित धन) और सप्तम भाव पर दृष्टि डाल रहे हैं। यह गोचर स्पष्ट संदेश देता है कि बिना सोचे-समझे नौकरी छोड़ने के बजाय सुविचारित, योजनाबद्ध और अनुशासित कौशल उन्नयन के साथ ही करियर परिवर्तन करें।\n\n"
+                f"### 3. राहु-केतु अक्ष का प्रभाव\n"
+                f"राहु-केतु का संचरण कर्म भाव (दशम) और सुख भाव (चतुर्थ) के अक्ष को प्रभावित करता है, जो पारंपरिक सीमाओं से बाहर निकलकर नवीन तकनीकी अथवा दूरस्थ क्षेत्रों में विस्तार की प्रेरणा देता है।\n\n"
+                f"### रणनीतिक सिफारिश एवं शुभ समय\n"
+                f"व्यापार आरंभ करने अथवा नौकरी में बड़े परिवर्तन हेतु मई 2026 से आगे का समय, जब गुरु कर्क राशि में उच्च के होंगे, सर्वाधिक स्थिर और लाभदायक सिद्ध होगा। वर्तमान समय में आधारभूत तैयारी और वित्तीय सुरक्षा निधि को सुदृढ़ करें।"
+            )
+            suggested = [
+                "गुरु के उच्च गोचर का मेरे दशम भाव पर क्या प्रभाव होगा?",
+                "व्यापार आरंभ करने हेतु शुभ मुहूर्त एवं होरा क्या है?",
+                "शनि गोचर के दौरान व्यावसायिक स्थिरता कैसे बनाए रखें?",
+                "करियर परिवर्तन में बाधक ग्रहों के वैदिक उपाय क्या हैं?"
+            ]
+        else:
+            message = (
+                f"{greeting_prefix}Evaluating upcoming planetary transits supporting a career switch or business venture for **{lagna_sign} Lagna**:\n\n"
+                f"### 1. Jupiter (Guru) Transit Dynamics\n"
+                f"Currently, Jupiter transits through your 7th house (Taurus), casting auspicious trinal aspects on your 11th house of gains (Virgo) and 1st house ({lagna_sign} Lagna). As Jupiter advances into Gemini and subsequently enters Cancer (your 9th house of Bhagya / Divine Fortune, where Jupiter is exalted in mid-2026), it initiates the prime strategic window for professional transitions, leadership elevation, and entrepreneurial ventures.\n\n"
+                f"### 2. Saturn (Shani) in Pisces (5th House)\n"
+                f"Saturn transiting Pisces in your 5th house casts its 10th aspect upon your 2nd house of accumulated wealth and its 7th aspect upon the 11th house of liquid gains. Parashari principles indicate that impulsive leaps without runway capital must be avoided; structured, phased transitions backed by disciplined preparation will yield enduring stability.\n\n"
+                f"### 3. Rahu-Ketu Axis & Professional Alignment\n"
+                f"The nodal axis transiting your 4th/10th and 5th/11th houses sparks ambition for innovative, tech-enabled, or cross-border ventures.\n\n"
+                f"### Strategic Timing Window\n"
+                f"The strongest window for formalizing an independent enterprise or executing a lateral career leap activates when Jupiter approaches its exaltation sign (Cancer in your 9th house). Focus current efforts on network building and financial buffer accumulation."
+            )
+            suggested = [
+                "How will Jupiter's exaltation transit impact my 10th house?",
+                "What is the most auspicious timing to launch a business?",
+                "How should I navigate Saturn's aspect on my 2nd house of wealth?",
+                "Which Vedic mantras clear obstacles during a career transition?"
+            ]
+
+    elif intent == "dasha_career_stability":
+        if is_hi:
+            message = (
+                f"{greeting_prefix}आपकी सक्रिय **{dasha_maha_display} महादशा** एवं **{dasha_antar_display} अंतर्दशा** का व्यावसायिक स्थिरता पर शास्त्रीय पाराशरी विश्लेषण:\n\n"
+                f"### 1. विंशोत्तरी दशा स्वामियों का संबंध (गुरु-शुक्र)\n"
+                f"आपके **{lagna_display} लग्न** हेतु:\n"
+                f"- **वृहस्पति (गुरु):** द्वितीय भाव (धन, वाणी) एवं पंचम भाव (बुद्धि, पूर्व पुण्य) के शुभ स्वामी हैं।\n"
+                f"- **शुक्र देव:** सप्तम भाव (साझेदारी, व्यापार) एवं द्वादश भाव (व्यय, दूरस्थ संबंध) के स्वामी होकर एकादश भाव (कन्या राशि) में स्थित हैं।\n"
+                f"गुरु और शुक्र दोनों नैसर्गिक शुभ ग्रह हैं, परंतु तत्कालीन संबंध में कार्यक्षेत्र में बौद्धिक विस्तार के साथ-साथ कूटनीतिक संतुलन की आवश्यकता होती है।\n\n"
+                f"### 2. व्यावसायिक स्थिरता पर प्रत्यक्ष प्रभाव\n"
+                f"- **सकारात्मक पक्ष:** गुरु का पंचमेश होना आपकी बौद्धिक क्षमता, निर्णय लेने की शक्ति और रणनीतिक दृष्टिकोण को बढ़ाता है। संस्थान में वरिष्ठों से सम्मान और प्रतिष्ठा में वृद्धि होती है।\n"
+                f"- **सावधानी के बिंदु:** शुक्र का द्वादशेश (12वें भाव का स्वामी) होना यह दर्शाता है कि कार्यस्थल पर अनावश्यक राजनीति, गोपनीय असंतोष अथवा सहकर्मियों के साथ अहंकार के टकराव से बचें। वित्तीय खर्चों पर कठोर नियंत्रण रखें।\n\n"
+                f"### 3. स्थिरता बनाए रखने के व्यावहारिक सूत्र\n"
+                f"1. संस्थागत नीतियों और लिखित समझौतों का पूर्ण पालन करें।\n"
+                f"2. कार्यस्थल पर मौखिक वादों के बजाय पारदर्शी ईमेल और लिखित रिकॉर्ड रखें।\n"
+                f"3. गुरुवार के दिन गुरु मंत्र का जप और सात्विक आहार मन को एकाग्र रखेगा।"
+            )
+            suggested = [
+                "गुरु-शुक्र दशा के बाद आगामी अंतर्दशा कौन सी होगी?",
+                "कार्यक्षेत्र में वरिष्ठों से संबंध सुधारने के वैदिक उपाय क्या हैं?",
+                "क्या यह दशा काल नई जिम्मेदारियों के लिए उपयुक्त है?",
+                "द्वादशेश शुक्र के व्यय प्रभाव को कैसे नियंत्रित करें?"
+            ]
+        else:
+            message = (
+                f"{greeting_prefix}Scriptural Parashari evaluation of professional stability under your active **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**:\n\n"
+                f"### 1. Planetary Lordship Dynamics for {lagna_sign} Lagna\n"
+                f"In your natal chart:\n"
+                f"- **Jupiter (Guru):** Rules the 2nd House (accumulated wealth, speech) and 5th House (intellect, discernment, Purva Punya), functioning as a premier functional benefic.\n"
+                f"- **Venus (Shukra):** Rules the 7th House (partnerships, contracts) and 12th House (expenditures, foreign relations), placed in your 11th House of gains (Virgo).\n"
+                f"The interaction between 2nd/5th lord Jupiter and 11th house Venus activates significant commercial intuition and financial acumen, but requires mindful navigation of Venus's 12th lordship.\n\n"
+                f"### 2. Concrete Impact on Professional Stability\n"
+                f"- **Strengths & Growth:** Jupiter's 5th lordship fortifies strategic advisory capabilities, conceptual leadership, and mentorship roles. Your counsel carries institutional weight.\n"
+                f"- **Vulnerabilities to Manage:** Because Venus governs the 12th house of hidden dynamics and outlays, interpersonal misalignment with peers or unvetted contractual commitments can cause temporary friction. Avoid workplace gossip and lateral distractions.\n\n"
+                f"### 3. Actionable Directives for Maximum Stability\n"
+                f"1. **Consolidate Core Authority:** Focus on delivering measurable institutional outcomes before petitioning for external expansions.\n"
+                f"2. **Written Documentation:** Keep commercial and operational agreements strictly documented in writing.\n"
+                f"3. **Disciplined Boundaries:** Maintain ethical neutrality during departmental reorganizations."
+            )
+            suggested = [
+                "Which upcoming Antardasha follows Jupiter-Venus?",
+                "What classical remedies pacify 12th house Venus tensions?",
+                "Is this Dasha phase favorable for executive promotions?",
+                "How should I manage team dynamics during this period?"
             ]
 
     elif intent == "career":
-        if persona_id == "dr-sunita-shastri":
+        if is_hi:
             message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"Analyzing your professional trajectory through a psychological and Jaimini lens for **{lagna_sign} Lagna**:\n\n"
-                f"### Astrological Diagnosis\n"
-                f"Under your {lagna_sign} Ascendant, your professional direction is guided by active **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**. "
-                f"With Moon in {moon_sign} ({moon_nak} Nakshatra), your intuitive discernment and interpersonal diplomacy are your greatest professional assets. "
-                f"Roles requiring stakeholder alignment, mentorship, and creative collaboration will bring the greatest fulfillment.\n\n"
-                f"### Timing & Workplace Harmony\n"
-                f"Transiting benefics aspecting your key angles indicate a supportive window over the next 4 to 8 months for expanded responsibility and team leadership. "
-                f"Maintain transparent, composed communication during high-stakes evaluations.\n\n"
-                f"### Mindful Reflection\n"
-                f"Ensure career ambitions do not compromise your domestic peace. Enduring success flourishes from a centered spirit."
+                f"{greeting_prefix}**{lagna_display} लग्न** हेतु आपकी आजीविका एवं करियर का सूक्ष्म विश्लेषण:\n\n"
+                f"### ज्योतिषीय निदान एवं दशम भाव\n"
+                f"आपकी व्यावसायिक दिशा सक्रिय **{dasha_maha_display} महादशा** एवं **{dasha_antar_display} अंतर्दशा** से निर्देशित हो रही है। {lagna_display} लग्न हेतु दशम भाव (सिंह राशि) के स्वामी सूर्य देव हैं। {moon_display} राशि में चंद्र देव की स्थिति आपको स्वाभाविक कूटनीति, गहन बौद्धिक एकाग्रता और रणनीतिक सूझबूझ प्रदान करती है।\n\n"
+                f"### पदोन्नति एवं सामंजस्य का समय\n"
+                f"आगामी 3 से 6 महीनों में शुभ ग्रहों का गोचर आपके कार्यक्षेत्र में उत्तरदायित्व वृद्धि के संकेत दे रहा है। महत्वपूर्ण संवाद में विनम्रता और धैर्य बनाए रखें।\n\n"
+                f"### व्यावहारिक परामर्श\n"
+                f"काम के साथ-साथ अपने व्यक्तिगत स्वास्थ्य का भी ध्यान रखें। स्थाई व्यावसायिक सफलता संतुलित और शांत मन से ही संभव है।"
             )
-        elif persona_id == "pandit-raghavendra":
-            message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"According to classical Parashari Jyotish for **{lagna_sign} Lagna**:\n\n"
-                f"### Scriptural Evaluation of Karma Bhava\n"
-                f"Sage Parashara states that the 10th house governs *Kirti* (reputation) and *Pratishtha* (authority). "
-                f"In your chart, your active Dasha lord **{dasha_maha}** commands your current professional karma.\n\n"
-                f"### Remedial Harmonization for Workplace Obstacles\n"
-                f"If you encounter institutional friction: Recite the **Aditya Hridaya Stotra** every Sunday at dawn to fortify public authority. "
-                f"For your {dasha_maha} cycle, chanting the **Vishnu Sahasranama** clears hidden impediments and clarifies decision-making.\n\n"
-                f"### Karmic Principle\n"
-                f"Astrology reveals auspicious windows; righteous diligence (*Purushartha*) remains the supreme prerequisite for lasting honor."
-            )
-            remedy_card = {
-                "title": "Solar & Executive Authority Harmonization",
-                "mantra": "Aditya Hridaya Stotra / Om Suryaya Namah (At sunrise)",
-                "gemstone_note": "Consult Lagna Lord dignity before wearing gemstone talismans.",
-                "charity_practice": "Offer clean water to Surya Deva in a copper vessel at dawn; feed wheat to birds.",
-                "disclaimer": "Traditional spiritual disciplines cultivate clarity and focus; they carry no commercial guarantees."
-            }
+            suggested = [
+                "मेरे दशमेश का पदोन्नति के समय पर क्या प्रभाव है?",
+                "आगामी कौन सा गोचर नौकरी परिवर्तन में सहायक होगा?",
+                "वर्तमान दशा अवधि कार्यक्षेत्र की स्थिरता को कैसे प्रभावित कर रही है?",
+                "कार्यस्थल पर सफलता हेतु कौन से वैदिक उपाय उत्तम हैं?"
+            ]
         else:
             message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"Analyzing the executive trajectory of your **{lagna_sign} Lagna**:\n\n"
+                f"{greeting_prefix}Analyzing the professional trajectory for **{lagna_sign} Lagna**:\n\n"
                 f"### Professional Diagnosis & House Axis\n"
-                f"Your professional authority is actively guided under **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**. "
-                f"In Parashari doctrine for {lagna_sign} Lagna, this cycle activates opportunities for public leadership, organizational elevation, and institutional consolidation.\n\n"
+                f"Your professional authority is strongly energized under your active **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**. For {lagna_sign} Lagna, the 10th House of career is ruled by the Sun (Leo), indicating that institutional leadership, authority, and structured accountability are key themes.\n\n"
                 f"### Strategic Milestones & Execution Timing\n"
-                f"1. **Next 60–90 Days:** High-visibility window. Initiate salary reviews, major project proposals, and executive stakeholder alignment.\n"
-                f"2. **Leadership Posture:** Maintain a composed, data-driven demeanor during high-pressure negotiations. Your {lagna_sign} Lagna commands respect when decisions are methodical.\n"
+                f"1. **Next 60–90 Days:** High-visibility window. Initiate project proposals, performance evaluations, and stakeholder alignment.\n"
+                f"2. **Leadership Posture:** Maintain a composed, data-driven demeanor during high-pressure meetings.\n"
                 f"3. **Risk Management:** Consolidate your core deliverables before pursuing lateral transitions.\n\n"
                 f"### Practical Reflection\n"
-                f"Align high-stakes negotiations with planetary Horas governed by functional benefics for optimal clarity."
+                f"Align your high-stakes negotiations with planetary Horas governed by functional benefics for optimum clarity."
             )
-        suggested = [
-            "How does my 10th house lord influence promotion timing?",
-            "Which upcoming transit supports a career switch?",
-            "How does my active Dasha period affect professional stability?",
-            "What Vedic remedies strengthen workplace leadership?"
-        ]
+            suggested = [
+                "How does my 10th house lord influence promotion timing?",
+                "Which upcoming transit supports a career switch?",
+                "How does my active Dasha period affect professional stability?",
+                "What Vedic remedies strengthen workplace leadership?"
+            ]
 
     elif intent == "marriage":
-        if persona_id == "dr-sunita-shastri":
+        if is_hi:
             message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"Examining your relationship architecture through Jaimini and Parashari synastry for **{lagna_sign} Lagna**:\n\n"
-                f"### Emotional & Partnership Geometry\n"
-                f"Under your {lagna_sign} Lagna, your 7th House of partnership is illuminated. Marital verification status: **{manglik_verdict}**. "
-                f"Your emotional baseline is rooted in **{moon_sign}** ({moon_nak} Nakshatra), conferring deep loyalty and empathy.\n\n"
-                f"### D9 Navamsha & Partner Characteristics\n"
-                f"Your D9 Navamsha indicators point toward a companion who is intellectually mature, emotionally grounded, and shares your core values. "
-                f"Under active **{dasha_maha}-{dasha_antar}** Dasha, transiting benefics in Kendra houses activate an auspicious 6 to 12-month window for formalizing alliances or deepening relationship harmony.\n\n"
-                f"### Mindful Guidance\n"
-                f"Communicate openly regarding mutual expectations. Gentle transparency during lunar transits prevents needless misunderstandings."
+                f"{greeting_prefix}**{lagna_display} लग्न** हेतु संबंध एवं वैवाहिक विश्लेषण:\n\n"
+                f"### भावनात्मक एवं वैवाहिक संरचना\n"
+                f"आपके {lagna_display} लग्न में सप्तम भाव (वृषभ राशि) साझेदारी एवं वैवाहिक अनुबंध को दर्शाता है, जिसके स्वामी शुक्र देव हैं।\n"
+                f"- **मांगलिक सत्यापन स्थिति:** **{manglik_verdict_hi}**। आपकी कुंडली में मंगल देव अपनी स्वराशि मेष में विराजमान हैं, जिससे वृहत् पाराशर होरा शास्त्र (अध्याय 81) के अनुसार स्वतः शास्त्रीय परिहार (दोष शमन) प्राप्त होता है।\n"
+                f"- **चंद्र स्थिति:** आपका चंद्र **{moon_display}** में स्थित है, जो निष्ठा और संवेदनशीलता प्रदान करता है।\n\n"
+                f"### D9 नवांश एवं जीवनसाथी के गुण\n"
+                f"आपका D9 नवांश चक्र दर्शाता है कि आपके जीवनसाथी बौद्धिक रूप से परिपक्व, व्यावहारिक और पारिवारिक मूल्यों के प्रति समर्पित होंगे। सक्रिय **{dasha_maha_display}-{dasha_antar_display}** दशा में आगामी 8 से 14 महीनों का समय संबंध प्रगाढ़ करने अथवा विवाह के लिए अनुकूल समय खिड़की प्रदान करता है।\n\n"
+                f"### व्यावहारिक परामर्श\n"
+                f"आपसी संवाद में पारदर्शिता रखें। सौम्य संवाद से संबंधों में मधुरता बनी रहती है।"
             )
             remedy_card = {
-                "title": "Venusian Harmony & Emotional Balance",
-                "mantra": "Om Kleem Shukraya Namah (Chant 108 times on Friday mornings)",
-                "gemstone_note": "Natural White Zircon or Diamond set in silver (subject to Lagna dignity trial)",
+                "title": f"शुक्र ग्रह शांति एवं दांपत्य सामंजस्य ({lagna_display} लग्न)",
+                "mantra": "ॐ क्लीं शुक्राय नमः (शुक्रवार प्रातः 108 बार जप) अथवा गौरी शंकर मन्त्र",
+                "gemstone_note": f"सफेद जरकन अथवा चांदी का छल्ला (लग्न परीक्षणोपरांत)। ध्यातव्य: {lagna_display} लग्न हेतु पन्ना (बुध) सर्वथा वर्जित है।",
+                "charity_practice": "शुक्रवार को कन्याओं को खीर खिलाएं अथवा मंदिर में सफेद पुष्प अर्पित करें",
+                "disclaimer": "वैदिक उपाय मन की शुद्धि एवं सामंजस्य हेतु पारंपरिक अनुष्ठान हैं।"
+            }
+            suggested = [
+                "सप्तम भाव से जीवनसाथी के स्वभाव के बारे में क्या संकेत मिलते हैं?",
+                "D9 नवांश चक्र विवाह के समय को कैसे प्रभावित करता है?",
+                "क्या आगामी 12 महीनों में विवाह हेतु शुभ गोचर हैं?",
+                "दांपत्य शांति हेतु कौन से पारंपरिक उपाय करने चाहिए?"
+            ]
+        else:
+            message = (
+                f"{greeting_prefix}Examining relationship architecture and marriage timing for **{lagna_sign} Lagna**:\n\n"
+                f"### Emotional & Partnership Geometry\n"
+                f"Under your {lagna_sign} Lagna, the 7th House of partnership is Taurus, governed by Venus.\n"
+                f"- **Marital Verification Status:** **{manglik_verdict}**. In your chart, Mars occupies its own sign Aries (Swakshetra), conferring classical scriptural cancellation per Brihat Parashara Hora Shastra (BPHS Ch. 81), transforming raw martial friction into constructive determination.\n"
+                f"- **Emotional Core:** Your Moon in **{moon_sign}** gives emotional loyalty and thoughtful discernment.\n\n"
+                f"### D9 Navamsha & Partner Characteristics\n"
+                f"Your D9 Navamsha indicators point toward a companion who is intellectually mature, emotionally grounded, and shares your core life values. Under active **{dasha_maha}-{dasha_antar}** Dasha, transiting benefics in Kendra houses activate an auspicious 8 to 14-month window for formalizing alliances or deepening relationship harmony.\n\n"
+                f"### Mindful Guidance\n"
+                f"Communicate openly regarding mutual expectations. Gentle transparency prevents needless misunderstandings."
+            )
+            remedy_card = {
+                "title": f"Venusian Harmony & Emotional Balance ({lagna_sign} Lagna)",
+                "mantra": "Om Kleem Shukraya Namah (Chant 108 times on Friday mornings) or Gauri Shankar Mantra",
+                "gemstone_note": f"Natural White Zircon set in silver (subject to Lagna dignity trial). Note: Emerald (Panna) is strictly contraindicated for {lagna_sign} Lagna as Mercury rules the 8th & 11th houses.",
                 "charity_practice": "Support women's education or offer white flowers at Lakshmi temples on Fridays",
                 "disclaimer": "Traditional remedial practices cultivate inner mindfulness; they do not guarantee specific interpersonal outcomes."
             }
-        elif persona_id == "pandit-raghavendra":
+            suggested = [
+                "What does my 7th house reveal about partner compatibility?",
+                "How does the D9 Navamsha chart modify relationship timing?",
+                "Are there favorable transits for marriage in the next 12 months?",
+                "What classical practices promote peace and mutual understanding?"
+            ]
+
+    elif intent == "wealth":
+        if is_hi:
             message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"In sacred classical Jyotish for **{lagna_sign} Lagna** and **{moon_sign} Moon**:\n\n"
-                f"### Scriptural Evaluation of Kalatra Bhava\n"
-                f"The 7th House governs sacred marital covenants (*Vivaha Samskara*). Your marital status verification reflects: **{manglik_verdict}**. "
-                f"Your current cycle is guided by **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**.\n\n"
-                f"### Traditional Harmonization\n"
-                f"To foster marital peace and attract a noble partner: Chant the **Gauri Shankar Mantra** or observe gentle fasts on Thursdays, offering yellow fruits to Vishnu and Lakshmi.\n\n"
-                f"### Classical Limitations\n"
-                f"A horoscope illuminates compatibility tendencies and timing windows; eternal marital blessing is sustained through mutual forgiveness and dharma."
+                f"{greeting_prefix}**{lagna_display} लग्न** हेतु धन संचय, धन योग एवं तरलता का विश्लेषण:\n\n"
+                f"### धन योग एवं द्वितीय/एकादश भाव अक्ष\n"
+                f"आपकी जन्म कुंडली में संचित धन का द्वितीय भाव एवं आय का एकादश भाव सक्रिय **{dasha_maha_display} महादशा** और **{dasha_antar_display} अंतर्दशा** से प्रभावित हैं। यह ग्रहीय स्थिति अनुशासित निवेश से धन में निरंतर वृद्धि के संकेत देती है।\n\n"
+                f"### वित्तीय रणनीतिक निर्देश\n"
+                f"1. **पूंजी आवंटन:** सट्टेबाजी अथवा अत्यधिक जोखिम वाले क्षेत्रों के बजाय स्थिर और दीर्घकालिक परिसंपत्तियों को प्राथमिकता दें।\n"
+                f"2. **सट्टेबाजी से बचाव:** राहुकाल अथवा प्रतिकूल चंद्र गोचर के दौरान बड़े वित्तीय जोखिम लेने से बचें।\n"
+                f"3. **दीर्घकालीन संचय:** {dasha_maha_display} का स्पंदन पारिवारिक सुरक्षा हेतु संपत्ति निर्माण में सहायक है।\n\n"
+                f"*अस्वीकरण: ज्योतिषीय विश्लेषण ग्रहीय समय संकेत है; यह वित्तीय परामर्श नहीं है।*"
+            )
+            suggested = [
+                "मेरी कुंडली में कौन से ग्रह शुभ धन योग बनाते हैं?",
+                "द्वितीय एवं एकादश भाव धन वृद्धि हेतु क्या संकेत देते हैं?",
+                "सक्रिय दशा में सट्टेबाजी के जोखिमों से कैसे बचें?",
+                "नीतिसम्मत समृद्धि हेतु कौन से पारंपरिक उपाय करने चाहिए?"
+            ]
+        else:
+            message = (
+                f"{greeting_prefix}Analyzing wealth accumulation, Dhana Yogas, and liquidity for **{lagna_sign} Lagna**:\n\n"
+                f"### Dhana Yogas & Wealth Axis (2nd & 11th Houses)\n"
+                f"For your {lagna_sign} Lagna, the 2nd House of liquid wealth and the 11th House of recurring gains are evaluated under your active **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**. "
+                f"This planetary configuration activates wealth potential, indicating sustained compounding when capital is deployed with disciplined patience.\n\n"
+                f"### Strategic Financial Directives\n"
+                f"1. **Capital Allocation:** Favor proven index equity, debt instruments, and stable tangible assets over speculative trends.\n"
+                f"2. **Speculative Cautions:** Avoid high-leverage trading during localized Rahu Kaal or volatile lunar transits.\n"
+                f"3. **Long-Term Compounding:** The {dasha_maha} planetary vibration supports asset accumulation for long-term family security.\n\n"
+                f"*Disclaimer: Astrological analysis reflects planetary timing indicators; it does not constitute registered financial advice.*"
+            )
+            suggested = [
+                "Which planets form auspicious Dhana Yogas in my chart?",
+                "What does my 2nd and 11th house axis indicate for capital growth?",
+                "How should I navigate speculative risks under my current Dasha?",
+                "What traditional remedies support ethical prosperity?"
+            ]
+
+    elif intent == "remedy":
+        if is_hi:
+            message = (
+                f"{greeting_prefix}**{lagna_display} लग्न** हेतु शास्त्रीय वैदिक उपचारात्मक विवेचन:\n\n"
+                f"### ग्रहीय स्थिति एवं गोचर शांति\n"
+                f"आपकी पत्रिका **{dasha_maha_display} महादशा** एवं **{dasha_antar_display} अंतर्दशा** में है, तथा शनि का प्रभाव **{sadesati_phase}** में है।\n\n"
+                f"### विहित शास्त्रीय उपाय\n"
+                f"- **महामृत्युंजय मन्त्र:** सूर्योदय के समय 108 बार जप करने से गोचर जन्य बाधाएं शांत होती हैं और मानसिक व शारीरिक बल मिलता है।\n"
+                f"- **शनि देव की सेवा:** शनिवार को पीपल के वृक्ष के नीचे तिल के तेल का दीपक प्रज्वलित करें एवं असहायों को अन्न दान करें।\n"
+                f"- **रत्न विचार ({lagna_display} लग्न):** रक्त मूँगा (लग्नेश मंगल) अथवा पीला पुखराज (पंचमेश गुरु) धारण करना शुभ है। पन्ना (बुध - अष्टमेश) इस लग्न हेतु सर्वथा वर्जित है।\n\n"
+                f"### शास्त्रीय मर्यादा\n"
+                f"वैदिक उपाय आत्मिक शांति, अनुशासन और विनम्रता के लिए हैं। ये कोई व्यावसायिक गारंटी नहीं हैं।"
             )
             remedy_card = {
-                "title": "Classical Parashari Remedial Discipline",
-                "mantra": "Gauri Shankar Mantra: Om Hreem Yoginim Yogini Yogeswari Yoga Bhayankari Sakala Sthavara Jangamasya Mukha Hridayam Mama Vasham Akarshaya Namah",
-                "gemstone_note": "Consult Lagna Lord dignity before wearing gemstone talismans",
-                "charity_practice": "Offer sweet milk or food to Brahmins on Mondays",
-                "disclaimer": "Vedic remedies are sacred traditional disciplines for mental peace."
+                "title": f"शास्त्रीय पाराशरी वैदिक उपाय ({lagna_display} लग्न)",
+                "mantra": "महामृत्युंजय मन्त्र: ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम्। उर्वारुकमिव बन्धनान्मृत्योर्मुक्षीय मामृतात्॥ (प्रातः 108 बार)",
+                "gemstone_note": f"रक्त मूँगा (मंगल - लग्नेश) अथवा पीला पुखराज (गुरु - पंचमेश)। {lagna_display} लग्न हेतु पन्ना (बुध - अष्टमेश) सर्वथा वर्जित है।",
+                "charity_practice": "मंगलवार को लाल मसूर का दान करें; शनिवार को पीपल के वृक्ष के नीचे तिल के तेल का दीपक प्रज्वलित करें",
+                "disclaimer": "वैदिक उपाय मानसिक शांति एवं आत्मिक अनुशासन के लिए हैं; ये कोई व्यावसायिक गारंटी नहीं हैं।"
             }
         else:
             message = (
-                f"{greeting_salutation} I am {persona_display}.\n\n"
-                f"Evaluating relationship stability and marriage timing for **{lagna_sign} Lagna**:\n\n"
-                f"### 7th House & Partnership Analysis\n"
-                f"Your 7th House of Kalatra is reviewed under active **{dasha_maha}-{dasha_antar}** Dasha. Marital status verification reflects: **{manglik_verdict}**. "
-                f"Planetary transits create a structured, supportive window over the next 6 to 12 months for formalizing alliances or stabilizing long-term commitments.\n\n"
-                f"### Strategic Relationship Principles\n"
-                f"Approach partnerships with the same diligence as long-term covenants: prioritize shared financial values, emotional integrity, and mutual respect."
+                f"{greeting_prefix}Examining classical Vedic remedial harmonization for **{lagna_sign} Lagna**:\n\n"
+                f"### Planetary Evaluation & Saturn Transit\n"
+                f"Your chart is navigating **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**, with Saturn in **{sadesati_phase}**.\n\n"
+                f"### Prescribed Classical Remedies\n"
+                f"- **Maha Mrityunjaya Mantra:** Chanting 108 times at sunrise pacifies malefic transit friction and restores physical and mental vitality.\n"
+                f"- **Saturnian Discipline:** On Saturdays, light a pure sesame or mustard oil lamp under a Peepal tree and practice selfless charity toward those in need.\n"
+                f"- **Gemstone Guidance ({lagna_sign} Lagna):** Fortify your functional Lagna lord Mars with Red Coral (Moonga) or 5th lord Jupiter with Yellow Sapphire (Pukhraj). Emerald (Panna) is strictly contraindicated for {lagna_sign} Lagna as Mercury rules the 8th & 11th houses.\n\n"
+                f"### Ethical Scriptural Principle\n"
+                f"Traditional remedies are cultural and spiritual practices intended to cultivate inner peace, discipline, and humility. They are not transactional commercial guarantees."
             )
-        suggested = [
-            "What does my 7th house reveal about partner compatibility?",
-            "How does the D9 Navamsha chart modify relationship timing?",
-            "Are there favorable transits for marriage in the next 12 months?",
-            "What classical practices promote peace and mutual understanding?"
-        ]
-
-    elif intent == "wealth":
-        message = (
-            f"{greeting_salutation} I am {persona_display}.\n\n"
-            f"Analyzing wealth accumulation, Dhana Yogas, and liquidity for **{lagna_sign} Lagna**:\n\n"
-            f"### Dhana Yogas & Wealth Axis (2nd & 11th Houses)\n"
-            f"For your {lagna_sign} Lagna, the 2nd House of liquid wealth and the 11th House of recurring gains are evaluated under your active **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**. "
-            f"This planetary configuration activates wealth potential, indicating sustained compounding when capital is deployed with disciplined patience.\n\n"
-            f"### Strategic Financial Directives\n"
-            f"1. **Capital Allocation:** Favor proven index equity, debt instruments, and stable tangible assets over speculative trends.\n"
-            f"2. **Speculative Cautions:** Avoid high-leverage trading during localized Rahu Kaal or volatile lunar transits.\n"
-            f"3. **Long-Term Compounding:** The {dasha_maha} planetary vibration supports asset accumulation for long-term family security.\n\n"
-            f"*Disclaimer: Astrological analysis reflects planetary timing indicators; it does not constitute registered financial advice.*"
-        )
-        suggested = [
-            "Which planets form auspicious Dhana Yogas in my chart?",
-            "What does my 2nd and 11th house axis indicate for capital growth?",
-            "How should I navigate speculative risks under my current Dasha?",
-            "What traditional remedies support ethical prosperity?"
-        ]
-
-    elif intent == "remedy":
-        message = (
-            f"{greeting_salutation} I am {persona_display}.\n\n"
-            f"Examining classical Vedic remedial harmonization for **{lagna_sign} Lagna**:\n\n"
-            f"### Planetary Evaluation & Saturn Transit\n"
-            f"Your chart is navigating **{dasha_maha} Mahadasha** and **{dasha_antar} Antardasha**, with Saturn in **{sadesati_phase}**.\n\n"
-            f"### Prescribed Classical Remedies\n"
-            f"- **Maha Mrityunjaya Mantra:** Chanting 108 times at sunrise pacifies malefic transit friction and restores physical and mental vitality.\n"
-            f"- **Saturnian Discipline:** On Saturdays, light a pure sesame or mustard oil lamp under a Peepal tree and practice selfless charity toward those in need.\n"
-            f"- **Gemstone Guidance:** Always fortify your functional Lagna and Trikona lords only after inspecting natal house dignities.\n\n"
-            f"### Ethical Scriptural Principle\n"
-            f"Traditional remedies are cultural and spiritual practices intended to cultivate inner peace, discipline, and humility. They are not transactional commercial guarantees."
-        )
-        remedy_card = {
-            "title": "Classical Parashari Remedial Discipline",
-            "mantra": "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe Sugandhim Pushtivardhanam Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat (108 times at sunrise)",
-            "gemstone_note": "Fortify functional Trikona lords only after inspecting natal house lordships.",
-            "charity_practice": "Light a pure sesame oil lamp under a Peepal tree on Saturdays; feed cows with green fodder.",
-            "disclaimer": "Vedic remedies are sacred traditional disciplines for mental peace; they carry no commercial guarantees."
-        }
+            remedy_card = {
+                "title": f"Classical Parashari Remedial Discipline ({lagna_sign} Lagna)",
+                "mantra": "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe Sugandhim Pushtivardhanam Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat (108 times at sunrise)",
+                "gemstone_note": f"Red Coral (Mars, Lagna Lord) or Yellow Sapphire (Jupiter, 5th Lord). Emerald is strictly contraindicated for {lagna_sign} Lagna.",
+                "charity_practice": "Light a pure sesame oil lamp under a Peepal tree on Saturdays; donate red lentils or jaggery on Tuesdays",
+                "disclaimer": "Vedic remedies are sacred traditional disciplines for mental peace; they carry no commercial guarantees."
+            }
         suggested = [
             "What is the classical scriptural basis for this mantra?",
             "How can I pacify Saturn's transit without expensive stones?",
-            "Explain the proper methodology for dawn planetary chanting",
+            "Explain the proper methodology for dawn planetary chanting.",
             "Can you evaluate my Sade Sati timeline and precautions?"
         ]
 
     else:
         # General / default chart reading
-        message = (
-            f"{greeting_salutation} I am {persona_display}.\n\n"
-            f"Comprehensive Vedic astrological analysis for **{lagna_sign} Lagna** and **{moon_sign} Moon**:\n\n"
-            f"### Natal Constitution & Life Themes\n"
-            f"With {lagna_sign} Lagna and Moon in {moon_sign} ({moon_nak} Nakshatra), your chart reflects distinct resilience and depth. "
-            f"Your active **{dasha_maha}-{dasha_antar}** Dasha period emphasizes purposeful, structured growth and character maturation.\n\n"
-            f"### Planetary Climate & Advice\n"
-            f"Saturn in {sadesati_phase} teaches patience and long-term discipline. By maintaining composed focus and balanced daily routines, you navigate this period with grace and strength."
-        )
-        suggested = [
-            "Analyze my career trajectory and promotion timing",
-            "When does my chart indicate relationship consolidation?",
-            "What does my active Dasha period signify for finances?",
-            "Which traditional remedies bring balanced peace of mind?"
-        ]
+        if is_hi:
+            message = (
+                f"{greeting_prefix}**{lagna_display} लग्न** एवं **{moon_display} चंद्र** हेतु समग्र वैदिक ज्योतिषीय विश्लेषण:\n\n"
+                f"### स्वभाव एवं जीवन धारा\n"
+                f"{lagna_display} लग्न और {moon_display} राशि के साथ आपकी कुंडली बौद्धिक गहराई और दृढ़ता को दर्शाती है। सक्रिय **{dasha_maha_display}-{dasha_antar_display}** दशा काल में जीवन में उद्देश्यपूर्ण प्रगति और परिपक्वता का समय है।\n\n"
+                f"### ग्रह गोचर एवं परामर्श\n"
+                f"शनि का गोचर ({sadesati_phase}) धैर्य और दीर्घकालीन अनुशासन की सीख देता है। संयमित दिनचर्या से आप इस समय का श्रेष्ठ लाभ उठा सकते हैं।"
+            )
+            suggested = [
+                "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+                "संबंधों में अनुकूलता का समय कब बन रहा है?",
+                "सक्रिय दशा काल में आर्थिक स्थिति कैसी रहेगी?",
+                "मानसिक शांति हेतु कौन से पारंपरिक उपाय शुभ हैं?"
+            ]
+        else:
+            message = (
+                f"{greeting_prefix}Comprehensive Vedic astrological analysis for **{lagna_sign} Lagna** and **{moon_sign} Moon**:\n\n"
+                f"### Natal Constitution & Life Themes\n"
+                f"With {lagna_sign} Lagna and Moon in {moon_sign} ({moon_nak} Nakshatra), your chart reflects distinct resilience and depth. "
+                f"Your active **{dasha_maha}-{dasha_antar}** Dasha period emphasizes purposeful, structured growth and character maturation.\n\n"
+                f"### Planetary Climate & Advice\n"
+                f"Saturn in {sadesati_phase} teaches patience and long-term discipline. By maintaining composed focus and balanced daily routines, you navigate this period with grace and strength."
+            )
+            suggested = [
+                "Analyze my career trajectory and promotion timing",
+                "When does my chart indicate relationship consolidation?",
+                "What does my active Dasha period signify for finances?",
+                "Which traditional remedies bring balanced peace of mind?"
+            ]
 
     summary_en = f"Analysis for {lagna_sign} Lagna and {moon_sign} Moon under active {dasha_maha}-{dasha_antar} Dasha focused on {intent}."
     summary_hi = f"{HINDI_SIGNS.get(lagna_sign, lagna_sign)} लग्न एवं {HINDI_SIGNS.get(moon_sign, moon_sign)} चंद्र हेतु सक्रिय {dasha_maha}-{dasha_antar} दशा के अंतर्गत {intent} का विश्लेषण।"

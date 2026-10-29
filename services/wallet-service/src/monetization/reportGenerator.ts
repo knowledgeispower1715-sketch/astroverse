@@ -638,6 +638,23 @@ Mars represents fiery drive and willpower. When placed in sensitive relationship
         title: 'Chapter 1: Ashtakoota 36-Guna Synastry Matrix (36 Points)',
         subtitle: 'Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot & Nadi (36 Points)',
         icon: 'fa-scale-balanced',
+        chartSnippet: {
+          milan,
+          profileA: pAName,
+          profileB: pBName,
+          moonA: {
+            sign: chartA.planets.Moon.sign,
+            nakshatra: chartA.planets.Moon.nakshatra,
+            pada: chartA.planets.Moon.pada,
+            kujaDosha: chartA.kujaDosha.hasDosha ? 'Manglik' : (chartA.kujaDosha.isCancelled ? 'Mitigated / Cancelled' : 'Non-Manglik')
+          },
+          moonB: {
+            sign: chartB.planets.Moon.sign,
+            nakshatra: chartB.planets.Moon.nakshatra,
+            pada: chartB.planets.Moon.pada,
+            kujaDosha: chartB.kujaDosha.hasDosha ? 'Manglik' : (chartB.kujaDosha.isCancelled ? 'Mitigated / Cancelled' : 'Non-Manglik')
+          }
+        },
         contentMarkdown: `### Classical Parashari Ashtakoota Compatibility Evaluation (36 Points)
 Evaluating authoritative lunar synastry between **${pAName}** and **${pBName}**.
 

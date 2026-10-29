@@ -10,6 +10,13 @@ generator client {
 
 enum Role {
   USER
+  OWNER
+  SECURITY_ADMIN
+  SUPPORT_ADMIN
+  CONTENT_EDITOR
+  FINANCE_ADMIN
+  ASTROLOGY_OPS_ADMIN
+  READONLY_ANALYST
   SUPER_ADMIN
   SUPPORT
   OPERATIONS
@@ -65,6 +72,14 @@ model User {
   passwordSalt      String?
   resetTokenHash    String?
   resetTokenExpiresAt DateTime?
+  mfaEnabled        Boolean            @default(false)
+  mfaSecret         String?
+  mfaRecoveryCodes  String[]           @default([])
+  mfaEnforced       Boolean            @default(false)
+  subscriptionTier  String             @default("FREE")
+  subscriptionStatus String            @default("NONE")
+  subscriptionBillingPeriod String?
+  subscriptionExpiresAt DateTime?
   lastLoginAt       DateTime?
   birthProfiles     BirthProfile[]
   calculations      KundliCalculation[]
@@ -75,6 +90,7 @@ model User {
   pujaBookings      PujaBooking[]
   sessions          UserSession[]
   auditEvents       AuditEvent[]
+  privacyRequests   PrivacyRequest[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -98,15 +114,21 @@ model AuditEvent {
   id                String             @id @default(uuid())
   userId            String?
   user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action            String             // AUTH_LOGIN, AUTH_REGISTER, OTP_DISPATCHED, IDENTITY_LINKED, ROLE_CHANGED, STATUS_CHANGED, ACCOUNT_DEACTIVATED, ACCOUNT_DELETED
-  targetType        String?            // USER, PROFILE, ORDER, SESSION
+  actorId           String?
+  actorRole         String?
+  action            String             // AUTH_LOGIN, AUTH_REGISTER, OTP_DISPATCHED, IDENTITY_LINKED, ROLE_CHANGED, STATUS_CHANGED, ACCOUNT_DEACTIVATED, ACCOUNT_DELETED, ADMIN_*
+  targetType        String?            // USER, PROFILE, ORDER, SESSION, INCIDENT, FEATURE_FLAG
   targetId          String?
+  outcome           String             @default("SUCCESS")
+  requestId         String?
+  reason            String?
   metadata          Json?
   ipAddress         String?
   createdAt         DateTime           @default(now())
 
   @@index([userId, createdAt])
   @@index([action, createdAt])
+  @@index([actorId, createdAt])
 }
 
 model SavedReport {
@@ -258,4 +280,52 @@ model PujaBooking {
   createdAt          DateTime            @default(now())
 
   @@index([userId, bookingDate])
+}
+
+model FeatureFlag {
+  key         String   @id
+  name        String
+  enabled     Boolean  @default(false)
+  description String?
+  updatedAt   DateTime @default(now()) @updatedAt
+  updatedBy   String   @default("system")
+}
+
+model PlatformIncident {
+  id          String    @id @default(uuid())
+  title       String
+  severity    String    @default("P3_MINOR")
+  status      String    @default("OPEN")
+  summary     String
+  reportedBy  String
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, severity])
+}
+
+model PrivacyRequest {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String    // DATA_EXPORT, ACCOUNT_DELETION, DATA_CORRECTION
+  status      String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, REJECTED
+  notes       String?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId, status])
+}
+
+model ContentBanner {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  title     String
+  body      String
+  type      String   @default("BANNER")
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @default(now()) @updatedAt
+  updatedBy String   @default("system")
 }

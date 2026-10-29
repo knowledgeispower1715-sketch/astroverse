@@ -897,3 +897,176 @@ def test_ai_consultation_multi_horizon_in_chat():
         assert res["intent"] == expected_intent
         assert "switchNavSection" in res["message"]
         assert "bilingual_summary" in res
+
+
+def test_ai_consultation_golden_6_turn_conversation_quality():
+    """Verify the complete 6-turn golden consultation sequence, repetition guard, Manglik mitigation, and Hindi language fidelity."""
+    aryan_kundli = {
+        "lagna": {"sign": "Scorpio", "degree": 24.17},
+        "planets": {
+            "Sun": {"sign": "Leo", "degree": 3.5, "house": 10, "nakshatra": "Magha"},
+            "Moon": {"sign": "Aquarius", "degree": 12.21, "house": 4, "nakshatra": "Satabhisha"},
+            "Mars": {"sign": "Aries", "degree": 18.29, "house": 6, "nakshatra": "Bharani"},
+            "Mercury": {"sign": "Cancer", "degree": 28.0, "house": 9, "nakshatra": "Ashlesha"},
+            "Jupiter": {"sign": "Virgo", "degree": 22.46, "house": 11, "nakshatra": "Hasta"},
+            "Venus": {"sign": "Virgo", "degree": 16.0, "house": 11, "nakshatra": "Hasta"},
+            "Saturn": {"sign": "Cancer", "degree": 7.0, "house": 9, "nakshatra": "Pushya"}
+        }
+    }
+    aryan_dasha = {
+        "active_now": {
+            "maha_dasha": "Jupiter",
+            "antar_dasha": "Venus"
+        }
+    }
+    aryan_doshas = {
+        "sade_sati": {"phase": "Phase 3 (Setting)"},
+        "manglik": {
+            "status": "PRESENT_WITH_MITIGATION",
+            "has_dosha": False,
+            "is_mitigated": True,
+            "verdict": "Mitigated (Swakshetra in Aries)"
+        }
+    }
+
+    # Turn 1: Greeting (English)
+    t1 = generate_astrological_reading(
+        category="general",
+        user_query="hi",
+        kundli=aryan_kundli,
+        dasha=aryan_dasha,
+        doshas=aryan_doshas,
+        astrologer_name="Acharya Devratan",
+        session_history=[],
+        lang="en"
+    )
+    assert t1["intent"] == "greeting"
+    assert "Pranam! I am Acharya Devratan" in t1["message"]
+    assert "Scorpio Lagna" in t1["message"]
+
+    # Turn 1 (Hindi): Verify 100% Devanagari Hindi output
+    t1_hi = generate_astrological_reading(
+        category="general",
+        user_query="नमस्ते",
+        kundli=aryan_kundli,
+        dasha=aryan_dasha,
+        doshas=aryan_doshas,
+        astrologer_name="Acharya Devratan",
+        session_history=[],
+        lang="hi"
+    )
+    assert t1_hi["intent"] == "greeting"
+    assert "वृश्चिक लग्न" in t1_hi["message"]
+    assert "कुंभ" in t1_hi["message"]
+
+    history = [
+        {"role": "user", "content": "hi"},
+        {"role": "assistant", "content": t1["message"]}
+    ]
+
+    # Turn 2: Career Query (Repetition Guard: Turn 2+ does not repeat persona intro)
+    t2 = generate_astrological_reading(
+        category="career",
+        user_query="my career",
+        kundli=aryan_kundli,
+        dasha=aryan_dasha,
+        doshas=aryan_doshas,
+        astrologer_name="Acharya Devratan",
+        session_history=history,
+        lang="en"
+    )
+    assert t2["intent"] == "career"
+    assert not t2["message"].startswith("Pranam! I am Acharya Devratan")
+    assert "10th House" in t2["message"]
+
+    history.extend([
+        {"role": "user", "content": "my career"},
+        {"role": "assistant", "content": t2["message"]}
+    ])
+
+    # Turn 3: Career Transit Timing
+    t3 = generate_astrological_reading(
+        category="general",
+        user_query="Which upcoming transit supports a career switch or business?",
+        kundli=aryan_kundli,
+        dasha=aryan_dasha,
+        doshas=aryan_doshas,
+        astrologer_name="Acharya Devratan",
+        session_history=history,
+        lang="en"
+    )
+    assert t3["intent"] == "career_transit_timing"
+    assert not t3["message"].startswith("Pranam! I am Acharya Devratan")
+    assert "Jupiter" in t3["message"]
+    assert "Cancer" in t3["message"]
+    assert "Pisces" in t3["message"]
+
+    history.extend([
+        {"role": "user", "content": "Which upcoming transit supports a career switch or business?"},
+        {"role": "assistant", "content": t3["message"]}
+    ])
+
+    # Turn 4: Dasha Career Stability (Grounded in Jupiter-Venus, no Jupiter-Sun contradiction)
+    t4 = generate_astrological_reading(
+        category="general",
+        user_query="How does my active Dasha period affect professional stability?",
+        kundli=aryan_kundli,
+        dasha=aryan_dasha,
+        doshas=aryan_doshas,
+        astrologer_name="Acharya Devratan",
+        session_history=history,
+        lang="en"
+    )
+    assert t4["intent"] == "dasha_career_stability"
+    assert not t4["message"].startswith("Pranam! I am Acharya Devratan")
+    assert "Jupiter" in t4["message"]
+    assert "Venus" in t4["message"]
+    assert "Jupiter-Sun" not in t4["message"]
+
+    history.extend([
+        {"role": "user", "content": "How does my active Dasha period affect professional stability?"},
+        {"role": "assistant", "content": t4["message"]}
+    ])
+
+    # Turn 5: Ambiguous "future" query
+    t5 = generate_astrological_reading(
+        category="general",
+        user_query="future",
+        kundli=aryan_kundli,
+        dasha=aryan_dasha,
+        doshas=aryan_doshas,
+        astrologer_name="Acharya Devratan",
+        session_history=history,
+        lang="en"
+    )
+    assert t5["intent"] == "ambiguous_future"
+    assert not t5["message"].startswith("Pranam! I am Acharya Devratan")
+    assert "Career & Professional Trajectory" in t5["message"]
+    assert "Financial Accumulation & Dhana Yogas" in t5["message"]
+    assert "Marriage & Relationship Milestones" in t5["message"]
+    assert "Spiritual Path & Transit Remedies" in t5["message"]
+
+    history.extend([
+        {"role": "user", "content": "future"},
+        {"role": "assistant", "content": t5["message"]}
+    ])
+
+    # Turn 6: Marriage Query (Swakshetra mitigation + Scorpio Lagna remedy without Emerald)
+    t6 = generate_astrological_reading(
+        category="marriage",
+        user_query="marriage",
+        kundli=aryan_kundli,
+        dasha=aryan_dasha,
+        doshas=aryan_doshas,
+        astrologer_name="Acharya Devratan",
+        session_history=history,
+        lang="en"
+    )
+    assert t6["intent"] == "marriage"
+    assert not t6["message"].startswith("Pranam! I am Acharya Devratan")
+    assert "Mitigated / Pacified (Aries Swakshetra BPHS Cancellation)" in t6["message"]
+    assert "No Manglik Dosha (Kuja Dosha Free)" not in t6["message"]
+    assert t6["remedyCard"] is not None
+    assert "Virgo" not in t6["remedyCard"]["title"]
+    assert "for Lagna Virgo" not in t6["remedyCard"]["gemstone_note"]
+    assert "strictly contraindicated" in t6["remedyCard"]["gemstone_note"]

@@ -69,7 +69,7 @@
       }
     },
     {
-      "source": "/api/admin/(.*)",
+      "source": "/api/admin(.*)",
       "destination": {
         "service": "wallet-service"
       }
