@@ -105,20 +105,24 @@ async function main() {
   try {
     let connected = false;
     let targets = null;
-    for (let i = 0; i < 30; i++) {
+    let pageTarget = null;
+    for (let i = 0; i < 40; i++) {
       try {
         targets = await getJson('http://127.0.0.1:9260/json/list');
         if (targets && targets.length > 0) {
-          connected = true;
-          break;
+          pageTarget = targets.find((t) => t.type === 'page' && t.url.toLowerCase().includes('index.html'));
+          if (pageTarget) {
+            connected = true;
+            break;
+          }
         }
       } catch (e) {
-        await new Promise((r) => setTimeout(r, 100));
+        // waiting for chrome to bind port
       }
+      await new Promise((r) => setTimeout(r, 100));
     }
-    if (!connected) throw new Error('Could not connect to Chrome on port 9260');
+    if (!connected || !pageTarget) throw new Error('Could not find index.html page target on Chrome port 9260');
 
-    const pageTarget = targets.find((t) => t.type === 'page' && t.url.includes('index.html')) || targets.find((t) => t.type === 'page');
     const client = new CdpClient(pageTarget.webSocketDebuggerUrl);
     await client.connect();
     await client.send('Page.enable');

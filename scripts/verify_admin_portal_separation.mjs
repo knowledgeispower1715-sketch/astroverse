@@ -139,14 +139,25 @@ async function main() {
     `);
     assert('Admin login contains ZERO Google OAuth buttons', !googleButtonExists && !adminLoginHtml.includes('Continue with Google'));
 
-    console.log('\n--- TEST SUITE 2: Customer Mobile Bottom Dock Hidden on Admin Pages ---');
-    const dockDisplay = await cdp.eval(`
+    console.log('\n--- TEST SUITE 2: Customer Navigation & Chrome Hidden on Admin Pages ---');
+    const chromeDisplays = await cdp.eval(`
       (() => {
+        const navbar = document.querySelector('.main-navbar');
+        const promo = document.getElementById('promo-header-strip');
+        const footer = document.querySelector('.astro-main-footer');
         const dock = document.querySelector('.mob-bottom-dock');
-        return dock ? window.getComputedStyle(dock).display : 'none';
+        return {
+          navbarDisplay: navbar ? window.getComputedStyle(navbar).display : 'none',
+          promoDisplay: promo ? window.getComputedStyle(promo).display : 'none',
+          footerDisplay: footer ? window.getComputedStyle(footer).display : 'none',
+          dockDisplay: dock ? window.getComputedStyle(dock).display : 'none'
+        };
       })()
     `);
-    assert('Customer bottom navigation dock is hidden on admin login', dockDisplay === 'none');
+    assert('Customer top navbar is hidden on admin login', chromeDisplays.navbarDisplay === 'none');
+    assert('Customer promo announcement strip is hidden on admin login', chromeDisplays.promoDisplay === 'none');
+    assert('Customer public footer is hidden on admin login', chromeDisplays.footerDisplay === 'none');
+    assert('Customer bottom navigation dock is hidden on admin login', chromeDisplays.dockDisplay === 'none');
 
     console.log('\n--- TEST SUITE 3: Unauthorized Access Guard on /admin ---');
     // Clear any active session and attempt to navigate to #/admin
@@ -258,16 +269,25 @@ async function main() {
     const overviewState = await cdp.eval(`
       (() => {
         const overview = document.getElementById('view-overview');
+        const navbar = document.querySelector('.main-navbar');
+        const promo = document.getElementById('promo-header-strip');
+        const footer = document.querySelector('.astro-main-footer');
         const dock = document.querySelector('.mob-bottom-dock');
         return {
           overviewActive: overview?.classList.contains('active'),
-          dockStyleCleared: dock ? dock.style.display === '' : true
+          navbarRestored: navbar ? window.getComputedStyle(navbar).display !== 'none' : true,
+          promoRestored: promo ? window.getComputedStyle(promo).display !== 'none' : true,
+          footerRestored: footer ? window.getComputedStyle(footer).display !== 'none' : true,
+          dockRestored: dock ? window.getComputedStyle(dock).display !== 'none' : true
         };
       })()
     `);
 
     assert('Public customer overview active', overviewState.overviewActive);
-    assert('Customer bottom navigation dock override cleared on customer pages', overviewState.dockStyleCleared);
+    assert('Customer top navbar restored on customer pages', overviewState.navbarRestored);
+    assert('Customer promo announcement strip restored on customer pages', overviewState.promoRestored);
+    assert('Customer public footer restored on customer pages', overviewState.footerRestored);
+    assert('Customer bottom navigation dock restored on customer pages', overviewState.dockRestored);
 
   } catch (err) {
     console.error('Test execution error:', err);

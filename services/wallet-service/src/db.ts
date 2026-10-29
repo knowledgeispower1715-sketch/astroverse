@@ -396,9 +396,11 @@ class ResilientDatabase {
     if (this.schemaBootstrapPromise) return this.schemaBootstrapPromise;
 
     this.schemaBootstrapPromise = bootstrapPostgresSchema(this.prisma)
-      .then((ok) => {
+      .then(async (ok) => {
         if (!ok) {
           console.warn('[DB] PostgreSQL schema bootstrap returned false. Queries will use resilient fallback.');
+        } else {
+          await this.syncProvisionedAdminsToPostgres();
         }
         return ok;
       })
@@ -408,6 +410,51 @@ class ResilientDatabase {
       });
 
     return this.schemaBootstrapPromise;
+  }
+
+  async syncProvisionedAdminsToPostgres(): Promise<void> {
+    if (!this.isPostgresAvailable || !this.prisma) return;
+    try {
+      for (const localUser of this.data.users) {
+        if (isAnyAdmin(localUser.role) && localUser.passwordHash && localUser.email) {
+          const cleanEmail = localUser.email.trim().toLowerCase();
+          const existing = await this.prisma.user.findFirst({
+            where: { email: { equals: cleanEmail, mode: 'insensitive' } }
+          });
+          if (!existing) {
+            await this.prisma.user.create({
+              data: {
+                id: localUser.id,
+                email: cleanEmail,
+                phone: localUser.phone || null,
+                displayName: localUser.displayName || 'Platform Owner',
+                role: localUser.role,
+                status: localUser.status || AccountStatus.ACTIVE,
+                passwordHash: localUser.passwordHash,
+                passwordSalt: localUser.passwordSalt,
+                emailVerified: true,
+                walletBalance: localUser.walletBalance || 0
+              }
+            });
+            console.log(`[DB_SYNC] Seeded provisioned admin ${cleanEmail} into PostgreSQL`);
+          } else if (!existing.passwordHash || existing.role !== localUser.role) {
+            await this.prisma.user.update({
+              where: { id: existing.id },
+              data: {
+                passwordHash: localUser.passwordHash,
+                passwordSalt: localUser.passwordSalt,
+                role: localUser.role,
+                status: AccountStatus.ACTIVE,
+                emailVerified: true
+              }
+            });
+            console.log(`[DB_SYNC] Synchronized credentials for admin ${cleanEmail} in PostgreSQL`);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('[DB_SYNC] Admin synchronization warning:', err?.message || err);
+    }
   }
 
   assertDurableStorage(): void {
@@ -754,10 +801,60 @@ class ResilientDatabase {
         });
         if (u) {
           const mapped = this.mapPrismaUser(u);
+          const localAdmin = this.data.users.find(x => x.id === mapped.id || (x.email && x.email.toLowerCase() === clean));
+          if (localAdmin && localAdmin.passwordHash && isAnyAdmin(localAdmin.role) && (!mapped.passwordHash || mapped.role !== localAdmin.role)) {
+            try {
+              const updated = await this.prisma.user.update({
+                where: { id: mapped.id },
+                data: {
+                  passwordHash: localAdmin.passwordHash,
+                  passwordSalt: localAdmin.passwordSalt,
+                  role: localAdmin.role,
+                  status: AccountStatus.ACTIVE,
+                  emailVerified: true
+                }
+              });
+              return this.mapPrismaUser(updated);
+            } catch (_) {}
+          }
           const idx = this.data.users.findIndex(x => x.id === mapped.id);
           if (idx !== -1) this.data.users[idx] = mapped;
           else this.data.users.push(mapped);
           return mapped;
+        }
+
+        // Self-healing fallback: If an administrative account exists in local store with valid
+        // credentials but is missing in PostgreSQL, sync it immediately on lookup
+        const localAdmin = this.data.users.find(x => 
+          (x.email && x.email.toLowerCase() === clean) && 
+          isAnyAdmin(x.role) && 
+          x.passwordHash
+        );
+        if (localAdmin && localAdmin.email) {
+          try {
+            const created = await this.prisma.user.create({
+              data: {
+                id: localAdmin.id,
+                email: localAdmin.email.toLowerCase(),
+                phone: localAdmin.phone || null,
+                displayName: localAdmin.displayName || 'Platform Owner',
+                role: localAdmin.role,
+                status: localAdmin.status || AccountStatus.ACTIVE,
+                passwordHash: localAdmin.passwordHash,
+                passwordSalt: localAdmin.passwordSalt,
+                emailVerified: true,
+                walletBalance: localAdmin.walletBalance || 0
+              }
+            });
+            console.log(`[DB_SYNC] Self-healed admin account ${localAdmin.email} into PostgreSQL`);
+            const mapped = this.mapPrismaUser(created);
+            const idx = this.data.users.findIndex(x => x.id === mapped.id);
+            if (idx !== -1) this.data.users[idx] = mapped;
+            else this.data.users.push(mapped);
+            return mapped;
+          } catch (syncErr: any) {
+            console.warn('[DB_SYNC] Failed to self-heal admin into PostgreSQL:', syncErr?.message || syncErr);
+          }
         }
         return null;
       } catch (err: any) {
@@ -806,6 +903,35 @@ class ResilientDatabase {
           if (idx !== -1) this.data.users[idx] = mapped;
           else this.data.users.push(mapped);
           return mapped;
+        }
+
+        const localAdmin = this.data.users.find(x => 
+          (x.email && x.email.toLowerCase() === clean) && 
+          isAnyAdmin(x.role) && 
+          x.passwordHash
+        );
+        if (localAdmin && localAdmin.email) {
+          try {
+            const created = await this.prisma.user.create({
+              data: {
+                id: localAdmin.id,
+                email: localAdmin.email.toLowerCase(),
+                phone: localAdmin.phone || null,
+                displayName: localAdmin.displayName || 'Platform Owner',
+                role: localAdmin.role,
+                status: localAdmin.status || AccountStatus.ACTIVE,
+                passwordHash: localAdmin.passwordHash,
+                passwordSalt: localAdmin.passwordSalt,
+                emailVerified: true,
+                walletBalance: localAdmin.walletBalance || 0
+              }
+            });
+            const mapped = this.mapPrismaUser(created);
+            const idx = this.data.users.findIndex(x => x.id === mapped.id);
+            if (idx !== -1) this.data.users[idx] = mapped;
+            else this.data.users.push(mapped);
+            return mapped;
+          } catch (_) {}
         }
         return null;
       } catch (err: any) {

@@ -11245,24 +11245,44 @@
         }
       }
 
-      // Hide customer bottom mobile dock on admin pages to guarantee strict experience separation
+      // Dedicated Admin Experience Isolation:
+      // When navigating to #/admin or #/admin-login, strictly hide all customer navigation,
+      // announcement bars, customer footer, and customer bottom dock.
+      const isAdminSection = (targetSection === 'admin' || targetSection === 'admin-login');
+
+      const mainNavbar = document.querySelector('.main-navbar');
+      if (mainNavbar) {
+        mainNavbar.style.display = isAdminSection ? 'none' : '';
+      }
+      const promoHeaderStrip = document.getElementById('promo-header-strip');
+      if (promoHeaderStrip) {
+        promoHeaderStrip.style.display = isAdminSection ? 'none' : '';
+      }
+      const siteFooter = document.querySelector('.astro-main-footer');
+      if (siteFooter) {
+        siteFooter.style.display = isAdminSection ? 'none' : '';
+      }
       const mobDock = document.querySelector('.mob-bottom-dock');
       if (mobDock) {
-        if (targetSection === 'admin' || targetSection === 'admin-login') {
-          mobDock.style.display = 'none';
-        } else {
-          mobDock.style.display = '';
-        }
+        mobDock.style.display = isAdminSection ? 'none' : '';
+      }
+      const celestialBorder = document.getElementById('celestial-top-border');
+      if (celestialBorder) {
+        celestialBorder.style.display = isAdminSection ? 'none' : '';
       }
 
       // Hide hero banner on task-specific pages, show only on overview
       const mainHero = document.getElementById('main-hero-banner');
       if (mainHero) {
-        if (targetSection === 'overview' || targetSection === 'home') {
+        if (!isAdminSection && (targetSection === 'overview' || targetSection === 'home')) {
           mainHero.style.display = 'block';
         } else {
           mainHero.style.display = 'none';
         }
+      }
+
+      if (isAdminSection && typeof closeAuthModal === 'function') {
+        closeAuthModal();
       }
 
       if (updateHash && window.location.hash !== '#/' + sectionId) {
