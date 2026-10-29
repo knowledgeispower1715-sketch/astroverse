@@ -1529,8 +1529,31 @@
       margin: 24px auto 60px;
       padding: 0 var(--av-page-gutter, clamp(16px, 3vw, 36px));
     }
-    .page-tab-view { display: none; }
-    .page-tab-view.active { display: block; }
+    .page-tab-view { display: none !important; }
+    .page-tab-view.active { display: block !important; }
+    #view-admin-login.page-tab-view.active {
+      display: flex !important;
+      min-height: 85vh;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    /* Dedicated Admin Experience Layout Isolation */
+    body.admin-mode .main-navbar,
+    body.admin-mode #promo-header-strip,
+    body.admin-mode .astro-main-footer,
+    body.admin-mode .mob-bottom-dock,
+    body.admin-mode #celestial-top-border,
+    body.admin-mode #main-hero-banner {
+      display: none !important;
+    }
+
+    /* Hardened safeguard: ensure admin views never display when NOT in admin-mode */
+    body:not(.admin-mode) #view-admin-login,
+    body:not(.admin-mode) #view-admin {
+      display: none !important;
+    }
 
     .section-title-wrap {
       margin-bottom: 20px;
@@ -8917,7 +8940,7 @@
     </section>
 
     <!-- ==================== TAB 9.5: DEDICATED ADMINISTRATOR LOGIN ==================== -->
-    <section id="view-admin-login" class="page-tab-view" style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 40px 16px;">
+    <section id="view-admin-login" class="page-tab-view">
       <div class="admin-login-card" style="width: 100%; max-width: 440px; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 16px; padding: 32px 28px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); color: #F8FAFC;">
         
         <!-- Header Branding -->
@@ -8944,7 +8967,7 @@
             <label for="admin-login-email" style="display: block; font-size: 12px; font-weight: 700; color: #E2E8F0; margin-bottom: 6px;">Administrator Email</label>
             <div style="position: relative;">
               <i class="fa-solid fa-envelope" style="position: absolute; left: 12px; top: 12px; color: #64748B; font-size: 14px;"></i>
-              <input type="email" id="admin-login-email" required placeholder="admin@astroverse.app" style="width: 100%; box-sizing: border-box; background: #182338; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px 10px 36px; color: #FFFFFF; font-size: 13px;" autocomplete="username">
+              <input type="email" id="admin-login-email" required placeholder="Enter administrator email" style="width: 100%; box-sizing: border-box; background: #182338; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px 10px 36px; color: #FFFFFF; font-size: 13px;" autocomplete="username">
             </div>
           </div>
 
@@ -8954,7 +8977,7 @@
             </div>
             <div style="position: relative;">
               <i class="fa-solid fa-lock" style="position: absolute; left: 12px; top: 12px; color: #64748B; font-size: 14px;"></i>
-              <input type="password" id="admin-login-password" required placeholder="••••••••••••" style="width: 100%; box-sizing: border-box; background: #182338; border: 1px solid #334155; border-radius: 8px; padding: 10px 36px 10px 36px; color: #FFFFFF; font-size: 13px;" autocomplete="current-password">
+              <input type="password" id="admin-login-password" required placeholder="Enter administrator password" style="width: 100%; box-sizing: border-box; background: #182338; border: 1px solid #334155; border-radius: 8px; padding: 10px 36px 10px 36px; color: #FFFFFF; font-size: 13px;" autocomplete="current-password">
               <button type="button" onclick="toggleAdminPasswordVisibility()" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: #94A3B8; cursor: pointer; padding: 2px;" aria-label="Toggle password visibility">
                 <i class="fa-solid fa-eye" id="admin-pwd-toggle-icon"></i>
               </button>
@@ -11249,6 +11272,7 @@
       // When navigating to #/admin or #/admin-login, strictly hide all customer navigation,
       // announcement bars, customer footer, and customer bottom dock.
       const isAdminSection = (targetSection === 'admin' || targetSection === 'admin-login');
+      document.body.classList.toggle('admin-mode', isAdminSection);
 
       const mainNavbar = document.querySelector('.main-navbar');
       if (mainNavbar) {

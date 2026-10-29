@@ -133,6 +133,11 @@ async function main() {
     assert('Admin login card contains Password toggle', await cdp.eval(`Boolean(document.getElementById('admin-pwd-toggle-icon'))`));
     assert('Admin login card contains Sign In button', await cdp.eval(`Boolean(document.getElementById('btn-admin-login-submit'))`));
 
+    const emailPlaceholder = await cdp.eval(`document.getElementById('admin-login-email')?.placeholder || ''`);
+    const pwdPlaceholder = await cdp.eval(`document.getElementById('admin-login-password')?.placeholder || ''`);
+    assert('Admin email placeholder is clean and descriptive', emailPlaceholder === 'Enter administrator email');
+    assert('Admin password placeholder is not bullet dots (eliminates autofill confusion)', pwdPlaceholder === 'Enter administrator password' && !pwdPlaceholder.includes('•'));
+
     // CRITICAL REQUIREMENT: ZERO GOOGLE AUTH ON ADMIN LOGIN
     const googleButtonExists = await cdp.eval(`
       Boolean(document.querySelector('#view-admin-login button[onclick*="Google"], #view-admin-login .btn-google, #view-admin-login [id*="google"]'))
@@ -158,6 +163,9 @@ async function main() {
     assert('Customer promo announcement strip is hidden on admin login', chromeDisplays.promoDisplay === 'none');
     assert('Customer public footer is hidden on admin login', chromeDisplays.footerDisplay === 'none');
     assert('Customer bottom navigation dock is hidden on admin login', chromeDisplays.dockDisplay === 'none');
+
+    const bodyHasAdminMode = await cdp.eval(`document.body.classList.contains('admin-mode')`);
+    assert('document.body has admin-mode class active on admin routes', bodyHasAdminMode);
 
     console.log('\n--- TEST SUITE 3: Unauthorized Access Guard on /admin ---');
     // Clear any active session and attempt to navigate to #/admin
@@ -269,12 +277,17 @@ async function main() {
     const overviewState = await cdp.eval(`
       (() => {
         const overview = document.getElementById('view-overview');
+        const adminLogin = document.getElementById('view-admin-login');
+        const adminDashboard = document.getElementById('view-admin');
         const navbar = document.querySelector('.main-navbar');
         const promo = document.getElementById('promo-header-strip');
         const footer = document.querySelector('.astro-main-footer');
         const dock = document.querySelector('.mob-bottom-dock');
         return {
           overviewActive: overview?.classList.contains('active'),
+          bodyHasAdminMode: document.body.classList.contains('admin-mode'),
+          adminLoginDisplay: adminLogin ? window.getComputedStyle(adminLogin).display : 'none',
+          adminDashboardDisplay: adminDashboard ? window.getComputedStyle(adminDashboard).display : 'none',
           navbarRestored: navbar ? window.getComputedStyle(navbar).display !== 'none' : true,
           promoRestored: promo ? window.getComputedStyle(promo).display !== 'none' : true,
           footerRestored: footer ? window.getComputedStyle(footer).display !== 'none' : true,
@@ -284,6 +297,9 @@ async function main() {
     `);
 
     assert('Public customer overview active', overviewState.overviewActive);
+    assert('document.body has admin-mode removed on customer pages', !overviewState.bodyHasAdminMode);
+    assert('Admin login section is strictly hidden (display: none) on public customer pages', overviewState.adminLoginDisplay === 'none');
+    assert('Admin dashboard section is strictly hidden (display: none) on public customer pages', overviewState.adminDashboardDisplay === 'none');
     assert('Customer top navbar restored on customer pages', overviewState.navbarRestored);
     assert('Customer promo announcement strip restored on customer pages', overviewState.promoRestored);
     assert('Customer public footer restored on customer pages', overviewState.footerRestored);
