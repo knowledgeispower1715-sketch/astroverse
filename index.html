@@ -187,6 +187,17 @@
       --av-radius-card: 18px;
       --av-radius-modal: 22px;
 
+      /* Layer Stacking & Z-Index System */
+      --z-base: 1;
+      --z-floating-btn: 900;
+      --z-dock: 1000;
+      --z-navbar: 1100;
+      --z-popover: 1200;
+      --z-toast: 1300;
+      --z-modal: 10500;
+      --z-top-border: 10550;
+      --mobile-dock-height: 60px;
+
       /* Interaction & Focus */
       --av-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.45);
       --av-transition-fast: 140ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -827,7 +838,7 @@
       height: 3.5px;
       background: var(--av-top-accent);
       box-shadow: var(--av-blue-glow);
-      z-index: 10550;
+      z-index: var(--z-top-border, 10550);
       pointer-events: none;
     }
     @media (prefers-reduced-motion: reduce) {
@@ -1288,7 +1299,7 @@
       box-shadow: var(--av-shadow-glass, 0 8px 32px rgba(15, 23, 42, 0.20));
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: var(--z-navbar, 1100);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -2437,7 +2448,7 @@
       position: fixed;
       top: 24px;
       right: 24px;
-      z-index: 999999;
+      z-index: var(--z-toast, 1300);
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -2478,7 +2489,7 @@
       background: rgba(15, 23, 42, 0.65);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      z-index: 1000;
+      z-index: var(--z-modal, 10500);
       display: none;
       justify-content: center;
       align-items: center;
@@ -2510,7 +2521,7 @@
       -webkit-backdrop-filter: var(--av-glass-blur-nav, blur(20px) saturate(160%));
       border-top: 1px solid var(--av-glass-dark-border, rgba(255, 255, 255, 0.22));
       box-shadow: var(--av-shadow-glass, 0 -4px 24px rgba(0, 0, 0, 0.4));
-      z-index: 1000;
+      z-index: var(--z-dock, 1000);
       justify-content: space-around;
       align-items: center;
     }
@@ -3048,14 +3059,14 @@
         left: 0;
         right: 0;
         height: auto;
-        min-height: 56px;
+        min-height: var(--mobile-dock-height, 60px);
         padding-top: 6px;
         padding-bottom: max(6px, env(safe-area-inset-bottom, 6px));
         background: rgba(11, 16, 32, 0.96);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border-top: 1px solid rgba(212, 175, 55, 0.22);
-        z-index: 1000;
+        z-index: var(--z-dock, 1000);
         justify-content: space-around;
         align-items: center;
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
@@ -3232,22 +3243,23 @@
     @media (max-width: 768px) {
       .page-main-container {
         padding: 0 10px !important;
-        margin: 14px auto 60px !important;
+        margin: 10px auto 40px !important;
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
       }
       .main-navbar, .main-header {
-        padding: 8px 10px !important;
+        padding: 8px 12px !important;
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
-        overflow: hidden !important;
+        overflow: visible !important;
+        z-index: var(--z-navbar, 1100) !important;
       }
       .mobile-menu-btn {
         display: inline-flex !important;
-        width: 36px !important;
-        height: 36px !important;
+        width: 38px !important;
+        height: 38px !important;
         flex-shrink: 0 !important;
       }
       .nav-links-row {
@@ -3263,7 +3275,7 @@
         display: none !important;
       }
       .brand-logo-wrap {
-        gap: 6px !important;
+        gap: 8px !important;
         flex-shrink: 1 !important;
         min-width: 0 !important;
       }
@@ -3286,7 +3298,7 @@
         flex-shrink: 0 !important;
       }
       .wallet-chip {
-        padding: 4px 8px !important;
+        padding: 5px 8px !important;
         font-size: 11px !important;
         gap: 4px !important;
         flex-shrink: 0 !important;
@@ -3296,60 +3308,95 @@
         display: none !important;
       }
       .btn-auth-trigger {
-        padding: 5px 10px !important;
-        font-size: 11px !important;
+        padding: 6px 12px !important;
+        font-size: 11.5px !important;
+        font-weight: 700 !important;
         gap: 4px !important;
         flex-shrink: 0 !important;
-        min-height: 34px !important;
+        min-height: 36px !important;
         white-space: nowrap !important;
+        border-radius: 999px !important;
       }
       .lang-toggle-pill {
-        padding: 4px 7px !important;
-        font-size: 11px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 5px !important;
+        padding: 6px 12px !important;
+        font-size: 11.5px !important;
+        font-weight: 700 !important;
         flex-shrink: 0 !important;
-        min-height: 34px !important;
+        min-height: 36px !important;
+        border-radius: 999px !important;
+        background: rgba(245, 158, 11, 0.14) !important;
+        border: 1px solid rgba(245, 158, 11, 0.4) !important;
+        color: #F5C45E !important;
+        white-space: nowrap !important;
+        touch-action: manipulation !important;
+        z-index: var(--z-popover, 1200) !important;
       }
 
       /* Atmospheric Cosmic Hero Responsive Stacking */
       .cosmic-hero-wrapper {
-        padding: 20px 14px !important;
-        margin-bottom: 18px !important;
+        padding: 16px 14px !important;
+        margin-top: 8px !important;
+        margin-bottom: 14px !important;
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+        border-radius: 14px !important;
       }
       .cosmic-hero-wrapper > div {
         flex-direction: column !important;
-        gap: 16px !important;
+        gap: 12px !important;
       }
       .cosmic-hero-wrapper > div > div {
         width: 100% !important;
         min-width: 0 !important;
       }
+      .cosmic-hero-tag {
+        font-size: 10px !important;
+        padding: 3px 10px !important;
+        margin-bottom: 8px !important;
+      }
       .cosmic-hero-title {
-        font-size: clamp(19px, 5.5vw, 25px) !important;
-        line-height: 1.3 !important;
+        font-size: clamp(18px, 5.2vw, 24px) !important;
+        line-height: 1.25 !important;
+        margin-bottom: 6px !important;
       }
       .cosmic-hero-subtitle {
-        font-size: 13px !important;
-        line-height: 1.5 !important;
-        margin-bottom: 16px !important;
+        font-size: 12.5px !important;
+        line-height: 1.45 !important;
+        margin-bottom: 12px !important;
       }
       .cosmic-hero-actions {
         flex-direction: column !important;
         align-items: stretch !important;
         width: 100% !important;
-        gap: 10px !important;
+        gap: 8px !important;
       }
       .cosmic-hero-actions button {
         width: 100% !important;
         justify-content: center !important;
+        min-height: 42px !important;
+        font-size: 13px !important;
+        padding: 9px 14px !important;
       }
       .cosmic-hero-hora-box {
         width: 100% !important;
         min-width: 0 !important;
-        padding: 14px 14px !important;
+        max-width: 100% !important;
+        padding: 12px 14px !important;
         box-sizing: border-box !important;
+        border-radius: 12px !important;
+        margin-top: 4px !important;
+      }
+      .cosmic-hero-hora-box #overview-hora-name {
+        font-size: 17px !important;
+      }
+      .cosmic-hero-hora-box button {
+        margin-top: 8px !important;
+        padding: 6px 10px !important;
+        font-size: 11.5px !important;
       }
 
       /* Authenticated Command Center */
@@ -3578,27 +3625,32 @@
         min-height: 44px !important;
       }
       .toast-container {
-        top: 12px !important;
+        top: auto !important;
+        bottom: calc(var(--mobile-dock-height, 60px) + env(safe-area-inset-bottom, 12px) + 12px) !important;
         right: 12px !important;
         left: 12px !important;
         max-width: calc(100vw - 24px) !important;
         align-items: center !important;
+        z-index: var(--z-toast, 1300) !important;
+        pointer-events: none !important;
       }
       .toast-item {
         min-width: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
-        padding: 10px 14px !important;
-        font-size: 12px !important;
+        padding: 12px 16px !important;
+        font-size: 13px !important;
         box-sizing: border-box !important;
-        animation: fadeInDown 0.25s ease forwards !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45) !important;
+        animation: fadeInUpToast 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
       }
       body {
         padding-bottom: calc(var(--mobile-dock-content-space, 82px) + env(safe-area-inset-bottom, 12px)) !important;
       }
     }
-    @keyframes fadeInDown {
-      from { transform: translateY(-20px); opacity: 0; }
+    @keyframes fadeInUpToast {
+      from { transform: translateY(20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
 
@@ -3613,12 +3665,12 @@
     /* Smartphone Breakpoint (<= 480px) */
     @media (max-width: 480px) {
       .main-navbar, .main-header {
-        padding: 6px 8px !important;
+        padding: 7px 10px !important;
       }
       .mobile-menu-btn {
-        width: 34px !important;
-        height: 34px !important;
-        font-size: 14px !important;
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 15px !important;
       }
       .brand-icon {
         font-size: 18px !important;
@@ -3627,31 +3679,31 @@
         font-size: clamp(12.5px, 3.8vw, 15px) !important;
       }
       .nav-right-actions {
-        gap: 4px !important;
+        gap: 6px !important;
       }
       .wallet-chip {
-        padding: 4px 6px !important;
-        font-size: 10.5px !important;
-        min-height: 32px !important;
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        min-height: 34px !important;
       }
       .btn-auth-trigger {
-        padding: 4px 7px !important;
-        font-size: 10.5px !important;
-        min-height: 32px !important;
+        padding: 5px 10px !important;
+        font-size: 11.5px !important;
+        min-height: 36px !important;
       }
       .lang-toggle-pill {
-        padding: 4px 5px !important;
-        font-size: 10.5px !important;
-        min-height: 32px !important;
+        padding: 5px 10px !important;
+        font-size: 11.5px !important;
+        min-height: 36px !important;
       }
       .astro-card {
-        padding: 14px 10px !important;
+        padding: 14px 12px !important;
         border-radius: 12px !important;
       }
       .featured-guidance-card {
-        padding: 14px 10px !important;
+        padding: 14px 12px !important;
         border-radius: 12px !important;
-        margin-bottom: 18px !important;
+        margin-bottom: 16px !important;
       }
       .guidance-header-bar {
         flex-direction: column !important;
@@ -3688,42 +3740,80 @@
       .panchang-box {
         padding: 10px 8px !important;
       }
+      .report-product-card {
+        padding: 14px 12px !important;
+      }
+      .report-product-card .btn-gold-primary {
+        width: auto !important;
+        min-height: 36px !important;
+        padding: 6px 14px !important;
+        font-size: 12px !important;
+      }
+      .pricing-plan-card {
+        padding: 16px 14px !important;
+      }
+    }
+
+    /* Narrow Smartphone Breakpoint (<= 390px) */
+    @media (max-width: 390px) {
+      .wallet-chip {
+        display: none !important;
+      }
+      .main-navbar, .main-header {
+        padding: 6px 8px !important;
+      }
+      .mobile-menu-btn {
+        width: 35px !important;
+        height: 35px !important;
+        font-size: 14px !important;
+      }
+      .brand-title {
+        font-size: 12.5px !important;
+      }
+      .btn-auth-trigger {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        min-height: 34px !important;
+      }
+      .lang-toggle-pill {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        min-height: 34px !important;
+      }
     }
 
     /* Small Smartphone Breakpoint (<= 360px) */
     @media (max-width: 360px) {
       .main-navbar, .main-header {
-        padding: 5px 6px !important;
+        padding: 6px 8px !important;
       }
       .mobile-menu-btn {
-        width: 32px !important;
-        height: 32px !important;
-        font-size: 13px !important;
+        width: 34px !important;
+        height: 34px !important;
+        font-size: 14px !important;
       }
       .brand-icon {
         font-size: 16px !important;
       }
       .brand-title {
-        font-size: 13px !important;
+        font-size: 12px !important;
         letter-spacing: 0px !important;
       }
       .nav-right-actions {
-        gap: 3px !important;
+        gap: 5px !important;
       }
       .wallet-chip {
-        padding: 3px 5px !important;
-        font-size: 10px !important;
-        min-height: 30px !important;
+        display: none !important;
       }
       .btn-auth-trigger {
-        padding: 4px 6px !important;
-        font-size: 10px !important;
-        min-height: 30px !important;
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        min-height: 34px !important;
       }
       .lang-toggle-pill {
-        padding: 3px 5px !important;
-        font-size: 10px !important;
-        min-height: 30px !important;
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        min-height: 34px !important;
       }
       .auth-modal-card {
         padding: 12px 8px !important;
@@ -3746,37 +3836,43 @@
     /* Ultra-compact Smartphone Breakpoint (<= 320px) */
     @media (max-width: 320px) {
       .main-navbar, .main-header {
-        padding: 4px 4px !important;
+        padding: 5px 6px !important;
       }
       .mobile-menu-btn {
-        width: 30px !important;
-        height: 30px !important;
-        font-size: 12px !important;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 13px !important;
       }
       .brand-title {
         font-size: 11px !important;
       }
       .brand-icon {
-        font-size: 14px !important;
+        font-size: 15px !important;
       }
       .nav-right-actions {
-        gap: 2px !important;
-      }
-      .btn-auth-trigger {
-        padding: 3px 4px !important;
-        font-size: 9px !important;
-        min-height: 28px !important;
+        gap: 4px !important;
       }
       .wallet-chip {
-        padding: 3px 4px !important;
-        font-size: 9px !important;
-        min-height: 28px !important;
+        display: none !important;
+      }
+      .btn-auth-trigger {
+        padding: 5px 7px !important;
+        font-size: 10.5px !important;
+        min-height: 32px !important;
       }
       .lang-toggle-pill {
-        padding: 3px 4px !important;
-        font-size: 9px !important;
-        min-height: 28px !important;
+        padding: 5px 7px !important;
+        font-size: 10.5px !important;
+        min-height: 32px !important;
       }
+      .auth-modal-card {
+        padding: 10px 6px !important;
+      }
+      .auth-modal-tab {
+        font-size: 10px !important;
+        padding: 5px 1px !important;
+      }
+    }
       .auth-modal-card {
         padding: 10px 6px !important;
       }
@@ -4219,6 +4315,7 @@
     @media (max-width: 680px) {
       #modal-ai-consultation {
         padding: 0 !important;
+        z-index: var(--z-modal, 10500) !important;
       }
       #modal-ai-consultation .modal-dialog-card {
         width: 100% !important;
@@ -4226,12 +4323,20 @@
         height: 100dvh !important;
         max-height: 100dvh !important;
         border-radius: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      #ai-chat-messages-container {
+        padding: 12px 10px !important;
+      }
+      #ai-chat-composer {
+        padding: 10px 12px max(10px, env(safe-area-inset-bottom, 10px)) !important;
       }
       .chat-bubble-agent {
-        max-width: 95%;
+        max-width: 95% !important;
       }
       .chat-bubble-user {
-        max-width: 90%;
+        max-width: 90% !important;
       }
     }
 
@@ -5108,20 +5213,24 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 12px;
-      background: var(--av-color-surface);
-      border: 1px solid var(--av-color-border-strong);
+      padding: 6px 14px;
+      min-height: 34px;
+      box-sizing: border-box;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
       border-radius: 20px;
       font-size: 12px;
       font-weight: 700;
-      color: var(--av-color-maroon-800);
+      color: #F5C45E;
       cursor: pointer;
       transition: all 0.2s ease;
+      z-index: var(--z-popover, 1200);
+      position: relative;
     }
-    .lang-toggle-pill:hover {
-      background: var(--av-color-surface-soft);
-      border-color: var(--av-color-saffron);
-      color: var(--av-color-maroon-950);
+    .lang-toggle-pill:hover, .lang-toggle-pill:active {
+      background: rgba(245, 158, 11, 0.25);
+      border-color: #F59E0B;
+      color: #FFFFFF;
     }
 
     /* Voice Narration Audio Buttons */
@@ -21757,7 +21866,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             <ul style="list-style: none; padding: 0; margin: 0 0 16px 0; display: flex; flex-direction: column; gap: 4px;">
               ${chaptersHtml}
             </ul>
-            <div style="margin-top: auto; padding-top: 12px; border-top: 1px dashed #E2E8F0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="margin-top: auto; padding-top: 12px; border-top: 1px dashed #E2E8F0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               ${priceHtml}
               <button class="btn-gold-primary" style="padding: 7px 14px; font-size: 12px;" onclick="openReportBuilderModal('${item.productId}')">
                 <i class="fa-solid fa-sliders"></i> Customize
@@ -25073,6 +25182,10 @@ ${upTable}
       const langLbl = document.getElementById('global-lang-label');
       if (langLbl) {
         langLbl.textContent = dict.lang_switch_label;
+      }
+      const mobDrawerLangLbl = document.getElementById('mob-drawer-lang-label');
+      if (mobDrawerLangLbl) {
+        mobDrawerLangLbl.textContent = dict.lang_switch_label;
       }
 
       // Update Navigation Links
