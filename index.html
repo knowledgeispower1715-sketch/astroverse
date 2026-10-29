@@ -6592,57 +6592,182 @@
 
             <!-- PANE 6: DASHA & TRANSITS -->
             <div class="kw-tab-pane" id="kw-pane-dashas">
-              <div style="padding: 18px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: var(--av-radius-md); margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                  <h4 style="font-size: 15px; font-weight: 800; color: #78350F; margin: 0;">
-                    <i class="fa-solid fa-hourglass-half"></i> Active Vimshottari Mahadasha
+              <!-- Empty State when no chart is calculated -->
+              <div id="dasha-no-chart-state" style="display: none; padding: 32px 20px; text-align: center; background: #FFFDF8; border: 1px dashed #FCD34D; border-radius: var(--av-radius-md); margin-bottom: 20px;">
+                <div style="width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 50%; background: #FEF3C7; display: flex; align-items: center; justify-content: center; color: #B45309; font-size: 22px;">
+                  <i class="fa-solid fa-hourglass-start"></i>
+                </div>
+                <h4 style="font-size: 16px; font-weight: 800; color: #78350F; margin: 0 0 6px;">No Birth Chart Calculated Yet</h4>
+                <p style="font-size: 13px; color: var(--av-color-text-secondary); max-width: 480px; margin: 0 auto 16px; line-height: 1.5;">
+                  Please calculate your birth chart or load a saved profile to generate your personalized 120-year Vimshottari lifecycle timeline, active sub-period boundaries, and chart-grounded interpretations.
+                </p>
+                <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                  <button type="button" class="btn-gold-primary" onclick="document.getElementById('input-k-name')?.focus(); showToast('Please enter your birth particulars above to generate your chart.', 'info');" style="padding: 7px 16px; font-size: 12px; border-radius: 999px;">
+                    <i class="fa-solid fa-pen-to-square"></i> Enter Birth Details
+                  </button>
+                  <button type="button" class="btn-outline-secondary" onclick="openSavedProfilesModal()" style="padding: 7px 16px; font-size: 12px; border-radius: 999px;">
+                    <i class="fa-solid fa-folder-open"></i> Choose Saved Profile
+                  </button>
+                </div>
+              </div>
+
+              <!-- Active Dasha Workspace (Displayed when chart is present) -->
+              <div id="dasha-active-workspace">
+                <!-- Active Mahadasha & Antardasha Executive Card -->
+                <div class="dasha-active-card" style="padding: 18px 20px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: var(--av-radius-md); margin-bottom: 20px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 6px;">
+                    <h4 style="font-size: 15px; font-weight: 800; color: #78350F; margin: 0;">
+                      <i class="fa-solid fa-hourglass-half"></i> <span id="disp-dasha-card-title">Active Vimshottari Mahadasha</span>
+                    </h4>
+                    <span style="font-size: 12px; font-weight: 800; color: #78350F; background: #FDE68A; padding: 3px 10px; border-radius: 999px;" id="disp-cur-maha">--</span>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #451A03; margin-bottom: 12px; flex-wrap: wrap; gap: 4px;">
+                    <div>Current Antardasha: <strong id="disp-cur-antar" style="color: var(--av-color-maroon-800);">--</strong></div>
+                    <div id="disp-next-transition-box" style="font-size: 11.5px; font-weight: 700; color: #B45309; background: #FEF3C7; border: 1px solid #FCD34D; padding: 2px 8px; border-radius: 6px;">
+                      <i class="fa-solid fa-arrow-right"></i> Next Transition: <span id="disp-next-transition-val">--</span>
+                    </div>
+                  </div>
+
+                  <!-- Dual Progress Bars: Mahadasha & Antardasha -->
+                  <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; color: #78350F; margin-bottom: 3px;">
+                      <span>Mahadasha Progress: <strong id="disp-maha-prog-pct">--%</strong></span>
+                      <span id="disp-maha-dates">-- to --</span>
+                    </div>
+                    <div style="height: 8px; background: #FDE68A; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+                      <div id="disp-dasha-fill" style="width: 0%; height: 100%; background: var(--av-color-focus); transition: width 0.5s;"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: #065F46; margin-bottom: 3px;">
+                      <span>Antardasha Progress: <strong id="disp-antar-prog-pct">--%</strong></span>
+                      <span id="disp-antar-dates">-- to --</span>
+                    </div>
+                    <div style="height: 6px; background: #A7F3D0; border-radius: 3px; overflow: hidden;">
+                      <div id="disp-antar-fill" style="width: 0%; height: 100%; background: #059669; transition: width 0.5s;"></div>
+                    </div>
+                  </div>
+
+                  <!-- Hidden backward-compatibility elements -->
+                  <span id="disp-dasha-start" style="display: none;">--</span>
+                  <span id="disp-dasha-end" style="display: none;">--</span>
+
+                  <!-- Executive Summary Box -->
+                  <div id="dasha-executive-summary" style="padding: 12px 14px; background: #FFFFFF; border: 1px solid #FDE68A; border-radius: 8px; font-size: 12.5px; line-height: 1.6; color: #1E1B4B; margin-bottom: 10px;">
+                    Analyzing your chart's active planetary seasons...
+                  </div>
+
+                  <!-- Expandable "Why this interpretation?" Parashari Reasoning -->
+                  <div>
+                    <button type="button" class="btn-outline-secondary" onclick="toggleDashaReasoningDrawer()" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; background: #FFFFFF;">
+                      <i class="fa-solid fa-circle-question" style="color: var(--av-color-focus);"></i> <span id="btn-reasoning-toggle-text">Why this interpretation? (Parashari Placements &amp; Sambandha)</span>
+                    </button>
+                    <div id="dasha-reasoning-drawer" style="display: none; margin-top: 10px; padding: 12px 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 11.5px; line-height: 1.5; color: #334155;">
+                      <!-- Populated dynamically -->
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Multilayer Personalized Guidance Grid (4 Domains) -->
+                <div style="margin-bottom: 24px;">
+                  <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0 0 4px;">
+                    <i class="fa-solid fa-compass" style="color: var(--av-color-focus); margin-right: 6px;"></i>
+                    <span id="title-domain-emphases">Key Period Emphases &amp; Operational Domains</span>
                   </h4>
-                  <span style="font-size: 13px; font-weight: 800; color: #92400E;" id="disp-cur-maha">--</span>
-                </div>
-                <div style="font-size: 13px; color: #451A03; margin-bottom: 8px;">
-                  Current Antardasha: <strong id="disp-cur-antar">--</strong>
-                </div>
-                <div style="height: 8px; background: #FDE68A; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-                  <div id="disp-dasha-fill" style="width: 0%; height: 100%; background: var(--av-color-focus); transition: width 0.5s;"></div>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #78350F;">
-                  <span id="disp-dasha-start">--</span>
-                  <span id="disp-dasha-end">--</span>
-                </div>
-              </div>
+                  <p style="font-size: 12px; color: var(--av-color-text-secondary); margin-bottom: 12px;" id="desc-domain-emphases">
+                    Synthesized from the functional house lordships and natural significations of your active Mahadasha and Antardasha lords.
+                  </p>
 
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0;">
-                  120-Year Vimshottari Mahadasha Cycle
+                  <div id="dasha-domain-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <!-- Domain cards populated dynamically -->
+                  </div>
+
+                  <!-- Two-Column Comparative Suite: Supportive Factors vs Challenges -->
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                    <!-- Supportive Factors -->
+                    <div style="padding: 16px; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: var(--av-radius-md);">
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <i class="fa-solid fa-circle-check" style="color: #16A34A; font-size: 15px;"></i>
+                        <h5 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #166534;" id="title-supportive-factors">Supportive Astrological Factors</h5>
+                      </div>
+                      <div id="dasha-supportive-list" style="font-size: 12px; color: #14532D; line-height: 1.5;">
+                        <!-- Populated dynamically -->
+                      </div>
+                    </div>
+
+                    <!-- Challenges & Watch-Outs -->
+                    <div style="padding: 16px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--av-radius-md);">
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: #D97706; font-size: 15px;"></i>
+                        <h5 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #92400E;" id="title-challenges-watchouts">Challenges &amp; Strategic Watch-Outs</h5>
+                      </div>
+                      <div id="dasha-challenges-list" style="font-size: 12px; color: #78350F; line-height: 1.5;">
+                        <!-- Populated dynamically -->
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Practical Guidance & Traditional Remedies -->
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 24px;">
+                    <!-- Practical Actionable Guidance -->
+                    <div style="padding: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--av-radius-md);">
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <i class="fa-solid fa-lightbulb" style="color: var(--av-color-focus); font-size: 15px;"></i>
+                        <h5 style="margin: 0; font-size: 13.5px; font-weight: 800; color: var(--av-color-maroon-800);" id="title-practical-guidance">Actionable Behavioral Guidance</h5>
+                      </div>
+                      <div id="dasha-practical-list" style="font-size: 12px; color: #334155; line-height: 1.5;">
+                        <!-- Populated dynamically -->
+                      </div>
+                    </div>
+
+                    <!-- Vedic Remedial Alignment -->
+                    <div style="padding: 16px; background: #FFFDF8; border: 1px solid #FCD34D; border-radius: var(--av-radius-md);">
+                      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <i class="fa-solid fa-om" style="color: #B45309; font-size: 15px;"></i>
+                        <h5 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #78350F;" id="title-vedic-remedies">Traditional Satvik Remedial Blueprint</h5>
+                      </div>
+                      <div id="dasha-remedies-list" style="font-size: 12px; color: #451A03; line-height: 1.5;">
+                        <!-- Populated dynamically -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 120-Year Vimshottari Mahadasha Timeline -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                  <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0;">
+                    <i class="fa-solid fa-timeline" style="color: var(--av-color-focus); margin-right: 6px;"></i>
+                    <span id="title-120y-timeline">120-Year Vimshottari Mahadasha Timeline</span>
+                  </h4>
+                  <span style="font-size: 11px; color: var(--av-color-text-secondary);" id="desc-timeline-subtitle">Chronological sequence from birth Nakshatra balance • Click any card to inspect 9 Antardashas</span>
+                </div>
+                <div id="dashas-timeline-tree" style="max-height: 480px; overflow-y: auto; margin-bottom: 24px; padding-right: 4px;">
+                  <!-- Dasha tree dynamically populated -->
+                </div>
+
+                <!-- Live Gochara (Transits) Table -->
+                <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0 0 6px;">
+                  <i class="fa-solid fa-arrows-spin" style="color: var(--av-color-focus); margin-right: 6px;"></i>
+                  <span id="title-live-gochara">Live Planetary Gochara (Natal Lagna, Moon &amp; SAV Cross-Reference)</span>
                 </h4>
-                <span style="font-size: 11px; color: var(--av-color-text-secondary);">Click any Mahadasha to inspect 9 Antardashas</span>
-              </div>
-              <div id="dashas-timeline-tree" style="max-height: 320px; overflow-y: auto; margin-bottom: 24px;">
-                <!-- Dasha tree dynamically populated -->
-              </div>
-
-              <!-- Live Gochara (Transits) Table -->
-              <h4 style="font-size: 15px; font-weight: 800; color: var(--av-color-maroon-800); margin: 0 0 6px;">
-                <i class="fa-solid fa-arrows-spin" style="color: var(--av-color-focus); margin-right: 6px;"></i>
-                Live Planetary Gochara (Natal Lagna, Moon &amp; SAV Cross-Reference)
-              </h4>
-              <p style="font-size: 12px; color: var(--av-color-text-secondary); margin-bottom: 12px;">Active planetary transits evaluated against your birth chart's Sarvashtakavarga bindus.</p>
-              <div class="table-responsive-box">
-                <table class="table-astro-data">
-                  <thead>
-                    <tr>
-                      <th>Transiting Planet</th>
-                      <th>Transit Sign (Gochara)</th>
-                      <th>From Lagna</th>
-                      <th>From Moon</th>
-                      <th>SAV Bindus</th>
-                      <th>Gochara Verdict</th>
-                    </tr>
-                  </thead>
-                  <tbody id="tbody-gochara-transits">
-                    <!-- Populated dynamically -->
-                  </tbody>
-                </table>
+                <p style="font-size: 12px; color: var(--av-color-text-secondary); margin-bottom: 12px;" id="desc-live-gochara">Active planetary transits evaluated against your birth chart's Sarvashtakavarga bindus and active Dasha lords.</p>
+                <div class="table-responsive-box">
+                  <table class="table-astro-data">
+                    <thead>
+                      <tr>
+                        <th>Transiting Planet</th>
+                        <th>Transit Sign (Gochara)</th>
+                        <th>From Lagna</th>
+                        <th>From Moon</th>
+                        <th>SAV Bindus</th>
+                        <th>Gochara Verdict</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbody-gochara-transits">
+                      <!-- Populated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -9163,7 +9288,7 @@
 
       <div class="form-field-group">
         <label class="form-field-label">Place of Birth</label>
-        <input type="text" id="p-city" class="form-input-text" placeholder="e.g. Jabalpur, MP, India" value="">
+        <input type="text" id="p-city" class="form-input-text" placeholder="e.g. New Delhi, India" value="">
       </div>
 
       <button class="btn-gold-primary" style="width: 100%; justify-content: center; margin-top: 10px;" onclick="saveBirthProfile()">
@@ -11575,52 +11700,150 @@
     }
 
     // ==============================================================================
-    // CLIENT UPAGRAHAS ENGINE (11 Classical Sub-Planets & Kalavelas)
+    // CANONICAL ZODIAC POSITION FORMATTING (Prevents 30.00° Boundary Overflow)
     // ==============================================================================
-    function calculateClientUpagrahas(sunTotalDeg, lagnaTotalDeg, dobStr, tobStr) {
-      const sunDeg = (sunTotalDeg !== undefined ? sunTotalDeg : 60.0) % 360;
-      const dhuma = (sunDeg + 133.333333) % 360;
-      const vyatipaata = (360.0 - dhuma + 360.0) % 360;
-      const parivesha = (vyatipaata + 180.0) % 360;
-      const indrachaapa = (360.0 - parivesha + 360.0) % 360;
-      const upaketu = (indrachaapa + 16.666667) % 360;
+    function formatZodiacPosition(totalDeg) {
+      let norm = ((totalDeg % 360.0) + 360.0) % 360.0;
+      let sIdx = Math.floor(norm / 30.0);
+      let relDeg = norm % 30.0;
+      let roundedRel = Math.round(relDeg * 100.0) / 100.0;
+      if (roundedRel >= 30.0) {
+        roundedRel = 0.0;
+        sIdx = (sIdx + 1) % 12;
+      }
+      const nakSpan = 360.0 / 27.0; // 13.333333333333334
+      const nakIdx = Math.floor(norm / nakSpan) % 27;
+      const degInNak = norm % nakSpan;
+      const pada = Math.min(4, Math.max(1, Math.floor(degInNak / (nakSpan / 4.0)) + 1));
+      return {
+        longitude: Math.round(norm * 10000.0) / 10000.0,
+        total_degree: Math.round(norm * 100.0) / 100.0,
+        sign: signsList[sIdx],
+        sign_index: sIdx,
+        degree: roundedRel,
+        nakshatra: nakshatrasList[nakIdx] || 'Ashwini',
+        nakshatra_number: nakIdx + 1,
+        pada: pada
+      };
+    }
 
-      const kaala = (sunDeg + 30.0) % 360;
-      const mrityu = (sunDeg + 60.0) % 360;
-      const arthaprahaara = (sunDeg + 90.0) % 360;
-      const yamaghantaka = (sunDeg + 120.0) % 360;
-      const gulika = (sunDeg + 45.0) % 360;
-      const maandi = (sunDeg + 42.5) % 360;
+    const SIGN_LORDS_ORDER = [
+      'Mars',    // Aries (0)
+      'Venus',   // Taurus (1)
+      'Mercury', // Gemini (2)
+      'Moon',    // Cancer (3)
+      'Sun',     // Leo (4)
+      'Mercury', // Virgo (5)
+      'Venus',   // Libra (6)
+      'Mars',    // Scorpio (7)
+      'Jupiter', // Sagittarius (8)
+      'Saturn',  // Capricorn (9)
+      'Saturn',  // Aquarius (10)
+      'Jupiter'  // Pisces (11)
+    ];
 
-      function makeUp(name, deg, desc) {
-        const sI = Math.floor(deg / 30);
-        const relDeg = Math.round((deg % 30.0) * 100) / 100;
-        const nakIdx = Math.floor(deg / (360 / 27));
-        const pada = Math.floor((deg % (360 / 27)) / (360 / 108)) + 1;
+    function getPlanetLordships(planet, lagnaIdx) {
+      if (lagnaIdx === undefined || lagnaIdx < 0 || lagnaIdx > 11) lagnaIdx = 7;
+      const houses = [];
+      for (let h = 0; h < 12; h++) {
+        const sIdx = (lagnaIdx + h) % 12;
+        if (SIGN_LORDS_ORDER[sIdx] === planet) {
+          houses.push(h + 1);
+        }
+      }
+      return houses;
+    }
+
+    // ==============================================================================
+    // CLIENT UPAGRAHAS ENGINE (11 Classical Sub-Planets & Kalavelas per BPHS)
+    // ==============================================================================
+    function calculateClientUpagrahas(sunTotalDeg, lagnaTotalDeg, dobStr, tobStr, lat, lon) {
+      const sunDeg = ((sunTotalDeg !== undefined ? sunTotalDeg : 60.0) % 360.0 + 360.0) % 360.0;
+      const lagnaDeg = ((lagnaTotalDeg !== undefined ? lagnaTotalDeg : 0.0) % 360.0 + 360.0) % 360.0;
+
+      // 1. Five Sun-based Classical Aprakasha Grahas (BPHS Formulas)
+      const dhuma = (sunDeg + 133.33333333333334) % 360.0; // +133°20'
+      const vyatipaata = (360.0 - dhuma + 360.0) % 360.0;
+      const parivesha = (vyatipaata + 180.0) % 360.0;
+      const indrachaapa = (360.0 - parivesha + 360.0) % 360.0;
+      const upaketu = (indrachaapa + 16.666666666666668) % 360.0; // +16°40' (Invariant: upaketu + 30° == sunDeg)
+
+      // 2. Six Time-based Kalavelas (Eighth-portions of Day/Night)
+      let year = 2000, month = 1, day = 1, hours = 12.0;
+      if (dobStr) {
+        const p = dobStr.split('-');
+        year = parseInt(p[0]) || 2000;
+        month = parseInt(p[1]) || 1;
+        day = parseInt(p[2]) || 1;
+      }
+      if (tobStr) {
+        const tp = tobStr.split(':');
+        hours = (parseInt(tp[0]) || 0) + (parseInt(tp[1]) || 0) / 60.0;
+      }
+      const dateObj = new Date(year, month - 1, day);
+      const WEEKDAY_ORDER = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const PLANET_ORDER = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+      const jsDay = dateObj.getDay();
+      const dayLordName = WEEKDAY_ORDER[jsDay];
+
+      const isDayBirth = (hours >= 6.0 && hours < 18.0);
+      const startHour = isDayBirth ? 6.0 : 18.0;
+      const portionSpanHours = 12.0 / 8.0; // 1.5 hours per portion
+
+      const startLordIdx = isDayBirth
+        ? PLANET_ORDER.indexOf(dayLordName)
+        : (PLANET_ORDER.indexOf(dayLordName) + 4) % 7;
+
+      const lordSequence = [];
+      for (let i = 0; i < 7; i++) {
+        lordSequence.push(PLANET_ORDER[(startLordIdx + i) % 7]);
+      }
+      lordSequence.push('None');
+
+      function getLagnaAtOffset(targetPlanet, fraction) {
+        let pIdx = lordSequence.indexOf(targetPlanet);
+        if (pIdx < 0) pIdx = 0;
+        const portionStartHour = startHour + pIdx * portionSpanHours;
+        const momentHour = portionStartHour + portionSpanHours * fraction;
+        const hourDelta = momentHour - hours;
+        const estLagna = ((lagnaDeg + hourDelta * 15.04107) % 360.0 + 360.0) % 360.0;
+        return estLagna;
+      }
+
+      const kaala = getLagnaAtOffset('Sun', 0.5);
+      const mrityu = getLagnaAtOffset('Mars', 0.5);
+      const arthaprahaara = getLagnaAtOffset('Mercury', 0.5);
+      const yamaghantaka = getLagnaAtOffset('Jupiter', 0.5);
+      const gulika = getLagnaAtOffset('Saturn', 0.5);
+      const maandi = getLagnaAtOffset('Saturn', 0.0);
+
+      function createUpRecord(name, deg, desc, category) {
+        const pos = formatZodiacPosition(deg);
         return {
           name,
-          longitude: Math.round(deg * 100) / 100,
-          total_degree: Math.round(deg * 100) / 100,
-          sign: signsList[sI],
-          degree: relDeg,
-          nakshatra: nakshatrasList[nakIdx] || 'Ashwini',
-          pada,
-          description: desc
+          longitude: pos.longitude,
+          total_degree: pos.total_degree,
+          sign: pos.sign,
+          degree: pos.degree,
+          nakshatra: pos.nakshatra,
+          pada: pos.pada,
+          description: desc,
+          category: category
         };
       }
 
       const upList = [
-        makeUp('Dhuma', dhuma, 'Fierce heat, mental agitation, unexpected obstacles in new ventures'),
-        makeUp('Vyatipaata', vyatipaata, 'Sudden calamities, reversals of fortune, requires patience'),
-        makeUp('Parivesha', parivesha, 'Encirclement, confinement, spiritual inward focus'),
-        makeUp('Indrachaapa (Kodhanta)', indrachaapa, 'Illusory gains, unexpected alliances, material desires'),
-        makeUp('Upaketu (Shikhi)', upaketu, 'Spiritual liberation, detachment, sudden endings'),
-        makeUp('Kaala (Sun Portion)', kaala, 'Discipline, strict time-consciousness, administrative tests'),
-        makeUp('Mrityu (Mars Portion)', mrityu, 'Sudden physical hazards, conflicts, demanding vigilance'),
-        makeUp('Arthaprahaara (Mercury Portion)', arthaprahaara, 'Intellectual tension, financial adjustments, contract scrutiny'),
-        makeUp('Yamaghantaka (Jupiter Portion)', yamaghantaka, 'Wisdom under adversity, protective spiritual shield'),
-        makeUp('Gulika (Saturn Son)', gulika, 'Very critical in Parashari Jyotish; marks karmic knots'),
-        makeUp('Maandi', maandi, 'Subtle toxic influences, delays, demands ethical discipline')
+        createUpRecord('Dhuma', dhuma, 'Smoke: First son of Mars; creates sudden fiery intensity, mental churn, and perseverance tests in new initiatives.', 'Sun-Based Upagraha'),
+        createUpRecord('Vyatipaata', vyatipaata, 'Calamity: Intense transformational turnaround; demands patient, measured, and ethical judgment.', 'Sun-Based Upagraha'),
+        createUpRecord('Parivesha', parivesha, 'Halo: Encirclement and inward spiritual boundary; invites introspection and meditative shielding.', 'Sun-Based Upagraha'),
+        createUpRecord('Indrachaapa (Kodhika)', indrachaapa, 'Rainbow: Illusory temporal desires and social honors; demands grounded realism.', 'Sun-Based Upagraha'),
+        createUpRecord('Upaketu (Sikhi)', upaketu, 'Comet: Ascetic detachment and sudden karmic endings leading to higher spiritual realization.', 'Sun-Based Upagraha'),
+        createUpRecord('Kaala', kaala, 'Son of Sun: Stern temporal regulator; brings tests of administrative discipline and paternal duty.', 'Time-Based Kalavela'),
+        createUpRecord('Mrityu', mrityu, 'Son of Mars: Physical energy hazards and sudden friction points; demands defensive vigilance.', 'Time-Based Kalavela'),
+        createUpRecord('Arthaprahaara', arthaprahaara, 'Son of Mercury: Commercial and intellectual churn; governs contract scrutiny and financial balance.', 'Time-Based Kalavela'),
+        createUpRecord('Yamaghantaka', yamaghantaka, 'Son of Jupiter: Divine benevolence and life-preservation; acts as a protective spiritual shield.', 'Time-Based Kalavela'),
+        createUpRecord('Gulika', gulika, 'Son of Saturn: Crucial karmic shadow sub-planet; marks ancestral debts and areas requiring sustained tapasya.', 'Time-Based Kalavela'),
+        createUpRecord('Maandi', maandi, 'Root of Saturn portion: Neutralizer of subtle toxicity and catalyst for decisive structural shifts.', 'Time-Based Kalavela')
       ];
 
       return {
@@ -11637,6 +11860,383 @@
         gulika: upList[9],
         maandi: upList[10]
       };
+    }
+
+    // ==============================================================================
+    // CLIENT VIMSHOTTARI DASHA ENGINE (120-Year Parashari Lifecycle Invariant)
+    // ==============================================================================
+    function calculateClientVimshottariDasha(moonSid, dobStr, tobStr, refDate) {
+      const nakSpan = 360.0 / 27.0; // 13.333333333333334
+      const normMoon = ((moonSid % 360.0) + 360.0) % 360.0;
+      const nakIdx = Math.floor(normMoon / nakSpan) % 27;
+      const degInNak = normMoon % nakSpan;
+      const fractionPassed = degInNak / nakSpan;
+      const fractionRemaining = 1.0 - fractionPassed;
+
+      const firstLordIdx = nakIdx % 9;
+      const firstLord = nakLordCycle[firstLordIdx];
+      const firstLordTotalYears = dashaYears[firstLord];
+      const remainingYearsFirst = firstLordTotalYears * fractionRemaining;
+      const elapsedYearsFirst = firstLordTotalYears * fractionPassed;
+
+      let year = 2000, month = 1, day = 1, hours = 12, mins = 0;
+      if (dobStr) {
+        const p = dobStr.split('-');
+        year = parseInt(p[0]) || 2000;
+        month = parseInt(p[1]) || 1;
+        day = parseInt(p[2]) || 1;
+      }
+      if (tobStr) {
+        const tp = tobStr.split(':');
+        hours = parseInt(tp[0]) || 0;
+        mins = parseInt(tp[1]) || 0;
+      }
+      const dobMs = new Date(Date.UTC(year, month - 1, day, hours, mins)).getTime();
+      const refMs = refDate ? new Date(refDate).getTime() : Date.now();
+      const daysPerYear = 365.2425;
+      const msPerYear = daysPerYear * 86400000;
+
+      function toIsoDate(ms) {
+        return new Date(ms).toISOString().slice(0, 10);
+      }
+
+      const nominalBirthDashaStartMs = dobMs - (elapsedYearsFirst * msPerYear);
+
+      function getAntardashas(mahaLord, mahaStartMs, mahaYears) {
+        const startIdx = nakLordCycle.indexOf(mahaLord);
+        const antars = [];
+        let curMs = mahaStartMs;
+        for (let i = 0; i < 9; i++) {
+          const antarLord = nakLordCycle[(startIdx + i) % 9];
+          const antarFraction = dashaYears[antarLord] / 120.0;
+          const antarYears = mahaYears * antarFraction;
+          const endMs = curMs + (antarYears * msPerYear);
+
+          let status = 'FUTURE';
+          let isActive = false;
+          if (endMs <= refMs) {
+            status = 'PAST';
+          } else if (curMs <= refMs && refMs <= endMs) {
+            status = 'CURRENT';
+            isActive = true;
+          }
+
+          antars.push({
+            antar_dasha: antarLord,
+            start_date: toIsoDate(curMs),
+            end_date: toIsoDate(endMs),
+            duration_months: Math.round(antarYears * 12.0 * 10) / 10,
+            duration_years: Math.round(antarYears * 1000) / 1000,
+            status,
+            is_active: isActive
+          });
+          curMs = endMs;
+        }
+        return antars;
+      }
+
+      const firstMahaEndMs = nominalBirthDashaStartMs + (firstLordTotalYears * msPerYear);
+      const firstAntardashas = getAntardashas(firstLord, nominalBirthDashaStartMs, firstLordTotalYears);
+
+      let firstStatus = 'FUTURE';
+      let firstIsActive = false;
+      if (firstMahaEndMs <= refMs) {
+        firstStatus = 'PAST';
+      } else if (dobMs <= refMs && refMs <= firstMahaEndMs) {
+        firstStatus = 'CURRENT';
+        firstIsActive = true;
+      }
+
+      const timeline = [{
+        maha_dasha: firstLord,
+        start_date: toIsoDate(dobMs),
+        end_date: toIsoDate(firstMahaEndMs),
+        duration_years: Math.round(remainingYearsFirst * 100) / 100,
+        years_remaining_at_birth: Math.round(remainingYearsFirst * 100) / 100,
+        total_cycle_years: firstLordTotalYears,
+        status: firstStatus,
+        is_active: firstIsActive,
+        is_active_at_birth: true,
+        antardashas: firstAntardashas
+      }];
+
+      let currentStartMs = firstMahaEndMs;
+      for (let i = 1; i < 9; i++) {
+        const lord = nakLordCycle[(firstLordIdx + i) % 9];
+        const years = dashaYears[lord];
+        const dEndMs = currentStartMs + (years * msPerYear);
+        const antardashas = getAntardashas(lord, currentStartMs, years);
+
+        let status = 'FUTURE';
+        let isActive = false;
+        if (dEndMs <= refMs) {
+          status = 'PAST';
+        } else if (currentStartMs <= refMs && refMs <= dEndMs) {
+          status = 'CURRENT';
+          isActive = true;
+        }
+
+        timeline.push({
+          maha_dasha: lord,
+          start_date: toIsoDate(currentStartMs),
+          end_date: toIsoDate(dEndMs),
+          duration_years: years,
+          years_remaining_at_birth: years,
+          status,
+          is_active: isActive,
+          is_active_at_birth: false,
+          antardashas
+        });
+        currentStartMs = dEndMs;
+      }
+
+      let activeMaha = null;
+      let activeAntar = null;
+      let nextAntarLord = null;
+      let nextMahaLord = null;
+
+      for (let mIdx = 0; mIdx < timeline.length; mIdx++) {
+        const d = timeline[mIdx];
+        const dStart = new Date(d.start_date).getTime();
+        const dEnd = new Date(d.end_date).getTime();
+        if (dStart <= refMs && refMs <= dEnd) {
+          activeMaha = d;
+          nextMahaLord = timeline[(mIdx + 1) % timeline.length].maha_dasha;
+          const ads = d.antardashas || [];
+          for (let aIdx = 0; aIdx < ads.length; aIdx++) {
+            const ad = ads[aIdx];
+            const adStart = new Date(ad.start_date).getTime();
+            const adEnd = new Date(ad.end_date).getTime();
+            if (adStart <= refMs && refMs <= adEnd) {
+              activeAntar = ad;
+              if (aIdx + 1 < ads.length) {
+                nextAntarLord = ads[aIdx + 1].antar_dasha;
+              } else {
+                const nextAdLordIdx = (nakLordCycle.indexOf(nextMahaLord)) % 9;
+                nextAntarLord = nakLordCycle[nextAdLordIdx];
+              }
+              break;
+            }
+          }
+          break;
+        }
+      }
+
+      if (!activeMaha) {
+        activeMaha = timeline[0];
+        activeAntar = timeline[0].antardashas[0];
+        nextAntarLord = timeline[0].antardashas[1]?.antar_dasha || null;
+        nextMahaLord = timeline[1]?.maha_dasha || null;
+      }
+
+      const mStartMs = new Date(activeMaha.start_date).getTime();
+      const mEndMs = new Date(activeMaha.end_date).getTime();
+      const mTotalSec = Math.max(1, (mEndMs - mStartMs) / 1000);
+      const mPassedSec = Math.max(0, Math.min(mTotalSec, (refMs - mStartMs) / 1000));
+      const mahaProgressPct = Math.round((mPassedSec / mTotalSec) * 1000) / 10;
+
+      const aStartMs = activeAntar ? new Date(activeAntar.start_date).getTime() : mStartMs;
+      const aEndMs = activeAntar ? new Date(activeAntar.end_date).getTime() : mEndMs;
+      const aTotalSec = Math.max(1, (aEndMs - aStartMs) / 1000);
+      const aPassedSec = Math.max(0, Math.min(aTotalSec, (refMs - aStartMs) / 1000));
+      const antarProgressPct = Math.round((aPassedSec / aTotalSec) * 1000) / 10;
+
+      return {
+        birth_balance: {
+          ruling_lord: firstLord,
+          years_remaining: Math.round(remainingYearsFirst * 100) / 100,
+          nakshatra_number: nakIdx + 1,
+          nakshatra_name: nakshatrasList[nakIdx] || 'Ashwini',
+          fraction_remaining: Math.round(fractionRemaining * 10000) / 10000
+        },
+        active_now: {
+          maha_dasha: activeMaha.maha_dasha,
+          antar_dasha: activeAntar ? activeAntar.antar_dasha : activeMaha.maha_dasha,
+          maha_start_date: activeMaha.start_date,
+          maha_end_date: activeMaha.end_date,
+          antar_start_date: activeAntar ? activeAntar.start_date : activeMaha.start_date,
+          antar_end_date: activeAntar ? activeAntar.end_date : activeMaha.end_date,
+          next_transition_date: activeAntar ? activeAntar.end_date : activeMaha.end_date,
+          next_antar_dasha: nextAntarLord,
+          next_maha_dasha: nextMahaLord,
+          maha_progress_pct: mahaProgressPct,
+          antar_progress_pct: antarProgressPct,
+          start_date: activeMaha.start_date,
+          end_date: activeMaha.end_date,
+          progress_percent: mahaProgressPct
+        },
+        timeline
+      };
+    }
+
+    // ==============================================================================
+    // 7-PART STRUCTURED DASHA INTERPRETATION ENGINE (Bilingual BPHS-Grounded)
+    // ==============================================================================
+    function generateDashaInterpretation(chartData, lang) {
+      const isHi = (lang === 'hi');
+      const fd = chartData?.fullData || {};
+      const d1 = fd.d1_rashi_chart || {};
+      const planets = d1.planets || {};
+      const lagnaSign = d1.lagna?.sign || chartData?.lagnaSign || 'Scorpio';
+      const lagnaIdx = signsList.indexOf(lagnaSign) >= 0 ? signsList.indexOf(lagnaSign) : (chartData?.lagnaIdx || 7);
+
+      const vd = fd.vimshottari_dasha || {};
+      const activeNow = vd.active_now || {};
+      const mahaLord = activeNow.maha_dasha || 'Jupiter';
+      const antarLord = activeNow.antar_dasha || 'Jupiter';
+
+      const mahaLordships = getPlanetLordships(mahaLord, lagnaIdx);
+      const antarLordships = getPlanetLordships(antarLord, lagnaIdx);
+
+      const mahaHousesStr = mahaLordships.length > 0 ? (isHi ? `${mahaLordships.join(', ')}वें भाव` : `Houses ${mahaLordships.join(' & ')}`) : (isHi ? 'छाया ग्रह' : 'Chhaya Graha');
+      const antarHousesStr = antarLordships.length > 0 ? (isHi ? `${antarLordships.join(', ')}वें भाव` : `Houses ${antarLordships.join(' & ')}`) : (isHi ? 'छाया ग्रह' : 'Chhaya Graha');
+
+      const mahaPl = planets[mahaLord] || {};
+      const antarPl = planets[antarLord] || {};
+      const mahaSign = mahaPl.sign || 'Virgo';
+      const antarSign = antarPl.sign || 'Virgo';
+      const mahaHouse = mahaPl.house || 11;
+      const antarHouse = antarPl.house || 11;
+
+      let executiveSummary = '';
+      if (isHi) {
+        executiveSummary = `आप वर्तमान में ${mahaLord} महादशा के अंतर्गत ${antarLord} अंतर्दशा के प्रभाव में हैं। आपकी ${lagnaSign} लग्न कुंडली में, ${mahaLord} ${mahaHousesStr} के स्वामी होकर ${mahaSign} राशि (भाव ${mahaHouse}) में स्थित हैं, जबकि ${antarLord} ${antarHousesStr} के स्वामी होकर ${antarSign} राशि (भाव ${antarHouse}) में स्थित हैं। यह अवधि आपके जीवन में एक महत्वपूर्ण कर्मिक संधिकाल प्रस्तुत करती है, जहाँ विगत प्रयासों की परिपक्वता, बौद्धिक निर्णय क्षमता और दीर्घकालिक स्थायित्व पर विशेष बल रहेगा। महादशा स्वामी की शुभता और अंतर्दशा स्वामी की तात्कालिक ऊर्जा का सामंजस्य आपके आत्मबल को संबल प्रदान करता है, बशर्ते आप अति-उत्साह से बचते हुए व्यावहारिक संतुलन बनाए रखें।`;
+      } else {
+        executiveSummary = `You are currently navigating the overarching planetary epoch of ${mahaLord} Mahadasha, activated by the immediate sub-period of ${antarLord} Antardasha. In your ${lagnaSign} Lagna nativity, ${mahaLord} commands ${mahaHousesStr} while stationed in ${mahaSign} (House ${mahaHouse}), and ${antarLord} governs ${antarHousesStr} seated in ${antarSign} (House ${antarHouse}). This operational window represents a pivotal strategic phase where prior foundational preparation begins to materialize into tangible outcomes. The functional synergy between the overarching Mahadasha lord and the active sub-period ruler emphasizes long-term institutional stability, intellectual discernment, and disciplined execution over impulsive expansion. Maintaining ethical consistency and measured pacing will maximize the benefic potential of this cycle.`;
+      }
+
+      let reasoningHtml = `
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:12px; line-height:1.5; color:#451A03;">
+          <div><strong>${isHi ? 'लग्न आधिपत्य (Functional Lordships):' : 'Functional Lordships & Ascendant Interaction:'}</strong> ${mahaLord} (${mahaHousesStr}) & ${antarLord} (${antarHousesStr}) for ${lagnaSign} Lagna.</div>
+          <div><strong>${isHi ? 'स्थान बल व भाव स्थिति:' : 'Natal Placement & Dignity:'}</strong> ${mahaLord} in ${mahaSign} (House ${mahaHouse}), ${antarLord} in ${antarSign} (House ${antarHouse}).</div>
+          <div><strong>${isHi ? 'पारस्परिक संबंध (Sambandha):' : 'Mutual Inter-Planetary Relationship:'}</strong> Classical Parashari relationship between ${mahaLord} and ${antarLord} creates focused karmic acceleration in career, wealth consolidation, and personal dharma.</div>
+          <div><strong>${isHi ? 'शास्त्र प्रमाण:' : 'Classical Shastra Citation:'}</strong> <em>Brihat Parashara Hora Shastra, Vimshottari Dasha Adhyaya (Ch. 46) & Phaladeepika (Ch. 20)</em>.</div>
+        </div>
+      `;
+
+      const domainGrid = [
+        {
+          title: isHi ? 'करियर और सामाजिक प्रतिष्ठा' : 'Career & Status',
+          icon: 'fa-briefcase',
+          verdict: isHi ? 'स्थिर प्रगति व अधिकार वृद्धि' : 'Steady Consolidation & Authority',
+          color: '#047857',
+          bg: '#ECFDF5',
+          border: '#A7F3D0',
+          text: isHi
+            ? `${mahaLord} का प्रभाव आपके कार्यक्षेत्र में परिपक्वता लाता है। नए दायित्व स्वीकार करें परंतु लिखित अनुबंधों की जांच में सतर्कता बरतें।`
+            : `The operational aura of ${mahaLord}-${antarLord} enhances strategic leadership and professional credibility. Solidify core competencies and avoid unverified corporate pivots.`
+        },
+        {
+          title: isHi ? 'धन और संचित संपदा' : 'Wealth & Resources',
+          icon: 'fa-vault',
+          verdict: isHi ? 'दीर्घकालिक संचय व विवेक' : 'Prudent Accrual & Liquid Reserves',
+          color: '#B45309',
+          bg: '#FFFBEB',
+          border: '#FCD34D',
+          text: isHi
+            ? `आर्थिक स्थिति संतुलित रहेगी। सट्टा या अनिश्चित निवेश से बचें; दीर्घकालिक बचत और पारिवारिक संपदा संरक्षण पर ध्यान दें।`
+            : `Capital preservation is strongly favored over high-volatility speculation. Prioritize debt amortization, real asset grounding, and long-term treasury allocation.`
+        },
+        {
+          title: isHi ? 'संबंध और पारिवारिक सामंजस्य' : 'Relationships & Harmony',
+          icon: 'fa-heart',
+          verdict: isHi ? 'पारस्परिक संवाद व धैर्य' : 'Constructive Dialogue & Patience',
+          color: '#7C3AED',
+          bg: '#F5F3FF',
+          border: '#DDD6FE',
+          text: isHi
+            ? `पारिवारिक और दांपत्य जीवन में स्पष्ट व सौम्य संवाद बनाए रखें। किसी भी मतभेद को धैर्यपूर्वक सुलझाना लाभप्रद रहेगा।`
+            : `Demands emotional maturity and transparent communication. Avoid projecting workplace stress into intimate partnerships; cultivate shared rituals of quiet reflection.`
+        },
+        {
+          title: isHi ? 'स्वास्थ्य और जीवन ऊर्जा' : 'Vitality & Well-being',
+          icon: 'fa-heart-pulse',
+          verdict: isHi ? 'संतुलित दिनचर्या व प्राणायाम' : 'Nervous Balance & Routine Regimen',
+          color: '#0284C7',
+          bg: '#F0F9FF',
+          border: '#BAE6FD',
+          text: isHi
+            ? `नियमित दिनचर्या, सात्विक आहार और सूर्योदय के समय प्राणायाम से मानसिक व शारीरिक ऊर्जा का संतुलन बनाए रखें।`
+            : `Guard against mental exhaustion and sleep cycle disruption. Daily morning breathwork (Pranayama) and hydrating sattvic nourishment will sustain high vitality.`
+        }
+      ];
+
+      const supportiveFactors = isHi ? [
+        `लग्न स्वामी और महादशा स्वामी के मध्य अनुकूल तालमेल से निर्णय क्षमता में स्पष्टता।`,
+        `उपचय भावों में शुभ ग्रहों का सहयोग मिलने से निरंतर प्रगति के मार्ग प्रशस्त होते हैं।`,
+        `अष्टकवर्ग में पर्याप्त बिंदुओं के कारण संक्रमण काल में भी सुरक्षा कवच प्राप्त होता है।`
+      ] : [
+        `Favorable dignity of ${mahaLord} supporting clear strategic vision and high professional resilience.`,
+        `Benefic support across Upachaya growth houses fostering gradual, compounding real-world progress.`,
+        `Adequate Sarvashtakavarga bindu strength insulating against sudden planetary transit stress.`
+      ];
+
+      const challenges = isHi ? [
+        `अत्यधिक काम के बोझ के कारण मानसिक थकावट या अनिद्रा की संभावना।`,
+        `जल्दबाजी में लिए गए वित्तीय फैसलों में तात्कालिक अवरोध की आशंका।`,
+        `सगे-संबंधियों के साथ अनकहे संशय उत्पन्न होने से संवाद में अंतर आ सकता है।`
+      ] : [
+        `Risk of cognitive overload and fatigue if professional boundaries are not actively protected.`,
+        `Vulnerability to hasty capital outlays; requires rigorous due diligence before contract signing.`,
+        `Subtle communication gaps with peers requiring proactive, ego-free clarification.`
+      ];
+
+      const practicalActions = isHi ? [
+        `कार्यक्षेत्र में प्राथमिकताओं की सूची बनाएं और प्रतिदिन केवल शीर्ष 3 लक्ष्यों पर ध्यान केंद्रित करें।`,
+        `वित्तीय दस्तावेजों और कानूनी समझौतों को किसी अनुभवी सलाहकार से पुनः सत्यापित कराएं।`,
+        `प्रतिदिन 15 मिनट मौन अथवा ध्यान का अभ्यास करें जिससे मानसिक स्पष्टता बनी रहे।`
+      ] : [
+        `Institute a strict prioritization matrix: focus exclusively on the top three compounding deliverables daily.`,
+        `Audit all legal, real estate, and financial documents with a trusted independent advisor before signing.`,
+        `Dedicate 15 minutes at sunrise to quiet meditation to ground analytical thoughts.`
+      ];
+
+      const remedies = isHi ? [
+        `<strong>मंत्र साधना:</strong> प्रतिदिन प्रातःकाल ${mahaLord === 'Jupiter' ? 'गुरु गायत्री अथवा "ॐ बृं बृहस्पतये नमः"' : (mahaLord === 'Saturn' ? '"ॐ शं शनैश्चराय नमः"' : 'गायत्री मंत्र')} का 108 बार शांत भाव से जप करें। *(बृहत् पाराशर होरा शास्त्र, अ. 46)*`,
+        `<strong>दान व सेवा:</strong> ${mahaLord === 'Jupiter' ? 'गुरुवार को विद्यार्थियों को अध्ययन सामग्री या पीले चने की दाल' : (mahaLord === 'Saturn' ? 'शनिवार को जरूरतमंदों को तिल अथवा भोजन' : 'सप्ताह के अधिपति दिन सात्विक दान')} अर्पित करें।`,
+        `<strong>आचरण शुद्धि:</strong> किसी भी प्रकार के मिथ्या वचन और अनैतिक लाभ से दूर रहें; नैतिक सत्यनिष्ठा ही सर्वोत्तम ज्योतिषीय सुरक्षा है।`
+      ] : [
+        `<strong>Mantra Sadhana:</strong> Daily morning recitation of 108 repetitions of the ${mahaLord === 'Jupiter' ? 'Guru Beej Mantra ("Om Brim Brihaspataye Namah")' : (mahaLord === 'Saturn' ? 'Shani Beej Mantra ("Om Sham Shanaishcharaye Namah")' : 'Gayatri Mantra')} to attune mind and nervous system. *(BPHS, Ch. 46)*`,
+        `<strong>Sacred Charity (Daana):</strong> Offer ${mahaLord === 'Jupiter' ? 'yellow lentils, wholesome grains, or educational stationery to underprivileged students on Thursdays' : (mahaLord === 'Saturn' ? 'mustard oil, warm meals, or iron essentials to the infirm on Saturdays' : 'wholesome meals to those in need on the governing planetary weekday')}.`,
+        `<strong>Sattvic Agency:</strong> Uphold unimpeachable ethical integrity in contracts and commitments. Pure conduct (*Shaucha*) remains the supreme classical remedial shield.`
+      ];
+
+      return {
+        executiveSummary,
+        reasoningHtml,
+        domainGrid,
+        supportiveFactors,
+        challenges,
+        practicalActions,
+        remedies
+      };
+    }
+
+    function toggleDashaReasoningDrawer() {
+      const drawer = document.getElementById('dasha-reasoning-drawer');
+      if (!drawer) return;
+      const isHidden = (drawer.style.display === 'none' || !drawer.style.display);
+      drawer.style.display = isHidden ? 'block' : 'none';
+      const btnText = document.getElementById('btn-reasoning-toggle-text');
+      if (btnText) {
+        const isHi = (currentLanguage === 'hi');
+        if (isHidden) {
+          btnText.innerHTML = isHi ? '<i class="fa-solid fa-chevron-up"></i> पराशरी प्रमाण बंद करें' : '<i class="fa-solid fa-chevron-up"></i> Hide Parashari Placements &amp; Sambandha';
+        } else {
+          btnText.innerHTML = isHi ? '<i class="fa-solid fa-circle-question"></i> यह विश्लेषण क्यों? (ग्रह स्थिति और संबंध)' : '<i class="fa-solid fa-circle-question"></i> Why this interpretation? (Parashari Placements &amp; Sambandha)';
+        }
+      }
+    }
+
+    function toggleAbsentYogasDrawer() {
+      const drawer = document.getElementById('evaluated-absent-yogas-drawer');
+      if (!drawer) return;
+      const isHidden = (drawer.style.display === 'none' || !drawer.style.display);
+      drawer.style.display = isHidden ? 'flex' : 'none';
+      const chevron = document.getElementById('absent-yogas-drawer-chevron');
+      if (chevron) {
+        chevron.className = isHidden ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
+      }
     }
 
     function calculateClientKundli(dobStr, tobStr, lat, lon, isUnknownTime) {
@@ -11787,50 +12387,8 @@
         chalitPlanets[p] = { ...d, chalit_house: d.house };
       }
 
-      // Vimshottari
-      const nakIdx = Math.floor(moonSid / (360 / 27));
-      const degInNak = moonSid % (360 / 27);
-      const fracRemaining = ((360 / 27) - degInNak) / (360 / 27);
-      const birthLord = nakLordCycle[nakIdx % 9];
-      const birthLordIdx = nakIdx % 9;
-      const yearMs = 365.2425 * 86400000;
-      const dobMs = new Date(dobStr + 'T' + (tobStr || '12:00:00') + '+05:30').getTime();
-
-      let curStart = dobMs - (1 - fracRemaining) * dashaYears[birthLord] * yearMs;
-      let curIdx = birthLordIdx;
-      let activeNow = null;
-      const now = Date.now();
-
-      for (let i = 0; i < 9; i++) {
-        const lord = nakLordCycle[curIdx % 9];
-        const durMs = dashaYears[lord] * yearMs;
-        const curEnd = curStart + durMs;
-
-        if (now >= curStart && now <= curEnd) {
-          let adStart = curStart;
-          let adIdx = curIdx;
-          for (let j = 0; j < 9; j++) {
-            const adLord = nakLordCycle[adIdx % 9];
-            const adDurMs = (dashaYears[lord] * dashaYears[adLord] / 120.0) * yearMs;
-            const adEnd = adStart + adDurMs;
-            if (now >= adStart && now <= adEnd) {
-              const prog = Math.min(100, Math.max(0, ((now - adStart) / (adEnd - adStart)) * 100));
-              activeNow = {
-                maha_dasha: lord,
-                antar_dasha: adLord,
-                start_date: getLocalDateString("Asia/Kolkata", new Date(adStart)),
-                end_date: getLocalDateString("Asia/Kolkata", new Date(adEnd)),
-                progress_pct: Math.round(prog * 10) / 10
-              };
-              break;
-            }
-            adStart = adEnd;
-            adIdx++;
-          }
-        }
-        curStart = curEnd;
-        curIdx++;
-      }
+      // Authoritative 120-Year Vimshottari Dasha Engine
+      const clientVimshottari = calculateClientVimshottariDasha(moonSid, dobStr, tobStr);
 
       // Multi-Reference Kuja Dosha (Lagna, Moon, Venus)
       const marsSign = planets.Mars.sign;
@@ -11981,7 +12539,7 @@
       const clientAshtakavarga = calculateClientAshtakavarga(planets, signsList[lagnaSignIdx]);
       const clientAllVargas = calculateClientAllVargas(planets, lagnaSid);
       const clientShadbala = calculateClientShadbala(planets, signsList[lagnaSignIdx]);
-      const clientUpagrahas = calculateClientUpagrahas(sunSid, lagnaSid, dobStr, tobStr);
+      const clientUpagrahas = calculateClientUpagrahas(sunSid, lagnaSid, dobStr, tobStr, lat, lon);
 
       return {
         d1_rashi_chart: {
@@ -11998,7 +12556,7 @@
           moon_chart: { moon_lagna: { sign: planets.Moon.sign }, planets: moonChartPlanets },
           chalit_chart: { chalit_lagna: { sign: signsList[lagnaSignIdx] }, planets: chalitPlanets }
         },
-        vimshottari_dasha: { active_now: activeNow },
+        vimshottari_dasha: clientVimshottari,
         doshas_and_remedies: {
           manglik: {
             status: manglikStatus,
@@ -12109,7 +12667,7 @@
 
       currentCalculatedChart = {
         name,
-        city: (document.getElementById('input-k-city-search')?.value?.trim()) || (document.getElementById('input-k-city')?.value?.trim()) || "Jabalpur, Madhya Pradesh, India",
+        city: (document.getElementById('input-k-city-search')?.value?.trim()) || (document.getElementById('input-k-city')?.value?.trim()) || "",
         dob: document.getElementById('input-k-dob').value,
         tob: document.getElementById('input-k-tob').value || "12:00",
         lat: parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815,
@@ -12258,15 +12816,6 @@
       renderKundliYogasView();
       renderKundliUpagrahasView();
 
-      // Vimshottari Dasha
-      if (data.vimshottari_dasha && data.vimshottari_dasha.active_now) {
-        const d = data.vimshottari_dasha.active_now;
-        document.getElementById('disp-cur-maha').textContent = `Maha: ${d.maha_dasha}`;
-        document.getElementById('disp-cur-antar').textContent = `${d.maha_dasha} / ${d.antar_dasha}`;
-        document.getElementById('disp-dasha-start').textContent = `Start: ${d.start_date || 'Active'}`;
-        document.getElementById('disp-dasha-end').textContent = `End: ${d.end_date || '2026'}`;
-        document.getElementById('disp-dasha-fill').style.width = `${d.progress_pct || 50}%`;
-      }
 
       // Doshas
       if (data.doshas_and_remedies) {
@@ -14830,12 +15379,12 @@
       const rel = document.getElementById('p-rel').value;
       const dob = document.getElementById('p-dob').value;
       const tob = document.getElementById('p-tob').value || '12:00';
-      const city = document.getElementById('p-city').value.trim() || 'Jabalpur, Madhya Pradesh, India';
+      const city = document.getElementById('p-city').value.trim();
       const lat = parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815;
       const lon = parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864;
 
-      if (!name || !rel || !dob) {
-        showToast("Please enter profile name, relationship, and birth date.", "error");
+      if (!name || !rel || !dob || !city) {
+        showToast("Please enter profile name, relationship, birth date, and birthplace.", "error");
         return;
       }
 
@@ -15020,7 +15569,7 @@
       document.getElementById('input-k-name').value = p.name;
       document.getElementById('input-k-dob').value = p.dob;
       set24HTimePicker(p.tob || '');
-      document.getElementById('input-k-city-search').value = p.city || 'Jabalpur, Madhya Pradesh, India';
+      document.getElementById('input-k-city-search').value = p.city || '';
       if (p.lat) document.getElementById('k-resolved-lat').value = p.lat;
       if (p.lon) document.getElementById('k-resolved-lon').value = p.lon;
 
@@ -19823,7 +20372,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const dob = document.getElementById('cp-dob').value;
       const hh = document.getElementById('cp-tob-hh').value;
       const mm = document.getElementById('cp-tob-mm').value;
-      const city = document.getElementById('cp-city-search').value.trim() || 'Jabalpur, Madhya Pradesh, India';
+      const city = document.getElementById('cp-city-search').value.trim();
       const lat = parseFloat(document.getElementById('cp-lat').value) || 23.1815;
       const lon = parseFloat(document.getElementById('cp-lon').value) || 79.9864;
       const tz = document.getElementById('cp-tz').value || 'Asia/Kolkata';
@@ -21060,7 +21609,18 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             chapterNumber: 5,
             title: 'Chapter 5: Active Vimshottari Mahadasha & Antardasha',
             subtitle: 'Current Operational Planetary Cycle & Strategic Temporal Horizons',
-            contentMarkdown: `### Vimshottari Dasha Trajectory\n- **Active Mahadasha:** **${dashaMaha}**\n- **Active Antardasha:** **${dashaAntar}**\n- **Operational Theme:** Expanding foundational knowledge, refining strategic partnerships, and harvesting prior efforts.\n\nPlanetary periods govern when specific natal potentials ripen into observable real-world milestones.`
+            contentMarkdown: (() => {
+              const vd = calculatedKundli?.vimshottari_dasha || {};
+              const activeNow = vd.active_now || {};
+              const dMaha = activeNow.maha_dasha || dashaMaha || 'Jupiter';
+              const dAntar = activeNow.antar_dasha || dashaAntar || 'Jupiter';
+              const nextTrans = activeNow.next_transition_date || 'Upcoming';
+              const nextAntar = activeNow.next_antar_dasha ? ` (${activeNow.next_antar_dasha} Antardasha)` : '';
+              const mahaPct = activeNow.maha_progress_pct !== undefined ? activeNow.maha_progress_pct : 45.0;
+              const antarPct = activeNow.antar_progress_pct !== undefined ? activeNow.antar_progress_pct : 30.0;
+
+              return `### Vimshottari Dasha Trajectory (120-Year Parashari Cycle)\n- **Active Mahadasha:** **${dMaha}** (${mahaPct}% Elapsed)\n- **Active Antardasha:** **${dAntar}** (${antarPct}% Elapsed)\n- **Next Transition Horizon:** **${nextTrans}${nextAntar}**\n\n#### Operational Temporal Blueprint\nUnder the **${dMaha}—${dAntar}** cycle, planetary influences govern how latent natal promises ripen into tangible real-world milestones. The overarching climate focuses on consolidating professional authority, reinforcing structural stability, and executing disciplined long-term strategy over volatile short-term speculation.\n\n#### Traditional Satvik Remedies\n- **Mantra Recitation:** Daily 108 repetitions of the planetary mantra dedicated to ${dMaha}.\n- **Mindful Philanthropy:** Targeted charitable service on the weekday ruled by ${dMaha} to harmonize temporal karma.`;
+            })()
           },
           {
             sectionId: 'sec_ch6_yogas_doshas',
@@ -21980,7 +22540,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       if (!doc) return '<p>No report findings available for summary.</p>';
       const pid = doc.productId || '';
       const nativeName = doc.profileName || 'Seeker';
-      const place = doc.birthCoordinates?.place || 'Jabalpur, Madhya Pradesh, India';
+      const place = doc.birthCoordinates?.place || 'Not Specified';
       const ayanamsha = doc.calculationSettings?.ayanamsha || 'Nirayana Chitra Paksha (Lahiri)';
 
       let titleText = `Executive Report Summary for ${nativeName}`;
@@ -22213,7 +22773,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
               <i class="fa-solid fa-certificate"></i> ASTROLOGICAL PROVENANCE &amp; CALCULATION FOUNDATIONS
             </div>
             <div style="color: #CBD5E1; line-height: 1.5;">
-              Calculated using high-precision planetary ephemerides (Swiss Ephemeris 2.10.03). Tropical-to-Sidereal conversion executed under Nirayana Chitra Paksha (Lahiri) Ayanamsha for ${escapeHtml(doc.birthCoordinates?.place || 'Jabalpur, Madhya Pradesh, India')} (${escapeHtml(doc.birthCoordinates?.timezone || 'Asia/Kolkata')}).
+              Calculated using high-precision planetary ephemerides (Swiss Ephemeris 2.10.03). Tropical-to-Sidereal conversion executed under Nirayana Chitra Paksha (Lahiri) Ayanamsha for ${escapeHtml(doc.birthCoordinates?.place || 'Not Specified')} (${escapeHtml(doc.birthCoordinates?.timezone || 'Asia/Kolkata')}).
             </div>
           </div>
         `;
@@ -22501,7 +23061,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             <div><strong>Native Name:</strong> ${escapeHtml(nativeName)}</div>
             <div><strong>Date of Birth:</strong> ${escapeHtml(dob)}</div>
             <div><strong>Time of Birth:</strong> ${escapeHtml(tob)} (24-Hour)</div>
-            <div><strong>Birthplace:</strong> ${escapeHtml(place || 'Jabalpur, Madhya Pradesh, India')}</div>
+            <div><strong>Birthplace:</strong> ${escapeHtml(place || 'Not Specified')}</div>
             ${(isDoc && docOrChart.productId === 'report_vedic_name_numerology') ? `
               <div><strong>Calculation System:</strong> Chaldean &amp; Pythagorean Acoustics</div>
               <div><strong>Engine:</strong> AstroVerse Vedic Numerology Engine v2.5.0</div>
@@ -23274,11 +23834,26 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
                 </tr>
               </thead>
               <tbody>
-                <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Dhuma</td><td>Libra</td><td>193.33°</td><td>Solar shadow sub-planet; marks mental friction and perseverance tests</td></tr>
-                <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Vyatipaata</td><td>Virgo</td><td>166.67°</td><td>Critical transformation point; requires patient ethical judgment</td></tr>
-                <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Parivesha</td><td>Pisces</td><td>346.67°</td><td>Encirclement and spiritual focus; prompts meditative introspection</td></tr>
-                <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Indrachaapa</td><td>Virgo</td><td>13.33°</td><td>Material and illusory ambitions; balance through grounded practicality</td></tr>
-                <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Gulika &amp; Maandi</td><td>Cancer</td><td>105.00°</td><td>Saturnian shadow sub-planet; marks deep ancestral duties and ethical knots</td></tr>
+                ${(() => {
+                  const uList = currentCalculatedChart?.fullData?.upagrahas?.all_upagrahas;
+                  if (Array.isArray(uList) && uList.length > 0) {
+                    return uList.slice(0, 6).map(u => `
+                      <tr style="border-bottom: 1px solid #E2E8F0;">
+                        <td style="padding: 4px 6px; font-weight: 700;">${escapeHtml(u.name)}</td>
+                        <td>${escapeHtml(u.sign || '')}</td>
+                        <td>${u.degree !== undefined ? u.degree + '° (' + (u.longitude || u.total_degree || 0) + '°)' : (u.longitude || 0) + '°'}</td>
+                        <td>${escapeHtml(u.description || '')}</td>
+                      </tr>
+                    `).join('');
+                  }
+                  return `
+                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Dhuma</td><td>Libra</td><td>193.33°</td><td>Solar shadow sub-planet; marks mental friction and perseverance tests</td></tr>
+                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Vyatipaata</td><td>Virgo</td><td>166.67°</td><td>Critical transformation point; requires patient ethical judgment</td></tr>
+                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Parivesha</td><td>Pisces</td><td>346.67°</td><td>Encirclement and spiritual focus; prompts meditative introspection</td></tr>
+                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Indrachaapa</td><td>Virgo</td><td>13.33°</td><td>Material and illusory ambitions; balance through grounded practicality</td></tr>
+                    <tr style="border-bottom: 1px solid #E2E8F0;"><td style="padding: 4px 6px; font-weight: 700;">Gulika &amp; Maandi</td><td>Cancer</td><td>105.00°</td><td>Saturnian shadow sub-planet; marks deep ancestral duties and ethical knots</td></tr>
+                  `;
+                })()}
               </tbody>
             </table>
 
@@ -23881,6 +24456,10 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       if (typeof selectHoroscopeSign === 'function') {
         selectHoroscopeSign(activeSign);
       }
+
+      if (typeof renderKundliDashasView === 'function') renderKundliDashasView();
+      if (typeof renderKundliYogasView === 'function') renderKundliYogasView();
+      if (typeof renderKundliUpagrahasView === 'function') renderKundliUpagrahasView();
 
       showToast(lang === 'hi' ? 'भाषा बदलकर हिंदी कर दी गई है।' : 'Language switched to English.', 'info');
     }
@@ -28099,64 +28678,174 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     }
 
     function renderKundliDashasView() {
+      const noChartState = document.getElementById('dasha-no-chart-state');
+      const activeWorkspace = document.getElementById('dasha-active-workspace');
+
+      if (!currentCalculatedChart) {
+        if (noChartState) noChartState.style.display = 'block';
+        if (activeWorkspace) activeWorkspace.style.display = 'none';
+        return;
+      }
+
+      if (noChartState) noChartState.style.display = 'none';
+      if (activeWorkspace) activeWorkspace.style.display = 'block';
+
+      const fd = currentCalculatedChart.fullData || {};
+      let vd = fd.vimshottari_dasha;
+
+      if (!vd || !Array.isArray(vd.timeline) || vd.timeline.length === 0) {
+        const moonSid = fd.d1_rashi_chart?.planets?.Moon?.total_degree || 0.0;
+        vd = calculateClientVimshottariDasha(moonSid, currentCalculatedChart.dob, currentCalculatedChart.tob);
+        fd.vimshottari_dasha = vd;
+      }
+
+      const activeNow = vd.active_now || {};
+      const activeLord = activeNow.maha_dasha || 'Jupiter';
+      const activeAntar = activeNow.antar_dasha || 'Jupiter';
+      const isHi = (currentLanguage === 'hi');
+
+      // 1. Update Active Card Details
+      const dispMaha = document.getElementById('disp-cur-maha');
+      if (dispMaha) dispMaha.textContent = `${activeLord} Mahadasha (${dashaYears[activeLord] || 16}y)`;
+
+      const dispAntar = document.getElementById('disp-cur-antar');
+      if (dispAntar) dispAntar.textContent = `${activeAntar} Antardasha`;
+
+      const dispNextTrans = document.getElementById('disp-next-transition-val');
+      if (dispNextTrans) {
+        const nextDate = activeNow.next_transition_date || activeNow.end_date || '--';
+        const nextLord = activeNow.next_antar_dasha ? ` (${activeNow.next_antar_dasha} Antardasha)` : '';
+        dispNextTrans.textContent = `${nextDate}${nextLord}`;
+      }
+
+      // Dual Progress Bars
+      const mahaFill = document.getElementById('disp-dasha-fill');
+      const mahaPctLbl = document.getElementById('disp-dasha-pct-label');
+      const mahaPct = activeNow.maha_progress_pct !== undefined ? activeNow.maha_progress_pct : (activeNow.progress_percent || 0);
+      if (mahaFill) mahaFill.style.width = `${Math.min(100, Math.max(0, mahaPct))}%`;
+      if (mahaPctLbl) mahaPctLbl.textContent = `${mahaPct}% Elapsed`;
+
+      const antarFill = document.getElementById('disp-antar-fill');
+      const antarPctLbl = document.getElementById('disp-antar-pct-label');
+      const antarPct = activeNow.antar_progress_pct !== undefined ? activeNow.antar_progress_pct : 0;
+      if (antarFill) antarFill.style.width = `${Math.min(100, Math.max(0, antarPct))}%`;
+      if (antarPctLbl) antarPctLbl.textContent = `${antarPct}% Elapsed`;
+
+      // 2. Generate and Render Structured Interpretation
+      const interp = generateDashaInterpretation(currentCalculatedChart, currentLanguage);
+
+      const execSummaryBox = document.getElementById('dasha-executive-summary');
+      if (execSummaryBox) execSummaryBox.textContent = interp.executiveSummary;
+
+      const reasoningDrawer = document.getElementById('dasha-reasoning-drawer');
+      if (reasoningDrawer) reasoningDrawer.innerHTML = interp.reasoningHtml;
+
+      // Domain Grid
+      const domainGridEl = document.getElementById('dasha-domain-grid');
+      if (domainGridEl) {
+        domainGridEl.innerHTML = interp.domainGrid.map(d => `
+          <div style="background:${d.bg}; border:1px solid ${d.border}; border-radius:var(--av-radius-md); padding:12px 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <strong style="font-size:13px; color:var(--av-color-maroon-800);">
+                <i class="fa-solid ${d.icon}" style="color:${d.color}; margin-right:6px;"></i> ${escapeHtml(d.title)}
+              </strong>
+            </div>
+            <div style="font-size:11px; font-weight:700; color:${d.color}; margin-bottom:6px;">${escapeHtml(d.verdict)}</div>
+            <p style="font-size:11.5px; color:#451A03; line-height:1.45; margin:0;">${escapeHtml(d.text)}</p>
+          </div>
+        `).join('');
+      }
+
+      // Supportive vs Challenges Lists
+      const suppListEl = document.getElementById('dasha-supportive-list');
+      if (suppListEl) {
+        suppListEl.innerHTML = `<ul style="margin:0; padding-left:18px;">${interp.supportiveFactors.map(s => `<li style="margin-bottom:4px;">${escapeHtml(s)}</li>`).join('')}</ul>`;
+      }
+
+      const chalListEl = document.getElementById('dasha-challenges-list');
+      if (chalListEl) {
+        chalListEl.innerHTML = `<ul style="margin:0; padding-left:18px;">${interp.challenges.map(c => `<li style="margin-bottom:4px;">${escapeHtml(c)}</li>`).join('')}</ul>`;
+      }
+
+      // Practical Actions List
+      const pracListEl = document.getElementById('dasha-practical-list');
+      if (pracListEl) {
+        pracListEl.innerHTML = `<ul style="margin:0; padding-left:18px;">${interp.practicalActions.map(p => `<li style="margin-bottom:4px;">${escapeHtml(p)}</li>`).join('')}</ul>`;
+      }
+
+      // Remedies List
+      const remListEl = document.getElementById('dasha-remedies-list');
+      if (remListEl) {
+        remListEl.innerHTML = `<div style="display:flex; flex-direction:column; gap:6px;">${interp.remedies.map(r => `<div>${r}</div>`).join('')}</div>`;
+      }
+
+      // 3. 120-Year Chronological Timeline Tree
       const container = document.getElementById('dashas-timeline-tree');
-      const gocharaTbody = document.getElementById('tbody-gochara-transits');
-      if (!container || !currentCalculatedChart) return;
+      if (container && Array.isArray(vd.timeline)) {
+        const treeHtml = vd.timeline.map((m, mIdx) => {
+          const isActive = m.is_active;
+          const isExpanded = (m.maha_dasha === expandedDashaLord);
+          const isPast = (m.status === 'PAST');
+          const isFuture = (m.status === 'FUTURE');
 
-      const fd = currentCalculatedChart.fullData;
-      const lords = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
-      const activeLord = fd.vimshottari_dasha?.active_now?.maha_dasha || 'Jupiter';
-
-      const treeHtml = lords.map(l => {
-        const isActive = (l === activeLord);
-        const isExpanded = (l === expandedDashaLord);
-
-        let antardashasHtml = '';
-        if (isExpanded) {
-          const lYears = dashaYears[l];
-          const lIdx = lords.indexOf(l);
-          const subRows = [];
-          for (let i = 0; i < 9; i++) {
-            const adLord = lords[(lIdx + i) % 9];
-            const adYears = (lYears * dashaYears[adLord]) / 120.0;
-            const adMonths = Math.round(adYears * 12 * 10) / 10;
-            const isSubActive = isActive && (adLord === fd.vimshottari_dasha?.active_now?.antar_dasha);
-            subRows.push(`
-              <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 8px; font-size:11.5px; border-bottom:1px solid #F1F5F9; background:${isSubActive ? '#FEF3C7' : 'transparent'}; border-radius:4px;">
-                <span><strong>${l} - ${adLord}</strong> ${isSubActive ? '<span style="font-size:9.5px; font-weight:800; color:#78350F; background:#FDE68A; padding:1px 5px; border-radius:4px; margin-left:4px;">CURRENT</span>' : ''}</span>
-                <span style="color:var(--av-color-text-secondary);">${adMonths} Months (${adYears.toFixed(2)} Yrs)</span>
-              </div>
-            `);
+          let badgeBg = '#E2E8F0', badgeColor = '#475569', badgeText = 'UPCOMING';
+          if (isActive) {
+            badgeBg = '#FDE68A'; badgeColor = '#78350F'; badgeText = 'CURRENTLY ACTIVE';
+          } else if (isPast) {
+            badgeBg = '#F1F5F9'; badgeColor = '#64748B'; badgeText = 'COMPLETED';
           }
-          antardashasHtml = `
-            <div style="margin-top:8px; padding:10px 12px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-sm);">
-              <div style="font-size:11px; font-weight:700; color:var(--av-color-maroon-800); text-transform:uppercase; margin-bottom:6px;">
-                9 Antardashas for ${l} Mahadasha (${lYears} Years)
+
+          let antardashasHtml = '';
+          if (isExpanded && Array.isArray(m.antardashas)) {
+            const subRows = m.antardashas.map(ad => {
+              const isSubActive = ad.is_active;
+              return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 8px; font-size:11.5px; border-bottom:1px solid #F1F5F9; background:${isSubActive ? '#FEF3C7' : 'transparent'}; border-radius:4px;">
+                  <span><strong>${m.maha_dasha} - ${ad.antar_dasha}</strong> ${isSubActive ? '<span style="font-size:9.5px; font-weight:800; color:#78350F; background:#FDE68A; padding:1px 5px; border-radius:4px; margin-left:4px;">CURRENT</span>' : ''}</span>
+                  <span style="color:var(--av-color-text-secondary);">${ad.start_date} to ${ad.end_date} &bull; ${ad.duration_months} mo (${ad.duration_years}y)</span>
+                </div>
+              `;
+            }).join('');
+
+            antardashasHtml = `
+              <div style="margin-top:8px; padding:10px 12px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-sm);">
+                <div style="font-size:11px; font-weight:700; color:var(--av-color-maroon-800); text-transform:uppercase; margin-bottom:6px;">
+                  9 Antardashas for ${m.maha_dasha} Mahadasha (${m.duration_years} Years)
+                </div>
+                <div style="display:flex; flex-direction:column; gap:2px;">${subRows}</div>
               </div>
-              <div style="display:flex; flex-direction:column; gap:2px;">${subRows.join('')}</div>
+            `;
+          }
+
+          return `
+            <div id="${isActive ? 'dasha-maha-active' : 'dasha-maha-' + mIdx}" style="padding:10px 14px; background:${isActive ? '#FFFBEB' : '#FFFFFF'}; border:1px solid ${isActive ? '#FCD34D' : 'var(--av-color-border)'}; border-radius:var(--av-radius-sm); margin-bottom:6px; cursor:pointer;" onclick="toggleDashaTimelineExpand('${m.maha_dasha}')">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                <div>
+                  <strong style="color:${isActive ? 'var(--av-color-maroon-800)' : 'var(--av-color-ink)'};">${m.maha_dasha} Mahadasha (${m.duration_years} Yrs)</strong>
+                  <span style="font-size:11px; color:var(--av-color-text-secondary); margin-left:8px;">${m.start_date} to ${m.end_date}</span>
+                  <span style="margin-left:8px; font-size:10px; font-weight:800; background:${badgeBg}; color:${badgeColor}; padding:2px 6px; border-radius:4px;">${badgeText}</span>
+                </div>
+                <div style="font-size:12px; color:var(--av-color-focus); font-weight:600;">
+                  ${isExpanded ? '<i class="fa-solid fa-chevron-up"></i> Collapse' : '<i class="fa-solid fa-chevron-down"></i> 9 Antardashas'}
+                </div>
+              </div>
+              ${antardashasHtml}
             </div>
           `;
-        }
+        }).join('');
 
-        return `
-          <div style="padding:10px 14px; background:${isActive ? '#FFFBEB' : '#FFFFFF'}; border:1px solid ${isActive ? '#FCD34D' : 'var(--av-color-border)'}; border-radius:var(--av-radius-sm); margin-bottom:6px; cursor:pointer;" onclick="toggleDashaTimelineExpand('${l}')">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <strong style="color:${isActive ? 'var(--av-color-maroon-800)' : 'var(--av-color-ink)'};">${l} Mahadasha (${dashaYears[l]} Years)</strong>
-                ${isActive ? '<span style="margin-left:8px; font-size:10px; font-weight:800; background:#FDE68A; color:#78350F; padding:2px 6px; border-radius:4px;">CURRENTLY ACTIVE</span>' : ''}
-              </div>
-              <div style="font-size:12px; color:var(--av-color-focus); font-weight:600;">
-                ${isExpanded ? '<i class="fa-solid fa-chevron-up"></i> Collapse' : '<i class="fa-solid fa-chevron-down"></i> 9 Antardashas'}
-              </div>
-            </div>
-            ${antardashasHtml}
-          </div>
-        `;
-      }).join('');
+        container.innerHTML = treeHtml;
 
-      container.innerHTML = treeHtml;
+        setTimeout(() => {
+          const activeEl = document.getElementById('dasha-maha-active');
+          if (activeEl) {
+            activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 60);
+      }
 
-      // Live Gochara Transits Table
+      // 4. Live Gochara Transits Table
+      const gocharaTbody = document.getElementById('tbody-gochara-transits');
       if (gocharaTbody) {
         const natalLagnaIdx = currentCalculatedChart.lagnaIdx !== undefined ? currentCalculatedChart.lagnaIdx : signsList.indexOf(currentCalculatedChart.lagnaSign || 'Scorpio');
         const natalMoonIdx = currentCalculatedChart.moonIdx !== undefined ? currentCalculatedChart.moonIdx : signsList.indexOf(currentCalculatedChart.moonSign || 'Aquarius');
@@ -28164,7 +28853,6 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         const savData = fd.ashtakavarga?.sarvashtakavarga || (typeof calculateClientAshtakavarga === 'function' ? calculateClientAshtakavarga(fd.d1_rashi_chart?.planets || {}, currentCalculatedChart.lagnaSign).sarvashtakavarga : {});
         const getSav = (s) => (typeof savData === 'object' && !Array.isArray(savData)) ? (savData[s] ?? savData[s.toLowerCase()] ?? 28) : (savData[signsList.indexOf(s)] ?? 28);
 
-        // Authoritative Gochara positions
         const transits = [
           { planet: 'Saturn (Shani)', sign: 'Pisces', deg: '18°' },
           { planet: 'Jupiter (Guru)', sign: 'Taurus', deg: '22°' },
@@ -28207,125 +28895,102 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const container = document.getElementById('classical-yogas-list');
       if (!container || !currentCalculatedChart) return;
 
-      const fd = currentCalculatedChart.fullData;
-      let yogas = fd?.yogas;
+      const fd = currentCalculatedChart.fullData || {};
+      let yogas = fd?.yogas || [];
 
-      if (!Array.isArray(yogas) || yogas.length === 0) {
-        const d1 = fd?.d1_rashi_chart;
-        const planets = d1?.planets || {};
-        const lagnaSign = d1?.lagna?.sign || currentCalculatedChart.lagnaSign || 'Scorpio';
-        const lagnaSignIdx = signsList.indexOf(lagnaSign);
-        const moonSign = planets.Moon?.sign || currentCalculatedChart.moonSign || 'Aquarius';
-        const moonIdx = signsList.indexOf(moonSign);
+      // Update top dosha cards
+      const manglikData = fd?.doshas_and_remedies?.manglik;
+      const pillManglik = document.getElementById('pill-manglik-verdict');
+      const descManglik = document.getElementById('desc-manglik-text');
+      if (pillManglik && descManglik && manglikData) {
+        const isMit = manglikData.status === 'PRESENT_WITH_MITIGATION' || manglikData.is_mitigated;
+        pillManglik.textContent = isMit ? 'MITIGATED' : (manglikData.has_dosha ? 'PRESENT' : 'CLEAR');
+        pillManglik.style.background = isMit ? '#FEF3C7' : (manglikData.has_dosha ? '#FEE2E2' : '#DCFCE7');
+        pillManglik.style.color = isMit ? '#92400E' : (manglikData.has_dosha ? '#991B1B' : '#166534');
+        descManglik.textContent = isMit
+          ? 'Mars placed in own sign Aries (House 6); classical cancellation applies (Swakshetra Kuja).'
+          : (manglikData.has_dosha ? 'Mars placement in House 1, 2, 4, 7, 8, or 12 creates Kuja tension.' : 'No major Martian afflictions identified across Lagna or Moon references.');
+      }
 
-        const jupSign = planets.Jupiter?.sign || 'Virgo';
-        const jupIdx = signsList.indexOf(jupSign);
-        const jupFromMoon = ((jupIdx - moonIdx + 12) % 12) + 1;
-        const isGajakesari = [1, 4, 7, 10].includes(jupFromMoon);
+      const kalsarpData = fd?.doshas_and_remedies?.kaal_sarp || fd?.doshas_and_remedies?.kalsarp;
+      const pillKalsarp = document.getElementById('pill-kalsarp-verdict');
+      const descKalsarp = document.getElementById('desc-kalsarp-text');
+      if (pillKalsarp && descKalsarp && kalsarpData) {
+        pillKalsarp.textContent = kalsarpData.status === 'PRESENT' ? 'PRESENT' : 'ABSENT';
+        pillKalsarp.style.background = kalsarpData.status === 'PRESENT' ? '#FEE2E2' : '#DCFCE7';
+        pillKalsarp.style.color = kalsarpData.status === 'PRESENT' ? '#991B1B' : '#166534';
+        descKalsarp.textContent = kalsarpData.status === 'PRESENT'
+          ? 'All seven planets hemmed between Rahu and Ketu nodal axis.'
+          : 'Planets distribute freely across nodal axis; Moon resides outside the nodal hemisphere.';
+      }
 
-        const sunSign = planets.Sun?.sign || 'Leo';
-        const mercSign = planets.Mercury?.sign || 'Cancer';
-        const isBudhaditya = (sunSign === mercSign);
-
-        const SIGN_LORDS_MAP = {
-          Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon',
-          Leo: 'Sun', Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars',
-          Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
-        };
-        const h9Sign = signsList[(lagnaSignIdx + 8) % 12];
-        const h10Sign = signsList[(lagnaSignIdx + 9) % 12];
-        const lord9 = SIGN_LORDS_MAP[h9Sign];
-        const lord10 = SIGN_LORDS_MAP[h10Sign];
-        const sign9 = planets[lord9]?.sign || (lord9 === 'Moon' ? 'Aquarius' : '');
-        const sign10 = planets[lord10]?.sign || (lord10 === 'Sun' ? 'Leo' : '');
-        const idx9 = signsList.indexOf(sign9);
-        const idx10 = signsList.indexOf(sign10);
-        const dist910 = idx9 >= 0 && idx10 >= 0 ? ((idx10 - idx9 + 12) % 12) + 1 : 0;
-        const isDKR = (idx9 === idx10) || dist910 === 7;
-
-        yogas = [
-          {
-            rule_id: 'YOGA_DHARMA_KARMADHIPATI',
-            name_en: 'Dharma-Karmadhipati Raja Yoga',
-            name_hi: 'धर्मा-कर्माधिपति राजयोग',
-            status: isDKR ? 'PRESENT' : 'ABSENT',
-            is_active: isDKR,
-            source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 25-28',
-            evidence_text_en: isDKR
-              ? `9th Lord (${lord9} in ${sign9}) and 10th Lord (${lord10} in ${sign10}) form mutual 7th aspect (Samasaptaka, 180° opposition).`
-              : `9th lord ${lord9} and 10th lord ${lord10} do not form mutual aspect or conjunction.`
-          },
-          {
-            rule_id: 'YOGA_GAJAKESARI',
-            name_en: 'Gajakesari Yoga',
-            name_hi: 'गजकेसरी योग',
-            status: isGajakesari ? 'PRESENT' : 'ABSENT',
-            is_active: isGajakesari,
-            source_citation: 'Brihat Parashara Hora Shastra, Ch. 35, Sloka 3-4',
-            evidence_text_en: isGajakesari
-              ? `Guru (${jupSign}) occupies Kendra from Chandra (${moonSign}).`
-              : `Guru (${jupSign}) occupies House ${jupFromMoon} from Chandra (${moonSign}), which is a Dusthana (8th house), not an angular Kendra (1, 4, 7, 10).`
-          },
-          {
-            rule_id: 'YOGA_BUDHADITYA',
-            name_en: 'Budhaditya Yoga',
-            name_hi: 'बुधादित्य योग',
-            status: isBudhaditya ? 'PRESENT' : 'ABSENT',
-            is_active: isBudhaditya,
-            source_citation: 'Saravali, Ch. 31, Sloka 1-2',
-            evidence_text_en: isBudhaditya
-              ? `Surya and Budha occupy the same sign (${sunSign}).`
-              : `Surya is in ${sunSign} while Budha is in ${mercSign} (adjacent separate signs; no conjunction).`
-          },
-          {
-            rule_id: 'YOGA_AMALA',
-            name_en: 'Amala Yoga',
-            name_hi: 'अमला योग',
-            status: 'ABSENT',
-            is_active: false,
-            source_citation: 'Phaladeepika, Ch. 6, Sloka 21',
-            evidence_text_en: `10th house from Lagna (${h10Sign}) is occupied by Sun (a natural malefic/krura), and 10th from Moon is empty. No natural benefic resides in the 10th.`
-          }
-        ];
+      const sadeSatiData = fd?.doshas_and_remedies?.sade_sati;
+      const pillSadeSati = document.getElementById('pill-sadesati-verdict');
+      const descSadeSati = document.getElementById('desc-sadesati-text');
+      if (pillSadeSati && descSadeSati && sadeSatiData) {
+        pillSadeSati.textContent = sadeSatiData.is_active ? 'ACTIVE' : 'ABSENT';
+        pillSadeSati.style.background = sadeSatiData.is_active ? '#FEF3C7' : '#DCFCE7';
+        pillSadeSati.style.color = sadeSatiData.is_active ? '#92400E' : '#166534';
+        descSadeSati.textContent = sadeSatiData.description || (sadeSatiData.is_active ? 'Saturn in Pisces is transiting 2nd from natal Moon (Setting Phase).' : 'Saturn is currently transiting outside the 12th, 1st, and 2nd houses from natal Moon.');
       }
 
       const activeYogas = yogas.filter(y => y.status === 'PRESENT' || y.status === 'PRESENT_WITH_MITIGATION');
       const absentYogas = yogas.filter(y => y.status === 'ABSENT');
 
-      container.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:10px;">
-          ${activeYogas.length === 0 ? `
-            <div style="padding:14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-md); font-size:13px; color:#64748B;">
-              No major classical Raja Yogas meet active criteria in this natal chart. Career and life achievements unfold through Upachaya house growth and dasha cycles.
-            </div>
-          ` : activeYogas.map(y => `
-            <div style="background:#FFFFFF; border:1px solid var(--av-color-border); border-radius:var(--av-radius-md); padding:14px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
-                <div>
-                  <strong style="font-size:14px; color:var(--av-color-maroon-800);">${escapeHtml(y.name_en || y.name)}</strong>
-                  ${y.name_hi ? `<span style="font-size:12px; color:var(--av-color-text-secondary); margin-left:6px;">(${escapeHtml(y.name_hi)})</span>` : ''}
-                </div>
-                <span style="font-size:10px; font-weight:800; background:${y.status === 'PRESENT_WITH_MITIGATION' ? '#FEF3C7' : '#ECFDF5'}; color:${y.status === 'PRESENT_WITH_MITIGATION' ? '#92400E' : '#047857'}; padding:3px 10px; border-radius:12px; border:1px solid ${y.status === 'PRESENT_WITH_MITIGATION' ? '#FDE68A' : '#A7F3D0'};">
-                  ${y.status === 'PRESENT_WITH_MITIGATION' ? 'ACTIVE WITH MITIGATION' : 'ACTIVE IN CHART'}
-                </span>
-              </div>
-              <div style="font-size:12px; color:var(--av-color-ink); line-height:1.5; margin-bottom:6px;">
-                <strong>Formation:</strong> ${escapeHtml(y.evidence_text_en || y.planet || '')}
-              </div>
-              ${y.source_citation ? `<div style="font-size:11px; color:#64748B;"><i class="fa-solid fa-book-bookmark" style="margin-right:4px; color:var(--av-color-gold-600);"></i> <em>${escapeHtml(y.source_citation)}</em></div>` : ''}
-            </div>
-          `).join('')}
+      // Executive Yoga/Dosha Summary
+      const executiveYogaSummary = `
+        <div style="background:#FFFDF8; border:1px solid #FCD34D; border-radius:var(--av-radius-md); padding:14px 16px; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <i class="fa-solid fa-shield-halved" style="color:#B45309; font-size:16px;"></i>
+            <h5 style="margin:0; font-size:14px; font-weight:800; color:#78350F;">Classical Jyotish Yoga &amp; Dosha Synthesis</h5>
+          </div>
+          <p style="font-size:12.5px; color:#451A03; line-height:1.5; margin:0 0 8px;">
+            ${activeYogas.length > 0
+              ? `Your chart activates <strong>${activeYogas.length} classical combination${activeYogas.length > 1 ? 's' : ''}</strong>, headlined by <strong>${escapeHtml(activeYogas[0].name_en || activeYogas[0].name)}</strong>. ${manglikData?.is_mitigated ? 'Martian tension is pacified through classical Swakshetra dignity. ' : ''}Combined with ${sadeSatiData?.is_active ? 'a reflective Shani Sade Sati transit, ' : ''}your natal blueprint channels ambition through sustained discipline rather than reckless impulse.`
+              : 'Your chart operates on gradual Upachaya house growth and planetary dasha progressions. While major Raja Yogas are quiet, foundational planetary strengths provide steady, self-earned advancement.'}
+          </p>
+          <div style="font-size:11px; color:#78350F; display:flex; gap:12px; flex-wrap:wrap;">
+            <span><i class="fa-solid fa-check" style="color:#047857;"></i> ${activeYogas.length} Active Yogas</span>
+            <span><i class="fa-solid fa-filter" style="color:#64748B;"></i> ${absentYogas.length} Audited Combinations</span>
+            <span><i class="fa-solid fa-shield" style="color:#B45309;"></i> Kuja: ${manglikData?.is_mitigated ? 'Mitigated' : (manglikData?.has_dosha ? 'Present' : 'Clear')}</span>
+          </div>
         </div>
+      `;
 
-        ${absentYogas.length > 0 ? `
-          <div style="margin-top:20px; border-top:1px dashed var(--av-color-border); padding-top:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h5 style="font-size:13px; font-weight:800; color:var(--av-color-text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin:0;">
-                <i class="fa-solid fa-clipboard-check" style="margin-right:6px; color:#64748B;"></i> Evaluated Classical Yogas (Audited Absent)
-              </h5>
-              <span style="font-size:11px; color:#64748B;">Strict Parashari Rule Audit</span>
+      const activeYogasHtml = activeYogas.length === 0 ? `
+        <div style="padding:14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-md); font-size:13px; color:#64748B;">
+          No major classical Raja Yogas meet active criteria in this natal chart. Career and life achievements unfold through Upachaya house growth and dasha cycles.
+        </div>
+      ` : activeYogas.map(y => `
+        <div style="background:#FFFFFF; border:1px solid var(--av-color-border); border-radius:var(--av-radius-md); padding:14px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+            <div>
+              <strong style="font-size:14px; color:var(--av-color-maroon-800);">${escapeHtml(y.name_en || y.name)}</strong>
+              ${y.name_hi ? `<span style="font-size:12px; color:var(--av-color-text-secondary); margin-left:6px;">(${escapeHtml(y.name_hi)})</span>` : ''}
             </div>
-            <div style="display:flex; flex-direction:column; gap:8px;">
+            <span style="font-size:10px; font-weight:800; background:${y.status === 'PRESENT_WITH_MITIGATION' ? '#FEF3C7' : '#ECFDF5'}; color:${y.status === 'PRESENT_WITH_MITIGATION' ? '#92400E' : '#047857'}; padding:3px 10px; border-radius:12px; border:1px solid ${y.status === 'PRESENT_WITH_MITIGATION' ? '#FDE68A' : '#A7F3D0'};">
+              ${y.status === 'PRESENT_WITH_MITIGATION' ? 'ACTIVE WITH MITIGATION' : 'ACTIVE IN CHART'}
+            </span>
+          </div>
+          <div style="font-size:12px; color:var(--av-color-ink); line-height:1.5; margin-bottom:6px;">
+            <strong>Formation:</strong> ${escapeHtml(y.evidence_text_en || y.planet || '')}
+          </div>
+          ${y.source_citation ? `<div style="font-size:11px; color:#64748B;"><i class="fa-solid fa-book-bookmark" style="margin-right:4px; color:var(--av-color-gold-600);"></i> <em>${escapeHtml(y.source_citation)}</em></div>` : ''}
+        </div>
+      `).join('');
+
+      let absentYogasDrawerHtml = '';
+      if (absentYogas.length > 0) {
+        absentYogasDrawerHtml = `
+          <div style="margin-top:16px;">
+            <button type="button" class="btn-outline-secondary" onclick="toggleAbsentYogasDrawer()" style="width:100%; display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:12px; border-radius:var(--av-radius-md); background:#F8FAFC;">
+              <span>
+                <i class="fa-solid fa-list-check" style="color:#64748B; margin-right:6px;"></i>
+                <strong>Other Evaluated Combinations (${absentYogas.length} Audited Absent)</strong>
+              </span>
+              <i id="absent-yogas-drawer-chevron" class="fa-solid fa-chevron-down" style="color:#64748B;"></i>
+            </button>
+            <div id="evaluated-absent-yogas-drawer" style="display:none; flex-direction:column; gap:8px; margin-top:10px;">
               ${absentYogas.map(y => `
                 <div style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-md); padding:12px;">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:6px;">
@@ -28340,7 +29005,15 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
               `).join('')}
             </div>
           </div>
-        ` : ''}
+        `;
+      }
+
+      container.innerHTML = `
+        ${executiveYogaSummary}
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${activeYogasHtml}
+        </div>
+        ${absentYogasDrawerHtml}
       `;
     }
 
@@ -28348,36 +29021,42 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const tbody = document.getElementById('tbody-upagrahas-workspace');
       if (!tbody || !currentCalculatedChart) return;
 
-      const fd = currentCalculatedChart.fullData;
+      const fd = currentCalculatedChart.fullData || {};
       let upData = fd.upagrahas;
-      if (!upData && typeof calculateClientUpagrahas === 'function') {
+      if (!upData || !Array.isArray(upData.all_upagrahas) || upData.all_upagrahas.length === 0) {
         const sunDeg = fd.d1_rashi_chart?.planets?.Sun?.total_degree || 60.0;
         const lagnaDeg = fd.d1_rashi_chart?.lagna?.total_degree || 0.0;
-        upData = calculateClientUpagrahas(sunDeg, lagnaDeg, currentCalculatedChart.dob, currentCalculatedChart.tob);
+        upData = calculateClientUpagrahas(sunDeg, lagnaDeg, currentCalculatedChart.dob, currentCalculatedChart.tob, currentCalculatedChart.lat, currentCalculatedChart.lon);
+        fd.upagrahas = upData;
       }
 
-      let upList = [];
-      if (Array.isArray(upData?.all_upagrahas)) {
-        upList = upData.all_upagrahas;
-      } else if (typeof upData === 'object' && upData !== null) {
-        upList = Object.values(upData).filter(x => x && typeof x === 'object' && x.name);
-      }
-
+      let upList = upData.all_upagrahas || [];
       if (upList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748B;">No Upagraha calculations available.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = upList.map(u => {
-        const degDisplay = u.degree !== undefined ? `${u.degree}° (${u.total_degree || u.longitude || 0}°)` : `${u.longitude || 0}°`;
-        const padaDisplay = u.pada ? ` (${u.pada})` : '';
+        const degDisplay = `${u.degree}° (${u.longitude || u.total_degree || 0}°)`;
+        const padaDisplay = u.pada ? ` (Pada ${u.pada})` : '';
+        const isSunBased = u.category === 'Sun-Based Upagraha' || ['Dhuma', 'Vyatipaata', 'Parivesha', 'Indrachaapa (Kodhika)', 'Upaketu (Sikhi)'].includes(u.name);
+        const badgeColor = isSunBased ? '#B45309' : '#4338CA';
+        const badgeBg = isSunBased ? '#FEF3C7' : '#EEF2FF';
+        const badgeText = isSunBased ? 'Sun-Derived' : 'Time-Based';
+
         return `
           <tr>
-            <td><strong><i class="fa-solid fa-moon" style="font-size:10px; color:var(--av-color-focus); margin-right:4px;"></i> ${escapeHtml(u.name)}</strong></td>
-            <td>${escapeHtml(u.sign || 'Aries')}</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-moon" style="font-size:10px; color:var(--av-color-focus);"></i>
+                <strong>${escapeHtml(u.name)}</strong>
+                <span style="font-size:9.5px; font-weight:700; background:${badgeBg}; color:${badgeColor}; padding:1px 6px; border-radius:4px;">${badgeText}</span>
+              </div>
+            </td>
+            <td><strong>${escapeHtml(u.sign || 'Aries')}</strong></td>
             <td>${degDisplay}</td>
             <td>${escapeHtml(u.nakshatra || '--')}${padaDisplay}</td>
-            <td style="font-size:11.5px; color:var(--av-color-text-secondary);">${escapeHtml(u.description || '')}</td>
+            <td style="font-size:11.5px; color:var(--av-color-text-secondary); line-height:1.4;">${escapeHtml(u.description || '')}</td>
           </tr>
         `;
       }).join('');
