@@ -15694,8 +15694,13 @@
       }
     }
 
-    // Hash Route Listener
+    // Hash and Pathname Route Listener
     function handleHashRoute() {
+      const pathname = (window.location.pathname || '').replace(/\/+$/, '').toLowerCase();
+      if (pathname === '/admin') {
+        switchNavSection('admin', false);
+        return;
+      }
       const hash = window.location.hash.replace('#/', '').replace('#', '');
       const authRoutes = ['login', 'signup', 'verify', 'forgot-password', 'reset-password', 'complete-profile', 'settings/security'];
       const validTabs = ['overview', 'kundli', 'horas', 'astrologers', 'matchmaking', 'horoscope', 'tools', 'dashboard', 'pujas', 'auth', 'settings', 'admin'];
@@ -15706,6 +15711,7 @@
       }
     }
     window.addEventListener('hashchange', handleHashRoute);
+    window.addEventListener('popstate', handleHashRoute);
 
 
     function openSaveProfileModal() {

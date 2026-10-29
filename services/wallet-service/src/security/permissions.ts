@@ -261,3 +261,38 @@ export const ADMIN_MODULE_REGISTRY = [
   { id: 'integrations', title: 'External Integrations Health', permission: AdminPermission.VIEW_INTEGRATIONS },
   { id: 'incidents', title: 'Monitoring, Errors & Incidents', permission: AdminPermission.VIEW_INCIDENTS }
 ];
+
+/**
+ * Reads and normalizes the server-side administrator email allowlist (ASTROVERSE_ADMIN_EMAILS).
+ * Invariant: Never exposed to client-side bundles or public endpoints.
+ */
+export function getAuthorizedAdminEmails(): string[] {
+  const envVal = process.env.ASTROVERSE_ADMIN_EMAILS;
+  if (!envVal || typeof envVal !== 'string') return [];
+  return envVal
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(e => e.length > 0 && e.includes('@'));
+}
+
+/**
+ * Checks if a given email is explicitly authorized in ASTROVERSE_ADMIN_EMAILS.
+ */
+export function isAuthorizedAdminEmail(email: string | undefined | null): boolean {
+  if (!email || typeof email !== 'string') return false;
+  const cleanEmail = email.trim().toLowerCase();
+  const allowlist = getAuthorizedAdminEmails();
+  return allowlist.includes(cleanEmail);
+}
+
+/**
+ * Checks if Administrator Tier Preview mode is explicitly enabled.
+ * In test environment, defaults to true to allow automated test harnesses.
+ * In production/preview environments, requires ASTROVERSE_ADMIN_PREVIEW_ENABLED='true'.
+ */
+export function isAdminPreviewEnabled(): boolean {
+  if (process.env.NODE_ENV === 'test') {
+    return true;
+  }
+  return process.env.ASTROVERSE_ADMIN_PREVIEW_ENABLED === 'true';
+}

@@ -49,10 +49,11 @@ export class EntitlementManager {
       };
     }
 
-    // Support simulated subscription tier in non-production demo mode strictly for authorized administrators
-    const isDemo = process.env.DEMO_MODE === 'true' || 
-                   process.env.NODE_ENV === 'test' || 
-                   process.env.NODE_ENV === 'development' || 
+    // Support simulated subscription tier in preview mode strictly for authorized administrators
+    const isDemo = process.env.ASTROVERSE_ADMIN_PREVIEW_ENABLED === 'true' ||
+                   process.env.DEMO_MODE === 'true' ||
+                   process.env.NODE_ENV === 'test' ||
+                   process.env.NODE_ENV === 'development' ||
                    process.env.VERCEL_ENV === 'preview';
     if (isDemo && user.simulatedSubscriptionTier) {
       const userRole = (user.role || '').toUpperCase();

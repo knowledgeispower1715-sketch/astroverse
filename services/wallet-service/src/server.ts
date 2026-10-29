@@ -9,7 +9,10 @@ import {
   hasPermission,
   isAnyAdmin,
   normalizeRole,
-  ADMIN_MODULE_REGISTRY
+  ADMIN_MODULE_REGISTRY,
+  getAuthorizedAdminEmails,
+  isAuthorizedAdminEmail,
+  isAdminPreviewEnabled
 } from './security/permissions';
 import {
   generateTotpSecret,
@@ -296,6 +299,18 @@ function requireAdmin(permissionOrRoles?: AdminPermission | Role[]) {
       });
     }
 
+    // Server-side allowlist re-verification & revocation guard (Actor 14)
+    const adminAllowlist = getAuthorizedAdminEmails();
+    if (adminAllowlist.length > 0) {
+      const userEmail = (req.user.email || '').trim().toLowerCase();
+      if (!userEmail || !isAuthorizedAdminEmail(userEmail)) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Administrator authorization has been revoked from the server allowlist.'
+        });
+      }
+    }
+
     if (!permissionOrRoles) {
       return next();
     }
@@ -506,13 +521,14 @@ app.post('/api/auth/verify-otp', authLimiter, async (req: Request, res: Response
 
     if (!user) {
       isNewUser = true;
+      const isAdminCandidate = isEmail && isAuthorizedAdminEmail(cleanId);
       user = await db.createUser({
         phone: isEmail ? null : cleanId,
         email: isEmail ? cleanId.toLowerCase() : null,
         phoneVerified: !isEmail,
         emailVerified: isEmail,
         displayName: displayName || (isEmail ? cleanId.split('@')[0] : `User_${cleanId.slice(-4)}`),
-        role: Role.USER,
+        role: isAdminCandidate ? Role.OWNER : Role.USER,
         status: AccountStatus.ACTIVE,
         walletBalance: 0.00 // Strict zero balance for all new registrations
       });
@@ -527,8 +543,18 @@ app.post('/api/auth/verify-otp', authLimiter, async (req: Request, res: Response
 
       // Mark verified
       const updates: Partial<UserRecord> = { lastLoginAt: new Date().toISOString() };
-      if (isEmail) updates.emailVerified = true;
-      else updates.phoneVerified = true;
+      if (isEmail) {
+        updates.emailVerified = true;
+        if (isAuthorizedAdminEmail(cleanId)) {
+          if (!isAnyAdmin(user.role)) {
+            updates.role = Role.OWNER;
+          }
+        } else if (getAuthorizedAdminEmails().length > 0 && isAnyAdmin(user.role)) {
+          updates.role = Role.USER;
+        }
+      } else {
+        updates.phoneVerified = true;
+      }
       user = await db.updateUser(user.id, updates);
     }
 
@@ -740,7 +766,7 @@ app.post('/api/auth/register-password', authLimiter, async (req: Request, res: R
       displayName: defaultName,
       passwordHash: hash,
       passwordSalt: salt,
-      role: Role.USER,
+      role: (cleanEmail && isAuthorizedAdminEmail(cleanEmail)) ? Role.OWNER : Role.USER,
       status: AccountStatus.ACTIVE,
       walletBalance: 0.00
     });
@@ -833,7 +859,15 @@ app.post('/api/auth/login-password', authLimiter, async (req: Request, res: Resp
       userAgent: req.headers['user-agent'] || null
     });
 
-    await db.updateUser(user.id, { lastLoginAt: new Date().toISOString() });
+    const updates: Partial<UserRecord> = { lastLoginAt: new Date().toISOString() };
+    if (user.email && isAuthorizedAdminEmail(user.email)) {
+      if (!isAnyAdmin(user.role)) {
+        updates.role = Role.OWNER;
+      }
+    } else if (getAuthorizedAdminEmails().length > 0 && user.email && !isAuthorizedAdminEmail(user.email) && isAnyAdmin(user.role)) {
+      updates.role = Role.USER;
+    }
+    const finalUser = await db.updateUser(user.id, updates);
 
     await db.recordAuditEvent({
       userId: user.id,
@@ -847,7 +881,7 @@ app.post('/api/auth/login-password', authLimiter, async (req: Request, res: Resp
     res.json({
       status: 'AUTHENTICATED',
       sessionToken: rawSessionToken,
-      user: sanitizeUser(user)
+      user: sanitizeUser(finalUser)
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -1234,7 +1268,7 @@ app.post('/api/auth/google', authLimiter, async (req: Request, res: Response) =>
         phoneVerified: false,
         emailVerified: true,
         displayName: payload.name || cleanEmail.split('@')[0],
-        role: Role.USER,
+        role: isAuthorizedAdminEmail(cleanEmail) ? Role.OWNER : Role.USER,
         status: AccountStatus.ACTIVE,
         walletBalance: 0.00
       });
@@ -1252,6 +1286,13 @@ app.post('/api/auth/google', authLimiter, async (req: Request, res: Response) =>
       };
       if (!user.displayName && payload.name) {
         updates.displayName = payload.name;
+      }
+      if (isAuthorizedAdminEmail(cleanEmail)) {
+        if (!isAnyAdmin(user.role)) {
+          updates.role = Role.OWNER;
+        }
+      } else if (getAuthorizedAdminEmails().length > 0 && isAnyAdmin(user.role)) {
+        updates.role = Role.USER;
       }
       user = await db.updateUser(user.id, updates);
     }
@@ -2421,6 +2462,13 @@ app.post('/api/demo/set-tier', authenticate, requireAdmin(), async (req: Authent
 
 // POST /api/admin/preview/set-tier - Start or switch admin preview mode
 app.post('/api/admin/preview/set-tier', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  if (!isAdminPreviewEnabled()) {
+    return res.status(403).json({
+      error: 'ADMIN_PREVIEW_DISABLED',
+      message: 'Admin preview mode is disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).'
+    });
+  }
+
   const { tier, demoBalance, syntheticProfileId } = req.body;
   const normTier = String(tier || 'FREE').toUpperCase();
 
@@ -2512,6 +2560,13 @@ app.post('/api/admin/preview/exit', authenticate, requireAdmin(), async (req: Au
 
 // POST /api/admin/demo-wallet/credit - Credit demo funds to isolated admin preview wallet
 app.post('/api/admin/demo-wallet/credit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  if (!isAdminPreviewEnabled()) {
+    return res.status(403).json({
+      error: 'ADMIN_PREVIEW_DISABLED',
+      message: 'Admin demo wallet operations are disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).'
+    });
+  }
+
   const { amount } = req.body;
   const validAmounts = [100, 500, 1000];
   const numAmount = Number(amount);
@@ -2533,6 +2588,13 @@ app.post('/api/admin/demo-wallet/credit', authenticate, requireAdmin(), async (r
 
 // POST /api/admin/demo-wallet/reset - Reset isolated admin preview wallet balance to 0.00
 app.post('/api/admin/demo-wallet/reset', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  if (!isAdminPreviewEnabled()) {
+    return res.status(403).json({
+      error: 'ADMIN_PREVIEW_DISABLED',
+      message: 'Admin demo wallet operations are disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).'
+    });
+  }
+
   try {
     const result = await db.resetDemoWallet(req.user!.id);
     res.json(result);

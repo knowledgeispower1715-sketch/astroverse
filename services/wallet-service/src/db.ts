@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { Role } from './security/permissions';
-export { Role };
+import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails } from './security/permissions';
+export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails };
 
 export enum AccountStatus {
   ACTIVE = 'ACTIVE',
@@ -779,19 +779,27 @@ class ResilientDatabase {
   }): Promise<UserRecord> {
     this.assertDurableStorage();
 
+    const normalizedEmail = userData.email ? userData.email.trim().toLowerCase() : null;
+    let assignedRole = userData.role || Role.USER;
+    if (normalizedEmail && isAuthorizedAdminEmail(normalizedEmail)) {
+      if (!userData.role || !isAnyAdmin(userData.role)) {
+        assignedRole = Role.OWNER;
+      }
+    }
+
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const u = await this.prisma.user.create({
           data: {
             ...(userData.id ? { id: userData.id } : {}),
             phone: userData.phone || null,
-            email: userData.email ? userData.email.trim().toLowerCase() : null,
+            email: normalizedEmail,
             phoneVerified: userData.phoneVerified || false,
             emailVerified: userData.emailVerified || false,
             displayName: userData.displayName || (userData.email ? userData.email.split('@')[0] : `User_${userData.phone?.slice(-4) || 'Astro'}`),
             passwordHash: userData.passwordHash || null,
             passwordSalt: userData.passwordSalt || null,
-            role: userData.role || Role.USER,
+            role: assignedRole,
             status: userData.status || AccountStatus.ACTIVE,
             preferredLanguage: userData.preferredLanguage || 'en',
             preferredTimezone: userData.preferredTimezone || 'Asia/Kolkata',
@@ -812,7 +820,7 @@ class ResilientDatabase {
     const newUser: UserRecord = {
       id: userData.id || ('usr_' + crypto.randomBytes(8).toString('hex')),
       phone: userData.phone || null,
-      email: userData.email ? userData.email.trim().toLowerCase() : null,
+      email: normalizedEmail,
       phoneVerified: userData.phoneVerified || false,
       emailVerified: userData.emailVerified || false,
       displayName: userData.displayName || (userData.email ? userData.email.split('@')[0] : `User_${userData.phone?.slice(-4) || 'Astro'}`),
@@ -820,7 +828,7 @@ class ResilientDatabase {
       passwordSalt: userData.passwordSalt || null,
       resetTokenHash: null,
       resetTokenExpiresAt: null,
-      role: userData.role || Role.USER,
+      role: assignedRole,
       status: userData.status || AccountStatus.ACTIVE,
       preferredLanguage: userData.preferredLanguage || 'en',
       preferredTimezone: userData.preferredTimezone || 'Asia/Kolkata',
@@ -866,7 +874,7 @@ class ResilientDatabase {
         emailVerified: Boolean(cleanEmail),
         phoneVerified: Boolean(cleanPhone),
         displayName: name,
-        role: Role.USER,
+        role: (cleanEmail && isAuthorizedAdminEmail(cleanEmail)) ? Role.OWNER : Role.USER,
         status: AccountStatus.ACTIVE,
         walletBalance: 0.00
       });
@@ -877,6 +885,11 @@ class ResilientDatabase {
       };
       if (!user.displayName && name) {
         updates.displayName = name;
+      }
+      if (cleanEmail && isAuthorizedAdminEmail(cleanEmail) && !isAnyAdmin(user.role)) {
+        updates.role = Role.OWNER;
+      } else if (getAuthorizedAdminEmails().length > 0 && cleanEmail && !isAuthorizedAdminEmail(cleanEmail) && isAnyAdmin(user.role)) {
+        updates.role = Role.USER;
       }
       user = await this.updateUser(user.id, updates);
     }
