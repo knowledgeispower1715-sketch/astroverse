@@ -2,7 +2,7 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from zoneinfo import ZoneInfo
 import urllib.request
 import urllib.parse
@@ -232,6 +232,11 @@ class PredictionRequest(BaseModel):
     lang: str = Field("en", description="Output language: 'en' or 'hi'")
     is_unlocked: bool = Field(False, description="Whether full premium content is unlocked")
     preview_tier: str = Field("FREE", description="Preview access tier: FREE, PLUS, PREMIUM, PRO")
+    is_universal_preview: Optional[bool] = Field(False, description="Explicit request for unpersonalized universal astronomical transit preview")
+    mode: Optional[str] = Field(None, description="'PERSONALIZED' or 'UNIVERSAL_PREVIEW'")
+    profile_id: Optional[str] = Field(None, description="Optional profile identifier")
+    profile_name: Optional[str] = Field(None, description="Optional profile name")
+    is_unknown_time: Optional[bool] = Field(False, description="Flag indicating birth time is unknown")
 
 class TajikaRequest(BirthDetails):
     target_year: Optional[int] = Field(None, description="Target year for solar return calculation, e.g. 2026")
@@ -690,40 +695,66 @@ def generate_prediction_endpoint(req: PredictionRequest):
     Generates standardized 7-section prediction reports (A. Overall Outlook,
     B. Supportive Developments, C. Challenges/Cautions, D. Relevant Time Windows,
     E. Why This Applies, F. Practical Reflection, G. Limitations)
-    for Hourly, Weekly, Monthly, and Yearly horizons grounded in Parashari Jyotish.
+    for Hourly, Daily, Weekly, Monthly, Yearly, and Mahadasha horizons grounded in Parashari Jyotish.
+    Enforces strict chart gating across all six horizons.
     """
     target_date_str = req.target_date or date.today().isoformat()
+    is_universal = bool(req.is_universal_preview or (req.mode and req.mode.upper() == "UNIVERSAL_PREVIEW"))
+    has_valid_inputs = bool(req.dob and req.lat is not None and req.lon is not None)
+    horizon_clean = (req.horizon or "hourly").lower()
+    is_hi = bool(req.lang and req.lang.lower().startswith("hi"))
 
-    if req.dob and req.lat is not None and req.lon is not None:
-        d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
-        SIGNS = [
-            "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
-            "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
-        ]
-        moon_sign_idx = SIGNS.index(d1["planets"]["Moon"]["sign"])
-        moon_abs_deg = (moon_sign_idx * 30.0) + d1["planets"]["Moon"]["degree"]
+    if not has_valid_inputs:
+        # If user did NOT explicitly opt into Universal Preview, enforce strict chart gating across ALL 6 horizons
+        if not is_universal:
+            horizon_labels = {
+                "hourly": ("होरा", "Hourly (Hora)"),
+                "daily": ("दैनिक", "Daily"),
+                "weekly": ("साप्ताहिक", "Weekly (7 Days)"),
+                "monthly": ("मासिक", "Monthly (4 Weeks)"),
+                "yearly": ("वार्षिक", "Yearly (12 Months)"),
+                "mahadasha": ("महादशा", "Mahadasha (5-Year)")
+            }
+            h_hi, h_en = horizon_labels.get(horizon_clean, (horizon_clean, horizon_clean.title()))
+            return {
+                "status": "CHART_REQUIRED",
+                "requires_chart": True,
+                "horizon": horizon_clean,
+                "mode": "CHART_REQUIRED",
+                "profile_loaded": False,
+                "is_personalized": False,
+                "message": (
+                    f"व्यक्तिगत {h_hi} फलादेश हेतु जन्म विवरण अनिवार्य है। कृपया 100% प्रामाणिक पारशरी गणनाओं हेतु अपनी जन्म कुंडली बनाएं।"
+                    if is_hi else
+                    f"Personalized {h_en} forecast requires your calculated birth chart. Enter your birth details or choose a saved profile to ground predictions in your natal Lagna, Moon sign, and Vimshottari Dasha."
+                ),
+                "cta": {
+                    "action": "calculate_kundli",
+                    "label": "अपनी जन्म कुंडली बनाएं" if is_hi else "Calculate My Kundli"
+                }
+            }
 
-        dashas = calculate_vimshottari_dasha(moon_abs_deg, datetime.fromisoformat(req.dob))
-        doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
+        # User explicitly requested Universal Transit Preview
+        if horizon_clean in ["mahadasha", "5year", "five_year"]:
+            return {
+                "status": "CHART_REQUIRED",
+                "requires_chart": True,
+                "horizon": "mahadasha",
+                "mode": "UNIVERSAL_TRANSIT_UNPERSONALIZED",
+                "profile_loaded": False,
+                "is_personalized": False,
+                "message": (
+                    "विंशोत्तरी महादशा कालखंड आपकी जन्म कालीन चंद्र राशि और नक्षत्र पर आधारित होता है। सटीक 5-वर्षीय विंशोत्तरी कालखंड देखने के लिए अपनी जन्म कुंडली बनाएं।"
+                    if is_hi else
+                    "Personalized 5-year Vimshottari Mahadasha timeline requires a calculated birth chart. Vimshottari Dasha calculations depend on the exact degree of your natal Moon at birth. Please calculate your Janam Kundli to unlock your active Mahadasha and 5-year subperiod timeline."
+                ),
+                "cta": {
+                    "action": "calculate_kundli",
+                    "label": "अपनी जन्म कुंडली बनाएं" if is_hi else "Calculate My Kundli"
+                }
+            }
 
-        result = generate_structured_prediction(
-            horizon=req.horizon,
-            target_date_str=target_date_str,
-            kundli=d1,
-            dasha=dashas,
-            doshas=doshas,
-            active_hora_planet=req.active_hora_planet,
-            hora_window=req.hora_window,
-            category=req.category,
-            lang=req.lang,
-            is_unlocked=req.is_unlocked,
-            preview_tier=req.preview_tier
-        )
-        result["mode"] = "PERSONALIZED_CHART_GROUNDED"
-        result["profile_loaded"] = True
-        return result
-    else:
-        # Canonical unpersonalized transit baseline for guest users without birth profile
+        # Canonical unpersonalized transit baseline for explicit universal preview
         result = generate_structured_prediction(
             horizon=req.horizon,
             target_date_str=target_date_str,
@@ -737,13 +768,70 @@ def generate_prediction_endpoint(req: PredictionRequest):
             is_unlocked=req.is_unlocked,
             preview_tier=req.preview_tier
         )
+        result["status"] = "SUCCESS"
         result["mode"] = "GENERAL_TRANSIT_UNPERSONALIZED"
         result["profile_loaded"] = False
+        result["is_personalized"] = False
+        result["requires_chart"] = False
         result["sections"]["limitations"] = (
-            "This prediction is an unpersonalized transit baseline because no birth chart was loaded. "
-            "Enter your birth details or sign in to calculate your Janam Kundli for 100% chart-grounded Parashari predictions."
+            "This prediction is an unpersonalized transit baseline computed via Swiss Ephemeris. "
+            "It outlines general astronomical cycles and contains no natal house or Dasha claims. "
+            "Calculate your Janam Kundli for 100% chart-grounded Parashari predictions."
         )
         return result
+
+    # Valid profile & chart calculation inputs supplied: 100% chart-grounded personalized prediction
+    d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
+    SIGNS = [
+        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+    ]
+    moon_sign_idx = SIGNS.index(d1["planets"]["Moon"]["sign"])
+    moon_abs_deg = (moon_sign_idx * 30.0) + d1["planets"]["Moon"]["degree"]
+
+    dashas = calculate_vimshottari_dasha(moon_abs_deg, datetime.fromisoformat(req.dob))
+    doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
+
+    chart_snapshot = {
+        "profile_id": req.profile_id or "session_guest",
+        "name": req.profile_name or "Consultant",
+        "dob": req.dob,
+        "lat": req.lat,
+        "lon": req.lon,
+        "timezone": req.timezone,
+        "is_unknown_time": bool(req.is_unknown_time),
+        "ayanamsha": "Lahiri (Chitra Paksha)",
+        "ephemeris_engine": "Swiss Ephemeris 2.10 (pyswisseph)",
+        "calculation_timestamp": datetime.now(timezone.utc).isoformat(),
+        "snapshot_version": "2.0.0",
+        "lagna_sign": d1["lagna"]["sign"] if not req.is_unknown_time else "Indeterminate",
+        "moon_sign": d1["planets"]["Moon"]["sign"],
+        "moon_nakshatra": d1["planets"]["Moon"].get("nakshatra", "Rohini"),
+        "moon_pada": d1["planets"]["Moon"].get("pada", 1),
+        "active_mahadasha": dashas.get("active_now", {}).get("maha_dasha"),
+        "active_antardasha": dashas.get("active_now", {}).get("antar_dasha")
+    }
+
+    result = generate_structured_prediction(
+        horizon=req.horizon,
+        target_date_str=target_date_str,
+        kundli=d1,
+        dasha=dashas,
+        doshas=doshas,
+        active_hora_planet=req.active_hora_planet,
+        hora_window=req.hora_window,
+        category=req.category,
+        lang=req.lang,
+        is_unlocked=req.is_unlocked,
+        preview_tier=req.preview_tier
+    )
+    result["status"] = "SUCCESS"
+    result["mode"] = "PERSONALIZED_CHART_GROUNDED"
+    result["profile_loaded"] = True
+    result["is_personalized"] = True
+    result["requires_chart"] = False
+    result["chart_snapshot"] = chart_snapshot
+    return result
 
 
 @app.post("/api/matchmaking")

@@ -26164,6 +26164,9 @@ ${upTable}
             : "Select a forecast horizon below to explore celestial cycles, or calculate your Janam Kundli for personalized Lagna and Dasha analysis.";
         }
         renderGuidanceSavedProfilesDropdown();
+        if (typeof renderGuidanceChartRequiredCard === 'function') {
+          renderGuidanceChartRequiredCard(currentGuidanceHorizon || 'hourly');
+        }
       } else if (state === 'GENERAL_TRANSIT_PREVIEW') {
         if (onboardingView) onboardingView.style.display = 'none';
         if (sectionsWrap) sectionsWrap.style.display = 'block';
@@ -26195,7 +26198,7 @@ ${upTable}
         }
         if (badge) {
           badge.className = 'badge-grounded';
-          badge.innerHTML = `<i class="fa-solid fa-certificate"></i> ${isHi ? 'कुंडली आधारित फलादेश' : 'Chart-Grounded'}${lagna ? ` &bull; ${lagna} ${isHi ? 'लग्न' : 'Lagna'}` : ''}${moon ? ` &bull; ${moon} ${isHi ? 'चंद्र' : 'Moon'}` : ''}`;
+          badge.innerHTML = `<i class="fa-solid fa-certificate"></i> ${isHi ? 'कुंडली आधारित फलादेश' : 'Chart-Grounded'}${lagna ? ` &bull; ${lagna} ${isHi ? 'लग्न' : 'Lagna'}` : ''}${moon ? ` &bull; ${isHi ? `${moon} चंद्र` : `Moon in ${moon}`}` : ''}`;
         }
         if (headerSub) {
           headerSub.textContent = isHi
@@ -26243,11 +26246,87 @@ ${upTable}
       }
     }
 
+    function renderGuidanceChartRequiredCard(horizon = 'hourly') {
+      const onboardingView = document.getElementById('guidance-onboarding-view');
+      if (!onboardingView) return;
+      const heroEl = onboardingView.querySelector('.guidance-onboarding-hero');
+      if (!heroEl) return;
+      const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
+      const hMeta = (typeof HORIZON_TITLES !== 'undefined' && HORIZON_TITLES[horizon]) || { en: horizon, hi: horizon };
+      const horizonName = isHi ? hMeta.hi : hMeta.en;
+      const isMahadasha = horizon === 'mahadasha';
+
+      const descriptionsEn = {
+        hourly: "Planetary Horas act upon your personal chart based on whether the ruling planet is a functional benefic or malefic for your natal Lagna. Calculate your Janam Kundli to unlock personalized hourly alignments.",
+        daily: "Authentic daily Jyotish forecasts require your natal Moon sign for Chandra Bala, natal Nakshatra for Tara Bala, and active Vimshottari Antardasha. Enter your birth details to ground your daily forecast.",
+        weekly: "A personalized 7-day forecast requires your natal Lagna to map transiting Moon across your 12 natal houses and identify high-leverage Muhurta windows. Calculate your Janam Kundli to unlock.",
+        monthly: "Monthly transit analysis cross-references transit Sun, Mars, Jupiter, and Saturn against your natal houses, Ashtakavarga bindus, and active Dasha. Enter birth details to unlock.",
+        yearly: "Annual life mapping evaluates slow-moving transits (Jupiter, Saturn, Rahu/Ketu) from your natal Lagna and Moon to project major life trends across 12 months.",
+        mahadasha: "Vimshottari Dasha calculations depend 100% on the exact degree, minute, and second of your natal Moon at birth. It cannot be generated without an authentic birth chart."
+      };
+
+      const descriptionsHi = {
+        hourly: "होरा अधिपति का फल आपके जन्म लग्न के अनुसार प्राकृतिक अथवा कार्यात्मक शुभत्व पर निर्भर करता है। व्यक्तिगत होरा मार्गदर्शन हेतु जन्म कुंडली की गणना करें।",
+        daily: "प्रामाणिक दैनिक वैदिक फलादेश आपके जन्म चंद्र से चंद्र बल, जन्म नक्षत्र से तारा बल एवं सक्रिय अंतर्दशा पर आधारित होता है। व्यक्तिगत दैनिक फलादेश हेतु जन्म विवरण दर्ज करें।",
+        weekly: "व्यक्तिगत ७-दिवसीय फलादेश में आपके जन्म लग्न से १२ भावों में चंद्र संचरण एवं मुहूर्त वेला का परिकलन होता है। अपनी जन्म कुंडली बनाकर इसे अनलॉक करें।",
+        monthly: "मासिक गोचर विश्लेषण में सूर्य, मंगल, गुरु व शनि के गोचर को आपकी जन्म कुंडली के भावों, अष्टकवर्ग बिंदुओं व दशा से जोड़ा जाता है। व्यक्तिगत मासिक विश्लेषण हेतु कुंडली बनाएं।",
+        yearly: "वार्षिक दृष्टिकोण में गुरु, शनि एवं राहु-केतु के मंदगामी गोचरों को आपके जन्म लग्न व चंद्र से जोड़कर १२ महीनों के जीवन क्षेत्रों का विश्लेषण किया जाता है।",
+        mahadasha: "विंशोत्तरी महादशा जन्म कालीन चंद्र नक्षत्र एवं सूक्ष्म अंशों पर पूर्णतः निर्भर है। इसे बिना जन्म विवरण के परिकलित नहीं किया जा सकता।"
+      };
+
+      const desc = isHi ? (descriptionsHi[horizon] || descriptionsHi.hourly) : (descriptionsEn[horizon] || descriptionsEn.hourly);
+
+      heroEl.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div style="max-width: 620px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="font-size: 11px; font-weight: 800; background: rgba(217,119,6,0.15); color: #92400E; padding: 3px 10px; border-radius: 999px; text-transform: uppercase;">
+                <i class="fa-solid fa-lock"></i> ${isHi ? 'जन्म पत्रिका अनिवार्य' : 'Birth Chart Required'}
+              </span>
+              <span style="font-size: 11px; font-weight: 700; color: #78350F;">${horizonName}</span>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">
+              ${isMahadasha
+                ? (isHi ? 'विंशोत्तरी महादशा कालखंड हेतु जन्म कुंडली अनिवार्य' : 'Vimshottari Mahadasha Timeline Strictly Requires Your Birth Chart')
+                : (isHi ? `व्यक्तिगत ${horizonName} हेतु अपनी जन्म कुंडली बनाएं` : `Personalized ${horizonName} Requires Your Birth Chart`)}
+            </h3>
+            <p style="font-size: 13px; color: #78350F; line-height: 1.5; margin: 0;">
+              ${desc}
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <button class="btn-gold-primary" style="padding: 10px 18px; font-size: 13px;" onclick="switchNavSection('kundli'); document.getElementById('input-k-name')?.focus();">
+              <i class="fa-solid fa-sparkles"></i> ${isHi ? 'अपनी कुंडली बनाएं' : 'Calculate My Kundli'}
+            </button>
+            <div style="position: relative;">
+              <select id="guidance-profile-select" class="form-input-text" style="width: auto; padding: 9px 14px; font-size: 12px; font-weight: 700; background: #FFFFFF; border-color: #FCD34D; color: #92400E; cursor: pointer;" onchange="handleGuidanceProfileSelect(this.value)">
+                <option value="">${isHi ? 'सहेजी गई प्रोफ़ाइल चुनें...' : 'Choose saved profile...'}</option>
+              </select>
+            </div>
+            ${!isMahadasha ? `
+              <button class="btn-outline-secondary" style="padding: 9px 16px; font-size: 12px; background: #FFFFFF;" onclick="enterGeneralTransitPreview('${horizon}')">
+                <i class="fa-solid fa-compass"></i> ${isHi ? 'सामान्य गोचर पूर्वावलोकन' : 'Explore General Transit Preview'}
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+      renderGuidanceSavedProfilesDropdown();
+    }
+
     function returnToGuidanceOnboarding() {
       setGuidanceState('NO_PROFILE');
+      renderGuidanceChartRequiredCard(currentGuidanceHorizon || 'hourly');
     }
 
     function enterGeneralTransitPreview(horizon = 'hourly') {
+      if (horizon === 'mahadasha') {
+        const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
+        showToast(isHi ? 'विंशोत्तरी महादशा फलादेश के लिए जन्म कुंडली अनिवार्य है।' : 'Vimshottari Mahadasha timeline strictly requires your Janam Kundli.', 'info');
+        setGuidanceState('NO_PROFILE');
+        renderGuidanceChartRequiredCard('mahadasha');
+        return;
+      }
       setGuidanceState('GENERAL_TRANSIT_PREVIEW');
       selectGuidanceHorizon(horizon);
     }
@@ -26395,8 +26474,19 @@ ${upTable}
       const activeBtn = document.getElementById('btn-hz-' + horizon);
       if (activeBtn) activeBtn.classList.add('active');
 
-      if (!currentCalculatedChart && window.astroGuidanceState === 'NO_PROFILE') {
-        setGuidanceState('GENERAL_TRANSIT_PREVIEW');
+      // STRICT ELIGIBILITY GATING:
+      // When no birth chart is loaded, clicking ANY horizon must NEVER silently switch to general preview.
+      if (!currentCalculatedChart && window.astroGuidanceState !== 'GENERAL_TRANSIT_PREVIEW') {
+        setGuidanceState('NO_PROFILE');
+        renderGuidanceChartRequiredCard(horizon);
+        return;
+      }
+
+      // Mahadasha strictly requires an authentic birth chart even in universal preview mode
+      if (!currentCalculatedChart && horizon === 'mahadasha') {
+        setGuidanceState('NO_PROFILE');
+        renderGuidanceChartRequiredCard('mahadasha');
+        return;
       }
 
       const isHi = typeof currentLanguage !== 'undefined' && currentLanguage === 'hi';
@@ -26449,6 +26539,12 @@ ${upTable}
     async function generatePersonalizedGuidance(horizon = 'hourly', reqId = null) {
       if (!currentCalculatedChart && window.astroGuidanceState !== 'GENERAL_TRANSIT_PREVIEW') {
         setGuidanceState('NO_PROFILE');
+        renderGuidanceChartRequiredCard(horizon);
+        return;
+      }
+      if (!currentCalculatedChart && horizon === 'mahadasha') {
+        setGuidanceState('NO_PROFILE');
+        renderGuidanceChartRequiredCard('mahadasha');
         return;
       }
       const activeReqId = reqId || ++currentGuidanceRequestId;
@@ -26481,7 +26577,9 @@ ${upTable}
           category: "general",
           lang: isHi ? "hi" : "en",
           is_unlocked: isUnlocked,
-          preview_tier: (typeof currentUserEntitlements !== 'undefined' && currentUserEntitlements?.tier) || (isAdminPreviewActive() ? getEffectiveAdminPreviewTier() : "FREE")
+          preview_tier: (typeof currentUserEntitlements !== 'undefined' && currentUserEntitlements?.tier) || (isAdminPreviewActive() ? getEffectiveAdminPreviewTier() : "FREE"),
+          is_universal_preview: !hasChart,
+          mode: hasChart ? "PERSONALIZED_CHART_GROUNDED" : "UNIVERSAL_PREVIEW"
         };
 
         if (hasChart && currentCalculatedChart.fullData) {
@@ -26507,6 +26605,11 @@ ${upTable}
           if (res.ok) {
             const data = await res.json();
             if (activeReqId !== currentGuidanceRequestId) return;
+            if (data.status === 'CHART_REQUIRED' || data.requires_chart) {
+              setGuidanceState('NO_PROFILE');
+              renderGuidanceChartRequiredCard(horizon);
+              return;
+            }
             window.currentActivePrediction = data;
             renderStructuredPredictionUI(data);
             return;
@@ -26516,6 +26619,11 @@ ${upTable}
         }
 
         if (activeReqId !== currentGuidanceRequestId) return;
+        if (!hasChart && window.astroGuidanceState !== 'GENERAL_TRANSIT_PREVIEW') {
+          setGuidanceState('NO_PROFILE');
+          renderGuidanceChartRequiredCard(horizon);
+          return;
+        }
         renderFallbackGuidanceUI(horizon, hasChart);
       } catch (err) {
         console.error("Guidance generation error:", err);
@@ -26944,9 +27052,19 @@ ${upTable}
           const tMoonIdx = (baseMoonIdx + Math.floor(i / 2.25)) % 12;
           const tMoon = signsList[tMoonIdx];
           const tMoonDisp = isHi ? (hindiSigns[tMoon] || tMoon) : tMoon;
-          const hNum = hasChart ? (((tMoonIdx - lagnaIdx + 12) % 12) + 1) : ((i % 12) + 1);
+          const hNum = hasChart ? (((tMoonIdx - lagnaIdx + 12) % 12) + 1) : null;
           const isLocked = (!isUnlocked) && (i >= 2);
           const auspiciousWin = isHi ? (weekdayAuspiciousHi[wIdx] || "प्रातः 07:30 AM – 09:00 AM") : (weekdayAuspiciousEn[wIdx] || "07:30 AM – 09:00 AM (Auspicious)");
+
+          const focusTheme = hasChart
+            ? (isHi ? `भाव ${hNum} गोचर प्रभाव` : `House ${hNum} Transit Activation`)
+            : (isHi ? `${tMoonDisp} राशि में सार्वभौमिक चंद्र गोचर` : `Universal Moon Transit in ${tMoon}`);
+          const teaserText = hasChart
+            ? (isHi ? `🔒 दिवस ${i+1} (${dayName}): चंद्र का ${tMoonDisp} राशि में गोचर आपके ${hNum}वें भाव को सक्रिय करेगा। शुभ वेला: ${auspiciousWin}। संपूर्ण 7-दिवसीय फलादेश अनलॉक करें।` : `🔒 Day ${i+1} (${dayName}): Moon in ${tMoon} activates House ${hNum}. Auspicious Window: ${auspiciousWin}. Unlock with ₹49 All-Horizons pass.`)
+            : (isHi ? `🔒 दिवस ${i+1} (${dayName}): चंद्र का ${tMoonDisp} राशि में सार्वभौमिक गोचर। शुभ वेला: ${auspiciousWin}। व्यक्तिगत कुंडली आधारित फलादेश अनलॉक करें।` : `🔒 Day ${i+1} (${dayName}): Universal Moon transit in ${tMoon}. Auspicious Window: ${auspiciousWin}. Ground in your Janam Kundli with ₹49 pass.`);
+          const guidanceText = hasChart
+            ? (isHi ? `आज चंद्र का ${tMoonDisp} राशि में संचरण आपके ${hNum}वें भाव को प्रकाशित करता है। ${rulerDisp} द्वारा शासित इस दिन में अनुशासित कार्यशैली लाभप्रद रहेगी।` : `Transiting Moon in ${tMoon} illuminates your natal House ${hNum}. Governed by ${ruler}, maintain structured focus and clarity.`)
+            : (isHi ? `आज चंद्र का ${tMoonDisp} राशि में सार्वभौमिक खगोलीय संचरण है। ${rulerDisp} द्वारा शासित इस दिन में अनुशासित कार्यशैली लाभप्रद रहेगी।` : `Universal transiting Moon enters sidereal ${tMoon}. Governed by ${ruler}, maintain structured focus and clarity.`);
 
           if (isLocked) {
             cards.push({
@@ -26956,10 +27074,10 @@ ${upTable}
               weekday_ruler: rulerDisp,
               transiting_moon: tMoonDisp,
               activated_house: hNum,
-              focus_theme: isHi ? `भाव ${hNum} गोचर प्रभाव` : `House ${hNum} Transit Activation`,
+              focus_theme: focusTheme,
               auspicious_window: auspiciousWin,
               is_preview_locked: true,
-              teaser: isHi ? `🔒 दिवस ${i+1} (${dayName}): चंद्र का ${tMoonDisp} राशि में गोचर आपके ${hNum}वें भाव को सक्रिय करेगा। शुभ वेला: ${auspiciousWin}। संपूर्ण 7-दिवसीय फलादेश अनलॉक करें।` : `🔒 Day ${i+1} (${dayName}): Moon in ${tMoon} activates House ${hNum}. Auspicious Window: ${auspiciousWin}. Unlock with ₹49 All-Horizons pass.`
+              teaser: teaserText
             });
           } else {
             cards.push({
@@ -26969,8 +27087,8 @@ ${upTable}
               weekday_ruler: rulerDisp,
               transiting_moon: tMoonDisp,
               activated_house: hNum,
-              focus_theme: isHi ? `भाव ${hNum} में चंद्र संचरण` : `House ${hNum} Lunar Transit`,
-              guidance: isHi ? `आज चंद्र का ${tMoonDisp} राशि में संचरण आपके ${hNum}वें भाव को प्रकाशित करता है। ${rulerDisp} द्वारा शासित इस दिन में अनुशासित कार्यशैली लाभप्रद रहेगी।` : `Transiting Moon in ${tMoon} illuminates your natal House ${hNum}. Governed by ${ruler}, maintain structured focus and clarity.`,
+              focus_theme: focusTheme,
+              guidance: guidanceText,
               auspicious_window: auspiciousWin,
               beej_mantra: beejMantras[ruler]?.mantra || "",
               transliteration: beejMantras[ruler]?.transliteration || "",
@@ -27091,6 +27209,20 @@ ${upTable}
     }
 
     function renderFallbackGuidanceUI(horizon, hasChart) {
+      if (!hasChart && window.astroGuidanceState !== 'GENERAL_TRANSIT_PREVIEW') {
+        setGuidanceState('NO_PROFILE');
+        if (typeof renderGuidanceChartRequiredCard === 'function') {
+          renderGuidanceChartRequiredCard(horizon);
+        }
+        return;
+      }
+      if (!hasChart && horizon === 'mahadasha') {
+        setGuidanceState('NO_PROFILE');
+        if (typeof renderGuidanceChartRequiredCard === 'function') {
+          renderGuidanceChartRequiredCard('mahadasha');
+        }
+        return;
+      }
       const fd = currentCalculatedChart?.fullData;
       const lagna = hasChart ? (currentCalculatedChart?.lagnaSign || "") : null;
       const moon = hasChart ? (currentCalculatedChart?.moonSign || "") : null;

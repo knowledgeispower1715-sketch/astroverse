@@ -1063,12 +1063,16 @@ def _build_period_items(
             t_moon_idx = (base_moon_idx + int(i / 2.25)) % 12
             t_moon = SIGNS_LIST[t_moon_idx]
             t_moon_disp = HINDI_SIGNS.get(t_moon, t_moon) if is_hi else t_moon
-            h_num = ((t_moon_idx - lagna_idx + 12) % 12) + 1 if has_chart else ((i % 12) + 1)
-            h_meaning = HOUSE_SIGNIFICATORS.get(h_num, "Personal development")
+            if has_chart:
+                h_num = ((t_moon_idx - lagna_idx + 12) % 12) + 1
+                h_meaning = HOUSE_SIGNIFICATORS.get(h_num, "Personal development")
+            else:
+                h_num = None
+                h_meaning = None
 
             is_locked = (not is_unlocked) and (i >= 2)
             theme, details = (day_focus_hi[i % 7] if is_hi else day_focus_en[i % 7])
-            mantra_data = BEEJ_MANTRAS.get(ruler, {})
+            mantra_data = BEEJ_MANTRAS.get(ruler, {}) if has_chart else {}
             auspicious_win = WEEKDAY_AUSPICIOUS_WINDOWS_HI[w_idx] if is_hi else WEEKDAY_AUSPICIOUS_WINDOWS_EN[w_idx]
 
             # Compute authentic Tara Bala & Chandra Bala when chart is available
@@ -1096,15 +1100,24 @@ def _build_period_items(
                     pass
 
             if is_locked:
-                teaser = (
-                    f"🔒 दिवस {i+1} ({day_name}, {cur.strftime('%d %b')}): चंद्र का {t_moon_disp} राशि में गोचर "
-                    f"आपके {h_num}वें भाव ({h_meaning.split(',')[0]}) को सक्रिय करेगा। "
-                    f"शुभ वेला: {auspicious_win}। संपूर्ण 7-दिवसीय सटीक होरा, अनुकूल मुहूर्त और उपाय ₹49 में अनलॉक करें।"
-                ) if is_hi else (
-                    f"🔒 Day {i+1} ({day_name}, {cur.strftime('%b %d')}): Moon transits into sidereal {t_moon}, "
-                    f"energizing House {h_num} ({h_meaning.split(',')[0]}). "
-                    f"Auspicious Window: {auspicious_win}. Unlock full ₹49 All-Horizons pass for exact hour-by-hour windows, Tara Bala, and remedies."
-                )
+                if has_chart:
+                    teaser = (
+                        f"🔒 दिवस {i+1} ({day_name}, {cur.strftime('%d %b')}): चंद्र का {t_moon_disp} राशि में गोचर "
+                        f"आपके {h_num}वें भाव ({h_meaning.split(',')[0]}) को सक्रिय करेगा। "
+                        f"शुभ वेला: {auspicious_win}। संपूर्ण 7-दिवसीय सटीक होरा, अनुकूल मुहूर्त और उपाय ₹49 में अनलॉक करें।"
+                    ) if is_hi else (
+                        f"🔒 Day {i+1} ({day_name}, {cur.strftime('%b %d')}): Moon transits into sidereal {t_moon}, "
+                        f"energizing House {h_num} ({h_meaning.split(',')[0]}). "
+                        f"Auspicious Window: {auspicious_win}. Unlock full ₹49 All-Horizons pass for exact hour-by-hour windows, Tara Bala, and remedies."
+                    )
+                else:
+                    teaser = (
+                        f"🔒 दिवस {i+1} ({day_name}, {cur.strftime('%d %b')}): सार्वभौमिक चंद्र का {t_moon_disp} राशि में संचरण। "
+                        f"शुभ वेला: {auspicious_win}। संपूर्ण 7-दिवसीय विश्लेषण ₹49 में अनलॉक करें।"
+                    ) if is_hi else (
+                        f"🔒 Day {i+1} ({day_name}, {cur.strftime('%b %d')}): Universal Moon transit into sidereal {t_moon}. "
+                        f"Auspicious Window: {auspicious_win}. Unlock full 7-day transit timeline for ₹49."
+                    )
                 cards.append({
                     "period_index": i + 1,
                     "date": cur.strftime("%Y-%m-%d"),
@@ -1120,13 +1133,22 @@ def _build_period_items(
                     "teaser": teaser
                 })
             else:
-                guidance_text = (
-                    f"{'आपकी जन्म कुंडली अनुसार, ' if has_chart else ''}आज चंद्र का {t_moon_disp} राशि में संचरण आपके "
-                    f"{h_num}वें भाव को प्रकाशित करता है। {ruler_disp} द्वारा शासित इस दिन में {details}"
-                ) if is_hi else (
-                    f"{'Personalized to your chart: ' if has_chart else ''}Transiting Moon in {t_moon} activates your "
-                    f"natal House {h_num} ({h_meaning}). Governed by {ruler}, {details}"
-                )
+                if has_chart:
+                    guidance_text = (
+                        f"आपकी जन्म कुंडली अनुसार, आज चंद्र का {t_moon_disp} राशि में संचरण आपके "
+                        f"{h_num}वें भाव ({h_meaning}) को प्रकाशित करता है। {ruler_disp} द्वारा शासित इस दिन में {details}"
+                    ) if is_hi else (
+                        f"Personalized to your chart: Transiting Moon in {t_moon} activates your "
+                        f"natal House {h_num} ({h_meaning}). Governed by {ruler}, {details}"
+                    )
+                else:
+                    guidance_text = (
+                        f"सार्वभौमिक गोचर: आज चंद्र का {t_moon_disp} राशि में संचरण {ruler_disp} के दिन-स्वामी प्रभाव में है। "
+                        f"सामान्य खगोलीय वायुमंडल {theme} का समर्थन करता है। व्यक्तिगत भाव प्रभाव जानने हेतु जन्म कुंडली बनाएं।"
+                    ) if is_hi else (
+                        f"Universal transit: Moon traverses sidereal {t_moon} under {ruler}'s weekday governance. "
+                        f"General celestial current supports {theme}. Calculate your Janam Kundli to ground in your natal houses."
+                    )
                 cards.append({
                     "period_index": i + 1,
                     "date": cur.strftime("%Y-%m-%d"),
@@ -1339,6 +1361,45 @@ def _build_remedies_and_precautions(
     has_chart: bool = False
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """Constructs shastric remedies and precautions grounded in active hora or dasha ruler."""
+    if not has_chart:
+        active_remedy_planet = hora_planet or "Sun"
+        remedy_planet_disp = HINDI_PLANETS.get(active_remedy_planet, active_remedy_planet) if is_hi else active_remedy_planet
+        remedy_mantra_info = BEEJ_MANTRAS.get(active_remedy_planet, BEEJ_MANTRAS.get("Sun", {}))
+        remedy_payload = {
+            "title": "सामान्य खगोलीय चिंतन" if is_hi else "Universal Transit Reflection",
+            "trigger": f"सार्वभौमिक {remedy_planet_disp} गोचर/होरा प्रभाव" if is_hi else f"Universal {active_remedy_planet} Transit/Hora resonance",
+            "planet": active_remedy_planet,
+            "mantra": remedy_mantra_info.get("mantra", ""),
+            "transliteration": remedy_mantra_info.get("transliteration", ""),
+            "japa_count": 1,
+            "practice_timing": "प्रातः सूर्योदय अथवा शांत समय में" if is_hi else "At sunrise or during quiet contemplation",
+            "charity": "सार्वभौमिक सात्विक परोपकार एवं पक्षियों/जीवों को अन्न-जल दें।" if is_hi else "General sattvic charity and sharing food with those in need.",
+            "gemstone_guidance": (
+                "व्यक्तिगत रत्न धारण हेतु जन्म कुंडली के लग्न, पंचम व नवम भावों का विश्लेषण अनिवार्य है। केवल गोचर अथवा होरा आधार पर रत्न कभी धारण न करें।" if is_hi
+                else "Gemstone prescriptions strictly require authentic natal chart analysis. Never wear gemstones based on universal transits."
+            ),
+            "provenance": "Classical Vedic Contemplation Baseline",
+            "is_personalized": False
+        }
+        precaution_payload = {
+            "title": "सामान्य खगोलीय समय निर्देश" if is_hi else "General Astronomical Timing Guidance",
+            "rahu_kaal_guidance": (
+                "स्थानीय दैनिक राहुकाल के दौरान महत्वपूर्ण अनुबंधों या सट्टेबाजी के सौदों से परहेज करें।" if is_hi
+                else "Avoid initiating major speculative trades or signing contentious contracts during local Rahu Kaal."
+            ),
+            "yamaganda_guidance": (
+                "यमगंड काल में लंबी यात्रा अथवा महत्वपूर्ण वार्ताओं में अतिरिक्त सतर्कता बरतें।" if is_hi
+                else "Exercise deliberate patience during Yamaganda; double-check transit documentation."
+            ),
+            "transit_warnings": challenges or [],
+            "behavioral_advice": reflection or "",
+            "disclaimer": (
+                "यह सामान्य खगोलीय गोचर मार्गदर्शन है, व्यक्तिगत कुंडली फलादेश नहीं। व्यक्तिगत प्रभाव जानने हेतु अपनी जन्म कुंडली बनाएं।" if is_hi
+                else "This is universal astronomical transit guidance, not a personalized birth chart prediction. Calculate your Janam Kundli for chart-grounded interpretations."
+            )
+        }
+        return remedy_payload, precaution_payload
+
     if horizon_lower == "hourly":
         active_remedy_planet = hora_planet
         remedy_planet_disp = HINDI_PLANETS.get(active_remedy_planet, active_remedy_planet) if is_hi else active_remedy_planet
