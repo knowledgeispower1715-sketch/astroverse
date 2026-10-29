@@ -3226,17 +3226,25 @@ app.post('/api/admin/mfa/setup', authenticate, requireAdmin(), async (req: Authe
     if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
 
     const accountName = user.email || user.phone || user.id;
-    const { secret, otpauthUrl } = generateTotpSecret();
-    const uri = otpauthUrl(accountName, 'AstroVerse');
+    const forceReset = Boolean(req.body && (req.body.forceReset || req.body.forceRotate));
 
-    // Store pending secret temporarily on user record
-    await db.updateUser(user.id, { mfaSecret: secret });
+    // Preserve existing pending secret unless explicit rotation requested or no secret exists
+    let secret = user.mfaSecret;
+    if (!secret || forceReset) {
+      const generated = generateTotpSecret();
+      secret = generated.secret;
+      await db.updateUser(user.id, { mfaSecret: secret });
+    }
+
+    const uri = `otpauth://totp/AstroVerse:${encodeURIComponent(accountName)}?secret=${secret}&issuer=AstroVerse&algorithm=SHA1&digits=6&period=30`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(uri)}&size=200x200&margin=8`;
 
     res.json({
       success: true,
       secret,
       otpauthUrl: uri,
-      instructions: 'Enter this secret or scan the QR code into your Authenticator app (Google Authenticator, 1Password, Authy), then verify with a 6-digit code.'
+      qrCodeUrl,
+      instructions: 'Scan this QR code with Google Authenticator or enter the secret key manually, then verify with a 6-digit code.'
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -3403,7 +3411,7 @@ app.get('/api/admin/astrology/health', authenticate, requireAdmin(AdminPermissio
 });
 
 app.post('/api/admin/astrology/test-calculation', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (_req: AuthenticatedRequest, res: Response) => {
-  // Test reference chart: Aryan Tiwari (2005-08-20 14:05 Jabalpur)
+  // Golden reference calibration chart: Benchmark Native A (2005-08-20 14:05 Jabalpur)
   try {
     const fixture = {
       dob: '2005-08-20',
@@ -4943,7 +4951,7 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
 
     const hasChart = Boolean(dob && lat !== null && lat !== undefined && lon !== null && lon !== undefined);
 
-    // Profile coordinates (Aryan Tiwari baseline)
+    // Profile coordinates (Standard Benchmark baseline)
     const lagna = 'Scorpio';
     const moon = 'Aquarius';
     const dashaMaha = 'Jupiter';

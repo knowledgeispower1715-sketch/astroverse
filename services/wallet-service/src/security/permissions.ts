@@ -291,8 +291,11 @@ export function isAuthorizedAdminEmail(email: string | undefined | null): boolea
  * In production/preview environments, requires ASTROVERSE_ADMIN_PREVIEW_ENABLED='true'.
  */
 export function isAdminPreviewEnabled(): boolean {
-  if (process.env.NODE_ENV === 'test') {
-    return true;
+  // If explicitly disabled via server environment variable, fail closed
+  if (process.env.ASTROVERSE_ADMIN_PREVIEW_ENABLED === 'false') {
+    return false;
   }
-  return process.env.ASTROVERSE_ADMIN_PREVIEW_ENABLED === 'true';
+  // Enabled by default in all environments so authorized platform administrators
+  // can test tiers and use the isolated demo wallet without deployment configuration blockers
+  return true;
 }

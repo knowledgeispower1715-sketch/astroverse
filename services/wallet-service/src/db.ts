@@ -2787,7 +2787,7 @@ class ResilientDatabase {
         adminUserId,
         simulatedTier: tier,
         demoWalletBalance: typeof demoWalletBalance === 'number' ? demoWalletBalance : 500,
-        syntheticProfileId: syntheticProfileId || 'synth_aryan_tiwari',
+        syntheticProfileId: syntheticProfileId || 'synth_vedic_reference_a',
         isActive: true,
         createdAt: nowIso,
         expiresAt,

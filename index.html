@@ -9249,7 +9249,7 @@
               </button>
             </div>
             <div id="admin-astrology-test-result" style="background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 14px; font-size: 12px; font-family: monospace;">
-              Click 'Run Reference Calibration Test' to cross-verify Aryan Tiwari chart calculations live against Swiss Ephemeris golden baselines.
+              Click 'Run Reference Calibration Test' to cross-verify golden reference chart calculations live against Swiss Ephemeris golden baselines.
             </div>
           </div>
         </div>
@@ -9529,7 +9529,7 @@
               </p>
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <select id="admin-synth-profile-select" style="flex: 1; min-width: 260px; padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 12px; background: #FFFFFF;" onchange="onAdminSyntheticProfileChanged()">
-                  <option value="synth_aryan_tiwari">Synthetic Aryan Tiwari (20 Aug 2005, 14:05, Jabalpur, MP - Vrishchika/Kumbha)</option>
+                  <option value="synth_vedic_reference_a">Synthetic Vedic Benchmark Native (20 Aug 2005, 14:05, Jabalpur, MP - Vrishchika/Kumbha)</option>
                   <option value="synth_priyadarshini">Synthetic Priyadarshini Rao (14 Nov 1992, 09:30, Bengaluru, KA - Dhanu/Mithuna)</option>
                   <option value="none">No Test Profile Selected (Ad-hoc Testing)</option>
                 </select>
@@ -9729,6 +9729,83 @@
           <input type="text" id="admin-mfa-code-input" class="form-input-text" placeholder="123456" maxlength="8" style="font-size: 20px; letter-spacing: 4px; text-align: center;">
         </div>
         <button class="btn-gold-primary" style="width: 100%;" onclick="submitAdminMfaChallenge()">Verify &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- Dedicated Admin MFA Setup & QR Code Modal -->
+    <div id="modal-admin-mfa-setup" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminMfaSetupModal()"></div>
+      <div class="modal-content-card" style="max-width: 480px; padding: 28px; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 16px; color: #F8FAFC; box-shadow: 0 20px 60px rgba(0,0,0,0.7);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: #F5C45E; font-size: 18px;">
+              <i class="fa-solid fa-qrcode"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 17px; font-weight: 800; color: #FFFFFF; margin: 0;">Authenticator (2FA) Setup</h3>
+              <div style="font-size: 11.5px; color: #94A3B8;">Scan QR Code with Google Authenticator or Authy</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminMfaSetupModal()" style="color: #94A3B8; font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+        </div>
+
+        <div id="admin-mfa-setup-step-1">
+          <!-- QR Code Display -->
+          <div style="text-align: center; margin: 16px 0 14px;">
+            <div style="display: inline-block; padding: 10px; background: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <img id="admin-mfa-qr-image" src="" alt="Scan QR Code" style="width: 180px; height: 180px; display: block;">
+            </div>
+          </div>
+
+          <!-- Secret Key with Copy -->
+          <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px;">
+              Can't scan? Enter this Secret Key manually:
+            </label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <div id="admin-mfa-secret-display" style="flex: 1; background: #182338; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; font-family: monospace; font-size: 13px; color: #F5C45E; letter-spacing: 1px; word-break: break-all;">
+                Loading secret...
+              </div>
+              <button type="button" class="btn-outline-secondary" onclick="copyAdminMfaSecretKey()" style="padding: 8px 14px; font-size: 12px; color: #CBD5E1; border-color: #475569; white-space: nowrap;">
+                <i class="fa-solid fa-copy"></i> Copy
+              </button>
+            </div>
+          </div>
+
+          <!-- 6-Digit Code Input -->
+          <div style="margin-bottom: 16px;">
+            <label for="admin-mfa-confirm-code" style="display: block; font-size: 12px; font-weight: 700; color: #E2E8F0; margin-bottom: 6px;">
+              Enter 6-Digit Code from Authenticator:
+            </label>
+            <input type="text" id="admin-mfa-confirm-code" maxlength="6" placeholder="000000" autocomplete="one-time-code" style="width: 100%; box-sizing: border-box; background: #182338; border: 1px solid #F5C45E; border-radius: 8px; padding: 10px; color: #FFFFFF; font-size: 20px; font-family: monospace; letter-spacing: 6px; text-align: center;">
+            <div id="admin-mfa-verify-error" style="display: none; color: #FCA5A5; font-size: 11.5px; margin-top: 6px;"></div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-gold-primary" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 700;" onclick="submitAdminMfaActivation()">
+              <i class="fa-solid fa-shield-check"></i> Activate 2FA
+            </button>
+            <button type="button" class="btn-outline-secondary" style="padding: 10px 14px; font-size: 12px; color: #94A3B8; border-color: #334155;" onclick="resetAdminMfaSecretKey()">
+              <i class="fa-solid fa-rotate-left"></i> Reset Key
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Recovery Codes Success View -->
+        <div id="admin-mfa-setup-step-2" style="display: none;">
+          <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 12px; margin-bottom: 16px; color: #6EE7B7; font-size: 12.5px;">
+            <i class="fa-solid fa-circle-check"></i> <strong>MFA Activated Successfully!</strong> Save these 8 single-use recovery codes in a secure password manager.
+          </div>
+          <div id="admin-mfa-recovery-codes-box" style="background: #182338; border: 1px solid #334155; border-radius: 8px; padding: 14px; font-family: monospace; font-size: 12.5px; color: #FFFFFF; line-height: 1.8; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          </div>
+          <button type="button" class="btn-gold-primary" style="width: 100%; margin-bottom: 8px;" onclick="copyAllAdminRecoveryCodes()">
+            <i class="fa-solid fa-copy"></i> Copy All Recovery Codes
+          </button>
+          <button type="button" class="btn-outline-secondary" style="width: 100%; color: #CBD5E1; border-color: #475569;" onclick="closeAdminMfaSetupModal()">
+            Done &bull; Return to Admin Console
+          </button>
+        </div>
       </div>
     </div>
 
@@ -11596,7 +11673,7 @@
           headers,
           body: JSON.stringify({
             tier: normTier,
-            syntheticProfileId: document.getElementById('admin-synth-profile-select')?.value || 'synth_aryan_tiwari'
+            syntheticProfileId: document.getElementById('admin-synth-profile-select')?.value || 'synth_vedic_reference_a'
           })
         });
         if (!res.ok) {
@@ -11690,17 +11767,17 @@
 
     function onAdminSyntheticProfileChanged() {
       const select = document.getElementById('admin-synth-profile-select');
-      const val = select ? select.value : 'synth_aryan_tiwari';
+      const val = select ? select.value : 'synth_vedic_reference_a';
       showToast(`Selected synthetic profile context: ${val === 'none' ? 'None' : val}`, "info");
     }
 
     function loadAdminSyntheticProfileToHarness() {
       const select = document.getElementById('admin-synth-profile-select');
-      const val = select ? select.value : 'synth_aryan_tiwari';
+      const val = select ? select.value : 'synth_vedic_reference_a';
 
-      if (val === 'synth_aryan_tiwari') {
-        const syntheticAryan = {
-          name: 'Aryan Tiwari (Sample)',
+      if (val === 'synth_vedic_reference_a') {
+        const syntheticVedic = {
+          name: 'Vedic Benchmark Native (Sample)',
           gender: 'male',
           dob: ['2005', '08', '20'].join('-'),
           tob: '14:05',
@@ -11711,10 +11788,10 @@
           tz: 5.5,
           isSynthetic: true
         };
-        currentCalculatedChart = syntheticAryan;
-        window.currentCalculatedChart = syntheticAryan;
+        currentCalculatedChart = syntheticVedic;
+        window.currentCalculatedChart = syntheticVedic;
         if (typeof renderKundliView === 'function') renderKundliView();
-        showToast("Loaded Synthetic Aryan Tiwari (Sample Test Profile) into harness.", "success");
+        showToast("Loaded Synthetic Vedic Benchmark Native (Sample Test Profile) into harness.", "success");
       } else if (val === 'synth_priyadarshini') {
         const syntheticPriya = {
           name: 'Priyadarshini Rao (Sample)',
@@ -15480,7 +15557,11 @@
           updateOverviewActiveChartBanner();
         }
         if (notify) showToast("Signed out successfully.", "info");
-        switchNavSection('kundli');
+        if (currentActiveNavSection === 'admin' || currentActiveNavSection === 'admin-login') {
+          switchNavSection('admin-login');
+        } else {
+          switchNavSection('kundli');
+        }
       } finally {
         isSigningOut = false;
       }
@@ -15572,7 +15653,9 @@
             syncPromotionalBannerState();
             return currentUserSession;
           } else if (res.status === 401 || res.status === 403) {
-            executeSignOut(false);
+            if (!isAdminUser()) {
+              executeSignOut(false);
+            }
             return null;
           }
         } catch (err) {
@@ -15701,7 +15784,11 @@
         if (viewKundliBtn) {
           viewKundliBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i> Calculate Free Kundli';
           viewKundliBtn.onclick = () => {
-            switchNavSection('kundli');
+            if (currentActiveNavSection === 'admin' || currentActiveNavSection === 'admin-login') {
+          switchNavSection('admin-login');
+        } else {
+          switchNavSection('kundli');
+        }
             document.getElementById('input-k-name')?.focus();
           };
         }
@@ -15725,7 +15812,11 @@
         if (viewKundliBtn) {
           viewKundliBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i> Calculate Free Kundli';
           viewKundliBtn.onclick = () => {
-            switchNavSection('kundli');
+            if (currentActiveNavSection === 'admin' || currentActiveNavSection === 'admin-login') {
+          switchNavSection('admin-login');
+        } else {
+          switchNavSection('kundli');
+        }
             document.getElementById('input-k-name')?.focus();
           };
         }
@@ -16422,7 +16513,7 @@
 
     async function runAdminAstrologyTest() {
       const target = document.getElementById('admin-astrology-test-result');
-      if (target) target.innerHTML = "Running Swiss Ephemeris golden validation on Aryan Tiwari test fixture...";
+      if (target) target.innerHTML = "Running Swiss Ephemeris golden validation on reference test fixture...";
       try {
         const res = await fetch(`${getAuthBase()}/api/admin/astrology/test-calculation`, {
           method: 'POST',
@@ -16662,30 +16753,120 @@
       }
     }
 
-    function openAdminMfaSetupModal() {
-      fetch(`${getAuthBase()}/api/admin/mfa/setup`, {
-        method: 'POST',
-        headers: getAuthHeaders()
-      }).then(r => r.json()).then(data => {
+    let currentPendingMfaSecret = '';
+    let currentAdminRecoveryCodes = [];
+
+    async function openAdminMfaSetupModal(forceReset = false) {
+      const modal = document.getElementById('modal-admin-mfa-setup');
+      const step1 = document.getElementById('admin-mfa-setup-step-1');
+      const step2 = document.getElementById('admin-mfa-setup-step-2');
+      const qrImg = document.getElementById('admin-mfa-qr-image');
+      const secretDisp = document.getElementById('admin-mfa-secret-display');
+      const codeInput = document.getElementById('admin-mfa-confirm-code');
+      const errDisp = document.getElementById('admin-mfa-verify-error');
+
+      if (step1) step1.style.display = 'block';
+      if (step2) step2.style.display = 'none';
+      if (codeInput) codeInput.value = '';
+      if (errDisp) { errDisp.style.display = 'none'; errDisp.textContent = ''; }
+      if (modal) modal.style.display = 'flex';
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/mfa/setup`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ forceReset })
+        });
+        const data = await res.json();
         if (data.secret) {
-          prompt(`Scan or copy this Base32 TOTP secret into your Authenticator app:\n\n${data.secret}\n\nURL: ${data.otpauthUrl}`, data.secret);
-          const candidate = prompt("Enter the 6-digit code from your authenticator app to confirm activation:");
-          if (candidate) {
-            fetch(`${getAuthBase()}/api/admin/mfa/verify`, {
-              method: 'POST',
-              headers: getAuthHeaders(),
-              body: JSON.stringify({ code: candidate })
-            }).then(r => r.json()).then(ver => {
-              if (ver.success) {
-                if (ver.assuranceToken) sessionStorage.setItem('admin_mfa_token', ver.assuranceToken);
-                alert(`MFA Activated Successfully!\n\nYour 8 Single-Use Recovery Codes:\n${ver.recoveryCodes.join('\n')}\n\nStore these in a secure password manager.`);
-                showToast("Admin MFA Activated!", "success");
-              } else {
-                showToast(ver.message || "MFA Verification failed.", "error");
-              }
-            });
-          }
+          currentPendingMfaSecret = data.secret;
+          if (secretDisp) secretDisp.textContent = data.secret.match(/.{1,4}/g)?.join(' ') || data.secret;
+          if (qrImg) qrImg.src = data.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(data.otpauthUrl)}&size=200x200&margin=8`;
+        } else {
+          showToast(data.message || 'Could not load MFA setup.', 'error');
         }
+      } catch (err) {
+        showToast('Network error loading MFA setup.', 'error');
+      }
+    }
+
+    function closeAdminMfaSetupModal() {
+      const modal = document.getElementById('modal-admin-mfa-setup');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function copyAdminMfaSecretKey() {
+      if (!currentPendingMfaSecret) return;
+      navigator.clipboard.writeText(currentPendingMfaSecret).then(() => {
+        showToast('Secret key copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast(currentPendingMfaSecret, 'info');
+      });
+    }
+
+    function resetAdminMfaSecretKey() {
+      if (confirm('Generate a new QR Code and Secret Key? Any previous codes entered in your authenticator will be replaced.')) {
+        openAdminMfaSetupModal(true);
+      }
+    }
+
+    async function submitAdminMfaActivation() {
+      const codeInput = document.getElementById('admin-mfa-confirm-code');
+      const errDisp = document.getElementById('admin-mfa-verify-error');
+      const code = codeInput?.value?.trim();
+
+      if (!code || !/^\d{6}$/.test(code)) {
+        if (errDisp) {
+          errDisp.textContent = 'Please enter the 6-digit code shown in your Authenticator app.';
+          errDisp.style.display = 'block';
+        }
+        return;
+      }
+      if (errDisp) errDisp.style.display = 'none';
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/mfa/verify`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ code })
+        });
+        const ver = await res.json();
+        if (ver.success) {
+          if (ver.assuranceToken) sessionStorage.setItem('admin_mfa_token', ver.assuranceToken);
+          currentAdminRecoveryCodes = ver.recoveryCodes || [];
+
+          // Show Step 2
+          const step1 = document.getElementById('admin-mfa-setup-step-1');
+          const step2 = document.getElementById('admin-mfa-setup-step-2');
+          const codesBox = document.getElementById('admin-mfa-recovery-codes-box');
+          if (step1) step1.style.display = 'none';
+          if (step2) step2.style.display = 'block';
+          if (codesBox) {
+            codesBox.innerHTML = currentAdminRecoveryCodes.map((c, i) => `<div><strong>${i + 1}.</strong> ${escapeHtml(c)}</div>`).join('');
+          }
+          showToast('MFA Activated Successfully!', 'success');
+        } else {
+          if (errDisp) {
+            errDisp.textContent = ver.message || 'MFA Verification failed. Please ensure your device clock is synchronized.';
+            errDisp.style.display = 'block';
+          }
+          showToast(ver.message || 'Verification failed.', 'error');
+        }
+      } catch (err) {
+        if (errDisp) {
+          errDisp.textContent = 'Network or server error during MFA activation.';
+          errDisp.style.display = 'block';
+        }
+      }
+    }
+
+    function copyAllAdminRecoveryCodes() {
+      if (!currentAdminRecoveryCodes.length) return;
+      const text = 'ASTROVERSE ADMIN 2FA RECOVERY CODES:\n' + currentAdminRecoveryCodes.join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('All 8 recovery codes copied!', 'success');
+      }).catch(() => {
+        showToast('Recovery codes copied.', 'info');
       });
     }
 
@@ -20616,6 +20797,24 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       }
       updateDemoWalletDisplay();
       syncPromotionalBannerState();
+      // Sanitize stored profiles from any legacy test/personal records
+      try {
+        const storedProfiles = JSON.parse(localStorage.getItem('astro_saved_profiles') || '[]');
+        if (Array.isArray(storedProfiles) && storedProfiles.length > 0) {
+          const sanitized = storedProfiles.filter(p => {
+            const name = (p.name || p.profileName || '').toLowerCase();
+            return !name.includes('aryan') && !name.includes('tiwari');
+          });
+          if (sanitized.length !== storedProfiles.length) {
+            localStorage.setItem('astro_saved_profiles', JSON.stringify(sanitized));
+            savedUserProfiles = sanitized;
+          }
+        }
+        const oldChart = localStorage.getItem('astro_active_chart');
+        if (oldChart && (oldChart.toLowerCase().includes('aryan') || oldChart.toLowerCase().includes('tiwari'))) {
+          localStorage.removeItem('astro_active_chart');
+        }
+      } catch (_) {}
       renderSavedProfilesList();
       if (typeof currentCalculatedChart !== 'undefined' && currentCalculatedChart && typeof initGuidanceSuite === 'function') {
         initGuidanceSuite();
@@ -20700,7 +20899,9 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
                   }
                 } else if (event === 'SIGNED_OUT') {
                   if (!isSigningOut) {
-                    executeSignOut(false);
+                    if (!isAdminUser()) {
+                      executeSignOut(false);
+                    }
                   }
                 } else if (event === 'PASSWORD_RECOVERY') {
                   openAuthModal('password');
@@ -28161,7 +28362,9 @@ ${upTable}
           } else if (res.status === 401 || res.status === 403) {
             // Token is expired or invalid on the backend
             console.warn("Session token expired or rejected by server when fetching saved reports.");
-            executeSignOut(false);
+            if (!isAdminUser()) {
+              executeSignOut(false);
+            }
             return [];
           }
         } catch (e) {
