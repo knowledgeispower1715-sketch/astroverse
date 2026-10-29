@@ -8916,29 +8916,114 @@
       </div>
     </section>
 
+    <!-- ==================== TAB 9.5: DEDICATED ADMINISTRATOR LOGIN ==================== -->
+    <section id="view-admin-login" class="page-tab-view" style="min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 40px 16px;">
+      <div class="admin-login-card" style="width: 100%; max-width: 440px; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 16px; padding: 32px 28px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); color: #F8FAFC;">
+        
+        <!-- Header Branding -->
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 14px; background: rgba(212, 175, 55, 0.15); border: 1px solid rgba(212, 175, 55, 0.4); color: #F5C45E; font-size: 26px; margin-bottom: 12px;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <h2 style="font-family: var(--av-font-display, 'Cinzel', serif); font-size: 22px; font-weight: 800; color: #FFFFFF; margin: 0 0 6px; letter-spacing: 0.5px;">AstroVerse Admin Portal</h2>
+          <p style="font-size: 12px; color: #94A3B8; margin: 0; line-height: 1.5;">Restricted Administrative Control Centre • Authoritative Server Authorization</p>
+        </div>
+
+        <!-- Security Warning Notice -->
+        <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 10px 12px; margin-bottom: 20px; font-size: 11.5px; color: #CBD5E1; display: flex; gap: 8px; align-items: flex-start;">
+          <i class="fa-solid fa-triangle-exclamation" style="color: #F59E0B; margin-top: 2px;"></i>
+          <span>Authorized staff only. Consumer Google sign-in is disabled on this portal. All access attempts are logged and cryptographically audited.</span>
+        </div>
+
+        <!-- Error Message Banner -->
+        <div id="admin-login-error" style="display: none; background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.4); border-radius: 8px; padding: 10px 14px; color: #FCA5A5; font-size: 12px; margin-bottom: 16px;"></div>
+
+        <!-- Admin Login Form -->
+        <form id="form-admin-login" onsubmit="handleAdminLoginSubmit(event)" autocomplete="off">
+          <div style="margin-bottom: 16px;">
+            <label for="admin-login-email" style="display: block; font-size: 12px; font-weight: 700; color: #E2E8F0; margin-bottom: 6px;">Administrator Email</label>
+            <div style="position: relative;">
+              <i class="fa-solid fa-envelope" style="position: absolute; left: 12px; top: 12px; color: #64748B; font-size: 14px;"></i>
+              <input type="email" id="admin-login-email" required placeholder="admin@astroverse.app" style="width: 100%; box-sizing: border-box; background: #182338; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px 10px 36px; color: #FFFFFF; font-size: 13px;" autocomplete="username">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label for="admin-login-password" style="font-size: 12px; font-weight: 700; color: #E2E8F0;">Password</label>
+            </div>
+            <div style="position: relative;">
+              <i class="fa-solid fa-lock" style="position: absolute; left: 12px; top: 12px; color: #64748B; font-size: 14px;"></i>
+              <input type="password" id="admin-login-password" required placeholder="••••••••••••" style="width: 100%; box-sizing: border-box; background: #182338; border: 1px solid #334155; border-radius: 8px; padding: 10px 36px 10px 36px; color: #FFFFFF; font-size: 13px;" autocomplete="current-password">
+              <button type="button" onclick="toggleAdminPasswordVisibility()" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: #94A3B8; cursor: pointer; padding: 2px;" aria-label="Toggle password visibility">
+                <i class="fa-solid fa-eye" id="admin-pwd-toggle-icon"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- MFA TOTP Step-Up Field (Revealed if MFA is required) -->
+          <div id="admin-mfa-container" style="display: none; margin-bottom: 16px; background: rgba(30, 41, 59, 0.7); border: 1px dashed rgba(212, 175, 55, 0.4); border-radius: 8px; padding: 12px;">
+            <label for="admin-login-mfa" style="display: block; font-size: 12px; font-weight: 700; color: #F5C45E; margin-bottom: 6px;">
+              <i class="fa-solid fa-key"></i> Authenticator 6-Digit TOTP Code
+            </label>
+            <input type="text" id="admin-login-mfa" maxlength="6" placeholder="123456" style="width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 10px; color: #FFFFFF; font-size: 16px; letter-spacing: 4px; text-align: center; font-family: monospace;">
+            <span style="display: block; font-size: 11px; color: #94A3B8; margin-top: 4px;">Enter the code from your authenticator app or an 8-character recovery code.</span>
+          </div>
+
+          <button type="submit" id="btn-admin-login-submit" class="btn-gold-primary" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 700; justify-content: center; min-height: 44px; margin-top: 8px;">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Admin Console
+          </button>
+        </form>
+
+        <!-- Recovery & Return Links -->
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); text-align: center; font-size: 11.5px; color: #64748B; display: flex; flex-direction: column; gap: 10px;">
+          <div>
+            <span>Lost administrator access?</span>
+            <a href="javascript:void(0)" onclick="openAdminRecoveryGuidance()" style="color: #F5C45E; text-decoration: underline; margin-left: 4px;">Recovery Procedures</a>
+          </div>
+          <div>
+            <a href="#/overview" onclick="switchNavSection('overview')" style="color: #94A3B8; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-arrow-left"></i> Return to AstroVerse Public App
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
     <!-- ==================== TAB 10: ADMINISTRATIVE MANAGEMENT CONSOLE ==================== -->
     <section id="view-admin" class="page-tab-view">
-      <div class="section-title-wrap">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <!-- Admin Top Operational Navigation Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: #F5C45E; font-size: 18px;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
           <div>
-            <h2><i class="fa-solid fa-shield-halved" style="color: #991B1B;"></i> Astroverse Administrative Console</h2>
-            <p>Enterprise platform monitoring, 7-role RBAC governance, MFA assurance, and 15 operational modules.</p>
+            <div style="font-size: 14px; font-weight: 800; color: #FFFFFF;">AstroVerse Administrative Control Centre</div>
+            <div style="font-size: 11px; color: #94A3B8;">Authoritative RBAC Mode &bull; Connected Identity: <strong id="admin-header-email" style="color: #F5C45E;">--</strong></div>
           </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="badge-role-admin" id="admin-role-badge">OWNER</span>
-            <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="openAdminMfaSetupModal()">
-              <i class="fa-solid fa-key"></i> Setup MFA
-            </button>
-          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="badge-role-admin" id="admin-role-badge">OWNER</span>
+          <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569;" onclick="openAdminMfaSetupModal()">
+            <i class="fa-solid fa-key"></i> Setup MFA
+          </button>
+          <a href="#/overview" onclick="switchNavSection('overview')" class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569; text-decoration: none;">
+            <i class="fa-solid fa-globe"></i> Customer App
+          </a>
+          <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #FCA5A5; border-color: #991B1B;" onclick="adminLogout()">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+          </button>
         </div>
       </div>
 
-      <!-- Access Denied Banner (if regular user) -->
+      <!-- Access Denied Banner (if non-admin user) -->
       <div id="admin-access-denied" class="empty-state-card" style="display: none; padding: 36px 20px; background: #FEF2F2; border-color: #FECACA;">
         <i class="fa-solid fa-lock" style="font-size: 36px; color: #DC2626; margin-bottom: 12px;"></i>
         <h3 style="font-size: 18px; font-weight: 800; color: #991B1B;">Administrative Access Required</h3>
         <p style="font-size: 13px; color: #7F1D1D; margin: 8px 0 16px;">This portal is strictly restricted to authorized platform personnel (Owner, Security, Support, Content, Finance, Operations, Analyst).</p>
-        <button class="btn-gold-primary" onclick="openAuthModal()">Sign in with Admin Credentials</button>
+        <button class="btn-gold-primary" onclick="switchNavSection('admin-login')"><i class="fa-solid fa-lock"></i> Sign In to Administrator Portal</button>
       </div>
 
       <!-- Admin Dashboard Content -->
@@ -11041,6 +11126,33 @@
       }
 
       currentActiveNavSection = targetSection;
+
+      // Dedicated route protection for Administrative Portal
+      if (targetSection === 'admin') {
+        const isAdmin = currentUserSession && CANONICAL_ADMIN_ROLES.includes(currentUserSession.role);
+        if (!isAdmin) {
+          switchNavSection('admin-login', updateHash);
+          return;
+        }
+      }
+
+      if (targetSection === 'admin-login') {
+        const isAdmin = currentUserSession && CANONICAL_ADMIN_ROLES.includes(currentUserSession.role);
+        if (isAdmin) {
+          switchNavSection('admin', updateHash);
+          return;
+        }
+      }
+
+      // Hide customer bottom mobile dock on admin pages to guarantee strict experience separation
+      const mobDock = document.querySelector('.mob-bottom-dock');
+      if (mobDock) {
+        if (targetSection === 'admin' || targetSection === 'admin-login') {
+          mobDock.style.display = 'none';
+        } else {
+          mobDock.style.display = '';
+        }
+      }
 
       // Hide hero banner on task-specific pages, show only on overview
       const mainHero = document.getElementById('main-hero-banner');
@@ -15810,6 +15922,7 @@
       const deniedBox = document.getElementById('admin-access-denied');
       const contentBox = document.getElementById('admin-dashboard-content');
       const roleBadge = document.getElementById('admin-role-badge');
+      const headerEmail = document.getElementById('admin-header-email');
 
       if (!isAdmin) {
         if (deniedBox) deniedBox.style.display = 'block';
@@ -15820,8 +15933,148 @@
       if (deniedBox) deniedBox.style.display = 'none';
       if (contentBox) contentBox.style.display = 'block';
       if (roleBadge) roleBadge.textContent = currentUserSession.role;
+      if (headerEmail) headerEmail.textContent = currentUserSession.email || currentUserSession.identifier || 'Admin';
 
       switchAdminModule(currentAdminActiveModule || 'overview');
+    }
+
+    // ==================== DEDICATED ADMINISTRATOR AUTHENTICATION CONTROLLERS ====================
+
+    function toggleAdminPasswordVisibility() {
+      const pwdInput = document.getElementById('admin-login-password');
+      const icon = document.getElementById('admin-pwd-toggle-icon');
+      if (!pwdInput) return;
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+        if (icon) { icon.className = 'fa-solid fa-eye-slash'; }
+      } else {
+        pwdInput.type = 'password';
+        if (icon) { icon.className = 'fa-solid fa-eye'; }
+      }
+    }
+
+    function openAdminRecoveryGuidance() {
+      alert(
+        "AstroVerse Administrator Account Recovery:\n\n" +
+        "1. Supabase Dashboard: Navigate to Authentication -> Users, search your owner email, and trigger 'Send Password Recovery'.\n" +
+        "2. CLI Recovery: Run on the application server:\n   npm run admin:provision -- --email owner@astroverse.app --role OWNER\n" +
+        "3. First-Owner Bootstrap: If no owner exists and ASTROVERSE_BOOTSTRAP_SECRET is set, use the protected setup endpoint.\n\n" +
+        "Note: To protect production security, administrator credentials can never be recovered over public communication channels."
+      );
+    }
+
+    async function handleAdminLoginSubmit(e) {
+      if (e) e.preventDefault();
+      const emailInput = document.getElementById('admin-login-email');
+      const pwdInput = document.getElementById('admin-login-password');
+      const mfaInput = document.getElementById('admin-login-mfa');
+      const errBox = document.getElementById('admin-login-error');
+      const submitBtn = document.getElementById('btn-admin-login-submit');
+
+      const email = emailInput?.value?.trim() || '';
+      const password = pwdInput?.value || '';
+      const mfaCode = mfaInput?.value?.trim() || '';
+
+      if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+      if (!email || !password) {
+        if (errBox) {
+          errBox.textContent = 'Please enter both administrator email and password.';
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Authenticating...';
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/admin-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, mfaCode })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.status === 'MFA_REQUIRED') {
+          const mfaContainer = document.getElementById('admin-mfa-container');
+          if (mfaContainer) {
+            mfaContainer.style.display = 'block';
+            mfaInput?.focus();
+          }
+          if (errBox) {
+            errBox.style.background = 'rgba(245, 158, 11, 0.15)';
+            errBox.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+            errBox.style.color = '#FDE68A';
+            errBox.textContent = 'Two-factor authentication code required. Please enter your 6-digit TOTP code.';
+            errBox.style.display = 'block';
+          }
+          return;
+        }
+
+        if (res.ok && data.status === 'AUTHENTICATED') {
+          const u = data.user;
+          currentSessionToken = data.sessionToken;
+          currentUserSession = {
+            id: u.id,
+            name: u.displayName || u.email?.split('@')[0] || 'Admin',
+            identifier: u.email,
+            email: u.email,
+            role: u.role,
+            status: u.status
+          };
+          if (data.assuranceToken) {
+            localStorage.setItem('astro_admin_assurance', data.assuranceToken);
+          }
+          localStorage.setItem('astro_session_token', currentSessionToken);
+          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+
+          updateUserSessionUI();
+          showToast(`Welcome to Admin Console, ${currentUserSession.name}!`, 'success');
+
+          // Transition to /admin
+          switchNavSection('admin');
+        } else {
+          if (errBox) {
+            errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+            errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+            errBox.style.color = '#FCA5A5';
+            errBox.textContent = data.message || 'Administrator authentication failed.';
+            errBox.style.display = 'block';
+          }
+          showToast(data.message || 'Authentication failed', 'error');
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = 'Network or server error during admin authentication.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Admin Console';
+        }
+      }
+    }
+
+    async function adminLogout() {
+      try {
+        await fetch(`${getAuthBase()}/api/auth/logout`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+      } catch (_) {}
+
+      currentSessionToken = null;
+      currentUserSession = null;
+      localStorage.removeItem('astro_session_token');
+      localStorage.removeItem('astro_user_session');
+      localStorage.removeItem('astro_admin_assurance');
+
+      updateUserSessionUI();
+      showToast('Administrator session closed successfully.', 'info');
+      switchNavSection('admin-login');
     }
 
     async function loadAdminOverview() {
@@ -16336,13 +16589,31 @@
     // Hash and Pathname Route Listener
     function handleHashRoute() {
       const pathname = (window.location.pathname || '').replace(/\/+$/, '').toLowerCase();
-      if (pathname === '/admin') {
-        switchNavSection('admin', false);
+      const hash = window.location.hash.replace('#/', '').replace('#', '').toLowerCase();
+
+      // Dedicated Admin Experience Routing
+      if (pathname === '/admin/login' || hash === 'admin/login' || hash === 'admin-login') {
+        const isAdmin = currentUserSession && CANONICAL_ADMIN_ROLES.includes(currentUserSession.role);
+        if (isAdmin) {
+          switchNavSection('admin', false);
+        } else {
+          switchNavSection('admin-login', false);
+        }
         return;
       }
-      const hash = window.location.hash.replace('#/', '').replace('#', '');
+
+      if (pathname === '/admin' || hash === 'admin') {
+        const isAdmin = currentUserSession && CANONICAL_ADMIN_ROLES.includes(currentUserSession.role);
+        if (isAdmin) {
+          switchNavSection('admin', false);
+        } else {
+          switchNavSection('admin-login', false);
+        }
+        return;
+      }
+
       const authRoutes = ['login', 'signup', 'verify', 'forgot-password', 'reset-password', 'complete-profile', 'settings/security'];
-      const validTabs = ['overview', 'kundli', 'horas', 'astrologers', 'matchmaking', 'horoscope', 'tools', 'dashboard', 'pujas', 'auth', 'settings', 'admin'];
+      const validTabs = ['overview', 'kundli', 'horas', 'astrologers', 'matchmaking', 'horoscope', 'tools', 'dashboard', 'pujas', 'auth', 'settings', 'admin', 'admin-login'];
       if (authRoutes.includes(hash) || validTabs.includes(hash)) {
         switchNavSection(hash, false);
       } else if (!hash) {

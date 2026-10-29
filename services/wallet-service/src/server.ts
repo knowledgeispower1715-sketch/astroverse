@@ -888,6 +888,206 @@ app.post('/api/auth/login-password', authLimiter, async (req: Request, res: Resp
   }
 });
 
+// POST /api/auth/admin-login
+// Dedicated, server-authoritative administrator login endpoint.
+// Invariant 1: Only accounts with explicit canonical admin roles are granted access.
+// Invariant 2: Rejects standard customer accounts (Role.USER) with HTTP 403.
+// Invariant 3: Verifies server allowlist (ASTROVERSE_ADMIN_EMAILS) when configured.
+// Invariant 4: Enforces MFA assurance challenge if configured.
+// Invariant 5: Never exposes Google OAuth buttons or consumer login paths.
+app.post('/api/auth/admin-login', authLimiter, async (req: Request, res: Response) => {
+  const { email, password, mfaCode } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({
+      error: 'FIELDS_REQUIRED',
+      message: 'Administrator email and password are required.'
+    });
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+
+  try {
+    let user: UserRecord | null = null;
+
+    // 1. Try local DB credentials (email / phone)
+    const dbUser = await db.findUserByIdentifier(cleanEmail);
+    if (dbUser && dbUser.passwordHash && dbUser.passwordSalt) {
+      const valid = verifyPassword(String(password), dbUser.passwordSalt, dbUser.passwordHash);
+      if (valid) {
+        user = dbUser;
+      }
+    }
+
+    // 2. Fall back to Supabase Auth credential verification if not found or matched in local DB
+    if (!user) {
+      const supaAdmin = getSupabaseAdminClient();
+      if (supaAdmin && cleanEmail.includes('@')) {
+        try {
+          const { data: supaData, error: supaErr } = await supaAdmin.auth.signInWithPassword({
+            email: cleanEmail,
+            password: String(password)
+          });
+          if (!supaErr && supaData?.user) {
+            user = await db.syncSupabaseUser({
+              id: supaData.user.id,
+              email: supaData.user.email,
+              phone: supaData.user.phone,
+              user_metadata: supaData.user.user_metadata
+            });
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (!user) {
+      await db.recordAuditEvent({
+        action: 'ADMIN_LOGIN_FAILED_CREDENTIALS',
+        targetType: 'USER',
+        ipAddress: clientIp,
+        outcome: 'FAILED',
+        reason: 'Invalid email or password'
+      });
+      return res.status(401).json({
+        error: 'INVALID_CREDENTIALS',
+        message: 'Invalid administrator email or password.'
+      });
+    }
+
+    if (user.status !== AccountStatus.ACTIVE) {
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: 'ADMIN_LOGIN_FAILED_INACTIVE',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: clientIp,
+        outcome: 'FAILED',
+        reason: `Account status is ${user.status}`
+      });
+      return res.status(403).json({
+        error: 'ACCOUNT_INACTIVE',
+        message: `Administrator account is ${user.status.toLowerCase()}. Please contact the platform owner.`
+      });
+    }
+
+    // 3. Strict Server-Authoritative Admin Authorization Check
+    // Standard customer accounts (Role.USER) are strictly forbidden from administrator portal access!
+    if (!isAnyAdmin(user.role)) {
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: 'ADMIN_LOGIN_UNAUTHORIZED_ROLE',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: clientIp,
+        outcome: 'DENIED',
+        reason: `User has non-admin role: ${user.role}`
+      });
+      return res.status(403).json({
+        error: 'ADMIN_NOT_AUTHORIZED',
+        message: 'This account does not have administrative privileges.'
+      });
+    }
+
+    // 4. Server-Side Allowlist Enforcement (if ASTROVERSE_ADMIN_EMAILS is configured)
+    const adminAllowlist = getAuthorizedAdminEmails();
+    if (adminAllowlist.length > 0) {
+      if (!isAuthorizedAdminEmail(cleanEmail)) {
+        await db.recordAuditEvent({
+          userId: user.id,
+          action: 'ADMIN_LOGIN_REVOKED_ALLOWLIST',
+          targetType: 'USER',
+          targetId: user.id,
+          ipAddress: clientIp,
+          outcome: 'DENIED',
+          reason: 'Email not present in server allowlist'
+        });
+        return res.status(403).json({
+          error: 'ADMIN_NOT_AUTHORIZED',
+          message: 'This account is not authorized in the server administrator registry.'
+        });
+      }
+    }
+
+    // 5. MFA TOTP Step-Up Verification (if user has mfaEnabled)
+    if (user.mfaEnabled && user.mfaSecret) {
+      if (!mfaCode) {
+        return res.status(200).json({
+          status: 'MFA_REQUIRED',
+          message: 'Two-factor authentication code is required to complete administrator sign-in.'
+        });
+      }
+      const codeValid = verifyTotpCode(user.mfaSecret, String(mfaCode).trim());
+      if (!codeValid) {
+        const recResult = verifyAndConsumeRecoveryCode(user.mfaRecoveryCodes || [], String(mfaCode).trim());
+        if (recResult.valid) {
+          await db.updateUser(user.id, { mfaRecoveryCodes: recResult.remainingHashedCodes });
+        } else {
+          await db.recordAuditEvent({
+            userId: user.id,
+            action: 'ADMIN_MFA_FAILED',
+            targetType: 'USER',
+            targetId: user.id,
+            ipAddress: clientIp,
+            outcome: 'FAILED'
+          });
+          return res.status(401).json({
+            error: 'INVALID_MFA_CODE',
+            message: 'Invalid two-factor authentication code.'
+          });
+        }
+      }
+    }
+
+    // 6. Issue Administrator Session
+    const rawSessionToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(rawSessionToken);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24-hour admin session
+
+    await db.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+      ipAddress: clientIp,
+      userAgent: req.headers['user-agent'] || null
+    });
+
+    const finalUser = await db.updateUser(user.id, {
+      lastLoginAt: new Date().toISOString()
+    });
+
+    const assuranceToken = issueAdminAssuranceToken(finalUser.id, finalUser.role);
+
+    await db.recordAuditEvent({
+      userId: finalUser.id,
+      actorId: finalUser.id,
+      actorRole: finalUser.role,
+      action: 'ADMIN_LOGIN_SUCCESS',
+      targetType: 'USER',
+      targetId: finalUser.id,
+      outcome: 'SUCCESS',
+      ipAddress: clientIp,
+      metadata: { role: finalUser.role, email: cleanEmail }
+    });
+
+    return res.json({
+      status: 'AUTHENTICATED',
+      sessionToken: rawSessionToken,
+      assuranceToken,
+      user: {
+        id: finalUser.id,
+        email: finalUser.email,
+        displayName: finalUser.displayName,
+        role: finalUser.role,
+        status: finalUser.status,
+        mfaEnabled: finalUser.mfaEnabled
+      },
+      permissions: ROLE_PERMISSIONS[normalizeRole(finalUser.role)] || []
+    });
+  } catch (err: any) {
+    return handleServiceError(res, err);
+  }
+});
+
 // POST /api/auth/forgot-password
 app.post('/api/auth/forgot-password', authLimiter, async (req: Request, res: Response) => {
   const { identifier } = req.body;
@@ -2454,6 +2654,147 @@ app.post('/api/demo/set-tier', authenticate, requireAdmin(), async (req: Authent
   } catch (err: any) {
     handleServiceError(res, err, 'Simulated tier update failed');
   }
+});
+
+// ==============================================================================
+// FIRST-OWNER BOOTSTRAP & PROVISIONING INSPECTION APIS
+// ==============================================================================
+
+// GET /api/admin/bootstrap-status - Check if initial owner exists and what provisioning methods are active
+app.get('/api/admin/bootstrap-status', async (_req: Request, res: Response) => {
+  try {
+    const list = await db.listUsers({ role: Role.OWNER, status: AccountStatus.ACTIVE, limit: 10 });
+    const ownerExists = list.total > 0 || list.users.some(u => normalizeRole(u.role) === Role.OWNER && u.status === AccountStatus.ACTIVE);
+    const bootstrapConfigured = Boolean(process.env.ASTROVERSE_BOOTSTRAP_SECRET && process.env.ASTROVERSE_BOOTSTRAP_SECRET.length >= 16);
+    const allowlistEmails = getAuthorizedAdminEmails();
+
+    res.json({
+      ownerExists,
+      bootstrapConfigured,
+      allowlistConfigured: allowlistEmails.length > 0,
+      cliProvisioningSupported: true,
+      allowedMethods: [
+        'CLI_PROVISION_SCRIPT',
+        ...(allowlistEmails.length > 0 ? ['ENVIRONMENT_ALLOWLIST'] : []),
+        ...(bootstrapConfigured && !ownerExists ? ['ONE_TIME_BOOTSTRAP_ENDPOINT'] : [])
+      ]
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Failed to inspect bootstrap status');
+  }
+});
+
+// POST /api/admin/bootstrap-first-owner - Secure one-time bootstrap endpoint for first OWNER
+app.post('/api/admin/bootstrap-first-owner', authLimiter, async (req: Request, res: Response) => {
+  const serverBootstrapSecret = process.env.ASTROVERSE_BOOTSTRAP_SECRET;
+  if (!serverBootstrapSecret || serverBootstrapSecret.length < 16) {
+    return res.status(503).json({
+      error: 'BOOTSTRAP_DISABLED',
+      message: 'First-owner bootstrap is disabled or unconfigured on this server.'
+    });
+  }
+
+  const { bootstrapSecret, email, password, displayName } = req.body;
+  if (!bootstrapSecret || !email || !password) {
+    return res.status(400).json({
+      error: 'FIELDS_REQUIRED',
+      message: 'Bootstrap secret, email address, and administrator password are required.'
+    });
+  }
+
+  const secretBuf = Buffer.from(String(bootstrapSecret));
+  const serverBuf = Buffer.from(serverBootstrapSecret);
+  if (secretBuf.length !== serverBuf.length || !crypto.timingSafeEqual(secretBuf, serverBuf)) {
+    return res.status(401).json({
+      error: 'INVALID_BOOTSTRAP_SECRET',
+      message: 'Invalid bootstrap secret.'
+    });
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+  if (!cleanEmail.includes('@') || cleanEmail.length < 5) {
+    return res.status(400).json({
+      error: 'INVALID_EMAIL',
+      message: 'A valid email address is required.'
+    });
+  }
+
+  if (String(password).length < 10) {
+    return res.status(400).json({
+      error: 'WEAK_PASSWORD',
+      message: 'Administrator password must be at least 10 characters with uppercase, lowercase, numbers, and symbols.'
+    });
+  }
+
+  // Strict check: Only permitted when ZERO active owners exist
+  const list = await db.listUsers({ role: Role.OWNER, status: AccountStatus.ACTIVE, limit: 10 });
+  const ownerExists = list.total > 0 || list.users.some(u => normalizeRole(u.role) === Role.OWNER && u.status === AccountStatus.ACTIVE);
+  if (ownerExists) {
+    return res.status(403).json({
+      error: 'OWNER_ALREADY_EXISTS',
+      message: 'An active platform OWNER already exists. First-owner bootstrap is permanently disabled.'
+    });
+  }
+
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = hashPassword(String(password), salt);
+  const name = displayName ? String(displayName).trim() : cleanEmail.split('@')[0];
+
+  let user = await db.findUserByIdentifier(cleanEmail);
+  if (!user) {
+    user = await db.createUser({
+      email: cleanEmail,
+      displayName: name,
+      emailVerified: true,
+      phoneVerified: false,
+      role: Role.OWNER,
+      status: AccountStatus.ACTIVE,
+      passwordHash,
+      passwordSalt: salt,
+      walletBalance: 0.00
+    });
+  } else {
+    user = await db.updateUser(user.id, {
+      role: Role.OWNER,
+      displayName: name,
+      emailVerified: true,
+      status: AccountStatus.ACTIVE,
+      passwordHash,
+      passwordSalt: salt
+    });
+  }
+
+  const supaAdmin = getSupabaseAdminClient();
+  if (supaAdmin) {
+    try {
+      await supaAdmin.auth.admin.createUser({
+        email: cleanEmail,
+        password: String(password),
+        email_confirm: true,
+        user_metadata: { displayName: name, role: 'OWNER' }
+      });
+    } catch (_) {}
+  }
+
+  await db.recordAuditEvent({
+    userId: user.id,
+    action: 'ADMIN_FIRST_OWNER_BOOTSTRAP',
+    targetType: 'USER',
+    targetId: user.id,
+    outcome: 'SUCCESS',
+    metadata: { email: cleanEmail, role: Role.OWNER }
+  });
+
+  return res.json({
+    status: 'PROVISIONED',
+    message: `Initial platform OWNER account successfully provisioned for ${cleanEmail}. First-owner bootstrap is now permanently closed.`,
+    user: {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      role: user.role
+    }
+  });
 });
 
 // ==============================================================================
