@@ -9970,6 +9970,52 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL: DEDICATED PAYMENT STATUS & RECOVERY ==================== -->
+  <div id="modal-payment-status" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10700;">
+    <div class="modal-dialog-card" style="max-width: 440px; width: 92%; max-height: 90vh; overflow-y: auto; padding: 26px 22px; text-align: center; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25); border: 1px solid rgba(217, 119, 6, 0.3); background: #FFFFFF;">
+      <!-- State Icon Container -->
+      <div id="payment-status-icon-wrap" style="width: 68px; height: 68px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; background: #FEF3C7; color: #D97706; transition: all 0.3s ease;">
+        <i class="fa-solid fa-spinner fa-spin" id="payment-status-icon"></i>
+      </div>
+
+      <!-- State Title & Subtitle -->
+      <h3 id="payment-status-title" style="font-size: 19px; font-weight: 800; color: #1E1B4B; margin: 0 0 8px;">Preparing Secure Payment</h3>
+      <p id="payment-status-desc" style="font-size: 13px; color: #64748B; margin: 0 0 18px; line-height: 1.5;">Connecting with Cashfree Payments...</p>
+
+      <!-- Order Details Summary Box -->
+      <div id="payment-status-meta" style="display: none; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; text-align: left; font-size: 12.5px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #64748B;">Item / Plan:</span>
+          <strong id="payment-status-item" style="color: #1E293B;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: #64748B;">Amount Payable:</span>
+          <strong id="payment-status-amount" style="color: #059669; font-size: 13.5px;">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #64748B;">Order Reference:</span>
+          <span id="payment-status-orderid" style="color: #94A3B8; font-family: monospace; font-size: 11px;">-</span>
+        </div>
+      </div>
+
+      <!-- Security / Trust Badge -->
+      <div id="payment-status-trust" style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11.5px; color: #64748B; margin-bottom: 20px;">
+        <i class="fa-solid fa-shield-halved" style="color: #059669;"></i>
+        <span>256-Bit TLS Encrypted &bull; Cashfree Verified</span>
+      </div>
+
+      <!-- Action Buttons -->
+      <div id="payment-status-actions" style="display: flex; gap: 10px; justify-content: center;">
+        <button id="btn-payment-action-primary" class="btn-gold-primary" style="display: none; min-width: 130px; justify-content: center; padding: 9px 16px; font-weight: 700; font-size: 13px;" onclick="handlePaymentPrimaryAction()">
+          Continue
+        </button>
+        <button id="btn-payment-action-secondary" class="btn-outline-secondary" style="min-width: 90px; justify-content: center; padding: 9px 16px; font-weight: 600; font-size: 13px;" onclick="handlePaymentCancellation()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== MODAL: REPORT STUDIO & STORE ==================== -->
   <div id="modal-report-store" class="modal-backdrop-wrap" style="display: none; align-items: center; justify-content: center; z-index: 10620;">
     <div class="modal-dialog-card" style="max-width: 980px; width: 94%; max-height: 90vh; overflow-y: auto; padding: 26px;">
@@ -16299,47 +16345,150 @@
       }
 
       const { base, bonus } = selectedRechargePack;
-      const creditAmt = base + bonus;
-      showToast(`Creating secure order for ₹${creditAmt}...`, "info");
+      const gst = parseFloat((base * 0.18).toFixed(2));
+      const totalPayable = parseFloat((base + gst).toFixed(2));
+      const totalCredit = parseFloat((base + bonus).toFixed(2));
+
+      const targetBtn = document.getElementById('btn-proceed-pay');
+      const originalBtnHtml = targetBtn ? targetBtn.innerHTML : '';
+
+      setPaymentState(PAYMENT_STATES.VALIDATING, {
+        type: 'wallet',
+        item: `Wallet Recharge: ₹${base} (+₹${bonus} Bonus)`,
+        amount: `₹${totalPayable.toFixed(2)}`,
+        retryFn: () => executeSelectedRecharge(),
+        resetBtn: () => {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+        }
+      });
 
       try {
+        if (targetBtn) {
+          targetBtn.disabled = true;
+          targetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparing...';
+        }
+
+        await ensureCashfreeConfig();
+
+        setPaymentState(PAYMENT_STATES.CREATING_ORDER, {
+          item: `Wallet Credit: ₹${totalCredit.toFixed(2)}`,
+          amount: `₹${totalPayable.toFixed(2)}`,
+          message: `Creating secure order for ₹${totalPayable.toFixed(2)}...`
+        });
+
         const orderRes = await fetch(`${getAuthBase()}/api/wallet/create-order`, {
           method: 'POST',
           headers: getAuthHeaders(),
-          body: JSON.stringify({ amount: creditAmt })
+          body: JSON.stringify({ amount: base })
         });
 
         if (!orderRes.ok) {
           const errData = await orderRes.json().catch(() => ({}));
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
           if (orderRes.status === 401) {
             handleAuthExpired({ type: 'recharge', pack: selectedRechargePack });
             return;
           }
-          showToast(errData.message || "Failed to create payment order. Gateway unavailable.", "error");
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            message: errData.message || "Failed to create payment order. Gateway unavailable.",
+            retryFn: () => executeSelectedRecharge()
+          });
           return;
         }
 
         const orderData = await orderRes.json();
-        if (orderData.paymentSessionId && typeof window.Cashfree !== 'undefined') {
-          const cashfree = window.Cashfree({ mode: (window.CASHFREE_ENV === 'production' ? 'production' : 'sandbox') });
-          cashfree.checkout({
-            paymentSessionId: orderData.paymentSessionId,
-            redirectTarget: '_modal'
-          }).then(result => {
-            if (result.error) {
-              showToast(result.error.message || "Payment was cancelled or failed.", "error");
-            }
-            if (result.paymentDetails) {
-              verifyAndCreditWallet(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId);
-            }
+        if (!orderData.paymentSessionId) {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            message: orderData.message || "Online payments are currently unconfigured.",
+            retryFn: () => executeSelectedRecharge()
           });
-        } else if (orderData.paymentSessionId) {
-          showToast(`Cashfree order created (${orderData.orderId}). Loading payment modal...`, "info");
-        } else {
-          showToast(orderData.message || "Online payments are currently unconfigured. Please try again later.", "warning");
+          return;
         }
+
+        setPaymentState(PAYMENT_STATES.INITIALIZING_CHECKOUT, {
+          orderId: orderData.orderId,
+          paymentSessionId: orderData.paymentSessionId
+        });
+
+        await loadCashfreeSDK();
+
+        if (typeof window.Cashfree !== 'function') {
+          throw new Error("Cashfree SDK failed to initialize.");
+        }
+
+        const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+        const cashfree = window.Cashfree({ mode: sdkMode });
+
+        setPaymentState(PAYMENT_STATES.CHECKOUT_OPEN, {
+          orderId: orderData.orderId
+        });
+
+        cashfree.checkout({
+          paymentSessionId: orderData.paymentSessionId,
+          redirectTarget: '_modal'
+        }).then(result => {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+
+          if (result.error) {
+            const msg = (result.error.message || '').toLowerCase();
+            const isCancelled = msg.includes('abandoned') || msg.includes('cancelled') || result.error.code === 'payment_cancelled';
+            if (isCancelled) {
+              setPaymentState(PAYMENT_STATES.CANCELLED, {
+                orderId: orderData.orderId,
+                message: "Wallet recharge checkout was cancelled."
+              });
+            } else {
+              setPaymentState(PAYMENT_STATES.FAILED, {
+                orderId: orderData.orderId,
+                message: result.error.message || "Payment was declined or failed.",
+                retryFn: () => executeSelectedRecharge()
+              });
+            }
+            return;
+          }
+
+          if (result.paymentDetails) {
+            setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
+              orderId: orderData.orderId,
+              message: 'Confirming wallet recharge payment...'
+            });
+            verifyAndCreditWallet(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId);
+          }
+        }).catch(sdkErr => {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+          console.error("Cashfree checkout error:", sdkErr);
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            message: sdkErr.message || "An unexpected error occurred during checkout.",
+            retryFn: () => executeSelectedRecharge()
+          });
+        });
+
       } catch (err) {
-        showToast("Network error while connecting to payment gateway.", "error");
+        if (targetBtn) {
+          targetBtn.disabled = false;
+          targetBtn.innerHTML = originalBtnHtml;
+        }
+        console.error("Wallet checkout error:", err);
+        setPaymentState(PAYMENT_STATES.FAILED, {
+          message: err.message || "Network error while connecting to payment gateway.",
+          retryFn: () => executeSelectedRecharge()
+        });
       }
     }
 
@@ -16353,7 +16502,11 @@
 
         if (!verifyRes.ok) {
           const errData = await verifyRes.json().catch(() => ({}));
-          showToast(errData.message || "Payment verification failed.", "error");
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            orderId,
+            message: errData.message || "Payment verification failed with server.",
+            retryFn: () => verifyAndCreditWallet(orderId, paymentId, signature)
+          });
           return;
         }
 
@@ -16361,11 +16514,18 @@
         currentWalletBalance = parseFloat(verifyData.newBalance);
         localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
         updateUserSessionUI();
-      if (typeof updateOverviewActiveChartBanner === 'function') {
-        updateOverviewActiveChartBanner();
-      }
+        if (typeof updateOverviewActiveChartBanner === 'function') {
+          updateOverviewActiveChartBanner();
+        }
         closeWalletModal();
-        showToast(`Wallet recharged successfully! ₹${verifyData.newBalance.toFixed(2)} current balance.`, "success");
+
+        setPaymentState(PAYMENT_STATES.SUCCESS, {
+          orderId,
+          type: 'wallet',
+          item: 'Wallet Recharge Credit',
+          amount: `₹${currentWalletBalance.toFixed(2)} New Balance`,
+          message: `Wallet recharged successfully! New balance: ₹${currentWalletBalance.toFixed(2)}.`
+        });
 
         if (window.pendingReportOrder) {
           const pending = window.pendingReportOrder;
@@ -16376,7 +16536,11 @@
           }, 600);
         }
       } catch (e) {
-        showToast("Error verifying payment with server.", "error");
+        setPaymentState(PAYMENT_STATES.FAILED, {
+          orderId,
+          message: "Error verifying payment with server. Please check your connection.",
+          retryFn: () => verifyAndCreditWallet(orderId, paymentId, signature)
+        });
       }
     }
 
@@ -19805,6 +19969,10 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     // Progressive Initialization on Page Load (Non-blocking, Lightweight Shell)
     window.addEventListener('DOMContentLoaded', async () => {
       try { await initSupabaseClient(); } catch (_) {}
+      try {
+        ensureCashfreeConfig();
+        checkPaymentReturnFromUrl();
+      } catch (_) {}
       checkGoogleAuthRedirect();
       initGoogleAuth();
       updateUserSessionUI();
@@ -21680,10 +21848,29 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       if (!modal) return;
       modal.style.display = 'flex';
       setBillingCycle(currentBillingCycle);
+
+      const plusBtn = document.getElementById('btn-upgrade-plus');
+      const premBtn = document.getElementById('btn-upgrade-premium');
+      if (plusBtn) {
+        plusBtn.disabled = false;
+        plusBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Upgrade to Plus';
+        plusBtn.className = 'btn-gold-primary';
+        plusBtn.style.width = '100%';
+        plusBtn.style.justifyContent = 'center';
+        plusBtn.style.minHeight = '42px';
+      }
+      if (premBtn) {
+        premBtn.disabled = false;
+        premBtn.innerHTML = '<i class="fa-solid fa-crown"></i> Upgrade to Premium';
+        premBtn.className = 'btn-gold-primary';
+        premBtn.style.width = '100%';
+        premBtn.style.justifyContent = 'center';
+        premBtn.style.minHeight = '42px';
+        premBtn.style.background = 'linear-gradient(135deg, #D97706, #78350F)';
+      }
+
       if (currentUserEntitlements) {
         const tier = currentUserEntitlements.tier;
-        const plusBtn = document.getElementById('btn-upgrade-plus');
-        const premBtn = document.getElementById('btn-upgrade-premium');
         if (tier === 'PLUS' && plusBtn) {
           plusBtn.innerHTML = '<i class="fa-solid fa-check"></i> Current Active Plan';
           plusBtn.disabled = true;
@@ -21739,6 +21926,336 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       }
     }
 
+    // ==========================================================================
+    // ASTROVERSE ENTERPRISE CASHFREE PAYMENT STATE MACHINE & GATEWAY CONTROLLER
+    // ==========================================================================
+    const PAYMENT_STATES = {
+      IDLE: 'IDLE',
+      VALIDATING: 'VALIDATING',
+      CREATING_ORDER: 'CREATING_ORDER',
+      INITIALIZING_CHECKOUT: 'INITIALIZING_CHECKOUT',
+      CHECKOUT_OPEN: 'CHECKOUT_OPEN',
+      VERIFYING_PAYMENT: 'VERIFYING_PAYMENT',
+      SUCCESS: 'SUCCESS',
+      FAILED: 'FAILED',
+      CANCELLED: 'CANCELLED'
+    };
+
+    let currentPaymentState = PAYMENT_STATES.IDLE;
+    let currentPaymentContext = null;
+    let paymentGatewayTimeoutTimer = null;
+
+    async function ensureCashfreeConfig() {
+      if (window.CASHFREE_CONFIG_LOADED && window.CASHFREE_APP_ID) {
+        return {
+          env: window.CASHFREE_ENV || 'sandbox',
+          appId: window.CASHFREE_APP_ID,
+          configured: !!window.PAYMENTS_CONFIGURED
+        };
+      }
+      try {
+        const base = getAuthBase();
+        const res = await fetch(`${base}/api/config`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.cashfreeAppId) window.CASHFREE_APP_ID = data.cashfreeAppId;
+          if (data.cashfreeEnv) window.CASHFREE_ENV = data.cashfreeEnv;
+          window.PAYMENTS_CONFIGURED = !!data.paymentsConfigured;
+          window.CASHFREE_CONFIG_LOADED = true;
+        }
+      } catch (err) {
+        console.warn("Could not refresh /api/config:", err);
+      }
+      return {
+        env: window.CASHFREE_ENV || 'sandbox',
+        appId: window.CASHFREE_APP_ID,
+        configured: !!window.PAYMENTS_CONFIGURED
+      };
+    }
+
+    function loadCashfreeSDK() {
+      return new Promise((resolve, reject) => {
+        if (typeof window.Cashfree === 'function') {
+          return resolve(window.Cashfree);
+        }
+        const existingScript = document.querySelector('script[src*="cashfree.js"]');
+        if (existingScript) {
+          existingScript.addEventListener('load', () => resolve(window.Cashfree));
+          existingScript.addEventListener('error', () => reject(new Error('Failed to load Cashfree checkout SDK')));
+          if (typeof window.Cashfree === 'function') return resolve(window.Cashfree);
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+        script.onload = () => resolve(window.Cashfree);
+        script.onerror = () => reject(new Error('Failed to load Cashfree checkout SDK from CDN'));
+        document.head.appendChild(script);
+      });
+    }
+
+    function clearPaymentTimeout() {
+      if (paymentGatewayTimeoutTimer) {
+        clearTimeout(paymentGatewayTimeoutTimer);
+        paymentGatewayTimeoutTimer = null;
+      }
+    }
+
+    function setPaymentState(newState, payload = {}) {
+      currentPaymentState = newState;
+      if (payload && Object.keys(payload).length > 0) {
+        currentPaymentContext = Object.assign({}, currentPaymentContext || {}, payload);
+      } else if (newState === PAYMENT_STATES.IDLE) {
+        currentPaymentContext = null;
+      }
+
+      const modalStatus = document.getElementById('modal-payment-status');
+      const iconWrap = document.getElementById('payment-status-icon-wrap');
+      const icon = document.getElementById('payment-status-icon');
+      const title = document.getElementById('payment-status-title');
+      const desc = document.getElementById('payment-status-desc');
+      const metaBox = document.getElementById('payment-status-meta');
+      const itemEl = document.getElementById('payment-status-item');
+      const amountEl = document.getElementById('payment-status-amount');
+      const orderIdEl = document.getElementById('payment-status-orderid');
+      const btnPrimary = document.getElementById('btn-payment-action-primary');
+      const btnSecondary = document.getElementById('btn-payment-action-secondary');
+
+      // Update meta details if available
+      if (metaBox && currentPaymentContext) {
+        if (currentPaymentContext.item || currentPaymentContext.amount || currentPaymentContext.orderId) {
+          metaBox.style.display = 'block';
+          if (itemEl) itemEl.textContent = currentPaymentContext.item || 'Vedic Subscription / Service';
+          if (amountEl) amountEl.textContent = currentPaymentContext.amount || '-';
+          if (orderIdEl) orderIdEl.textContent = currentPaymentContext.orderId || '-';
+        } else {
+          metaBox.style.display = 'none';
+        }
+      }
+
+      switch (newState) {
+        case PAYMENT_STATES.VALIDATING:
+        case PAYMENT_STATES.CREATING_ORDER:
+          clearPaymentTimeout();
+          paymentGatewayTimeoutTimer = setTimeout(() => {
+            if (currentPaymentState === PAYMENT_STATES.CREATING_ORDER || currentPaymentState === PAYMENT_STATES.INITIALIZING_CHECKOUT) {
+              setPaymentState(PAYMENT_STATES.FAILED, {
+                message: 'Payment gateway timed out. Please check your connection or try again.'
+              });
+            }
+          }, 15000);
+
+          if (modalStatus) modalStatus.style.display = 'flex';
+          if (iconWrap) {
+            iconWrap.style.background = '#FEF3C7';
+            iconWrap.style.color = '#D97706';
+          }
+          if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+          if (title) title.textContent = 'Preparing Secure Payment';
+          if (desc) desc.textContent = payload.message || 'Securing payment session with Cashfree Payments...';
+          if (btnPrimary) btnPrimary.style.display = 'none';
+          if (btnSecondary) {
+            btnSecondary.style.display = 'inline-flex';
+            btnSecondary.textContent = 'Cancel';
+            btnSecondary.disabled = false;
+          }
+          break;
+
+        case PAYMENT_STATES.INITIALIZING_CHECKOUT:
+          if (modalStatus) modalStatus.style.display = 'flex';
+          if (iconWrap) {
+            iconWrap.style.background = '#FEF3C7';
+            iconWrap.style.color = '#D97706';
+          }
+          if (icon) icon.className = 'fa-solid fa-lock fa-bounce';
+          if (title) title.textContent = 'Launching Gateway';
+          if (desc) desc.textContent = 'Opening Cashfree checkout... Please do not refresh.';
+          if (btnPrimary) btnPrimary.style.display = 'none';
+          if (btnSecondary) {
+            btnSecondary.style.display = 'inline-flex';
+            btnSecondary.textContent = 'Cancel';
+            btnSecondary.disabled = false;
+          }
+          // Pre-hide triggering modals so there is zero backdrop blur interference
+          closePricingPlansModal();
+          const rModal = document.getElementById('modal-recharge');
+          if (rModal) rModal.style.display = 'none';
+          const bModal = document.getElementById('modal-report-builder');
+          if (bModal) bModal.style.display = 'none';
+          break;
+
+        case PAYMENT_STATES.CHECKOUT_OPEN:
+          clearPaymentTimeout();
+          // Hide status modal so Cashfree's own modal iframe has 100% focus and clean viewport
+          if (modalStatus) modalStatus.style.display = 'none';
+          break;
+
+        case PAYMENT_STATES.VERIFYING_PAYMENT:
+          clearPaymentTimeout();
+          if (modalStatus) modalStatus.style.display = 'flex';
+          if (iconWrap) {
+            iconWrap.style.background = '#E0F2FE';
+            iconWrap.style.color = '#0284C7';
+          }
+          if (icon) icon.className = 'fa-solid fa-circle-notch fa-spin';
+          if (title) title.textContent = 'Confirming Payment';
+          if (desc) desc.textContent = payload.message || 'Validating transaction with bank & Cashfree...';
+          if (btnPrimary) btnPrimary.style.display = 'none';
+          if (btnSecondary) btnSecondary.style.display = 'none';
+          break;
+
+        case PAYMENT_STATES.SUCCESS:
+          clearPaymentTimeout();
+          if (currentPaymentContext && currentPaymentContext.resetBtn) {
+            try { currentPaymentContext.resetBtn(); } catch (_) {}
+          }
+          if (modalStatus) modalStatus.style.display = 'flex';
+          if (iconWrap) {
+            iconWrap.style.background = '#D1FAE5';
+            iconWrap.style.color = '#059669';
+          }
+          if (icon) icon.className = 'fa-solid fa-circle-check';
+          if (title) title.textContent = '🎉 Payment Successful!';
+          if (desc) desc.textContent = payload.message || 'Your payment has been verified and your entitlements are activated.';
+          if (btnPrimary) {
+            btnPrimary.style.display = 'inline-flex';
+            btnPrimary.textContent = 'Continue';
+            btnPrimary.disabled = false;
+          }
+          if (btnSecondary) btnSecondary.style.display = 'none';
+          break;
+
+        case PAYMENT_STATES.FAILED:
+          clearPaymentTimeout();
+          if (currentPaymentContext && currentPaymentContext.resetBtn) {
+            try { currentPaymentContext.resetBtn(); } catch (_) {}
+          }
+          if (modalStatus) modalStatus.style.display = 'flex';
+          if (iconWrap) {
+            iconWrap.style.background = '#FEE2E2';
+            iconWrap.style.color = '#DC2626';
+          }
+          if (icon) icon.className = 'fa-solid fa-triangle-exclamation';
+          if (title) title.textContent = 'Payment Unsuccessful';
+          if (desc) desc.textContent = payload.message || 'Payment could not be completed or was declined. No funds were debited.';
+          if (btnPrimary) {
+            btnPrimary.style.display = currentPaymentContext && currentPaymentContext.retryFn ? 'inline-flex' : 'none';
+            btnPrimary.textContent = 'Retry Payment';
+            btnPrimary.disabled = false;
+          }
+          if (btnSecondary) {
+            btnSecondary.style.display = 'inline-flex';
+            btnSecondary.textContent = 'Close';
+            btnSecondary.disabled = false;
+          }
+          break;
+
+        case PAYMENT_STATES.CANCELLED:
+          clearPaymentTimeout();
+          if (currentPaymentContext && currentPaymentContext.resetBtn) {
+            try { currentPaymentContext.resetBtn(); } catch (_) {}
+          }
+          if (modalStatus) modalStatus.style.display = 'none';
+          // Restore triggering modal cleanly without blur freeze
+          if (currentPaymentContext && currentPaymentContext.type === 'subscription') {
+            openPricingPlansModal();
+          } else if (currentPaymentContext && currentPaymentContext.type === 'wallet') {
+            openWalletModal();
+          }
+          showToast(payload.message || 'Payment was cancelled. No charges were made.', 'info');
+          currentPaymentState = PAYMENT_STATES.IDLE;
+          break;
+
+        case PAYMENT_STATES.IDLE:
+        default:
+          clearPaymentTimeout();
+          if (currentPaymentContext && currentPaymentContext.resetBtn) {
+            try { currentPaymentContext.resetBtn(); } catch (_) {}
+          }
+          if (modalStatus) modalStatus.style.display = 'none';
+          break;
+      }
+    }
+
+    function handlePaymentPrimaryAction() {
+      if (currentPaymentState === PAYMENT_STATES.SUCCESS) {
+        setPaymentState(PAYMENT_STATES.IDLE);
+      } else if (currentPaymentState === PAYMENT_STATES.FAILED && currentPaymentContext && typeof currentPaymentContext.retryFn === 'function') {
+        const retry = currentPaymentContext.retryFn;
+        setPaymentState(PAYMENT_STATES.IDLE);
+        retry();
+      } else {
+        setPaymentState(PAYMENT_STATES.IDLE);
+      }
+    }
+
+    function handlePaymentCancellation() {
+      clearPaymentTimeout();
+      if (currentPaymentContext && currentPaymentContext.resetBtn) {
+        try { currentPaymentContext.resetBtn(); } catch (_) {}
+      }
+      const prevContext = currentPaymentContext;
+      setPaymentState(PAYMENT_STATES.IDLE);
+
+      // Restore triggering modal cleanly
+      if (prevContext && prevContext.type === 'subscription') {
+        openPricingPlansModal();
+      } else if (prevContext && prevContext.type === 'wallet') {
+        openWalletModal();
+      }
+      showToast('Payment interaction closed.', 'info');
+    }
+
+    async function checkPaymentReturnFromUrl() {
+      if (typeof window === 'undefined' || !window.location) return;
+      const params = new URLSearchParams(window.location.search);
+      const orderId = params.get('cf_order_id');
+      const cfType = params.get('cf_type') || 'subscription';
+      if (!orderId) return;
+
+      // Clean URL parameters cleanly without page refresh
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
+        orderId,
+        type: cfType,
+        item: cfType === 'subscription' ? 'AstroVerse Subscription' : (cfType === 'wallet' ? 'Wallet Recharge' : 'Astrological Report'),
+        message: 'Confirming your transaction with Cashfree Payments...'
+      });
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/cashfree/verify-order?orderId=${encodeURIComponent(orderId)}`, {
+          headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.status === 'PAID') {
+          setPaymentState(PAYMENT_STATES.SUCCESS, {
+            orderId,
+            type: cfType,
+            amount: `₹${(data.amount || 0).toFixed(2)}`,
+            message: 'Your payment was successfully confirmed and your entitlements have been activated!'
+          });
+          await fetchUserEntitlements();
+          updateUserSessionUI();
+          if (typeof updateOverviewActiveChartBanner === 'function') {
+            updateOverviewActiveChartBanner();
+          }
+        } else {
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            orderId,
+            type: cfType,
+            message: data.message || `Payment status is ${data.status || 'UNPAID'}. If money was debited, it will be automatically refunded within 5-7 business days.`
+          });
+        }
+      } catch (err) {
+        setPaymentState(PAYMENT_STATES.FAILED, {
+          orderId,
+          type: cfType,
+          message: 'Unable to verify payment status with server. Please check your account or contact support.'
+        });
+      }
+    }
+
     async function executeSubscriptionCheckout(tier) {
       const token = currentSessionToken || localStorage.getItem('astro_session_token');
       if (!token) {
@@ -21748,8 +22265,42 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         return;
       }
 
+      const targetBtn = tier === 'PREMIUM' ? document.getElementById('btn-upgrade-premium') : document.getElementById('btn-upgrade-plus');
+      const originalBtnHtml = targetBtn ? targetBtn.innerHTML : '';
+
+      setPaymentState(PAYMENT_STATES.VALIDATING, {
+        type: 'subscription',
+        tier,
+        billingPeriod: currentBillingCycle,
+        retryFn: () => executeSubscriptionCheckout(tier),
+        resetBtn: () => {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+        }
+      });
+
       try {
-        showToast("Initiating subscription checkout...", "info");
+        if (targetBtn) {
+          targetBtn.disabled = true;
+          targetBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Initializing...';
+        }
+
+        // Refresh /api/config to ensure gateway environment is synced
+        await ensureCashfreeConfig();
+
+        const planName = `AstroVerse ${tier} (${currentBillingCycle === 'annual' ? 'Annual' : 'Monthly'})`;
+        const planPrice = tier === 'PREMIUM'
+          ? (currentBillingCycle === 'annual' ? '₹2,499.00' : '₹299.00')
+          : (currentBillingCycle === 'annual' ? '₹1,299.00' : '₹149.00');
+
+        setPaymentState(PAYMENT_STATES.CREATING_ORDER, {
+          item: planName,
+          amount: planPrice,
+          message: `Creating secure order for ${planName}...`
+        });
+
         const res = await fetch(`${getAuthBase()}/api/subscriptions/create-order`, {
           method: 'POST',
           headers: getAuthHeaders(),
@@ -21760,34 +22311,108 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         });
 
         if (!res.ok) {
-          const errData = await res.json();
-          showToast(errData.message || "Failed to initiate subscription order.", "error");
+          const errData = await res.json().catch(() => ({}));
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            message: errData.message || "Failed to initiate subscription order. Gateway unavailable.",
+            retryFn: () => executeSubscriptionCheckout(tier)
+          });
           return;
         }
 
         const orderData = await res.json();
 
-        if (orderData.paymentSessionId && typeof window.Cashfree !== 'undefined') {
-          const cashfree = window.Cashfree({ mode: (window.CASHFREE_ENV === 'production' ? 'production' : 'sandbox') });
-          cashfree.checkout({
-            paymentSessionId: orderData.paymentSessionId,
-            redirectTarget: '_modal'
-          }).then(result => {
-            if (result.error) {
-              showToast(result.error.message || "Subscription payment was cancelled or failed.", "error");
-            }
-            if (result.paymentDetails) {
-              verifySubscriptionPayment(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId, null, tier);
-            }
+        if (!orderData.paymentSessionId) {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            message: orderData.message || "Online payments are currently unconfigured.",
+            retryFn: () => executeSubscriptionCheckout(tier)
           });
-        } else if (orderData.paymentSessionId) {
-          showToast(`Subscription order created (${orderData.orderId}). Loading Cashfree checkout...`, "info");
-        } else {
-          showToast(orderData.message || "Online payments are currently unconfigured. Subscriptions cannot be purchased at this time.", "warning");
+          return;
         }
+
+        setPaymentState(PAYMENT_STATES.INITIALIZING_CHECKOUT, {
+          orderId: orderData.orderId,
+          paymentSessionId: orderData.paymentSessionId
+        });
+
+        // Ensure Cashfree SDK is loaded from CDN
+        await loadCashfreeSDK();
+
+        if (typeof window.Cashfree !== 'function') {
+          throw new Error("Cashfree SDK failed to initialize in browser context.");
+        }
+
+        const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+        const cashfree = window.Cashfree({ mode: sdkMode });
+
+        setPaymentState(PAYMENT_STATES.CHECKOUT_OPEN, {
+          orderId: orderData.orderId
+        });
+
+        cashfree.checkout({
+          paymentSessionId: orderData.paymentSessionId,
+          redirectTarget: '_modal'
+        }).then(result => {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+
+          if (result.error) {
+            const msg = (result.error.message || '').toLowerCase();
+            const isCancelled = msg.includes('abandoned') || msg.includes('cancelled') || result.error.code === 'payment_cancelled';
+            if (isCancelled) {
+              setPaymentState(PAYMENT_STATES.CANCELLED, {
+                orderId: orderData.orderId,
+                message: "Subscription checkout was cancelled."
+              });
+            } else {
+              setPaymentState(PAYMENT_STATES.FAILED, {
+                orderId: orderData.orderId,
+                message: result.error.message || "Payment was declined or failed.",
+                retryFn: () => executeSubscriptionCheckout(tier)
+              });
+            }
+            return;
+          }
+
+          if (result.paymentDetails) {
+            setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
+              orderId: orderData.orderId,
+              tier,
+              message: 'Confirming your subscription with Cashfree...'
+            });
+            verifySubscriptionPayment(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId, null, tier);
+          }
+        }).catch(sdkErr => {
+          if (targetBtn) {
+            targetBtn.disabled = false;
+            targetBtn.innerHTML = originalBtnHtml;
+          }
+          console.error("Cashfree checkout error:", sdkErr);
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            message: sdkErr.message || "An unexpected error occurred during checkout.",
+            retryFn: () => executeSubscriptionCheckout(tier)
+          });
+        });
+
       } catch (err) {
+        if (targetBtn) {
+          targetBtn.disabled = false;
+          targetBtn.innerHTML = originalBtnHtml;
+        }
         console.error("Subscription checkout error:", err);
-        showToast("Network error during subscription order creation.", "error");
+        setPaymentState(PAYMENT_STATES.FAILED, {
+          message: err.message || "Network error during subscription order creation.",
+          retryFn: () => executeSubscriptionCheckout(tier)
+        });
       }
     }
 
@@ -21807,19 +22432,33 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
         const data = await verifyRes.json();
         if (verifyRes.ok && data.success) {
-          showToast(`🎉 Subscription Activated! Welcome to AstroVerse ${data.subscriptionTier}!`, "success");
+          setPaymentState(PAYMENT_STATES.SUCCESS, {
+            orderId,
+            tier: data.subscriptionTier || tier,
+            item: `AstroVerse ${data.subscriptionTier || tier} Membership`,
+            amount: tier === 'PREMIUM' ? (currentBillingCycle === 'annual' ? '₹2,499.00' : '₹299.00') : (currentBillingCycle === 'annual' ? '₹1,299.00' : '₹149.00'),
+            message: `🎉 Welcome to AstroVerse ${data.subscriptionTier || tier}! Your membership benefits are active.`
+          });
           closePricingPlansModal();
           await fetchUserEntitlements();
           updateUserSessionUI();
-      if (typeof updateOverviewActiveChartBanner === 'function') {
-        updateOverviewActiveChartBanner();
-      }
+          if (typeof updateOverviewActiveChartBanner === 'function') {
+            updateOverviewActiveChartBanner();
+          }
         } else {
-          showToast(data.message || "Subscription payment verification failed.", "error");
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            orderId,
+            message: data.message || "Subscription payment verification failed.",
+            retryFn: () => verifySubscriptionPayment(orderId, paymentId, signature, tier)
+          });
         }
       } catch (err) {
         console.error("Payment verification network error:", err);
-        showToast("Network error verifying subscription payment.", "error");
+        setPaymentState(PAYMENT_STATES.FAILED, {
+          orderId,
+          message: "Network error verifying subscription payment. Please check your connection.",
+          retryFn: () => verifySubscriptionPayment(orderId, paymentId, signature, tier)
+        });
       }
     }
 
@@ -23709,24 +24348,70 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           showToast("🎉 Report compiled successfully! Opening private reader...", "success");
           openReportReaderModal(orderData.document);
         } else if (orderData.orderId && (method === 'CASHFREE' || method === 'ONLINE')) {
-          if (orderData.paymentSessionId && typeof window.Cashfree !== 'undefined') {
-            const cashfree = window.Cashfree({ mode: (window.CASHFREE_ENV === 'production' ? 'production' : 'sandbox') });
-            cashfree.checkout({
-              paymentSessionId: orderData.paymentSessionId,
-              redirectTarget: '_modal'
-            }).then(result => {
-              if (result.error) {
-                showToast(result.error.message || "Payment was cancelled or failed.", "error");
-              }
-              if (result.paymentDetails) {
-                verifyReportPayment(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId, null, resolvedProfileId, profileData);
-              }
+          if (!orderData.paymentSessionId) {
+            setPaymentState(PAYMENT_STATES.FAILED, {
+              message: orderData.message || "Online payments are currently unconfigured. Please select Wallet Balance to purchase this publication.",
+              retryFn: () => confirmReportOrderAndGenerate(profileId, focus, depth, lang, partnerId, method)
             });
-          } else if (orderData.paymentSessionId) {
-            showToast(`Order created (${orderData.orderId}). Loading Cashfree checkout...`, "info");
-          } else {
-            showToast(orderData.message || "Online payments are currently unconfigured. Please select Wallet Balance to purchase this publication.", "warning");
+            return;
           }
+
+          setPaymentState(PAYMENT_STATES.INITIALIZING_CHECKOUT, {
+            type: 'report',
+            orderId: orderData.orderId,
+            item: activeBuilderProduct.title || 'Astrological Publication',
+            amount: `₹${finalRupees.toFixed(2)}`,
+            retryFn: () => confirmReportOrderAndGenerate(profileId, focus, depth, lang, partnerId, method)
+          });
+
+          await loadCashfreeSDK();
+          if (typeof window.Cashfree !== 'function') {
+            throw new Error("Cashfree SDK failed to initialize.");
+          }
+
+          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+          const cashfree = window.Cashfree({ mode: sdkMode });
+
+          setPaymentState(PAYMENT_STATES.CHECKOUT_OPEN, {
+            orderId: orderData.orderId
+          });
+
+          cashfree.checkout({
+            paymentSessionId: orderData.paymentSessionId,
+            redirectTarget: '_modal'
+          }).then(result => {
+            if (result.error) {
+              const msg = (result.error.message || '').toLowerCase();
+              const isCancelled = msg.includes('abandoned') || msg.includes('cancelled') || result.error.code === 'payment_cancelled';
+              if (isCancelled) {
+                setPaymentState(PAYMENT_STATES.CANCELLED, {
+                  orderId: orderData.orderId,
+                  message: "Publication checkout was cancelled."
+                });
+              } else {
+                setPaymentState(PAYMENT_STATES.FAILED, {
+                  orderId: orderData.orderId,
+                  message: result.error.message || "Payment was declined or failed.",
+                  retryFn: () => confirmReportOrderAndGenerate(profileId, focus, depth, lang, partnerId, method)
+                });
+              }
+              return;
+            }
+
+            if (result.paymentDetails) {
+              setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
+                orderId: orderData.orderId,
+                message: 'Confirming payment and compiling personalized publication...'
+              });
+              verifyReportPayment(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId, null, resolvedProfileId, profileData);
+            }
+          }).catch(sdkErr => {
+            console.error("Cashfree report checkout error:", sdkErr);
+            setPaymentState(PAYMENT_STATES.FAILED, {
+              message: sdkErr.message || "An unexpected error occurred during checkout.",
+              retryFn: () => confirmReportOrderAndGenerate(profileId, focus, depth, lang, partnerId, method)
+            });
+          });
         } else {
           showToast(orderData.message || "Report generation failed.", "error");
         }
@@ -23778,22 +24463,39 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             });
             return;
           }
-          showToast(errData.message || "Payment verification failed.", "error");
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            orderId,
+            message: errData.message || "Payment verification failed with server.",
+            retryFn: () => verifyReportPayment(orderId, paymentId, signature, resolvedProfileId, profileData)
+          });
           return;
         }
 
         const data = await verifyRes.json();
         if (data.document) {
+          setPaymentState(PAYMENT_STATES.SUCCESS, {
+            orderId,
+            type: 'report',
+            item: activeBuilderProduct.title || 'Astrological Publication',
+            message: '🎉 Payment verified and publication compiled! Opening reader...'
+          });
           closeReportBuilderModal();
           closeReportStoreModal();
-          showToast("🎉 Payment verified and publication compiled! Opening reader...", "success");
           openReportReaderModal(data.document);
         } else {
-          showToast(data.message || "Payment verification failed.", "error");
+          setPaymentState(PAYMENT_STATES.FAILED, {
+            orderId,
+            message: data.message || "Publication could not be compiled after payment.",
+            retryFn: () => verifyReportPayment(orderId, paymentId, signature, resolvedProfileId, profileData)
+          });
         }
       } catch (err) {
-        console.error("Payment verification network error:", err);
-        showToast("Network error verifying report payment.", "error");
+        console.error("Report payment verification error:", err);
+        setPaymentState(PAYMENT_STATES.FAILED, {
+          orderId,
+          message: "Network error verifying publication payment. Please check your connection.",
+          retryFn: () => verifyReportPayment(orderId, paymentId, signature, resolvedProfileId, profileData)
+        });
       }
     }
 

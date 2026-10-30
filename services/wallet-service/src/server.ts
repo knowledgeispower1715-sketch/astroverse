@@ -2243,6 +2243,7 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
   try {
     const cfOrderId = `cf_wal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const userRecord = await db.findUserById(userId);
+    const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
     const cfOrder = await createCashfreeOrder({
       orderId: cfOrderId,
       orderAmount: amount,
@@ -2253,6 +2254,7 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
         customer_email: userRecord?.email || 'seeker@astroverse.ai',
         customer_name: userRecord?.displayName || 'AstroVerse Seeker'
       },
+      returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=wallet`,
       orderNote: `Wallet Recharge: ₹${amount}`
     });
 
@@ -4100,6 +4102,7 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
   try {
     const orderReceipt = `sub_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const userRecord = await db.findUserById(user.id);
+    const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
     const cfOrder = await createCashfreeOrder({
       orderId: `cf_${orderReceipt}`,
       orderAmount: priceRupees,
@@ -4110,6 +4113,7 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
         customer_phone: userRecord?.phone || '9999999999',
         customer_name: userRecord?.displayName || 'AstroVerse Seeker'
       },
+      returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=subscription`,
       orderNote: `Subscription: ${tier} (${period})`
     });
 
@@ -4423,6 +4427,12 @@ app.post('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedRe
     // Authoritative fulfillment
     if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
       await db.rechargeWallet(user.id, order.amount, cfStatus.cf_order_id || `cf_pay_${Date.now()}`, order.providerOrderId, 'CASHFREE');
+    } else if (order.productType === 'SUBSCRIPTION') {
+      const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+      const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+      const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+      await db.markPaymentOrderPaid(order.providerOrderId, cfStatus.cf_order_id || `cf_pay_${Date.now()}`, 'CASHFREE');
+      await db.updateSubscription(user.id, targetTier, period, durationDays);
     } else {
       await db.markPaymentOrderPaid(order.providerOrderId, cfStatus.cf_order_id || `cf_pay_${Date.now()}`, 'CASHFREE');
     }
@@ -4495,6 +4505,12 @@ app.post('/api/webhooks/cashfree', async (req: Request, res: Response) => {
           try {
             if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
               await db.rechargeWallet(order.userId, order.amount, paymentId, order.providerOrderId, 'CASHFREE');
+            } else if (order.productType === 'SUBSCRIPTION') {
+              const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+              const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+              const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+              await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
+              await db.updateSubscription(order.userId, targetTier, period, durationDays);
             } else {
               await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
             }
@@ -4999,6 +5015,7 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
 
     const orderReceipt = `rep_ord_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
     const userRecord = await db.findUserById(user.id);
+    const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
     const cfOrder = await createCashfreeOrder({
       orderId: `cf_${orderReceipt}`,
       orderAmount: pricing.finalPriceRupees,
@@ -5009,6 +5026,7 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
         customer_phone: userRecord?.phone || '9999999999',
         customer_name: userRecord?.displayName || 'AstroVerse Seeker'
       },
+      returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=report`,
       orderNote: `Report Purchase: ${product.displayName}`
     });
 
