@@ -378,6 +378,116 @@ export const DDL_STATEMENTS: string[] = [
   `DO $$ BEGIN
     ALTER TABLE "PrivacyRequest" ADD CONSTRAINT "PrivacyRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
   EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // ===========================================================================
+  // ROW LEVEL SECURITY (RLS) POLICIES & PRIVILEGE HARDENING (PHASE 6)
+  // ===========================================================================
+  // Enforces zero-trust isolation in PostgreSQL and Supabase.
+  // Direct client access (PostgREST / anon) without authenticated ownership
+  // is strictly rejected at the database engine level.
+  // ===========================================================================
+
+  `ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "UserSession" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "BirthProfile" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "SavedReport" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "KundliCalculation" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "PaymentOrder" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "WalletLedger" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "ConsultationSession" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "ConsultationMessage" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "PujaBooking" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "PrivacyRequest" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "AuditEvent" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "FeatureFlag" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "PlatformIncident" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "ContentBanner" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "Astrologer" ENABLE ROW LEVEL SECURITY;`,
+
+  // User Profile: Users may read/update only their own record; service_role has full access
+  `DO $$ BEGIN
+    CREATE POLICY "user_own_record" ON "User" FOR ALL 
+    USING (id = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'))
+    WITH CHECK (id = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // BirthProfile: Strict user ownership; prevents IDOR between customers
+  `DO $$ BEGIN
+    CREATE POLICY "birthprofile_own_record" ON "BirthProfile" FOR ALL 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'))
+    WITH CHECK ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // SavedReport: Strict user ownership; protects personalized reports and charts
+  `DO $$ BEGIN
+    CREATE POLICY "savedreport_own_record" ON "SavedReport" FOR ALL 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'))
+    WITH CHECK ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // PaymentOrder: Customers may view only their own orders; mutations strictly restricted to service_role
+  `DO $$ BEGIN
+    CREATE POLICY "paymentorder_read_own" ON "PaymentOrder" FOR SELECT 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "paymentorder_mutate_service_role" ON "PaymentOrder" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // WalletLedger: Customers may view only their own ledger transactions; mutations restricted to service_role
+  `DO $$ BEGIN
+    CREATE POLICY "walletledger_read_own" ON "WalletLedger" FOR SELECT 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "walletledger_mutate_service_role" ON "WalletLedger" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // AuditEvent: Append-only and readable strictly by service_role and security administrators
+  `DO $$ BEGIN
+    CREATE POLICY "auditevent_service_role_only" ON "AuditEvent" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // Astrologer Catalog & Banners: Public read; mutations restricted to service_role
+  `DO $$ BEGIN
+    CREATE POLICY "astrologer_public_read" ON "Astrologer" FOR SELECT USING (true);
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "astrologer_service_mutate" ON "Astrologer" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "contentbanner_public_read" ON "ContentBanner" FOR SELECT USING (true);
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "contentbanner_service_mutate" ON "ContentBanner" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
   END $$;`
 ];
 

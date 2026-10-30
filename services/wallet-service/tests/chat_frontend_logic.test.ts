@@ -439,7 +439,9 @@ test('Tier Simulator UI is securely isolated to Admin Console and removed from p
   const fs = await import('node:fs');
   const path = await import('node:path');
   const indexPath = path.resolve(__dirname, '../../../index.html');
+  const adminPath = path.resolve(__dirname, '../../../admin.html');
   const htmlContent = fs.readFileSync(indexPath, 'utf-8');
+  const adminContent = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, 'utf-8') : htmlContent;
 
   // 1. Public header simulator bar must be eliminated
   assert(!htmlContent.includes('id="header-tier-simulator"'), 'Header must not contain #header-tier-simulator');
@@ -453,16 +455,16 @@ test('Tier Simulator UI is securely isolated to Admin Console and removed from p
   assert(!htmlContent.includes('id="mob-sim-tier-plus"'), 'Mobile drawer must not have public Plus simulator button');
   assert(!htmlContent.includes('id="mob-sim-tier-premium"'), 'Mobile drawer must not have public Premium simulator button');
 
-  // 3. Dedicated Admin Module 16 QA console must be present
-  assert(htmlContent.includes('id="admin-panel-qa"'), 'Admin console must contain #admin-panel-qa');
-  assert(htmlContent.includes('id="admin-btn-sim-free"'), 'Admin QA console must have Free simulator button');
-  assert(htmlContent.includes('id="admin-btn-sim-plus"'), 'Admin QA console must have Plus simulator button');
-  assert(htmlContent.includes('id="admin-btn-sim-premium"'), 'Admin QA console must have Premium simulator button');
+  // 3. Dedicated Admin Module 16 QA console must be present in isolated admin portal
+  assert(adminContent.includes('id="admin-panel-qa"'), 'Admin console must contain #admin-panel-qa');
+  assert(adminContent.includes('id="admin-btn-sim-free"'), 'Admin QA console must have Free simulator button');
+  assert(adminContent.includes('id="admin-btn-sim-plus"'), 'Admin QA console must have Plus simulator button');
+  assert(adminContent.includes('id="admin-btn-sim-premium"'), 'Admin QA console must have Premium simulator button');
 
-  // 4. Controller functions
-  assert(htmlContent.includes('function adminSetPreviewTier('), 'index.html must define adminSetPreviewTier');
-  assert(htmlContent.includes('function exitAdminPreviewMode('), 'index.html must define exitAdminPreviewMode');
-  assert(htmlContent.includes('function updateAdminPreviewBannerUI('), 'index.html must define updateAdminPreviewBannerUI');
+  // 4. Controller functions must reside in isolated admin portal
+  assert(adminContent.includes('function adminSetPreviewTier('), 'Admin portal must define adminSetPreviewTier');
+  assert(adminContent.includes('function exitAdminPreviewMode('), 'Admin portal must define exitAdminPreviewMode');
+  assert(adminContent.includes('function updateAdminPreviewBannerUI('), 'Admin portal must define updateAdminPreviewBannerUI');
 });
 
 test('Streamlined Report Purchase & Confirmation dialog replaced 5-step customizer in index.html', async () => {

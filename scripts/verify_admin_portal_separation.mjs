@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const indexPath = path.resolve(__dirname, '..', 'index.html').replace(/\\/g, '/');
+const adminPath = path.resolve(__dirname, '..', 'admin.html').replace(/\\/g, '/');
 
 function getJson(url) {
   return new Promise((resolve, reject) => {
@@ -68,7 +68,7 @@ async function main() {
   console.log('ASTROVERSE ADMIN PORTAL SEPARATION & AUTHENTICATION AUDIT');
   console.log('======================================================================\n');
 
-  const baseUrl = process.argv[2] ? process.argv[2].replace(/\/$/, '') : `file:///${indexPath}`;
+  const baseUrl = process.argv[2] ? process.argv[2].replace(/\/$/, '') : `file:///${adminPath}`;
   console.log(`Target Base URL: ${baseUrl}\n`);
 
   const chromeProc = spawn('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', [
@@ -530,7 +530,10 @@ async function main() {
           kundliDisplay: document.getElementById('admin-tool-kundli')?.style.display,
           adminMode: document.body.classList.contains('admin-mode'),
           customerKundliActive: document.getElementById('view-kundli')?.classList.contains('active'),
-          navbarHidden: window.getComputedStyle(document.querySelector('.main-navbar')).display === 'none'
+          navbarHidden: (() => {
+            const nav = document.querySelector('.main-navbar');
+            return nav ? window.getComputedStyle(nav).display === 'none' : true;
+          })()
         };
       })()
     `);

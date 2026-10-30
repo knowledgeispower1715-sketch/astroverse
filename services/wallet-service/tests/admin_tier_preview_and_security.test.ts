@@ -111,8 +111,10 @@ describe('ASTROVERSE ADMIN TIER PREVIEW & SECURITY ISOLATION SUITE', () => {
 
   it('2. Public DOM Verification: Tier simulator & demo wallet buttons removed from public markup', () => {
     const htmlPath = path.resolve(__dirname, '../../../index.html');
+    const adminPath = path.resolve(__dirname, '../../../admin.html');
     assert.ok(fs.existsSync(htmlPath), 'index.html exists');
     const html = fs.readFileSync(htmlPath, 'utf-8');
+    const adminHtml = fs.existsSync(adminPath) ? fs.readFileSync(adminPath, 'utf-8') : html;
 
     // Desktop header simulator is eliminated
     assert.strictEqual(
@@ -160,19 +162,19 @@ describe('ASTROVERSE ADMIN TIER PREVIEW & SECURITY ISOLATION SUITE', () => {
       'QA DEMO ENVIRONMENT banner must not exist in public wallet modal'
     );
 
-    // Admin module 16 is properly integrated inside #admin-dashboard-content
+    // Admin module 16 is properly integrated inside #admin-dashboard-content in admin portal
     assert.ok(
-      html.includes('id="admin-panel-qa"'),
+      adminHtml.includes('id="admin-panel-qa"'),
       '#admin-panel-qa must exist inside administrative console'
     );
     assert.ok(
-      html.includes('switchAdminModule(\'qa\')'),
+      adminHtml.includes('switchAdminModule(\'qa\')'),
       'Module 16 navigation pill must exist in admin console'
     );
 
     // Floating preview banner is defined and initially hidden
     assert.ok(
-      html.includes('id="admin-preview-floating-banner"'),
+      html.includes('id="admin-preview-floating-banner"') || adminHtml.includes('id="admin-preview-floating-banner"'),
       '#admin-preview-floating-banner must exist'
     );
   });

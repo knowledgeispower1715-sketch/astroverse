@@ -54,18 +54,37 @@ import {
   CHALLENGING_COMPOUND_NUMBERS
 } from './monetization/numerologyCalculator';
 import { createRateLimiter } from './security/rateLimiter';
+import {
+  requireCloudflareAccess,
+  getCloudflareAccessConfig,
+  isCloudflareAccessEnforced
+} from './security/cloudflareAccess';
 
 const app = express();
 app.disable('x-powered-by');
 
-// Security Headers Middleware (OWASP recommended defense-in-depth)
-app.use((_req, res, next) => {
+// Security Headers Middleware (OWASP recommended defense-in-depth & Phase 8 browser protection)
+app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '0');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');
+  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://sdk.cashfree.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https://astroverse-eta.vercel.app https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+
+  // Sensitive endpoint cache controls (Phase 8: zero public caching on authenticated/admin data)
+  if (
+    req.path.startsWith('/api/admin') ||
+    req.path.startsWith('/api/user') ||
+    req.path.startsWith('/api/wallet') ||
+    req.path.startsWith('/api/reports') ||
+    req.path.startsWith('/api/profiles') ||
+    req.path.startsWith('/api/subscriptions')
+  ) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
   }
   next();
 });
@@ -87,6 +106,12 @@ export const orderLimiter = createRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 20,
   message: 'Too many order creation requests. Please wait a few moments before retrying.'
+});
+
+export const adminLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 40,
+  message: 'Too many administrative requests. Rate limit enforced.'
 });
 
 // Apply Global Rate Limiting across all API routes
@@ -118,7 +143,10 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'https://astroverse-eta.vercel.app');
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cf-Access-Jwt-Assertion, X-Admin-Assurance-Token, X-Admin-Mfa-Token'
+  );
   res.header('Access-Control-Allow-Credentials', 'true');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
@@ -916,7 +944,8 @@ app.post('/api/auth/login-password', authLimiter, async (req: Request, res: Resp
 // Invariant 3: Verifies server allowlist (ASTROVERSE_ADMIN_EMAILS) when configured.
 // Invariant 4: Enforces MFA assurance challenge if configured.
 // Invariant 5: Never exposes Google OAuth buttons or consumer login paths.
-app.post('/api/auth/admin-login', authLimiter, async (req: Request, res: Response) => {
+// Invariant 6: Transits Cloudflare Zero Trust gateway when enforced.
+app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async (req: Request, res: Response) => {
   const { email, password, mfaCode } = req.body;
   if (!email || !password) {
     return res.status(400).json({
@@ -2652,6 +2681,29 @@ app.post('/api/demo/set-tier', authenticate, requireAdmin(), async (req: Authent
   } catch (err: any) {
     handleServiceError(res, err, 'Simulated tier update failed');
   }
+});
+
+// ==============================================================================
+// ENTERPRISE NETWORK BOUNDARY: CLOUDFLARE ZERO TRUST & DIRECT-ORIGIN PROTECTION
+// ==============================================================================
+// Invariant: Direct-origin access to administrative APIs is strictly forbidden
+// when Cloudflare Access is active. Requests must transit the Zero Trust gateway.
+// ==============================================================================
+app.use('/api/admin', adminLimiter, requireCloudflareAccess());
+
+// GET /api/admin/gateway-status - Check Cloudflare Zero Trust gateway & direct-origin protection status
+app.get('/api/admin/gateway-status', (_req: Request, res: Response) => {
+  const cfg = getCloudflareAccessConfig();
+  res.json({
+    status: 'ONLINE',
+    cloudflareAccess: {
+      enforced: isCloudflareAccessEnforced(),
+      teamName: cfg.teamName || 'not_configured',
+      audConfigured: Boolean(cfg.aud),
+      certsUrl: cfg.certsUrl || 'not_configured'
+    },
+    originProtection: isCloudflareAccessEnforced() ? 'BLOCKED_DIRECT_ORIGIN' : 'APPLICATION_LAYER_ONLY'
+  });
 });
 
 // ==============================================================================
