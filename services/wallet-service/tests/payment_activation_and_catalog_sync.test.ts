@@ -306,4 +306,44 @@ test('ASTROVERSE CASHFREE PAYMENT ACTIVATION & PRICING SYNCHRONIZATION SUITE', a
     assert.strictEqual(postNoSig.body.error, 'MISSING_SIGNATURE_HEADERS');
   });
 
+  await t.test('7. Admin Runtime Gateway Credentials Activation', async () => {
+    // 7.1 Register admin
+    const adminRes = await request('/api/auth/register-password', {
+      method: 'POST',
+      body: { email: `gwadmin_${Date.now()}@astroverse.app`, password: 'AdminPassword#123' }
+    });
+    const adminToken = adminRes.body.sessionToken;
+    const adminUser = await db.findUserById(adminRes.body.user.id);
+    if (adminUser) adminUser.role = 'SUPER_ADMIN' as any;
+
+    // 7.2 Regular user cannot set credentials (403)
+    const userRes = await request('/api/auth/register-password', {
+      method: 'POST',
+      body: { email: `reguser_${Date.now()}@example.com`, password: 'UserPassword#123' }
+    });
+    const userToken = userRes.body.sessionToken;
+
+    const unauthRes = await request('/api/admin/gateway-credentials', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userToken}` },
+      body: { secretKey: 'cfsk_ma_prod_mock_secret_key_1234567890' }
+    });
+    assert.strictEqual(unauthRes.status, 403);
+
+    // 7.3 Admin can activate valid runtime credentials
+    const authRes = await request('/api/admin/gateway-credentials', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: {
+        secretKey: 'cfsk_ma_prod_mock_secret_key_1234567890',
+        appId: '14962482c27cb93db2c6bc6e4af8426941',
+        env: 'production'
+      }
+    });
+    assert.strictEqual(authRes.status, 200);
+    assert.strictEqual(authRes.body.success, true);
+    assert.strictEqual(authRes.body.readiness.configured, true);
+    assert.strictEqual(authRes.body.readiness.state, 'READY');
+  });
+
 });

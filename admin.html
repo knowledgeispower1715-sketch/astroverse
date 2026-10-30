@@ -800,9 +800,14 @@
               <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
                 <i class="fa-solid fa-server"></i> Cashfree Payment Gateway &amp; Readiness Diagnostic
               </h3>
-              <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminPayments()">
-                <i class="fa-solid fa-rotate"></i> Refresh Diagnostic
-              </button>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-primary" style="font-size: 11px; padding: 4px 10px; background: var(--vedic-maroon); color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="openAdminGatewayCredentialsModal()">
+                  <i class="fa-solid fa-key"></i> Configure Secret Key
+                </button>
+                <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminPayments()">
+                  <i class="fa-solid fa-rotate"></i> Refresh Diagnostic
+                </button>
+              </div>
             </div>
             <div id="admin-gateway-diagnostic-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 12px; margin-bottom: 12px;">
               <div style="padding: 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
@@ -1690,6 +1695,45 @@
           <input type="text" id="admin-mfa-code-input" class="form-input-text" placeholder="123456" maxlength="8" style="font-size: 20px; letter-spacing: 4px; text-align: center;">
         </div>
         <button class="btn-gold-primary" style="width: 100%;" onclick="submitAdminMfaChallenge()">Verify &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- Admin Gateway Credentials Modal -->
+    <div id="modal-admin-gateway-credentials" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminGatewayCredentialsModal()"></div>
+      <div class="modal-content-card" style="max-width: 500px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+              <i class="fa-solid fa-key"></i> Cashfree Live Credentials Activation
+            </h3>
+            <div style="font-size: 11px; color: #64748B; margin-top: 2px;">Activate Production Payment Gateway</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminGatewayCredentialsModal()">&times;</button>
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.5;">
+          <strong style="color: #1E293B;">Security Note:</strong> These credentials connect AstroVerse to your live Cashfree merchant account. Secret keys are securely transmitted to the server and never exposed in client browser code.
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Cashfree App ID (Client ID):</label>
+          <input type="text" id="admin-gw-appid-input" class="form-input-text" value="14962482c27cb93db2c6bc6e4af8426941" style="font-size: 13px; font-family: monospace;">
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Cashfree Secret Key:</label>
+          <input type="password" id="admin-gw-secret-input" class="form-input-text" placeholder="cfsk_ma_prod_..." style="font-size: 13px; font-family: monospace;">
+        </div>
+
+        <div id="admin-gateway-secret-status" style="font-size: 12px; min-height: 20px; margin-bottom: 12px;"></div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminGatewayCredentialsModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: var(--vedic-maroon); color: white;" onclick="submitAdminGatewayCredentials()">
+            <i class="fa-solid fa-bolt"></i> Activate Gateway
+          </button>
+        </div>
       </div>
     </div>
 
@@ -4233,6 +4277,59 @@
 
     function filterAdminProducts() {
       renderAdminProductsTable();
+    }
+
+    function openAdminGatewayCredentialsModal() {
+      const modal = document.getElementById('modal-admin-gateway-credentials');
+      if (modal) modal.style.display = 'flex';
+      const statusEl = document.getElementById('admin-gateway-secret-status');
+      if (statusEl) statusEl.textContent = '';
+    }
+
+    function closeAdminGatewayCredentialsModal() {
+      const modal = document.getElementById('modal-admin-gateway-credentials');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitAdminGatewayCredentials() {
+      const secretKeyInput = document.getElementById('admin-gw-secret-input');
+      const appIdInput = document.getElementById('admin-gw-appid-input');
+      const statusEl = document.getElementById('admin-gateway-secret-status');
+      const secret = (secretKeyInput.value || '').trim();
+      const appId = (appIdInput.value || '').trim();
+
+      if (!secret) {
+        statusEl.textContent = 'Please enter the Cashfree Secret Key.';
+        statusEl.style.color = '#DC2626';
+        return;
+      }
+
+      statusEl.textContent = 'Saving and activating credentials...';
+      statusEl.style.color = '#D97706';
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/gateway-credentials`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ secretKey: secret, appId: appId || undefined, env: 'production' })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          statusEl.textContent = 'Cashfree credentials activated successfully!';
+          statusEl.style.color = '#059669';
+          showToast('Cashfree Payment Gateway activated!', 'success');
+          setTimeout(() => {
+            closeAdminGatewayCredentialsModal();
+            loadAdminPayments();
+          }, 1200);
+        } else {
+          statusEl.textContent = data.message || 'Failed to activate credentials.';
+          statusEl.style.color = '#DC2626';
+        }
+      } catch (err) {
+        statusEl.textContent = 'Network error contacting server.';
+        statusEl.style.color = '#DC2626';
+      }
     }
 
     function openAdminEditPriceModal(prodId) {

@@ -61,10 +61,54 @@ export interface PaymentReadinessReport {
   customerMessage: string;
 }
 
+export const CANONICAL_CASHFREE_APP_ID = '14962482c27cb93db2c6bc6e4af8426941';
+
+let runtimeSecretKeyOverride: string | null = null;
+
+export function setRuntimeCashfreeSecretKey(secretKey: string): void {
+  runtimeSecretKeyOverride = secretKey ? secretKey.trim() : null;
+  if (runtimeSecretKeyOverride) {
+    process.env.CASHFREE_SECRET_KEY = runtimeSecretKeyOverride;
+  }
+}
+
+export function getResolvedCashfreeCredentials(): {
+  appId: string;
+  secretKey: string;
+  env: 'production' | 'sandbox';
+  apiVersion: string;
+} {
+  let appId = (process.env.CASHFREE_APP_ID || '').trim();
+  if (!appId) {
+    for (const key of Object.keys(process.env)) {
+      const clean = key.trim().replace(/:$/, '').toUpperCase();
+      if (['CASHFREE_APP_ID', 'CF_APP_ID', 'CASHFREE_CLIENT_ID', 'APPID', 'APP_ID'].includes(clean)) {
+        appId = (process.env[key] || '').trim();
+        if (appId) break;
+      }
+    }
+  }
+
+  let secretKey = (runtimeSecretKeyOverride || process.env.CASHFREE_SECRET_KEY || '').trim();
+  if (!secretKey) {
+    for (const key of Object.keys(process.env)) {
+      const clean = key.trim().replace(/:$/, '').toUpperCase();
+      if (['CASHFREE_SECRET_KEY', 'CF_SECRET_KEY', 'CASHFREE_API_SECRET', 'CASHFREE_SECRET', 'SECRET_KEY', 'SECRET'].includes(clean)) {
+        secretKey = (process.env[key] || '').trim();
+        if (secretKey) break;
+      }
+    }
+  }
+
+  const rawEnv = (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
+  const env: 'production' | 'sandbox' = rawEnv === 'sandbox' ? 'sandbox' : 'production';
+  const apiVersion = process.env.CASHFREE_API_VERSION || '2026-01-01';
+
+  return { appId, secretKey, env, apiVersion };
+}
+
 export function getPaymentReadinessStatus(options?: { featureFlagEnabled?: boolean }): PaymentReadinessReport {
-  const appId = (process.env.CASHFREE_APP_ID || '').trim();
-  const secretKey = (process.env.CASHFREE_SECRET_KEY || '').trim();
-  const env = (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase() as 'production' | 'sandbox';
+  const { appId, secretKey, env } = getResolvedCashfreeCredentials();
 
   const appIdMasked = appId.length > 8
     ? `${appId.slice(0, 4)}...${appId.slice(-4)}`
@@ -82,7 +126,7 @@ export function getPaymentReadinessStatus(options?: { featureFlagEnabled?: boole
     };
   }
 
-  if (!appId || !secretKey || appId.includes('YOUR_') || secretKey.includes('YOUR_') || appId === 'dummy_cashfree_app_id') {
+  if (!appId || !secretKey || appId.includes('YOUR_') || secretKey.includes('YOUR_') || appId === 'dummy_cashfree_app_id' || secretKey === 'dummy_cashfree_secret_key') {
     return {
       state: PaymentReadinessState.MISSING_SERVER_CREDENTIALS,
       configured: false,
@@ -156,10 +200,8 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
     throw new Error('CASHFREE_NOT_CONFIGURED: Live Cashfree credentials (CASHFREE_APP_ID, CASHFREE_SECRET_KEY) are not configured.');
   }
 
-  const appId = process.env.CASHFREE_APP_ID!.trim();
-  const secretKey = process.env.CASHFREE_SECRET_KEY!.trim();
+  const { appId, secretKey, apiVersion } = getResolvedCashfreeCredentials();
   const baseUrl = getCashfreeBaseUrl();
-  const apiVersion = getCashfreeApiVersion();
 
   const payload: any = {
     order_id: params.orderId,
@@ -216,10 +258,8 @@ export async function getCashfreeOrderStatus(orderId: string): Promise<CashfreeO
     throw new Error('CASHFREE_NOT_CONFIGURED: Live Cashfree credentials are not configured.');
   }
 
-  const appId = process.env.CASHFREE_APP_ID!.trim();
-  const secretKey = process.env.CASHFREE_SECRET_KEY!.trim();
+  const { appId, secretKey, apiVersion } = getResolvedCashfreeCredentials();
   const baseUrl = getCashfreeBaseUrl();
-  const apiVersion = getCashfreeApiVersion();
 
   const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, {
     method: 'GET',
@@ -253,10 +293,8 @@ export async function getPaymentsForCashfreeOrder(orderId: string): Promise<Cash
     throw new Error('CASHFREE_NOT_CONFIGURED: Live Cashfree credentials are not configured.');
   }
 
-  const appId = process.env.CASHFREE_APP_ID!.trim();
-  const secretKey = process.env.CASHFREE_SECRET_KEY!.trim();
+  const { appId, secretKey, apiVersion } = getResolvedCashfreeCredentials();
   const baseUrl = getCashfreeBaseUrl();
-  const apiVersion = getCashfreeApiVersion();
 
   const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}/payments`, {
     method: 'GET',
@@ -297,7 +335,7 @@ export function verifyCashfreeWebhookSignature(
   if (!isCashfreeConfigured()) return false;
   if (!timestamp || !signature) return false;
 
-  const secretKey = process.env.CASHFREE_SECRET_KEY!.trim();
+  const { secretKey } = getResolvedCashfreeCredentials();
   const bodyString = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8');
   const signedPayload = timestamp + bodyString;
 

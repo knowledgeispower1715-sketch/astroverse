@@ -33,7 +33,9 @@ import {
   getCashfreeBaseUrl,
   PaymentReadinessState,
   PaymentReadinessReport,
-  getPaymentReadinessStatus
+  getPaymentReadinessStatus,
+  setRuntimeCashfreeSecretKey,
+  CANONICAL_CASHFREE_APP_ID
 } from './cashfree';
 import {
   SUBSCRIPTION_PLANS,
@@ -4833,6 +4835,58 @@ app.get('/api/admin/payment-readiness', authenticate, requireAdmin(AdminPermissi
     webhookUrl: 'https://astroverse-eta.vercel.app/api/webhooks/cashfree',
     timestamp: new Date().toISOString()
   });
+});
+
+// POST /api/admin/gateway-credentials (Super Admin / Owner activates Cashfree credentials)
+app.post('/api/admin/gateway-credentials', authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { secretKey, appId, env } = req.body;
+    if (!secretKey || typeof secretKey !== 'string') {
+      return res.status(400).json({ error: 'INVALID_CREDENTIALS', message: 'secretKey is required.' });
+    }
+
+    const trimmedSecret = secretKey.trim();
+    if (trimmedSecret.length < 24) {
+      return res.status(400).json({ error: 'INVALID_CREDENTIALS', message: 'Secret key is too short.' });
+    }
+
+    // Set runtime override in memory
+    setRuntimeCashfreeSecretKey(trimmedSecret);
+    if (appId && typeof appId === 'string') {
+      process.env.CASHFREE_APP_ID = appId.trim();
+    }
+    if (env && (env === 'production' || env === 'sandbox')) {
+      process.env.CASHFREE_ENV = env;
+    }
+
+    // Verify readiness
+    const readiness = getPaymentReadinessStatus();
+    const adminUser = req.user!;
+
+    await db.recordAuditEvent({
+      userId: adminUser.id,
+      actorId: adminUser.id,
+      actorRole: adminUser.role,
+      action: 'GATEWAY_CREDENTIALS_CONFIGURED',
+      targetType: 'GATEWAY',
+      targetId: 'CASHFREE',
+      outcome: 'SUCCESS',
+      metadata: {
+        gateway: 'CASHFREE',
+        appIdMasked: readiness.appIdMasked,
+        environment: readiness.environment,
+        state: readiness.state
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: 'Cashfree credentials activated in server runtime memory.',
+      readiness
+    });
+  } catch (err: any) {
+    return handleServiceError(res, err, 'Failed to update gateway credentials');
+  }
 });
 
 // ============================================================================
