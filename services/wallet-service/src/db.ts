@@ -2033,12 +2033,59 @@ class ResilientDatabase {
    */
   findPaymentOrderById(orderId: string): PaymentOrderRecord | null {
     if (!orderId) return null;
+    const cleanId = orderId.trim();
     return this.data.paymentOrders.find(o => 
-      o.id === orderId || 
-      o.providerOrderId === orderId || 
-      (o.cfOrderId && o.cfOrderId === orderId) ||
-      (o.razorpayOrderId && o.razorpayOrderId === orderId)
+      o.id === cleanId || 
+      o.providerOrderId === cleanId || 
+      (o.cfOrderId && o.cfOrderId === cleanId) ||
+      (o.razorpayOrderId && o.razorpayOrderId === cleanId)
     ) || null;
+  }
+
+  /**
+   * Asynchronous provider-aware payment order lookup with durable PostgreSQL hydration.
+   * First inspects local in-memory cache, then queries Postgres if available to survive serverless cold starts.
+   */
+  async findPaymentOrderByIdAsync(orderId: string): Promise<PaymentOrderRecord | null> {
+    if (!orderId) return null;
+    const cleanId = orderId.trim();
+
+    // 1. Fast in-memory check
+    const cached = this.findPaymentOrderById(cleanId);
+    if (cached) return cached;
+
+    // 2. Query durable PostgreSQL via Prisma if available
+    if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
+      try {
+        const pgOrder = await this.prisma.paymentOrder.findFirst({
+          where: {
+            OR: [
+              { razorpayOrderId: cleanId },
+              { id: cleanId }
+            ]
+          }
+        });
+        if (pgOrder) {
+          const mapped = this.mapPrismaPaymentOrder(pgOrder);
+          const existingIdx = this.data.paymentOrders.findIndex(o => 
+            o.id === mapped.id || 
+            o.providerOrderId === mapped.providerOrderId || 
+            o.razorpayOrderId === mapped.razorpayOrderId
+          );
+          if (existingIdx !== -1) {
+            this.data.paymentOrders[existingIdx] = mapped;
+          } else {
+            this.data.paymentOrders.unshift(mapped);
+          }
+          return mapped;
+        }
+      } catch (err: any) {
+        console.warn('[DB] findPaymentOrderByIdAsync Postgres query error:', err?.message || err);
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -2131,7 +2178,7 @@ class ResilientDatabase {
 
   async markPaymentOrderPaid(orderId: string, paymentId: string, provider: string = 'CASHFREE'): Promise<PaymentOrderRecord> {
     this.assertDurableStorage();
-    const order = this.findPaymentOrderById(orderId);
+    const order = (await this.findPaymentOrderByIdAsync(orderId)) || this.findPaymentOrderById(orderId);
     if (!order) {
       throw new Error('ORDER_NOT_FOUND');
     }
@@ -2141,9 +2188,17 @@ class ResilientDatabase {
     }
     if (this.isPostgresAvailable && this.prisma) {
       try {
-        await this.prisma.paymentOrder.update({
+        await this.prisma.paymentOrder.upsert({
           where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId },
-          data: {
+          create: {
+            userId: order.userId,
+            amount: order.amount,
+            currency: order.currency || 'INR',
+            razorpayOrderId: order.razorpayOrderId || order.providerOrderId,
+            razorpayPaymentId: paymentId,
+            status: OrderStatus.PAID
+          },
+          update: {
             status: OrderStatus.PAID,
             razorpayPaymentId: paymentId
           }
@@ -2161,7 +2216,7 @@ class ResilientDatabase {
 
   async markPaymentOrderFailed(orderId: string, reason?: string): Promise<PaymentOrderRecord> {
     this.assertDurableStorage();
-    const order = this.findPaymentOrderById(orderId);
+    const order = (await this.findPaymentOrderByIdAsync(orderId)) || this.findPaymentOrderById(orderId);
     if (!order) {
       throw new Error('ORDER_NOT_FOUND');
     }
@@ -2170,9 +2225,16 @@ class ResilientDatabase {
     }
     if (this.isPostgresAvailable && this.prisma) {
       try {
-        await this.prisma.paymentOrder.update({
+        await this.prisma.paymentOrder.upsert({
           where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId },
-          data: {
+          create: {
+            userId: order.userId,
+            amount: order.amount,
+            currency: order.currency || 'INR',
+            razorpayOrderId: order.razorpayOrderId || order.providerOrderId,
+            status: OrderStatus.FAILED
+          },
+          update: {
             status: OrderStatus.FAILED
           }
         });
@@ -2214,7 +2276,7 @@ class ResilientDatabase {
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
-    const order = this.findPaymentOrderById(orderId);
+    const order = (await this.findPaymentOrderByIdAsync(orderId)) || this.findPaymentOrderById(orderId);
     if (!order) {
       throw new Error('ORDER_NOT_FOUND');
     }
@@ -2230,6 +2292,16 @@ class ResilientDatabase {
       l => l.idempotencyKey === `RECHARGE_${paymentId}` || l.referenceId === paymentId
     );
     if (existingLedger) {
+      if (order.status === OrderStatus.PAID && (order.providerPaymentId === paymentId || order.razorpayPaymentId === paymentId)) {
+        return user;
+      }
+      const isSameOrder = this.data.paymentOrders.some(
+        o => (o.providerOrderId === orderId || o.razorpayOrderId === orderId || o.id === orderId) &&
+             (o.providerPaymentId === paymentId || o.razorpayPaymentId === paymentId)
+      );
+      if (!isSameOrder) {
+        throw new Error('PAYMENT_ID_ALREADY_USED');
+      }
       // Payment already settled idempotently, return current user state without double crediting
       return user;
     }
@@ -2261,20 +2333,32 @@ class ResilientDatabase {
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const pgUpdatedUser = await this.prisma.$transaction(async (tx: any) => {
-          const pgOrder = await tx.paymentOrder.findUnique({
+          let pgOrder = await tx.paymentOrder.findUnique({
             where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId }
           });
-          if (!pgOrder) throw new Error('ORDER_NOT_FOUND');
-          if (pgOrder.userId !== userId) throw new Error('ORDER_USER_MISMATCH');
-          if (Math.round(Number(pgOrder.amount) * 100) !== Math.round(amount * 100)) throw new Error('AMOUNT_MISMATCH');
+          if (!pgOrder) {
+            pgOrder = await tx.paymentOrder.create({
+              data: {
+                userId,
+                amount: order.amount,
+                currency: order.currency || 'INR',
+                razorpayOrderId: order.razorpayOrderId || order.providerOrderId,
+                razorpayPaymentId: paymentId,
+                status: OrderStatus.PAID
+              }
+            });
+          } else {
+            if (pgOrder.userId !== userId) throw new Error('ORDER_USER_MISMATCH');
+            if (Math.round(Number(pgOrder.amount) * 100) !== Math.round(amount * 100)) throw new Error('AMOUNT_MISMATCH');
 
-          await tx.paymentOrder.update({
-            where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId },
-            data: {
-              status: OrderStatus.PAID,
-              razorpayPaymentId: paymentId
-            }
-          });
+            await tx.paymentOrder.update({
+              where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId },
+              data: {
+                status: OrderStatus.PAID,
+                razorpayPaymentId: paymentId
+              }
+            });
+          }
 
           await tx.walletLedger.create({
             data: {

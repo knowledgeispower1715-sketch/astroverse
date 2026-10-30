@@ -16536,6 +16536,10 @@
       }
 
       const { base, bonus, totalPayable, totalCredit } = selectedRechargePack;
+      try {
+        localStorage.setItem('astro_last_order_amount', `₹${totalPayable.toFixed(2)}`);
+        localStorage.setItem('astro_last_order_item', `Wallet Recharge: ₹${base.toFixed(2)}` + (bonus > 0 ? ` (+₹${bonus.toFixed(2)} Bonus)` : ''));
+      } catch (_) {}
 
       const targetBtn = document.getElementById('btn-proceed-pay');
       const originalBtnHtml = targetBtn ? targetBtn.innerHTML : '';
@@ -22488,10 +22492,18 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const cleanUrl = window.location.origin + window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
 
+      let savedAmount = '';
+      let savedItem = '';
+      try {
+        savedAmount = localStorage.getItem('astro_last_order_amount') || '';
+        savedItem = localStorage.getItem('astro_last_order_item') || '';
+      } catch (_) {}
+
       setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
         orderId,
         type: cfType,
-        item: cfType === 'subscription' ? 'AstroVerse Subscription' : (cfType === 'wallet' ? 'Wallet Recharge' : 'Astrological Report'),
+        item: savedItem || (cfType === 'subscription' ? 'AstroVerse Subscription' : (cfType === 'wallet' ? 'Wallet Recharge' : 'Astrological Report')),
+        amount: savedAmount || undefined,
         message: 'Confirming your transaction with Cashfree Payments...'
       });
 
@@ -22500,12 +22512,20 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           headers: getAuthHeaders()
         });
         const data = await res.json();
+        const displayAmount = (data && data.amount != null) ? `₹${Number(data.amount).toFixed(2)}` : (savedAmount || undefined);
+
         if (res.ok && data.success && data.status === 'PAID') {
+          try {
+            localStorage.removeItem('astro_last_order_amount');
+            localStorage.removeItem('astro_last_order_item');
+          } catch (_) {}
           setPaymentState(PAYMENT_STATES.SUCCESS, {
             orderId,
             type: cfType,
-            amount: `₹${(data.amount || 0).toFixed(2)}`,
-            message: 'Your payment was successfully confirmed and your entitlements have been activated!'
+            amount: displayAmount,
+            message: cfType === 'wallet'
+              ? 'Your payment was successfully confirmed and your wallet has been credited!'
+              : 'Your payment was successfully confirmed and your entitlements have been activated!'
           });
           await fetchUserEntitlements();
           updateUserSessionUI();
@@ -22516,27 +22536,51 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           setPaymentState(PAYMENT_STATES.PENDING, {
             orderId,
             type: cfType,
+            amount: displayAmount,
             message: data.message || 'Your payment is currently pending confirmation from your bank. Please do not retry immediately.',
+            retryFn: () => checkPaymentReturnFromUrl()
+          });
+        } else if (data.status === 'RECONCILIATION_REQUIRED') {
+          setPaymentState(PAYMENT_STATES.PENDING, {
+            orderId,
+            type: cfType,
+            amount: displayAmount,
+            message: data.message || 'Your payment is being confirmed with Cashfree Payments. Please do not make another payment while we verify your transaction.',
             retryFn: () => checkPaymentReturnFromUrl()
           });
         } else if (data.status === 'USER_DROPPED') {
           setPaymentState(PAYMENT_STATES.CANCELLED, {
             orderId,
             type: cfType,
+            amount: displayAmount,
             message: data.message || 'Payment checkout was cancelled or closed.'
           });
         } else {
-          setPaymentState(PAYMENT_STATES.FAILED, {
-            orderId,
-            type: cfType,
-            message: data.message || `Payment status is ${data.status || 'UNPAID'}. If money was debited, it will be automatically refunded within 5-7 business days.`
-          });
+          // If response is not ok or error indicates pending/lookup issue, NEVER classify as definitive failure
+          if (data.error === 'ORDER_NOT_FOUND' || !res.ok) {
+            setPaymentState(PAYMENT_STATES.PENDING, {
+              orderId,
+              type: cfType,
+              amount: displayAmount,
+              message: 'Your payment is being verified with Cashfree Payments. If money was deducted from your bank, your wallet will be credited automatically. Please do not make another payment.',
+              retryFn: () => checkPaymentReturnFromUrl()
+            });
+          } else {
+            setPaymentState(PAYMENT_STATES.FAILED, {
+              orderId,
+              type: cfType,
+              amount: displayAmount,
+              message: data.message || `Payment status is ${data.status || 'UNPAID'}. If money was debited, it will be automatically refunded within 5-7 business days.`
+            });
+          }
         }
       } catch (err) {
-        setPaymentState(PAYMENT_STATES.FAILED, {
+        setPaymentState(PAYMENT_STATES.PENDING, {
           orderId,
           type: cfType,
-          message: 'Unable to verify payment status with server. Please check your account or contact support.'
+          amount: savedAmount || undefined,
+          message: 'Unable to reach payment verification server. Your payment is safe. Please click below to verify again.',
+          retryFn: () => checkPaymentReturnFromUrl()
         });
       }
     }
@@ -22586,6 +22630,11 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         const planPrice = tier === 'PREMIUM'
           ? (currentBillingCycle === 'annual' ? '₹2,499.00' : '₹299.00')
           : (currentBillingCycle === 'annual' ? '₹1,299.00' : '₹149.00');
+
+        try {
+          localStorage.setItem('astro_last_order_amount', planPrice);
+          localStorage.setItem('astro_last_order_item', planName);
+        } catch (_) {}
 
         setPaymentState(PAYMENT_STATES.CREATING_ORDER, {
           item: planName,

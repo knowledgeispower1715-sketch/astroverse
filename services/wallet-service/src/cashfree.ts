@@ -37,6 +37,9 @@ export interface CashfreeOrderResponse {
   order_currency: string;
   payment_session_id: string;
   created_at?: string;
+  customer_details?: CashfreeCustomerDetails;
+  order_note?: string;
+  order_tags?: Record<string, string>;
 }
 
 export enum PaymentReadinessState {
@@ -270,7 +273,10 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
     order_amount: body.order_amount,
     order_currency: body.order_currency,
     payment_session_id: body.payment_session_id,
-    created_at: body.created_at
+    created_at: body.created_at,
+    customer_details: body.customer_details,
+    order_note: body.order_note,
+    order_tags: body.order_tags
   };
 }
 
@@ -305,7 +311,10 @@ export async function getCashfreeOrderStatus(orderId: string): Promise<CashfreeO
     order_amount: body.order_amount,
     order_currency: body.order_currency,
     payment_session_id: body.payment_session_id,
-    created_at: body.created_at
+    created_at: body.created_at,
+    customer_details: body.customer_details,
+    order_note: body.order_note,
+    order_tags: body.order_tags
   };
 }
 

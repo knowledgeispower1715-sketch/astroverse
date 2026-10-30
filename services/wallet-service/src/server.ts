@@ -2178,13 +2178,24 @@ app.post('/api/wallet/recharge', authenticate, (_req: AuthenticatedRequest, res:
   });
 });
 
-export const APPROVED_RECHARGE_PACKAGES = [
-  { id: 'pack_100', baseAmount: 100, bonus: 10, totalCredit: 110, label: 'Starter Cosmic Pack' },
-  { id: 'pack_250', baseAmount: 250, bonus: 35, totalCredit: 285, label: 'Celestial Seeker Pack', popular: true },
-  { id: 'pack_500', baseAmount: 500, bonus: 100, totalCredit: 600, label: 'Divine Astral Pack' },
-  { id: 'pack_1000', baseAmount: 1000, bonus: 250, totalCredit: 1250, label: 'Rishi Wisdom Pack' },
-  { id: 'pack_2000', baseAmount: 2000, bonus: 600, totalCredit: 2600, label: 'Guru Divine Pack' },
-  { id: 'pack_5000', baseAmount: 5000, bonus: 1750, totalCredit: 6750, label: 'Maharishi Master Pack' }
+export interface RechargePackage {
+  id: string;
+  baseAmount: number;
+  gstAmount: number;
+  totalPayable: number;
+  bonus: number;
+  totalCredit: number;
+  label: string;
+  popular?: boolean;
+}
+
+export const APPROVED_RECHARGE_PACKAGES: RechargePackage[] = [
+  { id: 'pack_100', baseAmount: 100, gstAmount: 18, totalPayable: 118, bonus: 10, totalCredit: 110, label: 'Starter Cosmic Pack' },
+  { id: 'pack_250', baseAmount: 250, gstAmount: 45, totalPayable: 295, bonus: 35, totalCredit: 285, label: 'Celestial Seeker Pack', popular: true },
+  { id: 'pack_500', baseAmount: 500, gstAmount: 90, totalPayable: 590, bonus: 100, totalCredit: 600, label: 'Divine Astral Pack' },
+  { id: 'pack_1000', baseAmount: 1000, gstAmount: 180, totalPayable: 1180, bonus: 250, totalCredit: 1250, label: 'Rishi Wisdom Pack' },
+  { id: 'pack_2000', baseAmount: 2000, gstAmount: 360, totalPayable: 2360, bonus: 600, totalCredit: 2600, label: 'Guru Divine Pack' },
+  { id: 'pack_5000', baseAmount: 5000, gstAmount: 900, totalPayable: 5900, bonus: 1750, totalCredit: 6750, label: 'Maharishi Master Pack' }
 ];
 
 export function validateRechargeAmount(amount: any): { valid: boolean; normalizedAmount: number; error?: string } {
@@ -2523,11 +2534,69 @@ app.post('/api/wallet/verify-payment', authenticate, async (req: AuthenticatedRe
     });
   }
 
-  const order = db.findPaymentOrderById(trimmedOrderId);
+  let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
+  if (!order && isCashfreeConfigured()) {
+    try {
+      const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
+      if (cfStatus && cfStatus.order_id) {
+        const cfCustomerId = cfStatus.customer_details?.customer_id;
+        if (cfCustomerId && cfCustomerId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+          return res.status(403).json({ error: 'FORBIDDEN', message: 'Payment order does not belong to the authenticated user.' });
+        }
+        const totalAmount = Number(cfStatus.order_amount);
+        const pkg = APPROVED_RECHARGE_PACKAGES.find(p => Math.abs(p.totalPayable - totalAmount) < 0.01);
+        let baseAmount = totalAmount;
+        let gstAmount = 0;
+        let bonusAmount = 0;
+        let creditAmount = totalAmount;
+        if (pkg) {
+          baseAmount = pkg.baseAmount;
+          gstAmount = pkg.gstAmount;
+          bonusAmount = pkg.bonus;
+          creditAmount = pkg.totalCredit;
+        } else {
+          const totalPaise = Math.round(totalAmount * 100);
+          const basePaise = Math.round(totalPaise / 1.18);
+          const gstPaise = totalPaise - basePaise;
+          baseAmount = basePaise / 100;
+          gstAmount = gstPaise / 100;
+          bonusAmount = 0;
+          creditAmount = baseAmount;
+        }
+
+        order = await db.createPaymentOrder({
+          userId: cfCustomerId || sessionUser.id,
+          amount: totalAmount,
+          currency: cfStatus.order_currency || 'INR',
+          provider: 'CASHFREE',
+          providerOrderId: cfStatus.order_id,
+          gateway: 'CASHFREE',
+          cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
+          cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+          productType: 'WALLET_RECHARGE',
+          baseAmount,
+          gstAmount,
+          bonusAmount,
+          creditAmount
+        });
+
+        await db.recordAuditEvent({
+          userId: sessionUser.id,
+          action: 'WALLET_RECHARGE_ORDER_AUTO_RECOVERED',
+          targetType: 'PAYMENT_ORDER',
+          targetId: trimmedOrderId,
+          metadata: { recoveredFrom: 'CASHFREE_API', amount: totalAmount }
+        });
+      }
+    } catch (_) {}
+  }
+
   if (!order) {
     return res.status(404).json({
       error: 'ORDER_NOT_FOUND',
-      message: 'Payment order not found in platform records.'
+      message: 'Cashfree payment order was not found.',
+      orderId: trimmedOrderId,
+      status: 'RECONCILIATION_REQUIRED'
     });
   }
 
@@ -3860,11 +3929,36 @@ app.put('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.MANAG
 app.get('/api/admin/payments/transactions', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const metrics = await db.getPlatformMetrics();
+    let recentLedgers: any[] = (db as any).data?.walletLedgers?.slice(0, 50) || [];
+    let recentOrders: any[] = (db as any).data?.paymentOrders?.slice(0, 50) || [];
+
+    if ((db as any).isPostgresAvailable && (db as any).prisma) {
+      try {
+        const pgLedgers = await (db as any).prisma.walletLedger.findMany({
+          take: 50,
+          orderBy: { createdAt: 'desc' }
+        });
+        if (pgLedgers && pgLedgers.length > 0) {
+          recentLedgers = pgLedgers;
+        }
+        const pgOrders = await (db as any).prisma.paymentOrder.findMany({
+          take: 50,
+          orderBy: { createdAt: 'desc' }
+        });
+        if (pgOrders && pgOrders.length > 0) {
+          recentOrders = pgOrders.map((o: any) => (db as any).mapPrismaPaymentOrder(o));
+        }
+      } catch (pgErr: any) {
+        console.warn('[ADMIN_PAYMENTS] Postgres query warning:', pgErr?.message || pgErr);
+      }
+    }
+
     res.json({
       success: true,
       totalRechargeAmount: metrics.totalWalletDeposits,
       gateway: isCashfreeConfigured() ? 'Cashfree Payments (Live/Sandbox Connected)' : 'Cashfree Payments (Unconfigured / Fail-Closed)',
-      recentLedgerEntries: (db as any).data?.walletLedgers?.slice(0, 50) || []
+      recentLedgerEntries: recentLedgers,
+      recentOrders: recentOrders
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -3977,6 +4071,153 @@ app.post('/api/admin/payments/refund', authenticate, requireAdmin(AdminPermissio
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/payments/recover-order', authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+  const { orderId } = req.body;
+  if (!orderId || typeof orderId !== 'string' || !orderId.trim()) {
+    return res.status(400).json({ error: 'ORDER_ID_REQUIRED', message: 'A valid orderId is required for recovery.' });
+  }
+
+  const cleanOrderId = orderId.trim();
+  try {
+    let order = await db.findPaymentOrderByIdAsync(cleanOrderId);
+    const cfStatus = await getCashfreeOrderStatus(cleanOrderId);
+    const payments = await getPaymentsForCashfreeOrder(cleanOrderId).catch(() => []);
+    const successfulPayment = payments.find(p => p.payment_status === 'SUCCESS');
+    const isPaid = (cfStatus.order_status === 'PAID') || Boolean(successfulPayment);
+    const verifiedPaymentId = successfulPayment ? String(successfulPayment.cf_payment_id) : (cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : `cf_rec_${Date.now()}`);
+
+    const customerId = cfStatus.customer_details?.customer_id;
+    if (!customerId) {
+      return res.status(400).json({
+        error: 'CUSTOMER_NOT_IDENTIFIED',
+        message: 'Cashfree order does not contain an associated customer_id.',
+        cfStatus
+      });
+    }
+
+    const user = await db.findUserById(customerId);
+    if (!user) {
+      return res.status(404).json({
+        error: 'USER_NOT_FOUND',
+        message: `Customer ${customerId} referenced by Cashfree was not found on AstroVerse.`,
+        cfStatus
+      });
+    }
+
+    const totalAmount = Number(cfStatus.order_amount);
+    if (!order) {
+      const orderNote = cfStatus.order_note || '';
+      let productType = 'WALLET_RECHARGE';
+      let productId: string | undefined = undefined;
+      let baseAmount = totalAmount;
+      let gstAmount = 0;
+      let bonusAmount = 0;
+      let creditAmount = totalAmount;
+
+      if (cleanOrderId.startsWith('cf_sub_') || orderNote.includes('Subscription')) {
+        productType = 'SUBSCRIPTION';
+      } else if (cleanOrderId.startsWith('cf_rep_') || orderNote.includes('Report')) {
+        productType = 'REPORT';
+      } else {
+        productType = 'WALLET_RECHARGE';
+        const pkg = APPROVED_RECHARGE_PACKAGES.find(p => Math.abs(p.totalPayable - totalAmount) < 0.01);
+        if (pkg) {
+          baseAmount = pkg.baseAmount;
+          gstAmount = pkg.gstAmount;
+          bonusAmount = pkg.bonus;
+          creditAmount = pkg.totalCredit;
+        } else {
+          const totalPaise = Math.round(totalAmount * 100);
+          const basePaise = Math.round(totalPaise / 1.18);
+          const gstPaise = totalPaise - basePaise;
+          baseAmount = basePaise / 100;
+          gstAmount = gstPaise / 100;
+          bonusAmount = 0;
+          creditAmount = baseAmount;
+        }
+      }
+
+      order = await db.createPaymentOrder({
+        userId: customerId,
+        amount: totalAmount,
+        currency: cfStatus.order_currency || 'INR',
+        provider: 'CASHFREE',
+        providerOrderId: cfStatus.order_id,
+        gateway: 'CASHFREE',
+        cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
+        cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+        productType,
+        productId,
+        baseAmount,
+        gstAmount,
+        bonusAmount,
+        creditAmount
+      });
+    }
+
+    let updatedUser: UserRecord | null = user;
+    let actionTaken = 'NONE';
+
+    if (isPaid) {
+      if (order.status !== OrderStatus.PAID) {
+        if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
+          updatedUser = await db.rechargeWallet(customerId, order.amount, verifiedPaymentId, order.providerOrderId, 'CASHFREE');
+          actionTaken = 'WALLET_CREDITED';
+        } else if (order.productType === 'SUBSCRIPTION') {
+          const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+          const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+          const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+          await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
+          updatedUser = await db.updateSubscription(customerId, targetTier, period, durationDays);
+          actionTaken = 'SUBSCRIPTION_ACTIVATED';
+        } else {
+          await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
+          actionTaken = 'ORDER_MARKED_PAID';
+        }
+      } else {
+        actionTaken = 'ALREADY_PAID_AND_FULFILLED';
+      }
+    }
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'ADMIN_MANUAL_ORDER_RECOVERY',
+      targetType: 'PAYMENT_ORDER',
+      targetId: cleanOrderId,
+      outcome: 'SUCCESS',
+      metadata: {
+        orderId: cleanOrderId,
+        customerId,
+        amount: totalAmount,
+        actionTaken,
+        paymentId: verifiedPaymentId,
+        isPaid
+      }
+    });
+
+    res.json({
+      success: true,
+      recovered: true,
+      actionTaken,
+      orderId: order.providerOrderId,
+      cfOrderId: cfStatus.cf_order_id,
+      paymentId: verifiedPaymentId,
+      customerId,
+      customerEmail: cfStatus.customer_details?.customer_email || user.email,
+      customerName: cfStatus.customer_details?.customer_name || user.displayName,
+      orderStatus: cfStatus.order_status,
+      amount: totalAmount,
+      currency: cfStatus.order_currency || 'INR',
+      newBalance: updatedUser?.walletBalance,
+      payments
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'RECOVERY_FAILED', message: err.message || err });
   }
 });
 
@@ -4405,7 +4646,30 @@ app.post('/api/subscriptions/verify-payment', authenticate, async (req: Authenti
     });
   }
 
-  const order = db.findPaymentOrderById(trimmedOrderId);
+  let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
+  if (!order && isCashfreeConfigured()) {
+    try {
+      const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
+      if (cfStatus && cfStatus.order_id) {
+        const cfCustomerId = cfStatus.customer_details?.customer_id;
+        if (cfCustomerId && cfCustomerId !== user.id && user.role !== Role.SUPER_ADMIN) {
+          return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Payment order does not belong to authenticated user.' });
+        }
+        order = await db.createPaymentOrder({
+          userId: cfCustomerId || user.id,
+          amount: Number(cfStatus.order_amount),
+          currency: cfStatus.order_currency || 'INR',
+          provider: 'CASHFREE',
+          providerOrderId: cfStatus.order_id,
+          gateway: 'CASHFREE',
+          cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
+          cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+          productType: 'SUBSCRIPTION',
+          productId: tier || SubscriptionTier.PLUS
+        });
+      }
+    } catch (_) {}
+  }
   if (!order) {
     return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Subscription payment order not found.' });
   }
@@ -4633,18 +4897,105 @@ app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedReq
       return res.status(400).json({ error: 'MISSING_ORDER_ID', message: 'orderId is required.' });
     }
 
-    const order = db.findPaymentOrderById(orderId);
+    let order = await db.findPaymentOrderByIdAsync(orderId);
+
+    // Auto-recovery path: if order record is missing from platform DB, query Cashfree authoritatively!
+    if (!order && isCashfreeConfigured()) {
+      try {
+        const cfStatus = await getCashfreeOrderStatus(orderId);
+        if (cfStatus && cfStatus.order_id) {
+          const cfCustomerId = cfStatus.customer_details?.customer_id;
+          if (cfCustomerId && cfCustomerId !== user.id && user.role !== Role.SUPER_ADMIN) {
+            return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Order does not belong to the authenticated user.' });
+          }
+
+          const orderNote = cfStatus.order_note || '';
+          const totalAmount = Number(cfStatus.order_amount);
+          let productType = 'WALLET_RECHARGE';
+          let productId: string | undefined = undefined;
+          let baseAmount: number = totalAmount;
+          let gstAmount: number = 0;
+          let bonusAmount: number = 0;
+          let creditAmount: number = totalAmount;
+
+          if (orderId.startsWith('cf_sub_') || orderNote.includes('Subscription')) {
+            productType = 'SUBSCRIPTION';
+          } else if (orderId.startsWith('cf_rep_') || orderNote.includes('Report')) {
+            productType = 'REPORT';
+          } else {
+            productType = 'WALLET_RECHARGE';
+            const pkg = APPROVED_RECHARGE_PACKAGES.find(p => Math.abs(p.totalPayable - totalAmount) < 0.01);
+            if (pkg) {
+              baseAmount = pkg.baseAmount;
+              gstAmount = pkg.gstAmount;
+              bonusAmount = pkg.bonus;
+              creditAmount = pkg.totalCredit;
+            } else {
+              const totalPaise = Math.round(totalAmount * 100);
+              const basePaise = Math.round(totalPaise / 1.18);
+              const gstPaise = totalPaise - basePaise;
+              baseAmount = basePaise / 100;
+              gstAmount = gstPaise / 100;
+              bonusAmount = 0;
+              creditAmount = baseAmount;
+            }
+          }
+
+          order = await db.createPaymentOrder({
+            userId: cfCustomerId || user.id,
+            amount: totalAmount,
+            currency: cfStatus.order_currency || 'INR',
+            provider: 'CASHFREE',
+            providerOrderId: cfStatus.order_id,
+            gateway: 'CASHFREE',
+            cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
+            cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+            productType,
+            productId,
+            baseAmount,
+            gstAmount,
+            bonusAmount,
+            creditAmount
+          });
+
+          await db.recordAuditEvent({
+            userId: user.id,
+            action: 'CASHFREE_ORDER_AUTO_RECOVERED',
+            targetType: 'PAYMENT_ORDER',
+            targetId: orderId,
+            metadata: {
+              recoveredFrom: 'CASHFREE_API',
+              cfOrderId: cfStatus.cf_order_id,
+              amount: totalAmount,
+              orderStatus: cfStatus.order_status
+            }
+          });
+        }
+      } catch (cfErr: any) {
+        console.warn(`[CASHFREE_VERIFY] Gateway lookup failed for ${orderId}:`, cfErr?.message || cfErr);
+      }
+    }
+
     if (!order) {
-      return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Cashfree payment order was not found.' });
+      return res.status(404).json({
+        error: 'ORDER_NOT_FOUND',
+        message: 'Cashfree payment order was not found.',
+        orderId,
+        status: 'RECONCILIATION_REQUIRED'
+      });
     }
     if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
       return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Order does not belong to the authenticated user.' });
     }
     if (order.status === OrderStatus.PAID) {
+      const userRec = await db.findUserById(order.userId);
       return res.json({
         success: true,
         alreadyProcessed: true,
         status: 'PAID',
+        orderId: order.providerOrderId,
+        amount: order.amount,
+        newBalance: userRec ? userRec.walletBalance : undefined,
         message: 'Order was already verified and fulfilled.'
       });
     }
@@ -4683,7 +5034,9 @@ app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedReq
       return res.status(400).json({
         error: 'PAYMENT_NOT_COMPLETED',
         message: `Cashfree reports order status as ${cfStatus.order_status}.`,
-        status: cfStatus.order_status
+        status: cfStatus.order_status,
+        orderId: order.providerOrderId,
+        amount: order.amount
       });
     }
 
@@ -4695,16 +5048,18 @@ app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedReq
     }
 
     // Authoritative fulfillment
+    let updatedUser: UserRecord | null = null;
     if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
-      await db.rechargeWallet(user.id, order.amount, verifiedPaymentId, order.providerOrderId, 'CASHFREE');
+      updatedUser = await db.rechargeWallet(user.id, order.amount, verifiedPaymentId, order.providerOrderId, 'CASHFREE');
     } else if (order.productType === 'SUBSCRIPTION') {
       const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
       const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
       const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
       await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
-      await db.updateSubscription(user.id, targetTier, period, durationDays);
+      updatedUser = await db.updateSubscription(user.id, targetTier, period, durationDays);
     } else {
       await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
+      updatedUser = await db.findUserById(user.id);
     }
 
     await db.recordAuditEvent({
@@ -4720,6 +5075,7 @@ app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedReq
       status: 'PAID',
       orderId: order.providerOrderId,
       amount: order.amount,
+      newBalance: updatedUser ? updatedUser.walletBalance : undefined,
       gateway: 'CASHFREE'
     });
   } catch (err: any) {
@@ -4795,8 +5151,33 @@ app.post(['/api/webhooks/cashfree', '/api/cashfree/webhook'], async (req: Reques
       const paymentId = paymentData?.cf_payment_id ? String(paymentData.cf_payment_id) : `cf_wh_${Date.now()}`;
 
       if (orderId) {
-        const order = db.findPaymentOrderById(orderId);
-        if (order && order.status === OrderStatus.CREATED) {
+        let order = await db.findPaymentOrderByIdAsync(orderId);
+        if (!order) {
+          const customerId = orderData?.customer_details?.customer_id;
+          if (customerId) {
+            const totalAmount = Number(orderData.order_amount || paymentData?.payment_amount || 0);
+            const totalPaise = Math.round(totalAmount * 100);
+            const basePaise = Math.round(totalPaise / 1.18);
+            const gstPaise = totalPaise - basePaise;
+            const isSub = orderId.startsWith('cf_sub_') || (orderData.order_tags && orderData.order_tags.type === 'subscription');
+            order = await db.createPaymentOrder({
+              userId: customerId,
+              amount: totalAmount,
+              currency: orderData.order_currency || 'INR',
+              provider: 'CASHFREE',
+              providerOrderId: orderId,
+              gateway: 'CASHFREE',
+              cfOrderId: orderData.cf_order_id ? String(orderData.cf_order_id) : undefined,
+              productType: isSub ? 'SUBSCRIPTION' : 'WALLET_RECHARGE',
+              baseAmount: basePaise / 100,
+              gstAmount: gstPaise / 100,
+              bonusAmount: 0,
+              creditAmount: basePaise / 100
+            });
+            console.log(`[CASHFREE_WEBHOOK] Auto-recovered order ${orderId} for customer ${customerId}`);
+          }
+        }
+        if (order && order.status !== OrderStatus.PAID) {
           try {
             if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
               await db.rechargeWallet(order.userId, order.amount, paymentId, order.providerOrderId, 'CASHFREE');
@@ -5634,7 +6015,30 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
   }
 
   // 1. Order lookup & verification (AV-SEC-01 mitigation)
-  const order = db.findPaymentOrderById(trimmedOrderId);
+  let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
+  if (!order && isCashfreeConfigured()) {
+    try {
+      const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
+      if (cfStatus && cfStatus.order_id) {
+        const cfCustomerId = cfStatus.customer_details?.customer_id;
+        if (cfCustomerId && cfCustomerId !== user.id && user.role !== Role.SUPER_ADMIN) {
+          return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Payment order does not belong to the authenticated user.' });
+        }
+        order = await db.createPaymentOrder({
+          userId: cfCustomerId || user.id,
+          amount: Number(cfStatus.order_amount),
+          currency: cfStatus.order_currency || 'INR',
+          provider: 'CASHFREE',
+          providerOrderId: cfStatus.order_id,
+          gateway: 'CASHFREE',
+          cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
+          cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+          productType: 'REPORT',
+          productId
+        });
+      }
+    } catch (_) {}
+  }
   if (!order) {
     return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Payment order was not found in platform records.' });
   }

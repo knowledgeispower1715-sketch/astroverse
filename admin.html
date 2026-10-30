@@ -847,6 +847,28 @@
             </div>
           </div>
 
+          <!-- Emergency Order Recovery & Gateway Lookup -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Emergency Order Recovery &amp; Gateway Audit
+              </h3>
+              <span class="badge-status-active" style="font-size: 10.5px; background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; padding: 2px 8px; border-radius: 999px;">
+                <i class="fa-solid fa-shield-halved"></i> IDEMPOTENT FINANCIAL RECOVERY
+              </span>
+            </div>
+            <div style="font-size: 12px; color: #475569; margin-bottom: 10px;">
+              Directly query Cashfree Payments API for any order identifier (e.g. <code>cf_wal_f1bb9dc4d88c177f</code>), reconstruct missing platform records, verify bank capture, and idempotently credit the customer wallet.
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+              <input type="text" id="input-recover-order-id" placeholder="Enter Cashfree Order ID (e.g. cf_wal_...)" style="flex: 1; min-width: 260px; padding: 8px 12px; font-size: 12.5px; border: 1px solid #CBD5E1; border-radius: 6px; font-family: monospace;">
+              <button class="btn-primary" style="padding: 8px 16px; font-size: 12px; background: var(--vedic-maroon); color: white; border: none; border-radius: 6px; cursor: pointer;" onclick="runManualOrderRecovery()">
+                <i class="fa-solid fa-magnifying-glass-dollar"></i> Query Gateway &amp; Recover
+              </button>
+            </div>
+            <div id="admin-recover-order-result" style="display: none; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 12px; font-size: 12px; font-family: monospace;"></div>
+          </div>
+
           <!-- Wallet & Custom Recharge Governance (AV-FIN-01) -->
           <div class="astro-card" style="margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
@@ -4223,6 +4245,55 @@
         }
       } catch (_) {
         if (target) target.innerHTML = `<span style="color: #DC2626;">Reconciliation failed.</span>`;
+      }
+    }
+
+    async function runManualOrderRecovery() {
+      const input = document.getElementById('input-recover-order-id');
+      const target = document.getElementById('admin-recover-order-result');
+      const orderId = input ? input.value.trim() : '';
+      if (!orderId) {
+        showToast("Please enter a valid Cashfree Order ID.", "warning");
+        return;
+      }
+      if (target) {
+        target.style.display = 'block';
+        target.innerHTML = `<span style="color: #2563EB;"><i class="fa-solid fa-spinner fa-spin"></i> Querying Cashfree API for order ${orderId}...</span>`;
+      }
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/payments/recover-order`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ orderId })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (target) {
+            target.innerHTML = `
+              <div style="color: #059669; font-weight: 800; font-size: 13px; margin-bottom: 6px;">
+                <i class="fa-solid fa-circle-check"></i> ORDER RECOVERED & VERIFIED
+              </div>
+              <div><strong>Order ID:</strong> ${data.orderId} (Cashfree CF: ${data.cfOrderId || '-'})</div>
+              <div><strong>Customer:</strong> ${data.customerName || '-'} (${data.customerEmail || data.customerId})</div>
+              <div><strong>Gateway Status:</strong> <span style="color: #059669; font-weight: 700;">${data.orderStatus}</span> | <strong>Amount:</strong> ₹${(data.amount || 0).toFixed(2)}</div>
+              <div><strong>Payment ID:</strong> ${data.paymentId || '-'}</div>
+              <div><strong>Action Taken:</strong> <span style="color: #D97706; font-weight: 700;">${data.actionTaken}</span></div>
+              ${data.newBalance != null ? `<div><strong>Updated Customer Wallet:</strong> ₹${data.newBalance.toFixed(2)}</div>` : ''}
+            `;
+          }
+          showToast(`Order ${orderId} successfully recovered and reconciled!`, "success");
+          loadAdminPayments();
+        } else {
+          if (target) {
+            target.innerHTML = `<span style="color: #DC2626; font-weight: 700;"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error || 'Recovery Failed'}:</span> ${data.message || 'Unable to recover order.'}`;
+          }
+          showToast(data.message || "Failed to recover order.", "error");
+        }
+      } catch (err) {
+        if (target) {
+          target.innerHTML = `<span style="color: #DC2626;">Network error while contacting recovery endpoint.</span>`;
+        }
+        showToast("Network error during order recovery.", "error");
       }
     }
 
