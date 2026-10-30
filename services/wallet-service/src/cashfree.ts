@@ -15,6 +15,18 @@ export interface CreateCashfreeOrderParams {
   returnUrl?: string;
   notifyUrl?: string;
   orderNote?: string;
+  idempotencyKey?: string;
+}
+
+export interface CashfreePaymentEntity {
+  cf_payment_id: string | number;
+  payment_status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'USER_DROPPED' | 'CANCELLED' | string;
+  payment_amount: number;
+  payment_currency: string;
+  payment_message?: string;
+  payment_time?: string;
+  payment_group?: string;
+  payment_method?: any;
 }
 
 export interface CashfreeOrderResponse {
@@ -77,14 +89,19 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
     order_note: params.orderNote || 'AstroVerse Order'
   };
 
+  const headers: Record<string, string> = {
+    'x-client-id': appId,
+    'x-client-secret': secretKey,
+    'x-api-version': apiVersion,
+    'Content-Type': 'application/json'
+  };
+  if (params.idempotencyKey) {
+    headers['x-idempotency-key'] = params.idempotencyKey;
+  }
+
   const response = await fetch(`${baseUrl}/orders`, {
     method: 'POST',
-    headers: {
-      'x-client-id': appId,
-      'x-client-secret': secretKey,
-      'x-api-version': apiVersion,
-      'Content-Type': 'application/json'
-    },
+    headers,
     body: JSON.stringify(payload)
   });
 
@@ -140,6 +157,47 @@ export async function getCashfreeOrderStatus(orderId: string): Promise<CashfreeO
     payment_session_id: body.payment_session_id,
     created_at: body.created_at
   };
+}
+
+export async function getPaymentsForCashfreeOrder(orderId: string): Promise<CashfreePaymentEntity[]> {
+  if (!isCashfreeConfigured()) {
+    throw new Error('CASHFREE_NOT_CONFIGURED: Live Cashfree credentials are not configured.');
+  }
+
+  const appId = process.env.CASHFREE_APP_ID!.trim();
+  const secretKey = process.env.CASHFREE_SECRET_KEY!.trim();
+  const baseUrl = getCashfreeBaseUrl();
+  const apiVersion = getCashfreeApiVersion();
+
+  const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}/payments`, {
+    method: 'GET',
+    headers: {
+      'x-client-id': appId,
+      'x-client-secret': secretKey,
+      'x-api-version': apiVersion,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  const body: any = await response.json();
+  if (!response.ok) {
+    const errorMsg = body.message || body.error || `Cashfree payments lookup failed with status ${response.status}`;
+    throw new Error(`CASHFREE_PAYMENTS_LOOKUP_FAILED: ${errorMsg}`);
+  }
+
+  if (Array.isArray(body)) {
+    return body.map((p: any) => ({
+      cf_payment_id: p.cf_payment_id,
+      payment_status: p.payment_status,
+      payment_amount: p.payment_amount,
+      payment_currency: p.payment_currency,
+      payment_message: p.payment_message,
+      payment_time: p.payment_time,
+      payment_group: p.payment_group,
+      payment_method: p.payment_method
+    }));
+  }
+  return [];
 }
 
 export function verifyCashfreeWebhookSignature(

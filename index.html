@@ -15059,8 +15059,9 @@
 
     function getAuthHeaders() {
       const h = { 'Content-Type': 'application/json' };
-      if (currentSessionToken) {
-        h['Authorization'] = 'Bearer ' + currentSessionToken;
+      const token = currentSessionToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('astro_session_token') : '') || '';
+      if (token) {
+        h['Authorization'] = 'Bearer ' + token;
       }
       try {
         const mfaAssurance = sessionStorage.getItem('admin_mfa_token');
@@ -16379,10 +16380,11 @@
           message: `Creating secure order for ₹${totalPayable.toFixed(2)}...`
         });
 
+        const idempotencyKey = 'cf_rech_' + base + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
         const orderRes = await fetch(`${getAuthBase()}/api/wallet/create-order`, {
           method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ amount: base })
+          headers: Object.assign(getAuthHeaders(), { 'x-idempotency-key': idempotencyKey }),
+          body: JSON.stringify({ amount: base, idempotencyKey })
         });
 
         if (!orderRes.ok) {
@@ -16423,7 +16425,9 @@
         await loadCashfreeSDK();
 
         if (typeof window.Cashfree !== 'function') {
-          throw new Error("Cashfree SDK failed to initialize.");
+          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+          submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          return;
         }
 
         const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
@@ -16433,51 +16437,18 @@
           orderId: orderData.orderId
         });
 
-        cashfree.checkout({
-          paymentSessionId: orderData.paymentSessionId,
-          redirectTarget: '_modal'
-        }).then(result => {
-          if (targetBtn) {
-            targetBtn.disabled = false;
-            targetBtn.innerHTML = originalBtnHtml;
-          }
+        // Close recharge modal cleanly before navigation
+        closeWalletModal();
 
-          if (result.error) {
-            const msg = (result.error.message || '').toLowerCase();
-            const isCancelled = msg.includes('abandoned') || msg.includes('cancelled') || result.error.code === 'payment_cancelled';
-            if (isCancelled) {
-              setPaymentState(PAYMENT_STATES.CANCELLED, {
-                orderId: orderData.orderId,
-                message: "Wallet recharge checkout was cancelled."
-              });
-            } else {
-              setPaymentState(PAYMENT_STATES.FAILED, {
-                orderId: orderData.orderId,
-                message: result.error.message || "Payment was declined or failed.",
-                retryFn: () => executeSelectedRecharge()
-              });
-            }
-            return;
-          }
-
-          if (result.paymentDetails) {
-            setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
-              orderId: orderData.orderId,
-              message: 'Confirming wallet recharge payment...'
-            });
-            verifyAndCreditWallet(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId);
-          }
-        }).catch(sdkErr => {
-          if (targetBtn) {
-            targetBtn.disabled = false;
-            targetBtn.innerHTML = originalBtnHtml;
-          }
-          console.error("Cashfree checkout error:", sdkErr);
-          setPaymentState(PAYMENT_STATES.FAILED, {
-            message: sdkErr.message || "An unexpected error occurred during checkout.",
-            retryFn: () => executeSelectedRecharge()
+        try {
+          await cashfree.checkout({
+            paymentSessionId: orderData.paymentSessionId,
+            redirectTarget: '_self'
           });
-        });
+        } catch (sdkErr) {
+          console.warn("Cashfree wallet checkout threw, executing hosted fallback:", sdkErr);
+          submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+        }
 
       } catch (err) {
         if (targetBtn) {
@@ -21936,6 +21907,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       INITIALIZING_CHECKOUT: 'INITIALIZING_CHECKOUT',
       CHECKOUT_OPEN: 'CHECKOUT_OPEN',
       VERIFYING_PAYMENT: 'VERIFYING_PAYMENT',
+      PENDING: 'PENDING',
       SUCCESS: 'SUCCESS',
       FAILED: 'FAILED',
       CANCELLED: 'CANCELLED'
@@ -21944,6 +21916,40 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     let currentPaymentState = PAYMENT_STATES.IDLE;
     let currentPaymentContext = null;
     let paymentGatewayTimeoutTimer = null;
+
+    function submitCashfreeHostedFallback(paymentSessionId, env) {
+      if (!paymentSessionId) return;
+      const baseUrl = (env === 'production' || window.CASHFREE_ENV === 'production')
+        ? 'https://api.cashfree.com'
+        : 'https://sandbox.cashfree.com';
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `${baseUrl}/pg/view/sessions/checkout`;
+      form.target = '_self';
+      form.style.display = 'none';
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'payment_session_id';
+      input.value = paymentSessionId;
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    }
+
+    function monitorCashfreeModalIframe(paymentSessionId, sdkMode, timeoutMs = 3500) {
+      const timer = setTimeout(() => {
+        const modalContainer = document.getElementById('cashfree-modal-container');
+        if (modalContainer) {
+          const iframe = modalContainer.querySelector('iframe');
+          if (iframe && (iframe.src === 'about:blank' || !iframe.src || !iframe.contentWindow)) {
+            console.warn('[Cashfree Watchdog] Detected blank iframe sandbox freeze. Redirecting via hosted checkout.');
+            try { modalContainer.remove(); } catch (_) {}
+            submitCashfreeHostedFallback(paymentSessionId, sdkMode);
+          }
+        }
+      }, timeoutMs);
+      return () => clearTimeout(timer);
+    }
 
     async function ensureCashfreeConfig() {
       if (window.CASHFREE_CONFIG_LOADED && window.CASHFREE_APP_ID) {
@@ -22124,6 +22130,31 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           if (btnSecondary) btnSecondary.style.display = 'none';
           break;
 
+        case PAYMENT_STATES.PENDING:
+          clearPaymentTimeout();
+          if (currentPaymentContext && currentPaymentContext.resetBtn) {
+            try { currentPaymentContext.resetBtn(); } catch (_) {}
+          }
+          if (modalStatus) modalStatus.style.display = 'flex';
+          if (iconWrap) {
+            iconWrap.style.background = '#FEF3C7';
+            iconWrap.style.color = '#D97706';
+          }
+          if (icon) icon.className = 'fa-solid fa-clock-rotate-left fa-spin';
+          if (title) title.textContent = 'Payment Verification Pending';
+          if (desc) desc.textContent = payload.message || 'Your bank is processing your payment. Please do not retry immediately to prevent duplicate charges.';
+          if (btnPrimary) {
+            btnPrimary.style.display = currentPaymentContext && currentPaymentContext.retryFn ? 'inline-flex' : 'none';
+            btnPrimary.textContent = 'Check Status Again';
+            btnPrimary.disabled = false;
+          }
+          if (btnSecondary) {
+            btnSecondary.style.display = 'inline-flex';
+            btnSecondary.textContent = 'Close';
+            btnSecondary.disabled = false;
+          }
+          break;
+
         case PAYMENT_STATES.FAILED:
           clearPaymentTimeout();
           if (currentPaymentContext && currentPaymentContext.resetBtn) {
@@ -22179,7 +22210,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     function handlePaymentPrimaryAction() {
       if (currentPaymentState === PAYMENT_STATES.SUCCESS) {
         setPaymentState(PAYMENT_STATES.IDLE);
-      } else if (currentPaymentState === PAYMENT_STATES.FAILED && currentPaymentContext && typeof currentPaymentContext.retryFn === 'function') {
+      } else if ((currentPaymentState === PAYMENT_STATES.FAILED || currentPaymentState === PAYMENT_STATES.PENDING) && currentPaymentContext && typeof currentPaymentContext.retryFn === 'function') {
         const retry = currentPaymentContext.retryFn;
         setPaymentState(PAYMENT_STATES.IDLE);
         retry();
@@ -22240,6 +22271,19 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           if (typeof updateOverviewActiveChartBanner === 'function') {
             updateOverviewActiveChartBanner();
           }
+        } else if (data.status === 'PENDING') {
+          setPaymentState(PAYMENT_STATES.PENDING, {
+            orderId,
+            type: cfType,
+            message: data.message || 'Your payment is currently pending confirmation from your bank. Please do not retry immediately.',
+            retryFn: () => checkPaymentReturnFromUrl()
+          });
+        } else if (data.status === 'USER_DROPPED') {
+          setPaymentState(PAYMENT_STATES.CANCELLED, {
+            orderId,
+            type: cfType,
+            message: data.message || 'Payment checkout was cancelled or closed.'
+          });
         } else {
           setPaymentState(PAYMENT_STATES.FAILED, {
             orderId,
@@ -22260,6 +22304,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     window.setPaymentState = setPaymentState;
     window.checkPaymentReturnFromUrl = checkPaymentReturnFromUrl;
     window.ensureCashfreeConfig = ensureCashfreeConfig;
+    window.submitCashfreeHostedFallback = submitCashfreeHostedFallback;
+    window.monitorCashfreeModalIframe = monitorCashfreeModalIframe;
 
     async function executeSubscriptionCheckout(tier) {
       const token = currentSessionToken || localStorage.getItem('astro_session_token');
@@ -22306,12 +22352,14 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           message: `Creating secure order for ${planName}...`
         });
 
+        const idempotencyKey = 'cf_sub_' + tier + '_' + currentBillingCycle + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
         const res = await fetch(`${getAuthBase()}/api/subscriptions/create-order`, {
           method: 'POST',
-          headers: getAuthHeaders(),
+          headers: Object.assign(getAuthHeaders(), { 'x-idempotency-key': idempotencyKey }),
           body: JSON.stringify({
             tier,
-            billingPeriod: currentBillingCycle
+            billingPeriod: currentBillingCycle,
+            idempotencyKey
           })
         });
 
@@ -22351,7 +22399,10 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         await loadCashfreeSDK();
 
         if (typeof window.Cashfree !== 'function') {
-          throw new Error("Cashfree SDK failed to initialize in browser context.");
+          // If SDK script failed to load, execute immediate direct hosted redirect fallback
+          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+          submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          return;
         }
 
         const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
@@ -22361,52 +22412,18 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           orderId: orderData.orderId
         });
 
-        cashfree.checkout({
-          paymentSessionId: orderData.paymentSessionId,
-          redirectTarget: '_modal'
-        }).then(result => {
-          if (targetBtn) {
-            targetBtn.disabled = false;
-            targetBtn.innerHTML = originalBtnHtml;
-          }
+        // Close pricing modal cleanly before navigation to avoid any backdrop freeze
+        closePricingPlansModal();
 
-          if (result.error) {
-            const msg = (result.error.message || '').toLowerCase();
-            const isCancelled = msg.includes('abandoned') || msg.includes('cancelled') || result.error.code === 'payment_cancelled';
-            if (isCancelled) {
-              setPaymentState(PAYMENT_STATES.CANCELLED, {
-                orderId: orderData.orderId,
-                message: "Subscription checkout was cancelled."
-              });
-            } else {
-              setPaymentState(PAYMENT_STATES.FAILED, {
-                orderId: orderData.orderId,
-                message: result.error.message || "Payment was declined or failed.",
-                retryFn: () => executeSubscriptionCheckout(tier)
-              });
-            }
-            return;
-          }
-
-          if (result.paymentDetails) {
-            setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
-              orderId: orderData.orderId,
-              tier,
-              message: 'Confirming your subscription with Cashfree...'
-            });
-            verifySubscriptionPayment(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId, null, tier);
-          }
-        }).catch(sdkErr => {
-          if (targetBtn) {
-            targetBtn.disabled = false;
-            targetBtn.innerHTML = originalBtnHtml;
-          }
-          console.error("Cashfree checkout error:", sdkErr);
-          setPaymentState(PAYMENT_STATES.FAILED, {
-            message: sdkErr.message || "An unexpected error occurred during checkout.",
-            retryFn: () => executeSubscriptionCheckout(tier)
+        try {
+          await cashfree.checkout({
+            paymentSessionId: orderData.paymentSessionId,
+            redirectTarget: '_self'
           });
-        });
+        } catch (sdkErr) {
+          console.warn("Cashfree checkout redirect threw, launching hosted fallback:", sdkErr);
+          submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+        }
 
       } catch (err) {
         if (targetBtn) {
@@ -24283,15 +24300,17 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       try {
         showToast("Generating personalized astrological publication...", "info");
 
+        const idempotencyKey = 'cf_rep_' + activeBuilderProduct.productId + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
         const orderRes = await fetch(`${getAuthBase()}/api/reports/order`, {
           method: 'POST',
-          headers: getAuthHeaders(),
+          headers: Object.assign(getAuthHeaders(), { 'x-idempotency-key': idempotencyKey }),
           body: JSON.stringify({
             productId: activeBuilderProduct.productId,
             profileId: resolvedProfileId,
             profileData: profileData,
             partnerProfileId: partnerId,
             paymentMethod: method,
+            idempotencyKey,
             options: {
               focusArea: focus,
               technicalDepth: depth,
@@ -24356,7 +24375,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           if (!orderData.paymentSessionId) {
             setPaymentState(PAYMENT_STATES.FAILED, {
               message: orderData.message || "Online payments are currently unconfigured. Please select Wallet Balance to purchase this publication.",
-              retryFn: () => confirmReportOrderAndGenerate(profileId, focus, depth, lang, partnerId, method)
+              retryFn: () => executeGenerateReport()
             });
             return;
           }
@@ -24366,12 +24385,14 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             orderId: orderData.orderId,
             item: activeBuilderProduct.title || 'Astrological Publication',
             amount: `₹${finalRupees.toFixed(2)}`,
-            retryFn: () => confirmReportOrderAndGenerate(profileId, focus, depth, lang, partnerId, method)
+            retryFn: () => executeGenerateReport()
           });
 
           await loadCashfreeSDK();
           if (typeof window.Cashfree !== 'function') {
-            throw new Error("Cashfree SDK failed to initialize.");
+            const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+            submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+            return;
           }
 
           const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
@@ -24381,42 +24402,19 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             orderId: orderData.orderId
           });
 
-          cashfree.checkout({
-            paymentSessionId: orderData.paymentSessionId,
-            redirectTarget: '_modal'
-          }).then(result => {
-            if (result.error) {
-              const msg = (result.error.message || '').toLowerCase();
-              const isCancelled = msg.includes('abandoned') || msg.includes('cancelled') || result.error.code === 'payment_cancelled';
-              if (isCancelled) {
-                setPaymentState(PAYMENT_STATES.CANCELLED, {
-                  orderId: orderData.orderId,
-                  message: "Publication checkout was cancelled."
-                });
-              } else {
-                setPaymentState(PAYMENT_STATES.FAILED, {
-                  orderId: orderData.orderId,
-                  message: result.error.message || "Payment was declined or failed.",
-                  retryFn: () => confirmReportOrderAndGenerate(profileId, focus, depth, lang, partnerId, method)
-                });
-              }
-              return;
-            }
+          // Close report builder and store modals cleanly before navigation
+          closeReportBuilderModal();
+          closeReportStoreModal();
 
-            if (result.paymentDetails) {
-              setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
-                orderId: orderData.orderId,
-                message: 'Confirming payment and compiling personalized publication...'
-              });
-              verifyReportPayment(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId, null, resolvedProfileId, profileData);
-            }
-          }).catch(sdkErr => {
-            console.error("Cashfree report checkout error:", sdkErr);
-            setPaymentState(PAYMENT_STATES.FAILED, {
-              message: sdkErr.message || "An unexpected error occurred during checkout.",
-              retryFn: () => confirmReportOrderAndGenerate(profileId, focus, depth, lang, partnerId, method)
+          try {
+            await cashfree.checkout({
+              paymentSessionId: orderData.paymentSessionId,
+              redirectTarget: '_self'
             });
-          });
+          } catch (sdkErr) {
+            console.warn("Cashfree report checkout redirect threw, launching hosted fallback:", sdkErr);
+            submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          }
         } else {
           showToast(orderData.message || "Report generation failed.", "error");
         }

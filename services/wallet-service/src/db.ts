@@ -279,6 +279,7 @@ export interface PaymentOrderRecord {
   gateway?: 'RAZORPAY' | 'CASHFREE';
   cfOrderId?: string | null;
   cfPaymentSessionId?: string | null;
+  idempotencyKey?: string | null;
 }
 
 export interface OtpRecord {
@@ -2090,6 +2091,32 @@ class ResilientDatabase {
     return order;
   }
 
+  async markPaymentOrderFailed(orderId: string, reason?: string): Promise<PaymentOrderRecord> {
+    this.assertDurableStorage();
+    const order = this.findPaymentOrderById(orderId);
+    if (!order) {
+      throw new Error('ORDER_NOT_FOUND');
+    }
+    if (order.status === OrderStatus.PAID) {
+      return order;
+    }
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.paymentOrder.update({
+          where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId },
+          data: {
+            status: OrderStatus.FAILED
+          }
+        });
+      } catch (err) {
+        console.warn('[DB] Failed to mark order FAILED in postgres:', err);
+      }
+    }
+    order.status = OrderStatus.FAILED;
+    order.updatedAt = new Date().toISOString();
+    return order;
+  }
+
   getUserPaymentOrders(userId: string): PaymentOrderRecord[] {
     return this.data.paymentOrders
       .filter(o => o.userId === userId)
@@ -2429,8 +2456,16 @@ class ResilientDatabase {
     cfPaymentSessionId?: string;
     productType?: 'WALLET_RECHARGE' | 'SUBSCRIPTION' | 'REPORT' | string;
     productId?: string;
+    idempotencyKey?: string;
   }): Promise<PaymentOrderRecord> {
     this.assertDurableStorage();
+
+    if (data.idempotencyKey) {
+      const existingIdempotent = this.data.paymentOrders.find(o =>
+        o.userId === data.userId && o.idempotencyKey === data.idempotencyKey
+      );
+      if (existingIdempotent) return existingIdempotent;
+    }
     const resolvedProvider = data.provider || data.gateway || (data.cfOrderId || data.providerOrderId?.startsWith('cf_') ? 'CASHFREE' : (data.razorpayOrderId && !data.providerOrderId ? 'RAZORPAY' : 'CASHFREE'));
     const resolvedProviderOrderId = data.providerOrderId || data.cfOrderId || data.razorpayOrderId || ('cf_order_' + crypto.randomBytes(8).toString('hex'));
     const dbOrderId = data.razorpayOrderId || resolvedProviderOrderId;
@@ -2486,6 +2521,7 @@ class ResilientDatabase {
       gateway: (data.gateway || resolvedProvider) as any,
       cfOrderId: data.cfOrderId || (resolvedProvider === 'CASHFREE' ? resolvedProviderOrderId : null),
       cfPaymentSessionId: data.cfPaymentSessionId || null,
+      idempotencyKey: data.idempotencyKey || null,
       productType: data.productType,
       productId: data.productId,
       status: OrderStatus.CREATED,
@@ -2495,6 +2531,11 @@ class ResilientDatabase {
     this.data.paymentOrders.unshift(order);
     this.saveToFile();
     return order;
+  }
+
+  findPaymentOrderByCustomerAndIdempotencyKey(userId: string, idempotencyKey: string): PaymentOrderRecord | null {
+    if (!idempotencyKey) return null;
+    return this.data.paymentOrders.find(o => o.userId === userId && o.idempotencyKey === idempotencyKey) || null;
   }
 
   async unlockReport(userId: string, reportType: string, referenceId?: string, clientKey?: string): Promise<{

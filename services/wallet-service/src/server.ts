@@ -28,7 +28,9 @@ import {
   isCashfreeConfigured,
   createCashfreeOrder,
   getCashfreeOrderStatus,
-  verifyCashfreeWebhookSignature
+  getPaymentsForCashfreeOrder,
+  verifyCashfreeWebhookSignature,
+  getCashfreeBaseUrl
 } from './cashfree';
 import {
   SUBSCRIPTION_PLANS,
@@ -2232,6 +2234,28 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
   }
   const amount = validation.normalizedAmount;
 
+  const idempotencyKey = ((req.headers['x-idempotency-key'] as string) || (req.body.idempotencyKey as string) || '').trim();
+
+  // Idempotency check: Reuse existing active order if same idempotencyKey provided
+  if (idempotencyKey) {
+    const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(userId, idempotencyKey);
+    if (existingOrder && existingOrder.cfPaymentSessionId && existingOrder.status === OrderStatus.CREATED) {
+      return res.json({
+        orderId: existingOrder.providerOrderId,
+        amount: existingOrder.amount,
+        amountPaise: existingOrder.amountPaise,
+        currency: existingOrder.currency,
+        provider: 'CASHFREE',
+        gateway: 'CASHFREE',
+        paymentSessionId: existingOrder.cfPaymentSessionId,
+        cfOrderId: existingOrder.cfOrderId || existingOrder.providerOrderId,
+        checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+        reused: true,
+        isReused: true
+      });
+    }
+  }
+
   if (!isCashfreeConfigured()) {
     return res.status(503).json({
       error: 'PAYMENTS_NOT_CONFIGURED',
@@ -2255,7 +2279,8 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
         customer_name: userRecord?.displayName || 'AstroVerse Seeker'
       },
       returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=wallet`,
-      orderNote: `Wallet Recharge: ₹${amount}`
+      orderNote: `Wallet Recharge: ₹${amount}`,
+      idempotencyKey: idempotencyKey || undefined
     });
 
     const order = await db.createPaymentOrder({
@@ -2267,7 +2292,8 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
       gateway: 'CASHFREE',
       cfOrderId: cfOrder.order_id,
       cfPaymentSessionId: cfOrder.payment_session_id,
-      productType: 'WALLET_RECHARGE'
+      productType: 'WALLET_RECHARGE',
+      idempotencyKey: idempotencyKey || undefined
     });
 
     await db.recordAuditEvent({
@@ -2281,11 +2307,13 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
     res.json({
       orderId: order.providerOrderId,
       amount: order.amount,
-      currency: 'INR',
-      status: 'CREATED',
+      amountPaise: order.amountPaise,
+      currency: order.currency,
+      provider: 'CASHFREE',
+      gateway: 'CASHFREE',
       paymentSessionId: cfOrder.payment_session_id,
       cfOrderId: cfOrder.cf_order_id,
-      gateway: 'CASHFREE'
+      checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
     });
   } catch (error: any) {
     return handleServiceError(res, error, 'Failed to create payment order');
@@ -4078,6 +4106,7 @@ app.get('/api/entitlements/me', authenticate, async (req: AuthenticatedRequest, 
 app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { tier, billingPeriod } = req.body;
   const user = req.user!;
+  const idempotencyKey = ((req.headers['x-idempotency-key'] as string) || (req.body.idempotencyKey as string) || '').trim();
 
   if (!tier || !Object.values(SubscriptionTier).includes(tier) || tier === SubscriptionTier.FREE) {
     return res.status(400).json({
@@ -4090,6 +4119,28 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
   const plan = SUBSCRIPTION_PLANS[tier as SubscriptionTier];
   const pricePaise = period === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
   const priceRupees = Math.round(pricePaise / 100);
+
+  // Idempotency check: Reuse existing active order if same idempotencyKey provided
+  if (idempotencyKey) {
+    const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(user.id, idempotencyKey);
+    if (existingOrder && existingOrder.cfPaymentSessionId && existingOrder.status === OrderStatus.CREATED) {
+      return res.json({
+        success: true,
+        orderId: existingOrder.providerOrderId,
+        amount: existingOrder.amountPaise || Math.round(existingOrder.amount * 100),
+        amountPaise: existingOrder.amountPaise || Math.round(existingOrder.amount * 100),
+        amountRupees: existingOrder.amount,
+        tier,
+        billingPeriod: period,
+        paymentSessionId: existingOrder.cfPaymentSessionId,
+        cfOrderId: existingOrder.cfOrderId || existingOrder.providerOrderId,
+        gateway: 'CASHFREE',
+        checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+        reused: true,
+        isReused: true
+      });
+    }
+  }
 
   if (!isCashfreeConfigured()) {
     return res.status(503).json({
@@ -4114,7 +4165,8 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
         customer_name: userRecord?.displayName || 'AstroVerse Seeker'
       },
       returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=subscription`,
-      orderNote: `Subscription: ${tier} (${period})`
+      orderNote: `Subscription: ${tier} (${period})`,
+      idempotencyKey: idempotencyKey || undefined
     });
 
     const order = await db.createPaymentOrder({
@@ -4127,7 +4179,8 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
       cfOrderId: cfOrder.order_id,
       cfPaymentSessionId: cfOrder.payment_session_id,
       productType: 'SUBSCRIPTION',
-      productId: tier
+      productId: tier,
+      idempotencyKey: idempotencyKey || undefined
     });
 
     res.json({
@@ -4140,7 +4193,8 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
       billingPeriod: period,
       paymentSessionId: cfOrder.payment_session_id,
       cfOrderId: cfOrder.cf_order_id,
-      gateway: 'CASHFREE'
+      gateway: 'CASHFREE',
+      checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Subscription order creation failed');
@@ -4383,10 +4437,10 @@ app.post('/api/cashfree/create-order', authenticate, async (req: AuthenticatedRe
   }
 });
 
-// POST /api/cashfree/verify-order
-app.post('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+// ALL /api/cashfree/verify-order (Synchronous Cashfree Order Status & Payment Verification)
+app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { orderId } = req.body;
+    const orderId = ((req.body?.orderId || req.query?.orderId || '') as string).trim();
     const user = req.user!;
     if (!orderId) {
       return res.status(400).json({ error: 'MISSING_ORDER_ID', message: 'orderId is required.' });
@@ -4409,7 +4463,36 @@ app.post('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedRe
     }
 
     const cfStatus = await getCashfreeOrderStatus(orderId);
-    if (cfStatus.order_status !== 'PAID') {
+    let isPaid = (cfStatus.order_status === 'PAID');
+    let verifiedPaymentId = cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : `cf_pay_${Date.now()}`;
+
+    // Inspect payment entities for definitive verification
+    const payments = await getPaymentsForCashfreeOrder(orderId).catch(() => []);
+    const successfulPayment = payments.find(p => p.payment_status === 'SUCCESS');
+    if (successfulPayment) {
+      isPaid = true;
+      verifiedPaymentId = String(successfulPayment.cf_payment_id);
+    }
+
+    if (!isPaid) {
+      // Check for PENDING or USER_DROPPED states
+      const hasPending = payments.some(p => p.payment_status === 'PENDING');
+      if (hasPending) {
+        return res.json({
+          success: true,
+          status: 'PENDING',
+          message: 'Your payment is being verified by your bank. Please do not retry yet. We will update your order once confirmation is received.'
+        });
+      }
+      const hasDropped = payments.some(p => p.payment_status === 'USER_DROPPED' || p.payment_status === 'CANCELLED');
+      if (hasDropped) {
+        return res.json({
+          success: false,
+          status: 'USER_DROPPED',
+          message: 'Payment checkout was cancelled or closed. No money was debited.'
+        });
+      }
+
       return res.status(400).json({
         error: 'PAYMENT_NOT_COMPLETED',
         message: `Cashfree reports order status as ${cfStatus.order_status}.`,
@@ -4426,15 +4509,15 @@ app.post('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedRe
 
     // Authoritative fulfillment
     if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
-      await db.rechargeWallet(user.id, order.amount, cfStatus.cf_order_id || `cf_pay_${Date.now()}`, order.providerOrderId, 'CASHFREE');
+      await db.rechargeWallet(user.id, order.amount, verifiedPaymentId, order.providerOrderId, 'CASHFREE');
     } else if (order.productType === 'SUBSCRIPTION') {
       const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
       const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
       const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-      await db.markPaymentOrderPaid(order.providerOrderId, cfStatus.cf_order_id || `cf_pay_${Date.now()}`, 'CASHFREE');
+      await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
       await db.updateSubscription(user.id, targetTier, period, durationDays);
     } else {
-      await db.markPaymentOrderPaid(order.providerOrderId, cfStatus.cf_order_id || `cf_pay_${Date.now()}`, 'CASHFREE');
+      await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
     }
 
     await db.recordAuditEvent({
@@ -4517,6 +4600,16 @@ app.post('/api/webhooks/cashfree', async (req: Request, res: Response) => {
           } catch (fulfillErr: any) {
             console.error('[CASHFREE_WEBHOOK] Fulfillment warning:', fulfillErr?.message || fulfillErr);
           }
+        }
+      }
+    } else if (eventType === 'PAYMENT_FAILED_WEBHOOK' || eventType === 'PAYMENT_USER_DROPPED_WEBHOOK') {
+      const orderData = event.data?.order;
+      const orderId = orderData?.order_id;
+      if (orderId) {
+        try {
+          await db.markPaymentOrderFailed(orderId, eventType);
+        } catch (err: any) {
+          console.warn('[CASHFREE_WEBHOOK] Failed to mark order failed:', err?.message || err);
         }
       }
     }
@@ -4819,6 +4912,28 @@ function validateProfileInputData(pd: any): { error?: string; message?: string; 
 app.post('/api/reports/order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { productId, profileId, partnerProfileId, options, paymentMethod } = req.body;
   const user = req.user!;
+  const idempotencyKey = ((req.headers['x-idempotency-key'] as string) || req.body?.idempotencyKey || '').trim();
+
+  if (idempotencyKey) {
+    const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(user.id, idempotencyKey);
+    if (existingOrder && existingOrder.cfPaymentSessionId && existingOrder.status === OrderStatus.CREATED) {
+      const isRecent = (Date.now() - new Date(existingOrder.createdAt).getTime()) < 5 * 60 * 1000;
+      if (isRecent) {
+        return res.json({
+          orderId: existingOrder.providerOrderId,
+          amountPaise: Math.round(existingOrder.amount * 100),
+          amountRupees: existingOrder.amount,
+          discountPercent: 0,
+          productId,
+          paymentSessionId: existingOrder.cfPaymentSessionId,
+          cfOrderId: existingOrder.cfOrderId,
+          gateway: 'CASHFREE',
+          checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+          reused: true
+        });
+      }
+    }
+  }
 
   const product = REPORT_CATALOGUE[productId];
   if (!product) {
@@ -5027,7 +5142,8 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
         customer_name: userRecord?.displayName || 'AstroVerse Seeker'
       },
       returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=report`,
-      orderNote: `Report Purchase: ${product.displayName}`
+      orderNote: `Report Purchase: ${product.displayName}`,
+      idempotencyKey: idempotencyKey || undefined
     });
 
     const order = await db.createPaymentOrder({
@@ -5040,7 +5156,8 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
       cfOrderId: cfOrder.order_id,
       cfPaymentSessionId: cfOrder.payment_session_id,
       productType: 'REPORT',
-      productId
+      productId,
+      idempotencyKey: idempotencyKey || undefined
     });
 
     res.json({
@@ -5052,7 +5169,8 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
       profileId: profile.id,
       paymentSessionId: cfOrder.payment_session_id,
       cfOrderId: cfOrder.cf_order_id,
-      gateway: 'CASHFREE'
+      gateway: 'CASHFREE',
+      checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Report order generation failed');
