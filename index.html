@@ -75,8 +75,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Google Identity Services (OAuth 2.0 & GIS) -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(typeof initGoogleAuth==='function')initGoogleAuth();"></script>
-  <!-- Razorpay Checkout SDK -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <!-- Cashfree Payments Web Checkout SDK v3 -->
+  <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
   <!-- Firebase App & Analytics SDK (v11 Modular) - Secrets loaded securely via runtime config -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
@@ -93,9 +93,11 @@
             if (data.firebase && data.firebase.apiKey) {
               cfg = data.firebase;
             }
-            if (data.razorpayKeyId) {
-              window.RAZORPAY_KEY_ID = data.razorpayKeyId;
+            if (data.cashfreeAppId) {
+              window.CASHFREE_APP_ID = data.cashfreeAppId;
+              window.CASHFREE_ENV = data.cashfreeEnv || 'sandbox';
             }
+            window.PAYMENTS_CONFIGURED = !!data.paymentsConfigured;
           }
         } catch (_) {}
       }
@@ -5636,8 +5638,29 @@
       body * {
         visibility: hidden;
       }
-      #astroverse-pdf-document-template, #astroverse-pdf-document-template * {
+      #astroverse-pdf-document-template, #astroverse-pdf-document-template *,
+      #modal-report-viewer, #modal-report-viewer * {
         visibility: visible;
+      }
+      #modal-report-viewer {
+        position: static !important;
+        background: transparent !important;
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+      }
+      #modal-report-viewer .modal-dialog-card {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+      #modal-report-viewer button,
+      #modal-report-viewer i.fa-xmark {
+        display: none !important;
       }
       #astroverse-pdf-document-template {
         position: static;
@@ -6050,9 +6073,40 @@
         <div class="wallet-add-btn"><i class="fa-solid fa-plus"></i></div>
       </div>
 
-      <button class="btn-auth-trigger" id="auth-state-btn" onclick="handleAuthButtonClick()">
-        <i class="fa-solid fa-right-to-bracket"></i> <span id="auth-btn-text">Sign In</span>
-      </button>
+      <!-- Desktop Authentication Controls -->
+      <div id="nav-guest-btns" style="display: flex; gap: 6px; align-items: center;">
+        <button class="btn-auth-trigger" id="auth-state-btn" onclick="openAuthModal('password')" title="Sign In to your AstroVerse Account">
+          <i class="fa-solid fa-right-to-bracket"></i> <span id="auth-btn-text">Sign In</span>
+        </button>
+        <button class="btn-gold-primary" id="nav-btn-signup" onclick="openAuthModal('register')" style="padding: 6px 14px; font-size: 12px; min-height: 32px;" title="Create Free AstroVerse Account">
+          <i class="fa-solid fa-user-plus"></i> Sign Up
+        </button>
+      </div>
+
+      <!-- Authenticated User Menu Dropdown -->
+      <div id="nav-user-dropdown-wrap" style="display: none; position: relative;">
+        <button type="button" class="btn-auth-trigger" id="nav-user-profile-btn" onclick="toggleUserProfileDropdown(event)" style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 20px;" aria-expanded="false" aria-haspopup="true">
+          <i class="fa-solid fa-circle-user" style="color: #F5C45E; font-size: 14px;"></i>
+          <span id="nav-user-name" style="font-weight: 700;">Account</span>
+          <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
+        </button>
+        <div id="nav-user-dropdown-menu" class="nav-more-menu av-glass-dark av-glass-popover" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; min-width: 200px; background: rgba(24, 35, 58, 0.96); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); padding: 6px; z-index: 1000;">
+          <div style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 4px;">
+            <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Signed In As</div>
+            <div id="nav-dropdown-user-ident" style="font-size: 13px; font-weight: 700; color: #FFFFFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Seeker</div>
+          </div>
+          <button type="button" class="nav-dropdown-item nav-link-btn" onclick="switchNavSection('dashboard'); closeUserProfileDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px;">
+            <i class="fa-solid fa-user-shield" style="width: 18px; color: #F5C45E;"></i> My Space &amp; Charts
+          </button>
+          <button type="button" class="nav-dropdown-item nav-link-btn" onclick="switchNavSection('settings'); closeUserProfileDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px;">
+            <i class="fa-solid fa-gear" style="width: 18px; color: #F5C45E;"></i> Account Settings
+          </button>
+          <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0;"></div>
+          <button type="button" class="nav-dropdown-item nav-link-btn" onclick="executeSignOut(true); closeUserProfileDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px; color: #F87171;" title="Sign out of account">
+            <i class="fa-solid fa-arrow-right-from-bracket" style="width: 18px; color: #F87171;"></i> Sign Out
+          </button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -6141,6 +6195,9 @@
       <button type="button" class="btn-auth-trigger" id="mob-drawer-auth-btn" onclick="closeMobileNavDrawer(); handleAuthButtonClick()" style="flex: 1; justify-content: center; height: 38px;">
         <i class="fa-solid fa-right-to-bracket"></i> <span id="mob-drawer-auth-text">Sign In</span>
       </button>
+      <button type="button" class="btn-outline-secondary" id="mob-drawer-signout-btn" onclick="closeMobileNavDrawer(); executeSignOut(true)" style="display: none; width: 100%; justify-content: center; height: 38px; color: #DC2626; border-color: #FCA5A5; margin-top: 6px;">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+      </button>
     </div>
   </aside>
 
@@ -6189,7 +6246,32 @@
 
     <!-- ==================== TAB 0: OVERVIEW & COSMIC HUB ==================== -->
     <section id="view-overview" class="page-tab-view active">
-      <!-- Personalized Cosmic Command Center (Personalized with User/Chart Identity) -->
+      <!-- Public Guest Welcome & Service Access Banner (Visible when not authenticated) -->
+      <div id="overview-guest-banner" class="guest-welcome-command-center" style="display: block;">
+        <div class="guest-welcome-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; padding: 22px 24px; background: linear-gradient(135deg, rgba(30, 27, 75, 0.95), rgba(15, 23, 42, 0.98)); border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 16px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+          <div style="flex: 1; min-width: 260px;">
+            <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; color: #F5C45E; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px;">
+              <i class="fa-solid fa-sparkles"></i> Welcome to AstroVerse AI
+            </div>
+            <h2 style="font-size: 22px; font-weight: 800; color: #FFFFFF; margin: 2px 0 6px; font-family: var(--av-font-serif, 'Cinzel', serif);">
+              Begin Your Authentic Vedic Astrology Journey
+            </h2>
+            <p style="font-size: 13px; color: #CBD5E1; margin: 0; line-height: 1.5; max-width: 640px;">
+              Sign up or log in to calculate high-precision Janam Kundli charts, explore personalized planetary dashas, consult our classical AI Astrologers, and order authoritative astrological reports.
+            </p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button class="btn-gold-primary" onclick="openAuthModal('register')" style="padding: 10px 20px; font-size: 13px; font-weight: 700;">
+              <i class="fa-solid fa-user-plus"></i> Create Free Account
+            </button>
+            <button class="btn-outline-secondary" onclick="openAuthModal('password')" style="padding: 10px 18px; font-size: 13px; font-weight: 700; color: #F8FAFC; border-color: rgba(255,255,255,0.25);">
+              <i class="fa-solid fa-right-to-bracket"></i> Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Personalized Cosmic Command Center (Personalized with User/Chart Identity - Shown when logged in) -->
       <div id="overview-authenticated-dashboard" class="authenticated-command-center" style="display: none;">
         <div class="auth-greeting-row">
           <div class="auth-greeting-user">
@@ -9409,11 +9491,11 @@
                 <i class="fa-solid fa-indian-rupee-sign"></i> Payment Gateway Reconciliation &amp; Ledger Audit
               </h3>
               <button class="btn-gold-primary" style="font-size: 11px; padding: 6px 12px;" onclick="runPaymentReconciliation()">
-                <i class="fa-solid fa-scale-balanced"></i> Reconcile Razorpay Orders
+                <i class="fa-solid fa-scale-balanced"></i> Reconcile Payment Orders
               </button>
             </div>
             <div id="admin-reconcile-result" style="background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 12px; font-size: 12px; font-family: monospace; margin-bottom: 14px;">
-              Click 'Reconcile Razorpay Orders' to compare gateway orders against wallet ledger credits.
+              Click 'Reconcile Payment Orders' to compare gateway orders against wallet ledger credits.
             </div>
           </div>
         </div>
@@ -10057,7 +10139,7 @@
                     <i class="fa-solid fa-wallet"></i> Current Demo Wallet Balance
                   </span>
                   <div style="font-size: 11.5px; color: #A21CAF; margin-top: 2px;">
-                    Completely segregated from real customer bank accounts and razorpay ledgers.
+                    Completely segregated from real customer bank accounts and payment gateway ledgers.
                   </div>
                 </div>
                 <strong id="tool-billing-demo-bal" style="font-size: 24px; font-weight: 800; color: #86198F;">₹0.00</strong>
@@ -10081,16 +10163,21 @@
                 <div style="flex: 2; min-width: 220px;">
                   <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Select Report Product:</label>
                   <select id="sim-checkout-product-select" class="form-input-text" style="width: 100%;" onchange="updateSimCheckoutPricing()">
-                    <option value="career-destiny" data-price="699">Career &amp; Financial Destiny (₹699)</option>
-                    <option value="kundli-milan" data-price="799">Relationship &amp; Kundli Milan (₹799)</option>
-                    <option value="life-reading" data-price="999">Comprehensive Life Kundli (₹999)</option>
-                    <option value="health-vitality" data-price="499">Health &amp; Vitality Blueprint (₹499)</option>
-                    <option value="master-bundle" data-price="2999">Complete Vedic Master Bundle (₹2,999)</option>
+                    <option value="report_janam_kundli_deep_dive" data-price="199">Complete Janam Kundli Deep Dive (₹199)</option>
+                    <option value="report_career_education" data-price="149" selected>Career &amp; Education Report (₹149)</option>
+                    <option value="report_relationship_marriage" data-price="149">Relationship &amp; Marriage Report (₹149)</option>
+                    <option value="report_kundli_milan" data-price="149">Kundli Milan (Synastry Matchmaking) (₹149)</option>
+                    <option value="report_one_month_forecast" data-price="49">1-Month Micro Forecast (₹49)</option>
+                    <option value="report_twelve_month_varshphal" data-price="249">12-Month Varshphal (Annual Forecast) (₹249)</option>
+                    <option value="report_three_year_roadmap" data-price="499">3-Year Life Horizon Roadmap (₹499)</option>
+                    <option value="report_bundle_kundli_varshphal" data-price="399">Vedic Master Bundle (Kundli + Varshphal) (₹399)</option>
+                    <option value="report_vedic_name_numerology" data-price="199">Vedic Numerology &amp; Name Analysis (₹199)</option>
+                    <option value="report_remedial_gemstones" data-price="149">Remedial Measures &amp; Gemstone Blueprint (₹149)</option>
                   </select>
                 </div>
                 <div style="flex: 1; min-width: 140px;">
                   <div style="font-size: 11px; color: #64748B;">Final Price (after tier disc):</div>
-                  <strong id="sim-checkout-final-price" style="font-size: 18px; color: #1E293B;">₹699.00</strong>
+                  <strong id="sim-checkout-final-price" style="font-size: 18px; color: #1E293B;">₹149.00</strong>
                 </div>
                 <button type="button" class="btn-gold-primary" onclick="executeSimulatedDemoCheckout()" style="padding: 10px 18px;">
                   <i class="fa-solid fa-bolt"></i> Simulate Demo Checkout
@@ -10302,10 +10389,10 @@
           <div class="footer-col-title"><i class="fa-solid fa-lock"></i> Payment &amp; Security</div>
           <div class="footer-security-card">
             <div style="font-weight: 700; color: #FFFDF9; display: flex; align-items: center; gap: 6px; font-size: 12.5px; margin-bottom: 6px;">
-              <i class="fa-solid fa-shield-check" style="color: #10B981; font-size: 15px;"></i> Secured by Razorpay
+              <i class="fa-solid fa-shield-check" style="color: #10B981; font-size: 15px;"></i> Secured by Cashfree Payments
             </div>
             <div style="font-size: 11.5px; color: #C8B9AE; line-height: 1.5;">
-              Transactions encrypted via 256-bit TLS SSL. Processed securely through RBI-licensed payment aggregator Razorpay.
+              Transactions encrypted via 256-bit TLS SSL. Processed securely through RBI-licensed payment aggregator Cashfree Payments.
             </div>
             <div class="footer-payment-badges">
               <span class="footer-pay-pill"><i class="fa-solid fa-bolt"></i> UPI</span>
@@ -10387,6 +10474,9 @@
           </h3>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
+          <button class="btn-gold-primary" id="btn-viewer-download-pdf" style="padding: 4px 10px; font-size: 12px;" onclick="downloadCurrentSavedReportPdf()">
+            <i class="fa-solid fa-file-pdf"></i> Download PDF
+          </button>
           <button class="btn-outline-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="window.print()">
             <i class="fa-solid fa-print"></i> Print
           </button>
@@ -11139,7 +11229,7 @@
             <span><strong>Real Wallet</strong><br><small style="color: #64748B;">₹<span id="builder-real-bal-sub">0.00</span></small></span>
           </label>
           <label style="display: flex; align-items: center; gap: 8px; border: 1px solid #E2E8F0; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; background: #FFFFFF;">
-            <input type="radio" name="builder_pay_method" value="RAZORPAY" onchange="updateBuilderPaymentUI()">
+            <input type="radio" name="builder_pay_method" value="CASHFREE" onchange="updateBuilderPaymentUI()">
             <span><strong>UPI / NetBanking</strong></span>
           </label>
         </div>
@@ -11545,7 +11635,9 @@
   <!-- ==================== JAVASCRIPT CONTROLLER ==================== -->
   <script>
     // 1. GLOBAL STATE & SESSION (Section 10: Guest default with ₹0.00 balance)
-    window.RAZORPAY_KEY_ID = window.RAZORPAY_KEY_ID || "";
+    window.CASHFREE_APP_ID = window.CASHFREE_APP_ID || "";
+    window.CASHFREE_ENV = window.CASHFREE_ENV || "sandbox";
+    window.PAYMENTS_CONFIGURED = window.PAYMENTS_CONFIGURED || false;
     var currentLanguage = (typeof localStorage !== 'undefined' && localStorage.getItem('astroverse_lang')) || 'en';
     window.currentLanguage = currentLanguage;
     let currentUserSession = JSON.parse(localStorage.getItem('astro_user_session') || 'null');
@@ -12033,6 +12125,7 @@
 
     function isAdminPreviewActive() {
       if (!isAdminUser()) return false;
+      if (!document.body.classList.contains('admin-mode')) return false;
       return localStorage.getItem('astro_admin_preview_active') === 'true';
     }
 
@@ -14204,6 +14297,13 @@
     }
 
     async function generateUserKundli() {
+      // Service Auth Gate
+      if (!currentUserSession) {
+        window.pendingActionAfterAuth = { type: 'calculate_kundli' };
+        openAuthModal('register');
+        showToast("Please sign up or sign in first to calculate your authentic Janam Kundli.", "info");
+        return;
+      }
       const name = document.getElementById('input-k-name').value.trim();
       const gender = document.getElementById('input-k-gender').value;
       const dob = document.getElementById('input-k-dob').value;
@@ -15976,7 +16076,32 @@
       }
     }
 
-    // Sign Out
+    // User Profile Dropdown Controls
+    function toggleUserProfileDropdown(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('nav-user-dropdown-menu');
+      const btn = document.getElementById('nav-user-profile-btn');
+      if (!menu) return;
+      const isOpen = menu.style.display === 'block';
+      menu.style.display = isOpen ? 'none' : 'block';
+      if (btn) btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    }
+
+    function closeUserProfileDropdown() {
+      const menu = document.getElementById('nav-user-dropdown-menu');
+      const btn = document.getElementById('nav-user-profile-btn');
+      if (menu) menu.style.display = 'none';
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrap = document.getElementById('nav-user-dropdown-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        closeUserProfileDropdown();
+      }
+    });
+
+    // Sign Out (Comprehensive, Unconditional, Clean Purge)
     let isSigningOut = false;
     async function executeSignOut(notify = true) {
       if (isSigningOut) return;
@@ -15999,15 +16124,45 @@
         currentUserSession = null;
         currentSessionToken = '';
         currentWalletBalance = 0.00;
+        currentDemoWalletBalance = 0.00;
         if (typeof lastSyncedSupabaseToken !== 'undefined') {
           lastSyncedSupabaseToken = null;
         }
-        localStorage.removeItem('astro_session_token');
-        localStorage.removeItem('astro_user_session');
-        localStorage.removeItem('astro_wallet_bal');
-        localStorage.removeItem('astro_admin_preview_active');
-        localStorage.removeItem('astro_admin_preview_tier');
-        localStorage.removeItem('astro_simulated_tier');
+
+        const keysToClear = [
+          'astro_session_token',
+          'astro_user_session',
+          'astro_wallet_bal',
+          'astro_demo_wallet_bal',
+          'astro_admin_assurance',
+          'astro_admin_preview_active',
+          'astro_admin_preview_tier',
+          'astro_simulated_tier',
+          'astroverse.admin.preview.tier',
+          'astroverse.admin.preview.demo_wallet_bal',
+          'astroverse.admin.preview.profile_id',
+          'astro_admin_session',
+          'astro_admin_session_token',
+          'astro_premium_unlocked',
+          'astro_saved_profiles',
+          'astroverse_saved_profiles',
+          'astro_active_chart',
+          'astro_guest_trial_id',
+          'astro_guest_ai_quota'
+        ];
+        keysToClear.forEach(k => {
+          try { localStorage.removeItem(k); } catch (_) {}
+        });
+
+        // Thoroughly scrub all Supabase session tokens so client does not auto-login
+        try {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && (k.startsWith('sb-') || k.includes('supabase.auth'))) {
+              localStorage.removeItem(k);
+            }
+          }
+        } catch (_) {}
 
         // Clear active intervals safely to prevent memory and timer leaks
         if (horaCountdownInterval) {
@@ -16030,19 +16185,40 @@
         window.currentCalculatedChart = null;
         activeConsultationSession = null;
         isChatKundliLinked = false;
+        savedUserProfiles = [];
         if (typeof setGuidanceState === 'function') {
           setGuidanceState('NO_PROFILE');
         }
 
+        const kundliNameIn = document.getElementById('input-k-name');
+        if (kundliNameIn) kundliNameIn.value = '';
+
+        closeUserProfileDropdown();
         updateUserSessionUI();
+        if (typeof updatePersonalizedGreetingUI === 'function') {
+          updatePersonalizedGreetingUI();
+        }
         if (typeof updateOverviewActiveChartBanner === 'function') {
           updateOverviewActiveChartBanner();
         }
+        if (typeof renderSavedProfilesList === 'function') {
+          renderSavedProfilesList();
+        }
+        if (typeof updateAdminPreviewBannerUI === 'function') {
+          updateAdminPreviewBannerUI();
+        }
+
         if (notify) showToast("Signed out successfully.", "info");
+
+        if (typeof closeAuthModal === 'function') closeAuthModal();
+
         if (currentActiveNavSection === 'admin' || currentActiveNavSection === 'admin-login') {
           switchNavSection('admin-login');
         } else {
-          switchNavSection('kundli');
+          switchNavSection('overview');
+          if (window.location.hash !== '#/overview') {
+            window.location.hash = '#/overview';
+          }
         }
       } finally {
         isSigningOut = false;
@@ -16074,6 +16250,31 @@
           if (pending.pack) {
             selectWalletRechargePack(pending.pack.base, pending.pack.bonus);
           }
+        }, 600);
+      } else if (pending.type === 'calculate_kundli') {
+        setTimeout(() => {
+          switchNavSection('kundli');
+          generateUserKundli();
+        }, 600);
+      } else if (pending.type === 'open_chat') {
+        setTimeout(() => {
+          toggleChatDrawer();
+        }, 600);
+      } else if (pending.type === 'open_store') {
+        setTimeout(() => {
+          openReportStoreModal(pending.category || 'ALL');
+        }, 600);
+      } else if (pending.type === 'open_numerology') {
+        setTimeout(() => {
+          openNumerologyStudio();
+        }, 600);
+      } else if (pending.type === 'calculate_matchmaking') {
+        setTimeout(() => {
+          switchNavSection('matchmaking');
+        }, 600);
+      } else if (pending.type === 'open_dashboard') {
+        setTimeout(() => {
+          switchNavSection('dashboard');
         }, 600);
       }
     }
@@ -16135,9 +16336,7 @@
             syncPromotionalBannerState();
             return currentUserSession;
           } else if (res.status === 401 || res.status === 403) {
-            if (!isAdminUser()) {
-              executeSignOut(false);
-            }
+            executeSignOut(false);
             return null;
           }
         } catch (err) {
@@ -16183,10 +16382,16 @@
       const inputName = document.getElementById('input-k-name')?.value?.trim() || '';
 
       const sanitize = (n) => {
-        if (!n) return '';
-        const lower = n.toLowerCase();
-        if (lower === 'user' || lower === 'namaste' || lower === 'namaste, user' || lower === 'undefined' || lower === 'null') return '';
-        return n;
+        if (!n || typeof n !== 'string') return '';
+        const lower = n.trim().toLowerCase();
+        const prohibited = [
+          'user', 'namaste', 'namaste, user', 'undefined', 'null',
+          'platform owner', 'platform administrator', 'super admin',
+          'security admin', 'finance admin', 'administrator', 'admin',
+          'seeker', 'test'
+        ];
+        if (prohibited.includes(lower)) return '';
+        return n.trim();
       };
 
       const validChartName = sanitize(chartPersonName);
@@ -16196,10 +16401,14 @@
       // Priority: Active Chart Person Name > Authenticated Account Name > Kundli Input Draft Name
       const resolvedName = validChartName || validSessionName || validInputName || '';
 
-      // Determine visibility: Display command center if session is active OR if chart is loaded OR if name is provided
-      const shouldShow = Boolean(currentUserSession || chart || resolvedName);
+      // Determine visibility: Display command center only if authenticated user session is active
+      const shouldShow = Boolean(currentUserSession);
       if (authDash) {
         authDash.style.display = shouldShow ? 'block' : 'none';
+      }
+      const guestBanner = document.getElementById('overview-guest-banner');
+      if (guestBanner) {
+        guestBanner.style.display = shouldShow ? 'none' : 'block';
       }
 
       // Compute Authentic Vedic Monogram / Initials
@@ -16350,18 +16559,26 @@
       const authBox = document.getElementById('dash-auth-box');
       const adminNavBtn = document.getElementById('btn-nav-admin');
       const authDash = document.getElementById('overview-authenticated-dashboard');
+      const guestBanner = document.getElementById('overview-guest-banner');
+      const navGuestBtns = document.getElementById('nav-guest-btns');
+      const navUserDropdownWrap = document.getElementById('nav-user-dropdown-wrap');
+      const navUserName = document.getElementById('nav-user-name');
+      const navDropdownUserIdent = document.getElementById('nav-dropdown-user-ident');
+      const mobDrawerSignOutBtn = document.getElementById('mob-drawer-signout-btn');
+      const mobDrawerAuthText = document.getElementById('mob-drawer-auth-text');
 
       document.getElementById('global-wallet-bal').textContent = currentWalletBalance.toFixed(2);
       document.getElementById('dash-wallet-bal').textContent = currentWalletBalance.toFixed(2);
 
       const isAdmin = currentUserSession && CANONICAL_ADMIN_ROLES.includes(currentUserSession.role);
 
+      // Dedicated Admin Experience Separation: hide admin console in public customer navigation
       if (adminNavBtn) {
-        adminNavBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+        adminNavBtn.style.display = (isAdmin && document.body.classList.contains('admin-mode')) ? 'inline-flex' : 'none';
       }
       const mobAdminBtn = document.getElementById('mob-nav-admin');
       if (mobAdminBtn) {
-        mobAdminBtn.style.display = isAdmin ? 'flex' : 'none';
+        mobAdminBtn.style.display = (isAdmin && document.body.classList.contains('admin-mode')) ? 'flex' : 'none';
       }
       const drawerRealBal = document.getElementById('mob-drawer-real-bal');
       if (drawerRealBal) {
@@ -16370,9 +16587,20 @@
       updateAdminPreviewBannerUI();
 
       if (currentUserSession) {
-        authBtnText.textContent = currentUserSession.name;
+        if (authBtnText) authBtnText.textContent = currentUserSession.name || 'Account';
+        if (navUserName) navUserName.textContent = currentUserSession.name || 'Account';
+        if (navDropdownUserIdent) navDropdownUserIdent.textContent = currentUserSession.identifier || currentUserSession.email || currentUserSession.phone || currentUserSession.name || 'Seeker';
+        if (mobDrawerAuthText) mobDrawerAuthText.textContent = currentUserSession.name || 'Account';
+        if (mobDrawerSignOutBtn) mobDrawerSignOutBtn.style.display = 'flex';
+
+        if (navGuestBtns) navGuestBtns.style.display = 'none';
+        if (navUserDropdownWrap) navUserDropdownWrap.style.display = 'block';
+
         if (unauthBox) unauthBox.style.display = 'none';
         if (authBox) authBox.style.display = 'block';
+        if (authDash) authDash.style.display = 'block';
+        if (guestBanner) guestBanner.style.display = 'none';
+
         updatePersonalizedGreetingUI();
         const dName = document.getElementById('dash-user-name');
         const dIdent = document.getElementById('dash-user-ident');
@@ -16387,9 +16615,18 @@
           fetchUserEntitlements();
         }
       } else {
-        authBtnText.textContent = "Sign In";
+        if (authBtnText) authBtnText.textContent = "Sign In";
+        if (mobDrawerAuthText) mobDrawerAuthText.textContent = "Sign In";
+        if (mobDrawerSignOutBtn) mobDrawerSignOutBtn.style.display = 'none';
+
+        if (navGuestBtns) navGuestBtns.style.display = 'flex';
+        if (navUserDropdownWrap) navUserDropdownWrap.style.display = 'none';
+
         if (unauthBox) unauthBox.style.display = 'block';
         if (authBox) authBox.style.display = 'none';
+        if (authDash) authDash.style.display = 'none';
+        if (guestBanner) guestBanner.style.display = 'block';
+
         updatePersonalizedGreetingUI();
         const tierBadge = document.getElementById('global-tier-name');
         if (tierBadge) tierBadge.textContent = 'Essentials';
@@ -17420,16 +17657,16 @@
 
     // --- 5. REPORTS CATALOGUE & READER HARNESS ---
     const ADMIN_REPORTS_DATA = [
-      { id: 'comprehensive-life', title: 'Comprehensive Life Kundli', basePrice: 999, desc: 'Complete 12-house deep dive, planetary dignities, and lifelong roadmap.' },
-      { id: 'career-destiny', title: 'Career & Financial Destiny', basePrice: 699, desc: 'D10 Dashamsha analysis, Dhana Yogas, and peak wealth accumulation timings.' },
-      { id: 'kundli-milan', title: 'Relationship & Kundli Milan', basePrice: 799, desc: '36-Guna Ashtakoota compatibility, Bhakoot dosha, and Manglik mitigation.' },
-      { id: 'health-vitality', title: 'Health & Vitality Blueprint', basePrice: 499, desc: 'Ayurvedic dosha constitution, 6th/8th house vulnerabilities, and seasonal wellness.' },
-      { id: 'sade-sati', title: 'Sade Sati Deep Dive', basePrice: 499, desc: 'Saturnian 7.5-year cycle phases, peak impacts, and Shani Shanti rituals.' },
-      { id: 'mahadasha-timeline', title: 'Mahadasha & Antardasha Calendar', basePrice: 599, desc: '120-year Vimshottari dasha chronology with monthly transit triggers.' },
-      { id: 'kaal-sarp-dosha', title: 'Kaal Sarp & Pitra Dosha Audit', basePrice: 499, desc: 'Authentic scriptural verification from Lagna and Chandra.' },
-      { id: 'gemstone-prescription', title: 'Gemstone & Remedial Prescription', basePrice: 499, desc: 'Accurate ratna prescriptions based on functional benefic principles.' },
-      { id: 'yearly-varshaphala', title: 'Yearly Solar Return (Varshaphala)', basePrice: 799, desc: 'Tajika annual progression chart and monthly transit milestones.' },
-      { id: 'master-bundle', title: 'Complete Vedic Master Bundle', basePrice: 2999, desc: 'All 9 reports bundled with high-res printable PDF editions.' }
+      { id: 'report_janam_kundli_deep_dive', title: 'Complete Janam Kundli Deep Dive', basePrice: 199, desc: 'Comprehensive 25+ page life blueprint analyzing Lagna, D1–D60, Ashtakavarga, Shadbala & Dashas.' },
+      { id: 'report_career_education', title: 'Career & Education Report', basePrice: 149, desc: 'In-depth analysis of 10th House, D10 Dashamsha, professional authority & promotion timing.' },
+      { id: 'report_relationship_marriage', title: 'Relationship & Marriage Report', basePrice: 149, desc: 'Comprehensive 7th house, Venus/Jupiter dignity, Navamsha (D9) and Manglik analysis.' },
+      { id: 'report_kundli_milan', title: 'Kundli Milan (Synastry Matchmaking)', basePrice: 149, desc: '36-Guna Ashtakoota compatibility, Bhakoot/Nadi doshas, Navamsha harmony & mitigation.' },
+      { id: 'report_one_month_forecast', title: '1-Month Micro Forecast', basePrice: 49, desc: 'Day-by-day lunar transit triggers, favorable & caution dates, and weekly strategic focus.' },
+      { id: 'report_twelve_month_varshphal', title: '12-Month Varshphal (Annual Forecast)', basePrice: 249, desc: 'Tajika annual solar return, Muntha analysis, Varsha lord & 12 calendar month breakdowns.' },
+      { id: 'report_three_year_roadmap', title: '3-Year Life Horizon Roadmap', basePrice: 499, desc: '36-month macro dasha transitions, major life milestone planning & remedial timings.' },
+      { id: 'report_bundle_kundli_varshphal', title: 'Vedic Master Bundle (Kundli + Varshphal)', basePrice: 399, desc: 'Complete Janam Kundli Deep Dive bundled with full 12-Month Varshphal (save ₹49).' },
+      { id: 'report_vedic_name_numerology', title: 'Vedic Numerology & Name Analysis', basePrice: 199, desc: 'Chaldean & Pythagorean name vibration, Mulank, Bhagyank, and phonosemantic optimization.' },
+      { id: 'report_remedial_gemstones', title: 'Remedial Measures & Gemstone Blueprint', basePrice: 149, desc: 'Prescriptions for functional benefics, ratna selection, Vedic mantras & dana protocols.' }
     ];
 
     function renderAdminReportsHarness() {
@@ -17465,8 +17702,8 @@
               <button type="button" class="btn-outline-secondary" onclick="openAdminReportSampleReader('${r.id}')" style="flex: 1; font-size: 10.5px; padding: 5px;">
                 <i class="fa-solid fa-book-open"></i> Sample Chapters
               </button>
-              <button type="button" class="btn-outline-secondary" onclick="testAdminReportPdfEntitlement('${r.id}')" style="font-size: 10.5px; padding: 5px; ${canDownloadPdf ? 'color: #059669; border-color: #A7F3D0;' : 'color: #D97706;'}">
-                <i class="fa-solid fa-file-pdf"></i> ${canDownloadPdf ? 'PDF Allowed' : 'PDF Gated'}
+              <button type="button" id="btn-admin-pdf-${r.id}" class="btn-outline-secondary" onclick="testAdminReportPdfEntitlement('${r.id}', this)" style="font-size: 10.5px; padding: 5px; ${canDownloadPdf ? 'color: #059669; border-color: #A7F3D0; background: #ECFDF5;' : 'color: #D97706; border-color: #FDE68A; background: #FFFBEB;'}">
+                <i class="fa-solid ${canDownloadPdf ? 'fa-file-arrow-down' : 'fa-lock'}"></i> ${canDownloadPdf ? 'Download PDF' : 'PDF Gated'}
               </button>
             </div>
           </div>
@@ -17475,30 +17712,55 @@
     }
 
     function openAdminReportSampleReader(reportId) {
+      const prod = ADMIN_REPORTS_DATA.find(r => r.id === reportId) || ADMIN_REPORTS_DATA[0];
+      const tier = adminSimulatedTier || 'FREE';
+      const canDownloadPdf = (tier === 'PLUS' || tier === 'PREMIUM');
+
+      const chart = window.currentCalculatedChart || {
+        name: (window.currentUserSession?.name || window.currentUserSession?.displayName) || "Seeker",
+        dob: "1995-10-24",
+        tob: "14:05",
+        city: "Jabalpur, Madhya Pradesh, India",
+        lat: 23.1686,
+        lon: 79.9534,
+        tz: 5.5
+      };
+
+      if (!chart.fullData && typeof calculateClientKundli === 'function') {
+        try {
+          chart.fullData = calculateClientKundli(chart.dob, chart.tob, chart.lat, chart.lon, false);
+        } catch (e) {
+          console.warn("Could not calculate fullData for demo doc:", e);
+        }
+      }
+
+      let doc;
+      if (typeof buildClientSideDemoReportDocument === 'function') {
+        doc = buildClientSideDemoReportDocument({ productId: prod.id, displayName: prod.title }, chart, {
+          depth: 'advanced',
+          lang: 'en'
+        });
+      }
+
+      if (doc) {
+        doc.allowPdfDownload = canDownloadPdf;
+        openReportReaderModal(doc);
+      }
+
+      // Also sync inline preview box for harness completeness
       const box = document.getElementById('admin-sample-reader-box');
       const titleEl = document.getElementById('admin-sample-reader-title');
       const bodyEl = document.getElementById('admin-sample-reader-body');
-      if (!box || !titleEl || !bodyEl) return;
-
-      const report = ADMIN_REPORTS_DATA.find(r => r.id === reportId) || ADMIN_REPORTS_DATA[0];
-      titleEl.innerHTML = `<i class="fa-solid fa-book-open" style="color: #F59E0B;"></i> ${report.title} — Verified Sample Chapters`;
-
-      bodyEl.innerHTML = `
-        <h5 style="color: #92400E; font-size: 13px; margin: 0 0 6px;">Chapter 1: Executive Astrological Summary</h5>
-        <p>The native was born under Scorpio (Vrishchika) Lagna with Anuradha constellation active. The presence of Mars in Aries in the 6th house bestows unyielding determination and victory in all competitive trials. The Neechabhanga cancellation of Venus in the 11th house confirms substantial financial fortunes unfolding in the latter half of life.</p>
-
-        <h5 style="color: #92400E; font-size: 13px; margin: 12px 0 6px;">Chapter 2: Planetary Foundations &amp; Bhavas</h5>
-        <p>Sun commands the 10th house of governance and public status from its own sign Leo. This creates a powerful Raja Yoga capable of bestowing leadership roles in technological or institutional enterprises.</p>
-
-        <h5 style="color: #92400E; font-size: 13px; margin: 12px 0 6px;">Chapter 3: Vimshottari Dasha Analysis</h5>
-        <p>Currently navigating the Jupiter Mahadasha and Venus Antardasha. Jupiter in the 11th house aspects the 3rd and 7th houses, generating collaborative opportunities across multiple domains.</p>
-
-        <h5 style="color: #92400E; font-size: 13px; margin: 12px 0 6px;">Chapter 4: Personalized Remedial Measures</h5>
-        <p>To balance the debilitation of Venus and strengthen Mars, the following scriptural remedies are prescribed: (1) Offer white flowers on Friday mornings; (2) Wear an unheated natural Red Coral in copper or silver on the ring finger on Tuesday mornings.</p>
-      `;
-
-      box.style.display = 'block';
-      box.scrollIntoView({ behavior: 'smooth' });
+      if (box && titleEl && bodyEl) {
+        titleEl.innerHTML = `<i class="fa-solid fa-book-open" style="color: #F59E0B;"></i> ${prod.title} — Verified Sample Chapters`;
+        if (doc && doc.sections && doc.sections.length > 0) {
+          bodyEl.innerHTML = doc.sections.slice(0, 4).map((sec, idx) => `
+            <h5 style="color: #92400E; font-size: 13px; margin: ${idx === 0 ? '0 0 6px' : '12px 0 6px'};">${escapeHtml(sec.title || '')}</h5>
+            <div style="font-size: 11.5px; color: #334155; line-height: 1.5;">${renderSafeMarkdown(sec.contentMarkdown || sec.body || '')}</div>
+          `).join('');
+        }
+        box.style.display = 'block';
+      }
     }
 
     function closeAdminSampleReader() {
@@ -17506,13 +17768,97 @@
       if (box) box.style.display = 'none';
     }
 
-    function testAdminReportPdfEntitlement(reportId) {
+    async function testAdminReportPdfEntitlement(reportId, btnEl) {
       const tier = adminSimulatedTier || 'FREE';
       if (tier === 'FREE') {
         showToast("🔒 PDF Download Gated on Free Tier. (Customer prompted to upgrade to Plus or Premium).", "warning");
-      } else {
-        showToast(`✅ PDF Download Verified Unlocked (${tier} Tier)! Watermark: ASTROVERSE | Geometry: 296mm A4`, "success");
+        return;
       }
+
+      if (btnEl && btnEl.disabled) return;
+      const originalHtml = btnEl ? btnEl.innerHTML : '';
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...';
+      }
+
+      try {
+        await downloadDemoReportPdf(reportId);
+      } catch (err) {
+        console.error("Admin PDF entitlement test failed:", err);
+        showToast("PDF generation failed: " + (err.message || "Unknown error"), "error");
+      } finally {
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = originalHtml;
+        }
+      }
+    }
+
+    async function downloadDemoReportPdf(productId, customTitle = null) {
+      const prod = ADMIN_REPORTS_DATA.find(r => r.id === productId) || {
+        id: productId || 'report_janam_kundli_deep_dive',
+        title: customTitle || 'AstroVerse Guidance Report'
+      };
+
+      const chart = window.currentCalculatedChart || {
+        name: (window.currentUserSession?.name || window.currentUserSession?.displayName) || "Seeker",
+        dob: "1995-10-24",
+        tob: "14:05",
+        city: "Jabalpur, Madhya Pradesh, India",
+        lat: 23.1686,
+        lon: 79.9534,
+        tz: 5.5
+      };
+
+      if (!chart.fullData && typeof calculateClientKundli === 'function') {
+        try {
+          chart.fullData = calculateClientKundli(chart.dob, chart.tob, chart.lat, chart.lon, false);
+        } catch (e) {
+          console.warn("Could not calculate fullData for demo doc:", e);
+        }
+      }
+
+      let doc;
+      if (typeof buildClientSideDemoReportDocument === 'function') {
+        doc = buildClientSideDemoReportDocument({ productId: prod.id, displayName: prod.title }, chart, {
+          depth: 'advanced',
+          lang: 'en'
+        });
+      }
+
+      if (!doc) {
+        doc = {
+          productId: prod.id,
+          productName: prod.title,
+          profileName: chart.name || 'Seeker',
+          birthCoordinates: {
+            dob: chart.dob,
+            tob: chart.tob,
+            place: chart.city,
+            lat: chart.lat,
+            lon: chart.lon,
+            timezone: 'Asia/Kolkata'
+          },
+          allowPdfDownload: true,
+          watermark: {
+            ownerName: chart.name || 'Seeker',
+            accountHash: 'DEMO-SIMULATION',
+            isDemo: true
+          },
+          sections: [
+            {
+              sectionId: 'sec_demo_1',
+              title: 'Chapter 1: Astrological Foundation',
+              body: 'Comprehensive analysis of planetary dignities, Lagna strength, and constitutional vitality.',
+              keyTakeaways: ['Strong Lagna lord placement', 'Harmonic benefic aspects across quadrant houses']
+            }
+          ]
+        };
+      }
+
+      doc.allowPdfDownload = true;
+      await generateAndDownloadReportPdf(doc, customTitle || prod.title);
     }
 
     // --- 6. BILLING SIMULATION HARNESS ---
@@ -17530,7 +17876,7 @@
       if (!select || !priceDisplay) return;
 
       const opt = select.selectedOptions[0];
-      const basePrice = parseFloat(opt?.getAttribute('data-price') || '699');
+      const basePrice = parseFloat(opt?.getAttribute('data-price') || '149');
       const tier = adminSimulatedTier || 'FREE';
       const discounts = { FREE: 0, PLUS: 10, PREMIUM: 20 };
       const discount = discounts[tier] || 0;
@@ -17544,8 +17890,9 @@
       if (!select) return;
 
       const opt = select.selectedOptions[0];
+      const productId = opt?.value || 'report_career_education';
       const title = opt ? opt.text : 'Selected Report';
-      const basePrice = parseFloat(opt?.getAttribute('data-price') || '699');
+      const basePrice = parseFloat(opt?.getAttribute('data-price') || '149');
       const tier = adminSimulatedTier || 'FREE';
       const discounts = { FREE: 0, PLUS: 10, PREMIUM: 20 };
       const discount = discounts[tier] || 0;
@@ -17573,6 +17920,7 @@
       localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
 
       adminSimulatedPurchasedReports.unshift({
+        productId,
         title,
         price: finalPrice.toFixed(2),
         paidVia: 'DEMO_WALLET',
@@ -17600,9 +17948,14 @@
           <td><span class="badge-role-admin" style="background: #FDF4FF; color: #86198F; border-color: #F0ABFC;">${item.paidVia}</span></td>
           <td style="color: #64748B; font-size: 11px;">${item.timestamp}</td>
           <td>
-            <button class="btn-outline-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="openAdminReportSampleReader('career-destiny')">
-              <i class="fa-solid fa-book-open"></i> Read Report
-            </button>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-outline-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="openAdminReportSampleReader('${item.productId || 'report_career_education'}')">
+                <i class="fa-solid fa-book-open"></i> Read
+              </button>
+              <button class="btn-gold-primary" style="padding: 2px 8px; font-size: 11px;" onclick="downloadDemoReportPdf('${item.productId || 'report_career_education'}', '${escapeHtml(item.title)}')">
+                <i class="fa-solid fa-file-pdf"></i> Download PDF
+              </button>
+            </div>
           </td>
         </tr>
       `).join('');
@@ -17738,9 +18091,22 @@
 
       currentSessionToken = null;
       currentUserSession = null;
-      localStorage.removeItem('astro_session_token');
-      localStorage.removeItem('astro_user_session');
-      localStorage.removeItem('astro_admin_assurance');
+
+      const adminKeys = [
+        'astro_session_token',
+        'astro_user_session',
+        'astro_admin_assurance',
+        'astro_admin_preview_active',
+        'astro_admin_preview_tier',
+        'astro_simulated_tier',
+        'astroverse.admin.preview.tier',
+        'astroverse.admin.preview.demo_wallet_bal',
+        'astroverse.admin.preview.profile_id',
+        'astro_demo_wallet_bal'
+      ];
+      adminKeys.forEach(k => {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
 
       updateUserSessionUI();
       showToast('Administrator session closed successfully.', 'info');
@@ -18023,7 +18389,7 @@
 
     async function runPaymentReconciliation() {
       const target = document.getElementById('admin-reconcile-result');
-      if (target) target.innerHTML = "Reconciling Razorpay orders against wallet ledger...";
+      if (target) target.innerHTML = "Reconciling payment orders against wallet ledger...";
       try {
         const res = await fetch(`${getAuthBase()}/api/admin/payments/reconcile`, {
           method: 'POST',
@@ -18906,28 +19272,23 @@
         }
 
         const orderData = await orderRes.json();
-        if (typeof Razorpay !== 'undefined') {
-          const rzpOptions = {
-            key: orderData.keyId || window.RAZORPAY_KEY_ID || "",
-            amount: Math.round(creditAmt * 100),
-            currency: "INR",
-            name: "AstroVerse",
-            description: `Wallet recharge ₹${base} (+₹${bonus} bonus)`,
-            order_id: orderData.orderId,
-            handler: async function (response) {
-              await verifyAndCreditWallet(orderData.orderId, response.razorpay_payment_id, response.razorpay_signature);
-            },
-            prefill: {
-              name: currentUserSession?.name || "Astro Native",
-              email: currentUserSession?.email || "",
-              contact: currentUserSession?.phone || ""
-            },
-            theme: { color: "#18213A" }
-          };
-          const rzpInstance = new Razorpay(rzpOptions);
-          rzpInstance.open();
+        if (orderData.paymentSessionId && typeof window.Cashfree !== 'undefined') {
+          const cashfree = window.Cashfree({ mode: (window.CASHFREE_ENV === 'production' ? 'production' : 'sandbox') });
+          cashfree.checkout({
+            paymentSessionId: orderData.paymentSessionId,
+            redirectTarget: '_modal'
+          }).then(result => {
+            if (result.error) {
+              showToast(result.error.message || "Payment was cancelled or failed.", "error");
+            }
+            if (result.paymentDetails) {
+              verifyAndCreditWallet(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId);
+            }
+          });
+        } else if (orderData.paymentSessionId) {
+          showToast(`Cashfree order created (${orderData.orderId}). Loading payment modal...`, "info");
         } else {
-          showToast(`Order created (${orderData.orderId}). Payment SDK not loaded in browser.`, "info");
+          showToast(orderData.message || "Online payments are currently unconfigured. Please try again later.", "warning");
         }
       } catch (err) {
         showToast("Network error while connecting to payment gateway.", "error");
@@ -20143,6 +20504,12 @@
     }
 
     function startConsultationSession(astroName, rate) {
+      if (!currentUserSession) {
+        window.pendingActionAfterAuth = { type: 'open_chat', astroName, rate };
+        openAuthModal('register');
+        showToast("Please sign up or sign in first to consult our Vedic AI Astrologers.", "info");
+        return;
+      }
       const persona = getAstrologerPersona(astroName);
       const personaId = persona.id;
 
@@ -22511,9 +22878,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
                   }
                 } else if (event === 'SIGNED_OUT') {
                   if (!isSigningOut) {
-                    if (!isAdminUser()) {
-                      executeSignOut(false);
-                    }
+                    executeSignOut(false);
                   }
                 } else if (event === 'PASSWORD_RECOVERY') {
                   openAuthModal('password');
@@ -24076,8 +24441,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           <h3>3. User Accounts & Identity Verification</h3>
           <p>Users may access guest calculation tiers or authenticate securely using Google Identity Services (OAuth 2.0). You are responsible for safeguarding your login credentials and session tokens. You must provide authentic birth coordinates to ensure mathematical precision in astrological ephemeris calculations.</p>
 
-          <h3>4. Payments, Razorpay Gateway & Billing</h3>
-          <p>All financial transactions on AstroVerse AI, including digital report purchases, wallet top-ups, and subscription plans (Plus and Premium), are billed in Indian Rupees (INR) and processed securely through <strong>Razorpay</strong>, an authorized payment aggregator regulated by the Reserve Bank of India (RBI). AstroVerse does not capture, store, or process payment card numbers or banking passwords.</p>
+          <h3>4. Payments, Cashfree Gateway & Billing</h3>
+          <p>All financial transactions on AstroVerse AI, including digital report purchases, wallet top-ups, and subscription plans (Plus and Premium), are billed in Indian Rupees (INR) and processed securely through <strong>Cashfree Payments</strong>, an authorized payment aggregator regulated by the Reserve Bank of India (RBI). AstroVerse does not capture, store, or process payment card numbers or banking passwords.</p>
 
           <h3>5. Intellectual Property</h3>
           <p>All algorithms, ephemeris integrations, user interface code, text, charts, graphics, and generated report publication formats are the exclusive intellectual property of AstroVerse AI. Users are granted a personal, non-exclusive, revocable license to view and download their personalized reports for personal, non-commercial use.</p>
@@ -24101,7 +24466,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           </ul>
 
           <h3>2. Zero Storage of Financial & Payment Data</h3>
-          <p>AstroVerse AI complies strictly with Reserve Bank of India (RBI) payment guidelines. <strong>We do NOT store, process, or transmit your credit/debit card numbers, CVVs, expiry dates, net banking credentials, or UPI PINs.</strong> All payment processing is offloaded directly to PCI-DSS Level 1 compliant payment aggregator Razorpay via encrypted TLS 1.3 tunnels.</p>
+          <p>AstroVerse AI complies strictly with Reserve Bank of India (RBI) payment guidelines. <strong>We do NOT store, process, or transmit your credit/debit card numbers, CVVs, expiry dates, net banking credentials, or UPI PINs.</strong> All payment processing is offloaded directly to PCI-DSS Level 1 compliant payment aggregator Cashfree Payments via encrypted TLS 1.3 tunnels.</p>
 
           <h3>3. How We Use and Protect Your Data</h3>
           <p>Your birth details and calculation records are used exclusively to render your astrological charts, horoscope timelines, and personalized reports. We never sell, rent, monetise, or trade your personal or astrological information to third-party data brokers, marketers, or advertisers.</p>
@@ -24125,12 +24490,12 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           <h3>2. Failed Transactions & Double Debits</h3>
           <p>If an amount is deducted from your bank account or UPI handle but the corresponding report or wallet credit is not activated due to a network interruption or callback timeout:</p>
           <ul>
-            <li>Razorpay's automated reconciliation system typically identifies and initiates an automatic reversal within 24 to 48 hours.</li>
+            <li>Cashfree's automated reconciliation system typically identifies and initiates an automatic reversal within 24 to 48 hours.</li>
             <li>Refunds for failed transactions are credited back to the original payment source within <strong>5 to 7 business days</strong>, subject to your banking institution's processing cycles.</li>
           </ul>
 
           <h3>3. Subscription Cancellations</h3>
-          <p>Users enrolled in recurring Plus (₹499/mo) or Premium (₹999/mo) subscription plans may cancel their subscription at any time without penalty via their Account Billing settings or by emailing support@astroverse.app. Upon cancellation, your subscription remains active until the end of the current paid billing cycle, with no further charges incurred.</p>
+          <p>Users enrolled in recurring Plus (₹149/mo) or Premium (₹299/mo) subscription plans may cancel their subscription at any time without penalty via their Account Billing settings or by emailing support@astroverse.app. Upon cancellation, your subscription remains active until the end of the current paid billing cycle, with no further charges incurred.</p>
 
           <h3>4. Technical Defect & Calculation Remediation</h3>
           <p>In the rare event that a purchased publication contains verifiable technical generation defects (e.g. truncated chapters, rendering errors, or calculation failure):</p>
@@ -24157,7 +24522,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           </ul>
 
           <h3>3. Electronic Order Receipts & Invoices</h3>
-          <p>Upon successful payment confirmation via Razorpay, an electronic payment receipt detailing the order ID, transaction reference, amount paid, and tax breakdown is dispatched to your registered email address within <strong>5 minutes</strong>.</p>
+          <p>Upon successful payment confirmation via Cashfree Payments, an electronic payment receipt detailing the order ID, transaction reference, amount paid, and tax breakdown is dispatched to your registered email address within <strong>5 minutes</strong>.</p>
 
           <h3>4. Permanent In-App Library Access</h3>
           <p>All purchased publications and generated reports are permanently tied to your authenticated user account and remain accessible for on-demand reading and re-downloading at any time from your <strong>My Space / Dashboard</strong> section.</p>
@@ -24208,8 +24573,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           <h4>1. Membership & Subscription Tiers</h4>
           <ul>
             <li><strong>Free Tier (₹0):</strong> Foundational Janam Kundli birth chart, D1 Lagna, daily Panchanga, planetary Horas, and essential calculations.</li>
-            <li><strong>Plus Plan (₹499 / Month or ₹3,999 / Year):</strong> Unlocks D1-D10 divisional charts, full Ashtakoota 36-Guna compatibility synastry, complete Numerology Studio with 10 corrections/day, 10 daily AI consultations, and 10% discount across all report publications.</li>
-            <li><strong>Premium Plan (₹999 / Month or ₹7,999 / Year):</strong> Complete research-grade astrological software suite including all D1-D60 Shodashvarga divisional charts, unlimited AI astrological consultations, unlimited Numerology corrections, 20% discount on publications, and watermark-free high-resolution PDF exports.</li>
+            <li><strong>Plus Plan (₹149 / Month or ₹1,299 / Year):</strong> Unlocks D1-D10 divisional charts, full Ashtakoota 36-Guna compatibility synastry, complete Numerology Studio with 10 corrections/day, 10 daily AI consultations, and 10% discount across all report publications.</li>
+            <li><strong>Premium Plan (₹299 / Month or ₹2,499 / Year):</strong> Complete research-grade astrological software suite including all D1-D60 Shodashvarga divisional charts, unlimited AI astrological consultations, unlimited Numerology corrections, 20% discount on publications, and watermark-free high-resolution PDF exports.</li>
           </ul>
 
           <h4>2. Individual Specialized Report Publications</h4>
@@ -24226,7 +24591,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           </ul>
 
           <h4>3. Payment Gateway & Taxes</h4>
-          <p>Payments are processed in real-time via Razorpay. Prices include all applicable statutory GST and service taxes. Invoices are generated electronically for every payment order.</p>
+          <p>Payments are processed in real-time via Cashfree Payments. Prices include all applicable statutory GST and service taxes. Invoices are generated electronically for every payment order.</p>
         `
       }
     };
@@ -24354,29 +24719,23 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
         const orderData = await res.json();
 
-        if (typeof Razorpay !== 'undefined') {
-          const rzpOptions = {
-            key: orderData.keyId || window.RAZORPAY_KEY_ID || "",
-            amount: orderData.amountPaise || (tier === 'PLUS' ? 14900 : 29900),
-            currency: "INR",
-            name: "AstroVerse Vedic Platform",
-            description: `${tier} Membership (${currentBillingCycle.toUpperCase()})`,
-            order_id: orderData.orderId,
-            handler: async function (response) {
-              await verifySubscriptionPayment(orderData.orderId, response.razorpay_payment_id, response.razorpay_signature, tier);
-            },
-            prefill: {
-              name: currentUserSession?.name || "Astro Seeker",
-              email: currentUserSession?.email || "",
-              contact: currentUserSession?.phone || ""
-            },
-            theme: { color: "#18213A" }
-          };
-          const rzpInstance = new Razorpay(rzpOptions);
-          rzpInstance.open();
+        if (orderData.paymentSessionId && typeof window.Cashfree !== 'undefined') {
+          const cashfree = window.Cashfree({ mode: (window.CASHFREE_ENV === 'production' ? 'production' : 'sandbox') });
+          cashfree.checkout({
+            paymentSessionId: orderData.paymentSessionId,
+            redirectTarget: '_modal'
+          }).then(result => {
+            if (result.error) {
+              showToast(result.error.message || "Subscription payment was cancelled or failed.", "error");
+            }
+            if (result.paymentDetails) {
+              verifySubscriptionPayment(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId, null, tier);
+            }
+          });
+        } else if (orderData.paymentSessionId) {
+          showToast(`Subscription order created (${orderData.orderId}). Loading Cashfree checkout...`, "info");
         } else {
-          // Direct fallback for preview environments
-          await verifySubscriptionPayment(orderData.orderId, `pay_sub_${Date.now()}`, "preview_signature_bypass", tier);
+          showToast(orderData.message || "Online payments are currently unconfigured. Subscriptions cannot be purchased at this time.", "warning");
         }
       } catch (err) {
         console.error("Subscription checkout error:", err);
@@ -24419,6 +24778,12 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
     // ==================== REPORT STUDIO & STORE ====================
 
     async function openReportStoreModal(categoryFilter = 'ALL') {
+      if (!currentUserSession) {
+        window.pendingActionAfterAuth = { type: 'open_store', category: categoryFilter };
+        openAuthModal('register');
+        showToast("Please sign up or sign in first to browse and order Vedic reports.", "info");
+        return;
+      }
       const modal = document.getElementById('modal-report-store');
       if (!modal) return;
       modal.style.display = 'flex';
@@ -26295,29 +26660,24 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           closeReportStoreModal();
           showToast("🎉 Report compiled successfully! Opening private reader...", "success");
           openReportReaderModal(orderData.document);
-        } else if (orderData.orderId && method === 'RAZORPAY') {
-          if (typeof Razorpay !== 'undefined') {
-            const rzpOptions = {
-              key: orderData.keyId || window.RAZORPAY_KEY_ID || "",
-              amount: orderData.amountPaise || finalPaise,
-              currency: "INR",
-              name: "AstroVerse Report Studio",
-              description: activeBuilderProduct.displayName,
-              order_id: orderData.orderId,
-              handler: async function (response) {
-                await verifyReportPayment(orderData.orderId, response.razorpay_payment_id, response.razorpay_signature, resolvedProfileId, profileData);
-              },
-              prefill: {
-                name: currentUserSession?.name || "Astro Seeker",
-                email: currentUserSession?.email || "",
-                contact: currentUserSession?.phone || ""
-              },
-              theme: { color: "#18213A" }
-            };
-            const rzpInstance = new Razorpay(rzpOptions);
-            rzpInstance.open();
+        } else if (orderData.orderId && (method === 'CASHFREE' || method === 'ONLINE')) {
+          if (orderData.paymentSessionId && typeof window.Cashfree !== 'undefined') {
+            const cashfree = window.Cashfree({ mode: (window.CASHFREE_ENV === 'production' ? 'production' : 'sandbox') });
+            cashfree.checkout({
+              paymentSessionId: orderData.paymentSessionId,
+              redirectTarget: '_modal'
+            }).then(result => {
+              if (result.error) {
+                showToast(result.error.message || "Payment was cancelled or failed.", "error");
+              }
+              if (result.paymentDetails) {
+                verifyReportPayment(orderData.orderId, result.paymentDetails.paymentMessage || orderData.orderId, null, resolvedProfileId, profileData);
+              }
+            });
+          } else if (orderData.paymentSessionId) {
+            showToast(`Order created (${orderData.orderId}). Loading Cashfree checkout...`, "info");
           } else {
-            await verifyReportPayment(orderData.orderId, `pay_rep_${Date.now()}`, "sig_preview_bypass", resolvedProfileId, profileData);
+            showToast(orderData.message || "Online payments are currently unconfigured. Please select Wallet Balance to purchase this publication.", "warning");
           }
         } else {
           showToast(orderData.message || "Report generation failed.", "error");
@@ -26851,21 +27211,29 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
     // PDF GENERATION & EXPORT ENGINE
     // ==============================================================================
 
-    function triggerReaderPdfDownload() {
-      if (!activeReaderDoc) return;
-      const isAllowed = activeReaderDoc.productId === 'report_basic_chart_summary' ||
-                        activeReaderDoc.allowPdfDownload === true ||
-                        activeReaderDoc.watermark?.isDemo === true ||
-                        Boolean(currentUserEntitlements?.allowsReportPdfDownload) ||
-                        (currentUserSession && currentUserSession.role === 'SUPER_ADMIN');
-
-      if (!isAllowed) {
-        showToast("📄 PDF Download is an exclusive Premium privilege. You can read your full report anytime in this reader!", "info");
-        openPricingPlansModal();
+    async function triggerReaderPdfDownload() {
+      if (!activeReaderDoc) {
+        showToast("No active report loaded to download.", "warning");
         return;
       }
-
-      generateAndDownloadReportPdf(activeReaderDoc);
+      if (activeReaderDoc.allowPdfDownload === false) {
+        showToast("🔒 PDF download is gated on Free Tier. Upgrade to Plus or Premium to unlock PDF exports.", "warning");
+        return;
+      }
+      const btn = document.getElementById('btn-reader-download-pdf');
+      const origHtml = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+      }
+      try {
+        await generateAndDownloadReportPdf(activeReaderDoc);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origHtml;
+        }
+      }
     }
 
     function downloadKundliBasicPdf() {
@@ -27942,9 +28310,10 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
 
       try {
         if (typeof html2pdf !== 'undefined') {
+          const safeTag = isDoc ? (docOrChart.productId ? docOrChart.productId.replace(/^report_/, '') : 'Report') : 'Kundli';
           const opt = {
             margin: 0,
-            filename: `${nativeName.replace(/[^a-zA-Z0-9]/g, '_')}_AstroVerse_Report.pdf`,
+            filename: `${nativeName.replace(/[^a-zA-Z0-9]/g, '_')}_${safeTag}_AstroVerse.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
               scale: 2,
@@ -27977,19 +28346,26 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
               pdfDoc.deletePage(pdfDoc.internal.getNumberOfPages());
             }
           }
-          await worker.save();
-          showToast("🎉 PDF downloaded successfully!", "success");
+          const filename = opt.filename || `${nativeName.replace(/[^a-zA-Z0-9]/g, '_')}_AstroVerse_Report.pdf`;
+          const blob = pdfDoc.output('blob');
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            if (a.parentNode) a.parentNode.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+          }, 30000);
+          showToast(`🎉 PDF downloaded successfully: ${filename}`, "success");
         } else {
-          window.print();
+          showToast("PDF rendering engine not loaded.", "error");
         }
       } catch (e) {
         console.error("PDF export generation failed:", e);
-        showToast("PDF generation failed. Activating browser print fallback...", "warning");
-        try {
-          window.print();
-        } catch (printErr) {
-          showToast("Print fallback failed. Please check browser permissions.", "error");
-        }
+        showToast("PDF generation failed: " + (e.message || "Unknown error"), "error");
       } finally {
         // Clean up container DOM safely after export completes
         if (container) {
@@ -29517,17 +29893,34 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           const pHi = hindiPlanets[p] || p;
           const energy = ["Jupiter", "Venus", "Mercury"].includes(p) ? "Favorable" : (["Sun", "Moon"].includes(p) ? "Moderate" : "Caution");
           const energyHi = ["Jupiter", "Venus", "Mercury"].includes(p) ? "शुभ" : (["Sun", "Moon"].includes(p) ? "मध्यम" : "सावधानी");
+          let lordshipStr = null;
+          let friendshipStr = null;
+          if (hasChart && lagnaSign) {
+            const lagnesha = SIGN_LORDS[lagnaSign] || 'Mars';
+            const isFriend = (PLANET_FRIENDS[p]?.friends || []).includes(lagnesha);
+            const isEnemy = (PLANET_FRIENDS[p]?.enemies || []).includes(lagnesha);
+            friendshipStr = isHi
+              ? (isFriend ? `मित्र (लग्नेश ${hindiPlanets[lagnesha] || lagnesha} के अनुकूल)` : (isEnemy ? `शत्रु (लग्नेश ${hindiPlanets[lagnesha] || lagnesha} हेतु सतर्कता)` : `सम (लग्नेश से तटस्थ)`))
+              : (isFriend ? `Mitra (Harmonious Friend of Lagnesha ${lagnesha})` : (isEnemy ? `Shatru (Challenging to Lagnesha ${lagnesha})` : `Sama (Neutral to Lagnesha ${lagnesha})`));
+            const pHouses = getPlanetLordships(p, signsList.indexOf(lagnaSign));
+            const pHousesStr = pHouses.length > 0 ? (isHi ? `${pHouses.join(', ')}वें भाव` : `Houses ${pHouses.join(' & ')}`) : (isHi ? 'छाया ग्रह' : 'Chhaya Graha');
+            lordshipStr = isHi ? `${hindiSigns[lagnaSign] || lagnaSign} लग्न में ${pHousesStr} का आधिपत्य` : `Commands ${pHousesStr} in ${lagnaSign} Lagna`;
+          }
           cards.push({
             period_index: off + 1,
-            title: isHi ? `${pHi} होरा (${off === 0 ? 'सक्रिय' : `आगामी +${off}`})` : `${p} Hora (${off === 0 ? 'Active Now' : `Upcoming +${off}h`})`,
+            title: isHi ? `${pHi} होरा (${off === 0 ? 'सक्रिय' : `आगामी +${off} घंटा`})` : `${p} Hora (${off === 0 ? 'Active Now' : `Upcoming +${off}h`})`,
             time_window: off === 0 ? (window.currentActiveHoraWindow || "Active Hour") : (isHi ? `अगला +${off} घंटा` : `Next +${off}h`),
             planet: p,
             planet_hi: pHi,
             energy_category: energy,
             energy_category_hi: energyHi,
+            lordship_summary: lordshipStr,
+            friendship_with_lagna: friendshipStr,
             beej_mantra: beejMantras[p]?.mantra || "",
             transliteration: beejMantras[p]?.transliteration || "",
-            guidance: isHi ? `इस ${pHi} होरा में एकाग्रता और अनुशासित कर्म से सफलता प्राप्त होगी।` : `During this ${p} Hora, focus on disciplined strategic priorities and clarity.`,
+            guidance: isHi ? `इस ${pHi} होरा में एकाग्रता और अनुशासित कर्म से सफलता प्राप्त होगी। ${lordshipStr || ''}` : `During this ${p} Hora, focus on disciplined strategic priorities and clarity. ${lordshipStr || ''}`,
+            action_recommendation: isHi ? `इस ${pHi} काल में ${pHi} से संबंधित विषयों को प्राथमिकता दें।` : `Prioritize high-leverage activities resonant with ${p}.`,
+            avoid: isHi ? `उतावलेपन और विवाद से बचें।` : `Avoid impulsive haste, contentious debates, or trivial distractions.`,
             is_preview_locked: false
           });
         }
@@ -29539,26 +29932,35 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           items: [
             {
               period_index: 1,
-              title: isHi ? "प्रातः काल: सूर्योदय से मध्याह्न" : "Morning Phase: Pratah Kala (Dawn to Solar Noon)",
+              phase_key: 'morning_pratah',
+              title: isHi ? "प्रातः काल: सूर्योदय से मध्याह्न (06:00 AM – 12:00 PM)" : "Morning Phase: Pratah Kala (Dawn to Solar Noon)",
               focus_theme: isHi ? "रणनीतिक योजना एवं उच्च प्राथमिकता कार्य" : "High-Leverage Strategic Inception & Focus",
               guidance: isHi ? "प्रातःकालीन वेला में सौर प्राण और शुभ होराएं बौद्धिक एकाग्रता को शिखर पर रखती हैं।" : "Solar prana and benefic diurnal Horas harmonize conscious focus during morning hours.",
-              auspicious_window: isHi ? "प्रातः 07:30 AM – 09:30 AM" : "07:30 AM – 09:30 AM",
+              recommendation: isHi ? "दिन के सबसे चुनौतीपूर्ण कार्य को 11:30 AM से पूर्व संपन्न करें।" : "Complete your most demanding objective before solar noon.",
+              cautions: isHi ? "दिन के आरंभ में बिखरे हुए डिजिटल संदेशों में समय नष्ट न करें।" : "Guard against reactive digital communications during initial focus hours.",
+              auspicious_window: isHi ? "प्रातः 07:30 AM – 09:30 AM" : "07:30 AM – 09:30 AM (Benefic Window)",
               is_preview_locked: false
             },
             {
               period_index: 2,
-              title: isHi ? "मध्याह्न काल: अभिजित मुहूर्त एवं कर्म संपादन" : "Midday Phase: Madhyahna & Abhijit Muhurta (~11:45 AM – 12:35 PM)",
+              phase_key: 'midday_madhyahna',
+              title: isHi ? "मध्याह्न काल: अभिजित मुहूर्त एवं कर्म संपादन (12:00 PM – 05:30 PM)" : "Midday Phase: Madhyahna & Abhijit Muhurta (~11:45 AM – 12:35 PM)",
               focus_theme: isHi ? "व्यावसायिक क्रियान्वयन एवं सहयोगात्मक समझौते" : "Collaborative Reviews, Negotiations & Execution",
               guidance: isHi ? "अभिजित मुहूर्त (~11:45 AM – 12:35 PM) अशुभ गोचर दोषों का शमन करता है।" : "The classical Abhijit Muhurta window mitigates ambient transit impurities, favoring pivotal business negotiations.",
+              recommendation: isHi ? "अनुबंधों पर हस्ताक्षर और टीम समन्वय मध्याह्न में करें।" : "Finalize vetted contracts and conduct client negotiations during the afternoon.",
+              cautions: isHi ? "दैनिक राहुकाल अवधि में सट्टेबाजी या जल्दबाजी के समझौतों से बचें।" : "Avoid speculative agreements during the localized Rahu Kaal window.",
               auspicious_window: "Abhijit Muhurta (~11:45 AM – 12:35 PM)",
               is_preview_locked: false
             },
             {
               period_index: 3,
-              title: isHi ? "सायंकाल एवं निशा: पारिवारिक सौहार्द व विश्राम" : "Evening & Night Phase: Sayankala & Nisha (Sunset Onward)",
+              phase_key: 'evening_nisha',
+              title: isHi ? "सायंकाल एवं निशा: पारिवारिक सौहार्द व विश्राम (05:30 PM – रात्रि)" : "Evening & Night Phase: Sayankala & Nisha (Sunset Onward)",
               focus_theme: isHi ? "पारिवारिक सौहार्द, स्वाध्याय एवं मानसिक शांति" : "Domestic Well-being, Study & Restorative Rest",
               guidance: isHi ? "सूर्यास्त उपरांत चंद्र ऊर्जा मानसिक शांति और भावनात्मक संतुलन प्रदान करती है।" : "Post-sunset lunar transitions soothe neurological intensity. Ideal for domestic connection and reflection.",
-              auspicious_window: isHi ? "सायं 06:30 PM – 07:45 PM" : "06:30 PM – 07:45 PM",
+              recommendation: isHi ? "कार्य से औपचारिक विराम लें और सायं ध्यान अथवा स्वाध्याय करें।" : "Deliberately disconnect from professional channels; cultivate mindfulness.",
+              cautions: isHi ? "देर रात गरिष्ठ भोजन और अत्यधिक स्क्रीन समय से बचें।" : "Minimize late-night screen exposure to preserve deep sleep cycles.",
+              auspicious_window: isHi ? "सायं 06:30 PM – 07:45 PM" : "06:30 PM – 07:45 PM (Twilight Window)",
               is_preview_locked: false
             }
           ]
@@ -29821,8 +30223,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `स्विस एफिमेरिस द्वारा संगणित ${targetDate} का सार्वभौमिक खगोलीय गोचर। व्यक्तिगत फलादेश हेतु टैब 1 में जन्म कुंडली की गणना करें।`;
           s = {
             executive_summary: hasChart
-              ? `${lagna} लग्न एवं ${moon} चंद्र हेतु ${activeMaha}-${activeAntar} दशा अंतर्गत दैनिक पारशरी गोचर फलादेश।`
-              : `स्विस एफिमेरिस द्वारा संगणित ${targetDate} का दैनिक खगोलीय गोचर फलादेश।`,
+              ? `आपके ${lagna} लग्न और ${moon} चंद्र (${nak} नक्षत्र) हेतु, आज का खगोलीय गोचर ${activeMaha}-${activeAntar} विंशोत्तरी दशा के अंतर्गत आपके प्रमुख कर्म भावों को ऊर्जावान बना रहा है। सौर व चंद्र गोचर का सामंजस्य कार्यक्षेत्र में अनुशासित कर्म, स्पष्ट संवाद और स्थिर प्रगति का मार्ग प्रशस्त करता है। प्रातःकालीन शुभ होरा एवं अभिजित मुहूर्त (~11:45 AM – 12:35 PM) दिन की सबसे महत्वपूर्ण पहलों के क्रियान्वयन हेतु सर्वोच्च खिड़की प्रदान करते हैं, जबकि स्थानीय राहुकाल में सट्टेबाजी या जल्दबाजी के समझौतों से बचना अनिवार्य है। दिन-स्वामी ग्रह के बीज मंत्र का जप और सात्विक दिनचर्या का पालन करें।`
+              : `स्विस एफिमेरिस द्वारा संगणित ${targetDate} का दैनिक खगोलीय गोचर चक्र सौर ऊर्जा, चंद्र स्थिति और अहोरात्र होराओं के सामंजस्य को प्रकट करता है। यह चक्र प्रातःकालीन एकाग्रता, मध्याह्न अभिजित मुहूर्त (~11:45 AM – 12:35 PM) में व्यावसायिक गति और सायंकाल में विश्राम का समर्थन करता है। स्थानीय दैनिक राहुकाल के दौरान सट्टेबाजी अथवा अपरीक्षित अनुबंधों से बचना चाहिए। व्यक्तिगत जन्म लग्न व भाव सक्रियता देखने के लिए जन्म कुंडली लोड करें।`,
             overall_outlook: hasChart
               ? `आपकी जन्म पत्रिका में ${lagna} लग्न और ${moon} चंद्र राशि (${nak} नक्षत्र) हेतु, आज का आकाशीय गोचर कर्मक्षेत्र और संवाद में अनुकूल ऊर्जा का संचार करता है। ${activeMaha}-${activeAntar} दशा काल में अनुशासित कार्यशैली और स्पष्ट प्राथमिकताओं से उत्कृष्ट परिणाम प्राप्त होंगे।`
               : `आज का ग्रहीय गोचर व्यावहारिक संवाद, अनुशासित कार्यप्रणाली और एकाग्रता पर बल देता है। वैदिक ज्योतिष के सिद्धांतों के अनुसार प्रमुख कार्यों को शुभ होरा में संपन्न करना श्रेयस्कर रहता है।`,
@@ -29866,8 +30268,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `Universal transit baseline computed for ${targetDate} via Swiss Ephemeris. Calculate your birth chart in Tab 1 to personalize.`;
           s = {
             executive_summary: hasChart
-              ? `Daily Parashari transit forecast for ${lagna} Lagna and ${moon} Moon under ${activeMaha}-${activeAntar} Dasha.`
-              : `Daily universal transit overview for ${targetDate} mapping planetary motion via Swiss Ephemeris.`,
+              ? `For your natal ${lagna} Lagna and ${moon} Moon (${nak} Nakshatra), today's planetary transit geometry energizes your core functional houses under the ${activeMaha}-${activeAntar} Dasha cycle. The daily cosmic currents favor disciplined execution, lucid communication, and steady professional advancement. Morning benefic Hora windows and the classical Abhijit Muhurta (~11:45 AM – 12:35 PM) offer your highest-leverage windows for signing agreements and closing deliverables, whereas unvetted speculative commitments must be avoided during localized Rahu Kaal. Harmonize your vitality with mindful hydration and recitation of the governing planetary mantra.`
+              : `Universal daily transit progression for ${targetDate} computed via Swiss Ephemeris maps solar prana, lunar position, and planetary hora currents across the 24-hour cycle. Atmospheric geometry emphasizes morning strategic inception, midday collaborative momentum during Abhijit Muhurta (~11:45 AM – 12:35 PM), and restorative evening reflection. Heightened awareness is advised during the localized daily Rahu Kaal window to guard against unhedged speculation. Calculate your birth chart in Tab 1 to ground this celestial weather in your natal houses.`,
             overall_outlook: hasChart
               ? `For your natal ${lagna} Lagna and ${moon} Moon (${nak} Nakshatra), today's planetary transit geometry energizes your communicative and professional sectors under the ${activeMaha}-${activeAntar} Dasha cycle. Cosmic alignments favor disciplined execution and clear priority management.`
               : `Today's planetary transit geometry highlights disciplined focus, practical communication, and measured execution under sidereal astronomical currents. Classical Jyotish encourages aligning major activities with favorable daily planetary hours.`,
@@ -29913,8 +30315,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `स्विस एफिमेरिस द्वारा संगणित शास्त्रीय ७-दिवसीय ग्रहीय गोचर चक्र। जन्म विवरण दर्ज कर कुंडली भावों से जोड़ें।`;
           s = {
             executive_summary: hasChart
-              ? `${lagna} लग्न हेतु केंद्र व त्रिकोण भावों में चंद्र गोचर का साप्ताहिक विश्लेषण।`
-              : `सप्ताह भर में चंद्र नक्षत्र संचार एवं ग्रहीय गोचर का पारशरी विश्लेषण।`,
+              ? `यह सात दिवसीय पारशरी गोचर चक्र आपकी ${lagna} लग्न कुंडली एवं ${moon} चंद्र के केंद्र व त्रिकोण भावों को ${activeMaha}-${activeAntar} दशा के संरक्षण में प्रकाशित करता है। चंद्रमा का क्रमिक नक्षत्र संचरण सप्ताह के पूर्वार्ध में आधिकारिक पहल व व्यावसायिक सुदृढ़ता और सप्ताहांत में पारिवारिक सौहार्द का संतुलन बनाता है। सफलता के मुख्य अवसर मंगलवार व गुरुवार प्रातःकालीन सूर्य व गुरु होरा में प्राप्त होंगे, जबकि बुधवार अपराह्न में संवाद में किसी भी अस्पष्टता से बचें। साप्ताहिक ऊर्जा संतुलन हेतु अपने दशा स्वामी के अनुकूल सात्विक दान और धर्म का आचरण करें।`
+              : `यह ७-दिवसीय सार्वभौमिक गोचर चक्र राशिचक्र में चंद्रमा के विभिन्न नक्षत्रों और राशियों में भ्रमण को दर्शाता है। सप्ताह का पूर्वार्ध व्यावहारिक नियोजन व आधिकारिक संचार, मध्य भाग वित्तीय सुदृढ़ीकरण और सप्ताहांत पारिवारिक सौहार्द व आत्म-मंथन की प्रेरणा देता है। मंगलवार व गुरुवार प्रातःकालीन होराएं महत्वपूर्ण कार्यों हेतु शुभ अवसर प्रस्तुत करती हैं, जबकि बुधवार अपराह्न में संवाद में धैर्य अपेक्षित है। अपनी जन्म कुंडली के विशिष्ट भाव प्रभावों को जानने हेतु जन्म विवरण दर्ज करें।`,
             overall_outlook: hasChart
               ? `यह सात दिवसीय गोचर चक्र आपकी जन्म कुंडली के ${lagna} लग्न एवं ${moon} चंद्र राशि हेतु केंद्र और त्रिकोण भावों को ऊर्जावान करता है। ${activeMaha}-${activeAntar} दशा अंतर्गत सप्ताह का पूर्वार्ध व्यावसायिक प्रगति, मध्य भाग वित्तीय स्थिरता और सप्ताहांत पारिवारिक सौहार्द व आध्यात्मिक चिंतन के लिए अत्यंत शुभ है।`
               : `यह साप्ताहिक चक्र राशि चक्र में चंद्रमा के विभिन्न नक्षत्रों में भ्रमण पर आधारित है। वैदिक ज्योतिष सप्ताह के आरंभ में व्यावहारिक नियोजन, मध्य में वित्तीय सुदृढ़ीकरण और सप्ताहांत में आत्म-मंथन की प्रेरणा देता है।`,
@@ -29958,8 +30360,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `Grounded in classical 7-day planetary transit cycles computed via Swiss Ephemeris. Enter birth details to ground in natal houses.`;
           s = {
             executive_summary: hasChart
-              ? `Weekly 7-day progression for ${lagna} Lagna navigating Kendra and Trikona lunar transits.`
-              : `Weekly 7-day universal transit progression mapping lunar stations and major planetary ingress.`,
+              ? `Across this 7-day Parashari cycle, lunar transits traverse your natal ${lagna} Lagna's Kendra and Trikona houses under the stabilizing governance of ${activeMaha}-${activeAntar} Dasha. The celestial arc favors early-week professional presentations and executive momentum, followed by mid-week balance sheet audits and weekend domestic rejuvenation. Primary breakthrough windows open during Tuesday and Thursday morning benefic Horas, while Wednesday afternoon demands deliberate patience during transient communication shifts. Strengthen your weekly karmic alignment through ethical duty (Dharma) and dedicated philanthropy.`
+              : `Seven-day universal lunar transit cycle traces the collective progression of the Moon across sidereal constellations via Swiss Ephemeris. The overarching weekly geometry guides early-week structured planning, mid-week operational consolidation, and weekend domestic harmony and philosophical reflection. Peak breakthrough windows occur during Tuesday and Thursday morning benefic Horas, while transient mid-week lunar shifts call for clear, documented communication. Ground these daily lunar transits in your natal Lagna by generating your Janam Kundli.`,
             overall_outlook: hasChart
               ? `This seven-day forecast period is energized by the transiting Moon traversing your ${lagna} Lagna's Kendra and Trikona houses under the ${activeMaha}-${activeAntar} Dasha. Early-week momentum favors professional initiation, mid-week highlights asset consolidation, and the weekend promotes spiritual rejuvenation and family harmony.`
               : `This seven-day transit cycle reflects the collective movement of the Moon across sidereal constellations. Classical principles emphasize patient consolidation early in the week, focused execution mid-week, and reflective harmony toward the weekend.`,
@@ -30005,8 +30407,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `चंद्र माह की विभिन्न कलाओं और प्रमुख ग्रहों की संक्रांति पर आधारित। व्यक्तिगत भाव विश्लेषण हेतु जन्म कुंडली बनाएं।`;
           s = {
             executive_summary: hasChart
-              ? `${activeMaha}-${activeAntar} दशा अंतर्गत ४-सप्ताह का प्रगति एवं पूंजी स्थिरता चक्र।`
-              : `मासिक ४-सप्ताह गोचर विश्लेषण - चंद्र कलाएं एवं ग्रहीय संक्रांति।`,
+              ? `आगामी ४-सप्ताह का मासिक गोचर चक्र आपके ${lagna} लग्न के दशम कर्म भाव और लाभ अक्ष को ${activeMaha}-${activeAntar} दशा के अधीन सुदृढ़ संबल प्रदान करता है। शुक्ल पक्ष के दौरान नई पहलों और व्यावसायिक विस्तार को गति मिलेगी, जबकि कृष्ण पक्ष पूंजी संचय, बजट संतुलन और देनदारियों के निपटान का समर्थन करता है। पूर्णिमा काल महत्वपूर्ण समझौतों व सहयोग हेतु सर्वोत्तम समय सिद्ध होगा, जबकि अमावस्या के निकट किसी भी प्रकार के सट्टा जोखिम से बचना चाहिए। प्रातःकालीन ध्यान नियमित रखें और ${activeMaha} महादशा स्वामी के बीज मंत्र का जप करें।`
+              : `स्विस एफिमेरिस द्वारा संगणित ४-सप्ताह का मासिक गोचर चक्र शुक्ल पक्ष एवं कृष्ण पक्ष की चंद्र कलाओं और ग्रहीय राशि प्रवेश का विश्लेषण करता है। प्रथम दो सप्ताह नए उपक्रमों, व्यावसायिक दृश्यता और रणनीतिक गठबंधनों के लिए अनुकूल हैं, जबकि अंतिम दो सप्ताह वित्तीय ऑडिट, पूंजी संचय और आंतरिक संतुलन का समर्थन करते हैं। पूर्णिमा काल मानसिक स्पष्टता लाता है, जबकि अमावस्या के निकट जोखिम भरे सट्टेबाजी से बचना चाहिए। व्यक्तिगत भाव फल जानने हेतु जन्म कुंडली बनाएं।`,
             overall_outlook: hasChart
               ? `आगामी चार सप्ताह का यह चक्र आपके ${lagna} लग्न हेतु संस्थागत प्रतिष्ठा और पूंजी संचय का मार्ग प्रशस्त करता है। ${activeMaha}-${activeAntar} दशा के शुभ प्रभाव से दीर्घकालिक योजनाओं में स्थिरता और कार्यसिद्धि प्राप्त होगी।`
               : `यह मासिक चक्र सूर्य, चंद्र और प्रमुख ग्रहों की संक्रांति पर आधारित है। खगोलीय संरेखण वित्तीय अनुशासन, नैतिक आचरण और व्यवस्थित कार्यप्रणाली का समर्थन करता है।`,
@@ -30050,8 +30452,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `Synthesized from lunar month phases and major planetary ingress across sidereal zodiacs. Calculate Janam Kundli for personal bhava analysis.`;
           s = {
             executive_summary: hasChart
-              ? `4-week consolidation cycle under ${activeMaha}-${activeAntar} Dasha supporting career advancement and asset stability.`
-              : `Monthly 4-week transit analysis synthesizing lunar phases and planetary stations.`,
+              ? `This 4-week transit arc stabilizes your natal ${lagna} Lagna's 10th house vocational axis and financial sectors under ongoing ${activeMaha}-${activeAntar} Dasha governance. Waxing Shukla Paksha currents catalyze career expansion, leadership visibility, and stakeholder endorsement across Weeks 1–2, transitioning into capital audits and asset consolidation in Weeks 3–4. Peak opportunities coincide with the waxing Moon for formalizing alliances, whereas high-volatility financial speculation must be strictly avoided during dark-moon Amavasya. Incorporate regular morning contemplation to maintain emotional poise and nervous equilibrium.`
+              : `Four-week universal transit progression synthesizes the 28-day solar-lunar cycle across waxing Shukla Paksha and waning Krishna Paksha via Swiss Ephemeris. Cosmic alignments support foundational launches and stakeholder visibility in Weeks 1–2, followed by capital consolidation, budget audits, and reflective restructuring in Weeks 3–4. Optimal momentum aligns with the waxing Moon toward Purnima, while speculative overextension should be avoided during the dark-moon phase. Enter birth details to map these monthly transit movements to your natal chart houses.`,
             overall_outlook: hasChart
               ? `This monthly cycle presents a structured phase of institutional elevation and capital consolidation for your ${lagna} Lagna. With your 10th House aspected by functional benefics and your active ${activeMaha}-${activeAntar} Dasha progressing steadily, the upcoming four weeks reward patience, systematic labor, and measured long-term investments.`
               : `This monthly transit cycle traces significant solar, lunar, and planetary ingress across sidereal zodiacs. Cosmic alignments support steady structural labor, prudent financial management, and deliberate long-range planning.`,
@@ -30094,8 +30496,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `१२-माह के खगोलीय गोचर और प्रमुख ग्रहीय संक्रांति पर आधारित। व्यक्तिगत दशा जानने हेतु कुंडली बनाएं।`;
           s = {
             executive_summary: hasChart
-              ? `${activeMaha} महादशा अंतर्गत १२-माह का जीवन प्रगति एवं संप्रभुता मानचित्र।`
-              : `वार्षिक १२-माह खगोलीय गोचर सिंहावलोकन - ग्रहीय राश्यांतर एवं वक्री काल।`,
+              ? `आगामी १२-माह का वार्षिक सौर व ग्रहीय चक्र आपके ${lagna} लग्न एवं ${moon} चंद्र हेतु ${activeMaha}-${activeAntar} दशा अंतर्गत व्यावसायिक स्वावलंबन और स्थायी प्रतिष्ठा का युगांतरकारी अध्याय प्रस्तुत करता है। गोचरीय देवगुरु बृहस्पति एवं कर्मफलदाता शनि के प्रमुख प्रभाव आपके केंद्र व त्रिकोण भावों को संबल प्रदान कर अनुशासित पुरुषार्थ का श्रेष्ठ फल देंगे। वसंतोपरांत का कालखंड रणनीतिक विस्तार हेतु सर्वाधिक अनुकूल रहेगा, जबकि ग्रहण काल व राहु-केतु संधिकाल में सट्टा व जोखिम से बचना अनिवार्य है। वर्ष भर में नियमित रूप से धर्म, सत्य और परोपकार का पालन करें।`
+              : `१२-माह का वार्षिक सार्वभौमिक गोचर मानचित्र देवगुरु बृहस्पति, कर्मफलदाता शनि और सूर्य संक्रांति के वृहद खगोलीय चक्रों को प्रदर्शित करता है। यह वार्षिक समयरेखा करियर में अनुशासन, वित्तीय स्वावलंबन और दीर्घकालिक प्रतिष्ठा के नए आयाम स्थापित करती है। चारों त्रैमासों में सौर व ग्रहीय परिवर्तन योजनाबद्ध कर्म और नैतिक आचरण का फल प्रदान करते हैं। अपनी जन्म कुंडली के सापेक्ष इन वार्षिक संक्रांतियों का सटीक फल जानने हेतु कुंडली बनाएं।`,
             overall_outlook: hasChart
               ? `आगामी बारह महीनों का यह कालखंड आपके ${lagna} लग्न के जीवन में एक युगांतरकारी अध्याय सिद्ध होगा। ${activeMaha} महादशा और ${activeAntar} अंतर्दशा के संरक्षण में करियर, वित्तीय स्वावलंबन और आत्म-सम्मान में स्थायी वृद्धि होगी।`
               : `वार्षिक चक्र प्रमुख ग्रहों - गुरु, शनि और राहु-केतु के राशि परिवर्तनों को प्रदर्शित करता है। यह समय दीर्घकालिक प्रतिबद्धताओं, नैतिक जीवनशैली और सतत परिश्रम का फल प्रदान करता है।`,
@@ -30136,8 +30538,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `Grounded in 12-month planetary ephemeris transits and major planetary stations. Calculate your Kundli to map natal Dasha periods.`;
           s = {
             executive_summary: hasChart
-              ? `12-month life progression mapping foundational growth and financial sovereignty under ${activeMaha} Mahadasha.`
-              : `Yearly 12-month universal transit overview tracking major planetary movements across the sidereal zodiac.`,
+              ? `The upcoming 12-month solar and transit journey for ${lagna} Lagna and ${moon} Moon marks a transformative epoch of professional sovereignty and asset compounding under ${activeMaha}-${activeAntar} Dasha. Major planetary stations of transiting Jupiter and Saturn activate your natal Kendra and Trikona axes, rewarding disciplined perseverance and systematic foundation-building across all four quarters. Optimal strategic acceleration opens post-spring equinox, while eclipse portals and nodal transits require emotional composure and avoidance of unhedged financial commitments. Anchor your annual trajectory by dedicating regular contemplative study to your Ishta Devata and practicing ethical duty (Dharma).`
+              : `Twelve-month planetary transit stations and solar ingress cycles define major thematic seasons for career discipline, structural governance, and long-term stability via Swiss Ephemeris. Major transits of Jupiter, Saturn, and the solar cardinal ingress across all four quarters establish opportune phases for compounding professional and financial initiatives. Spring equinox transitions favor strategic expansion, while eclipse portals demand emotional grounding and prudent risk management. Calculate your Janam Kundli to map these 12-month solar and planetary transits against your natal Lagna.`,
             overall_outlook: hasChart
               ? `The upcoming twelve-month cycle marks a pivotal transformative epoch in your life trajectory under ${lagna} Lagna. Under the governance of your ${activeMaha} Mahadasha and ${activeAntar} Antardasha, foundations laid in career, financial sovereignty, and personal wisdom will compound substantially.`
               : `The annual transit cycle outlines key planetary movements, stations, and retrogrades across sidereal signs. Major transits of Jupiter and Saturn establish broad thematic seasons for professional discipline, ethical governance, and personal development.`,
@@ -30192,8 +30594,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `पाराशरी १२०-वर्षीय विंशोत्तरी दशा पद्धति। व्यक्तिगत दशा फल हेतु सटीक जन्म समय और चंद्र नक्षत्र आवश्यक है।`;
           s = {
             executive_summary: hasChart
-              ? `${activeMaha} महादशा (${activeAntar} अंतर्दशा) अंतर्गत ५-वर्षीय कर्म चक्र एवं प्रतिष्ठा विस्तार।`
-              : `विंशोत्तरी १२०-वर्षीय शास्त्रीय कालचक्र। व्यक्तिगत दशा हेतु जन्म विवरण दर्ज करें।`,
+              ? `आपकी ${lagna} लग्न कुंडली में ${moon} चंद्र (${nak} नक्षत्र) से संगणित यह ५-वर्षीय विंशोत्तरी समयरेखा ${activeMaha}-${activeAntar} दशा के युगांतरकारी कर्म चक्र को उद्घाटित करती है। यह वृहद कालखंड प्रथम व द्वितीय वर्ष में आधारशिला निर्माण व साख संवर्धन से प्रारंभ होकर तृतीय से पंचम वर्ष में बौद्धिक उत्कर्ष, परिसंपत्ति विस्तार और सलाहकार नेतृत्व की ओर अग्रसर होता है। आपकी सर्वोच्च सफलता नैतिक सत्यनिष्ठा और संस्थागत मर्यादाओं के पालन से सुनिश्चित होगी, जबकि प्रमुख अंतर्दशा संधिकाल में वित्तीय विस्तार में उतावलेपन से बचना अनिवार्य है। प्रतिदिन प्रातःकाल ${activeMaha} महादशा स्वामी के बीज मंत्र का १०८ बार जप कर जीवन के ध्येय को संरेखित करें।`
+              : `विंशोत्तरी १२०-वर्षीय शास्त्रीय दशा प्रणाली जातक के जन्म कालीन चंद्र नक्षत्र और देशांतर अंशों पर आधारित एक सूक्ष्म कालचक्र है। यह पद्धति जीवन के प्रमुख अध्यायों, महादशा स्वामियों और कर्मिक संक्रमण कालखंडों का सटीक मानचित्र प्रस्तुत करती है। चूँकि विंशोत्तरी गणना पूर्णतः जन्म समय की सटीकता पर निर्भर करती है, अतः सार्वभौमिक रूप से इसका व्यक्तिगत अनुमान संभव नहीं है। अपनी सक्रिय महादशा और ५-वर्षीय उप-अवधि समयरेखा देखने के लिए टैब १ में जन्म कुंडली बनाएं।`,
             overall_outlook: hasChart
               ? `आप वर्तमान में ${activeMaha} महादशा के परिवर्तनकारी कालखंड से गुजर रहे हैं, जिसमें ${activeAntar} अंतर्दशा सक्रिय है। आपके ${lagna} लग्न हेतु ${activeMaha} ग्रह एक अत्यंत महत्वपूर्ण कारक है, जो बुद्धि, धर्म और कार्यसिद्धि का संचालन करता है। यह कालखंड परिपक्वता, प्रभाव और स्थायी प्रतिष्ठा की स्थापना करता है।`
               : `महर्षि पाराशर के अनुसार १२०-वर्षीय विंशोत्तरी दशा प्रणाली जातक के जन्म चंद्र नक्षत्र पर आधारित जीवन अध्यायों को प्रकट करती है। व्यक्तिगत महादशा और अंतर्दशा जानने हेतु जन्म कुंडली की गणना करें।`,
@@ -30246,8 +30648,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `Vimshottari 120-year cycle timeline calculated via classical Parashari rules. Personal dasha requires exact natal Moon degree.`;
           s = {
             executive_summary: hasChart
-              ? `5-year karmic arc under ${activeMaha} Mahadasha (${activeAntar} Antardasha) establishing long-term authority and legacy.`
-              : `Vimshottari 120-year canonical timeline overview. Enter birth details to map your active personal Mahadasha.`,
+              ? `Your 5-year chronological Vimshottari roadmap unfolds the sovereign karmic epoch of ${activeMaha}-${activeAntar} Dasha for your ${lagna} Lagna nativity, derived from natal Moon in ${moon} (${nak} Nakshatra). This multi-year trajectory transitions from foundational systems-building and reputation consolidation in Years 1–2 to capital compounding, intellectual mastery, and advisory leadership across Years 3–5. Peak fruition arrives through ethical institutional stewardship, while periods of Antardasha Sandhi require patience against over-leveraging assets or rushing corporate pivots. Harmonize your multi-year arc with consistent morning recitation of 108 repetitions of the ${activeMaha} Beej Mantra and charitable service.`
+              : `Vimshottari 120-year canonical timeline framework maps overarching karmic epochs derived from the exact sidereal longitude of the natal Moon at birth. Under classical Parashari Jyotish, this system delineates the primary planetary rulers governing personal career, vitality, wealth, and relationship progression. Because Vimshottari calculations require high-precision natal Moon coordinates, personal dasha timelines cannot be inferred without an authenticated birth chart. Calculate your Janam Kundli in Tab 1 to unlock your active Mahadasha, Antardasha, and 5-year chronological progression.`,
             overall_outlook: hasChart
               ? `You are currently traversing the transformative 16-year cycle of ${activeMaha} Mahadasha, with the active sub-period (Antardasha) of ${activeAntar}. For your ${lagna} Lagna, ${activeMaha} acts as a vital functional ruler, governing key houses of growth, wisdom, and material manifestation. The upcoming five-year window brings structural maturity, expansion of influence, and lasting legacy development.`
               : `In classical Parashari Jyotish, the 120-year Vimshottari Dasha system delineates personal life epochs based on your natal Moon Nakshatra. Calculate your Janam Kundli in Tab 1 to identify your current active Mahadasha, Antardasha, and pivotal karmic seasons.`,
@@ -30289,7 +30691,9 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             ? `आपकी जन्म कुंडली के ${lagna} लग्न, ${moon} चंद्र राशि (${nak} नक्षत्र) एवं सक्रिय ${activeMaha}-${activeAntar} दशा के साथ समन्वित।`
             : `स्विस एफिमेरिस द्वारा संगणित वैदिक सौर होरा क्रम। व्यक्तिगत फलादेश हेतु टैब 1 में जन्म कुंडली बनाएं।`;
           s = {
-            executive_summary: `सक्रिय ${horaPlanet} होरा (${horaWindow}) - गहन एकाग्रता, बौद्धिक निर्णय और रणनीतिक नियोजन का समय।`,
+            executive_summary: hasChart
+              ? `आपकी ${lagna} लग्न कुंडली में, जहाँ चंद्र ${moon} राशि (${nak} नक्षत्र) में स्थित हैं और सक्रिय ${activeMaha}-${activeAntar} दशा चल रही है, यह ${horaPlanet} होरा आपके प्रमुख कर्म भावों को सक्रिय करती है। आकाशीय ऊर्जाएं बौद्धिक निर्णय और रणनीतिक नियोजन को सशक्त बनाती हैं, जिससे कार्यों की समयबद्ध पूर्णता में सहायता मिलती है। इस होरा का मध्यवर्ती ३० मिनट का समय महत्वपूर्ण वार्ताओं और योजनाबद्ध निर्णयों हेतु सर्वोत्तम अवसर प्रदान करता है, जबकि होरा संधिकाल में जल्दबाजी से बचना चाहिए। एकाग्रता संवर्धन हेतु ${horaPlanet} के बीज मंत्र का शांत भाव से स्मरण करें।`
+              : `सक्रिय ${horaPlanet} होरा (${horaWindow}) सार्वभौमिक खगोलीय कालखंड में रणनीतिक विवेक, एकाग्रता और अनुशासित संवाद को शक्ति प्रदान करती है। शास्त्रीय होरा चक्र के अनुसार, यह अवधि बौद्धिक योजना, महत्वपूर्ण प्रपत्रों की समीक्षा और प्राथमिकताओं के संपादन हेतु अत्यंत अनुकूल है। होरा का मध्यवर्ती समय सर्वोच्च स्पष्टता प्रदान करता है, जबकि संधिकाल में उतावलेपन से बचना चाहिए। व्यक्तिगत लग्न व भाव प्रभाव जानने हेतु जन्म कुंडली की गणना करें।`,
             overall_outlook: hasChart
               ? `इस सक्रिय ${horaPlanet} होरा काल में, आकाशीय ऊर्जाएं आपके ${lagna} लग्न एवं सक्रिय ${activeMaha}-${activeAntar} दशा से समन्वित होती हैं। ${horaPlanet} होरा विशेष रूप से रणनीतिक क्रियान्वयन, बौद्धिक स्पष्टता और प्राथमिकताओं के संरेखण पर बल देती है।`
               : `इस सक्रिय ${horaPlanet} होरा काल में, खगोलीय ऊर्जाएं रणनीतिक कार्यों, व्यावहारिक संवाद और आत्म-संयम पर बल देती हैं। वैदिक ज्योतिष के अनुसार ग्रहों की होरा दैनिक कार्यों को समयबद्ध और सफल बनाने में सहायक होती है।`,
@@ -30326,7 +30730,9 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             ? `This interpretation applies because your natal Ascendant is ${lagna}, your Moon resides in ${moon} (${nak} Nakshatra), and your active Vimshottari Dasha is ${activeMaha}-${activeAntar}.`
             : `Grounded in classical Chaldean solar hora sequences computed via Swiss Ephemeris. Calculate your birth chart in Tab 1 to personalize.`;
           s = {
-            executive_summary: `Active ${horaPlanet} Hora (${horaWindow}) focusing deliberate execution and analytical discernment.`,
+            executive_summary: hasChart
+              ? `In your natal ${lagna} Lagna nativity with Moon stationed in ${moon} (${nak} Nakshatra), this ${horaPlanet} Hora activates your functional houses under the prevailing governance of ${activeMaha}-${activeAntar} Dasha. The prevailing planetary resonance sharpens strategic discernment and purposeful task completion across key vocational sectors. Your highest-leverage opportunity falls within the central 30 minutes of this Hora for vital communications and deal deliberations, while impulsive commitments during transitional sandhi should be strictly avoided. Attune your focus by reciting the ${horaPlanet} Beej Mantra.`
+              : `Active ${horaPlanet} Hora (${horaWindow}) provides a focused universal astronomical window for disciplined execution, analytical discernment, and structured planning. In classical Jyotish, diurnal planetary hours attune conscious effort with the natural significations of the governing planetary ruler. The central 30 minutes of this Hora interval offer maximum intellectual throughput for high-priority tasks, while impulsive commitments should be deferred. To ground these planetary hours in your natal houses, calculate your Janam Kundli.`,
             overall_outlook: hasChart
               ? `During this active ${horaPlanet} planetary window, celestial influences interact with your natal ${lagna} Lagna and current ${activeMaha}-${activeAntar} Dasha cycle. Traditionally, the ${horaPlanet} Hora emphasizes focused strategic execution, analytical discernment, and aligning mental priorities with your core life responsibilities.`
               : `During this active ${horaPlanet} planetary window, celestial energies emphasize focused strategic action, analytical discernment, and purposeful communication. In classical Vedic astrology, planetary Horas delineate qualitative atmospheric currents that assist in timing activities constructively.`,
@@ -30496,9 +30902,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           } else if (res.status === 401 || res.status === 403) {
             // Token is expired or invalid on the backend
             console.warn("Session token expired or rejected by server when fetching saved reports.");
-            if (!isAdminUser()) {
-              executeSignOut(false);
-            }
+            executeSignOut(false);
             return [];
           }
         } catch (e) {
@@ -30557,9 +30961,11 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       });
     }
 
+    let currentViewingSavedReport = null;
     function openReportViewer(reportId) {
-      const rep = window.currentUserSavedReports.find(x => x.id === reportId);
+      const rep = (window.currentUserSavedReports || []).find(x => x.id === reportId);
       if (!rep) return;
+      currentViewingSavedReport = rep;
 
       document.getElementById('viewer-report-type').textContent = rep.reportType;
       document.getElementById('viewer-report-title').textContent = rep.title;
@@ -30660,6 +31066,21 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
 
     function closeReportViewer() {
       document.getElementById('modal-report-viewer').style.display = 'none';
+      currentViewingSavedReport = null;
+    }
+
+    function downloadCurrentSavedReportPdf() {
+      if (!currentViewingSavedReport || !currentViewingSavedReport.payload) {
+        showToast("No active saved report to download.", "warning");
+        return;
+      }
+      const p = currentViewingSavedReport.payload;
+      if (p && p.sections && Array.isArray(p.sections)) {
+        p.allowPdfDownload = true;
+        generateAndDownloadReportPdf(p, currentViewingSavedReport.title);
+      } else {
+        generateAndDownloadReportPdf(p, currentViewingSavedReport.title || "Astrological Guidance Report");
+      }
     }
 
     async function deleteReportRecord(reportId) {
@@ -31465,6 +31886,12 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
     }
 
     function openNumerologyStudio(tab = 'personal') {
+      if (!currentUserSession) {
+        window.pendingActionAfterAuth = { type: 'open_numerology', tab };
+        openAuthModal('register');
+        showToast("Please sign up or sign in first to access the Vedic Numerology Studio.", "info");
+        return;
+      }
       const modal = document.getElementById('modal-numerology-studio');
       if (!modal) return;
 

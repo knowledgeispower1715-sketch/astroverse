@@ -117,7 +117,18 @@ def calculate_full_panchang(
     Calculates complete Janam or Gochara Panchang and Muhurtas.
     """
     swe.set_sid_mode(swe.SIDM_LAHIRI)
-    parsed_date = date.fromisoformat(target_date_str)
+    has_time = "T" in target_date_str or " " in target_date_str
+    if has_time:
+        try:
+            base_dt = datetime.fromisoformat(target_date_str.replace("Z", "+00:00"))
+            parsed_date = base_dt.date()
+        except Exception:
+            parsed_date = date.fromisoformat(target_date_str[:10])
+            base_dt = None
+    else:
+        parsed_date = date.fromisoformat(target_date_str[:10])
+        base_dt = None
+
     # Noon UTC
     noon_jd = swe.julday(parsed_date.year, parsed_date.month, parsed_date.day, 12.0)
 
@@ -126,6 +137,21 @@ def calculate_full_panchang(
     dt_rise = jd_to_datetime_utc(jd_rise)
     dt_set = jd_to_datetime_utc(jd_set)
     dt_next_rise = jd_to_datetime_utc(jd_next_rise)
+
+    # If datetime includes specific time of day, verify Vedic sunrise boundary
+    if base_dt is not None:
+        if base_dt.tzinfo is None:
+            if ZoneInfo:
+                try:
+                    base_dt = base_dt.replace(tzinfo=ZoneInfo(tz_str))
+                except Exception:
+                    base_dt = base_dt.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+            else:
+                base_dt = base_dt.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+        dt_rise_local = dt_rise.astimezone(base_dt.tzinfo)
+        if base_dt < dt_rise_local:
+            # Pre-sunrise: belongs to previous Vedic day
+            parsed_date = parsed_date - timedelta(days=1)
 
     # Celestial positions at sunrise for true Vedic Day reckoning
     sun_res, _ = swe.calc_ut(jd_rise, swe.SUN, swe.FLG_SIDEREAL)

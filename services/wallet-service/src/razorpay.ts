@@ -1,40 +1,39 @@
 import dotenv from 'dotenv';
 if (process.env.NODE_ENV !== 'test') dotenv.config();
-import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
 export const TEST_RAZORPAY_SECRET = 'test_secret_for_automated_regression_suite_hmac256';
 
+/**
+ * Historical Razorpay configuration check.
+ * Active transactions exclusively use Cashfree Payments.
+ */
 export function isRazorpayConfigured(): boolean {
-  if (process.env.NODE_ENV === 'test') {
-    return false;
-  }
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  return Boolean(
-    keyId &&
-    keySecret &&
-    !keyId.includes('placeholder') &&
-    !keySecret.includes('placeholder') &&
-    !keyId.includes('your_') &&
-    !keySecret.includes('your_')
-  );
+  return false;
 }
 
 export function getRazorpaySecret(): string {
   if (process.env.NODE_ENV === 'test') {
     return TEST_RAZORPAY_SECRET;
   }
-  if (isRazorpayConfigured()) {
-    return process.env.RAZORPAY_KEY_SECRET!;
-  }
   return '';
 }
 
-export const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder'
-});
+/**
+ * Deprecated client instance stub. Razorpay SDK is retired.
+ */
+export const razorpay: any = {
+  orders: {
+    create: async () => {
+      throw new Error('GATEWAY_RETIRED: Razorpay orders cannot be created. Active transactions use Cashfree.');
+    }
+  },
+  payments: {
+    fetch: async () => {
+      throw new Error('GATEWAY_RETIRED: Razorpay payments cannot be fetched. Active transactions use Cashfree.');
+    }
+  }
+};
 
 /**
  * Timing-safe cryptographic HMAC-SHA256 signature verification.

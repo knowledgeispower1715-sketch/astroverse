@@ -22,6 +22,7 @@ from ephemeris import calculate_kundli
 from divisional_charts import calculate_navamsha, calculate_dashamsha, calculate_moon_chart, calculate_chalit_chart
 from dasha_engine import calculate_vimshottari_dasha
 from hora_engine import calculate_sun_times, calculate_24h_horas
+from panchang_engine import calculate_full_panchang
 from matchmaking import match_kundli_36_gunas
 from doshas_and_remedies import analyze_doshas_and_remedies
 from ai_astrologer import generate_structured_prediction
@@ -66,6 +67,43 @@ def test_ephemeris_and_panchang():
     assert len(p["yoga"]) > 0
     assert len(p["karana"]) > 0
     print("[PASS] test_ephemeris_and_panchang passed")
+
+def test_vedic_sunrise_day_boundary_av_sec_06():
+    """
+    AV-SEC-06 Verification:
+    Surya Siddhanta & Parashari astronomical invariant:
+    The Vedic day (Ahargana/Vara) begins at local solar sunrise, NOT Gregorian midnight (00:00).
+    A pre-sunrise birth on a calendar Tuesday belongs to Monday (Somavara, Moon).
+    A post-sunrise birth on that same calendar Tuesday belongs to Tuesday (Mangalavara, Mars).
+    """
+    lat, lon, tz = 28.6139, 77.2090, "Asia/Kolkata"
+    # On 1995-10-24, New Delhi local sunrise is at ~06:27 AM IST.
+
+    # 1. Pre-sunrise birth: 03:30 AM IST (Gregorian Tuesday, but Vedic Monday)
+    pre_sunrise_dob = "1995-10-24T03:30:00"
+    res_pre = calculate_kundli(pre_sunrise_dob, lat, lon, tz)
+    assert res_pre["panchang"]["vaar"] == "Monday", (
+        f"Pre-sunrise birth at 03:30 AM on Oct 24 must be Monday (Vedic day before sunrise), got {res_pre['panchang']['vaar']}"
+    )
+
+    # 2. Post-sunrise birth: 08:00 AM IST (Gregorian Tuesday, Vedic Tuesday)
+    post_sunrise_dob = "1995-10-24T08:00:00"
+    res_post = calculate_kundli(post_sunrise_dob, lat, lon, tz)
+    assert res_post["panchang"]["vaar"] == "Tuesday", (
+        f"Post-sunrise birth at 08:00 AM on Oct 24 must be Tuesday, got {res_post['panchang']['vaar']}"
+    )
+
+    # 3. Panchang engine verification for pre-sunrise ISO datetime
+    p_pre = calculate_full_panchang(pre_sunrise_dob, lat, lon, tz)
+    assert p_pre["panchang"]["vara"] == "Monday"
+    assert p_pre["panchang"]["day_lord"] == "Moon"
+
+    # 4. Panchang engine verification for post-sunrise ISO datetime
+    p_post = calculate_full_panchang(post_sunrise_dob, lat, lon, tz)
+    assert p_post["panchang"]["vara"] == "Tuesday"
+    assert p_post["panchang"]["day_lord"] == "Mars"
+
+    print("[PASS] test_vedic_sunrise_day_boundary_av_sec_06 passed: pre-sunrise & post-sunrise verified")
 
 def test_divisional_charts():
     dob = "1996-11-24T14:30:00"

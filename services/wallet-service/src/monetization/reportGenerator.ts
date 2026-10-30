@@ -76,6 +76,7 @@ export interface CanonicalReportDocument {
   tableOfContents: { sectionId: string; title: string; chapterNumber: number }[];
   sections: ReportChapterSection[];
   monthlyForecasts?: MonthlyForecastChapter[];
+  allowPdfDownload?: boolean;
   ethicalNotice: string;
 }
 
@@ -222,6 +223,7 @@ export class ReportDocumentGenerator {
       tableOfContents,
       sections,
       monthlyForecasts,
+      allowPdfDownload: true,
       ethicalNotice: 'Astrology is a traditional, symbolic discipline. This report provides personal contemplative guidance and is not a guarantee of future outcomes.'
     };
   }

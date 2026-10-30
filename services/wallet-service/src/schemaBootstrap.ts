@@ -185,6 +185,12 @@ export const DDL_STATEMENTS: string[] = [
     "userId" TEXT NOT NULL,
     "amount" DECIMAL(12,2) NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'INR',
+    "provider" TEXT NOT NULL DEFAULT 'CASHFREE',
+    "providerOrderId" TEXT,
+    "providerPaymentId" TEXT,
+    "amountPaise" INTEGER,
+    "productType" TEXT,
+    "productId" TEXT,
     "razorpayOrderId" TEXT NOT NULL,
     "razorpayPaymentId" TEXT,
     "status" "OrderStatus" NOT NULL DEFAULT 'CREATED',
@@ -192,6 +198,17 @@ export const DDL_STATEMENTS: string[] = [
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "PaymentOrder_pkey" PRIMARY KEY ("id")
   );`,
+
+  `DO $$ BEGIN
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "provider" TEXT NOT NULL DEFAULT 'CASHFREE';
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "providerOrderId" TEXT;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "providerPaymentId" TEXT;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "amountPaise" INTEGER;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "productType" TEXT;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "productId" TEXT;
+  EXCEPTION
+    WHEN duplicate_column THEN null;
+  END $$;`,
 
   `CREATE TABLE IF NOT EXISTS "WalletLedger" (
     "id" TEXT NOT NULL,

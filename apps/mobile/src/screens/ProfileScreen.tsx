@@ -219,7 +219,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </View>
           <View style={styles.profileRow}>
             <Text style={styles.profileLabel}>Payment Security:</Text>
-            <Text style={styles.profileVal}>Secured by Razorpay (256-bit TLS)</Text>
+            <Text style={styles.profileVal}>Secured by Cashfree Payments (256-bit TLS)</Text>
           </View>
           <View style={styles.profileRow}>
             <Text style={styles.profileLabel}>Jurisdiction:</Text>

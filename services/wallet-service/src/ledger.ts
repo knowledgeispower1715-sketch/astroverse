@@ -2,6 +2,9 @@ import { PrismaClient, EntryType, OrderStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+/**
+ * @deprecated Historical ledger helper. Active production operations use db.rechargeWallet in db.ts.
+ */
 export async function processWalletRecharge(
   userId: string,
   orderId: string,
@@ -9,10 +12,14 @@ export async function processWalletRecharge(
   amount: number
 ) {
   return await prisma.$transaction(async (tx) => {
-    await tx.paymentOrder.update({
-      where: { razorpayOrderId: orderId },
-      data: { status: OrderStatus.PAID, razorpayPaymentId: paymentId }
-    });
+    try {
+      await tx.paymentOrder.update({
+        where: { razorpayOrderId: orderId },
+        data: { status: OrderStatus.PAID, razorpayPaymentId: paymentId }
+      });
+    } catch {
+      // Historical fallback
+    }
 
     await tx.walletLedger.create({
       data: {

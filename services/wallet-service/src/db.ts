@@ -260,15 +260,45 @@ export interface WalletLedgerRecord {
 }
 
 export interface PaymentOrderRecord {
-  id: string;
+  id: string; // Internal AstroVerse order ID (e.g. ord_...)
   userId: string;
-  amount: number;
+  amount: number; // in rupees
+  amountPaise: number; // integer minor currency units
   currency: string;
-  razorpayOrderId: string;
-  razorpayPaymentId: string | null;
+  provider: 'CASHFREE' | 'RAZORPAY' | string;
+  providerOrderId: string; // Authoritative provider order ID (Cashfree order_id or historical Razorpay order ID)
+  providerPaymentId: string | null;
+  productType?: 'WALLET_RECHARGE' | 'SUBSCRIPTION' | 'REPORT' | string;
+  productId?: string | null;
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
+  // Compatibility aliases for historical records:
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string | null;
+  gateway?: 'RAZORPAY' | 'CASHFREE';
+  cfOrderId?: string | null;
+  cfPaymentSessionId?: string | null;
+}
+
+export interface OtpRecord {
+  identifier: string;
+  otp: string;
+  expiresAt: number;
+  attempts: number;
+  lastSentAt: number;
+}
+
+export interface ProcessedWebhookRecord {
+  eventId: string;
+  provider: string;
+  processedAt: string;
+}
+
+export interface RateLimitRecord {
+  key: string;
+  count: number;
+  windowStart: number;
 }
 
 export interface PujaBookingRecord {
@@ -299,6 +329,9 @@ interface DatabaseSchema {
   contentBanners: ContentBannerRecord[];
   consultationSessions: ConsultationSessionRecord[];
   adminPreviewSessions: AdminPreviewSessionRecord[];
+  otps: OtpRecord[];
+  processedWebhooks: ProcessedWebhookRecord[];
+  rateLimits: RateLimitRecord[];
 }
 
 function resolveDbPaths(): { dataDir: string; dbFile: string } {
@@ -584,14 +617,27 @@ class ResilientDatabase {
   }
 
   private mapPrismaPaymentOrder(o: any): PaymentOrderRecord {
+    const amount = Number(o.amount);
+    const provider = o.provider || (o.razorpayOrderId?.startsWith('cf_') || o.gateway === 'CASHFREE' ? 'CASHFREE' : 'RAZORPAY');
+    const providerOrderId = o.providerOrderId || o.razorpayOrderId || o.id;
+    const providerPaymentId = o.providerPaymentId || o.razorpayPaymentId || null;
     return {
       id: o.id,
       userId: o.userId,
-      amount: Number(o.amount),
-      currency: o.currency,
-      razorpayOrderId: o.razorpayOrderId,
-      razorpayPaymentId: o.razorpayPaymentId,
+      amount,
+      amountPaise: o.amountPaise !== undefined ? Number(o.amountPaise) : Math.round(amount * 100),
+      currency: o.currency || 'INR',
+      provider,
+      providerOrderId,
+      providerPaymentId,
       status: o.status,
+      productType: o.productType,
+      productId: o.productId,
+      razorpayOrderId: o.razorpayOrderId || providerOrderId,
+      razorpayPaymentId: o.razorpayPaymentId || providerPaymentId,
+      gateway: (o.gateway || provider) as any,
+      cfOrderId: o.cfOrderId || null,
+      cfPaymentSessionId: o.cfPaymentSessionId || null,
       createdAt: typeof o.createdAt === 'string' ? o.createdAt : o.createdAt.toISOString(),
       updatedAt: typeof o.updatedAt === 'string' ? o.updatedAt : o.updatedAt.toISOString()
     };
@@ -606,14 +652,42 @@ class ResilientDatabase {
       savedReports: Array.isArray(d?.savedReports) ? d.savedReports : [],
       astrologers: Array.isArray(d?.astrologers) ? d.astrologers : [],
       walletLedgers: Array.isArray(d?.walletLedgers) ? d.walletLedgers : [],
-      paymentOrders: Array.isArray(d?.paymentOrders) ? d.paymentOrders : [],
+      paymentOrders: Array.isArray(d?.paymentOrders) ? d.paymentOrders.map((o: any) => {
+        const amount = Number(o.amount);
+        const provider = o.provider || (o.razorpayOrderId?.startsWith('cf_') || o.gateway === 'CASHFREE' ? 'CASHFREE' : 'RAZORPAY');
+        const providerOrderId = o.providerOrderId || o.razorpayOrderId || o.cfOrderId || o.id;
+        const providerPaymentId = o.providerPaymentId || o.razorpayPaymentId || null;
+        return {
+          id: o.id,
+          userId: o.userId,
+          amount,
+          amountPaise: o.amountPaise !== undefined ? Number(o.amountPaise) : Math.round(amount * 100),
+          currency: o.currency || 'INR',
+          provider,
+          providerOrderId,
+          providerPaymentId,
+          status: o.status,
+          productType: o.productType,
+          productId: o.productId,
+          razorpayOrderId: o.razorpayOrderId || providerOrderId,
+          razorpayPaymentId: o.razorpayPaymentId || providerPaymentId,
+          gateway: o.gateway || provider,
+          cfOrderId: o.cfOrderId || null,
+          cfPaymentSessionId: o.cfPaymentSessionId || null,
+          createdAt: typeof o.createdAt === 'string' ? o.createdAt : (o.createdAt ? new Date(o.createdAt).toISOString() : new Date().toISOString()),
+          updatedAt: typeof o.updatedAt === 'string' ? o.updatedAt : (o.updatedAt ? new Date(o.updatedAt).toISOString() : new Date().toISOString())
+        };
+      }) : [],
       pujaBookings: Array.isArray(d?.pujaBookings) ? d.pujaBookings : [],
       incidents: Array.isArray(d?.incidents) ? d.incidents : [],
       featureFlags: Array.isArray(d?.featureFlags) ? d.featureFlags : [],
       privacyRequests: Array.isArray(d?.privacyRequests) ? d.privacyRequests : [],
       contentBanners: Array.isArray(d?.contentBanners) ? d.contentBanners : [],
       consultationSessions: Array.isArray(d?.consultationSessions) ? d.consultationSessions : [],
-      adminPreviewSessions: Array.isArray(d?.adminPreviewSessions) ? d.adminPreviewSessions : []
+      adminPreviewSessions: Array.isArray(d?.adminPreviewSessions) ? d.adminPreviewSessions : [],
+      otps: Array.isArray(d?.otps) ? d.otps : [],
+      processedWebhooks: Array.isArray(d?.processedWebhooks) ? d.processedWebhooks : [],
+      rateLimits: Array.isArray(d?.rateLimits) ? d.rateLimits : []
     });
 
     if (fs.existsSync(this.dbFilePath)) {
@@ -1884,8 +1958,136 @@ class ResilientDatabase {
 
   // ==================== WALLET & LEDGER ====================
 
+  /**
+   * Authoritative provider-aware payment order lookup.
+   * Resolves order by internal ID, provider order ID, or historical gateway order ID.
+   */
+  findPaymentOrderById(orderId: string): PaymentOrderRecord | null {
+    if (!orderId) return null;
+    return this.data.paymentOrders.find(o => 
+      o.id === orderId || 
+      o.providerOrderId === orderId || 
+      (o.cfOrderId && o.cfOrderId === orderId) ||
+      (o.razorpayOrderId && o.razorpayOrderId === orderId)
+    ) || null;
+  }
+
+  /**
+   * @deprecated Compatibility lookup for historical records only.
+   * Active code must call `findPaymentOrderById`.
+   */
   findPaymentOrderByRazorpayId(razorpayOrderId: string): PaymentOrderRecord | null {
-    return this.data.paymentOrders.find(o => o.razorpayOrderId === razorpayOrderId) || null;
+    return this.findPaymentOrderById(razorpayOrderId);
+  }
+
+  // ==================== DURABLE SERVERLESS STATE (AV-SEC-04) ====================
+
+  getOtp(identifier: string): OtpRecord | null {
+    if (!identifier) return null;
+    const clean = identifier.trim().toLowerCase();
+    const entry = this.data.otps.find(o => o.identifier.toLowerCase() === clean);
+    return entry || null;
+  }
+
+  saveOtp(entry: OtpRecord): void {
+    if (!entry || !entry.identifier) return;
+    const clean = entry.identifier.trim().toLowerCase();
+    const normalized: OtpRecord = {
+      ...entry,
+      identifier: clean
+    };
+    const idx = this.data.otps.findIndex(o => o.identifier.toLowerCase() === clean);
+    if (idx >= 0) {
+      this.data.otps[idx] = normalized;
+    } else {
+      this.data.otps.push(normalized);
+    }
+    this.saveToFile();
+  }
+
+  deleteOtp(identifier: string): void {
+    if (!identifier) return;
+    const clean = identifier.trim().toLowerCase();
+    const initialLen = this.data.otps.length;
+    this.data.otps = this.data.otps.filter(o => o.identifier.toLowerCase() !== clean);
+    if (this.data.otps.length !== initialLen) {
+      this.saveToFile();
+    }
+  }
+
+  isWebhookEventProcessed(eventId: string): boolean {
+    if (!eventId) return false;
+    return this.data.processedWebhooks.some(w => w.eventId === eventId);
+  }
+
+  markWebhookEventProcessed(eventId: string, provider: string = 'CASHFREE'): void {
+    if (!eventId) return;
+    if (this.isWebhookEventProcessed(eventId)) return;
+    this.data.processedWebhooks.push({
+      eventId,
+      provider,
+      processedAt: new Date().toISOString()
+    });
+    // Bounded history: retain recent 2000 entries
+    if (this.data.processedWebhooks.length > 2000) {
+      this.data.processedWebhooks = this.data.processedWebhooks.slice(-1500);
+    }
+    this.saveToFile();
+  }
+
+  checkAndIncrementRateLimit(key: string, limit: number, windowMs: number): { allowed: boolean; remaining: number } {
+    if (!key) return { allowed: true, remaining: limit };
+    const now = Date.now();
+    let record = this.data.rateLimits.find(r => r.key === key);
+    if (!record || (now - record.windowStart) > windowMs) {
+      if (record) {
+        record.count = 1;
+        record.windowStart = now;
+      } else {
+        record = { key, count: 1, windowStart: now };
+        this.data.rateLimits.push(record);
+      }
+      this.saveToFile();
+      return { allowed: true, remaining: limit - 1 };
+    }
+
+    if (record.count >= limit) {
+      return { allowed: false, remaining: 0 };
+    }
+
+    record.count += 1;
+    this.saveToFile();
+    return { allowed: true, remaining: limit - record.count };
+  }
+
+  async markPaymentOrderPaid(orderId: string, paymentId: string, provider: string = 'CASHFREE'): Promise<PaymentOrderRecord> {
+    this.assertDurableStorage();
+    const order = this.findPaymentOrderById(orderId);
+    if (!order) {
+      throw new Error('ORDER_NOT_FOUND');
+    }
+    const orderKey = order.providerOrderId || order.razorpayOrderId || order.id;
+    if (this.isPaymentIdUsed(paymentId, orderKey)) {
+      throw new Error('PAYMENT_ID_ALREADY_USED');
+    }
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.paymentOrder.update({
+          where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId },
+          data: {
+            status: OrderStatus.PAID,
+            razorpayPaymentId: paymentId
+          }
+        });
+      } catch (err) {
+        console.warn('[DB] Failed to mark order PAID in postgres:', err);
+      }
+    }
+    order.status = OrderStatus.PAID;
+    order.providerPaymentId = paymentId;
+    order.razorpayPaymentId = paymentId;
+    order.updatedAt = new Date().toISOString();
+    return order;
   }
 
   getUserPaymentOrders(userId: string): PaymentOrderRecord[] {
@@ -1895,8 +2097,14 @@ class ResilientDatabase {
   }
 
   isPaymentIdUsed(paymentId: string, excludeOrderId?: string): boolean {
+    if (!paymentId) return false;
     const usedInOrders = this.data.paymentOrders.some(
-      o => o.razorpayPaymentId === paymentId && o.razorpayOrderId !== excludeOrderId
+      o => (
+        (o.providerPaymentId === paymentId || o.razorpayPaymentId === paymentId) && 
+        o.providerOrderId !== excludeOrderId && 
+        o.razorpayOrderId !== excludeOrderId &&
+        o.id !== excludeOrderId
+      )
     );
     if (usedInOrders) return true;
 
@@ -1906,12 +2114,12 @@ class ResilientDatabase {
     return usedInLedger;
   }
 
-  async rechargeWallet(userId: string, amount: number, paymentId: string, orderId: string): Promise<UserRecord> {
+  async rechargeWallet(userId: string, amount: number, paymentId: string, orderId: string, provider: string = 'CASHFREE'): Promise<UserRecord> {
     this.assertDurableStorage();
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
-    const order = this.data.paymentOrders.find(o => o.razorpayOrderId === orderId);
+    const order = this.findPaymentOrderById(orderId);
     if (!order) {
       throw new Error('ORDER_NOT_FOUND');
     }
@@ -1931,32 +2139,34 @@ class ResilientDatabase {
       return user;
     }
 
-    if (order.status === OrderStatus.PAID && order.razorpayPaymentId === paymentId) {
+    if (order.status === OrderStatus.PAID && (order.providerPaymentId === paymentId || order.razorpayPaymentId === paymentId)) {
       return user;
     }
 
-    if (order.status === OrderStatus.PAID && order.razorpayPaymentId !== paymentId) {
+    if (order.status === OrderStatus.PAID && order.providerPaymentId !== paymentId && order.razorpayPaymentId !== paymentId) {
       throw new Error('ORDER_ALREADY_PAID_DIFFERENT_PAYMENT');
     }
 
+    const orderKey = order.providerOrderId || order.razorpayOrderId || order.id;
     // Unique payment identifier check
-    if (this.isPaymentIdUsed(paymentId, orderId)) {
+    if (this.isPaymentIdUsed(paymentId, orderKey)) {
       throw new Error('PAYMENT_ID_ALREADY_USED');
     }
 
+    const activeProvider = order.provider || provider;
     // If PostgreSQL Prisma is active, execute ACID transaction
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const pgUpdatedUser = await this.prisma.$transaction(async (tx: any) => {
           const pgOrder = await tx.paymentOrder.findUnique({
-            where: { razorpayOrderId: orderId }
+            where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId }
           });
           if (!pgOrder) throw new Error('ORDER_NOT_FOUND');
           if (pgOrder.userId !== userId) throw new Error('ORDER_USER_MISMATCH');
           if (Math.round(Number(pgOrder.amount) * 100) !== Math.round(amount * 100)) throw new Error('AMOUNT_MISMATCH');
 
           await tx.paymentOrder.update({
-            where: { razorpayOrderId: orderId },
+            where: { razorpayOrderId: order.razorpayOrderId || order.providerOrderId },
             data: {
               status: OrderStatus.PAID,
               razorpayPaymentId: paymentId
@@ -1970,7 +2180,7 @@ class ResilientDatabase {
               entryType: EntryType.WALLET_RECHARGE,
               idempotencyKey: `RECHARGE_${paymentId}`,
               referenceId: paymentId,
-              description: `Wallet recharge of ₹${order.amount.toFixed(2)} via Razorpay (${paymentId})`
+              description: `Wallet recharge of ₹${order.amount.toFixed(2)} via ${activeProvider} (${paymentId})`
             }
           });
 
@@ -1983,6 +2193,7 @@ class ResilientDatabase {
         });
 
         order.status = OrderStatus.PAID;
+        order.providerPaymentId = paymentId;
         order.razorpayPaymentId = paymentId;
         user.walletBalance = pgUpdatedUser.walletBalance;
         return pgUpdatedUser;
@@ -1996,6 +2207,7 @@ class ResilientDatabase {
 
     // Atomic mutation of state
     order.status = OrderStatus.PAID;
+    order.providerPaymentId = paymentId;
     order.razorpayPaymentId = paymentId;
     order.updatedAt = new Date().toISOString();
 
@@ -2011,7 +2223,7 @@ class ResilientDatabase {
       entryType: EntryType.WALLET_RECHARGE,
       idempotencyKey: `RECHARGE_${paymentId}`,
       referenceId: paymentId,
-      description: `Wallet recharge of ₹${order.amount.toFixed(2)} via Razorpay (${paymentId})`,
+      description: `Wallet recharge of ₹${order.amount.toFixed(2)} via ${activeProvider} (${paymentId})`,
       createdAt: new Date().toISOString()
     });
 
@@ -2209,26 +2421,50 @@ class ResilientDatabase {
     userId: string;
     amount: number;
     currency?: string;
-    razorpayOrderId: string;
+    provider?: 'CASHFREE' | 'RAZORPAY' | string;
+    providerOrderId?: string;
+    razorpayOrderId?: string;
+    gateway?: 'RAZORPAY' | 'CASHFREE';
+    cfOrderId?: string;
+    cfPaymentSessionId?: string;
+    productType?: 'WALLET_RECHARGE' | 'SUBSCRIPTION' | 'REPORT' | string;
+    productId?: string;
   }): Promise<PaymentOrderRecord> {
     this.assertDurableStorage();
-    const existing = this.data.paymentOrders.find(o => o.razorpayOrderId === data.razorpayOrderId);
+    const resolvedProvider = data.provider || data.gateway || (data.cfOrderId || data.providerOrderId?.startsWith('cf_') ? 'CASHFREE' : (data.razorpayOrderId && !data.providerOrderId ? 'RAZORPAY' : 'CASHFREE'));
+    const resolvedProviderOrderId = data.providerOrderId || data.cfOrderId || data.razorpayOrderId || ('cf_order_' + crypto.randomBytes(8).toString('hex'));
+    const dbOrderId = data.razorpayOrderId || resolvedProviderOrderId;
+    const amountPaise = Math.round(data.amount * 100);
+
+    const existing = this.data.paymentOrders.find(o => 
+      o.providerOrderId === resolvedProviderOrderId ||
+      o.razorpayOrderId === dbOrderId ||
+      (data.cfOrderId && o.cfOrderId === data.cfOrderId)
+    );
     if (existing) return existing;
 
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const pgOrder = await this.prisma.paymentOrder.upsert({
-          where: { razorpayOrderId: data.razorpayOrderId },
+          where: { razorpayOrderId: dbOrderId },
           create: {
             userId: data.userId,
             amount: data.amount,
             currency: data.currency || 'INR',
-            razorpayOrderId: data.razorpayOrderId,
+            razorpayOrderId: dbOrderId,
             status: OrderStatus.CREATED
           },
           update: {}
         });
         const mapped = this.mapPrismaPaymentOrder(pgOrder);
+        mapped.provider = resolvedProvider;
+        mapped.providerOrderId = resolvedProviderOrderId;
+        mapped.gateway = (data.gateway || resolvedProvider) as any;
+        mapped.cfOrderId = data.cfOrderId || (resolvedProvider === 'CASHFREE' ? resolvedProviderOrderId : null);
+        mapped.cfPaymentSessionId = data.cfPaymentSessionId || null;
+        mapped.productType = data.productType;
+        mapped.productId = data.productId;
+        mapped.amountPaise = amountPaise;
         this.data.paymentOrders.unshift(mapped);
         return mapped;
       } catch (err: any) {
@@ -2240,9 +2476,18 @@ class ResilientDatabase {
       id: 'ord_' + crypto.randomBytes(8).toString('hex'),
       userId: data.userId,
       amount: data.amount,
+      amountPaise,
       currency: data.currency || 'INR',
-      razorpayOrderId: data.razorpayOrderId,
+      provider: resolvedProvider,
+      providerOrderId: resolvedProviderOrderId,
+      providerPaymentId: null,
+      razorpayOrderId: dbOrderId,
       razorpayPaymentId: null,
+      gateway: (data.gateway || resolvedProvider) as any,
+      cfOrderId: data.cfOrderId || (resolvedProvider === 'CASHFREE' ? resolvedProviderOrderId : null),
+      cfPaymentSessionId: data.cfPaymentSessionId || null,
+      productType: data.productType,
+      productId: data.productId,
       status: OrderStatus.CREATED,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

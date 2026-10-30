@@ -88,33 +88,24 @@ async function runRazorpayComplianceTestSuite() {
     });
 
     // -------------------------------------------------------------------------
-    // 2. WEBHOOK ENDPOINT EXECUTION & REJECTION TESTS
+    // 2. GATEWAY RETIREMENT & FAIL-CLOSED PROTECTION TESTS
     // -------------------------------------------------------------------------
-    console.log('\n--- 2. RAZORPAY WEBHOOK ENDPOINT (POST /api/webhooks/razorpay) ---');
+    console.log('\n--- 2. RAZORPAY GATEWAY RETIREMENT & REJECTION TESTS ---');
 
-    await test('POST /api/webhooks/razorpay rejects request missing x-razorpay-signature with HTTP 400', async () => {
+    await test('POST /api/webhooks/razorpay returns HTTP 410 GATEWAY_RETIRED for incoming webhook events', async () => {
       const payload = { event: 'order.paid' };
       const res = await request('/api/webhooks/razorpay', {
         method: 'POST',
+        headers: { 'x-razorpay-signature': 'sig_123' },
         body: payload
       });
-      assert.strictEqual(res.status, 400);
-      assert.strictEqual(res.data?.error, 'MISSING_SIGNATURE');
-    });
-
-    await test('POST /api/webhooks/razorpay rejects request with invalid signature with HTTP 400', async () => {
-      const payload = { event: 'order.paid' };
-      const res = await request('/api/webhooks/razorpay', {
-        method: 'POST',
-        headers: { 'x-razorpay-signature': 'invalid_forged_signature_hex' },
-        body: payload
-      });
-      assert.strictEqual(res.status, 400);
-      assert.strictEqual(res.data?.error, 'INVALID_SIGNATURE');
+      assert.strictEqual(res.status, 410);
+      assert.strictEqual(res.data?.error, 'GATEWAY_RETIRED');
+      assert.strictEqual(res.data?.message, 'Razorpay webhooks are retired. Use Cashfree.');
     });
 
     // Create a real test user and session via register-password
-    const testEmail = `compliance_test_${Date.now()}@example.com`;
+    const testEmail = 'compliance_test_' + Date.now() + '@example.com';
     const regRes = await request('/api/auth/register-password', {
       method: 'POST',
       body: {
@@ -126,132 +117,170 @@ async function runRazorpayComplianceTestSuite() {
     assert.strictEqual(regRes.status, 200);
     const testUser = regRes.data.user;
     const sessionToken = regRes.data.sessionToken;
-    const authHeaders = { Authorization: `Bearer ${sessionToken}` };
+    const authHeaders = { Authorization: 'Bearer ' + sessionToken };
 
-    const orderIdStr = `order_rzp_comp_${Date.now()}`;
-    const orderRecord = await db.createPaymentOrder({
+    const orderIdStr = 'order_rzp_comp_' + Date.now();
+    await db.createPaymentOrder({
       userId: testUser.id,
       amount: 500,
       currency: 'INR',
       razorpayOrderId: orderIdStr
     });
 
-    await test('POST /api/webhooks/razorpay processes valid order.paid event and settles order', async () => {
-      const webhookPayload = JSON.stringify({
-        event: 'order.paid',
-        payload: {
-          payment: {
-            entity: {
-              id: `pay_rzp_comp_${Date.now()}`,
-              order_id: orderRecord.razorpayOrderId,
-              amount: 50000,
-              status: 'captured'
-            }
-          }
+    await test('POST /api/wallet/verify-payment rejects legacy Razorpay payment submission with HTTP 410', async () => {
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: authHeaders,
+        body: {
+          orderId: orderIdStr,
+          paymentId: 'pay_rzp_legacy_' + Date.now(),
+          signature: 'legacy_signature_hex'
         }
       });
-      const sig = generateTestWebhookSignature(webhookPayload);
-
-      const res = await request('/api/webhooks/razorpay', {
-        method: 'POST',
-        headers: { 'x-razorpay-signature': sig },
-        body: webhookPayload
-      });
-
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data?.status, 'ok');
-      assert.strictEqual(res.data?.event, 'order.paid');
-      assert.strictEqual(res.data?.processed, true);
-
-      // Verify user's wallet was credited
-      const updatedUser = await db.findUserById(testUser.id);
-      assert.strictEqual(updatedUser?.walletBalance, 500, 'Wallet balance should reflect credited amount');
+      assert.strictEqual(res.status, 410);
+      assert.strictEqual(res.data?.error, 'PAYMENT_PROVIDER_RETIRED');
     });
 
-    await test('POST /api/webhooks/razorpay enforces idempotent processing on duplicate event replay', async () => {
-      const webhookPayload = JSON.stringify({
-        event: 'order.paid',
-        payload: {
-          payment: {
-            entity: {
-              id: `pay_rzp_dup_${Date.now()}`,
-              order_id: orderRecord.razorpayOrderId,
-              amount: 50000
-            }
-          }
+    await test('POST /api/subscriptions/verify-payment rejects legacy Razorpay payment submission with HTTP 410', async () => {
+      const res = await request('/api/subscriptions/verify-payment', {
+        method: 'POST',
+        headers: authHeaders,
+        body: {
+          orderId: orderIdStr,
+          paymentId: 'pay_rzp_sub_' + Date.now(),
+          signature: 'legacy_signature_hex'
         }
       });
-      const sig = generateTestWebhookSignature(webhookPayload);
-
-      // First call
-      const res1 = await request('/api/webhooks/razorpay', {
-        method: 'POST',
-        headers: { 'x-razorpay-signature': sig },
-        body: webhookPayload
-      });
-      assert.strictEqual(res1.status, 200);
-
-      // Second identical call (replay)
-      const res2 = await request('/api/webhooks/razorpay', {
-        method: 'POST',
-        headers: { 'x-razorpay-signature': sig },
-        body: webhookPayload
-      });
-      assert.strictEqual(res2.status, 200);
-      assert.strictEqual(res2.data?.alreadyProcessed, true, 'Replayed event must be flagged as alreadyProcessed');
+      assert.strictEqual(res.status, 410);
+      assert.strictEqual(res.data?.error, 'PAYMENT_PROVIDER_RETIRED');
     });
 
-    await test('POST /api/webhooks/razorpay processes subscription.charged event', async () => {
-      const webhookPayload = JSON.stringify({
-        event: 'subscription.charged',
-        payload: {
-          subscription: {
-            entity: {
-              id: `sub_comp_${Date.now()}`,
-              customer_email: testUser.email,
-              notes: { tier: 'PLUS', billing: 'monthly' }
-            }
-          }
+    await test('POST /api/reports/verify-and-generate rejects legacy Razorpay payment submission with HTTP 410', async () => {
+      const res = await request('/api/reports/verify-and-generate', {
+        method: 'POST',
+        headers: authHeaders,
+        body: {
+          orderId: orderIdStr,
+          paymentId: 'pay_rzp_rep_' + Date.now(),
+          signature: 'legacy_signature_hex',
+          productId: 'report_janam_kundli_deep_dive'
         }
       });
-      const sig = generateTestWebhookSignature(webhookPayload);
-
-      const res = await request('/api/webhooks/razorpay', {
-        method: 'POST',
-        headers: { 'x-razorpay-signature': sig },
-        body: webhookPayload
-      });
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data?.processed, true);
-
-      const updatedUser = await db.findUserById(testUser.id);
-      assert.strictEqual(updatedUser?.subscriptionTier, 'PLUS');
-      assert.strictEqual(updatedUser?.subscriptionStatus, 'ACTIVE');
+      assert.strictEqual(res.status, 410);
+      assert.strictEqual(res.data?.error, 'PAYMENT_PROVIDER_RETIRED');
     });
 
-    await test('POST /api/webhooks/razorpay processes subscription.cancelled event', async () => {
-      const webhookPayload = JSON.stringify({
-        event: 'subscription.cancelled',
-        payload: {
-          subscription: {
-            entity: {
-              id: `sub_canc_${Date.now()}`,
-              customer_email: testUser.email
-            }
-          }
+    await test('Historical Razorpay transaction in database remains queryable and verifiable', async () => {
+      const found = db.findPaymentOrderById(orderIdStr);
+      assert.ok(found);
+      assert.strictEqual(found.userId, testUser.id);
+      assert.strictEqual(found.amount, 500);
+    });
+
+    // -------------------------------------------------------------------------
+    // 2B. CROSS-PRODUCT & CROSS-TIER REPLAY PREVENTION (AV-SEC-02)
+    // -------------------------------------------------------------------------
+    console.log('\n--- 2B. CROSS-PRODUCT REPLAY PREVENTION TESTS (AV-SEC-02) ---');
+
+    const walletOrderId = 'cf_wal_replay_' + Date.now();
+    await db.createPaymentOrder({
+      userId: testUser.id,
+      amount: 149,
+      currency: 'INR',
+      provider: 'CASHFREE',
+      providerOrderId: walletOrderId,
+      productType: 'WALLET_RECHARGE'
+    });
+
+    await test('AV-SEC-02: /api/subscriptions/verify-payment rejects WALLET_RECHARGE order with HTTP 400 INVALID_ORDER_TYPE', async () => {
+      const res = await request('/api/subscriptions/verify-payment', {
+        method: 'POST',
+        headers: authHeaders,
+        body: {
+          orderId: walletOrderId,
+          paymentId: 'cf_pay_test_' + Date.now(),
+          tier: 'PLUS'
         }
       });
-      const sig = generateTestWebhookSignature(webhookPayload);
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data?.error, 'INVALID_ORDER_TYPE');
+    });
 
-      const res = await request('/api/webhooks/razorpay', {
+    await test('AV-SEC-02: /api/reports/verify-and-generate rejects WALLET_RECHARGE order with HTTP 400 INVALID_ORDER_TYPE', async () => {
+      const res = await request('/api/reports/verify-and-generate', {
         method: 'POST',
-        headers: { 'x-razorpay-signature': sig },
-        body: webhookPayload
+        headers: authHeaders,
+        body: {
+          orderId: walletOrderId,
+          paymentId: 'cf_pay_test_' + Date.now(),
+          productId: 'report_janam_kundli_deep_dive'
+        }
       });
-      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data?.error, 'INVALID_ORDER_TYPE');
+    });
 
-      const updatedUser = await db.findUserById(testUser.id);
-      assert.strictEqual(updatedUser?.subscriptionStatus, 'CANCELLED');
+    const subOrderId = 'cf_sub_replay_' + Date.now();
+    await db.createPaymentOrder({
+      userId: testUser.id,
+      amount: 149,
+      currency: 'INR',
+      provider: 'CASHFREE',
+      providerOrderId: subOrderId,
+      productType: 'SUBSCRIPTION',
+      productId: 'PLUS'
+    });
+
+    await test('AV-SEC-02: /api/wallet/verify-payment rejects SUBSCRIPTION order with HTTP 400 INVALID_ORDER_TYPE', async () => {
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: authHeaders,
+        body: {
+          orderId: subOrderId,
+          paymentId: 'cf_pay_test_' + Date.now()
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data?.error, 'INVALID_ORDER_TYPE');
+    });
+
+    await test('AV-SEC-02: /api/subscriptions/verify-payment rejects tier mismatch with HTTP 400 TIER_MISMATCH', async () => {
+      const res = await request('/api/subscriptions/verify-payment', {
+        method: 'POST',
+        headers: authHeaders,
+        body: {
+          orderId: subOrderId,
+          paymentId: 'cf_pay_test_' + Date.now(),
+          tier: 'PREMIUM'
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data?.error, 'TIER_MISMATCH');
+    });
+
+    const repOrderId = 'cf_rep_replay_' + Date.now();
+    await db.createPaymentOrder({
+      userId: testUser.id,
+      amount: 149,
+      currency: 'INR',
+      provider: 'CASHFREE',
+      providerOrderId: repOrderId,
+      productType: 'REPORT',
+      productId: 'report_career_education'
+    });
+
+    await test('AV-SEC-02: /api/reports/verify-and-generate rejects product mismatch with HTTP 400 PRODUCT_MISMATCH', async () => {
+      const res = await request('/api/reports/verify-and-generate', {
+        method: 'POST',
+        headers: authHeaders,
+        body: {
+          orderId: repOrderId,
+          paymentId: 'cf_pay_test_' + Date.now(),
+          productId: 'report_janam_kundli_deep_dive'
+        }
+      });
+      assert.strictEqual(res.status, 400);
+      assert.strictEqual(res.data?.error, 'PRODUCT_MISMATCH');
     });
 
     // -------------------------------------------------------------------------

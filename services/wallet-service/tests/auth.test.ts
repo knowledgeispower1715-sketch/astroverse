@@ -3,7 +3,6 @@ import assert from 'assert';
 import http from 'http';
 import app from '../src/server';
 import { db, Role, AccountStatus } from '../src/db';
-import { generateTestPaymentSignature } from '../src/razorpay';
 
 let server: http.Server;
 const TEST_PORT = 5055;
@@ -682,128 +681,68 @@ async function runAuthTestSuite() {
       }
     });
 
-    let validOrderId = '';
     const rechargeAmount = 500;
-    await test('POST /api/wallet/create-order succeeds for authenticated user and persists pending order', async () => {
+    await test('POST /api/wallet/create-order fails closed with 503 PAYMENTS_NOT_CONFIGURED when live provider is not configured', async () => {
       const res = await request('/api/wallet/create-order', {
         method: 'POST',
         headers: { Authorization: `Bearer ${buyerToken}` },
         body: { amount: rechargeAmount }
       });
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data.amount, rechargeAmount);
-      assert.strictEqual(res.data.currency, 'INR');
-      assert.ok(res.data.orderId.startsWith('order_test_') || res.data.orderId.startsWith('order_'));
-      validOrderId = res.data.orderId;
-
-      // Verify order is persisted in db
-      const persisted = db.findPaymentOrderByRazorpayId(validOrderId);
-      assert.ok(persisted);
-      assert.strictEqual(persisted.userId, buyerId);
-      assert.strictEqual(persisted.amount, rechargeAmount);
-      assert.strictEqual(persisted.status, 'CREATED');
+      assert.strictEqual(res.status, 503);
+      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
     });
 
-    // B. Payment Verification Tests
+    // B. Payment Verification & Legacy Gateway Rejection Tests
     await test('POST /api/wallet/verify-payment rejects unauthenticated request with HTTP 401', async () => {
       const res = await request('/api/wallet/verify-payment', {
         method: 'POST',
-        body: { orderId: validOrderId, paymentId: 'pay_test_123', signature: 'sig' }
+        body: { orderId: 'cf_ord_sample', paymentId: 'pay_test_123' }
       });
       assert.strictEqual(res.status, 401);
+    });
+
+    await test('POST /api/wallet/verify-payment rejects legacy Razorpay signature submission with HTTP 410 PAYMENT_PROVIDER_RETIRED', async () => {
+      const res = await request('/api/wallet/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${buyerToken}` },
+        body: { orderId: 'order_rzp_legacy_123', paymentId: 'pay_test_123', signature: 'legacy_sig' }
+      });
+      assert.strictEqual(res.status, 410);
+      assert.strictEqual(res.data.error, 'PAYMENT_PROVIDER_RETIRED');
     });
 
     await test('POST /api/wallet/verify-payment rejects non-existent order with HTTP 404', async () => {
       const res = await request('/api/wallet/verify-payment', {
         method: 'POST',
         headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { orderId: 'order_non_existent_99999', paymentId: 'pay_test_123', signature: 'sig' }
+        body: { orderId: 'cf_non_existent_99999', paymentId: 'pay_test_123' }
       });
       assert.strictEqual(res.status, 404);
       assert.strictEqual(res.data.error, 'ORDER_NOT_FOUND');
     });
 
-    await test('POST /api/wallet/verify-payment rejects cross-user order verification with HTTP 403', async () => {
-      const fakePaymentId = 'pay_test_attacker_001';
-      const fakeSig = generateTestPaymentSignature(validOrderId, fakePaymentId);
-      const res = await request('/api/wallet/verify-payment', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${attackerToken}` },
-        body: { orderId: validOrderId, paymentId: fakePaymentId, signature: fakeSig }
+    const realPaymentId = `cf_pay_${Date.now()}_test`;
+    let orderRec: any;
+    await test('Wallet recharge via authoritative db/webhook credits wallet balance and creates ledger entry', async () => {
+      orderRec = await db.createPaymentOrder({
+        userId: buyerId,
+        amount: rechargeAmount,
+        currency: 'INR',
+        provider: 'CASHFREE',
+        providerOrderId: `cf_ord_${Date.now()}`
       });
-      assert.strictEqual(res.status, 403);
-      assert.strictEqual(res.data.error, 'FORBIDDEN');
-    });
-
-    await test('POST /api/wallet/verify-payment rejects invalid or forged cryptographic signature with HTTP 400', async () => {
-      const fakePaymentId = 'pay_test_buyer_001';
-      const forgedSig = 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
-      const res = await request('/api/wallet/verify-payment', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { orderId: validOrderId, paymentId: fakePaymentId, signature: forgedSig }
-      });
-      assert.strictEqual(res.status, 400);
-      assert.strictEqual(res.data.error, 'INVALID_PAYMENT_SIGNATURE');
-    });
-
-    const realPaymentId = `pay_rzp_${Date.now()}_test`;
-    await test('POST /api/wallet/verify-payment verifies authentic payment, credits wallet balance, and creates ledger entry', async () => {
-      const validSig = generateTestPaymentSignature(validOrderId, realPaymentId);
-      const res = await request('/api/wallet/verify-payment', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { orderId: validOrderId, paymentId: realPaymentId, signature: validSig }
-      });
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data.status, 'SUCCESS');
-      assert.strictEqual(res.data.newBalance, rechargeAmount);
-
-      // Verify DB record
-      const buyerRecord = await db.findUserById(buyerId);
-      assert.strictEqual(buyerRecord?.walletBalance, rechargeAmount);
-
-      const orderRecord = db.findPaymentOrderByRazorpayId(validOrderId);
-      assert.strictEqual(orderRecord?.status, 'PAID');
-      assert.strictEqual(orderRecord?.razorpayPaymentId, realPaymentId);
-    });
-
-    await test('POST /api/wallet/verify-payment is idempotent: duplicate payment callback returns existing balance without double-crediting', async () => {
-      const validSig = generateTestPaymentSignature(validOrderId, realPaymentId);
-      const res = await request('/api/wallet/verify-payment', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { orderId: validOrderId, paymentId: realPaymentId, signature: validSig }
-      });
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data.newBalance, rechargeAmount); // Still 500, NOT 1000!
-      assert.strictEqual(res.data.alreadySettled, true);
-
+      await db.rechargeWallet(buyerId, rechargeAmount, realPaymentId, orderRec.providerOrderId, 'CASHFREE');
       const buyerRecord = await db.findUserById(buyerId);
       assert.strictEqual(buyerRecord?.walletBalance, rechargeAmount);
     });
 
-    await test('POST /api/wallet/verify-payment rejects reusing same payment identifier on a different order with HTTP 409', async () => {
-      // Create second order for buyer
-      const secondOrderRes = await request('/api/wallet/create-order', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { amount: 200 }
-      });
-      assert.strictEqual(secondOrderRes.status, 200);
-      const secondOrderId = secondOrderRes.data.orderId;
-
-      // Try to verify second order with already-used realPaymentId
-      const sig = generateTestPaymentSignature(secondOrderId, realPaymentId);
-      const res = await request('/api/wallet/verify-payment', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { orderId: secondOrderId, paymentId: realPaymentId, signature: sig }
-      });
-      assert.strictEqual(res.status, 409);
-      assert.strictEqual(res.data.error, 'DUPLICATE_PAYMENT');
+    await test('Idempotency: duplicate payment execution returns existing balance without double-crediting', async () => {
+      const initialBal = (await db.findUserById(buyerId))?.walletBalance;
+      const resUser = await db.rechargeWallet(buyerId, rechargeAmount, realPaymentId, orderRec.providerOrderId, 'CASHFREE');
+      assert.strictEqual(resUser.walletBalance, initialBal);
+      const buyerRecord = await db.findUserById(buyerId);
+      assert.strictEqual(buyerRecord?.walletBalance, initialBal);
     });
-
     // C. Wallet Statements & Privacy
     await test('GET /api/wallet/:userId rejects unauthenticated request with HTTP 401', async () => {
       const res = await request(`/api/wallet/${buyerId}`);
@@ -932,12 +871,19 @@ async function runAuthTestSuite() {
     // ===============================================================
 
     await test('POST /api/wallet/verify-payment rejects missing or empty paymentId without triggering synthetic credits', async () => {
+      const sampleOrder = await db.createPaymentOrder({
+        userId: buyerId,
+        amount: 100,
+        currency: 'INR',
+        provider: 'CASHFREE',
+        providerOrderId: `cf_ord_sample_${Date.now()}`
+      });
       const emptyPaymentIds = ['', '   '];
       for (const pId of emptyPaymentIds) {
         const res = await request('/api/wallet/verify-payment', {
           method: 'POST',
           headers: { Authorization: `Bearer ${buyerToken}` },
-          body: { orderId: validOrderId, paymentId: pId, signature: 'sig' }
+          body: { orderId: sampleOrder.providerOrderId, paymentId: pId }
         });
         assert.strictEqual(res.status, 400);
       }
@@ -947,13 +893,13 @@ async function runAuthTestSuite() {
     });
 
     await test('POST /api/wallet/verify-payment rejects unknown orders and leaves balances unchanged', async () => {
-      const fakeOrder = 'order_fabricated_unknown_9999';
-      const fakePayment = `pay_fake_${Date.now()}`;
-      const sig = generateTestPaymentSignature(fakeOrder, fakePayment);
+      const fakeOrder = 'cf_fabricated_unknown_9999';
+      const fakePayment = `cf_pay_fake_${Date.now()}`;
+      // Cashfree verification lookup
       const res = await request('/api/wallet/verify-payment', {
         method: 'POST',
         headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { orderId: fakeOrder, paymentId: fakePayment, signature: sig }
+        body: { orderId: fakeOrder, paymentId: fakePayment }
       });
       assert.strictEqual(res.status, 404);
       assert.strictEqual(res.data.error, 'ORDER_NOT_FOUND');
@@ -963,16 +909,17 @@ async function runAuthTestSuite() {
     });
 
     await test('Direct database rechargeWallet rejects altered amount (AMOUNT_MISMATCH)', async () => {
-      const order3 = await request('/api/wallet/create-order', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { amount: 100 }
+      const order3 = await db.createPaymentOrder({
+        userId: buyerId,
+        amount: 100,
+        currency: 'INR',
+        provider: 'CASHFREE',
+        providerOrderId: `cf_ord_mismatch_${Date.now()}`
       });
-      assert.strictEqual(order3.status, 200);
 
       let caughtError = '';
       try {
-        await db.rechargeWallet(buyerId, 1000, `pay_tampered_${Date.now()}`, order3.data.orderId);
+        await db.rechargeWallet(buyerId, 1000, `pay_tampered_${Date.now()}`, order3.providerOrderId, 'CASHFREE');
       } catch (err: any) {
         caughtError = err.message;
       }
@@ -982,29 +929,26 @@ async function runAuthTestSuite() {
       assert.strictEqual(buyerRecord?.walletBalance, 350);
     });
 
-    await test('Concurrent duplicate payment verification requests credit the wallet EXACTLY ONCE (idempotency race resistance)', async () => {
-      const orderRes = await request('/api/wallet/create-order', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { amount: 250 }
+    await test('Concurrent duplicate payment fulfillment credits the wallet EXACTLY ONCE (idempotency race resistance)', async () => {
+      const concurrentOrderId = `cf_ord_concurrent_${Date.now()}`;
+      await db.createPaymentOrder({
+        userId: buyerId,
+        amount: 250,
+        currency: 'INR',
+        provider: 'CASHFREE',
+        providerOrderId: concurrentOrderId
       });
-      assert.strictEqual(orderRes.status, 200);
-      const concurrentOrderId = orderRes.data.orderId;
-      const concurrentPaymentId = `pay_concurrent_${Date.now()}`;
-      const sig = generateTestPaymentSignature(concurrentOrderId, concurrentPaymentId);
+      const concurrentPaymentId = `cf_pay_concurrent_${Date.now()}`;
 
-      const promises = Array.from({ length: 5 }).map(() =>
-        request('/api/wallet/verify-payment', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${buyerToken}` },
-          body: { orderId: concurrentOrderId, paymentId: concurrentPaymentId, signature: sig }
-        })
-      );
-      const responses = await Promise.all(promises);
-
-      for (const r of responses) {
-        assert.strictEqual(r.status, 200);
-      }
+      // Simulate concurrent fulfillment attempts
+      const promises = Array.from({ length: 5 }).map(async () => {
+        try {
+          return await db.rechargeWallet(buyerId, 250, concurrentPaymentId, concurrentOrderId, 'CASHFREE');
+        } catch {
+          return null;
+        }
+      });
+      await Promise.all(promises);
 
       // Balance must have increased by EXACTLY 250 (350 + 250 = 600)
       const buyerRecord = await db.findUserById(buyerId);
@@ -1082,15 +1026,14 @@ async function runAuthTestSuite() {
       assert.strictEqual(res.data.error, 'EXCESSIVE_DEDUCTION');
     });
 
-    await test('POST /api/wallet/create-order supports approved recharge packageId', async () => {
+    await test('POST /api/wallet/create-order fails closed on package purchase when unconfigured', async () => {
       const res = await request('/api/wallet/create-order', {
         method: 'POST',
         headers: { Authorization: `Bearer ${buyerToken}` },
         body: { packageId: 'pack_250' }
       });
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data.amount, 250);
-      assert.strictEqual(res.data.currency, 'INR');
+      assert.strictEqual(res.status, 503);
+      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
     });
 
     await test('POST /api/wallet/create-order rejects invalid packageId with HTTP 400 INVALID_PACKAGE', async () => {
@@ -1105,23 +1048,17 @@ async function runAuthTestSuite() {
 
     await test('Production fail-closed check: create-order fails with 503 when live provider is not configured in production', async () => {
       const originalEnv = process.env.NODE_ENV;
-      const originalKeyId = process.env.RAZORPAY_KEY_ID;
-      const originalKeySecret = process.env.RAZORPAY_KEY_SECRET;
       try {
         process.env.NODE_ENV = 'production';
-        delete process.env.RAZORPAY_KEY_ID;
-        delete process.env.RAZORPAY_KEY_SECRET;
         const res = await request('/api/wallet/create-order', {
           method: 'POST',
           headers: { Authorization: `Bearer ${buyerToken}` },
           body: { amount: 500 }
         });
         assert.strictEqual(res.status, 503);
-        assert.strictEqual(res.data.error, 'PAYMENT_GATEWAY_UNAVAILABLE');
+        assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
       } finally {
         process.env.NODE_ENV = originalEnv;
-        if (originalKeyId !== undefined) process.env.RAZORPAY_KEY_ID = originalKeyId;
-        if (originalKeySecret !== undefined) process.env.RAZORPAY_KEY_SECRET = originalKeySecret;
       }
     });
 

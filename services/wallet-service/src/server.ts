@@ -24,7 +24,12 @@ import {
   verifyAdminAssuranceToken
 } from './security/mfa';
 import { getPublicSupabaseConfig, verifySupabaseToken, getSupabaseAdminClient } from './supabase';
-import { razorpay, isRazorpayConfigured, verifyRazorpaySignature, verifyRazorpayWebhookSignature, getRazorpayWebhookSecret } from './razorpay';
+import {
+  isCashfreeConfigured,
+  createCashfreeOrder,
+  getCashfreeOrderStatus,
+  verifyCashfreeWebhookSignature
+} from './cashfree';
 import {
   SUBSCRIPTION_PLANS,
   REPORT_CATALOGUE,
@@ -167,24 +172,38 @@ interface OtpEntry {
   lastSentAt: number;
   attempts: number;
 }
-const otpStore = new Map<string, OtpEntry>();
 
-// IP Rate Limiter (Max 15 requests per 10 minutes per IP)
-const ipRateMap = new Map<string, { count: number; windowStart: number }>();
+// Durable OTP store backed by db (AV-SEC-04 multi-instance serverless resilience)
+const otpStore = {
+  get: (key: string): OtpEntry | null => {
+    const rec = db.getOtp(key);
+    if (!rec) return null;
+    return {
+      otp: rec.otp,
+      expiresAt: rec.expiresAt,
+      lastSentAt: rec.lastSentAt,
+      attempts: rec.attempts
+    };
+  },
+  set: (key: string, val: OtpEntry): void => {
+    db.saveOtp({
+      identifier: key,
+      otp: val.otp,
+      expiresAt: val.expiresAt,
+      lastSentAt: val.lastSentAt,
+      attempts: val.attempts
+    });
+  },
+  delete: (key: string): void => {
+    db.deleteOtp(key);
+  }
+};
 
+// Durable IP Rate Limiter (Max 20 requests per 10 minutes per IP)
 function checkIpRateLimit(ip: string): boolean {
   if (process.env.NODE_ENV === 'test') return true;
-  const now = Date.now();
-  const record = ipRateMap.get(ip);
-  if (!record || now - record.windowStart > 10 * 60 * 1000) {
-    ipRateMap.set(ip, { count: 1, windowStart: now });
-    return true;
-  }
-  if (record.count >= 20) {
-    return false;
-  }
-  record.count += 1;
-  return true;
+  const result = db.checkAndIncrementRateLimit(ip, 20, 10 * 60 * 1000);
+  return result.allowed;
 }
 
 // ==================== ERROR HANDLING HELPER ====================
@@ -496,6 +515,7 @@ app.post('/api/auth/verify-otp', authLimiter, async (req: Request, res: Response
   }
 
   record.attempts += 1;
+  otpStore.set(cleanId, record);
   if (record.attempts > 5) {
     otpStore.delete(cleanId);
     return res.status(429).json({
@@ -676,6 +696,7 @@ app.post('/api/auth/register-password', authLimiter, async (req: Request, res: R
       }
 
       record.attempts += 1;
+      otpStore.set(challengeTarget, record);
       if (record.attempts > 5) {
         otpStore.delete(challengeTarget);
         return res.status(429).json({
@@ -2132,55 +2153,58 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
   }
   const amount = validation.normalizedAmount;
 
-  try {
-    let razorpayOrderId: string;
+  if (!isCashfreeConfigured()) {
+    return res.status(503).json({
+      error: 'PAYMENTS_NOT_CONFIGURED',
+      message: 'Online payments are currently unconfigured. Please contact support or try again later.',
+      gateway: 'CASHFREE'
+    });
+  }
 
-    if (isRazorpayConfigured()) {
-      try {
-        const razorpayOrder = await razorpay.orders.create({
-          amount: Math.round(amount * 100),
-          currency: 'INR',
-          receipt: `rcpt_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`
-        });
-        razorpayOrderId = razorpayOrder.id;
-      } catch (rzpErr: any) {
-        return res.status(503).json({
-          error: 'PAYMENT_GATEWAY_ERROR',
-          message: 'Payment gateway rejected order creation. Please retry later.'
-        });
-      }
-    } else if (process.env.NODE_ENV === 'test') {
-      // Isolated test-environment order simulation
-      razorpayOrderId = `order_test_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    } else {
-      // Production fail-closed: missing live provider credentials
-      return res.status(503).json({
-        error: 'PAYMENT_GATEWAY_UNAVAILABLE',
-        message: 'Payment gateway is not configured for live transactions. Please contact support.'
-      });
-    }
+  try {
+    const cfOrderId = `cf_wal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const userRecord = await db.findUserById(userId);
+    const cfOrder = await createCashfreeOrder({
+      orderId: cfOrderId,
+      orderAmount: amount,
+      orderCurrency: 'INR',
+      customer: {
+        customer_id: userId,
+        customer_phone: userRecord?.phone || '9999999999',
+        customer_email: userRecord?.email || 'seeker@astroverse.ai',
+        customer_name: userRecord?.displayName || 'AstroVerse Seeker'
+      },
+      orderNote: `Wallet Recharge: ₹${amount}`
+    });
 
     const order = await db.createPaymentOrder({
       userId,
       amount,
       currency: 'INR',
-      razorpayOrderId
+      provider: 'CASHFREE',
+      providerOrderId: cfOrder.order_id,
+      gateway: 'CASHFREE',
+      cfOrderId: cfOrder.order_id,
+      cfPaymentSessionId: cfOrder.payment_session_id,
+      productType: 'WALLET_RECHARGE'
     });
 
     await db.recordAuditEvent({
       userId,
       action: 'PAYMENT_ORDER_CREATED',
       targetType: 'PAYMENT_ORDER',
-      targetId: order.razorpayOrderId,
-      metadata: { amount, currency: 'INR' }
+      targetId: order.providerOrderId,
+      metadata: { amount, currency: 'INR', provider: 'CASHFREE', cfOrderId: cfOrder.cf_order_id }
     });
 
     res.json({
-      orderId: order.razorpayOrderId,
+      orderId: order.providerOrderId,
       amount: order.amount,
       currency: 'INR',
       status: 'CREATED',
-      keyId: process.env.RAZORPAY_KEY_ID || ''
+      paymentSessionId: cfOrder.payment_session_id,
+      cfOrderId: cfOrder.cf_order_id,
+      gateway: 'CASHFREE'
     });
   } catch (error: any) {
     return handleServiceError(res, error, 'Failed to create payment order');
@@ -2205,136 +2229,105 @@ app.post('/api/wallet/verify-payment', authenticate, async (req: AuthenticatedRe
     });
   }
 
-  const trimmedPaymentId = paymentId.trim();
-  if (trimmedPaymentId.length < 5) {
-    return res.status(400).json({
-      error: 'INVALID_PAYMENT_ID',
-      message: 'Payment identifier is invalid.'
+  const trimmedOrderId = orderId.trim();
+
+  // Rejection of legacy Razorpay signatures for active payments
+  if (signature && (trimmedOrderId.startsWith('order_') || !trimmedOrderId.startsWith('cf_'))) {
+    return res.status(410).json({
+      error: 'PAYMENT_PROVIDER_RETIRED',
+      message: 'Razorpay is retired. Active payments must be verified via Cashfree.'
     });
   }
 
-  if (!signature || typeof signature !== 'string' || !signature.trim()) {
+  const order = db.findPaymentOrderById(trimmedOrderId);
+  if (!order) {
+    return res.status(404).json({
+      error: 'ORDER_NOT_FOUND',
+      message: 'Payment order not found in platform records.'
+    });
+  }
+
+  // Ownership verification
+  if (order.userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+    return res.status(403).json({
+      error: 'FORBIDDEN',
+      message: 'Payment order does not belong to the authenticated user.'
+    });
+  }
+
+  // Cross-product replay prevention (AV-SEC-02)
+  if (order.productType && order.productType !== 'WALLET_RECHARGE') {
     return res.status(400).json({
-      error: 'MISSING_SIGNATURE',
-      message: 'Cryptographic payment signature is required.'
+      error: 'INVALID_ORDER_TYPE',
+      message: `Order type '${order.productType}' cannot be used for wallet recharge.`
+    });
+  }
+
+  // Idempotency: if already paid, return current balance
+  if (order.status === OrderStatus.PAID) {
+    const user = await db.findUserById(order.userId);
+    return res.json({
+      status: 'SUCCESS',
+      newBalance: user ? user.walletBalance : sessionUser.walletBalance,
+      alreadySettled: true,
+      orderId: order.providerOrderId,
+      paymentId: order.providerPaymentId
+    });
+  }
+
+  if (!isCashfreeConfigured()) {
+    return res.status(503).json({
+      error: 'PAYMENTS_NOT_CONFIGURED',
+      message: 'Online payments are currently unconfigured.',
+      gateway: 'CASHFREE'
     });
   }
 
   try {
-    const order = db.findPaymentOrderByRazorpayId(orderId.trim());
-    if (!order) {
-      return res.status(404).json({
-        error: 'ORDER_NOT_FOUND',
-        message: 'Payment order not found in platform records.'
-      });
-    }
-
-    // Ownership verification
-    if (order.userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
-      return res.status(403).json({
-        error: 'FORBIDDEN',
-        message: 'Payment order does not belong to the authenticated user.'
-      });
-    }
-
-    // Idempotency: if already paid with same paymentId, return current balance
-    if (order.status === OrderStatus.PAID && order.razorpayPaymentId === trimmedPaymentId) {
-      const user = await db.findUserById(order.userId);
-      return res.json({
-        status: 'SUCCESS',
-        newBalance: user ? user.walletBalance : sessionUser.walletBalance,
-        alreadySettled: true,
-        orderId: order.razorpayOrderId,
-        paymentId: order.razorpayPaymentId
-      });
-    }
-
-    if (order.status === OrderStatus.PAID && order.razorpayPaymentId !== trimmedPaymentId) {
-      return res.status(409).json({
-        error: 'ORDER_ALREADY_PAID',
-        message: 'Order was already settled with a different payment identifier.'
-      });
-    }
-
-    // Check if payment ID has already been processed for another order
-    if (db.isPaymentIdUsed(trimmedPaymentId, order.razorpayOrderId)) {
-      return res.status(409).json({
-        error: 'DUPLICATE_PAYMENT',
-        message: 'Payment identifier has already been processed for another transaction.'
-      });
-    }
-
-    // Verify cryptographic HMAC-SHA256 signature
-    const isSigValid = verifyRazorpaySignature(order.razorpayOrderId, trimmedPaymentId, signature.trim());
-    if (!isSigValid) {
+    const cfStatus = await getCashfreeOrderStatus(order.providerOrderId || order.cfOrderId || trimmedOrderId);
+    if (cfStatus.order_status !== 'PAID') {
       return res.status(400).json({
-        error: 'INVALID_PAYMENT_SIGNATURE',
-        message: 'Payment signature verification failed. Untrusted payment claim rejected.'
+        error: 'PAYMENT_NOT_COMPLETED',
+        message: `Cashfree reports order status as ${cfStatus.order_status}.`,
+        status: cfStatus.order_status
       });
     }
 
-    // If live Razorpay credentials are configured, cross-verify payment directly against provider API
-    if (isRazorpayConfigured()) {
-      try {
-        const paymentData = await razorpay.payments.fetch(trimmedPaymentId);
-        if (paymentData.order_id !== order.razorpayOrderId) {
-          return res.status(400).json({
-            error: 'ORDER_PAYMENT_MISMATCH',
-            message: 'Provider payment record does not match the platform order ID.'
-          });
-        }
-        if (paymentData.amount !== Math.round(order.amount * 100)) {
-          return res.status(400).json({
-            error: 'AMOUNT_MISMATCH',
-            message: 'Payment amount recorded by provider differs from platform order amount.'
-          });
-        }
-        if (paymentData.currency !== 'INR') {
-          return res.status(400).json({
-            error: 'CURRENCY_MISMATCH',
-            message: 'Payment currency recorded by provider is not INR.'
-          });
-        }
-        if (paymentData.status !== 'captured' && paymentData.status !== 'authorized') {
-          return res.status(400).json({
-            error: 'PAYMENT_NOT_SETTLED',
-            message: `Provider payment is not in an authorized or captured state (current status: ${paymentData.status}).`
-          });
-        }
-      } catch (fetchErr: any) {
-        return res.status(400).json({
-          error: 'PROVIDER_PAYMENT_FETCH_FAILED',
-          message: 'Could not verify payment with provider: ' + (fetchErr?.error?.description || fetchErr.message)
-        });
-      }
+    if (Math.round(cfStatus.order_amount * 100) !== Math.round(order.amount * 100)) {
+      return res.status(400).json({
+        error: 'AMOUNT_MISMATCH',
+        message: `Verified Cashfree amount ₹${cfStatus.order_amount} does not match order amount ₹${order.amount}.`
+      });
     }
 
-    // Settle wallet credit atomically
+    const settledPaymentId = cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
     const updatedUser = await db.rechargeWallet(
       order.userId,
       order.amount,
-      trimmedPaymentId,
-      order.razorpayOrderId
+      settledPaymentId,
+      order.providerOrderId,
+      'CASHFREE'
     );
 
     await db.recordAuditEvent({
       userId: order.userId,
       action: 'WALLET_RECHARGE_VERIFIED',
       targetType: 'WALLET',
-      targetId: trimmedPaymentId,
+      targetId: settledPaymentId,
       metadata: {
-        orderId: order.razorpayOrderId,
-        paymentId: trimmedPaymentId,
+        orderId: order.providerOrderId,
+        paymentId: settledPaymentId,
         amount: order.amount,
-        newBalance: updatedUser.walletBalance
+        newBalance: updatedUser.walletBalance,
+        provider: 'CASHFREE'
       }
     });
 
     res.json({
       status: 'SUCCESS',
       newBalance: updatedUser.walletBalance,
-      orderId: order.razorpayOrderId,
-      paymentId: trimmedPaymentId
+      orderId: order.providerOrderId,
+      paymentId: settledPaymentId
     });
   } catch (error: any) {
     return handleServiceError(res, error, 'Payment verification failed');
@@ -3558,7 +3551,7 @@ app.get('/api/admin/payments/transactions', authenticate, requireAdmin(AdminPerm
     res.json({
       success: true,
       totalRechargeAmount: metrics.totalWalletDeposits,
-      gateway: isRazorpayConfigured() ? 'Razorpay (Live/Test Connected)' : 'Internal Simulation Mode',
+      gateway: isCashfreeConfigured() ? 'Cashfree Payments (Live/Sandbox Connected)' : 'Cashfree Payments (Unconfigured / Fail-Closed)',
       recentLedgerEntries: (db as any).data?.walletLedgers?.slice(0, 50) || []
     });
   } catch (err: any) {
@@ -3576,17 +3569,32 @@ app.post('/api/admin/payments/reconcile', authenticate, requireAdmin(AdminPermis
 
   for (const o of orders) {
     if (o.status === OrderStatus.PAID) {
-      const match = ledgers.find((l: any) => l.referenceId === o.razorpayOrderId || l.idempotencyKey.includes(o.id));
-      if (match) {
-        matched++;
+      const orderRef = o.providerOrderId || o.razorpayOrderId || o.cfOrderId || o.id;
+      const isWalletOrder = o.productType === 'WALLET_RECHARGE' || (!o.productType && !orderRef.startsWith('rep_') && !orderRef.startsWith('sub_'));
+      if (isWalletOrder) {
+        const match = ledgers.find((l: any) => 
+          l.referenceId === orderRef || 
+          l.referenceId === o.providerOrderId ||
+          l.referenceId === o.razorpayOrderId ||
+          (l.idempotencyKey && l.idempotencyKey.includes(o.id)) || 
+          (o.providerPaymentId && l.referenceId === o.providerPaymentId) ||
+          (o.razorpayPaymentId && l.referenceId === o.razorpayPaymentId)
+        );
+        if (match) {
+          matched++;
+        } else {
+          mismatched++;
+          discrepancies.push({
+            orderId: o.id,
+            provider: o.provider || 'CASHFREE',
+            orderReference: orderRef,
+            amount: o.amount,
+            issue: 'Wallet recharge order marked PAID but no corresponding ledger credit located'
+          });
+        }
       } else {
-        mismatched++;
-        discrepancies.push({
-          orderId: o.id,
-          razorpayOrderId: o.razorpayOrderId,
-          amount: o.amount,
-          issue: 'Order marked PAID but no corresponding ledger credit located'
-        });
+        // Direct product fulfilment (reports, subscriptions) verified via order record
+        matched++;
       }
     }
   }
@@ -3703,9 +3711,12 @@ app.get('/api/admin/settings/safe', authenticate, requireAdmin(AdminPermission.V
       SUPABASE_URL: maskConfigValue(process.env.SUPABASE_URL),
       SUPABASE_ANON_KEY: maskConfigValue(process.env.SUPABASE_ANON_KEY),
       SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
-      RAZORPAY_KEY_ID: maskConfigValue(process.env.RAZORPAY_KEY_ID),
-      RAZORPAY_KEY_SECRET: Boolean(process.env.RAZORPAY_KEY_SECRET) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
-      RAZORPAY_WEBHOOK_SECRET: Boolean(process.env.RAZORPAY_WEBHOOK_SECRET) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
+      CASHFREE_APP_ID: maskConfigValue(process.env.CASHFREE_APP_ID),
+      CASHFREE_SECRET_KEY: Boolean(process.env.CASHFREE_SECRET_KEY) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
+      CASHFREE_ENV: (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase(),
+      RAZORPAY_KEY_ID: 'RETIRED',
+      RAZORPAY_KEY_SECRET: 'RETIRED',
+      RAZORPAY_WEBHOOK_SECRET: 'RETIRED',
       GOOGLE_CLIENT_ID: maskConfigValue(process.env.GOOGLE_CLIENT_ID),
       GOOGLE_CLIENT_SECRET: Boolean(process.env.GOOGLE_CLIENT_SECRET) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
       KUNDLI_ENGINE_URL: process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000',
@@ -3813,7 +3824,7 @@ app.get('/api/admin/audit-logs', authenticate, requireAdmin(AdminPermission.VIEW
 // -----------------------------------------------------------------------------
 app.get('/api/admin/integrations', authenticate, requireAdmin(AdminPermission.VIEW_INTEGRATIONS), async (_req: AuthenticatedRequest, res: Response) => {
   const checks = [
-    { name: 'Razorpay Gateway', configured: isRazorpayConfigured(), status: isRazorpayConfigured() ? 'HEALTHY' : 'SIMULATION_ACTIVE' },
+    { name: 'Cashfree Payment Gateway', configured: isCashfreeConfigured(), status: isCashfreeConfigured() ? 'HEALTHY' : 'UNCONFIGURED_FAIL_CLOSED' },
     { name: 'Supabase Database & Auth', configured: Boolean(process.env.SUPABASE_URL), status: Boolean(process.env.SUPABASE_URL) ? 'HEALTHY' : 'STANDALONE_DURABLE' },
     { name: 'FastAPI Kundli Ephemeris', configured: true, status: 'CONNECTED' },
     { name: 'AI Consultation Pipeline', configured: Boolean(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY), status: 'PARASHARI_SYNTHESIS_ONLINE' },
@@ -3959,7 +3970,7 @@ app.get('/api/entitlements/me', authenticate, async (req: AuthenticatedRequest, 
   }
 });
 
-// POST /api/subscriptions/create-order (Create Razorpay order for Plus/Premium subscription)
+// POST /api/subscriptions/create-order (Create Cashfree order for Plus/Premium subscription)
 app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { tier, billingPeriod } = req.body;
   const user = req.user!;
@@ -3976,61 +3987,165 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
   const pricePaise = period === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
   const priceRupees = Math.round(pricePaise / 100);
 
-  try {
-    const orderId = `sub_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    let razorpayOrderId = `order_${orderId}`;
+  if (!isCashfreeConfigured()) {
+    return res.status(503).json({
+      error: 'PAYMENTS_NOT_CONFIGURED',
+      message: 'Online payments are currently unconfigured. Paid subscriptions cannot be initiated at this time.',
+      gateway: 'CASHFREE'
+    });
+  }
 
-    if (isRazorpayConfigured()) {
-      const rzpOrder = await razorpay.orders.create({
-        amount: pricePaise,
-        currency: 'INR',
-        receipt: orderId,
-        notes: { userId: user.id, tier, period }
-      });
-      razorpayOrderId = rzpOrder.id;
-    }
+  try {
+    const orderReceipt = `sub_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const userRecord = await db.findUserById(user.id);
+    const cfOrder = await createCashfreeOrder({
+      orderId: `cf_${orderReceipt}`,
+      orderAmount: priceRupees,
+      orderCurrency: 'INR',
+      customer: {
+        customer_id: user.id,
+        customer_email: userRecord?.email || undefined,
+        customer_phone: userRecord?.phone || '9999999999',
+        customer_name: userRecord?.displayName || 'AstroVerse Seeker'
+      },
+      orderNote: `Subscription: ${tier} (${period})`
+    });
 
     const order = await db.createPaymentOrder({
       userId: user.id,
       amount: priceRupees,
       currency: 'INR',
-      razorpayOrderId
+      provider: 'CASHFREE',
+      providerOrderId: cfOrder.order_id,
+      gateway: 'CASHFREE',
+      cfOrderId: cfOrder.order_id,
+      cfPaymentSessionId: cfOrder.payment_session_id,
+      productType: 'SUBSCRIPTION',
+      productId: tier
     });
 
     res.json({
       success: true,
-      orderId: order.razorpayOrderId,
+      orderId: order.providerOrderId,
       amount: pricePaise,
       amountPaise: pricePaise,
       amountRupees: priceRupees,
       tier,
       billingPeriod: period,
-      keyId: process.env.RAZORPAY_KEY_ID || ''
+      paymentSessionId: cfOrder.payment_session_id,
+      cfOrderId: cfOrder.cf_order_id,
+      gateway: 'CASHFREE'
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Subscription order creation failed');
   }
 });
 
-// POST /api/subscriptions/verify-payment (Activate subscription upon verified payment)
+// POST /api/subscriptions/verify-payment (Activate subscription upon verified Cashfree payment)
 app.post('/api/subscriptions/verify-payment', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { orderId, paymentId, signature, tier, billingPeriod } = req.body;
   const user = req.user!;
 
-  if (!orderId || !paymentId || !signature) {
-    return res.status(400).json({ error: 'MISSING_PAYMENT_DETAILS', message: 'orderId, paymentId, and signature are required.' });
+  if (!orderId) {
+    return res.status(400).json({ error: 'MISSING_ORDER_ID', message: 'orderId is required.' });
   }
 
-  const isValid = verifyRazorpaySignature(orderId, paymentId, signature);
-  if (!isValid) {
-    return res.status(400).json({ error: 'INVALID_PAYMENT_SIGNATURE', message: 'Cryptographic payment signature mismatch.' });
+  const trimmedOrderId = String(orderId).trim();
+  if (signature && (trimmedOrderId.startsWith('order_') || !trimmedOrderId.startsWith('cf_'))) {
+    return res.status(410).json({
+      error: 'PAYMENT_PROVIDER_RETIRED',
+      message: 'Razorpay is retired. Active payments must be verified via Cashfree.'
+    });
   }
 
-  const targetTier = (tier as SubscriptionTier) || SubscriptionTier.PLUS;
+  const order = db.findPaymentOrderById(trimmedOrderId);
+  if (!order) {
+    return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Subscription payment order not found.' });
+  }
+  if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+    return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Payment order does not belong to authenticated user.' });
+  }
+
+  // Cross-product replay prevention (AV-SEC-02)
+  if (order.productType && order.productType !== 'SUBSCRIPTION') {
+    return res.status(400).json({
+      error: 'INVALID_ORDER_TYPE',
+      message: `Order type '${order.productType}' cannot be used to activate a subscription.`
+    });
+  }
+
+  if (order.status === OrderStatus.PAID) {
+    const userRec = await db.findUserById(user.id);
+    return res.json({
+      success: true,
+      alreadyProcessed: true,
+      tier: userRec?.subscriptionTier,
+      billingPeriod: userRec?.subscriptionBillingPeriod,
+      subscriptionExpiresAt: userRec?.subscriptionExpiresAt
+    });
+  }
+
+  // Tier mismatch check (AV-SEC-02)
+  if (tier && order.productId) {
+    const normOrderTier = order.productId.toLowerCase().includes('premium') ? 'PREMIUM' : (order.productId.toLowerCase().includes('plus') ? 'PLUS' : order.productId);
+    const normReqTier = String(tier).toUpperCase();
+    if (normOrderTier !== normReqTier && order.productId !== tier) {
+      return res.status(400).json({
+        error: 'TIER_MISMATCH',
+        message: `Order was created for tier '${order.productId}', cannot activate '${tier}'.`
+      });
+    }
+  }
+
+  if (!isCashfreeConfigured()) {
+    return res.status(503).json({
+      error: 'PAYMENTS_NOT_CONFIGURED',
+      message: 'Payment gateway credentials are not configured. Cashfree verification is unavailable in fail-closed state.',
+      gateway: 'CASHFREE'
+    });
+  }
+
+  const targetTier = (tier as SubscriptionTier) || (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+  if (order.productId && order.productId !== targetTier) {
+    return res.status(400).json({
+      error: 'TIER_MISMATCH',
+      message: `Order was created for tier '${order.productId}', cannot activate '${targetTier}'.`
+    });
+  }
   const period = billingPeriod === BillingPeriod.ANNUAL ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
-  const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+  const plan = SUBSCRIPTION_PLANS[targetTier];
+  if (!plan) {
+    return res.status(400).json({ error: 'INVALID_TIER', message: 'Subscription tier not recognized.' });
+  }
+  const expectedPaise = period === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
+  const expectedRupees = Math.round(expectedPaise / 100);
+  if (order.amount !== expectedRupees) {
+    return res.status(400).json({
+      error: 'INVALID_ORDER_AMOUNT',
+      message: `Order amount ₹${order.amount} does not match required subscription price ₹${expectedRupees}.`
+    });
+  }
+
+  if (!isCashfreeConfigured()) {
+    return res.status(503).json({
+      error: 'PAYMENTS_NOT_CONFIGURED',
+      message: 'Online payments are currently unconfigured.',
+      gateway: 'CASHFREE'
+    });
+  }
 
   try {
+    const cfStatus = await getCashfreeOrderStatus(order.providerOrderId || order.cfOrderId || trimmedOrderId);
+    if (cfStatus.order_status !== 'PAID') {
+      return res.status(400).json({
+        error: 'PAYMENT_NOT_SETTLED',
+        message: `Cashfree reports order status as ${cfStatus.order_status}.`
+      });
+    }
+
+    const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+    const settledPaymentId = cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
+    await db.markPaymentOrderPaid(order.providerOrderId, settledPaymentId, 'CASHFREE');
     const updatedUser = await db.updateSubscription(user.id, targetTier, period, durationDays);
 
     await db.recordAuditEvent({
@@ -4043,7 +4158,8 @@ app.post('/api/subscriptions/verify-payment', authenticate, async (req: Authenti
         period,
         durationDays,
         expiresAt: updatedUser.subscriptionExpiresAt,
-        paymentId
+        paymentId: settledPaymentId,
+        provider: 'CASHFREE'
       }
     });
 
@@ -4077,99 +4193,227 @@ app.post('/api/subscriptions/cancel', authenticate, async (req: AuthenticatedReq
   }
 });
 
-// In-memory set to guarantee idempotent processing of webhook event deliveries
-const processedWebhookEvents = new Set<string>();
+// Durable set to guarantee idempotent processing of webhook event deliveries across serverless restarts (AV-SEC-04)
+const processedWebhookEvents = {
+  has: (eventId: string): boolean => db.isWebhookEventProcessed(eventId),
+  add: (eventId: string, provider = 'CASHFREE'): void => db.markWebhookEventProcessed(eventId, provider)
+};
 
-// POST /api/webhooks/razorpay (Razorpay Asynchronous Webhook Processor)
-app.post('/api/webhooks/razorpay', async (req: Request, res: Response) => {
+// POST /api/webhooks/razorpay (Retired Razorpay Webhook Endpoint)
+app.post('/api/webhooks/razorpay', async (_req: Request, res: Response) => {
+  return res.status(410).json({
+    error: 'GATEWAY_RETIRED',
+    message: 'Razorpay webhooks are retired. Use Cashfree.'
+  });
+});
+
+// ==================== CASHFREE PAYMENT INTEGRATION (AV-SEC-03) ====================
+
+// POST /api/cashfree/create-order
+app.post('/api/cashfree/create-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const signature = req.headers['x-razorpay-signature'] as string;
-    if (!signature) {
+    const { amount, productType, productId, returnUrl } = req.body;
+    const user = req.user!;
+    const numAmount = Number(amount);
+
+    if (!numAmount || isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({ error: 'INVALID_AMOUNT', message: 'A positive order amount is required.' });
+    }
+
+    if (!isCashfreeConfigured()) {
+      return res.status(503).json({
+        error: 'CASHFREE_GATEWAY_NOT_CONFIGURED',
+        message: 'Cashfree Payment Gateway is not configured with live credentials.'
+      });
+    }
+
+    const orderId = `cf_ord_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const userRecord = await db.findUserById(user.id);
+    const cfOrder = await createCashfreeOrder({
+      orderId,
+      orderAmount: numAmount,
+      orderCurrency: 'INR',
+      customer: {
+        customer_id: user.id,
+        customer_phone: userRecord?.phone || '9999999999',
+        customer_email: userRecord?.email || 'seeker@astroverse.ai',
+        customer_name: userRecord?.displayName || 'AstroVerse Seeker'
+      },
+      returnUrl,
+      orderNote: productType ? `AstroVerse ${productType}` : 'AstroVerse Recharge'
+    });
+
+    await db.createPaymentOrder({
+      userId: user.id,
+      amount: numAmount,
+      currency: 'INR',
+      provider: 'CASHFREE',
+      providerOrderId: cfOrder.order_id,
+      gateway: 'CASHFREE',
+      cfOrderId: cfOrder.cf_order_id,
+      cfPaymentSessionId: cfOrder.payment_session_id,
+      productType: productType || 'WALLET_RECHARGE',
+      productId: productId || null
+    });
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'CASHFREE_ORDER_CREATED',
+      targetType: 'PAYMENT_ORDER',
+      targetId: cfOrder.order_id,
+      metadata: { amount: numAmount, productType, cfOrderId: cfOrder.cf_order_id }
+    });
+
+    res.json({
+      success: true,
+      orderId: cfOrder.order_id,
+      cfOrderId: cfOrder.cf_order_id,
+      paymentSessionId: cfOrder.payment_session_id,
+      amount: cfOrder.order_amount,
+      currency: cfOrder.order_currency
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Cashfree order creation failed');
+  }
+});
+
+// POST /api/cashfree/verify-order
+app.post('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { orderId } = req.body;
+    const user = req.user!;
+    if (!orderId) {
+      return res.status(400).json({ error: 'MISSING_ORDER_ID', message: 'orderId is required.' });
+    }
+
+    const order = db.findPaymentOrderById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Cashfree payment order was not found.' });
+    }
+    if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Order does not belong to the authenticated user.' });
+    }
+    if (order.status === OrderStatus.PAID) {
+      return res.json({
+        success: true,
+        alreadyProcessed: true,
+        status: 'PAID',
+        message: 'Order was already verified and fulfilled.'
+      });
+    }
+
+    const cfStatus = await getCashfreeOrderStatus(orderId);
+    if (cfStatus.order_status !== 'PAID') {
       return res.status(400).json({
-        error: 'MISSING_SIGNATURE',
-        message: 'Missing x-razorpay-signature header on webhook event.'
+        error: 'PAYMENT_NOT_COMPLETED',
+        message: `Cashfree reports order status as ${cfStatus.order_status}.`,
+        status: cfStatus.order_status
+      });
+    }
+
+    if (Math.round(cfStatus.order_amount * 100) !== Math.round(order.amount * 100)) {
+      return res.status(400).json({
+        error: 'AMOUNT_MISMATCH',
+        message: `Verified Cashfree amount ₹${cfStatus.order_amount} does not match order amount ₹${order.amount}.`
+      });
+    }
+
+    // Authoritative fulfillment
+    if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
+      await db.rechargeWallet(user.id, order.amount, cfStatus.cf_order_id || `cf_pay_${Date.now()}`, order.providerOrderId, 'CASHFREE');
+    } else {
+      await db.markPaymentOrderPaid(order.providerOrderId, cfStatus.cf_order_id || `cf_pay_${Date.now()}`, 'CASHFREE');
+    }
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'CASHFREE_ORDER_VERIFIED',
+      targetType: 'PAYMENT_ORDER',
+      targetId: orderId,
+      metadata: { amount: order.amount, cfOrderId: cfStatus.cf_order_id, provider: 'CASHFREE' }
+    });
+
+    res.json({
+      success: true,
+      status: 'PAID',
+      orderId: order.providerOrderId,
+      amount: order.amount,
+      gateway: 'CASHFREE'
+    });
+  } catch (err: any) {
+    handleServiceError(res, err, 'Cashfree order verification failed');
+  }
+});
+
+// POST /api/webhooks/cashfree (Asynchronous Cashfree Webhook Handler)
+app.post('/api/webhooks/cashfree', async (req: Request, res: Response) => {
+  try {
+    const signature = req.headers['x-webhook-signature'] as string;
+    const timestamp = req.headers['x-webhook-timestamp'] as string;
+
+    if (!signature || !timestamp) {
+      return res.status(400).json({
+        error: 'MISSING_SIGNATURE_HEADERS',
+        message: 'x-webhook-signature and x-webhook-timestamp headers are required.'
       });
     }
 
     const rawPayload = (req as any).rawBody || Buffer.from(JSON.stringify(req.body));
-    const isValid = verifyRazorpayWebhookSignature(rawPayload, signature);
+    const isValid = verifyCashfreeWebhookSignature(rawPayload, timestamp, signature);
     if (!isValid) {
       return res.status(400).json({
         error: 'INVALID_SIGNATURE',
-        message: 'Cryptographic signature verification failed for Razorpay webhook.'
+        message: 'Cashfree webhook signature verification failed.'
       });
     }
 
     const event = req.body;
-    const eventId = (req.headers['x-razorpay-event-id'] as string) ||
-      event.id ||
-      crypto.createHash('sha256').update(rawPayload).digest('hex');
+    const idempotencyKey = (req.headers['x-idempotency-key'] as string) ||
+      (event.data?.order?.order_id ? `${event.type}_${event.data.order.order_id}` : null) ||
+      crypto.createHash('sha256').update(timestamp + rawPayload.toString('utf8')).digest('hex');
 
-    // Idempotency: skip already-processed events
-    if (processedWebhookEvents.has(eventId)) {
+    if (db.isWebhookEventProcessed(idempotencyKey)) {
       return res.status(200).json({
         status: 'ok',
-        event: event.event,
         alreadyProcessed: true,
-        message: 'Webhook event was previously processed idempotently.'
+        message: 'Cashfree webhook event was already processed idempotently.'
       });
     }
 
-    const eventType = event.event;
+    const eventType = event.type;
+    if (eventType === 'PAYMENT_SUCCESS_WEBHOOK') {
+      const orderData = event.data?.order;
+      const paymentData = event.data?.payment;
+      const orderId = orderData?.order_id;
+      const paymentId = paymentData?.cf_payment_id ? String(paymentData.cf_payment_id) : `cf_wh_${Date.now()}`;
 
-    if (eventType === 'order.paid' || eventType === 'payment.captured') {
-      const orderId = event.payload?.payment?.entity?.order_id || event.payload?.order?.entity?.id;
-      const paymentId = event.payload?.payment?.entity?.id;
       if (orderId) {
-        const order = db.findPaymentOrderByRazorpayId(orderId);
+        const order = db.findPaymentOrderById(orderId);
         if (order && order.status === OrderStatus.CREATED) {
           try {
-            await db.rechargeWallet(
-              order.userId,
-              order.amount,
-              paymentId || `pay_wh_${Date.now()}`,
-              orderId
-            );
-          } catch (settleErr: any) {
-            console.error('[WEBHOOK] Order settlement warning:', settleErr.message);
+            if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
+              await db.rechargeWallet(order.userId, order.amount, paymentId, order.providerOrderId, 'CASHFREE');
+            } else {
+              await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
+            }
+          } catch (fulfillErr: any) {
+            console.error('[CASHFREE_WEBHOOK] Fulfillment warning:', fulfillErr?.message || fulfillErr);
           }
-        }
-      }
-    } else if (eventType === 'subscription.charged' || eventType === 'subscription.activated') {
-      const subEntity = event.payload?.subscription?.entity;
-      const customerEmail = subEntity?.customer_email || subEntity?.notes?.email;
-      if (customerEmail) {
-        const user = await db.findUserByEmail(customerEmail);
-        if (user) {
-          const tier = subEntity?.notes?.tier === 'PREMIUM' ? 'PREMIUM' : 'PLUS';
-          const billing = subEntity?.notes?.billing === 'annual' ? 'ANNUAL' : 'MONTHLY';
-          await db.updateSubscription(user.id, tier, billing, billing === 'ANNUAL' ? 365 : 30);
-        }
-      }
-    } else if (eventType === 'subscription.cancelled') {
-      const subEntity = event.payload?.subscription?.entity;
-      const customerEmail = subEntity?.customer_email || subEntity?.notes?.email;
-      if (customerEmail) {
-        const user = await db.findUserByEmail(customerEmail);
-        if (user) {
-          await db.cancelSubscription(user.id);
         }
       }
     }
 
-    // Record processed event to prevent duplicate execution
-    processedWebhookEvents.add(eventId);
-
+    db.markWebhookEventProcessed(idempotencyKey, 'CASHFREE');
     return res.status(200).json({
       status: 'ok',
       event: eventType,
       processed: true
     });
   } catch (err: any) {
-    console.error('[WEBHOOK] Error processing Razorpay webhook:', err);
+    console.error('[CASHFREE_WEBHOOK] Error processing webhook:', err);
     return res.status(500).json({
       error: 'WEBHOOK_PROCESSING_FAILED',
-      message: 'Internal server error while processing webhook.'
+      message: 'Internal server error while processing Cashfree webhook.'
     });
   }
 });
@@ -4177,9 +4421,13 @@ app.post('/api/webhooks/razorpay', async (req: Request, res: Response) => {
 // GET /api/config (Public runtime client configuration without secret leakage)
 app.get('/api/config', (_req: Request, res: Response) => {
   res.json({
-    razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+    paymentsConfigured: isCashfreeConfigured(),
     currency: 'INR',
-    isLiveGateway: isRazorpayConfigured(),
+    gateway: 'CASHFREE',
+    isLiveGateway: isCashfreeConfigured(),
+    cashfreeAppId: process.env.CASHFREE_APP_ID || '',
+    cashfreeEnv: (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase(),
+    isCashfreeConfigured: isCashfreeConfigured(),
     firebase: {
       apiKey: process.env.FIREBASE_API_KEY || '',
       authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'astroverse-c0b90.firebaseapp.com',
@@ -4195,9 +4443,13 @@ app.get('/api/config', (_req: Request, res: Response) => {
 // GET /api/billing/config (Public payment gateway configuration)
 app.get('/api/billing/config', (_req: Request, res: Response) => {
   res.json({
-    razorpayKeyId: process.env.RAZORPAY_KEY_ID || '',
+    paymentsConfigured: isCashfreeConfigured(),
     currency: 'INR',
-    isLiveGateway: isRazorpayConfigured()
+    gateway: 'CASHFREE',
+    isLiveGateway: isCashfreeConfigured(),
+    cashfreeAppId: process.env.CASHFREE_APP_ID || '',
+    cashfreeEnv: (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase(),
+    isCashfreeConfigured: isCashfreeConfigured()
   });
 });
 
@@ -4479,48 +4731,74 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
       });
     }
 
-    // Razorpay Checkout flow
-    const orderReceipt = `rep_ord_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
-    let razorpayOrderId = `order_${orderReceipt}`;
-
-    if (isRazorpayConfigured()) {
-      const rzpOrder = await razorpay.orders.create({
-        amount: pricing.finalPricePaise,
-        currency: 'INR',
-        receipt: orderReceipt,
-        notes: { userId: user.id, productId, profileId }
+    // Cashfree Checkout flow for paid report purchases
+    if (!isCashfreeConfigured()) {
+      return res.status(503).json({
+        error: 'PAYMENTS_NOT_CONFIGURED',
+        message: 'Online payments are currently unconfigured. Individual report purchases via payment gateway are unavailable.',
+        gateway: 'CASHFREE'
       });
-      razorpayOrderId = rzpOrder.id;
     }
+
+    const orderReceipt = `rep_ord_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const userRecord = await db.findUserById(user.id);
+    const cfOrder = await createCashfreeOrder({
+      orderId: `cf_${orderReceipt}`,
+      orderAmount: pricing.finalPriceRupees,
+      orderCurrency: 'INR',
+      customer: {
+        customer_id: user.id,
+        customer_email: userRecord?.email || undefined,
+        customer_phone: userRecord?.phone || '9999999999',
+        customer_name: userRecord?.displayName || 'AstroVerse Seeker'
+      },
+      orderNote: `Report Purchase: ${product.displayName}`
+    });
 
     const order = await db.createPaymentOrder({
       userId: user.id,
       amount: pricing.finalPriceRupees,
       currency: 'INR',
-      razorpayOrderId
+      provider: 'CASHFREE',
+      providerOrderId: cfOrder.order_id,
+      gateway: 'CASHFREE',
+      cfOrderId: cfOrder.order_id,
+      cfPaymentSessionId: cfOrder.payment_session_id,
+      productType: 'REPORT',
+      productId
     });
 
     res.json({
-      orderId: order.razorpayOrderId,
+      orderId: order.providerOrderId,
       amountPaise: pricing.finalPricePaise,
       amountRupees: pricing.finalPriceRupees,
       discountPercent: pricing.discountPercent,
       productId,
-      profileId,
-      keyId: process.env.RAZORPAY_KEY_ID || ''
+      profileId: profile.id,
+      paymentSessionId: cfOrder.payment_session_id,
+      cfOrderId: cfOrder.cf_order_id,
+      gateway: 'CASHFREE'
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Report order generation failed');
   }
 });
 
-// POST /api/reports/verify-and-generate (Verify Razorpay payment and compile canonical document)
+// POST /api/reports/verify-and-generate (Verify Cashfree payment and compile canonical document)
 app.post('/api/reports/verify-and-generate', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { orderId, paymentId, signature, productId, profileId, partnerProfileId, options } = req.body;
   const user = req.user!;
 
-  if (!orderId || !paymentId) {
-    return res.status(400).json({ error: 'MISSING_PAYMENT_DETAILS', message: 'orderId and paymentId are required.' });
+  if (!orderId) {
+    return res.status(400).json({ error: 'MISSING_ORDER_ID', message: 'orderId is required.' });
+  }
+
+  const trimmedOrderId = String(orderId).trim();
+  if (signature && (trimmedOrderId.startsWith('order_') || !trimmedOrderId.startsWith('cf_'))) {
+    return res.status(410).json({
+      error: 'PAYMENT_PROVIDER_RETIRED',
+      message: 'Razorpay is retired. Active payments must be verified via Cashfree.'
+    });
   }
 
   const product = REPORT_CATALOGUE[productId];
@@ -4528,11 +4806,60 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
     return res.status(400).json({ error: 'INVALID_PRODUCT', message: 'Product not recognized.' });
   }
 
-  // Signature check
-  if (isRazorpayConfigured() && signature) {
-    const isValid = verifyRazorpaySignature(orderId, paymentId, signature);
-    if (!isValid) {
-      return res.status(400).json({ error: 'INVALID_SIGNATURE', message: 'Payment signature validation failed.' });
+  // 1. Order lookup & verification (AV-SEC-01 mitigation)
+  const order = db.findPaymentOrderById(trimmedOrderId);
+  if (!order) {
+    return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Payment order was not found in platform records.' });
+  }
+  if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+    return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Payment order does not belong to the authenticated user.' });
+  }
+
+  // Cross-product replay prevention (AV-SEC-02)
+  if (order.productType && order.productType !== 'REPORT') {
+    return res.status(400).json({
+      error: 'INVALID_ORDER_TYPE',
+      message: `Order type '${order.productType}' cannot be used to fulfill a report publication.`
+    });
+  }
+  if (order.productId && order.productId !== productId) {
+    return res.status(400).json({
+      error: 'PRODUCT_MISMATCH',
+      message: `Order is bound to product '${order.productId}', cannot fulfill '${productId}'.`
+    });
+  }
+
+  const userRecord = await db.findUserById(user.id);
+  const userTier = resolveRequestTier(userRecord, req);
+  const pricing = calculateReportPrice(productId, userTier);
+
+  // If order not yet marked paid, verify directly with Cashfree
+  if (order.status !== OrderStatus.PAID) {
+    if (!isCashfreeConfigured()) {
+      return res.status(503).json({
+        error: 'PAYMENTS_NOT_CONFIGURED',
+        message: 'Online payments are currently unconfigured.'
+      });
+    }
+
+    try {
+      const cfStatus = await getCashfreeOrderStatus(order.providerOrderId || order.cfOrderId || trimmedOrderId);
+      if (cfStatus.order_status !== 'PAID') {
+        return res.status(400).json({
+          error: 'PAYMENT_NOT_SETTLED',
+          message: `Cashfree reports order status as ${cfStatus.order_status}.`
+        });
+      }
+      if (Math.round(cfStatus.order_amount * 100) < pricing.finalPricePaise) {
+        return res.status(400).json({
+          error: 'AMOUNT_MISMATCH',
+          message: `Verified Cashfree amount ₹${cfStatus.order_amount} is less than required publication price ₹${pricing.finalPriceRupees}.`
+        });
+      }
+      const settledPaymentId = cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
+      await db.markPaymentOrderPaid(order.providerOrderId, settledPaymentId, 'CASHFREE');
+    } catch (cfErr: any) {
+      return handleServiceError(res, cfErr, 'Cashfree verification failed');
     }
   }
 
@@ -4615,8 +4942,8 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
       metadata: {
         productId,
         profileId,
-        orderId,
-        paymentId
+        orderId: order.providerOrderId,
+        provider: 'CASHFREE'
       }
     });
 
@@ -4624,7 +4951,8 @@ app.post('/api/reports/verify-and-generate', authenticate, async (req: Authentic
       success: true,
       reportId: saved.id,
       status: 'READY_FOR_READER',
-      paidVia: 'RAZORPAY'
+      paidVia: 'CASHFREE',
+      document: doc
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Report verification and compilation failed');

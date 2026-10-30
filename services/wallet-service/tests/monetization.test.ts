@@ -3,7 +3,6 @@ import assert from 'assert';
 import http from 'http';
 import app from '../src/server';
 import { db, Role, AccountStatus, UserRecord } from '../src/db';
-import { generateTestPaymentSignature } from '../src/razorpay';
 import { REPORT_CATALOGUE, SUBSCRIPTION_PLANS, calculateReportPrice, SubscriptionTier } from '../src/monetization/catalog';
 import { EntitlementManager } from '../src/monetization/entitlements';
 import { ReportDocumentGenerator } from '../src/monetization/reportGenerator';
@@ -52,6 +51,7 @@ async function runMonetizationTestSuite() {
     // -------------------------------------------------------------------------
     await test('GET /api/reports/catalogue returns all 10 distinct reports with integer paise pricing', async () => {
       const res = await request('/api/reports/catalogue');
+      if (res.status !== 200) console.log('VERIFY_RES_FAIL:', res.status, res.data);
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.data.success, true);
       assert.strictEqual(res.data.catalogue.length, 10);
@@ -213,54 +213,73 @@ async function runMonetizationTestSuite() {
       assert.strictEqual(res.data.error, 'INVALID_TIER');
     });
 
-    let subOrderId = '';
-    await test('POST /api/subscriptions/create-order creates valid Razorpay order for Plus monthly', async () => {
+    await test('POST /api/subscriptions/create-order fails closed with 503 PAYMENTS_NOT_CONFIGURED when live provider is not configured', async () => {
       const res = await request('/api/subscriptions/create-order', {
         method: 'POST',
         headers: { Authorization: `Bearer ${tokenA}` },
         body: { tier: 'PLUS', billingPeriod: 'monthly' }
       });
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data.success, true);
-      assert.strictEqual(res.data.amount, 14900);
-      assert.strictEqual(res.data.tier, 'PLUS');
-      assert.strictEqual(res.data.billingPeriod.toUpperCase(), 'MONTHLY');
-      assert(res.data.orderId.startsWith('order_sub_'));
-      subOrderId = res.data.orderId;
+      assert.strictEqual(res.status, 503);
+      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
     });
 
-    await test('POST /api/subscriptions/verify-payment rejects forged cryptographic signature', async () => {
+    await test('POST /api/subscriptions/verify-payment rejects legacy Razorpay signature submission with HTTP 410 PAYMENT_PROVIDER_RETIRED', async () => {
       const res = await request('/api/subscriptions/verify-payment', {
         method: 'POST',
         headers: { Authorization: `Bearer ${tokenA}` },
         body: {
-          orderId: subOrderId,
+          orderId: 'order_legacy_sub_123',
           paymentId: 'pay_sub_fake_123',
-          signature: 'forged_invalid_signature_hex'
+          signature: 'legacy_signature_hex'
         }
       });
-      assert.strictEqual(res.status, 400);
-      assert.strictEqual(res.data.error, 'INVALID_PAYMENT_SIGNATURE');
+      assert.strictEqual(res.status, 410);
+      assert.strictEqual(res.data.error, 'PAYMENT_PROVIDER_RETIRED');
     });
 
-    await test('POST /api/subscriptions/verify-payment activates Plus subscription upon verified signature', async () => {
-      const fakePaymentId = `pay_sub_${Date.now()}`;
-      const validSig = generateTestPaymentSignature(subOrderId, fakePaymentId);
-
+    await test('POST /api/subscriptions/verify-payment rejects unrecorded order with HTTP 404 ORDER_NOT_FOUND', async () => {
       const res = await request('/api/subscriptions/verify-payment', {
         method: 'POST',
         headers: { Authorization: `Bearer ${tokenA}` },
         body: {
-          orderId: subOrderId,
-          paymentId: fakePaymentId,
-          signature: validSig
+          orderId: 'cf_sub_nonexistent_99999',
+          paymentId: 'cf_pay_123'
         }
       });
-      assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data.success, true);
-      assert.strictEqual(res.data.subscriptionTier, 'PLUS');
-      assert.strictEqual(res.data.subscriptionStatus, 'ACTIVE');
-      assert(res.data.subscriptionExpiresAt, 'Must set subscription expiration date');
+      assert.strictEqual(res.status, 404);
+      assert.strictEqual(res.data.error, 'ORDER_NOT_FOUND');
+    });
+
+    await test('POST /api/subscriptions/verify-payment fails closed with HTTP 503 PAYMENTS_NOT_CONFIGURED for recorded order without active provider', async () => {
+      const existingOrderId = `cf_sub_${Date.now()}`;
+      await db.createPaymentOrder({
+        userId: userA.id,
+        amount: 149,
+        currency: 'INR',
+        provider: 'CASHFREE',
+        providerOrderId: existingOrderId,
+        productType: 'SUBSCRIPTION',
+        productId: 'sub_plus_monthly'
+      });
+      const res = await request('/api/subscriptions/verify-payment', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenA}` },
+        body: {
+          orderId: existingOrderId,
+          paymentId: 'cf_pay_123'
+        }
+      });
+      assert.strictEqual(res.status, 503);
+      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+    });
+
+    await test('Subscription activation and entitlement verification for Plus tier', async () => {
+      // Direct activation for testing downstream Plus entitlements
+      await db.updateUser(userA.id, {
+        subscriptionTier: 'PLUS',
+        subscriptionStatus: 'ACTIVE',
+        subscriptionExpiresAt: new Date(Date.now() + 30 * 86400000).toISOString()
+      });
 
       // Check entitlements endpoint reflects upgrade
       const entRes = await request('/api/entitlements/me', {
@@ -492,6 +511,93 @@ async function runMonetizationTestSuite() {
       const latestEntry = walletRes.data.statement[0];
       assert(latestEntry.description.startsWith('Report Purchase:'), `Expected 'Report Purchase:' but got '${latestEntry.description}'`);
       assert(!latestEntry.description.includes('Vedic Puja Booking'), 'Ledger entry must not be mislabeled as Puja Booking');
+    });
+
+    await test('POST /api/reports/order with paymentMethod gateway fails closed with 503 PAYMENTS_NOT_CONFIGURED when live provider is not configured', async () => {
+      const orderRes = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenA}` },
+        body: {
+          productId: 'report_janam_kundli_deep_dive',
+          profileId: profileA.id,
+          paymentMethod: 'gateway'
+        }
+      });
+      assert.strictEqual(orderRes.status, 503);
+      assert.strictEqual(orderRes.data.error, 'PAYMENTS_NOT_CONFIGURED');
+    });
+
+    await test('POST /api/reports/verify-and-generate rejects legacy Razorpay signature with HTTP 410 PAYMENT_PROVIDER_RETIRED', async () => {
+      const res = await request('/api/reports/verify-and-generate', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenA}` },
+        body: {
+          orderId: 'order_fake_rep_99999',
+          paymentId: 'pay_fake_rep_99999',
+          signature: 'legacy_sig_123',
+          productId: 'report_janam_kundli_deep_dive',
+          profileId: profileA.id
+        }
+      });
+      assert.strictEqual(res.status, 410);
+      assert.strictEqual(res.data.error, 'PAYMENT_PROVIDER_RETIRED');
+    });
+
+    await test('POST /api/reports/verify-and-generate rejects unrecorded order with HTTP 404 ORDER_NOT_FOUND', async () => {
+      const res = await request('/api/reports/verify-and-generate', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenA}` },
+        body: {
+          orderId: 'cf_rep_nonexistent_99999',
+          paymentId: 'cf_pay_123',
+          productId: 'report_janam_kundli_deep_dive',
+          profileId: profileA.id
+        }
+      });
+      assert.strictEqual(res.status, 404);
+      assert.strictEqual(res.data.error, 'ORDER_NOT_FOUND');
+    });
+
+    await test('POST /api/reports/verify-and-generate fails closed with HTTP 503 PAYMENTS_NOT_CONFIGURED for recorded order without active provider', async () => {
+      const existingOrderId = `cf_rep_${Date.now()}`;
+      await db.createPaymentOrder({
+        userId: userA.id,
+        amount: 199,
+        currency: 'INR',
+        provider: 'CASHFREE',
+        providerOrderId: existingOrderId,
+        productType: 'REPORT',
+        productId: 'report_janam_kundli_deep_dive'
+      });
+      const res = await request('/api/reports/verify-and-generate', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenA}` },
+        body: {
+          orderId: existingOrderId,
+          paymentId: 'cf_pay_123',
+          productId: 'report_janam_kundli_deep_dive',
+          profileId: profileA.id
+        }
+      });
+      assert.strictEqual(res.status, 503);
+      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+    });
+
+    await test('POST /api/reports/order allows free report generation even when payment gateway is unconfigured', async () => {
+      const freeRes = await request('/api/reports/order', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tokenA}` },
+        body: {
+          productId: 'report_basic_chart_summary',
+          profileId: profileA.id,
+          paymentMethod: 'free'
+        }
+      });
+      assert.strictEqual(freeRes.status, 200);
+      assert.strictEqual(freeRes.data.success, true);
+      assert.strictEqual(freeRes.data.paidAmountPaise, 0);
+      assert(freeRes.data.reportId, 'Must generate and return reportId for free report');
+      assert.strictEqual(freeRes.data.document.allowPdfDownload, true, 'Free report must allow PDF download');
     });
 
     await test('Kundli Milan report generates comprehensive 4-chapter synastry including Ashtakoota and 12-Kuta diagnostics', async () => {

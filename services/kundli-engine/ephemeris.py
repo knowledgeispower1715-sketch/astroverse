@@ -182,9 +182,22 @@ def calculate_kundli(dob_iso: str, lat: float = 28.6139, lon: float = 77.2090, t
     else:
         karana_name = KARANAS[(karana_num - 1) % 7]
 
-    # Vaar (Weekday)
+    # Vaar (Vedic Weekday reckoned from local sunrise)
     weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    vaar_name = weekdays[dt.weekday()]
+    try:
+        from hora_engine import calculate_sun_times
+        ref_date = dt.date()
+        s_rise, _, _ = calculate_sun_times(ref_date, lat, lon, tz_str)
+        if dt < s_rise:
+            # Birth occurred prior to local sunrise -> belongs to preceding Vedic day
+            prev_date = ref_date - timedelta(days=1)
+            weekday_idx = prev_date.weekday()
+        else:
+            weekday_idx = ref_date.weekday()
+    except Exception:
+        weekday_idx = dt.weekday()
+
+    vaar_name = weekdays[weekday_idx]
 
     # Ayanamsha value
     ayanamsha_deg = swe.get_ayanamsa_ut(jd_ut)
