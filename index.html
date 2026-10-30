@@ -9992,7 +9992,7 @@
           <span style="color: #64748B;">Amount Payable:</span>
           <strong id="payment-status-amount" style="color: #059669; font-size: 13.5px;">-</strong>
         </div>
-        <div style="display: flex; justify-content: space-between;">
+        <div style="display: flex; justify-content: space-between;" id="payment-status-orderid-row">
           <span style="color: #64748B;">Order Reference:</span>
           <span id="payment-status-orderid" style="color: #94A3B8; font-family: monospace; font-size: 11px;">-</span>
         </div>
@@ -10000,8 +10000,8 @@
 
       <!-- Security / Trust Badge -->
       <div id="payment-status-trust" style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11.5px; color: #64748B; margin-bottom: 20px;">
-        <i class="fa-solid fa-shield-halved" style="color: #059669;"></i>
-        <span>256-Bit TLS Encrypted &bull; Cashfree Verified</span>
+        <i class="fa-solid fa-lock" style="color: #059669;"></i>
+        <span>256-Bit Bank-Grade TLS Encryption</span>
       </div>
 
       <!-- Action Buttons -->
@@ -21876,26 +21876,66 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const premPeriod = document.getElementById('premium-period-display');
       const premSub = document.getElementById('premium-annual-subtext');
 
+      const plusM = window.PRICE_PLUS_MONTHLY || 149;
+      const plusA = window.PRICE_PLUS_ANNUAL || 1299;
+      const premM = window.PRICE_PREMIUM_MONTHLY || 299;
+      const premA = window.PRICE_PREMIUM_ANNUAL || 2499;
+
       if (cycle === 'annual') {
         if (btnM) btnM.classList.remove('active');
         if (btnA) btnA.classList.add('active');
-        if (plusPrice) plusPrice.textContent = '₹1,299';
+        if (plusPrice) plusPrice.textContent = `₹${plusA.toLocaleString()}`;
         if (plusPeriod) plusPeriod.textContent = '/ year';
-        if (plusSub) plusSub.style.display = 'block';
-        if (premPrice) premPrice.textContent = '₹2,499';
+        if (plusSub) {
+          plusSub.style.display = 'block';
+          plusSub.textContent = `Billed annually as ₹${plusA.toLocaleString()}/yr (~₹${Math.round(plusA / 12)}/mo)`;
+        }
+        if (premPrice) premPrice.textContent = `₹${premA.toLocaleString()}`;
         if (premPeriod) premPeriod.textContent = '/ year';
-        if (premSub) premSub.style.display = 'block';
+        if (premSub) {
+          premSub.style.display = 'block';
+          premSub.textContent = `Billed annually as ₹${premA.toLocaleString()}/yr (~₹${Math.round(premA / 12)}/mo)`;
+        }
       } else {
         if (btnM) btnM.classList.add('active');
         if (btnA) btnA.classList.remove('active');
-        if (plusPrice) plusPrice.textContent = '₹149';
+        if (plusPrice) plusPrice.textContent = `₹${plusM}`;
         if (plusPeriod) plusPeriod.textContent = '/ month';
         if (plusSub) plusSub.style.display = 'none';
-        if (premPrice) premPrice.textContent = '₹299';
+        if (premPrice) premPrice.textContent = `₹${premM}`;
         if (premPeriod) premPeriod.textContent = '/ month';
         if (premSub) premSub.style.display = 'none';
       }
     }
+
+    async function syncPublicPricingFromCatalog() {
+      try {
+        const base = getAuthBase();
+        const res = await fetch(`${base}/api/catalog/products`);
+        if (res.ok) {
+          const data = await res.json();
+          window.ASTRO_CANONICAL_PRODUCTS = data.products || [];
+          const plus = (data.products || []).find(p => p.id === 'sub_plus');
+          const prem = (data.products || []).find(p => p.id === 'sub_premium');
+
+          if (plus) {
+            window.PRICE_PLUS_MONTHLY = plus.amountRupees;
+            window.PRICE_PLUS_ANNUAL = plus.annualPriceRupees || 1299;
+          }
+          if (prem) {
+            window.PRICE_PREMIUM_MONTHLY = prem.amountRupees;
+            window.PRICE_PREMIUM_ANNUAL = prem.annualPriceRupees || 2499;
+          }
+
+          if (typeof currentBillingCycle !== 'undefined') {
+            setBillingCycle(currentBillingCycle);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not sync public pricing catalogue:", err);
+      }
+    }
+    syncPublicPricingFromCatalog();
 
     // ==========================================================================
     // ASTROVERSE ENTERPRISE CASHFREE PAYMENT STATE MACHINE & GATEWAY CONTROLLER
@@ -21967,6 +22007,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           if (data.cashfreeAppId) window.CASHFREE_APP_ID = data.cashfreeAppId;
           if (data.cashfreeEnv) window.CASHFREE_ENV = data.cashfreeEnv;
           window.PAYMENTS_CONFIGURED = !!data.paymentsConfigured;
+          window.PAYMENT_READINESS_STATE = data.readinessState || (data.paymentsConfigured ? 'READY' : 'UNCONFIGURED');
           window.CASHFREE_CONFIG_LOADED = true;
         }
       } catch (err) {
@@ -22027,12 +22068,20 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       const btnSecondary = document.getElementById('btn-payment-action-secondary');
 
       // Update meta details if available
+      const orderIdRow = document.getElementById('payment-status-orderid-row');
       if (metaBox && currentPaymentContext) {
         if (currentPaymentContext.item || currentPaymentContext.amount || currentPaymentContext.orderId) {
           metaBox.style.display = 'block';
           if (itemEl) itemEl.textContent = currentPaymentContext.item || 'Vedic Subscription / Service';
           if (amountEl) amountEl.textContent = currentPaymentContext.amount || '-';
-          if (orderIdEl) orderIdEl.textContent = currentPaymentContext.orderId || '-';
+          if (orderIdRow) {
+            if (currentPaymentContext.orderId && currentPaymentContext.orderId !== '-' && currentPaymentContext.orderId !== '*') {
+              orderIdRow.style.display = 'flex';
+              if (orderIdEl) orderIdEl.textContent = currentPaymentContext.orderId;
+            } else {
+              orderIdRow.style.display = 'none';
+            }
+          }
         } else {
           metaBox.style.display = 'none';
         }
@@ -22166,7 +22215,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             iconWrap.style.color = '#DC2626';
           }
           if (icon) icon.className = 'fa-solid fa-triangle-exclamation';
-          if (title) title.textContent = 'Payment Unsuccessful';
+          const isConfigIssue = (payload.readinessState && payload.readinessState !== 'READY') || (payload.error && payload.error.includes('CONFIGURED'));
+          if (title) title.textContent = isConfigIssue ? 'Payment Temporarily Unavailable' : 'Payment Unsuccessful';
           if (desc) desc.textContent = payload.message || 'Payment could not be completed or was declined. No funds were debited.';
           if (btnPrimary) {
             btnPrimary.style.display = currentPaymentContext && currentPaymentContext.retryFn ? 'inline-flex' : 'none';
@@ -22370,6 +22420,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             targetBtn.innerHTML = originalBtnHtml;
           }
           setPaymentState(PAYMENT_STATES.FAILED, {
+            error: errData.error,
+            readinessState: errData.readinessState,
             message: errData.message || "Failed to initiate subscription order. Gateway unavailable.",
             retryFn: () => executeSubscriptionCheckout(tier)
           });

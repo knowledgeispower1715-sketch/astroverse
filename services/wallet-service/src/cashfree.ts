@@ -39,16 +39,105 @@ export interface CashfreeOrderResponse {
   created_at?: string;
 }
 
-export function isCashfreeConfigured(): boolean {
+export enum PaymentReadinessState {
+  READY = 'READY',
+  DISABLED_BY_MERCHANT_CONFIGURATION = 'DISABLED_BY_MERCHANT_CONFIGURATION',
+  MISSING_SERVER_CREDENTIALS = 'MISSING_SERVER_CREDENTIALS',
+  ENVIRONMENT_MISMATCH = 'ENVIRONMENT_MISMATCH',
+  CASHFREE_AUTHENTICATION_FAILED = 'CASHFREE_AUTHENTICATION_FAILED',
+  MERCHANT_NOT_ACTIVATED = 'MERCHANT_NOT_ACTIVATED',
+  DOMAIN_CONFIGURATION_REQUIRED = 'DOMAIN_CONFIGURATION_REQUIRED',
+  BACKEND_UNAVAILABLE = 'BACKEND_UNAVAILABLE',
+  INVALID_PRODUCT_CONFIGURATION = 'INVALID_PRODUCT_CONFIGURATION'
+}
+
+export interface PaymentReadinessReport {
+  state: PaymentReadinessState;
+  configured: boolean;
+  environment: 'production' | 'sandbox';
+  gateway: 'CASHFREE';
+  appIdMasked: string;
+  adminExplanation: string;
+  customerMessage: string;
+}
+
+export function getPaymentReadinessStatus(options?: { featureFlagEnabled?: boolean }): PaymentReadinessReport {
   const appId = (process.env.CASHFREE_APP_ID || '').trim();
   const secretKey = (process.env.CASHFREE_SECRET_KEY || '').trim();
-  return Boolean(
-    appId &&
-    secretKey &&
-    !appId.includes('YOUR_') &&
-    !secretKey.includes('YOUR_') &&
-    appId !== 'dummy_cashfree_app_id'
-  );
+  const env = (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase() as 'production' | 'sandbox';
+
+  const appIdMasked = appId.length > 8
+    ? `${appId.slice(0, 4)}...${appId.slice(-4)}`
+    : (appId ? '***' : 'NOT_CONFIGURED');
+
+  if (options?.featureFlagEnabled === false) {
+    return {
+      state: PaymentReadinessState.DISABLED_BY_MERCHANT_CONFIGURATION,
+      configured: false,
+      environment: env,
+      gateway: 'CASHFREE',
+      appIdMasked,
+      adminExplanation: 'Online payments have been paused via administrative feature flag.',
+      customerMessage: 'Online payments are currently paused for scheduled maintenance.'
+    };
+  }
+
+  if (!appId || !secretKey || appId.includes('YOUR_') || secretKey.includes('YOUR_') || appId === 'dummy_cashfree_app_id') {
+    return {
+      state: PaymentReadinessState.MISSING_SERVER_CREDENTIALS,
+      configured: false,
+      environment: env,
+      gateway: 'CASHFREE',
+      appIdMasked,
+      adminExplanation: 'Live Cashfree API credentials (CASHFREE_APP_ID or CASHFREE_SECRET_KEY) are missing or set to placeholder values.',
+      customerMessage: 'Online payment gateway is undergoing configuration. Please try again later or contact support.'
+    };
+  }
+
+  // Detect credential/environment mismatch:
+  // Production secret keys have format cfsk_ma_prod_...
+  // Sandbox secret keys have format cfsk_ma_test_... and appId TEST...
+  const isProdKey = secretKey.startsWith('cfsk_ma_prod_');
+  const isTestKey = secretKey.startsWith('cfsk_ma_test_') || appId.startsWith('TEST');
+
+  if (env === 'production' && isTestKey) {
+    return {
+      state: PaymentReadinessState.ENVIRONMENT_MISMATCH,
+      configured: false,
+      environment: env,
+      gateway: 'CASHFREE',
+      appIdMasked,
+      adminExplanation: 'Environment mismatch: CASHFREE_ENV is "production" but provided secret key is a sandbox test credential (cfsk_ma_test_).',
+      customerMessage: 'Online payment gateway configuration mismatch. Please contact support.'
+    };
+  }
+
+  if (env === 'sandbox' && isProdKey) {
+    return {
+      state: PaymentReadinessState.ENVIRONMENT_MISMATCH,
+      configured: false,
+      environment: env,
+      gateway: 'CASHFREE',
+      appIdMasked,
+      adminExplanation: 'Environment mismatch: CASHFREE_ENV is "sandbox" but provided secret key is a live production credential (cfsk_ma_prod_). Sandbox base URL rejects production keys.',
+      customerMessage: 'Online payment gateway configuration mismatch. Please contact support.'
+    };
+  }
+
+  return {
+    state: PaymentReadinessState.READY,
+    configured: true,
+    environment: env,
+    gateway: 'CASHFREE',
+    appIdMasked,
+    adminExplanation: `Cashfree Payment Gateway is fully configured and ready for transactions in ${env.toUpperCase()} mode.`,
+    customerMessage: 'Online payments are active and secure.'
+  };
+}
+
+export function isCashfreeConfigured(): boolean {
+  const readiness = getPaymentReadinessStatus();
+  return readiness.configured;
 }
 
 export function getCashfreeBaseUrl(): string {

@@ -550,3 +550,434 @@ export const AI_CONSULTATION_SERVICE: AiConsultationRateDefinition = {
   currency: 'INR',
   disclaimer: 'Billed in Indian Rupees at ₹15 per started minute after promotional free allowance.'
 };
+
+/**
+ * ============================================================================
+ * ASTROVERSE CENTRAL CANONICAL PRODUCT & PRICING CATALOGUE
+ * Authoritative source of truth for all paid services across Public Website,
+ * Admin Control Centre, Backend Order Validation, and Cashfree Payments.
+ * ============================================================================
+ */
+export interface CanonicalProduct {
+  id: string; // product_id / sku
+  sku: string;
+  name: string;
+  category: 'SUBSCRIPTION' | 'REPORT' | 'WALLET_RECHARGE' | 'CONSULTATION';
+  description: string;
+  productType: string;
+  billingModel: 'ONE_TIME' | 'RECURRING_PASS';
+  currency: 'INR';
+  amountPaise: number;
+  amountRupees: number;
+  billingInterval?: 'MONTHLY' | 'ANNUAL' | 'ONE_TIME';
+  billingIntervalCount?: number;
+  annualPricePaise?: number;
+  annualPriceRupees?: number;
+  discountPercent?: number;
+  entitlementMapping: Record<string, any>;
+  taxConfiguration?: {
+    gstPercent: number;
+    inclusive: boolean;
+  };
+  active: boolean;
+  displayOrder: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: string;
+}
+
+export const CANONICAL_PRODUCT_CATALOGUE: Record<string, CanonicalProduct> = {
+  // --- Subscriptions ---
+  'sub_plus': {
+    id: 'sub_plus',
+    sku: 'AV-SUB-PLUS',
+    name: 'AstroVerse Plus',
+    category: 'SUBSCRIPTION',
+    description: 'Up to 3 birth profiles, D9/D10 harmonic charts, detailed Vimshottari dasha, 15 AI consultations/day, 10% report discount.',
+    productType: 'SUBSCRIPTION',
+    billingModel: 'RECURRING_PASS',
+    currency: 'INR',
+    amountPaise: 14900,
+    amountRupees: 149,
+    billingInterval: 'MONTHLY',
+    billingIntervalCount: 1,
+    annualPricePaise: 129900,
+    annualPriceRupees: 1299,
+    discountPercent: 10,
+    entitlementMapping: {
+      tier: 'PLUS',
+      maxProfiles: 3,
+      dailyAiLimit: 15,
+      allowedDivisionalCharts: ['D1', 'D9', 'D10'],
+      dashaDepth: 'detailed',
+      reportDiscountPercent: 10,
+      hasPersonalizedReportReader: true
+    },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 1,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'sub_premium': {
+    id: 'sub_premium',
+    sku: 'AV-SUB-PREMIUM',
+    name: 'AstroVerse Premium',
+    category: 'SUBSCRIPTION',
+    description: 'Up to 5 birth profiles, full 16 Shodashavarga charts (D1-D60), 337-Bindu Ashtakavarga, 6-fold Shadbala, BTR, 30 AI consultations/day, 20% report discount, watermarked reader.',
+    productType: 'SUBSCRIPTION',
+    billingModel: 'RECURRING_PASS',
+    currency: 'INR',
+    amountPaise: 29900,
+    amountRupees: 299,
+    billingInterval: 'MONTHLY',
+    billingIntervalCount: 1,
+    annualPricePaise: 249900,
+    annualPriceRupees: 2499,
+    discountPercent: 20,
+    entitlementMapping: {
+      tier: 'PREMIUM',
+      maxProfiles: 5,
+      dailyAiLimit: 30,
+      allowedDivisionalCharts: ['D1', 'D2', 'D3', 'D4', 'D7', 'D9', 'D10', 'D12', 'D16', 'D20', 'D24', 'D27', 'D30', 'D40', 'D45', 'D60'],
+      dashaDepth: 'advanced',
+      reportDiscountPercent: 20,
+      hasPersonalizedReportReader: true
+    },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 2,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+
+  // --- Individual Digital Reports ---
+  'report_janam_kundli_deep_dive': {
+    id: 'report_janam_kundli_deep_dive',
+    sku: 'AV-REP-KUNDLI-DEEP',
+    name: 'Complete Janam Kundli Deep Dive',
+    category: 'REPORT',
+    description: 'Comprehensive 25+ page life blueprint analyzing Lagna, D1–D60, Ashtakavarga, Shadbala & Dashas.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 19900,
+    amountRupees: 199,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_janam_kundli_deep_dive', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 3,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_career_education': {
+    id: 'report_career_education',
+    sku: 'AV-REP-CAREER',
+    name: 'Career & Education Report',
+    category: 'REPORT',
+    description: 'In-depth analysis of 10th House, D10 Dashamsha, professional authority & promotion timing.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 14900,
+    amountRupees: 149,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_career_education', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 4,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_relationship_marriage': {
+    id: 'report_relationship_marriage',
+    sku: 'AV-REP-MARRIAGE',
+    name: 'Relationship & Marriage Report',
+    category: 'REPORT',
+    description: '7th House Kalatra evaluation, D9 Navamsha partner archetypes & marital harmony guidance.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 14900,
+    amountRupees: 149,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_relationship_marriage', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 5,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_kundli_milan': {
+    id: 'report_kundli_milan',
+    sku: 'AV-REP-MILAN',
+    name: 'Detailed Kundli Milan (Astrological Synastry)',
+    category: 'REPORT',
+    description: 'Full 36-Guna Ashtakoota synastry matrix with cross-chart D9 Navamsha compatibility calculation.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 14900,
+    amountRupees: 149,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_kundli_milan', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 6,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_one_month_forecast': {
+    id: 'report_one_month_forecast',
+    sku: 'AV-REP-1MO',
+    name: 'One-Month Personalized Forecast',
+    category: 'REPORT',
+    description: 'High-resolution 30-day forecast integrating active Vimshottari Antardasha and transits.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 4900,
+    amountRupees: 49,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_one_month_forecast', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 7,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_twelve_month_varshphal': {
+    id: 'report_twelve_month_varshphal',
+    sku: 'AV-REP-12MO',
+    name: 'Twelve-Month Varshphal & Forecast',
+    category: 'REPORT',
+    description: 'Comprehensive annual roadmap analyzing all 12 upcoming calendar months individually.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 24900,
+    amountRupees: 249,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_twelve_month_varshphal', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 8,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_three_year_roadmap': {
+    id: 'report_three_year_roadmap',
+    sku: 'AV-REP-3YR',
+    name: 'Three-Year Personal Roadmap',
+    category: 'REPORT',
+    description: 'Strategic 36-month macro horizon mapping major Dasha shifts and planetary transitions.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 49900,
+    amountRupees: 499,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_three_year_roadmap', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 9,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_bundle_kundli_varshphal': {
+    id: 'report_bundle_kundli_varshphal',
+    sku: 'AV-REP-BUNDLE',
+    name: 'Complete Kundli + Twelve-Month Forecast Bundle',
+    category: 'REPORT',
+    description: 'Best-value bundle combining the 25+ page Janam Kundli Deep Dive and 12-Month Annual Varshphal.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 39900,
+    amountRupees: 399,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_bundle_kundli_varshphal', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 10,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_vedic_name_numerology': {
+    id: 'report_vedic_name_numerology',
+    sku: 'AV-REP-NUMEROLOGY',
+    name: 'Vedic Name Correction & Numerology Master Blueprint',
+    category: 'REPORT',
+    description: 'Exhaustive 15+ page personal numerology blueprint covering Moolank, Bhagyank, Chaldean Naamank, compound vibrations & signature analysis.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 19900,
+    amountRupees: 199,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_vedic_name_numerology', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 11,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'report_remedial_gemstones': {
+    id: 'report_remedial_gemstones',
+    sku: 'AV-REP-REMEDIES',
+    name: 'Planetary Remedies, Gemstone & Mantra Blueprint',
+    category: 'REPORT',
+    description: 'In-depth 12+ page remedial guide with Lagna-safe gemstone prescriptions, Beej mantras & Yantras.',
+    productType: 'REPORT',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 14900,
+    amountRupees: 149,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { reportType: 'report_remedial_gemstones', onlineReaderAccess: true, watermark: true },
+    taxConfiguration: { gstPercent: 18, inclusive: true },
+    active: true,
+    displayOrder: 12,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+
+  // --- Wallet Recharge Packs ---
+  'wallet_pack_100': {
+    id: 'wallet_pack_100',
+    sku: 'AV-WAL-100',
+    name: 'Wallet Recharge ₹100 (+₹10 Bonus)',
+    category: 'WALLET_RECHARGE',
+    description: 'Instant wallet recharge. Base ₹100 + 18% GST (Payable ₹118). Includes ₹10 complimentary bonus credits (Total credit: ₹110).',
+    productType: 'WALLET_RECHARGE',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 11800, // Total payable with GST
+    amountRupees: 118,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { baseAmount: 100, bonusAmount: 10, totalCredit: 110 },
+    taxConfiguration: { gstPercent: 18, inclusive: false },
+    active: true,
+    displayOrder: 13,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'wallet_pack_250': {
+    id: 'wallet_pack_250',
+    sku: 'AV-WAL-250',
+    name: 'Wallet Recharge ₹250 (+₹35 Bonus)',
+    category: 'WALLET_RECHARGE',
+    description: 'Instant wallet recharge. Base ₹250 + 18% GST (Payable ₹295). Includes ₹35 complimentary bonus credits (Total credit: ₹285).',
+    productType: 'WALLET_RECHARGE',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 29500, // Total payable with GST
+    amountRupees: 295,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { baseAmount: 250, bonusAmount: 35, totalCredit: 285 },
+    taxConfiguration: { gstPercent: 18, inclusive: false },
+    active: true,
+    displayOrder: 14,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  },
+  'wallet_pack_500': {
+    id: 'wallet_pack_500',
+    sku: 'AV-WAL-500',
+    name: 'Wallet Recharge ₹500 (+₹100 Bonus)',
+    category: 'WALLET_RECHARGE',
+    description: 'Instant wallet recharge. Base ₹500 + 18% GST (Payable ₹590). Includes ₹100 complimentary bonus credits (Total credit: ₹600).',
+    productType: 'WALLET_RECHARGE',
+    billingModel: 'ONE_TIME',
+    currency: 'INR',
+    amountPaise: 59000, // Total payable with GST
+    amountRupees: 590,
+    billingInterval: 'ONE_TIME',
+    entitlementMapping: { baseAmount: 500, bonusAmount: 100, totalCredit: 600 },
+    taxConfiguration: { gstPercent: 18, inclusive: false },
+    active: true,
+    displayOrder: 15,
+    version: 1,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z'
+  }
+};
+
+export function getCanonicalProduct(id: string): CanonicalProduct | undefined {
+  return CANONICAL_PRODUCT_CATALOGUE[id];
+}
+
+export function getAllCanonicalProducts(filterCategory?: string): CanonicalProduct[] {
+  const all = Object.values(CANONICAL_PRODUCT_CATALOGUE);
+  if (!filterCategory || filterCategory === 'ALL') {
+    return all.sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+  return all
+    .filter(p => p.category === filterCategory)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+}
+
+export function updateCanonicalProductPrice(
+  id: string,
+  newAmountRupees: number,
+  adminEmail: string,
+  newAnnualRupees?: number
+): CanonicalProduct {
+  const prod = CANONICAL_PRODUCT_CATALOGUE[id];
+  if (!prod) {
+    throw new Error(`Product '${id}' not found in canonical catalogue.`);
+  }
+
+  if (!Number.isFinite(newAmountRupees) || newAmountRupees <= 0) {
+    throw new Error('New price must be a positive number.');
+  }
+
+  const newPaise = Math.round(newAmountRupees * 100);
+  prod.amountRupees = newAmountRupees;
+  prod.amountPaise = newPaise;
+  if (typeof newAnnualRupees === 'number' && newAnnualRupees > 0) {
+    prod.annualPriceRupees = newAnnualRupees;
+    prod.annualPricePaise = Math.round(newAnnualRupees * 100);
+  }
+  prod.version = (prod.version || 1) + 1;
+  prod.updatedAt = new Date().toISOString();
+  prod.updatedBy = adminEmail;
+
+  // Also update corresponding SUBSCRIPTION_PLANS or REPORT_CATALOGUE if applicable
+  if (id === 'sub_plus') {
+    SUBSCRIPTION_PLANS[SubscriptionTier.PLUS].monthlyPriceRupees = newAmountRupees;
+    SUBSCRIPTION_PLANS[SubscriptionTier.PLUS].monthlyPricePaise = newPaise;
+    if (newAnnualRupees) {
+      SUBSCRIPTION_PLANS[SubscriptionTier.PLUS].annualPriceRupees = newAnnualRupees;
+      SUBSCRIPTION_PLANS[SubscriptionTier.PLUS].annualPricePaise = Math.round(newAnnualRupees * 100);
+    }
+  } else if (id === 'sub_premium') {
+    SUBSCRIPTION_PLANS[SubscriptionTier.PREMIUM].monthlyPriceRupees = newAmountRupees;
+    SUBSCRIPTION_PLANS[SubscriptionTier.PREMIUM].monthlyPricePaise = newPaise;
+    if (newAnnualRupees) {
+      SUBSCRIPTION_PLANS[SubscriptionTier.PREMIUM].annualPriceRupees = newAnnualRupees;
+      SUBSCRIPTION_PLANS[SubscriptionTier.PREMIUM].annualPricePaise = Math.round(newAnnualRupees * 100);
+    }
+  } else if (REPORT_CATALOGUE[id]) {
+    REPORT_CATALOGUE[id].priceRupees = newAmountRupees;
+    REPORT_CATALOGUE[id].pricePaise = newPaise;
+  }
+
+  return prod;
+}

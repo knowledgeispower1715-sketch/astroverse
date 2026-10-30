@@ -30,7 +30,10 @@ import {
   getCashfreeOrderStatus,
   getPaymentsForCashfreeOrder,
   verifyCashfreeWebhookSignature,
-  getCashfreeBaseUrl
+  getCashfreeBaseUrl,
+  PaymentReadinessState,
+  PaymentReadinessReport,
+  getPaymentReadinessStatus
 } from './cashfree';
 import {
   SUBSCRIPTION_PLANS,
@@ -38,7 +41,12 @@ import {
   SubscriptionTier,
   BillingPeriod,
   calculateReportPrice,
-  AI_CONSULTATION_SERVICE
+  AI_CONSULTATION_SERVICE,
+  CANONICAL_PRODUCT_CATALOGUE,
+  CanonicalProduct,
+  getCanonicalProduct,
+  getAllCanonicalProducts,
+  updateCanonicalProductPrice
 } from './monetization/catalog';
 import { ACTIVE_PROMOTIONAL_OFFER, isEligibleForFreeMinute } from './monetization/promotions';
 import { EntitlementManager } from './monetization/entitlements';
@@ -2256,10 +2264,14 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
     }
   }
 
-  if (!isCashfreeConfigured()) {
+  const readiness = getPaymentReadinessStatus();
+  if (!readiness.configured) {
     return res.status(503).json({
       error: 'PAYMENTS_NOT_CONFIGURED',
-      message: 'Online payments are currently unconfigured. Please contact support or try again later.',
+      readinessState: readiness.state,
+      specificError: readiness.state,
+      message: readiness.customerMessage,
+      adminExplanation: readiness.adminExplanation,
       gateway: 'CASHFREE'
     });
   }
@@ -4144,10 +4156,14 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
     }
   }
 
-  if (!isCashfreeConfigured()) {
+  const readiness = getPaymentReadinessStatus();
+  if (!readiness.configured) {
     return res.status(503).json({
       error: 'PAYMENTS_NOT_CONFIGURED',
-      message: 'Online payments are currently unconfigured. Paid subscriptions cannot be initiated at this time.',
+      readinessState: readiness.state,
+      specificError: readiness.state,
+      message: readiness.customerMessage,
+      adminExplanation: readiness.adminExplanation,
       gateway: 'CASHFREE'
     });
   }
@@ -4635,14 +4651,19 @@ app.post('/api/webhooks/cashfree', async (req: Request, res: Response) => {
 
 // GET /api/config (Public runtime client configuration without secret leakage)
 app.get('/api/config', (_req: Request, res: Response) => {
+  const readiness = getPaymentReadinessStatus();
   res.json({
-    paymentsConfigured: isCashfreeConfigured(),
+    status: 'CONFIG_READY',
+    paymentsConfigured: readiness.configured,
+    readinessState: readiness.state,
+    readinessMessage: readiness.customerMessage,
     currency: 'INR',
     gateway: 'CASHFREE',
-    isLiveGateway: isCashfreeConfigured(),
+    isLiveGateway: readiness.configured,
     cashfreeAppId: process.env.CASHFREE_APP_ID || '',
-    cashfreeEnv: (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase(),
-    isCashfreeConfigured: isCashfreeConfigured(),
+    cashfreeAppIdMasked: readiness.appIdMasked,
+    cashfreeEnv: readiness.environment,
+    isCashfreeConfigured: readiness.configured,
     firebase: {
       apiKey: process.env.FIREBASE_API_KEY || '',
       authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'astroverse-c0b90.firebaseapp.com',
@@ -4652,6 +4673,140 @@ app.get('/api/config', (_req: Request, res: Response) => {
       appId: process.env.FIREBASE_APP_ID || '1:719758726336:web:1e9ed188ed9651562e4925',
       measurementId: process.env.FIREBASE_MEASUREMENT_ID || 'G-C2JVGQ8GH2'
     }
+  });
+});
+
+// GET /api/catalog/products (Public canonical product and pricing catalogue)
+app.get('/api/catalog/products', (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    currency: 'INR',
+    products: getAllCanonicalProducts('ALL'),
+    subscriptionPlans: Object.values(SUBSCRIPTION_PLANS),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// GET /api/admin/products (Admin view of canonical products, pricing, and versions)
+app.get('/api/admin/products', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
+  res.json({
+    success: true,
+    currency: 'INR',
+    products: getAllCanonicalProducts(),
+    subscriptionPlans: Object.values(SUBSCRIPTION_PLANS),
+    auditTrail: (db as any).data?.auditEvents?.filter((e: any) => e.action === 'PRODUCT_PRICE_UPDATED')?.slice(0, 20) || []
+  });
+});
+
+// POST /api/admin/products/preview (Preview price update calculations before publishing)
+app.post('/api/admin/products/preview', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+  const { id, proposedAmountRupees, proposedAnnualRupees } = req.body;
+  const prod = getCanonicalProduct(id);
+  if (!prod) {
+    return res.status(404).json({ error: 'PRODUCT_NOT_FOUND', message: `Product '${id}' does not exist.` });
+  }
+
+  const currentPrice = prod.amountRupees;
+  const newPrice = Number(proposedAmountRupees);
+  if (!Number.isFinite(newPrice) || newPrice <= 0) {
+    return res.status(400).json({ error: 'INVALID_PRICE', message: 'Proposed price must be a positive number.' });
+  }
+
+  const diffRupees = newPrice - currentPrice;
+  const diffPercent = currentPrice > 0 ? Number(((diffRupees / currentPrice) * 100).toFixed(1)) : 0;
+  const gstPercent = prod.taxConfiguration?.gstPercent || 18;
+  const taxInclusive = prod.taxConfiguration?.inclusive ?? true;
+
+  const payableRupees = taxInclusive ? newPrice : Number((newPrice * (1 + gstPercent / 100)).toFixed(2));
+
+  res.json({
+    success: true,
+    id: prod.id,
+    name: prod.name,
+    category: prod.category,
+    currentPriceRupees: currentPrice,
+    proposedPriceRupees: newPrice,
+    diffRupees,
+    diffPercent,
+    proposedAnnualRupees: proposedAnnualRupees ? Number(proposedAnnualRupees) : prod.annualPriceRupees,
+    taxConfiguration: {
+      gstPercent,
+      inclusive: taxInclusive,
+      calculatedPayableRupees: payableRupees
+    },
+    entitlementMapping: prod.entitlementMapping
+  });
+});
+
+// PUT /api/admin/products/:id (Authorized price update with audit logging and price version increment)
+app.put('/api/admin/products/:id', authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  const { amountRupees, annualPriceRupees, active, description } = req.body;
+  const adminUser = req.user!;
+
+  const prod = getCanonicalProduct(id);
+  if (!prod) {
+    return res.status(404).json({ error: 'PRODUCT_NOT_FOUND', message: `Product '${id}' not found.` });
+  }
+
+  const oldPrice = prod.amountRupees;
+  const oldAnnual = prod.annualPriceRupees;
+
+  try {
+    const updated = updateCanonicalProductPrice(
+      id,
+      Number(amountRupees),
+      adminUser.email || adminUser.id,
+      annualPriceRupees ? Number(annualPriceRupees) : undefined
+    );
+
+    if (typeof active === 'boolean') {
+      updated.active = active;
+    }
+    if (typeof description === 'string' && description.trim()) {
+      updated.description = description.trim();
+    }
+
+    await db.recordAuditEvent({
+      userId: adminUser.id,
+      actorId: adminUser.id,
+      actorRole: adminUser.role,
+      action: 'PRODUCT_PRICE_UPDATED',
+      targetType: 'PRODUCT',
+      targetId: id,
+      outcome: 'SUCCESS',
+      metadata: {
+        productId: id,
+        oldPriceRupees: oldPrice,
+        newPriceRupees: updated.amountRupees,
+        oldAnnualRupees: oldAnnual,
+        newAnnualRupees: updated.annualPriceRupees,
+        version: updated.version,
+        updatedBy: adminUser.email || adminUser.id
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Product '${updated.name}' price updated to ₹${updated.amountRupees} (v${updated.version}).`,
+      product: updated
+    });
+  } catch (err: any) {
+    res.status(400).json({ error: 'UPDATE_FAILED', message: err.message });
+  }
+});
+
+// GET /api/admin/payment-readiness (Comprehensive diagnostic status for Admin Control Centre)
+app.get('/api/admin/payment-readiness', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
+  const readiness = getPaymentReadinessStatus();
+  res.json({
+    success: true,
+    readiness,
+    activeGateway: 'CASHFREE',
+    apiVersion: process.env.CASHFREE_API_VERSION || '2026-01-01',
+    returnUrlPattern: 'https://astroverse-eta.vercel.app/?cf_order_id={order_id}',
+    webhookUrl: 'https://astroverse-eta.vercel.app/api/webhooks/cashfree',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -5124,10 +5279,14 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
     }
 
     // Cashfree Checkout flow for paid report purchases
-    if (!isCashfreeConfigured()) {
+    const readiness = getPaymentReadinessStatus();
+    if (!readiness.configured) {
       return res.status(503).json({
         error: 'PAYMENTS_NOT_CONFIGURED',
-        message: 'Online payments are currently unconfigured. Individual report purchases via payment gateway are unavailable.',
+        readinessState: readiness.state,
+        specificError: readiness.state,
+        message: readiness.customerMessage,
+        adminExplanation: readiness.adminExplanation,
         gateway: 'CASHFREE'
       });
     }

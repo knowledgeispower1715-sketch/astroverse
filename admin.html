@@ -794,7 +794,41 @@
 
         <!-- MODULE 8: PAYMENTS & RECONCILIATION -->
         <div id="admin-panel-payments" class="admin-module-panel" style="display: none;">
-          <div class="astro-card">
+          <!-- Gateway Status Card -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                <i class="fa-solid fa-server"></i> Cashfree Payment Gateway &amp; Readiness Diagnostic
+              </h3>
+              <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminPayments()">
+                <i class="fa-solid fa-rotate"></i> Refresh Diagnostic
+              </button>
+            </div>
+            <div id="admin-gateway-diagnostic-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 12px; margin-bottom: 12px;">
+              <div style="padding: 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                <div style="color: #64748B; font-size: 11px;">Gateway Provider</div>
+                <strong id="gw-diag-provider" style="color: #1E293B;">Cashfree Payments</strong>
+              </div>
+              <div style="padding: 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                <div style="color: #64748B; font-size: 11px;">Environment</div>
+                <strong id="gw-diag-env" style="color: #059669;">PRODUCTION</strong>
+              </div>
+              <div style="padding: 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                <div style="color: #64748B; font-size: 11px;">Readiness State</div>
+                <strong id="gw-diag-readiness" style="color: #059669;">READY</strong>
+              </div>
+              <div style="padding: 10px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px;">
+                <div style="color: #64748B; font-size: 11px;">App ID</div>
+                <span id="gw-diag-appid" style="font-family: monospace; font-size: 11px; color: #334155;">1496...6941</span>
+              </div>
+            </div>
+            <div id="gw-diag-explanation" style="font-size: 11.5px; color: #059669; padding: 8px 12px; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 6px;">
+              Checking authoritative gateway status...
+            </div>
+          </div>
+
+          <!-- Reconciliation & Audit -->
+          <div class="astro-card" style="margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
               <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
                 <i class="fa-solid fa-indian-rupee-sign"></i> Payment Gateway Reconciliation &amp; Ledger Audit
@@ -807,25 +841,122 @@
               Click 'Reconcile Payment Orders' to compare gateway orders against wallet ledger credits.
             </div>
           </div>
+
+          <!-- Financial Transactions Table -->
+          <div class="astro-card">
+            <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 12px;">
+              <i class="fa-solid fa-receipt"></i> Recent Payment &amp; Wallet Transactions
+            </h3>
+            <div class="table-responsive-box">
+              <table class="table-astro-data">
+                <thead>
+                  <tr>
+                    <th>Reference / Order ID</th>
+                    <th>User ID</th>
+                    <th>Amount</th>
+                    <th>Entry Type</th>
+                    <th>Description</th>
+                    <th>Date / Time</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-payments-tbody">
+                  <tr><td colspan="6" style="text-align: center; color: #64748B;">Loading financial transactions...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- MODULE 9: SUBSCRIPTIONS & REFUNDS -->
         <div id="admin-panel-subscriptions" class="admin-module-panel" style="display: none;">
+          <!-- Active Tier Distribution -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 12px;">
+              <i class="fa-solid fa-arrows-rotate"></i> Subscription Plans &amp; Active Member Distribution
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;" id="admin-subscription-plans-grid">
+              <div style="padding: 14px; border: 1px solid #E2E8F0; border-radius: 8px; background: #FFFFFF;">
+                <h4 style="font-weight: 800; color: #475569; margin: 0 0 4px;">AstroVerse Essentials (Free)</h4>
+                <div style="font-size: 14px; font-weight: 700;">₹0 / Forever</div>
+                <div style="font-size: 11.5px; color: #64748B; margin-top: 6px;">Active Members: <strong id="tier-count-free">0</strong></div>
+              </div>
+              <div style="padding: 14px; border: 1.5px solid #F59E0B; border-radius: 8px; background: #FFFDF8;">
+                <h4 style="font-weight: 800; color: #059669; margin: 0 0 4px;">AstroVerse Plus</h4>
+                <div style="font-size: 14px; font-weight: 700; color: #B45309;" id="admin-plus-price-label">₹149 / Month &bull; ₹1,299 / Year</div>
+                <div style="font-size: 11.5px; color: #92400E; margin-top: 6px;">Active Members: <strong id="tier-count-plus">0</strong></div>
+              </div>
+              <div style="padding: 14px; border: 1.5px solid #881337; border-radius: 8px; background: #FFF1F2;">
+                <h4 style="font-weight: 800; color: #7C3AED; margin: 0 0 4px;">AstroVerse Premium</h4>
+                <div style="font-size: 14px; font-weight: 700; color: #881337;" id="admin-premium-price-label">₹299 / Month &bull; ₹2,499 / Year</div>
+                <div style="font-size: 11.5px; color: #9F1239; margin-top: 6px;">Active Members: <strong id="tier-count-premium">0</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Central Canonical Product & Pricing Catalogue -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                  <i class="fa-solid fa-tags"></i> Central Product &amp; Pricing Catalogue
+                </h3>
+                <p style="font-size: 11.5px; color: #64748B; margin: 2px 0 0;">
+                  Authoritative server-controlled catalogue synchronized across Public Store, Admin Control Centre, and Cashfree Gateway.
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <select id="admin-product-filter-cat" class="form-input-text" style="font-size: 11.5px; padding: 4px 8px;" onchange="filterAdminProducts()">
+                  <option value="ALL">All Categories</option>
+                  <option value="SUBSCRIPTION">Subscriptions</option>
+                  <option value="REPORT">Reports</option>
+                  <option value="WALLET_RECHARGE">Wallet Recharges</option>
+                </select>
+                <input type="text" id="admin-product-search-input" class="form-input-text" placeholder="Search SKU or name..." style="font-size: 11.5px; padding: 4px 8px; min-width: 160px;" oninput="filterAdminProducts()">
+              </div>
+            </div>
+            <div class="table-responsive-box">
+              <table class="table-astro-data">
+                <thead>
+                  <tr>
+                    <th>SKU / ID</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>Active Price</th>
+                    <th>Annual / Bonus</th>
+                    <th>Billing Model</th>
+                    <th>Version</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-products-tbody">
+                  <tr><td colspan="9" style="text-align: center; color: #64748B;">Loading authoritative product catalogue...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Refund Processing Section -->
           <div class="astro-card">
             <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 12px;">
-              <i class="fa-solid fa-arrows-rotate"></i> Subscription Plans &amp; Refund Processing
+              <i class="fa-solid fa-hand-holding-dollar"></i> Customer Refund Processing (Authorized Admin)
             </h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
-              <div style="padding: 14px; border: 1px solid #E2E8F0; border-radius: 8px;">
-                <h4 style="font-weight: 800; color: #059669; margin: 0 0 4px;">AstroVerse Plus</h4>
-                <div style="font-size: 14px; font-weight: 700;">₹149 / Month &bull; ₹1,299 / Year</div>
-                <p style="font-size: 11.5px; color: #64748B; margin-top: 6px;">Includes full Kundli deep dives and 15 daily AI consultations.</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+              <div style="flex: 2; min-width: 200px;">
+                <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Order / Reference ID:</label>
+                <input type="text" id="admin-refund-order-id" class="form-input-text" placeholder="e.g. cf_sub_... or rep_..." style="font-size: 12px;">
               </div>
-              <div style="padding: 14px; border: 1px solid #E2E8F0; border-radius: 8px;">
-                <h4 style="font-weight: 800; color: #7C3AED; margin: 0 0 4px;">AstroVerse Premium</h4>
-                <div style="font-size: 14px; font-weight: 700;">₹299 / Month &bull; ₹2,499 / Year</div>
-                <p style="font-size: 11.5px; color: #64748B; margin-top: 6px;">Includes unlimited publications, 30 daily queries, and full 16 Shodashavarga charts.</p>
+              <div style="flex: 1; min-width: 120px;">
+                <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Refund Amount (₹):</label>
+                <input type="number" id="admin-refund-amount" class="form-input-text" placeholder="Full or partial" style="font-size: 12px;">
               </div>
+              <div style="flex: 2; min-width: 180px;">
+                <label style="display: block; font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Reason:</label>
+                <input type="text" id="admin-refund-reason" class="form-input-text" placeholder="Customer support resolution" style="font-size: 12px;">
+              </div>
+              <button class="btn-outline-secondary" style="border-color: #DC2626; color: #DC2626; font-weight: 700; padding: 8px 14px;" onclick="executeAdminRefund()">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Issue Refund
+              </button>
             </div>
           </div>
         </div>
@@ -1559,6 +1690,76 @@
           <input type="text" id="admin-mfa-code-input" class="form-input-text" placeholder="123456" maxlength="8" style="font-size: 20px; letter-spacing: 4px; text-align: center;">
         </div>
         <button class="btn-gold-primary" style="width: 100%;" onclick="submitAdminMfaChallenge()">Verify &amp; Continue</button>
+      </div>
+    </div>
+
+    <!-- Admin Canonical Product Price Edit & Preview Modal -->
+    <div id="modal-admin-edit-price" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminEditPriceModal()"></div>
+      <div class="modal-content-card" style="max-width: 500px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+              <i class="fa-solid fa-pen-to-square"></i> Edit Product Price &amp; Synchronize
+            </h3>
+            <div id="edit-price-sku-label" style="font-size: 11px; color: #64748B; font-family: monospace; margin-top: 2px;">SKU: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminEditPriceModal()">&times;</button>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <h4 id="edit-price-name" style="font-size: 14px; font-weight: 800; color: #1E293B; margin: 0 0 6px;">Product Name</h4>
+          <p id="edit-price-desc" style="font-size: 12px; color: #64748B; margin: 0;">Description...</p>
+        </div>
+
+        <input type="hidden" id="edit-price-prod-id" value="">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">New Monthly/Base Price (₹):</label>
+            <input type="number" id="edit-price-input-amount" class="form-input-text" style="font-size: 14px; font-weight: 700;">
+          </div>
+          <div id="edit-price-annual-wrap" style="display: none;">
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">New Annual Price (₹):</label>
+            <input type="number" id="edit-price-input-annual" class="form-input-text" style="font-size: 14px; font-weight: 700;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <button type="button" class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 12px;" onclick="previewPriceImpact()">
+            <i class="fa-solid fa-calculator"></i> Calculate Price Impact &amp; Tax Preview
+          </button>
+        </div>
+
+        <!-- Live Price Preview Card -->
+        <div id="edit-price-preview-card" style="display: none; background: #FFFBEB; border: 1.5px solid #FCD34D; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 12px;">
+          <div style="font-weight: 800; color: #92400E; margin-bottom: 6px; text-transform: uppercase; font-size: 11px;">
+            <i class="fa-solid fa-chart-line"></i> Financial Impact Preview
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #64748B;">Current Active Price:</span>
+            <strong id="preview-old-price" style="color: #1E293B;">₹0.00</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #64748B;">Proposed Active Price:</span>
+            <strong id="preview-new-price" style="color: #059669; font-size: 13px;">₹0.00</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="color: #64748B;">Net Change:</span>
+            <span id="preview-diff-percent" style="font-weight: 700; color: #B45309;">0%</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px dashed #FDE68A; padding-top: 4px; margin-top: 4px;">
+            <span style="color: #92400E; font-weight: 700;">New Customer Payable (incl. tax):</span>
+            <strong id="preview-payable" style="color: #92400E; font-size: 13.5px;">₹0.00</strong>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminEditPriceModal()">Cancel</button>
+          <button type="button" class="btn-gold-primary" id="btn-publish-price" onclick="publishAdminPriceUpdate()">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Confirm &amp; Publish Price
+          </button>
+        </div>
       </div>
     </div>
 
@@ -3864,14 +4065,66 @@
       } catch (_) {}
     }
 
+    let currentAdminProductsList = [];
+
     async function loadAdminPayments() {
+      const tbody = document.getElementById('admin-payments-tbody');
+      const boxExplanation = document.getElementById('gw-diag-explanation');
+      const provEl = document.getElementById('gw-diag-provider');
+      const envEl = document.getElementById('gw-diag-env');
+      const readyEl = document.getElementById('gw-diag-readiness');
+      const appEl = document.getElementById('gw-diag-appid');
+
       try {
-        const res = await fetch(`${getAuthBase()}/api/admin/payments/transactions`, { headers: getAuthHeaders() });
-        if (res.ok) {
-          const data = await res.json();
-          // Render data
+        const [txRes, readyRes] = await Promise.all([
+          fetch(`${getAuthBase()}/api/admin/payments/transactions`, { headers: getAuthHeaders() }),
+          fetch(`${getAuthBase()}/api/admin/payment-readiness`, { headers: getAuthHeaders() })
+        ]);
+
+        if (readyRes.ok) {
+          const readyData = await readyRes.json();
+          const r = readyData.readiness || {};
+          if (provEl) provEl.textContent = readyData.activeGateway || 'Cashfree Payments';
+          if (envEl) {
+            envEl.textContent = (r.environment || 'production').toUpperCase();
+            envEl.style.color = r.environment === 'production' ? '#059669' : '#D97706';
+          }
+          if (readyEl) {
+            readyEl.textContent = r.state || 'UNKNOWN';
+            readyEl.style.color = r.state === 'READY' ? '#059669' : '#DC2626';
+          }
+          if (appEl) appEl.textContent = r.appIdMasked || '***';
+          if (boxExplanation) {
+            boxExplanation.textContent = r.adminExplanation || 'Payment gateway active and configured.';
+            boxExplanation.style.color = r.state === 'READY' ? '#059669' : '#DC2626';
+            boxExplanation.style.background = r.state === 'READY' ? '#F0FDF4' : '#FEF2F2';
+            boxExplanation.style.borderColor = r.state === 'READY' ? '#BBF7D0' : '#FECACA';
+          }
         }
-      } catch (_) {}
+
+        if (txRes.ok) {
+          const txData = await txRes.json();
+          const entries = txData.recentLedgerEntries || [];
+          if (tbody) {
+            if (entries.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;">Zero transactions recorded in this session.</td></tr>';
+            } else {
+              tbody.innerHTML = entries.map(e => `
+                <tr>
+                  <td><code style="font-size: 11px; color: #1E293B;">${escapeHtml(e.referenceId || e.idempotencyKey || e.id)}</code></td>
+                  <td><span style="font-size: 11px; color: #64748B;">${escapeHtml(e.userId || 'Guest')}</span></td>
+                  <td><strong style="color: #059669;">₹${Number(e.amount || 0).toFixed(2)}</strong></td>
+                  <td><span class="badge-status-active" style="font-size: 10px;">${escapeHtml(e.entryType || 'PAYMENT')}</span></td>
+                  <td style="font-size: 11.5px; color: #475569;">${escapeHtml(e.description || '-')}</td>
+                  <td style="font-size: 11px; color: #64748B;">${e.createdAt ? new Date(e.createdAt).toLocaleString() : '-'}</td>
+                </tr>
+              `).join('');
+            }
+          }
+        }
+      } catch (err) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #DC2626; padding: 16px;">Failed to load financial transactions.</td></tr>';
+      }
     }
 
     async function runPaymentReconciliation() {
@@ -3895,13 +4148,239 @@
     }
 
     async function loadAdminSubscriptions() {
+      const freeCountEl = document.getElementById('tier-count-free');
+      const plusCountEl = document.getElementById('tier-count-plus');
+      const premCountEl = document.getElementById('tier-count-premium');
+      const plusPriceEl = document.getElementById('admin-plus-price-label');
+      const premPriceEl = document.getElementById('admin-premium-price-label');
+
       try {
-        const res = await fetch(`${getAuthBase()}/api/admin/subscriptions`, { headers: getAuthHeaders() });
+        const [subRes, prodRes] = await Promise.all([
+          fetch(`${getAuthBase()}/api/admin/subscriptions`, { headers: getAuthHeaders() }),
+          fetch(`${getAuthBase()}/api/admin/products`, { headers: getAuthHeaders() })
+        ]);
+
+        if (subRes.ok) {
+          const data = await subRes.json();
+          const dist = data.distribution || {};
+          if (freeCountEl) freeCountEl.textContent = dist.FREE ?? 0;
+          if (plusCountEl) plusCountEl.textContent = dist.PLUS ?? 0;
+          if (premCountEl) premCountEl.textContent = dist.PREMIUM ?? 0;
+        }
+
+        if (prodRes.ok) {
+          const prodData = await prodRes.json();
+          currentAdminProductsList = prodData.products || [];
+          
+          // Update subscription plan price labels
+          const plusProd = currentAdminProductsList.find(p => p.id === 'sub_plus');
+          const premProd = currentAdminProductsList.find(p => p.id === 'sub_premium');
+          if (plusProd && plusPriceEl) {
+            plusPriceEl.textContent = `₹${plusProd.amountRupees} / Month • ₹${plusProd.annualPriceRupees?.toLocaleString() || '1,299'} / Year`;
+          }
+          if (premProd && premPriceEl) {
+            premPriceEl.textContent = `₹${premProd.amountRupees} / Month • ₹${premProd.annualPriceRupees?.toLocaleString() || '2,499'} / Year`;
+          }
+
+          renderAdminProductsTable();
+        }
+      } catch (err) {
+        console.error("Failed to load admin subscriptions/products:", err);
+      }
+    }
+
+    function renderAdminProductsTable() {
+      const tbody = document.getElementById('admin-products-tbody');
+      if (!tbody) return;
+
+      const filterCat = document.getElementById('admin-product-filter-cat')?.value || 'ALL';
+      const searchQ = (document.getElementById('admin-product-search-input')?.value || '').toLowerCase().trim();
+
+      let filtered = currentAdminProductsList;
+      if (filterCat !== 'ALL') {
+        filtered = filtered.filter(p => p.category === filterCat);
+      }
+      if (searchQ) {
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQ) || p.sku.toLowerCase().includes(searchQ) || p.id.toLowerCase().includes(searchQ));
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #64748B; padding: 20px;">No matching products found in canonical catalogue.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(p => `
+        <tr>
+          <td><code style="font-size: 11px; font-weight: 700; color: #1E293B;">${escapeHtml(p.sku || p.id)}</code></td>
+          <td>
+            <strong>${escapeHtml(p.name)}</strong>
+            <div style="font-size: 10.5px; color: #64748B; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(p.description || '')}</div>
+          </td>
+          <td><span class="badge-role-admin" style="font-size: 9.5px;">${escapeHtml(p.category)}</span></td>
+          <td><strong style="font-size: 13.5px; color: #059669;">₹${p.amountRupees}</strong></td>
+          <td>${p.annualPriceRupees ? `<span style="font-size: 11.5px; color: #B45309;">₹${p.annualPriceRupees}/yr</span>` : (p.entitlementMapping?.bonusAmount ? `<span style="font-size: 11px; color: #059669;">+₹${p.entitlementMapping.bonusAmount} bonus</span>` : '-')}</td>
+          <td><span style="font-size: 11px; color: #475569;">${escapeHtml(p.billingModel || 'ONE_TIME')}</span></td>
+          <td><span style="font-size: 10.5px; background: #F1F5F9; padding: 1px 6px; border-radius: 4px; font-family: monospace;">v${p.version || 1}</span></td>
+          <td><span style="color: ${p.active ? '#059669' : '#DC2626'}; font-weight: 700; font-size: 11px;">${p.active ? 'ACTIVE' : 'INACTIVE'}</span></td>
+          <td>
+            <button class="btn-outline-secondary" style="font-size: 11px; padding: 3px 8px;" onclick="openAdminEditPriceModal('${escapeHtml(p.id)}')">
+              <i class="fa-solid fa-pen"></i> Edit Price
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterAdminProducts() {
+      renderAdminProductsTable();
+    }
+
+    function openAdminEditPriceModal(prodId) {
+      const prod = currentAdminProductsList.find(p => p.id === prodId);
+      if (!prod) {
+        showToast("Product not found.", "error");
+        return;
+      }
+
+      document.getElementById('edit-price-prod-id').value = prod.id;
+      document.getElementById('edit-price-sku-label').textContent = `SKU: ${prod.sku || prod.id} • Category: ${prod.category}`;
+      document.getElementById('edit-price-name').textContent = prod.name;
+      document.getElementById('edit-price-desc').textContent = prod.description || '';
+      document.getElementById('edit-price-input-amount').value = prod.amountRupees;
+
+      const annualWrap = document.getElementById('edit-price-annual-wrap');
+      const annualInput = document.getElementById('edit-price-input-annual');
+      if (prod.category === 'SUBSCRIPTION' && annualWrap && annualInput) {
+        annualWrap.style.display = 'block';
+        annualInput.value = prod.annualPriceRupees || '';
+      } else if (annualWrap) {
+        annualWrap.style.display = 'none';
+      }
+
+      const previewCard = document.getElementById('edit-price-preview-card');
+      if (previewCard) previewCard.style.display = 'none';
+
+      document.getElementById('modal-admin-edit-price').style.display = 'flex';
+    }
+
+    function closeAdminEditPriceModal() {
+      const modal = document.getElementById('modal-admin-edit-price');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function previewPriceImpact() {
+      const prodId = document.getElementById('edit-price-prod-id').value;
+      const proposedAmt = parseFloat(document.getElementById('edit-price-input-amount').value);
+      const proposedAnnual = parseFloat(document.getElementById('edit-price-input-annual')?.value || '0');
+
+      if (!Number.isFinite(proposedAmt) || proposedAmt <= 0) {
+        showToast("Please enter a valid positive price.", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/products/preview`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            id: prodId,
+            proposedAmountRupees: proposedAmt,
+            proposedAnnualRupees: proposedAnnual > 0 ? proposedAnnual : undefined
+          })
+        });
+
         if (res.ok) {
           const data = await res.json();
-          // Render data
+          document.getElementById('preview-old-price').textContent = `₹${data.currentPriceRupees.toFixed(2)}`;
+          document.getElementById('preview-new-price').textContent = `₹${data.proposedPriceRupees.toFixed(2)}`;
+          const diffSign = data.diffRupees >= 0 ? '+' : '';
+          document.getElementById('preview-diff-percent').textContent = `${diffSign}₹${data.diffRupees.toFixed(2)} (${diffSign}${data.diffPercent}%)`;
+          document.getElementById('preview-diff-percent').style.color = data.diffRupees > 0 ? '#059669' : (data.diffRupees < 0 ? '#DC2626' : '#64748B');
+          document.getElementById('preview-payable').textContent = `₹${data.taxConfiguration?.calculatedPayableRupees?.toFixed(2) || data.proposedPriceRupees.toFixed(2)}`;
+          document.getElementById('edit-price-preview-card').style.display = 'block';
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(err.message || "Failed to calculate preview.", "error");
         }
-      } catch (_) {}
+      } catch (err) {
+        showToast("Network error calculating price preview.", "error");
+      }
+    }
+
+    async function publishAdminPriceUpdate() {
+      const prodId = document.getElementById('edit-price-prod-id').value;
+      const proposedAmt = parseFloat(document.getElementById('edit-price-input-amount').value);
+      const proposedAnnual = parseFloat(document.getElementById('edit-price-input-annual')?.value || '0');
+      const btn = document.getElementById('btn-publish-price');
+
+      if (!Number.isFinite(proposedAmt) || proposedAmt <= 0) {
+        showToast("Please enter a valid price.", "error");
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/products/${encodeURIComponent(prodId)}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            amountRupees: proposedAmt,
+            annualPriceRupees: proposedAnnual > 0 ? proposedAnnual : undefined
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          showToast(`✅ Price published! ${data.message || ''}`, "success");
+          closeAdminEditPriceModal();
+          loadAdminSubscriptions();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(err.message || "Failed to publish price update.", "error");
+        }
+      } catch (err) {
+        showToast("Network error publishing price update.", "error");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function executeAdminRefund() {
+      const orderId = (document.getElementById('admin-refund-order-id')?.value || '').trim();
+      const amount = parseFloat(document.getElementById('admin-refund-amount')?.value || '0');
+      const reason = (document.getElementById('admin-refund-reason')?.value || '').trim();
+
+      if (!orderId) {
+        showToast("Order Reference ID is required.", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/payments/refund`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            orderId,
+            amount: amount > 0 ? amount : undefined,
+            reason: reason || undefined
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          showToast(`✅ Refund issued successfully: ${data.message || ''}`, "success");
+          document.getElementById('admin-refund-order-id').value = '';
+          document.getElementById('admin-refund-amount').value = '';
+          document.getElementById('admin-refund-reason').value = '';
+          loadAdminPayments();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          showToast(err.message || "Failed to process refund.", "error");
+        }
+      } catch (err) {
+        showToast("Network error executing refund.", "error");
+      }
     }
 
     async function loadAdminContent() {
