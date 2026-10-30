@@ -67,13 +67,16 @@ async function run() {
   console.log('ASTROVERSE AUTHENTICATION, SIGN-OUT & PORTAL ISOLATION VERIFICATION');
   console.log('======================================================================\n');
 
+  const targetUrl = process.argv[2] || `file:///${indexPath}`;
+  console.log(`Target URL: ${targetUrl}\n`);
+
   const chromeProc = spawn('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', [
     '--headless=new',
     '--remote-debugging-port=9266',
     '--disable-gpu',
     '--no-sandbox',
     '--allow-file-access-from-files',
-    `file:///${indexPath}`
+    targetUrl
   ]);
 
   let testCount = 0;

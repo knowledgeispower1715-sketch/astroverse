@@ -68,13 +68,16 @@ async function main() {
   console.log('ASTROVERSE ADMIN PORTAL SEPARATION & AUTHENTICATION AUDIT');
   console.log('======================================================================\n');
 
+  const baseUrl = process.argv[2] ? process.argv[2].replace(/\/$/, '') : `file:///${indexPath}`;
+  console.log(`Target Base URL: ${baseUrl}\n`);
+
   const chromeProc = spawn('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', [
     '--headless=new',
     '--remote-debugging-port=9263',
     '--disable-gpu',
     '--no-sandbox',
     '--allow-file-access-from-files',
-    `file:///${indexPath}#/admin-login`
+    `${baseUrl}#/admin-login`
   ]);
 
   let passedAll = true;
@@ -115,7 +118,7 @@ async function main() {
     await cdp.send('Page.enable');
     await cdp.send('DOM.enable');
 
-    await new Promise((r) => setTimeout(r, 1200));
+    await new Promise((r) => setTimeout(r, 3500));
 
     console.log('--- TEST SUITE 1: Dedicated Administrator Login UI & Zero Google Auth ---');
     const adminLoginVisible = await cdp.eval(`
