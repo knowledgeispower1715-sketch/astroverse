@@ -16441,10 +16441,14 @@
         closeWalletModal();
 
         try {
-          await cashfree.checkout({
+          const checkoutResult = await cashfree.checkout({
             paymentSessionId: orderData.paymentSessionId,
             redirectTarget: '_self'
           });
+          if (checkoutResult && checkoutResult.error) {
+            console.warn("Cashfree wallet checkout returned error, executing hosted fallback:", checkoutResult.error);
+            submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          }
         } catch (sdkErr) {
           console.warn("Cashfree wallet checkout threw, executing hosted fallback:", sdkErr);
           submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
@@ -22468,10 +22472,14 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         closePricingPlansModal();
 
         try {
-          await cashfree.checkout({
+          const checkoutResult = await cashfree.checkout({
             paymentSessionId: orderData.paymentSessionId,
             redirectTarget: '_self'
           });
+          if (checkoutResult && checkoutResult.error) {
+            console.warn("Cashfree checkout redirect returned error, launching hosted fallback:", checkoutResult.error);
+            submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          }
         } catch (sdkErr) {
           console.warn("Cashfree checkout redirect threw, launching hosted fallback:", sdkErr);
           submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
@@ -24459,10 +24467,14 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           closeReportStoreModal();
 
           try {
-            await cashfree.checkout({
+            const checkoutResult = await cashfree.checkout({
               paymentSessionId: orderData.paymentSessionId,
               redirectTarget: '_self'
             });
+            if (checkoutResult && checkoutResult.error) {
+              console.warn("Cashfree report checkout returned error, launching hosted fallback:", checkoutResult.error);
+              submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+            }
           } catch (sdkErr) {
             console.warn("Cashfree report checkout redirect threw, launching hosted fallback:", sdkErr);
             submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
