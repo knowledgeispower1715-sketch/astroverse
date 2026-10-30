@@ -2265,7 +2265,9 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
   }
 
   try {
-    const cfOrderId = `cf_wal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const cfOrderId = idempotencyKey
+      ? `cf_wal_${crypto.createHash('sha256').update(userId + '_' + idempotencyKey).digest('hex').slice(0, 16)}`
+      : `cf_wal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const userRecord = await db.findUserById(userId);
     const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
     const cfOrder = await createCashfreeOrder({
@@ -4151,7 +4153,9 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
   }
 
   try {
-    const orderReceipt = `sub_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const orderReceipt = idempotencyKey
+      ? `sub_${crypto.createHash('sha256').update(user.id + '_' + idempotencyKey).digest('hex').slice(0, 16)}`
+      : `sub_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const userRecord = await db.findUserById(user.id);
     const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
     const cfOrder = await createCashfreeOrder({
@@ -5128,7 +5132,9 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
       });
     }
 
-    const orderReceipt = `rep_ord_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const orderReceipt = idempotencyKey
+      ? `rep_${crypto.createHash('sha256').update(user.id + '_' + idempotencyKey).digest('hex').slice(0, 16)}`
+      : `rep_ord_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
     const userRecord = await db.findUserById(user.id);
     const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
     const cfOrder = await createCashfreeOrder({
@@ -6392,8 +6398,5 @@ if (require.main === module && !process.env.VERCEL && !process.env.AWS_LAMBDA_FU
   });
 }
 
-module.exports = app;
-module.exports.default = app;
-module.exports.app = app;
-module.exports.resolveGeocodeQuery = resolveGeocodeQuery;
+export { app };
 export default app;

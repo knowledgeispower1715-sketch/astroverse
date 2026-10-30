@@ -2500,6 +2500,7 @@ class ResilientDatabase {
         mapped.productType = data.productType;
         mapped.productId = data.productId;
         mapped.amountPaise = amountPaise;
+        mapped.idempotencyKey = data.idempotencyKey || null;
         this.data.paymentOrders.unshift(mapped);
         return mapped;
       } catch (err: any) {
@@ -2535,7 +2536,14 @@ class ResilientDatabase {
 
   findPaymentOrderByCustomerAndIdempotencyKey(userId: string, idempotencyKey: string): PaymentOrderRecord | null {
     if (!idempotencyKey) return null;
-    return this.data.paymentOrders.find(o => o.userId === userId && o.idempotencyKey === idempotencyKey) || null;
+    const inMem = this.data.paymentOrders.find(o => o.userId === userId && o.idempotencyKey === idempotencyKey);
+    if (inMem) return inMem;
+    const subOrderId = `cf_sub_${crypto.createHash('sha256').update(userId + '_' + idempotencyKey).digest('hex').slice(0, 16)}`;
+    const walOrderId = `cf_wal_${crypto.createHash('sha256').update(userId + '_' + idempotencyKey).digest('hex').slice(0, 16)}`;
+    const repOrderId = `cf_rep_${crypto.createHash('sha256').update(userId + '_' + idempotencyKey).digest('hex').slice(0, 16)}`;
+    return this.data.paymentOrders.find(o =>
+      o.userId === userId && (o.providerOrderId === subOrderId || o.providerOrderId === walOrderId || o.providerOrderId === repOrderId)
+    ) || null;
   }
 
   async unlockReport(userId: string, reportType: string, referenceId?: string, clientKey?: string): Promise<{
