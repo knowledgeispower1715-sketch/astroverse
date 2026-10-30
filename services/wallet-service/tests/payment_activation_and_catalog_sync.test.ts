@@ -277,4 +277,33 @@ test('ASTROVERSE CASHFREE PAYMENT ACTIVATION & PRICING SYNCHRONIZATION SUITE', a
     }
   });
 
+  await t.test('6. Webhook Endpoint Reachability & Probe Handler (GET /api/webhooks/cashfree)', async () => {
+    // 6.1 GET /api/webhooks/cashfree returns 200 ONLINE
+    const getRes = await request('/api/webhooks/cashfree');
+    assert.strictEqual(getRes.status, 200);
+    assert.strictEqual(getRes.body.status, 'ONLINE');
+    assert.strictEqual(getRes.body.endpoint, '/api/webhooks/cashfree');
+    assert.strictEqual(getRes.body.provider, 'Cashfree Payments');
+    assert.strictEqual(getRes.body.apiVersion, '2026-01-01');
+    assert.strictEqual(getRes.body.protocol, 'HTTP POST');
+    assert(Array.isArray(getRes.body.supportedEvents));
+
+    // 6.2 GET /api/cashfree/webhook alias returns 200 ONLINE
+    const aliasRes = await request('/api/cashfree/webhook');
+    assert.strictEqual(aliasRes.status, 200);
+    assert.strictEqual(aliasRes.body.status, 'ONLINE');
+
+    // 6.3 HEAD /api/webhooks/cashfree returns 200
+    const headRes = await request('/api/webhooks/cashfree', { method: 'HEAD' });
+    assert.strictEqual(headRes.status, 200);
+
+    // 6.4 POST /api/webhooks/cashfree without signatures still rejects with HTTP 400
+    const postNoSig = await request('/api/webhooks/cashfree', {
+      method: 'POST',
+      body: { type: 'TEST_EVENT' }
+    });
+    assert.strictEqual(postNoSig.status, 400);
+    assert.strictEqual(postNoSig.body.error, 'MISSING_SIGNATURE_HEADERS');
+  });
+
 });

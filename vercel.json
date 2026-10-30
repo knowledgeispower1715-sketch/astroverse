@@ -123,7 +123,7 @@
       }
     },
     {
-      "source": "/api/webhooks/(.*)",
+      "source": "/api/webhooks(.*)",
       "destination": {
         "service": "wallet-service"
       }

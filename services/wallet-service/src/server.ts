@@ -4560,8 +4560,33 @@ app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedReq
   }
 });
 
-// POST /api/webhooks/cashfree (Asynchronous Cashfree Webhook Handler)
-app.post('/api/webhooks/cashfree', async (req: Request, res: Response) => {
+// GET /api/webhooks/cashfree & /api/cashfree/webhook (Probe & Browser Verification Endpoint)
+const cashfreeWebhookHealthHandler = (_req: Request, res: Response) => {
+  return res.status(200).json({
+    status: 'ONLINE',
+    endpoint: '/api/webhooks/cashfree',
+    protocol: 'HTTP POST',
+    message: 'Cashfree webhook receiver is online and operational. Payment lifecycle events must be dispatched via HTTP POST with cryptographic x-webhook-signature and x-webhook-timestamp headers.',
+    provider: 'Cashfree Payments',
+    apiVersion: '2026-01-01',
+    supportedEvents: [
+      'PAYMENT_SUCCESS_WEBHOOK',
+      'PAYMENT_FAILED_WEBHOOK',
+      'PAYMENT_USER_DROPPED_WEBHOOK',
+      'REFUND_STATUS_WEBHOOK',
+      'SETTLEMENT_SUCCESS'
+    ],
+    timestamp: new Date().toISOString()
+  });
+};
+
+app.get('/api/webhooks/cashfree', cashfreeWebhookHealthHandler);
+app.get('/api/cashfree/webhook', cashfreeWebhookHealthHandler);
+app.head('/api/webhooks/cashfree', cashfreeWebhookHealthHandler);
+app.head('/api/cashfree/webhook', cashfreeWebhookHealthHandler);
+
+// POST /api/webhooks/cashfree & /api/cashfree/webhook (Asynchronous Cashfree Webhook Handler)
+app.post(['/api/webhooks/cashfree', '/api/cashfree/webhook'], async (req: Request, res: Response) => {
   try {
     const signature = req.headers['x-webhook-signature'] as string;
     const timestamp = req.headers['x-webhook-timestamp'] as string;
