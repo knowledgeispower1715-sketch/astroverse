@@ -365,8 +365,10 @@ async function run() {
     );
     await client.evaluate(`if (typeof closePricingPlansModal === 'function') closePricingPlansModal();`);
 
-    // Reports Store Modal
+    // Reports Store Modal (requires authenticated session)
     const reportModalInfo = await client.evaluate(`(() => {
+      localStorage.setItem('astro_user_session', JSON.stringify({ id: 'test-qa-user', email: 'seeker@astroverse.test', name: 'Test Seeker', session_token: 'fake-token' }));
+      try { currentUserSession = JSON.parse(localStorage.getItem('astro_user_session')); } catch (_) {}
       if (typeof openReportStoreModal === 'function') openReportStoreModal();
       const modal = document.getElementById('modal-report-store');
       const card = modal ? modal.querySelector('.modal-dialog-card') : null;
@@ -385,8 +387,10 @@ async function run() {
     );
     await client.evaluate(`if (typeof closeReportStoreModal === 'function') closeReportStoreModal();`);
 
-    // AI Consultation Room Modal
+    // AI Consultation Room Modal (requires authenticated session)
     const consultationModalInfo = await client.evaluate(`(() => {
+      localStorage.setItem('astro_user_session', JSON.stringify({ id: 'test-qa-user', email: 'seeker@astroverse.test', name: 'Test Seeker', session_token: 'fake-token' }));
+      try { currentUserSession = JSON.parse(localStorage.getItem('astro_user_session')); } catch (_) {}
       if (typeof toggleChatDrawer === 'function') toggleChatDrawer();
       const modal = document.getElementById('modal-ai-consultation');
       const card = modal ? modal.querySelector('.modal-dialog-card') : null;
@@ -410,7 +414,7 @@ async function run() {
       consultationModalInfo.cardHeight <= consultationModalInfo.winHeight + 2
     );
     assert(`AI consultation input composer is visible at bottom`, consultationModalInfo.composerVisible);
-    await client.evaluate(`if (typeof closeConsultationModal === 'function') closeConsultationModal();`);
+    await client.evaluate(`if (typeof closeConsultationModal === 'function') closeConsultationModal(); localStorage.removeItem('astro_user_session'); try { currentUserSession = null; } catch(_) {}`);
 
     console.log('\n===============================================================');
     console.log(`VERIFICATION SUMMARY: ${passedAssertions}/${totalAssertions} ASSERTIONS PASSED`);

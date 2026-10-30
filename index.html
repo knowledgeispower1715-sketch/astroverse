@@ -3429,10 +3429,19 @@
       .brand-tag {
         display: none !important;
       }
+      #nav-btn-signup {
+        display: none !important;
+      }
+      #global-tier-badge, .tier-chip {
+        display: none !important;
+      }
+      #global-header-profile-chip {
+        display: none !important;
+      }
       .nav-right-actions {
         display: flex !important;
         align-items: center !important;
-        gap: 4px !important;
+        gap: 6px !important;
         flex-shrink: 0 !important;
         margin-left: auto !important;
       }
@@ -3851,28 +3860,76 @@
       to { transform: translateY(0); opacity: 1; }
     }
 
-    /* Small Tablet / Phablet Breakpoint (<= 540px) */
-    @media (max-width: 540px) {
+    /* Small Tablet / Phablet Breakpoint (<= 640px) */
+    @media (max-width: 640px) {
       .promo-ticker {
         font-size: 11px !important;
-        padding: 5px 8px !important;
+        padding: 5px 10px !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        min-height: 36px !important;
+        max-width: 100vw !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .promo-content-wrap {
+        gap: 6px !important;
+        flex-wrap: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+      .promo-description, .promo-separator, .promo-trust {
+        display: none !important;
+      }
+      .promo-headline {
+        font-size: 11px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+      }
+      .promo-badge {
+        font-size: 9px !important;
+        padding: 2px 6px !important;
+        flex-shrink: 0 !important;
+      }
+      .promo-actions-wrap {
+        flex-shrink: 0 !important;
+        display: flex !important;
+        gap: 4px !important;
+      }
+      .promo-btn-cta {
+        padding: 3px 8px !important;
+        font-size: 10.5px !important;
+        min-height: 26px !important;
+        white-space: nowrap !important;
+      }
+      .promo-btn-secondary {
+        display: none !important;
       }
     }
 
     /* Smartphone Breakpoint (<= 480px) */
     @media (max-width: 480px) {
       .main-navbar, .main-header {
-        padding: 6px 8px !important;
+        padding: 6px 10px !important;
         gap: 6px !important;
+        max-width: 100vw !important;
+        overflow-x: clip !important;
+        box-sizing: border-box !important;
       }
       .mobile-menu-btn {
-        width: 34px !important;
-        height: 34px !important;
-        font-size: 14px !important;
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 15px !important;
         flex-shrink: 0 !important;
+        min-height: 36px !important;
       }
       .brand-logo-wrap {
-        gap: 5px !important;
+        gap: 6px !important;
         flex-shrink: 0 !important;
         min-width: 0 !important;
       }
@@ -3880,16 +3937,15 @@
         font-size: 17px !important;
       }
       .brand-title {
-        font-size: clamp(12px, 3.2vw, 13.5px) !important;
+        font-size: clamp(12.5px, 3.4vw, 14px) !important;
+        font-weight: 800 !important;
       }
       .nav-right-actions {
-        gap: 4px !important;
+        gap: 6px !important;
         margin-left: auto !important;
       }
       .wallet-chip {
-        padding: 4px 6px !important;
-        font-size: 10.5px !important;
-        min-height: 32px !important;
+        display: none !important;
       }
       .btn-auth-trigger {
         padding: 4px 7px !important;
@@ -4080,14 +4136,6 @@
         font-size: 10.5px !important;
         min-height: 32px !important;
       }
-      .auth-modal-card {
-        padding: 10px 6px !important;
-      }
-      .auth-modal-tab {
-        font-size: 10px !important;
-        padding: 5px 1px !important;
-      }
-    }
       .auth-modal-card {
         padding: 10px 6px !important;
       }
@@ -4618,9 +4666,43 @@
     }
     .tools-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
       gap: 20px;
       margin-top: 20px;
+    }
+    @media (max-width: 640px) {
+      .tools-filter-bar {
+        padding: 12px 14px !important;
+        gap: 10px !important;
+      }
+      .tools-search-box {
+        min-width: 100% !important;
+      }
+      .tools-cat-filter {
+        gap: 6px !important;
+      }
+      .tool-filter-btn {
+        padding: 5px 11px !important;
+        font-size: 11.5px !important;
+      }
+      .tools-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+      }
+      .tool-card {
+        padding: 16px 14px !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .tool-modal-backdrop {
+        padding: 8px !important;
+      }
+      .tool-modal-box {
+        padding: 18px 14px !important;
+        max-width: 100% !important;
+        max-height: 94vh !important;
+      }
     }
     .tool-card {
       background: #FFFFFF;
