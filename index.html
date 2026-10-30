@@ -9421,38 +9421,71 @@
 
   <!-- ==================== MODAL: WALLET RECHARGE ==================== -->
   <div id="modal-wallet" class="modal-backdrop-wrap">
-    <div class="modal-dialog-card" style="max-width: 520px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon);">
-          <i class="fa-solid fa-wallet"></i> Recharge Wallet & GST Invoice
+    <div class="modal-dialog-card" style="max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+          <i class="fa-solid fa-wallet"></i> Recharge Wallet &amp; GST Invoice
         </h3>
-        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px;" onclick="closeWalletModal()"></i>
+        <i class="fa-solid fa-xmark" style="cursor: pointer; font-size: 18px; color: #64748B; padding: 4px;" onclick="closeWalletModal()"></i>
       </div>
 
-      <p style="font-size: 13px; color: #64748B; margin-bottom: 16px;">
-        Select an authorized recharge pack. Includes statutory 18% GST and instant promotional bonus credits:
-      </p>
-
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;" id="wallet-pack-selector">
-        <div class="panchang-box" id="pack-card-100" style="cursor: pointer; text-align: center; border: 2px solid #E2E8F0; padding: 10px;" onclick="selectWalletRechargePack(100, 10)">
-          <div class="panchang-val" style="font-size: 18px;">₹100</div>
-          <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹10 Free</div>
-          <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹110</div>
+      <!-- SECTION 1 — QUICK RECHARGE PACKAGES -->
+      <div style="margin-bottom: 14px;">
+        <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+          SECTION 1 — QUICK RECHARGE PACKAGES
         </div>
-        <div class="panchang-box" id="pack-card-250" style="cursor: pointer; text-align: center; border: 2px solid var(--vedic-gold); background: #FFFDF8; padding: 10px;" onclick="selectWalletRechargePack(250, 35)">
-          <div class="panchang-val" style="font-size: 18px;">₹250</div>
-          <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹35 Free</div>
-          <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹285</div>
-        </div>
-        <div class="panchang-box" id="pack-card-500" style="cursor: pointer; text-align: center; border: 2px solid #E2E8F0; padding: 10px;" onclick="selectWalletRechargePack(500, 100)">
-          <div class="panchang-val" style="font-size: 18px;">₹500</div>
-          <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹100 Free</div>
-          <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹600</div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;" id="wallet-pack-selector">
+          <div class="panchang-box" id="pack-card-100" style="cursor: pointer; text-align: center; border: 2px solid #E2E8F0; padding: 10px; border-radius: 8px;" onclick="selectWalletRechargePack(100, 10)">
+            <div class="panchang-val" style="font-size: 18px; font-weight: 800;">₹100</div>
+            <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹10 Free</div>
+            <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹110</div>
+          </div>
+          <div class="panchang-box" id="pack-card-250" style="cursor: pointer; text-align: center; border: 2px solid var(--vedic-gold); background: #FFFDF8; padding: 10px; border-radius: 8px;" onclick="selectWalletRechargePack(250, 35)">
+            <div class="panchang-val" style="font-size: 18px; font-weight: 800;">₹250</div>
+            <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹35 Free</div>
+            <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹285</div>
+          </div>
+          <div class="panchang-box" id="pack-card-500" style="cursor: pointer; text-align: center; border: 2px solid #E2E8F0; padding: 10px; border-radius: 8px;" onclick="selectWalletRechargePack(500, 100)">
+            <div class="panchang-val" style="font-size: 18px; font-weight: 800;">₹500</div>
+            <div style="font-size: 11px; color: #059669; font-weight: 700;">+₹100 Free</div>
+            <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Total Credit: ₹600</div>
+          </div>
         </div>
       </div>
 
-      <!-- GST Breakdown Invoice -->
+      <!-- SECTION 2 — CUSTOM RECHARGE -->
+      <div style="margin-bottom: 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-md); padding: 12px 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">
+            <i class="fa-solid fa-coins" style="color: var(--vedic-gold);"></i> SECTION 2 — CUSTOM RECHARGE
+          </div>
+          <span style="font-size: 10.5px; color: #059669; font-weight: 700; background: #ECFDF5; border: 1px solid #A7F3D0; padding: 2px 6px; border-radius: 4px;">Min ₹1.00</span>
+        </div>
+        <p style="font-size: 12px; color: #64748B; margin: 0 0 8px 0;">
+          Choose any amount starting from ₹1.00 up to ₹50,000.00:
+        </p>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-weight: 800; font-size: 16px; color: #1E293B;">₹</span>
+          <input
+            type="number"
+            id="input-custom-recharge"
+            step="0.01"
+            min="1"
+            max="50000"
+            inputmode="decimal"
+            placeholder="Enter custom amount (e.g. 1.00, 10.00, 750.00)"
+            style="width: 100%; padding: 10px 12px 10px 30px; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 15px; font-weight: 700; color: #0F172A; background: #FFFFFF; outline: none; box-sizing: border-box;"
+            oninput="onCustomRechargeInput(this.value)"
+          >
+        </div>
+        <div id="custom-recharge-error" style="display: none; font-size: 11.5px; color: #DC2626; margin-top: 6px; font-weight: 600;"></div>
+      </div>
+
+      <!-- SECTION 3 — PAYMENT SUMMARY & GST INVOICE -->
       <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px; font-size: 13px;">
+        <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+          SECTION 3 — PAYMENT SUMMARY
+        </div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
           <span style="color: #64748B;">Recharge Base Amount:</span>
           <strong id="invoice-base-amt">₹250.00</strong>
@@ -9471,13 +9504,14 @@
           <strong id="invoice-total-payable" style="color: var(--vedic-maroon); font-size: 16px;">₹295.00</strong>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 12px; color: #059669; font-weight: 600;">
-          <span>Effective Wallet Balance Credited:</span>
+          <span>Final Wallet Balance Credited:</span>
           <span id="invoice-wallet-credit">₹285.00</span>
         </div>
       </div>
 
-      <button class="btn-gold-primary" id="btn-proceed-pay" style="width: 100%; justify-content: center; margin-bottom: 8px;" onclick="executeSelectedRecharge()">
-        <i class="fa-solid fa-lock"></i> Pay ₹295.00 & Recharge Wallet
+      <!-- SECTION 4 — PAYMENT BUTTON -->
+      <button class="btn-gold-primary" id="btn-proceed-pay" style="width: 100%; justify-content: center; margin-bottom: 8px; font-weight: 800; font-size: 14px; padding: 12px;" onclick="executeSelectedRecharge()">
+        <i class="fa-solid fa-lock"></i> Proceed to Secure Payment — ₹295.00
       </button>
 
       <button class="btn-outline-secondary" style="width: 100%; justify-content: center;" onclick="closeWalletModal()">
@@ -16299,7 +16333,12 @@
     }
 
     // Wallet Modals & Consultations
-    let selectedRechargePack = { base: 250, bonus: 35 };
+    let selectedRechargePack = { base: 250, bonus: 35, gst: 45, totalPayable: 295, totalCredit: 285, isValid: true };
+    const PRESET_RECHARGE_PACKS = [
+      { base: 100, bonus: 10 },
+      { base: 250, bonus: 35 },
+      { base: 500, bonus: 100 }
+    ];
 
     function openWalletModal() {
       selectWalletRechargePack(250, 35);
@@ -16312,30 +16351,176 @@
     }
 
     function selectWalletRechargePack(base, bonus) {
-      selectedRechargePack = { base, bonus };
-      const gst = parseFloat((base * 0.18).toFixed(2));
-      const totalPayable = parseFloat((base + gst).toFixed(2));
-      const totalCredit = parseFloat((base + bonus).toFixed(2));
+      const customInput = document.getElementById('input-custom-recharge');
+      if (customInput) {
+        customInput.value = base;
+      }
+      applyWalletRechargeAmount(base, bonus, true);
+    }
 
-      document.getElementById('invoice-base-amt').textContent = `₹${base.toFixed(2)}`;
-      document.getElementById('invoice-gst-amt').textContent = `₹${gst.toFixed(2)}`;
-      document.getElementById('invoice-bonus-amt').textContent = `+₹${bonus.toFixed(2)}`;
-      document.getElementById('invoice-total-payable').textContent = `₹${totalPayable.toFixed(2)}`;
-      document.getElementById('invoice-wallet-credit').textContent = `₹${totalCredit.toFixed(2)}`;
-      document.getElementById('btn-proceed-pay').innerHTML = `<i class="fa-solid fa-lock"></i> Pay ₹${totalPayable.toFixed(2)} & Recharge Wallet`;
+    function onCustomRechargeInput(valStr) {
+      const errEl = document.getElementById('custom-recharge-error');
+      const payBtn = document.getElementById('btn-proceed-pay');
+      const cleaned = (valStr || '').trim();
 
+      // Deselect visual cards
       ['100', '250', '500'].forEach(p => {
         const c = document.getElementById('pack-card-' + p);
         if (c) {
-          if (parseInt(p) === base) {
-            c.style.border = '2px solid var(--vedic-gold)';
-            c.style.background = '#FFFDF8';
-          } else {
-            c.style.border = '2px solid #E2E8F0';
-            c.style.background = '#FFFFFF';
-          }
+          c.style.border = '2px solid #E2E8F0';
+          c.style.background = '#FFFFFF';
         }
       });
+
+      if (!cleaned) {
+        if (errEl) {
+          errEl.textContent = 'Please enter a recharge amount.';
+          errEl.style.display = 'block';
+        }
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Enter Valid Amount';
+        }
+        selectedRechargePack.isValid = false;
+        return;
+      }
+
+      if (cleaned.includes('e') || cleaned.includes('E')) {
+        if (errEl) {
+          errEl.textContent = 'Scientific notation is not permitted.';
+          errEl.style.display = 'block';
+        }
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Enter Valid Amount';
+        }
+        selectedRechargePack.isValid = false;
+        return;
+      }
+
+      const num = parseFloat(cleaned);
+      if (isNaN(num) || !isFinite(num)) {
+        if (errEl) {
+          errEl.textContent = 'Please enter a valid numeric amount.';
+          errEl.style.display = 'block';
+        }
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Enter Valid Amount';
+        }
+        selectedRechargePack.isValid = false;
+        return;
+      }
+
+      if (num < 1.00) {
+        if (errEl) {
+          errEl.textContent = 'Minimum recharge amount is ₹1.00.';
+          errEl.style.display = 'block';
+        }
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Min Amount ₹1.00';
+        }
+        selectedRechargePack.isValid = false;
+        return;
+      }
+
+      if (num > 50000.00) {
+        if (errEl) {
+          errEl.textContent = 'Maximum permitted recharge amount is ₹50,000.00.';
+          errEl.style.display = 'block';
+        }
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Max Amount ₹50,000';
+        }
+        selectedRechargePack.isValid = false;
+        return;
+      }
+
+      const decParts = cleaned.split('.');
+      if (decParts.length > 2 || (decParts.length === 2 && decParts[1].length > 2)) {
+        if (errEl) {
+          errEl.textContent = 'Please enter an amount with no more than two decimal places.';
+          errEl.style.display = 'block';
+        }
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Max 2 Decimals';
+        }
+        selectedRechargePack.isValid = false;
+        return;
+      }
+
+      if (errEl) errEl.style.display = 'none';
+
+      // Check if matches preset pack
+      const matched = PRESET_RECHARGE_PACKS.find(p => p.base === num);
+      const bonus = matched ? matched.bonus : 0;
+      if (matched) {
+        const c = document.getElementById('pack-card-' + matched.base);
+        if (c) {
+          c.style.border = '2px solid var(--vedic-gold)';
+          c.style.background = '#FFFDF8';
+        }
+      }
+
+      applyWalletRechargeAmount(num, bonus, false);
+    }
+
+    function applyWalletRechargeAmount(base, bonus, updateCards) {
+      const basePaise = Math.round(base * 100);
+      const gstPaise = Math.round(basePaise * 0.18);
+      const totalPayablePaise = basePaise + gstPaise;
+      const bonusPaise = Math.round(bonus * 100);
+      const totalCreditPaise = basePaise + bonusPaise;
+
+      const gst = gstPaise / 100;
+      const totalPayable = totalPayablePaise / 100;
+      const totalCredit = totalCreditPaise / 100;
+
+      selectedRechargePack = {
+        base,
+        bonus,
+        gst,
+        totalPayable,
+        totalCredit,
+        isValid: true
+      };
+
+      const baseEl = document.getElementById('invoice-base-amt');
+      const gstEl = document.getElementById('invoice-gst-amt');
+      const bonusEl = document.getElementById('invoice-bonus-amt');
+      const totalEl = document.getElementById('invoice-total-payable');
+      const creditEl = document.getElementById('invoice-wallet-credit');
+      const payBtn = document.getElementById('btn-proceed-pay');
+
+      if (baseEl) baseEl.textContent = `₹${base.toFixed(2)}`;
+      if (gstEl) gstEl.textContent = `₹${gst.toFixed(2)}`;
+      if (bonusEl) bonusEl.textContent = bonus > 0 ? `+₹${bonus.toFixed(2)}` : '₹0.00';
+      if (totalEl) totalEl.textContent = `₹${totalPayable.toFixed(2)}`;
+      if (creditEl) creditEl.textContent = `₹${totalCredit.toFixed(2)}`;
+      if (payBtn) {
+        payBtn.disabled = false;
+        payBtn.innerHTML = `<i class="fa-solid fa-lock"></i> Proceed to Secure Payment — ₹${totalPayable.toFixed(2)}`;
+      }
+
+      if (updateCards) {
+        ['100', '250', '500'].forEach(p => {
+          const c = document.getElementById('pack-card-' + p);
+          if (c) {
+            if (parseInt(p) === base) {
+              c.style.border = '2px solid var(--vedic-gold)';
+              c.style.background = '#FFFDF8';
+            } else {
+              c.style.border = '2px solid #E2E8F0';
+              c.style.background = '#FFFFFF';
+            }
+          }
+        });
+        const errEl = document.getElementById('custom-recharge-error');
+        if (errEl) errEl.style.display = 'none';
+      }
     }
 
     async function executeSelectedRecharge() {
@@ -16345,17 +16530,19 @@
         return;
       }
 
-      const { base, bonus } = selectedRechargePack;
-      const gst = parseFloat((base * 0.18).toFixed(2));
-      const totalPayable = parseFloat((base + gst).toFixed(2));
-      const totalCredit = parseFloat((base + bonus).toFixed(2));
+      if (!selectedRechargePack.isValid || selectedRechargePack.base < 1.00) {
+        showToast("Please enter a valid recharge amount of at least ₹1.00.", "warning");
+        return;
+      }
+
+      const { base, bonus, totalPayable, totalCredit } = selectedRechargePack;
 
       const targetBtn = document.getElementById('btn-proceed-pay');
       const originalBtnHtml = targetBtn ? targetBtn.innerHTML : '';
 
       setPaymentState(PAYMENT_STATES.VALIDATING, {
         type: 'wallet',
-        item: `Wallet Recharge: ₹${base} (+₹${bonus} Bonus)`,
+        item: `Wallet Recharge: ₹${base.toFixed(2)}` + (bonus > 0 ? ` (+₹${bonus.toFixed(2)} Bonus)` : ''),
         amount: `₹${totalPayable.toFixed(2)}`,
         retryFn: () => executeSelectedRecharge(),
         resetBtn: () => {

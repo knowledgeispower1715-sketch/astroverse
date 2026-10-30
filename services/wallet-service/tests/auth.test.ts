@@ -670,7 +670,7 @@ async function runAuthTestSuite() {
     });
 
     await test('POST /api/wallet/create-order rejects zero, negative, non-finite, and out-of-range amounts', async () => {
-      const invalidAmounts = [0, -100, NaN, Infinity, 25, 60000, 100.555, 'not-a-number'];
+      const invalidAmounts = [0, -100, NaN, Infinity, 0.5, 60000, 100.555, 'not-a-number'];
       for (const amt of invalidAmounts) {
         const res = await request('/api/wallet/create-order', {
           method: 'POST',

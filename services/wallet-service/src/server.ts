@@ -2162,8 +2162,9 @@ app.delete('/api/reports/:id', authenticate, async (req: AuthenticatedRequest, r
 
 // ==================== 5. WALLET & PAYMENT GATEWAY ====================
 
-export const MIN_RECHARGE_AMOUNT = 50;
+export const MIN_RECHARGE_AMOUNT = 1.00;
 export const MAX_RECHARGE_AMOUNT = 50000;
+export const RECHARGE_GST_RATE = 0.18;
 
 /**
  * Direct recharge endpoint is deprecated and disabled for financial integrity.
@@ -2178,28 +2179,40 @@ app.post('/api/wallet/recharge', authenticate, (_req: AuthenticatedRequest, res:
 });
 
 export const APPROVED_RECHARGE_PACKAGES = [
-  { id: 'pack_50', baseAmount: 50, bonus: 0, totalCredit: 50 },
-  { id: 'pack_100', baseAmount: 100, bonus: 10, totalCredit: 110 },
-  { id: 'pack_250', baseAmount: 250, bonus: 35, totalCredit: 285 },
-  { id: 'pack_500', baseAmount: 500, bonus: 100, totalCredit: 600 },
-  { id: 'pack_1000', baseAmount: 1000, bonus: 250, totalCredit: 1250 },
-  { id: 'pack_2000', baseAmount: 2000, bonus: 600, totalCredit: 2600 },
-  { id: 'pack_5000', baseAmount: 5000, bonus: 1750, totalCredit: 6750 }
+  { id: 'pack_100', baseAmount: 100, bonus: 10, totalCredit: 110, label: 'Starter Cosmic Pack' },
+  { id: 'pack_250', baseAmount: 250, bonus: 35, totalCredit: 285, label: 'Celestial Seeker Pack', popular: true },
+  { id: 'pack_500', baseAmount: 500, bonus: 100, totalCredit: 600, label: 'Divine Astral Pack' },
+  { id: 'pack_1000', baseAmount: 1000, bonus: 250, totalCredit: 1250, label: 'Rishi Wisdom Pack' },
+  { id: 'pack_2000', baseAmount: 2000, bonus: 600, totalCredit: 2600, label: 'Guru Divine Pack' },
+  { id: 'pack_5000', baseAmount: 5000, bonus: 1750, totalCredit: 6750, label: 'Maharishi Master Pack' }
 ];
 
 export function validateRechargeAmount(amount: any): { valid: boolean; normalizedAmount: number; error?: string } {
   if (amount == null || (typeof amount !== 'number' && typeof amount !== 'string')) {
     return { valid: false, normalizedAmount: 0, error: 'Recharge amount must be a numeric value.' };
   }
+  if (typeof amount === 'string') {
+    const trimmed = amount.trim();
+    if (!trimmed) {
+      return { valid: false, normalizedAmount: 0, error: 'Recharge amount cannot be empty.' };
+    }
+    if (trimmed.includes('e') || trimmed.includes('E')) {
+      return { valid: false, normalizedAmount: 0, error: 'Scientific notation is not permitted.' };
+    }
+    const decParts = trimmed.split('.');
+    if (decParts.length > 2 || (decParts.length === 2 && decParts[1].length > 2)) {
+      return { valid: false, normalizedAmount: 0, error: 'Recharge amount cannot exceed 2 decimal places.' };
+    }
+  }
   const num = Number(amount);
   if (!Number.isFinite(num) || isNaN(num)) {
     return { valid: false, normalizedAmount: 0, error: 'Recharge amount must be a finite number.' };
   }
   if (num < MIN_RECHARGE_AMOUNT) {
-    return { valid: false, normalizedAmount: 0, error: `Minimum recharge amount is ₹${MIN_RECHARGE_AMOUNT}.` };
+    return { valid: false, normalizedAmount: 0, error: `Minimum recharge amount is ₹${MIN_RECHARGE_AMOUNT.toFixed(2)}.` };
   }
   if (num > MAX_RECHARGE_AMOUNT) {
-    return { valid: false, normalizedAmount: 0, error: `Maximum recharge amount is ₹${MAX_RECHARGE_AMOUNT}.` };
+    return { valid: false, normalizedAmount: 0, error: `Maximum recharge amount is ₹${MAX_RECHARGE_AMOUNT.toFixed(2)}.` };
   }
   const rounded = Math.round(num * 100) / 100;
   if (Math.abs(num - rounded) > 0.0001) {
@@ -2207,6 +2220,130 @@ export function validateRechargeAmount(amount: any): { valid: boolean; normalize
   }
   return { valid: true, normalizedAmount: rounded };
 }
+
+export interface RechargePricingBreakdown {
+  valid: boolean;
+  baseAmount: number;
+  basePaise: number;
+  gstRate: number;
+  gstAmount: number;
+  gstPaise: number;
+  totalPayableAmount: number;
+  totalPayablePaise: number;
+  bonusAmount: number;
+  bonusPaise: number;
+  creditAmount: number;
+  creditPaise: number;
+  currency: string;
+  currencySymbol: string;
+  error?: string;
+}
+
+export function calculateWalletRechargePricing(amount: any, packageId?: string): RechargePricingBreakdown {
+  let requested = amount;
+  let matchingPack = packageId ? APPROVED_RECHARGE_PACKAGES.find(p => p.id === packageId) : undefined;
+  if (matchingPack) {
+    requested = matchingPack.baseAmount;
+  }
+
+  const validation = validateRechargeAmount(requested);
+  if (!validation.valid) {
+    return {
+      valid: false,
+      baseAmount: 0,
+      basePaise: 0,
+      gstRate: RECHARGE_GST_RATE,
+      gstAmount: 0,
+      gstPaise: 0,
+      totalPayableAmount: 0,
+      totalPayablePaise: 0,
+      bonusAmount: 0,
+      bonusPaise: 0,
+      creditAmount: 0,
+      creditPaise: 0,
+      currency: 'INR',
+      currencySymbol: '₹',
+      error: validation.error
+    };
+  }
+
+  const baseAmount = validation.normalizedAmount;
+  const basePaise = Math.round(baseAmount * 100);
+
+  // 18% statutory GST in integer paise
+  const gstPaise = Math.round(basePaise * RECHARGE_GST_RATE);
+  const gstAmount = gstPaise / 100;
+
+  // Total payable via Cashfree
+  const totalPayablePaise = basePaise + gstPaise;
+  const totalPayableAmount = totalPayablePaise / 100;
+
+  // Promotional bonus
+  if (!matchingPack) {
+    matchingPack = APPROVED_RECHARGE_PACKAGES.find(p => Math.round(p.baseAmount * 100) === basePaise);
+  }
+  const bonusAmount = matchingPack ? matchingPack.bonus : 0;
+  const bonusPaise = Math.round(bonusAmount * 100);
+
+  // Effective wallet credits (Base principal + bonus)
+  const creditPaise = basePaise + bonusPaise;
+  const creditAmount = creditPaise / 100;
+
+  return {
+    valid: true,
+    baseAmount,
+    basePaise,
+    gstRate: RECHARGE_GST_RATE,
+    gstAmount,
+    gstPaise,
+    totalPayableAmount,
+    totalPayablePaise,
+    bonusAmount,
+    bonusPaise,
+    creditAmount,
+    creditPaise,
+    currency: 'INR',
+    currencySymbol: '₹'
+  };
+}
+
+app.get('/api/wallet/config', async (_req: Request, res: Response) => {
+  const readiness = getPaymentReadinessStatus();
+  return res.json({
+    success: true,
+    currency: 'INR',
+    currencySymbol: '₹',
+    minAmount: MIN_RECHARGE_AMOUNT,
+    maxAmount: MAX_RECHARGE_AMOUNT,
+    decimalPrecision: 2,
+    customRechargeEnabled: true,
+    gst: {
+      rate: RECHARGE_GST_RATE,
+      percentage: Math.round(RECHARGE_GST_RATE * 100),
+      applicable: true,
+      type: 'STATUTORY_GST',
+      hsnSacCode: '998315'
+    },
+    packages: APPROVED_RECHARGE_PACKAGES.map(p => {
+      const basePaise = Math.round(p.baseAmount * 100);
+      const gstPaise = Math.round(basePaise * RECHARGE_GST_RATE);
+      return {
+        ...p,
+        gstAmount: gstPaise / 100,
+        totalPayable: (basePaise + gstPaise) / 100
+      };
+    }),
+    gateway: 'CASHFREE',
+    environment: readiness.environment,
+    paymentsConfigured: readiness.configured
+  });
+});
+
+app.post('/api/wallet/quote', async (req: Request, res: Response) => {
+  const { amount, packageId } = req.body || {};
+  const quote = calculateWalletRechargePricing(amount, packageId);
+  return res.json(quote);
+});
 
 app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const sessionUser = req.user!;
@@ -2224,25 +2361,25 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
     : sessionUser.id;
 
   let requestedAmount = req.body.amount;
-  if (req.body.packageId) {
-    const pkg = APPROVED_RECHARGE_PACKAGES.find(p => p.id === req.body.packageId);
+  const packageId = req.body.packageId;
+  if (packageId) {
+    const pkg = APPROVED_RECHARGE_PACKAGES.find(p => p.id === packageId);
     if (!pkg) {
       return res.status(400).json({
         error: 'INVALID_PACKAGE',
-        message: `Package identifier '${req.body.packageId}' is not an approved recharge package.`
+        message: `Package identifier '${packageId}' is not an approved recharge package.`
       });
     }
     requestedAmount = pkg.baseAmount;
   }
 
-  const validation = validateRechargeAmount(requestedAmount);
-  if (!validation.valid) {
+  const pricing = calculateWalletRechargePricing(requestedAmount, packageId);
+  if (!pricing.valid) {
     return res.status(400).json({
       error: 'INVALID_AMOUNT',
-      message: validation.error
+      message: pricing.error
     });
   }
-  const amount = validation.normalizedAmount;
 
   const idempotencyKey = ((req.headers['x-idempotency-key'] as string) || (req.body.idempotencyKey as string) || '').trim();
 
@@ -2254,6 +2391,10 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
         orderId: existingOrder.providerOrderId,
         amount: existingOrder.amount,
         amountPaise: existingOrder.amountPaise,
+        baseAmount: existingOrder.baseAmount ?? pricing.baseAmount,
+        gstAmount: existingOrder.gstAmount ?? pricing.gstAmount,
+        bonusAmount: existingOrder.bonusAmount ?? pricing.bonusAmount,
+        creditAmount: existingOrder.creditAmount ?? pricing.creditAmount,
         currency: existingOrder.currency,
         provider: 'CASHFREE',
         gateway: 'CASHFREE',
@@ -2287,7 +2428,7 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
     const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
     const cfOrder = await createCashfreeOrder({
       orderId: cfOrderId,
-      orderAmount: amount,
+      orderAmount: pricing.totalPayableAmount,
       orderCurrency: 'INR',
       customer: {
         customer_id: userId,
@@ -2296,13 +2437,13 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
         customer_name: userRecord?.displayName || 'AstroVerse Seeker'
       },
       returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=wallet`,
-      orderNote: `Wallet Recharge: ₹${amount}`,
+      orderNote: `Wallet Recharge: ₹${pricing.baseAmount.toFixed(2)} (+₹${pricing.gstAmount.toFixed(2)} GST)`,
       idempotencyKey: idempotencyKey || undefined
     });
 
     const order = await db.createPaymentOrder({
       userId,
-      amount,
+      amount: pricing.totalPayableAmount,
       currency: 'INR',
       provider: 'CASHFREE',
       providerOrderId: cfOrder.order_id,
@@ -2310,7 +2451,11 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
       cfOrderId: cfOrder.order_id,
       cfPaymentSessionId: cfOrder.payment_session_id,
       productType: 'WALLET_RECHARGE',
-      idempotencyKey: idempotencyKey || undefined
+      idempotencyKey: idempotencyKey || undefined,
+      baseAmount: pricing.baseAmount,
+      gstAmount: pricing.gstAmount,
+      bonusAmount: pricing.bonusAmount,
+      creditAmount: pricing.creditAmount
     });
 
     await db.recordAuditEvent({
@@ -2318,13 +2463,26 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
       action: 'PAYMENT_ORDER_CREATED',
       targetType: 'PAYMENT_ORDER',
       targetId: order.providerOrderId,
-      metadata: { amount, currency: 'INR', provider: 'CASHFREE', cfOrderId: cfOrder.cf_order_id }
+      metadata: { 
+        amount: pricing.totalPayableAmount,
+        baseAmount: pricing.baseAmount,
+        gstAmount: pricing.gstAmount,
+        bonusAmount: pricing.bonusAmount,
+        creditAmount: pricing.creditAmount,
+        currency: 'INR',
+        provider: 'CASHFREE',
+        cfOrderId: cfOrder.cf_order_id
+      }
     });
 
     res.json({
       orderId: order.providerOrderId,
       amount: order.amount,
       amountPaise: order.amountPaise,
+      baseAmount: pricing.baseAmount,
+      gstAmount: pricing.gstAmount,
+      bonusAmount: pricing.bonusAmount,
+      creditAmount: pricing.creditAmount,
       currency: order.currency,
       provider: 'CASHFREE',
       gateway: 'CASHFREE',
@@ -2453,7 +2611,12 @@ app.post('/api/wallet/verify-payment', authenticate, async (req: AuthenticatedRe
       status: 'SUCCESS',
       newBalance: updatedUser.walletBalance,
       orderId: order.providerOrderId,
-      paymentId: settledPaymentId
+      paymentId: settledPaymentId,
+      amount: order.amount,
+      baseAmount: order.baseAmount,
+      gstAmount: order.gstAmount,
+      bonusAmount: order.bonusAmount,
+      creditAmount: order.creditAmount
     });
   } catch (error: any) {
     return handleServiceError(res, error, 'Payment verification failed');
@@ -6667,4 +6830,10 @@ module.exports = app;
 module.exports.default = app;
 module.exports.app = app;
 module.exports.resolveGeocodeQuery = resolveGeocodeQuery;
+module.exports.validateRechargeAmount = validateRechargeAmount;
+module.exports.calculateWalletRechargePricing = calculateWalletRechargePricing;
+module.exports.MIN_RECHARGE_AMOUNT = MIN_RECHARGE_AMOUNT;
+module.exports.MAX_RECHARGE_AMOUNT = MAX_RECHARGE_AMOUNT;
+module.exports.RECHARGE_GST_RATE = RECHARGE_GST_RATE;
+module.exports.APPROVED_RECHARGE_PACKAGES = APPROVED_RECHARGE_PACKAGES;
 export default app;

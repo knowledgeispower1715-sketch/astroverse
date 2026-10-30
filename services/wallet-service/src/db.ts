@@ -273,6 +273,10 @@ export interface PaymentOrderRecord {
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
+  baseAmount?: number;
+  gstAmount?: number;
+  bonusAmount?: number;
+  creditAmount?: number;
   // Compatibility aliases for historical records:
   razorpayOrderId?: string;
   razorpayPaymentId?: string | null;
@@ -2245,6 +2249,14 @@ class ResilientDatabase {
     }
 
     const activeProvider = order.provider || provider;
+    const effectiveCredit = order.creditAmount != null 
+      ? order.creditAmount 
+      : (order.baseAmount != null ? Math.round((order.baseAmount + (order.bonusAmount || 0)) * 100) / 100 : order.amount);
+    const baseCredit = order.baseAmount != null 
+      ? order.baseAmount 
+      : (order.bonusAmount != null ? Math.max(0, Math.round((order.amount - order.bonusAmount) * 100) / 100) : order.amount);
+    const bonusCredit = order.bonusAmount != null ? order.bonusAmount : 0;
+
     // If PostgreSQL Prisma is active, execute ACID transaction
     if (this.isPostgresAvailable && this.prisma) {
       try {
@@ -2267,17 +2279,30 @@ class ResilientDatabase {
           await tx.walletLedger.create({
             data: {
               userId,
-              amount,
+              amount: baseCredit,
               entryType: EntryType.WALLET_RECHARGE,
               idempotencyKey: `RECHARGE_${paymentId}`,
               referenceId: paymentId,
-              description: `Wallet recharge of ₹${order.amount.toFixed(2)} via ${activeProvider} (${paymentId})`
+              description: `Wallet recharge of ₹${baseCredit.toFixed(2)} via ${activeProvider} (${paymentId})`
             }
           });
 
+          if (bonusCredit > 0) {
+            await tx.walletLedger.create({
+              data: {
+                userId,
+                amount: bonusCredit,
+                entryType: EntryType.WALLET_RECHARGE,
+                idempotencyKey: `BONUS_${paymentId}`,
+                referenceId: paymentId,
+                description: `Promotional bonus credit of ₹${bonusCredit.toFixed(2)} for recharge ${order.providerOrderId || orderKey}`
+              }
+            });
+          }
+
           const updated = await tx.user.update({
             where: { id: userId },
-            data: { walletBalance: { increment: amount } }
+            data: { walletBalance: { increment: effectiveCredit } }
           });
 
           return this.mapPrismaUser(updated);
@@ -2302,7 +2327,7 @@ class ResilientDatabase {
     order.razorpayPaymentId = paymentId;
     order.updatedAt = new Date().toISOString();
 
-    const newBal = Math.round((user.walletBalance + order.amount) * 100) / 100;
+    const newBal = Math.round((user.walletBalance + effectiveCredit) * 100) / 100;
     user.walletBalance = newBal;
     user.updatedAt = new Date().toISOString();
 
@@ -2310,13 +2335,27 @@ class ResilientDatabase {
       id: 'led_' + crypto.randomBytes(8).toString('hex'),
       userId,
       astrologerId: null,
-      amount: order.amount,
+      amount: baseCredit,
       entryType: EntryType.WALLET_RECHARGE,
       idempotencyKey: `RECHARGE_${paymentId}`,
       referenceId: paymentId,
-      description: `Wallet recharge of ₹${order.amount.toFixed(2)} via ${activeProvider} (${paymentId})`,
+      description: `Wallet recharge of ₹${baseCredit.toFixed(2)} via ${activeProvider} (${paymentId})`,
       createdAt: new Date().toISOString()
     });
+
+    if (bonusCredit > 0) {
+      this.data.walletLedgers.unshift({
+        id: 'led_' + crypto.randomBytes(8).toString('hex'),
+        userId,
+        astrologerId: null,
+        amount: bonusCredit,
+        entryType: EntryType.WALLET_RECHARGE,
+        idempotencyKey: `BONUS_${paymentId}`,
+        referenceId: paymentId,
+        description: `Promotional bonus credit of ₹${bonusCredit.toFixed(2)} for recharge ${order.providerOrderId || orderKey}`,
+        createdAt: new Date().toISOString()
+      });
+    }
 
     this.saveToFile();
     return user;
@@ -2521,6 +2560,10 @@ class ResilientDatabase {
     productType?: 'WALLET_RECHARGE' | 'SUBSCRIPTION' | 'REPORT' | string;
     productId?: string;
     idempotencyKey?: string;
+    baseAmount?: number;
+    gstAmount?: number;
+    bonusAmount?: number;
+    creditAmount?: number;
   }): Promise<PaymentOrderRecord> {
     this.assertDurableStorage();
 
@@ -2565,6 +2608,10 @@ class ResilientDatabase {
         mapped.productId = data.productId;
         mapped.amountPaise = amountPaise;
         mapped.idempotencyKey = data.idempotencyKey || null;
+        mapped.baseAmount = data.baseAmount;
+        mapped.gstAmount = data.gstAmount;
+        mapped.bonusAmount = data.bonusAmount;
+        mapped.creditAmount = data.creditAmount;
         this.data.paymentOrders.unshift(mapped);
         return mapped;
       } catch (err: any) {
@@ -2589,6 +2636,10 @@ class ResilientDatabase {
       idempotencyKey: data.idempotencyKey || null,
       productType: data.productType,
       productId: data.productId,
+      baseAmount: data.baseAmount,
+      gstAmount: data.gstAmount,
+      bonusAmount: data.bonusAmount,
+      creditAmount: data.creditAmount,
       status: OrderStatus.CREATED,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
