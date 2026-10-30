@@ -122,7 +122,7 @@ export const orderLimiter = createRateLimiter({
 
 export const adminLimiter = createRateLimiter({
   windowMs: 60 * 1000,
-  max: 40,
+  max: 120,
   message: 'Too many administrative requests. Rate limit enforced.'
 });
 
@@ -4753,9 +4753,10 @@ app.put('/api/admin/monitoring/incidents/:id', authenticate, requireAdmin(AdminP
 // -----------------------------------------------------------------------------
 // MODULE 17: REAL-TIME DATABASE MONITOR & RELIABILITY TELEMETRY
 // -----------------------------------------------------------------------------
-app.get('/api/admin/database/monitor', authenticate, requireAdmin(), async (_req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/database/monitor', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const monitorData = await db.getDatabaseMonitorMetrics();
+    const forceFresh = req.query.fresh === 'true';
+    const monitorData = await db.getDatabaseMonitorMetrics(forceFresh);
     res.json({ success: true, ...monitorData });
   } catch (err: any) {
     res.status(500).json({ error: 'DATABASE_MONITOR_ERROR', message: err.message });
