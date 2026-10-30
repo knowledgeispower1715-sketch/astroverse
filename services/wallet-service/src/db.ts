@@ -1583,6 +1583,70 @@ class ResilientDatabase {
     return flag;
   }
 
+  async getCashfreeGatewayConfig(): Promise<{ secretKey: string; appId: string; env: string } | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const flag = await this.prisma.featureFlag.findUnique({
+          where: { key: 'CASHFREE_GATEWAY_CONFIG' }
+        });
+        if (flag && flag.enabled && flag.description) {
+          return JSON.parse(flag.description);
+        }
+      } catch (err: any) {
+        console.warn('[DB] Failed to read CASHFREE_GATEWAY_CONFIG from PostgreSQL:', err?.message || err);
+      }
+    }
+    const mem = this.data.featureFlags?.find(f => f.key === 'CASHFREE_GATEWAY_CONFIG');
+    if (mem && mem.enabled && mem.description) {
+      try {
+        return JSON.parse(mem.description);
+      } catch {}
+    }
+    return null;
+  }
+
+  async saveCashfreeGatewayConfig(config: { secretKey: string; appId: string; env: string }): Promise<void> {
+    const payload = JSON.stringify(config);
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.featureFlag.upsert({
+          where: { key: 'CASHFREE_GATEWAY_CONFIG' },
+          create: {
+            key: 'CASHFREE_GATEWAY_CONFIG',
+            name: 'Cashfree Payment Gateway Credentials',
+            enabled: true,
+            description: payload,
+            updatedBy: 'admin'
+          },
+          update: {
+            enabled: true,
+            description: payload,
+            updatedBy: 'admin',
+            updatedAt: new Date()
+          }
+        });
+      } catch (err: any) {
+        console.error('[DB] Failed to persist CASHFREE_GATEWAY_CONFIG to PostgreSQL:', err?.message || err);
+      }
+    }
+    let flag = this.data.featureFlags.find(f => f.key === 'CASHFREE_GATEWAY_CONFIG');
+    if (!flag) {
+      this.data.featureFlags.push({
+        key: 'CASHFREE_GATEWAY_CONFIG',
+        name: 'Cashfree Payment Gateway Credentials',
+        enabled: true,
+        description: payload,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'admin'
+      });
+    } else {
+      flag.enabled = true;
+      flag.description = payload;
+      flag.updatedAt = new Date().toISOString();
+    }
+    this.saveToFile();
+  }
+
   // ==================== PRIVACY REQUESTS (GDPR / DPDP) ====================
 
   async listPrivacyRequests(userId?: string): Promise<PrivacyRequestRecord[]> {

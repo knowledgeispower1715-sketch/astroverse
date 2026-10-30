@@ -2266,6 +2266,7 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
     }
   }
 
+  await syncGatewayCredentialsFromDb();
   const readiness = getPaymentReadinessStatus();
   if (!readiness.configured) {
     return res.status(503).json({
@@ -4158,6 +4159,7 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
     }
   }
 
+  await syncGatewayCredentialsFromDb();
   const readiness = getPaymentReadinessStatus();
   if (!readiness.configured) {
     return res.status(503).json({
@@ -4677,7 +4679,8 @@ app.post(['/api/webhooks/cashfree', '/api/cashfree/webhook'], async (req: Reques
 });
 
 // GET /api/config (Public runtime client configuration without secret leakage)
-app.get('/api/config', (_req: Request, res: Response) => {
+app.get('/api/config', async (_req: Request, res: Response) => {
+  await syncGatewayCredentialsFromDb();
   const readiness = getPaymentReadinessStatus();
   res.json({
     status: 'CONFIG_READY',
@@ -4687,7 +4690,7 @@ app.get('/api/config', (_req: Request, res: Response) => {
     currency: 'INR',
     gateway: 'CASHFREE',
     isLiveGateway: readiness.configured,
-    cashfreeAppId: process.env.CASHFREE_APP_ID || '',
+    cashfreeAppId: readiness.configured ? (process.env.CASHFREE_APP_ID || CANONICAL_CASHFREE_APP_ID) : '',
     cashfreeAppIdMasked: readiness.appIdMasked,
     cashfreeEnv: readiness.environment,
     isCashfreeConfigured: readiness.configured,
@@ -4823,8 +4826,26 @@ app.put('/api/admin/products/:id', authenticate, requireAdmin(AdminPermission.MA
   }
 });
 
+// Sync gateway credentials from PostgreSQL database if not present in process.env
+export async function syncGatewayCredentialsFromDb(): Promise<void> {
+  try {
+    if (process.env.CASHFREE_SECRET_KEY === 'FORCE_EMPTY') return;
+    if (!process.env.CASHFREE_SECRET_KEY) {
+      const saved = await db.getCashfreeGatewayConfig();
+      if (saved && saved.secretKey) {
+        setRuntimeCashfreeSecretKey(saved.secretKey);
+        if (saved.appId) process.env.CASHFREE_APP_ID = saved.appId;
+        if (saved.env) process.env.CASHFREE_ENV = saved.env;
+      }
+    }
+  } catch (err: any) {
+    console.warn('[GATEWAY] syncGatewayCredentialsFromDb warning:', err?.message || err);
+  }
+}
+
 // GET /api/admin/payment-readiness (Comprehensive diagnostic status for Admin Control Centre)
 app.get('/api/admin/payment-readiness', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
+  await syncGatewayCredentialsFromDb();
   const readiness = getPaymentReadinessStatus();
   res.json({
     success: true,
@@ -4850,14 +4871,20 @@ app.post('/api/admin/gateway-credentials', authenticate, requireAdmin(AdminPermi
       return res.status(400).json({ error: 'INVALID_CREDENTIALS', message: 'Secret key is too short.' });
     }
 
+    const effectiveAppId = (appId && typeof appId === 'string' && appId.trim()) || CANONICAL_CASHFREE_APP_ID;
+    const effectiveEnv = env === 'sandbox' ? 'sandbox' : 'production';
+
     // Set runtime override in memory
     setRuntimeCashfreeSecretKey(trimmedSecret);
-    if (appId && typeof appId === 'string') {
-      process.env.CASHFREE_APP_ID = appId.trim();
-    }
-    if (env && (env === 'production' || env === 'sandbox')) {
-      process.env.CASHFREE_ENV = env;
-    }
+    process.env.CASHFREE_APP_ID = effectiveAppId;
+    process.env.CASHFREE_ENV = effectiveEnv;
+
+    // Persist to PostgreSQL database across all serverless lambda instances
+    await db.saveCashfreeGatewayConfig({
+      secretKey: trimmedSecret,
+      appId: effectiveAppId,
+      env: effectiveEnv
+    });
 
     // Verify readiness
     const readiness = getPaymentReadinessStatus();
@@ -4881,7 +4908,7 @@ app.post('/api/admin/gateway-credentials', authenticate, requireAdmin(AdminPermi
 
     return res.json({
       success: true,
-      message: 'Cashfree credentials activated in server runtime memory.',
+      message: 'Cashfree credentials activated and durably saved to PostgreSQL database.',
       readiness
     });
   } catch (err: any) {

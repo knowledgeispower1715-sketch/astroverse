@@ -65,10 +65,14 @@ export const CANONICAL_CASHFREE_APP_ID = '14962482c27cb93db2c6bc6e4af8426941';
 
 let runtimeSecretKeyOverride: string | null = null;
 
-export function setRuntimeCashfreeSecretKey(secretKey: string): void {
+export function setRuntimeCashfreeSecretKey(secretKey: string | null): void {
   runtimeSecretKeyOverride = secretKey ? secretKey.trim() : null;
   if (runtimeSecretKeyOverride) {
     process.env.CASHFREE_SECRET_KEY = runtimeSecretKeyOverride;
+  } else {
+    if (process.env.CASHFREE_SECRET_KEY !== 'FORCE_EMPTY') {
+      delete process.env.CASHFREE_SECRET_KEY;
+    }
   }
 }
 
@@ -79,7 +83,9 @@ export function getResolvedCashfreeCredentials(): {
   apiVersion: string;
 } {
   let appId = (process.env.CASHFREE_APP_ID || '').trim();
-  if (!appId) {
+  if (appId === 'FORCE_EMPTY') {
+    appId = '';
+  } else if (!appId) {
     for (const key of Object.keys(process.env)) {
       const clean = key.trim().replace(/:$/, '').toUpperCase();
       if (['CASHFREE_APP_ID', 'CF_APP_ID', 'CASHFREE_CLIENT_ID', 'APPID', 'APP_ID'].includes(clean)) {
@@ -87,15 +93,28 @@ export function getResolvedCashfreeCredentials(): {
         if (appId) break;
       }
     }
+    if (!appId) {
+      appId = CANONICAL_CASHFREE_APP_ID;
+    }
   }
 
-  let secretKey = (runtimeSecretKeyOverride || process.env.CASHFREE_SECRET_KEY || '').trim();
-  if (!secretKey) {
-    for (const key of Object.keys(process.env)) {
-      const clean = key.trim().replace(/:$/, '').toUpperCase();
-      if (['CASHFREE_SECRET_KEY', 'CF_SECRET_KEY', 'CASHFREE_API_SECRET', 'CASHFREE_SECRET', 'SECRET_KEY', 'SECRET'].includes(clean)) {
-        secretKey = (process.env[key] || '').trim();
-        if (secretKey) break;
+  let secretKey = '';
+  if (process.env.CASHFREE_SECRET_KEY === 'FORCE_EMPTY') {
+    secretKey = '';
+  } else {
+    secretKey = (runtimeSecretKeyOverride || process.env.CASHFREE_SECRET_KEY || '').trim();
+    if (secretKey === 'FORCE_EMPTY') {
+      secretKey = '';
+    } else if (!secretKey) {
+      for (const key of Object.keys(process.env)) {
+        const clean = key.trim().replace(/:$/, '').toUpperCase();
+        if (['CASHFREE_SECRET_KEY', 'CF_SECRET_KEY', 'CASHFREE_API_SECRET', 'CASHFREE_SECRET', 'SECRET_KEY', 'SECRET'].includes(clean)) {
+          const val = (process.env[key] || '').trim();
+          if (val && val !== 'FORCE_EMPTY') {
+            secretKey = val;
+            break;
+          }
+        }
       }
     }
   }
@@ -133,7 +152,9 @@ export function getPaymentReadinessStatus(options?: { featureFlagEnabled?: boole
       environment: env,
       gateway: 'CASHFREE',
       appIdMasked,
-      adminExplanation: 'Live Cashfree API credentials (CASHFREE_APP_ID or CASHFREE_SECRET_KEY) are missing or set to placeholder values.',
+      adminExplanation: !secretKey
+        ? 'Live Cashfree Secret Key (CASHFREE_SECRET_KEY) is not configured. Set it in Vercel Environment Variables or activate via Admin Control Centre.'
+        : 'Live Cashfree API credentials (CASHFREE_APP_ID or CASHFREE_SECRET_KEY) are missing or set to placeholder values.',
       customerMessage: 'Online payment gateway is undergoing configuration. Please try again later or contact support.'
     };
   }

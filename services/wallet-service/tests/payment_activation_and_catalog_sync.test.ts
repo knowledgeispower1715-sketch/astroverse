@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 import test from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
@@ -5,7 +6,8 @@ import app from '../src/server';
 import { db } from '../src/db';
 import {
   getPaymentReadinessStatus,
-  PaymentReadinessState
+  PaymentReadinessState,
+  setRuntimeCashfreeSecretKey
 } from '../src/cashfree';
 import {
   CANONICAL_PRODUCT_CATALOGUE,
@@ -51,13 +53,19 @@ test('ASTROVERSE CASHFREE PAYMENT ACTIVATION & PRICING SYNCHRONIZATION SUITE', a
 
     try {
       // 1.1 Missing credentials state
-      delete process.env.CASHFREE_APP_ID;
+      process.env.CASHFREE_APP_ID = 'FORCE_EMPTY';
       delete process.env.CASHFREE_SECRET_KEY;
       const missingStatus = getPaymentReadinessStatus();
       assert.strictEqual(missingStatus.state, PaymentReadinessState.MISSING_SERVER_CREDENTIALS);
       assert.strictEqual(missingStatus.configured, false);
       assert.strictEqual(missingStatus.appIdMasked, 'NOT_CONFIGURED');
       assert(missingStatus.customerMessage.includes('Online payment gateway is undergoing configuration'));
+
+      // 1.1b Canonical App ID fallback test
+      delete process.env.CASHFREE_APP_ID;
+      const canonicalStatus = getPaymentReadinessStatus();
+      assert.strictEqual(canonicalStatus.appIdMasked, '1496...6941');
+      assert.strictEqual(canonicalStatus.configured, false);
 
       // 1.2 Environment mismatch: production env with sandbox key
       process.env.CASHFREE_APP_ID = 'TEST10001';
@@ -250,8 +258,9 @@ test('ASTROVERSE CASHFREE PAYMENT ACTIVATION & PRICING SYNCHRONIZATION SUITE', a
   await t.test('5. Fail-Closed Error Contract with Specific Diagnostic State', async () => {
     const origAppId = process.env.CASHFREE_APP_ID;
     const origSecret = process.env.CASHFREE_SECRET_KEY;
+    setRuntimeCashfreeSecretKey(null);
     delete process.env.CASHFREE_APP_ID;
-    delete process.env.CASHFREE_SECRET_KEY;
+    process.env.CASHFREE_SECRET_KEY = 'FORCE_EMPTY';
 
     try {
       const userRes = await request('/api/auth/register-password', {
