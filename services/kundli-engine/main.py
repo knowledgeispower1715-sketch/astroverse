@@ -346,40 +346,88 @@ def admin_health_check():
         }
     }
 
+BUILTIN_GAZETTEER = [
+    {"id": "gaz-delhi", "name": "Delhi", "display_name": "Delhi, NCT, India", "latitude": 28.6519, "longitude": 77.2315, "country": "India", "country_code": "IN", "region": "NCT", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-new-delhi", "name": "New Delhi", "display_name": "New Delhi, Delhi, India", "latitude": 28.6139, "longitude": 77.2090, "country": "India", "country_code": "IN", "region": "Delhi", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-jabalpur", "name": "Jabalpur", "display_name": "Jabalpur, Madhya Pradesh, India", "latitude": 23.1815, "longitude": 79.9864, "country": "India", "country_code": "IN", "region": "Madhya Pradesh", "district": "Jabalpur", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-mumbai", "name": "Mumbai", "display_name": "Mumbai, Maharashtra, India", "latitude": 19.0760, "longitude": 72.8777, "country": "India", "country_code": "IN", "region": "Maharashtra", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-bengaluru", "name": "Bengaluru", "display_name": "Bengaluru, Karnataka, India", "latitude": 12.9716, "longitude": 77.5946, "country": "India", "country_code": "IN", "region": "Karnataka", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-kolkata", "name": "Kolkata", "display_name": "Kolkata, West Bengal, India", "latitude": 22.5726, "longitude": 88.3639, "country": "India", "country_code": "IN", "region": "West Bengal", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-chennai", "name": "Chennai", "display_name": "Chennai, Tamil Nadu, India", "latitude": 13.0827, "longitude": 80.2707, "country": "India", "country_code": "IN", "region": "Tamil Nadu", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-hyderabad", "name": "Hyderabad", "display_name": "Hyderabad, Telangana, India", "latitude": 17.3850, "longitude": 78.4867, "country": "India", "country_code": "IN", "region": "Telangana", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-ahmedabad", "name": "Ahmedabad", "display_name": "Ahmedabad, Gujarat, India", "latitude": 23.0225, "longitude": 72.5714, "country": "India", "country_code": "IN", "region": "Gujarat", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-pune", "name": "Pune", "display_name": "Pune, Maharashtra, India", "latitude": 18.5204, "longitude": 73.8567, "country": "India", "country_code": "IN", "region": "Maharashtra", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-jaipur", "name": "Jaipur", "display_name": "Jaipur, Rajasthan, India", "latitude": 26.9124, "longitude": 75.7873, "country": "India", "country_code": "IN", "region": "Rajasthan", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-lucknow", "name": "Lucknow", "display_name": "Lucknow, Uttar Pradesh, India", "latitude": 26.8467, "longitude": 80.9462, "country": "India", "country_code": "IN", "region": "Uttar Pradesh", "timezone": "Asia/Kolkata", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-london", "name": "London", "display_name": "London, Greater London, United Kingdom", "latitude": 51.5074, "longitude": -0.1278, "country": "United Kingdom", "country_code": "GB", "region": "England", "timezone": "Europe/London", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-new-york", "name": "New York", "display_name": "New York, New York, United States", "latitude": 40.7128, "longitude": -74.0060, "country": "United States", "country_code": "US", "region": "New York", "timezone": "America/New_York", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-tokyo", "name": "Tokyo", "display_name": "Tokyo, Tokyo, Japan", "latitude": 35.6762, "longitude": 139.6503, "country": "Japan", "country_code": "JP", "region": "Tokyo", "timezone": "Asia/Tokyo", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-sydney", "name": "Sydney", "display_name": "Sydney, New South Wales, Australia", "latitude": -33.8688, "longitude": 151.2093, "country": "Australia", "country_code": "AU", "region": "New South Wales", "timezone": "Australia/Sydney", "precision": "city", "source": "gazetteer"},
+    {"id": "gaz-paris", "name": "Paris", "display_name": "Paris, Île-de-France, France", "latitude": 48.8566, "longitude": 2.3522, "country": "France", "country_code": "FR", "region": "Île-de-France", "timezone": "Europe/Paris", "precision": "city", "source": "gazetteer"}
+]
+
 @app.get("/api/geocode")
 def geocode_location(q: str = Query(..., min_length=2, description="City, town, or region query")):
     """
-    Location Intelligence Autocomplete (Section 3):
-    Proxies queries to Open-Meteo Geocoding API with error handling and disambiguation.
+    Location Intelligence Autocomplete:
+    Proxies queries to Open-Meteo Geocoding API with Canonical Location normalization,
+    WGS84 validation, and resilient gazetteer fallback.
     """
-    encoded_q = urllib.parse.quote(q)
+    q_clean = q.strip()
+    encoded_q = urllib.parse.quote(q_clean)
     url = f"https://geocoding-api.open-meteo.com/v1/search?name={encoded_q}&count=10&language=en&format=json"
-    req = urllib.request.Request(url, headers={"User-Agent": "Astroverse-Geocoding/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "AstroVerse-Geocoding/2.0"})
+    now_iso = datetime.now(timezone.utc).isoformat()
     try:
-        with urllib.request.urlopen(req, timeout=6) as response:
+        with urllib.request.urlopen(req, timeout=5) as response:
             data = json.loads(response.read().decode("utf-8"))
             results = data.get("results", [])
             formatted = []
             for r in results:
+                try:
+                    lat = float(r.get("latitude"))
+                    lon = float(r.get("longitude"))
+                    if lat < -90 or lat > 90 or lon < -180 or lon > 180:
+                        continue
+                except (ValueError, TypeError):
+                    continue
+
                 name = r.get("name", "")
                 admin1 = r.get("admin1", "")
+                admin2 = r.get("admin2", "")
                 country = r.get("country", "")
+                country_code = r.get("country_code", "")
                 tz = r.get("timezone", "UTC")
-                display_parts = [p for p in [name, admin1, country] if p]
+                display_parts = [p for p in [name, admin2 if admin2 != name else None, admin1 if admin1 != name else None, country] if p]
                 display_name = ", ".join(display_parts)
                 formatted.append({
-                    "id": r.get("id"),
+                    "id": r.get("id") or f"om-{lat:.4f}-{lon:.4f}",
                     "name": name,
                     "display_name": display_name,
-                    "latitude": r.get("latitude"),
-                    "longitude": r.get("longitude"),
+                    "latitude": lat,
+                    "longitude": lon,
                     "country": country,
+                    "country_code": country_code,
                     "region": admin1,
-                    "timezone": tz
+                    "district": admin2 or None,
+                    "timezone": tz,
+                    "precision": "city",
+                    "source": "open-meteo",
+                    "resolved_at": now_iso
                 })
-            return {"query": q, "results": formatted}
+            if formatted:
+                return {"query": q_clean, "results": formatted}
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Geocoding service unavailable: {str(e)}")
+        # Upstream failure: fall back to built-in gazetteer
+        pass
+
+    q_lower = q_clean.lower()
+    matches = [
+        {**g, "resolved_at": now_iso}
+        for g in BUILTIN_GAZETTEER
+        if q_lower in g["name"].lower() or q_lower in g["display_name"].lower()
+    ]
+    return {"query": q_clean, "results": matches}
 
 @app.post("/api/kundli")
 def get_base_kundli(req: BirthDetails):

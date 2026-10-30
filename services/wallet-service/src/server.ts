@@ -71,7 +71,7 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');
   res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://sdk.cashfree.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https://astroverse-eta.vercel.app https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://sdk.cashfree.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https://astroverse-eta.vercel.app https://*.supabase.co https://api.cashfree.com https://sandbox.cashfree.com https://geocoding-api.open-meteo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
 
   // Sensitive endpoint cache controls (Phase 8: zero public caching on authenticated/admin data)
   if (
@@ -4542,6 +4542,161 @@ app.get('/api/config', (_req: Request, res: Response) => {
   });
 });
 
+// ============================================================================
+// CANONICAL LOCATION INTELLIGENCE & GEOCODING PROXY
+// ============================================================================
+
+export interface CanonicalLocation {
+  id: number | string;
+  name: string;
+  display_name: string;
+  latitude: number;
+  longitude: number;
+  country: string;
+  country_code: string;
+  region: string;
+  district?: string;
+  timezone: string;
+  precision: 'city' | 'town' | 'village' | 'administrative' | 'manual';
+  source: 'open-meteo' | 'gazetteer' | 'manual';
+  resolved_at: string;
+}
+
+const BUILTIN_GAZETTEER: Array<Omit<CanonicalLocation, 'resolved_at'>> = [
+  { id: 'gaz-delhi', name: 'Delhi', display_name: 'Delhi, NCT, India', latitude: 28.6519, longitude: 77.2315, country: 'India', country_code: 'IN', region: 'NCT', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-new-delhi', name: 'New Delhi', display_name: 'New Delhi, Delhi, India', latitude: 28.6139, longitude: 77.2090, country: 'India', country_code: 'IN', region: 'Delhi', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-jabalpur', name: 'Jabalpur', display_name: 'Jabalpur, Madhya Pradesh, India', latitude: 23.1815, longitude: 79.9864, country: 'India', country_code: 'IN', region: 'Madhya Pradesh', district: 'Jabalpur', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-mumbai', name: 'Mumbai', display_name: 'Mumbai, Maharashtra, India', latitude: 19.0760, longitude: 72.8777, country: 'India', country_code: 'IN', region: 'Maharashtra', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-bengaluru', name: 'Bengaluru', display_name: 'Bengaluru, Karnataka, India', latitude: 12.9716, longitude: 77.5946, country: 'India', country_code: 'IN', region: 'Karnataka', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-kolkata', name: 'Kolkata', display_name: 'Kolkata, West Bengal, India', latitude: 22.5726, longitude: 88.3639, country: 'India', country_code: 'IN', region: 'West Bengal', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-chennai', name: 'Chennai', display_name: 'Chennai, Tamil Nadu, India', latitude: 13.0827, longitude: 80.2707, country: 'India', country_code: 'IN', region: 'Tamil Nadu', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-hyderabad', name: 'Hyderabad', display_name: 'Hyderabad, Telangana, India', latitude: 17.3850, longitude: 78.4867, country: 'India', country_code: 'IN', region: 'Telangana', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-ahmedabad', name: 'Ahmedabad', display_name: 'Ahmedabad, Gujarat, India', latitude: 23.0225, longitude: 72.5714, country: 'India', country_code: 'IN', region: 'Gujarat', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-pune', name: 'Pune', display_name: 'Pune, Maharashtra, India', latitude: 18.5204, longitude: 73.8567, country: 'India', country_code: 'IN', region: 'Maharashtra', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-jaipur', name: 'Jaipur', display_name: 'Jaipur, Rajasthan, India', latitude: 26.9124, longitude: 75.7873, country: 'India', country_code: 'IN', region: 'Rajasthan', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-lucknow', name: 'Lucknow', display_name: 'Lucknow, Uttar Pradesh, India', latitude: 26.8467, longitude: 80.9462, country: 'India', country_code: 'IN', region: 'Uttar Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-kanpur', name: 'Kanpur', display_name: 'Kanpur, Uttar Pradesh, India', latitude: 26.4499, longitude: 80.3319, country: 'India', country_code: 'IN', region: 'Uttar Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-nagpur', name: 'Nagpur', display_name: 'Nagpur, Maharashtra, India', latitude: 21.1458, longitude: 79.0882, country: 'India', country_code: 'IN', region: 'Maharashtra', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-indore', name: 'Indore', display_name: 'Indore, Madhya Pradesh, India', latitude: 22.7196, longitude: 75.8577, country: 'India', country_code: 'IN', region: 'Madhya Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-bhopal', name: 'Bhopal', display_name: 'Bhopal, Madhya Pradesh, India', latitude: 23.2599, longitude: 77.4126, country: 'India', country_code: 'IN', region: 'Madhya Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-patna', name: 'Patna', display_name: 'Patna, Bihar, India', latitude: 25.5941, longitude: 85.1376, country: 'India', country_code: 'IN', region: 'Bihar', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-varanasi', name: 'Varanasi', display_name: 'Varanasi, Uttar Pradesh, India', latitude: 25.3176, longitude: 82.9739, country: 'India', country_code: 'IN', region: 'Uttar Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-chandigarh', name: 'Chandigarh', display_name: 'Chandigarh, Punjab/Haryana, India', latitude: 30.7333, longitude: 76.7794, country: 'India', country_code: 'IN', region: 'Chandigarh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-surat', name: 'Surat', display_name: 'Surat, Gujarat, India', latitude: 21.1702, longitude: 72.8311, country: 'India', country_code: 'IN', region: 'Gujarat', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-london', name: 'London', display_name: 'London, Greater London, United Kingdom', latitude: 51.5074, longitude: -0.1278, country: 'United Kingdom', country_code: 'GB', region: 'England', timezone: 'Europe/London', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-new-york', name: 'New York', display_name: 'New York, New York, United States', latitude: 40.7128, longitude: -74.0060, country: 'United States', country_code: 'US', region: 'New York', timezone: 'America/New_York', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-tokyo', name: 'Tokyo', display_name: 'Tokyo, Tokyo, Japan', latitude: 35.6762, longitude: 139.6503, country: 'Japan', country_code: 'JP', region: 'Tokyo', timezone: 'Asia/Tokyo', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-sydney', name: 'Sydney', display_name: 'Sydney, New South Wales, Australia', latitude: -33.8688, longitude: 151.2093, country: 'Australia', country_code: 'AU', region: 'New South Wales', timezone: 'Australia/Sydney', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-paris', name: 'Paris', display_name: 'Paris, Île-de-France, France', latitude: 48.8566, longitude: 2.3522, country: 'France', country_code: 'FR', region: 'Île-de-France', timezone: 'Europe/Paris', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-berlin', name: 'Berlin', display_name: 'Berlin, Berlin, Germany', latitude: 52.5200, longitude: 13.4050, country: 'Germany', country_code: 'DE', region: 'Berlin', timezone: 'Europe/Berlin', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-dubai', name: 'Dubai', display_name: 'Dubai, Dubai, United Arab Emirates', latitude: 25.2048, longitude: 55.2708, country: 'United Arab Emirates', country_code: 'AE', region: 'Dubai', timezone: 'Asia/Dubai', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-singapore', name: 'Singapore', display_name: 'Singapore, Singapore', latitude: 1.3521, longitude: 103.8198, country: 'Singapore', country_code: 'SG', region: 'Singapore', timezone: 'Asia/Singapore', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-toronto', name: 'Toronto', display_name: 'Toronto, Ontario, Canada', latitude: 43.6532, longitude: -79.3832, country: 'Canada', country_code: 'CA', region: 'Ontario', timezone: 'America/Toronto', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-san-francisco', name: 'San Francisco', display_name: 'San Francisco, California, United States', latitude: 37.7749, longitude: -122.4194, country: 'United States', country_code: 'US', region: 'California', timezone: 'America/Los_Angeles', precision: 'city', source: 'gazetteer' },
+  { id: 'gaz-chicago', name: 'Chicago', display_name: 'Chicago, Illinois, United States', latitude: 41.8781, longitude: -87.6298, country: 'United States', country_code: 'US', region: 'Illinois', timezone: 'America/Chicago', precision: 'city', source: 'gazetteer' }
+];
+
+const geocodeCache = new Map<string, { timestamp: number; data: { query: string; results: CanonicalLocation[] } }>();
+const GEOCODE_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
+const MAX_GEOCODE_CACHE_SIZE = 500;
+
+export async function resolveGeocodeQuery(rawQuery: string): Promise<{ query: string; results: CanonicalLocation[] }> {
+  const q = (rawQuery || '').trim();
+  if (q.length < 2) {
+    return { query: q, results: [] };
+  }
+
+  const cacheKey = q.toLowerCase();
+  const cached = geocodeCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < GEOCODE_CACHE_TTL_MS)) {
+    return cached.data;
+  }
+
+  // Attempt live Open-Meteo upstream lookup with 5000ms bounded timeout
+  let liveResults: CanonicalLocation[] = [];
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=10&language=en&format=json`;
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'AstroVerse-Geocoding-Proxy/2.0 (astroverse-eta.vercel.app)' }
+    });
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const json: any = await response.json();
+      if (Array.isArray(json.results)) {
+        for (const item of json.results) {
+          const lat = typeof item.latitude === 'number' ? item.latitude : parseFloat(item.latitude);
+          const lon = typeof item.longitude === 'number' ? item.longitude : parseFloat(item.longitude);
+          if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+
+          const parts: string[] = [];
+          if (item.name) parts.push(item.name);
+          if (item.admin2 && item.admin2 !== item.name) parts.push(item.admin2);
+          if (item.admin1 && item.admin1 !== item.name && item.admin1 !== item.admin2) parts.push(item.admin1);
+          if (item.country) parts.push(item.country);
+          const displayName = parts.join(', ');
+
+          liveResults.push({
+            id: item.id || `om-${lat.toFixed(4)}-${lon.toFixed(4)}`,
+            name: item.name || q,
+            display_name: displayName,
+            latitude: lat,
+            longitude: lon,
+            country: item.country || '',
+            country_code: item.country_code || '',
+            region: item.admin1 || '',
+            district: item.admin2 || undefined,
+            timezone: item.timezone || 'UTC',
+            precision: 'city',
+            source: 'open-meteo',
+            resolved_at: new Date().toISOString()
+          });
+        }
+      }
+    }
+  } catch (err) {
+    // Upstream network failure, timeout, or DNS issue — fall back to built-in gazetteer
+  }
+
+  // If live results obtained, cache and return
+  if (liveResults.length > 0) {
+    const payload = { query: q, results: liveResults };
+    if (geocodeCache.size >= MAX_GEOCODE_CACHE_SIZE) {
+      const firstKey = geocodeCache.keys().next().value;
+      if (firstKey) geocodeCache.delete(firstKey);
+    }
+    geocodeCache.set(cacheKey, { timestamp: Date.now(), data: payload });
+    return payload;
+  }
+
+  // Built-in gazetteer matching as offline/resilient fallback
+  const nowIso = new Date().toISOString();
+  const gazetteerMatches: CanonicalLocation[] = BUILTIN_GAZETTEER
+    .filter(g => g.name.toLowerCase().includes(cacheKey) || g.display_name.toLowerCase().includes(cacheKey))
+    .map(g => ({ ...g, resolved_at: nowIso }));
+
+  const fallbackPayload = { query: q, results: gazetteerMatches };
+  return fallbackPayload;
+}
+
+// GET /api/geocode (Worldwide Location Search & Geocoding Gateway)
+app.get('/api/geocode', async (req: Request, res: Response) => {
+  const query = (req.query.q || req.query.name || req.query.query || '').toString().trim();
+  if (query.length < 2) {
+    return res.status(400).json({ error: 'Query parameter q must be at least 2 characters long', results: [] });
+  }
+
+  try {
+    const outcome = await resolveGeocodeQuery(query);
+    return res.json(outcome);
+  } catch (err: any) {
+    return res.status(500).json({ error: 'Failed to resolve location query', details: err?.message || String(err), results: [] });
+  }
+});
+
 // GET /api/billing/config (Public payment gateway configuration)
 app.get('/api/billing/config', (_req: Request, res: Response) => {
   res.json({
@@ -6103,4 +6258,6 @@ if (require.main === module && !process.env.VERCEL && !process.env.AWS_LAMBDA_FU
 
 module.exports = app;
 module.exports.default = app;
+module.exports.app = app;
+module.exports.resolveGeocodeQuery = resolveGeocodeQuery;
 export default app;

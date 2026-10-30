@@ -11309,101 +11309,245 @@
     // Location Intelligence Autocomplete (Section 3)
     let locationDebounceTimer = null;
     let locationAbortController = null;
+    window.__kundliLocationSuggestions = [];
+    window.__kundliSelectedSuggestionIdx = -1;
 
     function handleLocationSearchInput(e) {
       const query = e.target.value.trim();
       const spinner = document.getElementById('location-spinner');
       const suggestionsBox = document.getElementById('location-suggestions-box');
+      const badge = document.getElementById('k-location-resolved-badge');
 
       clearTimeout(locationDebounceTimer);
       if (locationAbortController) {
         locationAbortController.abort();
       }
 
+      // If user edits the text, invalidate existing resolution until a selection is confirmed
+      document.getElementById('k-resolved-lat').value = '';
+      document.getElementById('k-resolved-lon').value = '';
+      document.getElementById('k-resolved-tz').value = '';
+      document.getElementById('k-resolved-name').value = '';
+      if (badge) badge.style.display = 'none';
+
       if (query.length < 2) {
-        suggestionsBox.style.display = 'none';
-        spinner.style.display = 'none';
+        if (suggestionsBox) suggestionsBox.style.display = 'none';
+        if (spinner) spinner.style.display = 'none';
+        window.__kundliLocationSuggestions = [];
+        window.__kundliSelectedSuggestionIdx = -1;
         return;
       }
 
-      spinner.style.display = 'block';
+      if (spinner) spinner.style.display = 'block';
+      if (suggestionsBox) {
+        suggestionsBox.innerHTML = `
+          <div style="padding: 12px 14px; font-size: 13px; color: #64748B; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-spinner fa-spin" style="color: var(--saffron-orange);"></i>
+            <span>Searching locations worldwide...</span>
+          </div>`;
+        suggestionsBox.style.display = 'block';
+      }
+
       locationDebounceTimer = setTimeout(async () => {
         locationAbortController = new AbortController();
+        const signal = locationAbortController.signal;
+        let results = [];
+
+        // Tier 1: Query internal API gateway proxy /api/geocode (same-origin, cached, serverless resilient)
         try {
-          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=8&language=en&format=json`, {
-            signal: locationAbortController.signal
-          });
-          const data = await res.json();
-          spinner.style.display = 'none';
-
-          if (!data.results || data.results.length === 0) {
-            suggestionsBox.innerHTML = '<div style="padding: 12px; font-size: 13px; color: #64748B;">No matching locations found. Try entering coordinates manually.</div>';
-            suggestionsBox.style.display = 'block';
-            return;
-          }
-
-          suggestionsBox.innerHTML = '';
-          const seenKeys = new Set();
-          const uniqueResults = [];
-
-          data.results.forEach(item => {
-            const latRound = item.latitude ? item.latitude.toFixed(2) : '0';
-            const lonRound = item.longitude ? item.longitude.toFixed(2) : '0';
-            const key = `${(item.name || '').toLowerCase()}|${(item.admin1 || '').toLowerCase()}|${(item.country || '').toLowerCase()}|${latRound}|${lonRound}`;
-            if (!seenKeys.has(key)) {
-              seenKeys.add(key);
-              uniqueResults.push(item);
+          const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, { signal });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.results)) {
+              results = data.results;
             }
-          });
+          }
+        } catch (proxyErr) {
+          if (proxyErr.name === 'AbortError') return;
+          console.warn('Backend geocode proxy unreachable, attempting direct client fallback:', proxyErr);
+        }
 
-          uniqueResults.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'location-suggestion-item';
-            const adminParts = [];
-            if (item.admin2 && item.admin2 !== item.name) adminParts.push(item.admin2);
-            if (item.admin1 && item.admin1 !== item.name && item.admin1 !== item.admin2) adminParts.push(item.admin1);
-            if (item.country) adminParts.push(item.country);
-            const regionDetails = adminParts.join(', ');
-            const fullTitle = `${item.name}${regionDetails ? ', ' + regionDetails : ''}`;
-            const tz = item.timezone || 'UTC';
-            div.innerHTML = `
-              <strong>${item.name}</strong>
-              <span class="loc-subtext">${regionDetails} • Timezone: ${tz} (${item.latitude.toFixed(2)}°, ${item.longitude.toFixed(2)}°)</span>
-            `;
-            div.onclick = () => selectResolvedLocation(fullTitle, item.latitude, item.longitude, tz);
-            suggestionsBox.appendChild(div);
-          });
-          suggestionsBox.style.display = 'block';
-        } catch (err) {
-          if (err.name !== 'AbortError') {
-            spinner.style.display = 'none';
-            console.error('Geocoding search failed:', err);
+        // Tier 2: Direct Open-Meteo geocoding fallback if proxy returned empty or failed
+        if (results.length === 0 && !signal.aborted) {
+          try {
+            const fallbackRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=10&language=en&format=json`, { signal });
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              if (Array.isArray(fallbackData.results)) {
+                results = fallbackData.results.map(r => {
+                  const lat = typeof r.latitude === 'number' ? r.latitude : parseFloat(r.latitude);
+                  const lon = typeof r.longitude === 'number' ? r.longitude : parseFloat(r.longitude);
+                  const parts = [r.name, r.admin2 !== r.name ? r.admin2 : null, r.admin1 !== r.name ? r.admin1 : null, r.country].filter(Boolean);
+                  return {
+                    id: r.id || `om-${lat}-${lon}`,
+                    name: r.name || query,
+                    display_name: parts.join(', '),
+                    latitude: lat,
+                    longitude: lon,
+                    country: r.country || '',
+                    region: r.admin1 || '',
+                    district: r.admin2 || '',
+                    timezone: r.timezone || 'UTC'
+                  };
+                });
+              }
+            }
+          } catch (directErr) {
+            if (directErr.name === 'AbortError') return;
+            console.error('Direct Open-Meteo lookup failed:', directErr);
           }
         }
+
+        if (spinner) spinner.style.display = 'none';
+        if (signal.aborted) return;
+
+        // Deduplicate and validate results
+        const seen = new Set();
+        const uniqueResults = [];
+        for (const item of results) {
+          const lat = parseFloat(item.latitude);
+          const lon = parseFloat(item.longitude);
+          if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+          const key = `${(item.name || '').toLowerCase()}|${(item.region || '').toLowerCase()}|${(item.country || '').toLowerCase()}|${lat.toFixed(2)}|${lon.toFixed(2)}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueResults.push({
+              ...item,
+              latitude: lat,
+              longitude: lon,
+              timezone: item.timezone || 'UTC'
+            });
+          }
+        }
+
+        window.__kundliLocationSuggestions = uniqueResults;
+        window.__kundliSelectedSuggestionIdx = -1;
+
+        if (uniqueResults.length === 0) {
+          const safeQuery = query.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+          suggestionsBox.innerHTML = `
+            <div style="padding: 14px; font-size: 13px; color: #64748B;">
+              <div>No matching locations found for "<strong>${safeQuery}</strong>".</div>
+              <div style="margin-top: 8px;">
+                <button type="button" onclick="toggleManualLocation()" class="btn-outline-secondary" style="font-size: 12px; padding: 4px 10px;">
+                  <i class="fa-solid fa-map-pin"></i> Enter Coordinates Manually
+                </button>
+              </div>
+            </div>`;
+          suggestionsBox.style.display = 'block';
+          return;
+        }
+
+        suggestionsBox.innerHTML = '';
+        suggestionsBox.setAttribute('role', 'listbox');
+        suggestionsBox.setAttribute('aria-label', 'Location suggestions');
+
+        uniqueResults.forEach((item, index) => {
+          const div = document.createElement('div');
+          div.className = 'location-suggestion-item';
+          div.id = `kundli-loc-opt-${index}`;
+          div.setAttribute('role', 'option');
+          div.setAttribute('aria-selected', 'false');
+          div.setAttribute('tabindex', '-1');
+
+          const tz = item.timezone || 'UTC';
+          const latStr = `${Math.abs(item.latitude).toFixed(2)}°${item.latitude >= 0 ? 'N' : 'S'}`;
+          const lonStr = `${Math.abs(item.longitude).toFixed(2)}°${item.longitude >= 0 ? 'E' : 'W'}`;
+
+          div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+              <strong style="color: #1E293B;">${item.name}</strong>
+              <span style="font-size: 10px; font-weight: 600; padding: 2px 6px; background: #EEF2FF; color: #4338CA; border-radius: 4px;">${tz}</span>
+            </div>
+            <span class="loc-subtext">${item.display_name} • ${latStr}, ${lonStr}</span>
+          `;
+          div.onclick = () => selectResolvedLocation(item.display_name, item.latitude, item.longitude, tz);
+          div.onmouseenter = () => updateKundliSuggestionSelection(index);
+          suggestionsBox.appendChild(div);
+        });
+
+        suggestionsBox.style.display = 'block';
       }, 300);
+    }
+
+    function updateKundliSuggestionSelection(index) {
+      window.__kundliSelectedSuggestionIdx = index;
+      const box = document.getElementById('location-suggestions-box');
+      if (!box) return;
+      const items = box.querySelectorAll('.location-suggestion-item');
+      items.forEach((el, idx) => {
+        if (idx === index) {
+          el.classList.add('selected');
+          el.setAttribute('aria-selected', 'true');
+          el.scrollIntoView({ block: 'nearest' });
+        } else {
+          el.classList.remove('selected');
+          el.setAttribute('aria-selected', 'false');
+        }
+      });
     }
 
     function handleLocationKeydown(e) {
       const box = document.getElementById('location-suggestions-box');
-      if (box.style.display !== 'block') return;
-      if (e.key === 'Escape') box.style.display = 'none';
+      if (!box || box.style.display !== 'block') return;
+      const suggestions = window.__kundliLocationSuggestions || [];
+      if (!suggestions.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = (window.__kundliSelectedSuggestionIdx + 1) % suggestions.length;
+        updateKundliSuggestionSelection(next);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = window.__kundliSelectedSuggestionIdx <= 0 ? suggestions.length - 1 : window.__kundliSelectedSuggestionIdx - 1;
+        updateKundliSuggestionSelection(prev);
+      } else if (e.key === 'Enter') {
+        if (window.__kundliSelectedSuggestionIdx >= 0 && window.__kundliSelectedSuggestionIdx < suggestions.length) {
+          e.preventDefault();
+          const chosen = suggestions[window.__kundliSelectedSuggestionIdx];
+          selectResolvedLocation(chosen.display_name, chosen.latitude, chosen.longitude, chosen.timezone);
+        }
+      } else if (e.key === 'Escape') {
+        box.style.display = 'none';
+        window.__kundliSelectedSuggestionIdx = -1;
+      }
     }
 
     function selectResolvedLocation(displayName, lat, lon, tz) {
+      const latNum = parseFloat(lat);
+      const lonNum = parseFloat(lon);
+      const tzVal = tz || 'Asia/Kolkata';
+
       document.getElementById('input-k-city-search').value = displayName;
       document.getElementById('k-resolved-name').value = displayName;
-      document.getElementById('k-resolved-lat').value = lat;
-      document.getElementById('k-resolved-lon').value = lon;
-      document.getElementById('k-resolved-tz').value = tz;
+      document.getElementById('k-resolved-lat').value = latNum;
+      document.getElementById('k-resolved-lon').value = lonNum;
+      document.getElementById('k-resolved-tz').value = tzVal;
 
-      document.getElementById('k-location-resolved-badge').style.display = 'flex';
-      document.getElementById('k-location-resolved-text').textContent = `Resolved: ${displayName} (${tz} | ${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E)`;
-      document.getElementById('location-suggestions-box').style.display = 'none';
+      const badge = document.getElementById('k-location-resolved-badge');
+      const badgeText = document.getElementById('k-location-resolved-text');
+      if (badge && badgeText) {
+        const latStr = `${Math.abs(latNum).toFixed(2)}°${latNum >= 0 ? 'N' : 'S'}`;
+        const lonStr = `${Math.abs(lonNum).toFixed(2)}°${lonNum >= 0 ? 'E' : 'W'}`;
+        badgeText.textContent = `Verified: ${displayName} (${tzVal} | ${latStr}, ${lonStr})`;
+        badge.style.display = 'flex';
+      }
+
+      const box = document.getElementById('location-suggestions-box');
+      if (box) box.style.display = 'none';
+      window.__kundliSelectedSuggestionIdx = -1;
     }
 
     function toggleManualLocation() {
       const box = document.getElementById('k-manual-coords-box');
-      box.style.display = (box.style.display === 'none') ? 'block' : 'none';
+      if (box) {
+        const isHidden = box.style.display === 'none';
+        box.style.display = isHidden ? 'block' : 'none';
+        if (isHidden) {
+          const latInp = document.getElementById('k-manual-lat');
+          if (latInp) latInp.focus();
+        }
+      }
     }
 
     function applyManualCoords() {
@@ -11411,15 +11555,18 @@
       const lon = parseFloat(document.getElementById('k-manual-lon').value);
       const tz = document.getElementById('k-manual-tz').value.trim() || 'Asia/Kolkata';
 
-      if (!isNaN(lat) && !isNaN(lon)) {
-        document.getElementById('k-resolved-lat').value = lat;
-        document.getElementById('k-resolved-lon').value = lon;
-        document.getElementById('k-resolved-tz').value = tz;
-        document.getElementById('k-resolved-name').value = `Manual (${lat}, ${lon})`;
-
-        document.getElementById('k-location-resolved-badge').style.display = 'flex';
-        document.getElementById('k-location-resolved-text').textContent = `Manual Coordinates Applied: ${lat}°, ${lon}° (${tz})`;
+      if (isNaN(lat) || lat < -90 || lat > 90) {
+        showToast("Please enter a valid latitude between -90 and 90.", "error");
+        return;
       }
+      if (isNaN(lon) || lon < -180 || lon > 180) {
+        showToast("Please enter a valid longitude between -180 and 180.", "error");
+        return;
+      }
+
+      const label = `Custom (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+      selectResolvedLocation(label, lat, lon, tz);
+      showToast("Manual birthplace coordinates applied.", "success");
     }
 
     function getAuthBase() {
@@ -13120,7 +13267,12 @@
       if (!gender) { showToast("Please select your gender.", "error"); return; }
       if (!dob) { showToast("Please enter your date of birth.", "error"); return; }
       if (!isUnknownTime && !tob) { showToast("Please enter time of birth or check 'Birth time unknown'.", "error"); return; }
-      if (isNaN(lat) || isNaN(lon)) { showToast("Please search and select a verified birthplace.", "error"); return; }
+      if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        showToast("Please search and select a verified birthplace or enter manual coordinates.", "error");
+        const citySearchInp = document.getElementById('input-k-city-search');
+        if (citySearchInp) citySearchInp.focus();
+        return;
+      }
 
       const payload = {
         dob: `${dob}T${isUnknownTime ? '12:00:00' : tob + ':00'}`,
@@ -13166,8 +13318,8 @@
         city: (document.getElementById('input-k-city-search')?.value?.trim()) || (document.getElementById('input-k-city')?.value?.trim()) || "",
         dob: document.getElementById('input-k-dob').value,
         tob: document.getElementById('input-k-tob').value || "12:00",
-        lat: parseFloat(document.getElementById('k-resolved-lat').value) || 23.1815,
-        lon: parseFloat(document.getElementById('k-resolved-lon').value) || 79.9864,
+        lat: parseFloat(document.getElementById('k-resolved-lat').value),
+        lon: parseFloat(document.getElementById('k-resolved-lon').value),
         timezone: document.getElementById('k-resolved-tz').value || "Asia/Kolkata",
         tz: document.getElementById('k-resolved-tz').value || "Asia/Kolkata",
         lagnaSign: lagna.sign,
@@ -14238,11 +14390,23 @@
     let milanBoyCityAbort = null;
     let milanGirlCityDebounce = null;
     let milanGirlCityAbort = null;
+    window.__milanBoySuggestions = [];
+    window.__milanGirlSuggestions = [];
+    window.__milanBoySelectedIdx = -1;
+    window.__milanGirlSelectedIdx = -1;
 
     function handleMilanCitySearch(partner, e) {
       const query = e.target.value.trim();
       const suggestionsBox = document.getElementById(`milan-${partner}-city-suggestions`);
+      const badge = document.getElementById(`milan-${partner}-loc-badge`);
       if (!suggestionsBox) return;
+
+      // Invalidate existing resolution on edit
+      const latInp = document.getElementById(`milan-${partner}-lat`);
+      const lonInp = document.getElementById(`milan-${partner}-lon`);
+      if (latInp) latInp.value = '';
+      if (lonInp) lonInp.value = '';
+      if (badge) badge.style.display = 'none';
 
       if (partner === 'boy') {
         clearTimeout(milanBoyCityDebounce);
@@ -14254,69 +14418,160 @@
 
       if (query.length < 2) {
         suggestionsBox.style.display = 'none';
+        if (partner === 'boy') {
+          window.__milanBoySuggestions = [];
+          window.__milanBoySelectedIdx = -1;
+        } else {
+          window.__milanGirlSuggestions = [];
+          window.__milanGirlSelectedIdx = -1;
+        }
         return;
       }
+
+      suggestionsBox.innerHTML = `
+        <div style="padding: 10px 12px; font-size: 12px; color: #64748B; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-spinner fa-spin" style="color: var(--saffron-orange);"></i>
+          <span>Searching locations...</span>
+        </div>`;
+      suggestionsBox.style.display = 'block';
 
       const timer = setTimeout(async () => {
         const abortController = new AbortController();
         if (partner === 'boy') milanBoyCityAbort = abortController;
         else milanGirlCityAbort = abortController;
+        const signal = abortController.signal;
+        let results = [];
 
+        // Tier 1: /api/geocode proxy
         try {
-          const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=6&language=en&format=json`, {
-            signal: abortController.signal
-          });
-          const data = await res.json();
-          if (!data.results || data.results.length === 0) {
-            suggestionsBox.innerHTML = '<div style="padding: 10px; font-size: 12px; color: #64748B;">No locations found.</div>';
-            suggestionsBox.style.display = 'block';
-            return;
+          const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, { signal });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.results)) results = data.results;
           }
-
-          suggestionsBox.innerHTML = '';
-          const seenKeys = new Set();
-          const uniqueResults = [];
-
-          data.results.forEach(item => {
-            const latRound = item.latitude ? item.latitude.toFixed(2) : '0';
-            const lonRound = item.longitude ? item.longitude.toFixed(2) : '0';
-            const key = `${(item.name || '').toLowerCase()}|${(item.admin1 || '').toLowerCase()}|${(item.country || '').toLowerCase()}|${latRound}|${lonRound}`;
-            if (!seenKeys.has(key)) {
-              seenKeys.add(key);
-              uniqueResults.push(item);
-            }
-          });
-
-          uniqueResults.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'location-suggestion-item';
-            const adminParts = [];
-            if (item.admin2 && item.admin2 !== item.name) adminParts.push(item.admin2);
-            if (item.admin1 && item.admin1 !== item.name && item.admin1 !== item.admin2) adminParts.push(item.admin1);
-            if (item.country) adminParts.push(item.country);
-            const regionDetails = adminParts.join(', ');
-            const fullTitle = `${item.name}${regionDetails ? ', ' + regionDetails : ''}`;
-            const tz = item.timezone || 'Asia/Kolkata';
-            div.innerHTML = `
-              <strong>${item.name}</strong>
-              <span class="loc-subtext">${regionDetails} • ${tz} (${item.latitude.toFixed(2)}°, ${item.longitude.toFixed(2)}°)</span>
-            `;
-            div.onclick = () => selectMilanCity(partner, fullTitle, item.latitude, item.longitude, tz);
-            suggestionsBox.appendChild(div);
-          });
-          suggestionsBox.style.display = 'block';
         } catch (err) {
-          if (err.name !== 'AbortError') console.error('Milan geocoding failed:', err);
+          if (err.name === 'AbortError') return;
         }
+
+        // Tier 2: Open-Meteo fallback
+        if (results.length === 0 && !signal.aborted) {
+          try {
+            const fallbackRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=8&language=en&format=json`, { signal });
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              if (Array.isArray(fallbackData.results)) {
+                results = fallbackData.results.map(r => {
+                  const lat = typeof r.latitude === 'number' ? r.latitude : parseFloat(r.latitude);
+                  const lon = typeof r.longitude === 'number' ? r.longitude : parseFloat(r.longitude);
+                  const parts = [r.name, r.admin2 !== r.name ? r.admin2 : null, r.admin1 !== r.name ? r.admin1 : null, r.country].filter(Boolean);
+                  return {
+                    id: r.id || `om-${lat}-${lon}`,
+                    name: r.name || query,
+                    display_name: parts.join(', '),
+                    latitude: lat,
+                    longitude: lon,
+                    timezone: r.timezone || 'UTC'
+                  };
+                });
+              }
+            }
+          } catch (err) {
+            if (err.name === 'AbortError') return;
+          }
+        }
+
+        if (signal.aborted) return;
+
+        const seen = new Set();
+        const uniqueResults = [];
+        for (const item of results) {
+          const lat = parseFloat(item.latitude);
+          const lon = parseFloat(item.longitude);
+          if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+          const key = `${(item.name || '').toLowerCase()}|${lat.toFixed(2)}|${lon.toFixed(2)}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueResults.push({ ...item, latitude: lat, longitude: lon, timezone: item.timezone || 'UTC' });
+          }
+        }
+
+        if (partner === 'boy') {
+          window.__milanBoySuggestions = uniqueResults;
+          window.__milanBoySelectedIdx = -1;
+        } else {
+          window.__milanGirlSuggestions = uniqueResults;
+          window.__milanGirlSelectedIdx = -1;
+        }
+
+        if (uniqueResults.length === 0) {
+          suggestionsBox.innerHTML = '<div style="padding: 10px; font-size: 12px; color: #64748B;">No locations found.</div>';
+          suggestionsBox.style.display = 'block';
+          return;
+        }
+
+        suggestionsBox.innerHTML = '';
+        suggestionsBox.setAttribute('role', 'listbox');
+
+        uniqueResults.forEach((item, index) => {
+          const div = document.createElement('div');
+          div.className = 'location-suggestion-item';
+          div.setAttribute('role', 'option');
+          div.setAttribute('tabindex', '-1');
+          const tz = item.timezone || 'Asia/Kolkata';
+          div.innerHTML = `
+            <strong>${item.name}</strong>
+            <span class="loc-subtext">${item.display_name} • ${tz} (${item.latitude.toFixed(2)}°, ${item.longitude.toFixed(2)}°)</span>
+          `;
+          div.onclick = () => selectMilanCity(partner, item.display_name, item.latitude, item.longitude, tz);
+          div.onmouseenter = () => updateMilanSuggestionSelection(partner, index);
+          suggestionsBox.appendChild(div);
+        });
+        suggestionsBox.style.display = 'block';
       }, 300);
 
       if (partner === 'boy') milanBoyCityDebounce = timer;
       else milanGirlCityDebounce = timer;
     }
 
+    function updateMilanSuggestionSelection(partner, index) {
+      if (partner === 'boy') window.__milanBoySelectedIdx = index;
+      else window.__milanGirlSelectedIdx = index;
+
+      const box = document.getElementById(`milan-${partner}-city-suggestions`);
+      if (!box) return;
+      const items = box.querySelectorAll('.location-suggestion-item');
+      items.forEach((el, idx) => {
+        if (idx === index) {
+          el.classList.add('selected');
+          el.scrollIntoView({ block: 'nearest' });
+        } else {
+          el.classList.remove('selected');
+        }
+      });
+    }
+
     function handleMilanCityKeydown(partner, e) {
       const box = document.getElementById(`milan-${partner}-city-suggestions`);
-      if (box && box.style.display === 'block' && e.key === 'Escape') {
+      if (!box || box.style.display !== 'block') return;
+      const suggestions = partner === 'boy' ? window.__milanBoySuggestions : window.__milanGirlSuggestions;
+      if (!suggestions || !suggestions.length) return;
+      const currentIdx = partner === 'boy' ? window.__milanBoySelectedIdx : window.__milanGirlSelectedIdx;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = (currentIdx + 1) % suggestions.length;
+        updateMilanSuggestionSelection(partner, next);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = currentIdx <= 0 ? suggestions.length - 1 : currentIdx - 1;
+        updateMilanSuggestionSelection(partner, prev);
+      } else if (e.key === 'Enter') {
+        if (currentIdx >= 0 && currentIdx < suggestions.length) {
+          e.preventDefault();
+          const chosen = suggestions[currentIdx];
+          selectMilanCity(partner, chosen.display_name, chosen.latitude, chosen.longitude, chosen.timezone);
+        }
+      } else if (e.key === 'Escape') {
         box.style.display = 'none';
       }
     }
