@@ -6398,5 +6398,8 @@ if (require.main === module && !process.env.VERCEL && !process.env.AWS_LAMBDA_FU
   });
 }
 
-export { app };
+module.exports = app;
+module.exports.default = app;
+module.exports.app = app;
+module.exports.resolveGeocodeQuery = resolveGeocodeQuery;
 export default app;
