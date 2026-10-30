@@ -22256,6 +22256,11 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       }
     }
 
+    window.PAYMENT_STATES = PAYMENT_STATES;
+    window.setPaymentState = setPaymentState;
+    window.checkPaymentReturnFromUrl = checkPaymentReturnFromUrl;
+    window.ensureCashfreeConfig = ensureCashfreeConfig;
+
     async function executeSubscriptionCheckout(tier) {
       const token = currentSessionToken || localStorage.getItem('astro_session_token');
       if (!token) {
