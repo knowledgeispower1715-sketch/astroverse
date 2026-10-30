@@ -214,13 +214,22 @@ async function runMonetizationTestSuite() {
     });
 
     await test('POST /api/subscriptions/create-order fails closed with 503 PAYMENTS_NOT_CONFIGURED when live provider is not configured', async () => {
-      const res = await request('/api/subscriptions/create-order', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${tokenA}` },
-        body: { tier: 'PLUS', billingPeriod: 'monthly' }
-      });
-      assert.strictEqual(res.status, 503);
-      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+      delete process.env.CASHFREE_APP_ID;
+      delete process.env.CASHFREE_SECRET_KEY;
+      try {
+        const res = await request('/api/subscriptions/create-order', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenA}` },
+          body: { tier: 'PLUS', billingPeriod: 'monthly' }
+        });
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      } finally {
+        if (origAppId) process.env.CASHFREE_APP_ID = origAppId;
+        if (origSecret) process.env.CASHFREE_SECRET_KEY = origSecret;
+      }
     });
 
     await test('POST /api/subscriptions/verify-payment rejects legacy Razorpay signature submission with HTTP 410 PAYMENT_PROVIDER_RETIRED', async () => {
@@ -251,26 +260,35 @@ async function runMonetizationTestSuite() {
     });
 
     await test('POST /api/subscriptions/verify-payment fails closed with HTTP 503 PAYMENTS_NOT_CONFIGURED for recorded order without active provider', async () => {
-      const existingOrderId = `cf_sub_${Date.now()}`;
-      await db.createPaymentOrder({
-        userId: userA.id,
-        amount: 149,
-        currency: 'INR',
-        provider: 'CASHFREE',
-        providerOrderId: existingOrderId,
-        productType: 'SUBSCRIPTION',
-        productId: 'sub_plus_monthly'
-      });
-      const res = await request('/api/subscriptions/verify-payment', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${tokenA}` },
-        body: {
-          orderId: existingOrderId,
-          paymentId: 'cf_pay_123'
-        }
-      });
-      assert.strictEqual(res.status, 503);
-      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+      delete process.env.CASHFREE_APP_ID;
+      delete process.env.CASHFREE_SECRET_KEY;
+      try {
+        const existingOrderId = `cf_sub_${Date.now()}`;
+        await db.createPaymentOrder({
+          userId: userA.id,
+          amount: 149,
+          currency: 'INR',
+          provider: 'CASHFREE',
+          providerOrderId: existingOrderId,
+          productType: 'SUBSCRIPTION',
+          productId: 'sub_plus_monthly'
+        });
+        const res = await request('/api/subscriptions/verify-payment', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenA}` },
+          body: {
+            orderId: existingOrderId,
+            paymentId: 'cf_pay_123'
+          }
+        });
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      } finally {
+        if (origAppId) process.env.CASHFREE_APP_ID = origAppId;
+        if (origSecret) process.env.CASHFREE_SECRET_KEY = origSecret;
+      }
     });
 
     await test('Subscription activation and entitlement verification for Plus tier', async () => {
@@ -514,17 +532,26 @@ async function runMonetizationTestSuite() {
     });
 
     await test('POST /api/reports/order with paymentMethod gateway fails closed with 503 PAYMENTS_NOT_CONFIGURED when live provider is not configured', async () => {
-      const orderRes = await request('/api/reports/order', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${tokenA}` },
-        body: {
-          productId: 'report_janam_kundli_deep_dive',
-          profileId: profileA.id,
-          paymentMethod: 'gateway'
-        }
-      });
-      assert.strictEqual(orderRes.status, 503);
-      assert.strictEqual(orderRes.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+      delete process.env.CASHFREE_APP_ID;
+      delete process.env.CASHFREE_SECRET_KEY;
+      try {
+        const orderRes = await request('/api/reports/order', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenA}` },
+          body: {
+            productId: 'report_janam_kundli_deep_dive',
+            profileId: profileA.id,
+            paymentMethod: 'gateway'
+          }
+        });
+        assert.strictEqual(orderRes.status, 503);
+        assert.strictEqual(orderRes.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      } finally {
+        if (origAppId) process.env.CASHFREE_APP_ID = origAppId;
+        if (origSecret) process.env.CASHFREE_SECRET_KEY = origSecret;
+      }
     });
 
     await test('POST /api/reports/verify-and-generate rejects legacy Razorpay signature with HTTP 410 PAYMENT_PROVIDER_RETIRED', async () => {
@@ -559,28 +586,37 @@ async function runMonetizationTestSuite() {
     });
 
     await test('POST /api/reports/verify-and-generate fails closed with HTTP 503 PAYMENTS_NOT_CONFIGURED for recorded order without active provider', async () => {
-      const existingOrderId = `cf_rep_${Date.now()}`;
-      await db.createPaymentOrder({
-        userId: userA.id,
-        amount: 199,
-        currency: 'INR',
-        provider: 'CASHFREE',
-        providerOrderId: existingOrderId,
-        productType: 'REPORT',
-        productId: 'report_janam_kundli_deep_dive'
-      });
-      const res = await request('/api/reports/verify-and-generate', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${tokenA}` },
-        body: {
-          orderId: existingOrderId,
-          paymentId: 'cf_pay_123',
-          productId: 'report_janam_kundli_deep_dive',
-          profileId: profileA.id
-        }
-      });
-      assert.strictEqual(res.status, 503);
-      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+      delete process.env.CASHFREE_APP_ID;
+      delete process.env.CASHFREE_SECRET_KEY;
+      try {
+        const existingOrderId = `cf_rep_${Date.now()}`;
+        await db.createPaymentOrder({
+          userId: userA.id,
+          amount: 199,
+          currency: 'INR',
+          provider: 'CASHFREE',
+          providerOrderId: existingOrderId,
+          productType: 'REPORT',
+          productId: 'report_janam_kundli_deep_dive'
+        });
+        const res = await request('/api/reports/verify-and-generate', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${tokenA}` },
+          body: {
+            orderId: existingOrderId,
+            paymentId: 'cf_pay_123',
+            productId: 'report_janam_kundli_deep_dive',
+            profileId: profileA.id
+          }
+        });
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      } finally {
+        if (origAppId) process.env.CASHFREE_APP_ID = origAppId;
+        if (origSecret) process.env.CASHFREE_SECRET_KEY = origSecret;
+      }
     });
 
     await test('POST /api/reports/order allows free report generation even when payment gateway is unconfigured', async () => {

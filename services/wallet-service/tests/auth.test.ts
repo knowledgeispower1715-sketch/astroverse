@@ -683,13 +683,22 @@ async function runAuthTestSuite() {
 
     const rechargeAmount = 500;
     await test('POST /api/wallet/create-order fails closed with 503 PAYMENTS_NOT_CONFIGURED when live provider is not configured', async () => {
-      const res = await request('/api/wallet/create-order', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { amount: rechargeAmount }
-      });
-      assert.strictEqual(res.status, 503);
-      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+      delete process.env.CASHFREE_APP_ID;
+      delete process.env.CASHFREE_SECRET_KEY;
+      try {
+        const res = await request('/api/wallet/create-order', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: { amount: rechargeAmount }
+        });
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      } finally {
+        if (origAppId) process.env.CASHFREE_APP_ID = origAppId;
+        if (origSecret) process.env.CASHFREE_SECRET_KEY = origSecret;
+      }
     });
 
     // B. Payment Verification & Legacy Gateway Rejection Tests
@@ -1027,13 +1036,22 @@ async function runAuthTestSuite() {
     });
 
     await test('POST /api/wallet/create-order fails closed on package purchase when unconfigured', async () => {
-      const res = await request('/api/wallet/create-order', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${buyerToken}` },
-        body: { packageId: 'pack_250' }
-      });
-      assert.strictEqual(res.status, 503);
-      assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+      delete process.env.CASHFREE_APP_ID;
+      delete process.env.CASHFREE_SECRET_KEY;
+      try {
+        const res = await request('/api/wallet/create-order', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${buyerToken}` },
+          body: { packageId: 'pack_250' }
+        });
+        assert.strictEqual(res.status, 503);
+        assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
+      } finally {
+        if (origAppId) process.env.CASHFREE_APP_ID = origAppId;
+        if (origSecret) process.env.CASHFREE_SECRET_KEY = origSecret;
+      }
     });
 
     await test('POST /api/wallet/create-order rejects invalid packageId with HTTP 400 INVALID_PACKAGE', async () => {
@@ -1048,8 +1066,11 @@ async function runAuthTestSuite() {
 
     await test('Production fail-closed check: create-order fails with 503 when live provider is not configured in production', async () => {
       const originalEnv = process.env.NODE_ENV;
+      const origAppId = process.env.CASHFREE_APP_ID;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
+      delete process.env.CASHFREE_APP_ID;
+      delete process.env.CASHFREE_SECRET_KEY;
       try {
-        process.env.NODE_ENV = 'production';
         const res = await request('/api/wallet/create-order', {
           method: 'POST',
           headers: { Authorization: `Bearer ${buyerToken}` },
@@ -1059,6 +1080,8 @@ async function runAuthTestSuite() {
         assert.strictEqual(res.data.error, 'PAYMENTS_NOT_CONFIGURED');
       } finally {
         process.env.NODE_ENV = originalEnv;
+        if (origAppId) process.env.CASHFREE_APP_ID = origAppId;
+        if (origSecret) process.env.CASHFREE_SECRET_KEY = origSecret;
       }
     });
 

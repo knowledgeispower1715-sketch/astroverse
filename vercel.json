@@ -55,6 +55,12 @@
   },
   "rewrites": [
     {
+      "source": "/api/cashfree/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/wallet/(.*)",
       "destination": {
         "service": "wallet-service"
