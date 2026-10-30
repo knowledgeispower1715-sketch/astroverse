@@ -1091,7 +1091,7 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
     // 6. Issue Administrator Session
     const rawSessionToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = hashToken(rawSessionToken);
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24-hour admin session
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30-minute short-lived admin session
 
     await db.createSession({
       userId: user.id,
@@ -1102,8 +1102,8 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
     });
 
     const sanitizedName = (user.displayName && (user.displayName.toLowerCase().includes('aryan') || user.displayName.toLowerCase().includes('tiwari')))
-      ? 'Platform Owner'
-      : (user.displayName || 'Platform Owner');
+      ? (user.displayName || 'Administrator')
+      : (user.displayName || 'Administrator');
 
     const finalUser = await db.updateUser(user.id, {
       lastLoginAt: new Date().toISOString(),
@@ -1140,6 +1140,56 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
     });
   } catch (err: any) {
     return handleServiceError(res, err);
+  }
+});
+
+// POST /api/auth/admin-logout
+// Explicit, secure administrator session termination endpoint.
+// Invariant 1: Accepts token via Authorization header or request body (supports navigator.sendBeacon).
+// Invariant 2: Cryptographically deletes session from database.
+// Invariant 3: Records authoritative ADMIN_LOGOUT audit event.
+// Invariant 4: Always succeeds idempotently with HTTP 200 LOGGED_OUT status.
+app.post('/api/auth/admin-logout', async (req: Request, res: Response) => {
+  try {
+    let token: string | undefined;
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7).trim();
+    }
+    if (!token && req.body) {
+      if (typeof req.body === 'object' && req.body.sessionToken) {
+        token = String(req.body.sessionToken).trim();
+      } else if (typeof req.body === 'string') {
+        try {
+          const parsed = JSON.parse(req.body);
+          if (parsed && parsed.sessionToken) token = String(parsed.sessionToken).trim();
+        } catch (_) {}
+      }
+    }
+
+    if (token) {
+      const hashed = hashToken(token);
+      const session = await db.findSessionByTokenHash(hashed);
+      if (session) {
+        await db.deleteSession(hashed);
+        await db.recordAuditEvent({
+          userId: session.userId,
+          actorId: session.userId,
+          action: 'ADMIN_LOGOUT',
+          targetType: 'USER',
+          targetId: session.userId,
+          outcome: 'SUCCESS',
+          reason: 'Administrator closed console or tab unloaded'
+        });
+      }
+    }
+
+    res.json({
+      status: 'LOGGED_OUT',
+      message: 'Administrator session terminated successfully.'
+    });
+  } catch (err: any) {
+    res.status(200).json({ status: 'LOGGED_OUT', message: 'Administrator session terminated.' });
   }
 });
 

@@ -10436,6 +10436,23 @@
     var currentLanguage = (typeof localStorage !== 'undefined' && localStorage.getItem('astroverse_lang')) || 'en';
     window.currentLanguage = currentLanguage;
     let currentUserSession = JSON.parse(localStorage.getItem('astro_user_session') || 'null');
+    // Dedicated Security Guard: Admin credentials must NEVER reside in public client storage
+    if (currentUserSession) {
+      const uRole = String(currentUserSession.role || '').toUpperCase();
+      const uName = String(currentUserSession.name || '').toLowerCase();
+      const adminRoles = ['OWNER', 'SUPER_ADMIN', 'SECURITY_ADMIN', 'FINANCE_ADMIN', 'SUPPORT_ADMIN', 'ASTROLOGY_OPS_ADMIN', 'CONTENT_EDITOR', 'READONLY_ANALYST'];
+      if (adminRoles.includes(uRole) || uName.includes('platform owner') || uName.includes('administrator')) {
+        currentUserSession = null;
+        try {
+          localStorage.removeItem('astro_user_session');
+          localStorage.removeItem('astro_session_token');
+          localStorage.removeItem('astro_admin_assurance');
+          localStorage.removeItem('astro_admin_preview_active');
+          localStorage.removeItem('astro_admin_preview_tier');
+          localStorage.removeItem('astro_simulated_tier');
+        } catch (_) {}
+      }
+    }
     let currentWalletBalance = parseFloat(localStorage.getItem('astro_wallet_bal') || '0.00');
     let currentDemoWalletBalance = parseFloat(
       (typeof localStorage !== 'undefined' && (localStorage.getItem('astroverse.admin.preview.demo_wallet_bal') || localStorage.getItem('astro_demo_wallet_bal'))) || '0.00'
@@ -15210,14 +15227,39 @@
       }
       if (avatarEl) avatarEl.textContent = initials;
 
-      // Personalized Heading (Never generic "User")
-      if (headingEl) {
-        headingEl.textContent = resolvedName ? `Namaste, ${resolvedName}` : 'Namaste, Seeker';
-      }
-
-      // Dynamic Astrological Contextualization
-      if (chart) {
+      // Dynamic Astrological Contextualization & Clear Separation
+      if (!currentUserSession) {
+        // GUEST / UNAUTHENTICATED VISITOR
+        if (labelEl) labelEl.textContent = 'Vedic Astrology Hub';
+        if (headingEl) headingEl.textContent = resolvedName ? `Namaste, ${resolvedName}` : 'Namaste, Seeker';
+        if (subEl) {
+          subEl.textContent = 'Calculate your Janam Kundli, check planetary dashas, and explore Vedic insights';
+          subEl.style.display = 'block';
+        }
+        if (chartNameEl) {
+          chartNameEl.textContent = resolvedName ? `Draft Profile: ${resolvedName}` : 'No Chart Loaded';
+        }
+        if (chartIconEl) {
+          chartIconEl.className = resolvedName ? 'fa-solid fa-sparkles' : 'fa-solid fa-compass';
+          chartIconEl.style.color = '#F5C45E';
+        }
+        if (chartChip) {
+          chartChip.style.borderColor = 'rgba(212, 175, 55, 0.3)';
+          chartChip.style.background = 'rgba(255, 255, 255, 0.08)';
+        }
+        if (viewKundliBtn) {
+          viewKundliBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i> Calculate Free Kundli';
+          viewKundliBtn.onclick = () => {
+            switchNavSection('kundli');
+            document.getElementById('input-k-name')?.focus();
+          };
+        }
+      } else if (chart) {
+        // AUTHENTICATED CUSTOMER WITH ACTIVE NATAL CHART
         if (labelEl) labelEl.textContent = 'Active Vedic Profile';
+        if (headingEl) {
+          headingEl.textContent = resolvedName ? `Namaste, ${resolvedName}` : 'Namaste, Seeker';
+        }
         if (subEl) {
           const lagna = chart.lagnaSign ? `${chart.lagnaSign} Lagna (H1)` : 'Sidereal Lagna';
           const moon = chart.moonSign ? ` • Moon in ${chart.moonSign}` : '';
@@ -15240,8 +15282,12 @@
           viewKundliBtn.innerHTML = '<i class="fa-solid fa-dharmachakra"></i> View Full Kundli';
           viewKundliBtn.onclick = () => switchNavSection('kundli');
         }
-      } else if (currentUserSession) {
-        if (labelEl) labelEl.textContent = 'Welcome Back';
+      } else {
+        // AUTHENTICATED CUSTOMER WITHOUT NATAL CHART
+        if (labelEl) labelEl.textContent = 'Welcome to AstroVerse';
+        if (headingEl) {
+          headingEl.textContent = resolvedName ? `Namaste, ${resolvedName}` : (validSessionName ? `Namaste, ${validSessionName}` : 'Namaste, Seeker');
+        }
         if (subEl) {
           subEl.textContent = 'Enter your birth details in Janam Kundli to calculate your sidereal chart';
           subEl.style.display = 'block';
@@ -15260,39 +15306,7 @@
         if (viewKundliBtn) {
           viewKundliBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i> Calculate Free Kundli';
           viewKundliBtn.onclick = () => {
-            if (currentActiveNavSection === 'admin' || currentActiveNavSection === 'admin-login') {
-          switchNavSection('admin-login');
-        } else {
-          switchNavSection('kundli');
-        }
-            document.getElementById('input-k-name')?.focus();
-          };
-        }
-      } else {
-        if (labelEl) labelEl.textContent = 'Vedic Astrology Hub';
-        if (subEl) {
-          subEl.textContent = 'Enter your birth details to generate your sidereal Kundli';
-          subEl.style.display = 'block';
-        }
-        if (chartNameEl) {
-          chartNameEl.textContent = resolvedName ? `Draft Profile: ${resolvedName}` : 'No Chart Loaded';
-        }
-        if (chartIconEl) {
-          chartIconEl.className = resolvedName ? 'fa-solid fa-sparkles' : 'fa-solid fa-compass';
-          chartIconEl.style.color = '#F5C45E';
-        }
-        if (chartChip) {
-          chartChip.style.borderColor = 'rgba(212, 175, 55, 0.3)';
-          chartChip.style.background = 'rgba(255, 255, 255, 0.08)';
-        }
-        if (viewKundliBtn) {
-          viewKundliBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i> Calculate Free Kundli';
-          viewKundliBtn.onclick = () => {
-            if (currentActiveNavSection === 'admin' || currentActiveNavSection === 'admin-login') {
-          switchNavSection('admin-login');
-        } else {
-          switchNavSection('kundli');
-        }
+            switchNavSection('kundli');
             document.getElementById('input-k-name')?.focus();
           };
         }
@@ -15372,10 +15386,15 @@
       updateAdminPreviewBannerUI();
 
       if (currentUserSession) {
-        if (authBtnText) authBtnText.textContent = currentUserSession.name || 'Account';
-        if (navUserName) navUserName.textContent = currentUserSession.name || 'Account';
-        if (navDropdownUserIdent) navDropdownUserIdent.textContent = currentUserSession.identifier || currentUserSession.email || currentUserSession.phone || currentUserSession.name || 'Seeker';
-        if (mobDrawerAuthText) mobDrawerAuthText.textContent = currentUserSession.name || 'Account';
+        const rawName = String(currentUserSession.name || '').trim();
+        const rawRole = String(currentUserSession.role || '').toUpperCase();
+        const isLeakedAdmin = CANONICAL_ADMIN_ROLES.includes(rawRole) || rawName.toLowerCase().includes('platform owner') || rawName.toLowerCase().includes('administrator');
+        const cleanName = isLeakedAdmin ? 'Customer' : (rawName || 'Customer');
+
+        if (authBtnText) authBtnText.textContent = cleanName;
+        if (navUserName) navUserName.textContent = cleanName;
+        if (navDropdownUserIdent) navDropdownUserIdent.textContent = isLeakedAdmin ? (currentUserSession.email || 'customer@astroverse.app') : (currentUserSession.identifier || currentUserSession.email || currentUserSession.phone || cleanName || 'Seeker');
+        if (mobDrawerAuthText) mobDrawerAuthText.textContent = cleanName;
         if (mobDrawerSignOutBtn) mobDrawerSignOutBtn.style.display = 'flex';
 
         if (navGuestBtns) navGuestBtns.style.display = 'none';

@@ -420,7 +420,7 @@
             <a href="javascript:void(0)" onclick="openAdminRecoveryGuidance()" style="color: #F5C45E; text-decoration: underline; margin-left: 4px;">Recovery Procedures</a>
           </div>
           <div>
-            <a href="#/overview" onclick="switchNavSection('overview')" style="color: #94A3B8; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            <a href="/" style="color: #94A3B8; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-arrow-left"></i> Return to AstroVerse Public App
             </a>
           </div>
@@ -447,11 +447,11 @@
           <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569;" onclick="openAdminMfaSetupModal()">
             <i class="fa-solid fa-key"></i> Setup MFA
           </button>
-          <a href="#/overview" onclick="switchNavSection('overview')" class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569; text-decoration: none;">
+          <a href="/" class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-globe"></i> Customer App
           </a>
-          <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #FCA5A5; border-color: #991B1B;" onclick="adminLogout()">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+          <button id="btn-admin-close-signout" class="btn-outline-secondary" style="font-size: 11px; padding: 6px 14px; color: #FCA5A5; border-color: #991B1B; background: rgba(153, 27, 27, 0.15); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 6px;" onclick="closeAdminAndSignOut()">
+            <i class="fa-solid fa-power-off"></i> Close Admin &amp; Sign Out
           </button>
         </div>
       </div>
@@ -3408,11 +3408,23 @@
             role: u.role,
             status: u.status
           };
-          if (data.assuranceToken) {
-            localStorage.setItem('astro_admin_assurance', data.assuranceToken);
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('astro_admin_session_token', currentSessionToken);
+            sessionStorage.setItem('astro_admin_user', JSON.stringify(currentUserSession));
+            if (data.assuranceToken) {
+              sessionStorage.setItem('astro_admin_assurance', data.assuranceToken);
+            }
           }
-          localStorage.setItem('astro_session_token', currentSessionToken);
-          localStorage.setItem('astro_user_session', JSON.stringify(currentUserSession));
+          // Remove legacy keys from localStorage to prevent cross-contamination with public customer portal
+          const legacyAdminKeys = [
+            'astro_session_token', 'astro_user_session', 'astro_admin_assurance',
+            'astro_admin_preview_active', 'astro_admin_preview_tier', 'astro_simulated_tier',
+            'astroverse.admin.preview.tier', 'astroverse.admin.preview.demo_wallet_bal',
+            'astroverse.admin.preview.profile_id', 'astro_demo_wallet_bal'
+          ];
+          legacyAdminKeys.forEach(k => {
+            try { localStorage.removeItem(k); } catch (_) {}
+          });
 
           updateUserSessionUI();
           showToast(`Welcome to Admin Console, ${currentUserSession.name}!`, 'success');
@@ -3442,18 +3454,33 @@
       }
     }
 
-    async function adminLogout() {
+    async function closeAdminAndSignOut() {
+      const token = currentSessionToken || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_session_token') : null);
       try {
-        await fetch(`${getAuthBase()}/api/auth/logout`, {
-          method: 'POST',
-          headers: getAuthHeaders()
-        });
+        if (token) {
+          if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+            navigator.sendBeacon(`${getAuthBase()}/api/auth/admin-logout`, JSON.stringify({ sessionToken: token }));
+          } else {
+            await fetch(`${getAuthBase()}/api/auth/admin-logout`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+              body: JSON.stringify({ sessionToken: token })
+            });
+          }
+        }
       } catch (_) {}
 
       currentSessionToken = null;
       currentUserSession = null;
 
-      const adminKeys = [
+      if (typeof sessionStorage !== 'undefined') {
+        const adminSessionKeys = ['astro_admin_session_token', 'astro_admin_user', 'astro_admin_assurance'];
+        adminSessionKeys.forEach(k => {
+          try { sessionStorage.removeItem(k); } catch (_) {}
+        });
+      }
+
+      const legacyKeys = [
         'astro_session_token',
         'astro_user_session',
         'astro_admin_assurance',
@@ -3465,14 +3492,29 @@
         'astroverse.admin.preview.profile_id',
         'astro_demo_wallet_bal'
       ];
-      adminKeys.forEach(k => {
+      legacyKeys.forEach(k => {
         try { localStorage.removeItem(k); } catch (_) {}
       });
 
+      // Clear input fields on login form
+      const emailInput = document.getElementById('admin-login-email');
+      const pwdInput = document.getElementById('admin-login-password');
+      const mfaInput = document.getElementById('admin-login-mfa');
+      const mfaCont = document.getElementById('admin-mfa-container');
+      const errBox = document.getElementById('admin-login-error');
+      if (emailInput) emailInput.value = '';
+      if (pwdInput) pwdInput.value = '';
+      if (mfaInput) mfaInput.value = '';
+      if (mfaCont) mfaCont.style.display = 'none';
+      if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+
       updateUserSessionUI();
+      showAdminLogin();
       showToast('Administrator session closed successfully.', 'info');
       switchNavSection('admin-login');
     }
+    window.closeAdminAndSignOut = closeAdminAndSignOut;
+    window.adminLogout = closeAdminAndSignOut;
 
     async function loadAdminOverview() {
       try {
@@ -3516,18 +3558,25 @@
         if (status !== 'ALL') url.searchParams.append('status', status);
 
         const res = await fetch(url.toString(), { headers: getAuthHeaders() });
+        if (res.status === 401 || res.status === 403) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #F87171; padding: 24px;"><div><i class="fa-solid fa-shield-halved" style="font-size: 24px; margin-bottom: 8px;"></i></div><strong>Session Expired or Unauthorized</strong><p style="font-size: 12px; color: #94A3B8; margin: 4px 0 12px;">Your administrator credentials require re-authentication.</p><button class="btn-gold-primary" onclick="closeAdminAndSignOut()" style="font-size: 11px; padding: 6px 12px;">Sign In Again</button></td></tr>';
+          showToast('Administrator session expired or unauthorized. Please sign in again.', 'error');
+          setTimeout(() => closeAdminAndSignOut(), 2000);
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
-          const users = data.users;
+          const users = data.users || [];
           if (users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B;">No matching users found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;">No matching users found in the directory.</td></tr>';
             return;
           }
 
           tbody.innerHTML = users.map(u => {
             const statusClass = u.status === 'ACTIVE' ? 'badge-status-active' : (u.status === 'SUSPENDED' ? 'badge-status-suspended' : 'badge-status-deactivated');
             const roleClass = (u.role === 'OWNER' || u.role === 'SUPER_ADMIN') ? 'badge-role-admin' : 'badge-role-user';
-            const isOwner = currentUserSession.role === 'OWNER' || currentUserSession.role === 'SUPER_ADMIN';
+            const isOwner = currentUserSession && (currentUserSession.role === 'OWNER' || currentUserSession.role === 'SUPER_ADMIN');
 
             return `
               <tr>
@@ -3559,9 +3608,12 @@
               </tr>
             `;
           }).join('');
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #F87171; padding: 20px;">Failed to load user directory (${res.status}: ${escapeHtml(errData.message || 'Unknown server response')}).<div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList()" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>`;
         }
       } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #DC2626;">Error loading user directory.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #DC2626; padding: 20px;"><div>Network or communication error loading user directory.</div><div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList()" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>';
       }
     }
 
@@ -4285,19 +4337,65 @@
 
   window.addEventListener('hashchange', handleStandaloneAdminRoute);
 
+  let adminLastActivity = Date.now();
+  function resetAdminActivity() {
+    adminLastActivity = Date.now();
+  }
+  function setupAdminInactivityMonitor() {
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, resetAdminActivity, { passive: true });
+    });
+
+    // 10-minute inactivity check: closes session on idle
+    setInterval(() => {
+      if (currentSessionToken && (Date.now() - adminLastActivity > 10 * 60 * 1000)) {
+        showToast('Admin session timed out due to 10 minutes of inactivity.', 'warning');
+        closeAdminAndSignOut();
+      }
+    }, 30000);
+
+    // Invalidate session on tab close or window hide
+    window.addEventListener('pagehide', () => {
+      const token = currentSessionToken || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_session_token') : null);
+      if (token && typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        navigator.sendBeacon(`${getAuthBase()}/api/auth/admin-logout`, JSON.stringify({ sessionToken: token }));
+      }
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     checkGatewaySecurityStatus();
 
     try {
-      const savedToken = localStorage.getItem('astro_session_token');
-      const savedUser = localStorage.getItem('astro_user_session');
+      // Admin session strictly loaded from sessionStorage (cleared on tab/window close)
+      const savedToken = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_session_token') : null;
+      const savedUser = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_user') : null;
       if (savedToken && savedUser) {
         currentSessionToken = savedToken;
         currentUserSession = JSON.parse(savedUser);
+      } else {
+        currentSessionToken = null;
+        currentUserSession = null;
       }
-    } catch (e) {}
+    } catch (e) {
+      currentSessionToken = null;
+      currentUserSession = null;
+    }
+
+    // Clean up any stale admin credentials from legacy localStorage
+    try {
+      const localUser = localStorage.getItem('astro_user_session');
+      if (localUser) {
+        const parsed = JSON.parse(localUser);
+        if (parsed && (parsed.role === 'OWNER' || parsed.role === 'SUPER_ADMIN' || parsed.role === 'SECURITY_ADMIN' || (parsed.name && parsed.name.toLowerCase().includes('platform owner')))) {
+          localStorage.removeItem('astro_user_session');
+          localStorage.removeItem('astro_session_token');
+        }
+      }
+    } catch (_) {}
 
     handleStandaloneAdminRoute();
+    setupAdminInactivityMonitor();
   });
 </script>
 </body>
