@@ -3979,6 +3979,10 @@
                             onclick="toggleAdminUserStatus('${u.id}', '${u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'}')">
                       ${u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
                     </button>
+                    <button class="btn-outline-secondary" style="padding: 4px 8px; font-size: 11px; color: #D97706;"
+                            onclick="promptAdminWalletAdjustment('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}')" title="Adjust Balance">
+                      <i class="fa-solid fa-wallet"></i> Adjust
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -4037,6 +4041,52 @@
         }
       } catch (err) {
         showToast("Network error updating role.", "error");
+      }
+    }
+
+    async function promptAdminWalletAdjustment(userId, userName) {
+      const type = prompt(`Wallet adjustment for ${userName} (${userId}):\nEnter adjustment type: 'CREDIT' or 'DEBIT'`, 'CREDIT');
+      if (!type) return;
+      const normType = type.trim().toUpperCase();
+      if (normType !== 'CREDIT' && normType !== 'DEBIT') {
+        showToast("Invalid adjustment type. Must be 'CREDIT' or 'DEBIT'.", "error");
+        return;
+      }
+      const amtStr = prompt(`Enter amount in INR to ${normType}:`, '100');
+      if (!amtStr) return;
+      const amount = parseFloat(amtStr);
+      if (isNaN(amount) || amount <= 0) {
+        showToast("Invalid amount. Must be a positive number.", "error");
+        return;
+      }
+      const reason = prompt(`Enter mandatory audit reason (minimum 5 characters):`, 'Customer service compensation');
+      if (!reason || reason.trim().length < 5) {
+        showToast("Adjustment cancelled: A valid reason of at least 5 characters is mandatory.", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/wallet/adjust-balance`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            userId,
+            amount,
+            type: normType,
+            reason: reason.trim(),
+            category: 'MANUAL_ADJUSTMENT'
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`Successfully ${normType.toLowerCase()}ed ₹${amount.toFixed(2)}. New balance: ₹${data.user.walletBalance.toFixed(2)}`, "success");
+          loadAdminUsersList();
+          loadAdminOverview();
+        } else {
+          showToast(data.message || "Failed to adjust wallet balance.", "error");
+        }
+      } catch (err) {
+        showToast("Network error during balance adjustment.", "error");
       }
     }
 
@@ -4239,9 +4289,9 @@
         if (res.ok) {
           const data = await res.json();
           if (target) {
-            target.innerHTML = `<span style="color: ${data.status === 'CLEAN_RECONCILED' ? '#059669' : '#D97706'}; font-weight: 800;">STATUS: ${data.status}</span><br>Total Orders: ${data.totalOrdersChecked} | Matched: ${data.matched} | Discrepancies: ${data.mismatched}`;
+            target.innerHTML = `<span style="color: ${data.status === 'CLEAN_RECONCILED' ? '#059669' : '#D97706'}; font-weight: 800;">STATUS: ${data.status}</span><br>Total Orders: ${data.totalOrdersChecked} | Auto-Reconciled: ${data.autoReconciledCount || 0} | Matched: ${data.matched} | Discrepancies: ${data.mismatched}`;
           }
-          showToast("Payment reconciliation complete.", "success");
+          showToast(`Payment reconciliation complete. Auto-reconciled: ${data.autoReconciledCount || 0}`, "success");
         }
       } catch (_) {
         if (target) target.innerHTML = `<span style="color: #DC2626;">Reconciliation failed.</span>`;

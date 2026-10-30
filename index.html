@@ -15546,6 +15546,10 @@
               const walRes = await fetch(`${getAuthBase()}/api/wallet/me`, { headers: getAuthHeaders() });
               if (walRes.ok) {
                 const walData = await walRes.json();
+                if (walData.balance !== undefined) {
+                  currentWalletBalance = parseFloat(walData.balance);
+                  localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+                }
                 if (walData.demoBalance !== undefined) {
                   currentDemoWalletBalance = parseFloat(walData.demoBalance);
                   localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
@@ -15577,6 +15581,34 @@
     async function validateSessionWithBackend() {
       return await validateStoredSession();
     }
+
+    async function refreshUserWalletBalance(force = false) {
+      if (!currentSessionToken) return currentWalletBalance;
+      try {
+        const walRes = await fetch(`${getAuthBase()}/api/wallet/me`, { headers: getAuthHeaders() });
+        if (walRes.ok) {
+          const walData = await walRes.json();
+          if (walData.balance !== undefined) {
+            currentWalletBalance = parseFloat(walData.balance);
+            localStorage.setItem('astro_wallet_bal', currentWalletBalance.toFixed(2));
+          }
+          if (walData.demoBalance !== undefined) {
+            currentDemoWalletBalance = parseFloat(walData.demoBalance);
+            localStorage.setItem('astro_demo_wallet_bal', currentDemoWalletBalance.toFixed(2));
+          }
+          updateUserSessionUI();
+          updateDemoWalletDisplay();
+          const balEls = document.querySelectorAll('#global-wallet-bal, #dash-wallet-bal, #mob-drawer-real-bal, [data-wallet-balance]');
+          balEls.forEach(el => { el.textContent = currentWalletBalance.toFixed(2); });
+          window.dispatchEvent(new CustomEvent('astroverse:wallet-updated', { detail: walData }));
+          return currentWalletBalance;
+        }
+      } catch (err) {
+        console.warn('[WALLET] Failed to refresh wallet balance:', err);
+      }
+      return currentWalletBalance;
+    }
+    window.refreshUserWalletBalance = refreshUserWalletBalance;
 
     // ==================== PERSONALIZED VEDIC GREETING & COMMAND CENTER ====================
     function updatePersonalizedGreetingUI() {
@@ -16344,6 +16376,9 @@
       selectWalletRechargePack(250, 35);
       updateDemoWalletDisplay();
       syncPromotionalBannerState();
+      if (typeof refreshUserWalletBalance === 'function') {
+        refreshUserWalletBalance();
+      }
       document.getElementById('modal-wallet').style.display = 'flex';
     }
     function closeWalletModal() {
@@ -22528,6 +22563,10 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
               : 'Your payment was successfully confirmed and your entitlements have been activated!'
           });
           await fetchUserEntitlements();
+          if (typeof refreshUserWalletBalance === 'function') {
+            await refreshUserWalletBalance(true);
+          }
+          await validateStoredSession(true);
           updateUserSessionUI();
           if (typeof updateOverviewActiveChartBanner === 'function') {
             updateOverviewActiveChartBanner();
@@ -22642,7 +22681,49 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           message: `Creating secure order for ${planName}...`
         });
 
+        const planPriceNumeric = tier === 'PREMIUM'
+          ? (currentBillingCycle === 'annual' ? 2499 : 299)
+          : (currentBillingCycle === 'annual' ? 1299 : 149);
+
         const idempotencyKey = 'cf_sub_' + tier + '_' + currentBillingCycle + '_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+
+        // If user has sufficient wallet balance, offer instant activation using wallet balance
+        if (currentWalletBalance >= planPriceNumeric) {
+          const useWallet = window.confirm(`You have ₹${currentWalletBalance.toFixed(2)} in your AstroVerse wallet.\n\nWould you like to activate ${planName} instantly using your wallet balance (₹${planPriceNumeric.toFixed(2)})?`);
+          if (useWallet) {
+            setPaymentState(PAYMENT_STATES.VERIFYING_PAYMENT, {
+              item: planName,
+              amount: planPrice,
+              message: `Activating ${planName} with your wallet balance...`
+            });
+            const walRes = await fetch(`${getAuthBase()}/api/subscriptions/purchase-with-wallet`, {
+              method: 'POST',
+              headers: Object.assign(getAuthHeaders(), { 'x-idempotency-key': idempotencyKey }),
+              body: JSON.stringify({
+                tier,
+                billingPeriod: currentBillingCycle,
+                idempotencyKey
+              })
+            });
+            if (walRes.ok) {
+              if (targetBtn) {
+                targetBtn.disabled = false;
+                targetBtn.innerHTML = originalBtnHtml;
+              }
+              await refreshUserWalletBalance(true);
+              await validateStoredSession(true);
+              closePricingPlansModal();
+              setPaymentState(PAYMENT_STATES.SUCCESS, {
+                item: planName,
+                amount: planPrice,
+                message: `🎉 Success! Your subscription has been upgraded to ${tier} using your wallet balance.`
+              });
+              showToast(`🎉 Upgraded to AstroVerse ${tier}!`, "success");
+              return;
+            }
+          }
+        }
+
         const res = await fetch(`${getAuthBase()}/api/subscriptions/create-order`, {
           method: 'POST',
           headers: Object.assign(getAuthHeaders(), { 'x-idempotency-key': idempotencyKey }),
@@ -22759,6 +22840,10 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           });
           closePricingPlansModal();
           await fetchUserEntitlements();
+          if (typeof refreshUserWalletBalance === 'function') {
+            await refreshUserWalletBalance(true);
+          }
+          await validateStoredSession(true);
           updateUserSessionUI();
           if (typeof updateOverviewActiveChartBanner === 'function') {
             updateOverviewActiveChartBanner();
@@ -26967,6 +27052,21 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && AstroVerseVoiceEngine && AstroVerseVoiceEngine.isSpeaking) {
         AstroVerseVoiceEngine.stop();
+      }
+      if (!document.hidden && currentSessionToken) {
+        // Tab became visible (e.g. user returned from external UPI payment or banking window)
+        validateStoredSession(true);
+        if (typeof refreshUserWalletBalance === 'function') {
+          refreshUserWalletBalance(true);
+        }
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      if (currentSessionToken) {
+        if (typeof refreshUserWalletBalance === 'function') {
+          refreshUserWalletBalance();
+        }
       }
     });
 

@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled } from './security/permissions';
 import { bootstrapPostgresSchema } from './schemaBootstrap';
+import { SubscriptionTier, BillingPeriod } from './monetization/catalog';
 export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled };
 
 export enum AccountStatus {
@@ -75,6 +76,8 @@ export interface UserRecord {
   preferredLanguage: string;
   preferredTimezone: string;
   walletBalance: number;
+  paidWalletBalance?: number;
+  promotionalWalletBalance?: number;
   demoWalletBalance?: number;
   simulatedSubscriptionTier?: 'FREE' | 'PLUS' | 'PREMIUM' | null;
   subscriptionTier?: 'FREE' | 'PLUS' | 'PREMIUM';
@@ -2253,6 +2256,55 @@ class ResilientDatabase {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
+  async getUserPaymentOrdersAsync(userId: string): Promise<PaymentOrderRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgOrders = await this.prisma.paymentOrder.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' }
+        });
+        const mapped = pgOrders.map((o: any) => this.mapPrismaPaymentOrder(o));
+        for (const m of mapped) {
+          const idx = this.data.paymentOrders.findIndex(o => o.id === m.id || o.providerOrderId === m.providerOrderId || o.razorpayOrderId === m.razorpayOrderId);
+          if (idx >= 0) {
+            this.data.paymentOrders[idx] = m;
+          } else {
+            this.data.paymentOrders.unshift(m);
+          }
+        }
+        return mapped;
+      } catch (err: any) {
+        console.warn('[DB] getUserPaymentOrdersAsync Postgres error:', err?.message || err);
+      }
+    }
+    return this.getUserPaymentOrders(userId);
+  }
+
+  async getPendingPaymentOrdersAsync(limit: number = 50): Promise<PaymentOrderRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgOrders = await this.prisma.paymentOrder.findMany({
+          where: { status: OrderStatus.CREATED },
+          orderBy: { createdAt: 'desc' },
+          take: limit
+        });
+        const mapped = pgOrders.map((o: any) => this.mapPrismaPaymentOrder(o));
+        for (const m of mapped) {
+          const idx = this.data.paymentOrders.findIndex(o => o.id === m.id || o.providerOrderId === m.providerOrderId || o.razorpayOrderId === m.razorpayOrderId);
+          if (idx >= 0) {
+            this.data.paymentOrders[idx] = m;
+          } else {
+            this.data.paymentOrders.unshift(m);
+          }
+        }
+        return mapped;
+      } catch (err: any) {
+        console.warn('[DB] getPendingPaymentOrdersAsync Postgres error:', err?.message || err);
+      }
+    }
+    return this.data.paymentOrders.filter(o => o.status === OrderStatus.CREATED).slice(0, limit);
+  }
+
   isPaymentIdUsed(paymentId: string, excludeOrderId?: string): boolean {
     if (!paymentId) return false;
     const usedInOrders = this.data.paymentOrders.some(
@@ -3062,6 +3114,219 @@ class ResilientDatabase {
       transactionId: ledgerId,
       reportTitle: cleanTitle
     };
+  }
+
+  async purchaseSubscription(
+    userId: string,
+    tier: SubscriptionTier,
+    billingPeriod: BillingPeriod,
+    amount: number,
+    clientKey?: string
+  ): Promise<{
+    success: boolean;
+    alreadyPurchased?: boolean;
+    newBalance: number;
+    deduction: number;
+    transactionId: string;
+    tier: SubscriptionTier;
+    billingPeriod: BillingPeriod;
+    subscriptionExpiresAt: string;
+  }> {
+    this.assertDurableStorage();
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      throw new Error('INVALID_AMOUNT');
+    }
+
+    if (user.walletBalance < amount) {
+      throw new Error('INSUFFICIENT_FUNDS');
+    }
+
+    const durationDays = billingPeriod === BillingPeriod.ANNUAL ? 365 : 30;
+    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+    const idemKey = clientKey || `SUB_WAL_${userId}_${tier}_${billingPeriod}_${Date.now()}`;
+
+    // Enforce idempotency
+    const existing = this.data.walletLedgers.find(l => l.idempotencyKey === idemKey);
+    if (existing) {
+      return {
+        success: true,
+        alreadyPurchased: true,
+        newBalance: user.walletBalance,
+        deduction: 0,
+        transactionId: existing.id,
+        tier,
+        billingPeriod,
+        subscriptionExpiresAt: user.subscriptionExpiresAt || expiresAt.toISOString()
+      };
+    }
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const pgResult = await this.prisma.$transaction(async (tx: any) => {
+          const pgUser = await tx.user.findUnique({ where: { id: userId } });
+          if (!pgUser) throw new Error('USER_NOT_FOUND');
+          if (Number(pgUser.walletBalance) < amount) throw new Error('INSUFFICIENT_FUNDS');
+
+          const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: {
+              walletBalance: { decrement: amount },
+              subscriptionTier: tier,
+              subscriptionBillingPeriod: billingPeriod,
+              subscriptionExpiresAt: expiresAt,
+              subscriptionStatus: 'ACTIVE'
+            }
+          });
+
+          const ledger = await tx.walletLedger.create({
+            data: {
+              userId,
+              amount: -amount,
+              entryType: EntryType.STORE_PURCHASE,
+              idempotencyKey: idemKey,
+              referenceId: `sub_${tier.toLowerCase()}`,
+              description: `Subscription Purchase: AstroVerse ${tier} (${billingPeriod})`
+            }
+          });
+
+          return {
+            success: true,
+            newBalance: Number(updatedUser.walletBalance),
+            deduction: amount,
+            transactionId: ledger.id,
+            tier,
+            billingPeriod,
+            subscriptionExpiresAt: expiresAt.toISOString()
+          };
+        });
+
+        user.walletBalance = pgResult.newBalance;
+        user.subscriptionTier = tier;
+        user.subscriptionBillingPeriod = billingPeriod;
+        user.subscriptionExpiresAt = expiresAt.toISOString();
+        user.subscriptionStatus = 'ACTIVE';
+        return pgResult;
+      } catch (err: any) {
+        if (err.message?.includes('Unique constraint failed') && err.message?.includes('idempotencyKey')) {
+          return {
+            success: true,
+            alreadyPurchased: true,
+            newBalance: user.walletBalance,
+            deduction: 0,
+            transactionId: idemKey,
+            tier,
+            billingPeriod,
+            subscriptionExpiresAt: user.subscriptionExpiresAt || expiresAt.toISOString()
+          };
+        }
+        throw err;
+      }
+    }
+
+    // In-memory fallback
+    user.walletBalance = Math.round((user.walletBalance - amount) * 100) / 100;
+    user.subscriptionTier = tier;
+    user.subscriptionBillingPeriod = billingPeriod;
+    user.subscriptionExpiresAt = expiresAt.toISOString();
+    user.subscriptionStatus = 'ACTIVE';
+    user.updatedAt = new Date().toISOString();
+
+    const ledgerId = 'led_' + crypto.randomBytes(8).toString('hex');
+    this.data.walletLedgers.unshift({
+      id: ledgerId,
+      userId,
+      astrologerId: null,
+      amount: -amount,
+      entryType: EntryType.STORE_PURCHASE,
+      idempotencyKey: idemKey,
+      referenceId: `sub_${tier.toLowerCase()}`,
+      description: `Subscription Purchase: AstroVerse ${tier} (${billingPeriod})`,
+      createdAt: new Date().toISOString()
+    });
+    this.saveToFile();
+
+    return {
+      success: true,
+      newBalance: user.walletBalance,
+      deduction: amount,
+      transactionId: ledgerId,
+      tier,
+      billingPeriod,
+      subscriptionExpiresAt: expiresAt.toISOString()
+    };
+  }
+
+  async adjustWalletBalance(
+    userId: string,
+    amount: number,
+    type: 'CREDIT' | 'DEBIT',
+    reason: string,
+    adminId: string,
+    category: 'COMPLIMENTARY_PROMOTIONAL' | 'CORRECTIVE_ADJUSTMENT' | 'REFUND_COMPENSATION' = 'CORRECTIVE_ADJUSTMENT'
+  ): Promise<{ success: boolean; newBalance: number; transactionId: string; user: UserRecord }> {
+    this.assertDurableStorage();
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      throw new Error('INVALID_AMOUNT: Amount must be a positive number.');
+    }
+
+    const cleanReason = (reason || '').trim();
+    if (!cleanReason) {
+      throw new Error('REASON_REQUIRED: A valid administrative justification is required.');
+    }
+
+    if (type === 'DEBIT' && user.walletBalance < amount) {
+      throw new Error('INSUFFICIENT_FUNDS: Debit amount exceeds user wallet balance.');
+    }
+
+    const delta = type === 'CREDIT' ? amount : -amount;
+    const idemKey = `ADMIN_ADJ_${adminId}_${userId}_${Date.now()}`;
+    const desc = `[ADMIN ${category}] ${type === 'CREDIT' ? '+' : '-'}₹${amount.toFixed(2)}: ${cleanReason}`;
+
+    if (this.isPostgresAvailable && this.prisma) {
+      const pgResult = await this.prisma.$transaction(async (tx: any) => {
+        const updated = await tx.user.update({
+          where: { id: userId },
+          data: { walletBalance: { increment: delta } }
+        });
+        const ledger = await tx.walletLedger.create({
+          data: {
+            userId,
+            amount: delta,
+            entryType: type === 'CREDIT' ? EntryType.WALLET_RECHARGE : EntryType.STORE_PURCHASE,
+            idempotencyKey: idemKey,
+            referenceId: adminId,
+            description: desc
+          }
+        });
+        return { updated: this.mapPrismaUser(updated), ledgerId: ledger.id };
+      });
+      user.walletBalance = pgResult.updated.walletBalance;
+      return { success: true, newBalance: user.walletBalance, transactionId: pgResult.ledgerId, user: pgResult.updated };
+    }
+
+    user.walletBalance = Math.round((user.walletBalance + delta) * 100) / 100;
+    user.updatedAt = new Date().toISOString();
+    const ledgerId = 'led_' + crypto.randomBytes(8).toString('hex');
+    this.data.walletLedgers.unshift({
+      id: ledgerId,
+      userId,
+      astrologerId: null,
+      amount: delta,
+      entryType: type === 'CREDIT' ? EntryType.WALLET_RECHARGE : EntryType.STORE_PURCHASE,
+      idempotencyKey: idemKey,
+      referenceId: adminId,
+      description: desc,
+      createdAt: new Date().toISOString()
+    });
+    this.saveToFile();
+
+    return { success: true, newBalance: user.walletBalance, transactionId: ledgerId, user };
   }
 
   // ============================================================================
