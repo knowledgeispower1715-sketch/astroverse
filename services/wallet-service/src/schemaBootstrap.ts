@@ -488,6 +488,107 @@ export const DDL_STATEMENTS: string[] = [
     USING (current_user IN ('postgres', 'service_role'))
     WITH CHECK (current_user IN ('postgres', 'service_role'));
   EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // KundliCalculation: User ownership isolation
+  `DO $$ BEGIN
+    CREATE POLICY "kundlicalculation_own_record" ON "KundliCalculation" FOR ALL 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'))
+    WITH CHECK ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // ConsultationSession: User ownership isolation for read; service_role for state mutations
+  `DO $$ BEGIN
+    CREATE POLICY "consultationsession_read_own" ON "ConsultationSession" FOR SELECT 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "consultationsession_mutate_service_role" ON "ConsultationSession" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // ConsultationMessage: Message access strictly scoped to participants
+  `DO $$ BEGIN
+    CREATE POLICY "consultationmessage_read_own_session" ON "ConsultationMessage" FOR SELECT 
+    USING (EXISTS (
+      SELECT 1 FROM "ConsultationSession" cs 
+      WHERE cs.id = "ConsultationMessage"."sessionId" 
+      AND (cs."userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'))
+    ));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "consultationmessage_mutate_service_role" ON "ConsultationMessage" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // PujaBooking: User ownership isolation for read
+  `DO $$ BEGIN
+    CREATE POLICY "pujabooking_read_own" ON "PujaBooking" FOR SELECT 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "pujabooking_mutate_service_role" ON "PujaBooking" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // PrivacyRequest: User ownership isolation
+  `DO $$ BEGIN
+    CREATE POLICY "privacyrequest_own_record" ON "PrivacyRequest" FOR ALL 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'))
+    WITH CHECK ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // UserSession: Session isolation
+  `DO $$ BEGIN
+    CREATE POLICY "usersession_own_record" ON "UserSession" FOR ALL 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'))
+    WITH CHECK ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // FeatureFlag: Public read, service_role write
+  `DO $$ BEGIN
+    CREATE POLICY "featureflag_public_read" ON "FeatureFlag" FOR SELECT USING (true);
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "featureflag_service_mutate" ON "FeatureFlag" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // PlatformIncident: Service role and security administrators only
+  `DO $$ BEGIN
+    CREATE POLICY "platformincident_service_only" ON "PlatformIncident" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // SQL Grants Hardening: Principle of least privilege
+  `DO $$ BEGIN
+    REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User" FROM anon;
+    GRANT SELECT ON "User", "BirthProfile", "SavedReport", "KundliCalculation", "PaymentOrder", "WalletLedger", "ConsultationSession", "ConsultationMessage", "PujaBooking", "PrivacyRequest" TO authenticated;
+    GRANT INSERT, UPDATE, DELETE ON "BirthProfile", "SavedReport", "KundliCalculation", "PrivacyRequest" TO authenticated;
+    GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+    GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+  EXCEPTION WHEN others THEN null;
   END $$;`
 ];
 
