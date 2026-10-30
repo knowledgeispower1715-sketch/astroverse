@@ -4707,7 +4707,7 @@ app.get('/api/config', async (_req: Request, res: Response) => {
 });
 
 // GET /api/catalog/products (Public canonical product and pricing catalogue)
-app.get('/api/catalog/products', (_req: Request, res: Response) => {
+app.get(['/api/catalog/products', '/api/subscriptions/catalog', '/api/wallet/catalog'], (_req: Request, res: Response) => {
   res.json({
     success: true,
     currency: 'INR',
