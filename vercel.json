@@ -55,13 +55,25 @@
   },
   "rewrites": [
     {
-      "source": "/api/catalog(.*)",
+      "source": "/api/catalog/(.*)",
       "destination": {
         "service": "wallet-service"
       }
     },
     {
-      "source": "/api/geocode(.*)",
+      "source": "/api/catalog",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/geocode/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/geocode",
       "destination": {
         "service": "wallet-service"
       }
