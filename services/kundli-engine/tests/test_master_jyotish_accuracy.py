@@ -48,8 +48,12 @@ from divisional_charts import (
     calculate_navamsha,
     calculate_dashamsha,
     calculate_shashtyamsha,
-    calculate_trimshamsha
+    calculate_trimshamsha,
+    calculate_chalit_chart
 )
+from shadbala_and_yogas import calculate_shadbala, detect_classical_yogas
+from upagraha_engine import calculate_upagrahas
+from ai_astrologer import generate_structured_prediction
 from birth_data_service import (
     validate_and_normalize_birth_data,
     analyze_unknown_time_sensitivity,
@@ -384,3 +388,105 @@ def test_birth_data_validation_and_sensitivity():
     sens_window = analyze_time_window_uncertainty("1992-08-14", "16:45", 28.6139, 77.2090, uncertainty_minutes=15)
     assert "evaluations" in sens_window
     assert len(sens_window["evaluations"]) == 3
+
+# -----------------------------------------------------------------------------
+# 10. SHADBALA (SIXFOLD PLANETARY STRENGTH)
+# -----------------------------------------------------------------------------
+
+def test_shadbala_sixfold_strength_components():
+    """Verify that calculate_shadbala computes all six canonical components for physical Grahas."""
+    d1 = calculate_kundli("1990-05-15T14:30:00")
+    sb = calculate_shadbala(d1["planets"], d1["lagna"]["sign"])
+    
+    physical_planets = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
+    assert len(sb) == 7
+    for p in physical_planets:
+        assert p in sb
+        b = sb[p]["breakdown"]
+        # All six canonical Parashari balas must be present
+        assert "sthana_bala" in b      # Sthana Bala (Positional)
+        assert "dig_bala" in b         # Dig Bala (Directional)
+        assert "kaala_bala" in b       # Kaala Bala (Temporal)
+        assert "cheshta_bala" in b     # Cheshta Bala (Motional)
+        assert "naisargika_bala" in b  # Naisargika Bala (Natural)
+        assert "drik_bala" in b        # Drik Bala (Aspectual)
+        
+        assert sb[p]["total_virupas"] > 0
+        assert sb[p]["strength_ratio"] > 0
+        assert sb[p]["verdict"] in ["Potent / Capable (Balavan)", "Moderate / Requires Support"]
+
+# -----------------------------------------------------------------------------
+# 11. CLASSICAL YOGAS
+# -----------------------------------------------------------------------------
+
+def test_classical_yogas_evaluation():
+    """Verify evaluation of classical Parashari yogas with evidence provenance."""
+    d1 = calculate_kundli("1990-05-15T14:30:00")
+    yogas = detect_classical_yogas(d1["planets"], d1["lagna"]["sign"])
+    assert len(yogas) > 0
+    for y in yogas:
+        assert "name" in y
+        assert "status" in y
+        assert y["status"] in ["PRESENT", "ABSENT", "PRESENT_WITH_MITIGATION"]
+        assert "source_citation" in y
+
+# -----------------------------------------------------------------------------
+# 12. UPAGRAHAS & KALAVELAS (11 SUBPLANETS)
+# -----------------------------------------------------------------------------
+
+def test_upagrahas_and_kalavelas_invariants():
+    """Verify 5 Sun-based Upagrahas, 6 Time-based Kalavelas, and cyclic closure invariant."""
+    up = calculate_upagrahas("1990-05-15T14:30:00", 28.6139, 77.2090, "Asia/Kolkata")
+    assert len(up["sun_based_upagrahas"]) == 5
+    assert len(up["time_based_kalavelas"]) == 6
+    assert len(up["all_upagrahas"]) == 11
+    
+    # 5 Sun-based: Dhuma, Vyatipaata, Parivesha, Indrachaapa, Upaketu
+    for expected in ["Dhuma", "Vyatipaata", "Parivesha", "Indrachaapa", "Upaketu"]:
+        assert expected in up["sun_based_upagrahas"]
+        
+    # Classical BPHS Invariant: (Upaketu + 30°) % 360 == Sun Longitude
+    sun_lon = up["birth_details"]["sun_nirayana_longitude"]
+    upaketu_lon = up["sun_based_upagrahas"]["Upaketu"]["longitude"]
+    reconstituted_sun = (upaketu_lon + 30.0) % 360.0
+    diff = abs(reconstituted_sun - sun_lon)
+    diff_wrapped = min(diff, 360.0 - diff)
+    assert diff_wrapped < 1e-4
+
+# -----------------------------------------------------------------------------
+# 13. EQUAL BHAVA CHALIT (LAGNA-CENTERED MIDPOINT SANDHI)
+# -----------------------------------------------------------------------------
+
+def test_equal_bhava_chalit_cusps():
+    """Verify Equal Bhava Chalit with midpoint sandhi cusps (Lagna ± 15°)."""
+    d1 = calculate_kundli("1990-05-15T14:30:00")
+    chalit = calculate_chalit_chart(d1["planets"], d1["lagna"]["total_degree"])
+    assert chalit["lagna_cusp"] == round(d1["lagna"]["total_degree"], 2)
+    assert len(chalit["planets"]) == 9
+    for p, d in chalit["planets"].items():
+        assert 1 <= d["chalit_house"] <= 12
+        assert "shifted" in d
+
+# -----------------------------------------------------------------------------
+# 14. MULTI-HORIZON GUIDANCE & AI NARRATIVE VALIDATION
+# -----------------------------------------------------------------------------
+
+def test_multi_horizon_guidance_and_narrative_safety():
+    """Verify structured predictions across horizons with non-fatalistic Section G limitations."""
+    d1 = calculate_kundli("1990-05-15T14:30:00")
+    dasha = calculate_vimshottari_dasha(d1["planets"]["Moon"]["absolute_degree"], datetime(1990, 5, 15, 14, 30))
+    
+    for h in ["hourly", "daily", "weekly", "monthly", "yearly"]:
+        pred = generate_structured_prediction(
+            horizon=h,
+            target_date_str="2026-11-01",
+            kundli=d1,
+            dasha=dasha
+        )
+        assert "sections" in pred
+        sec = pred["sections"]
+        assert "overall_outlook" in sec or "executive_summary" in sec
+        assert "limitations" in sec
+        # Epistemic safety: must include non-fatalistic limitations disclaimer
+        assert len(sec["limitations"]) > 10
+        assert "provenance" in pred

@@ -16,7 +16,7 @@ AstroVerse AI distinguishes six distinct layers of precision to ensure transpare
 
 1. **Ephemeris Numerical Precision:**
    * **Swiss Ephemeris JPL DE431 (`swe.FLG_SWIEPH`):** $\pm 0.001\text{ arcseconds}$ for planetary positions.
-   * **Moshier Analytical Model (`swe.FLG_MOSEPH`):** $\pm 0.1\text{ arcseconds}$ for outer planets; $\pm 0.5\text{ arcseconds}$ for lunar coordinates over 3,000 BCE to 3,000 CE.
+   * **Moshier Analytical Model (`swe.FLG_MOSEPH`):** Better than $0.1\text{ arcseconds}$ for planetary bodies (Sun through Saturn); approximately $3\text{ arcseconds}$ (RMS $\approx 1.5''$) for lunar coordinates relative to JPL DE406 over 3,000 BCE to 3,000 CE.
 2. **Birth-Time Precision:**
    * An error of $\pm 4\text{ minutes}$ in recorded civil birth time shifts the Ascendant (Lagna) by approximately $1^\circ 00'$ ($60\text{ arcminutes}$).
    * In fine divisional charts (e.g., D60 Shashtiamsha), a division spans only $0^\circ 30'$ ($30\text{ arcminutes}$), which changes every $\approx 2\text{ minutes}$ of clock time.

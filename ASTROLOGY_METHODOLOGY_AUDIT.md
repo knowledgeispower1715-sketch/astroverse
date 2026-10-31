@@ -47,7 +47,7 @@ gitGraph
 * **Ephemeris Data Source (`FLG_SWIEPH` vs `FLG_MOSEPH`):**
   * Inspection of `ephemeris.py` shows that `swe.set_ephe_path()` is not configured with external JPL `.se1` files.
   * When `swe.calc_ut(..., swe.FLG_SIDEREAL | swe.FLG_SPEED)` is invoked, Swiss Ephemeris returns flag `iflag: 65860`, which has `FLG_SWIEPH: False` and `FLG_MOSEPH: True`.
-  * **Finding:** The engine runs on the internal **Moshier Analytical Ephemeris model**. While accurate to $\approx 0.1\text{ arcseconds}$ for planets and a few tenths of an arcsecond for the Moon (more than sufficient for $13^\circ 20'$ Nakshatras and $30^\circ$ Rashi signs), the system must explicitly expose `ephemeris_source: "Moshier Analytical Model (FLG_MOSEPH)"` in its metadata rather than claiming unverified JPL numerical integration files.
+  * **Finding:** The engine runs on the internal **Moshier Analytical Ephemeris model**. While accurate to better than $0.1\text{ arcseconds}$ for planets and approximately $3\text{ arcseconds}$ for the Moon relative to DE406 (more than sufficient for $13^\circ 20'$ Nakshatras and $30^\circ$ Rashi signs), the system must explicitly expose `ephemeris_source: "Moshier Analytical Model (FLG_MOSEPH)"` in its metadata rather than claiming unverified JPL numerical integration files.
 * **Sidereal Mode & Ayanamsha:**
   * The engine calls `swe.set_sid_mode(swe.SIDM_LAHIRI)`.
   * This selects the standard Indian Government Calendar Reform Committee / Chitra Paksha Ayanamsha, pinning the fixed star Spica (Chitra) at exactly $180^\circ 00' 00''$ opposite the sidereal vernal point ($0^\circ$ Aries).
@@ -61,7 +61,7 @@ gitGraph
 * **House System:**
   * For natal chart house placement, the primary Parashari standard is **Whole-Sign Rashi Houses**, where the entire sign containing the Ascendant degree is House 1, the next sign is House 2, etc.:
     $$\text{House}(P) = ((\text{SignIndex}(P) - \text{SignIndex}(\text{Lagna}) + 12) \pmod{12}) + 1$$
-  * Unequal house systems (Bhava Chalit / Sripati / Placidus) are segregated and explicitly labelled.
+  * Unequal house systems (Equal Bhava Chalit with Lagna Cusp Midpoint Sandhi ±15°) are segregated and explicitly labelled.
 
 ### 2.2 Swiss Ephemeris Licensing Audit
 
