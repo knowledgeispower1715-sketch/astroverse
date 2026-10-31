@@ -69,6 +69,52 @@ def calculate_antardashas(
 
     return antardashas
 
+def calculate_pratyantardashas(
+    antar_lord: str,
+    antar_start: datetime,
+    antar_end: datetime,
+    ref_dt: Optional[datetime] = None
+) -> List[Dict[str, Any]]:
+    """
+    Calculates the 9 proportional Pratyantardashas (PDS / sub-sub-periods) within an Antardasha.
+    PDS duration formula = (Antar_Duration * PDS_Lord_Years) / 120.0
+    Sum of 9 Pratyantardashas exactly equals the parent Antardasha duration.
+    Authority: Brihat Parashara Hora Shastra, Ch. 46 (Vimshottari Dasha Sub-Sub-Division).
+    """
+    if ref_dt is None:
+        ref_dt = datetime.now()
+
+    start_idx = DASHA_LORDS.index(antar_lord)
+    pratyantardashas = []
+    total_sec = (antar_end - antar_start).total_seconds()
+    curr = antar_start
+
+    for i in range(9):
+        pds_lord = DASHA_LORDS[(start_idx + i) % 9]
+        pds_fraction = DASHA_YEARS[pds_lord] / TOTAL_CYCLE_YEARS
+        pds_seconds = total_sec * pds_fraction
+        end_dt = curr + timedelta(seconds=pds_seconds)
+
+        status = "FUTURE"
+        is_active = False
+        if end_dt <= ref_dt:
+            status = "PAST"
+        elif curr <= ref_dt <= end_dt:
+            status = "CURRENT"
+            is_active = True
+
+        pratyantardashas.append({
+            "pratyantar_dasha": pds_lord,
+            "start_date": curr.strftime("%Y-%m-%d"),
+            "end_date": end_dt.strftime("%Y-%m-%d"),
+            "duration_days": round(pds_seconds / 86400.0, 2),
+            "status": status,
+            "is_active": is_active
+        })
+        curr = end_dt
+
+    return pratyantardashas
+
 def calculate_vimshottari_dasha(
     moon_degree: float,
     dob_dt: datetime,
@@ -207,6 +253,29 @@ def calculate_vimshottari_dasha(
     a_passed_sec = max(0.0, min(a_total_sec, (ref_dt - a_start).total_seconds()))
     antar_progress_pct = round((a_passed_sec / a_total_sec) * 100.0, 1)
 
+    # 5. Calculate 9 Pratyantardashas (PDS) for active Antardasha
+    active_antar_lord = active_antar["antar_dasha"] if active_antar else active_maha["maha_dasha"]
+    active_pds_list = calculate_pratyantardashas(active_antar_lord, a_start, a_end, ref_dt)
+
+    active_pds = None
+    next_pds_lord = None
+    for p_idx, p in enumerate(active_pds_list):
+        if p.get("is_active"):
+            active_pds = p
+            if p_idx + 1 < len(active_pds_list):
+                next_pds_lord = active_pds_list[p_idx + 1]["pratyantar_dasha"]
+            break
+
+    if not active_pds and active_pds_list:
+        active_pds = active_pds_list[0]
+        next_pds_lord = active_pds_list[1]["pratyantar_dasha"] if len(active_pds_list) > 1 else None
+
+    pds_start = datetime.fromisoformat(active_pds["start_date"]) if active_pds else a_start
+    pds_end = datetime.fromisoformat(active_pds["end_date"]) if active_pds else a_end
+    p_total_sec = max(1.0, (pds_end - pds_start).total_seconds())
+    p_passed_sec = max(0.0, min(p_total_sec, (ref_dt - pds_start).total_seconds()))
+    pds_progress_pct = round((p_passed_sec / p_total_sec) * 100.0, 1)
+
     return {
         "birth_balance": {
             "ruling_lord": first_lord,
@@ -217,16 +286,22 @@ def calculate_vimshottari_dasha(
         },
         "active_now": {
             "maha_dasha": active_maha["maha_dasha"],
-            "antar_dasha": active_antar["antar_dasha"] if active_antar else active_maha["maha_dasha"],
+            "antar_dasha": active_antar_lord,
+            "pratyantar_dasha": active_pds["pratyantar_dasha"] if active_pds else active_antar_lord,
             "maha_start_date": active_maha["start_date"],
             "maha_end_date": active_maha["end_date"],
             "antar_start_date": active_antar["start_date"] if active_antar else active_maha["start_date"],
             "antar_end_date": active_antar["end_date"] if active_antar else active_maha["end_date"],
+            "pratyantar_start_date": active_pds["start_date"] if active_pds else (active_antar["start_date"] if active_antar else active_maha["start_date"]),
+            "pratyantar_end_date": active_pds["end_date"] if active_pds else (active_antar["end_date"] if active_antar else active_maha["end_date"]),
             "next_transition_date": active_antar["end_date"] if active_antar else active_maha["end_date"],
             "next_antar_dasha": next_antar_lord,
             "next_maha_dasha": next_maha_lord,
+            "next_pratyantar_dasha": next_pds_lord,
             "maha_progress_pct": maha_progress_pct,
             "antar_progress_pct": antar_progress_pct,
+            "pds_progress_pct": pds_progress_pct,
+            "pratyantardashas": active_pds_list,
             # Backward-compatibility aliases:
             "start_date": active_maha["start_date"],
             "end_date": active_maha["end_date"],

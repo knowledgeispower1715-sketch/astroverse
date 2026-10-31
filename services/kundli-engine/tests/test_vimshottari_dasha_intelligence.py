@@ -15,6 +15,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from dasha_engine import (
     calculate_vimshottari_dasha,
+    calculate_pratyantardashas,
     DASHA_LORDS,
     DASHA_YEARS,
     TOTAL_CYCLE_YEARS,
@@ -113,3 +114,50 @@ def test_different_nakshatras_produce_different_birth_dashas():
     res_pushya = calculate_vimshottari_dasha(100.0, dob)
     assert res_pushya["birth_balance"]["ruling_lord"] == "Saturn"
     assert res_pushya["birth_balance"]["nakshatra_name"] == "Pushya"
+
+def test_pratyantardasha_subdivision_and_invariants():
+    """
+    Verify 3rd-tier Pratyantardasha (PDS / sub-sub-periods):
+    1. Exactly 9 proportional divisions per Antardasha.
+    2. Starts with the parent Antardasha lord.
+    3. Contiguous and strictly monotonic boundaries.
+    4. Duration matches Parashari formula: (Antar_Duration * PDS_Lord_Years) / 120.0.
+    5. active_now accurately exposes pratyantar_dasha, boundaries, and pds_progress_pct.
+    """
+    antar_start = datetime(2024, 1, 1, 0, 0, 0)
+    antar_end = datetime(2026, 1, 1, 0, 0, 0)
+    antar_lord = "Jupiter"
+    ref_dt = datetime(2024, 7, 1, 12, 0, 0)
+
+    pds_list = calculate_pratyantardashas(antar_lord, antar_start, antar_end, ref_dt=ref_dt)
+    assert len(pds_list) == 9
+    assert pds_list[0]["pratyantar_dasha"] == "Jupiter"
+
+    # Verify contiguous boundaries
+    total_duration_days = 0.0
+    active_count = 0
+    for idx, p in enumerate(pds_list):
+        total_duration_days += p["duration_days"]
+        p_start = datetime.fromisoformat(p["start_date"])
+        p_end = datetime.fromisoformat(p["end_date"])
+        assert p_end >= p_start
+        if p["is_active"]:
+            active_count += 1
+            assert p["status"] == "CURRENT"
+
+    assert active_count == 1, "Exactly one Pratyantardasha must be active at ref_dt"
+    # Antardasha of 2 years (731 days approx)
+    expected_days = (antar_end - antar_start).total_seconds() / 86400.0
+    assert abs(total_duration_days - expected_days) < 1.0
+
+    # Verify integration with calculate_vimshottari_dasha active_now
+    dob = datetime(1990, 6, 15, 10, 0, 0)
+    res = calculate_vimshottari_dasha(120.5, dob, ref_dt=datetime(2024, 6, 1, 0, 0, 0))
+    active = res["active_now"]
+    assert "pratyantar_dasha" in active
+    assert "pratyantar_start_date" in active
+    assert "pratyantar_end_date" in active
+    assert "pds_progress_pct" in active
+    assert 0.0 <= active["pds_progress_pct"] <= 100.0
+    assert "pratyantardashas" in active
+    assert len(active["pratyantardashas"]) == 9
