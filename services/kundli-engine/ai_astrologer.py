@@ -1598,6 +1598,21 @@ def generate_structured_prediction(
         is_unlocked=is_unlocked
     )
 
+    if kundli and isinstance(kundli, dict) and "lagna" in kundli and "planets" in kundli:
+        from personalization_engine import generate_canonical_personalized_prediction
+        return generate_canonical_personalized_prediction(
+            horizon=horizon_lower,
+            target_date_str=target_date_str,
+            kundli=kundli,
+            dashas=dasha,
+            doshas=doshas,
+            active_hora_planet=hora_planet,
+            hora_window=time_window_str,
+            lang=lang,
+            is_unlocked=is_unlocked,
+            preview_tier=preview_tier
+        )
+
     if not kundli:
         # Canonical unpersonalized general transit guidance (no fabricated Lagna or Moon)
         if horizon_lower == "hourly":

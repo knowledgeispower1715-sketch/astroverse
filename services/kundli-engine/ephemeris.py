@@ -75,11 +75,16 @@ def calculate_kundli(dob_iso: str, lat: float = 28.6139, lon: float = 77.2090, t
             dt = parsed_dt.replace(tzinfo=tz)
             utc_dt = dt.astimezone(timezone.utc)
         except Exception:
-            utc_dt = parsed_dt.replace(tzinfo=timezone.utc)
+            dt = parsed_dt.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+            utc_dt = dt.astimezone(timezone.utc)
     elif pytz:
-        tz = pytz.timezone(tz_str)
-        dt = tz.localize(parsed_dt)
-        utc_dt = dt.astimezone(pytz.utc)
+        try:
+            tz = pytz.timezone(tz_str)
+            dt = tz.localize(parsed_dt)
+            utc_dt = dt.astimezone(pytz.utc)
+        except Exception:
+            dt = parsed_dt.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+            utc_dt = dt.astimezone(timezone.utc)
     else:
         # Default IST (+5:30) offset
         dt = parsed_dt.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
