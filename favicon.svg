@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="cosmicGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="50%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="cosmicBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E1B4B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+  </defs>
+  <!-- Background Circle with Gold Border -->
+  <circle cx="32" cy="32" r="30" fill="url(#cosmicBg)" stroke="url(#cosmicGold)" stroke-width="2"/>
+  <!-- Decorative Celestial Ring -->
+  <circle cx="32" cy="32" r="26" fill="none" stroke="#F59E0B" stroke-width="0.75" stroke-dasharray="3,3" opacity="0.6"/>
+  <!-- Sacred Om (ॐ) Emblem -->
+  <text x="32" y="42" font-family="'Cinzel', 'Noto Sans Devanagari', 'Segoe UI', serif" font-size="28" font-weight="bold" fill="url(#cosmicGold)" text-anchor="middle">&#2384;</text>
+</svg>

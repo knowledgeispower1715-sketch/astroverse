@@ -264,14 +264,14 @@ def test_external_api():
 
     # 3. Compatibility Adapters
     res = fetch_external_planets(1995, 6, 15, 10, 30, 0, 28.6139, 77.2090, 5.5)
-    if res.get("error") in ("CONFIG_ERROR_MISSING_API_KEY", "NETWORK_EXCEPTION") or (res.get("statusCode") == 500 and "429" in str(res.get("details", ""))):
+    if res.get("error") in ("CONFIG_ERROR_MISSING_API_KEY", "NETWORK_EXCEPTION", "HTTP_429") or res.get("statusCode") == 429 or (res.get("statusCode") == 500 and "429" in str(res.get("details", ""))):
         print("[SKIP] test_external_api: FreeAstroAPI unconfigured, network unreachable, or daily tier limit reached (429)")
         return
     assert res.get("statusCode") == 200
     assert len(res.get("output", [])) > 0
     
     chart_res = fetch_external_chart_url(1995, 6, 15, 10, 30, 0, 28.6139, 77.2090, 5.5)
-    if chart_res.get("error") in ("CONFIG_ERROR_MISSING_API_KEY", "NETWORK_EXCEPTION") or (chart_res.get("statusCode") == 500 and "429" in str(chart_res.get("details", ""))):
+    if chart_res.get("error") in ("CONFIG_ERROR_MISSING_API_KEY", "NETWORK_EXCEPTION", "HTTP_429") or chart_res.get("statusCode") == 429 or (chart_res.get("statusCode") == 500 and "429" in str(chart_res.get("details", ""))):
         print("[SKIP] test_external_api: FreeAstroAPI unconfigured, network unreachable, or daily tier limit reached (429)")
         return
     assert chart_res.get("statusCode") == 200

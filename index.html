@@ -7,6 +7,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
   <title>AstroVerse AI — Vedic Astrology Software & Astrological Calculations Platform</title>
   <meta name="description" content="AstroVerse AI is a high-precision Vedic astrology software platform offering Swiss Ephemeris Janam Kundli calculations, Ashtakoota 36-Guna compatibility synastry, planetary transit timelines, and Chaldean numerology reports.">
   <meta name="keywords" content="Vedic astrology software, Janam Kundli calculator, Swiss Ephemeris, astrological synastry, Ashtakoota 36 Guna, planetary transit, numerology software, horoscope calculations">
@@ -48,18 +50,18 @@
       {
         "@type": "Offer",
         "name": "Plus Plan",
-        "price": "499",
+        "price": "149",
         "priceCurrency": "INR",
         "billingDuration": "P1M",
-        "description": "Expanded divisional charts D1-D10, Ashtakoota 36-Guna compatibility synastry, and 10 daily AI consultations."
+        "description": "Expanded divisional charts D1-D10, Ashtakoota 36-Guna compatibility synastry, and 15 daily AI consultations."
       },
       {
         "@type": "Offer",
         "name": "Premium Plan",
-        "price": "999",
+        "price": "299",
         "priceCurrency": "INR",
         "billingDuration": "P1M",
-        "description": "Full research-grade suite with D1-D60 Shodashvarga, unlimited AI consultations, and 15-chapter numerology blueprint."
+        "description": "Full research-grade suite with D1-D60 Shodashavarga, 30 daily AI consultations, and 15-chapter numerology blueprint."
       }
     ]
   }
@@ -7130,6 +7132,9 @@
 
           <!-- Active Kundli Result Content -->
           <div id="kundli-active-content" style="display: none;">
+            <!-- Provenance & Data Grounding Banner -->
+            <div id="kundli-provenance-banner" style="display: none; margin-bottom: 14px; padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; align-items: center;"></div>
+
             <!-- Unified Kundli Workspace Subnav -->
             <div class="kundli-workspace-subnav" id="kundli-workspace-subnav">
               <button class="kw-subnav-btn active" id="btn-kw-overview" onclick="switchKundliTab('overview')"><i class="fa-solid fa-table-columns"></i> Overview</button>
@@ -13696,14 +13701,22 @@
     }
 
     async function generateUserKundli() {
-      // Service Auth Gate
-      if (!currentUserSession) {
+      const isSample = window.isSampleChartActive === true;
+      const isGuest = !currentUserSession;
+
+      const nameInp = document.getElementById('input-k-name');
+      const nameVal = nameInp ? nameInp.value.trim() : '';
+
+      // Allow verified sample chart exploration and local guest calculations
+      // If unauthenticated visitor clicks calculate without entering birth details, prompt registration
+      if (isGuest && !isSample && !nameVal) {
         window.pendingActionAfterAuth = { type: 'calculate_kundli' };
         openAuthModal('register');
-        showToast("Please sign up or sign in first to calculate your authentic Janam Kundli.", "info");
+        showToast("Please enter birth details or explore the Verified Sample Chart.", "info");
         return;
       }
-      const name = document.getElementById('input-k-name').value.trim();
+
+      const name = nameVal || (isSample ? 'Anand Sharma' : 'Seeker');
       const gender = document.getElementById('input-k-gender').value;
       const dob = document.getElementById('input-k-dob').value;
       const isUnknownTime = document.getElementById('input-k-unknown-time').checked;
@@ -13796,6 +13809,26 @@
       const content = document.getElementById('kundli-active-content');
       content.style.display = 'block';
       if (window.gsap) gsap.fromTo(content, { opacity: 0, scale: 0.98 }, { opacity: 1, scale: 1, duration: 0.35 });
+
+      // Provenance & Data Grounding Banner
+      const provBanner = document.getElementById('kundli-provenance-banner');
+      if (provBanner) {
+        if (window.isSampleChartActive || (currentCalculatedChart && currentCalculatedChart.isSampleChart)) {
+          provBanner.style.display = 'flex';
+          provBanner.style.background = '#FFFBEB';
+          provBanner.style.border = '1px solid #FCD34D';
+          provBanner.style.color = '#92400E';
+          provBanner.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles" style="color: #D97706; margin-right: 8px; font-size: 14px;"></i> <span><strong>DEMONSTRATION SAMPLE DATA:</strong> Showing verified reference birth chart for Anand Sharma (New Delhi). <a href="#" onclick="openAuthModal(\'register\'); return false;" style="color: #B45309; text-decoration: underline; font-weight: 700; margin-left: 6px;">Sign up free</a> to compute and store your own birth chart.</span>';
+        } else if (!currentUserSession) {
+          provBanner.style.display = 'flex';
+          provBanner.style.background = '#F0F9FF';
+          provBanner.style.border = '1px solid #BAE6FD';
+          provBanner.style.color = '#0369A1';
+          provBanner.innerHTML = '<i class="fa-solid fa-laptop-code" style="color: #0284C7; margin-right: 8px; font-size: 14px;"></i> <span><strong>LOCAL GUEST WORKSPACE:</strong> Chart calculated locally on this device. Not saved to cloud database. <a href="#" onclick="openAuthModal(\'register\'); return false;" style="color: #0369A1; text-decoration: underline; font-weight: 700; margin-left: 6px;">Sign up free</a> to synchronize and save family charts to cloud.</span>';
+        } else {
+          provBanner.style.display = 'none';
+        }
+      }
 
       // Badges
       document.getElementById('disp-lagna-val').textContent = isUnknownTime ? "Indeterminate" : `${lagna.sign} (${lagna.degree ? lagna.degree.toFixed(1) + '°' : ''})`;

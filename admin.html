@@ -9,6 +9,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
   <meta name="referrer" content="strict-origin-when-cross-origin">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
   <title>AstroVerse — Administrative Control Centre</title>
 
   <!-- Typography: Classical Vedic Luxury & High-Legibility Sans -->
@@ -586,7 +588,7 @@
               <span id="admin-env-badge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; background: #064E3B; color: #34D399; border: 1px solid #059669; letter-spacing: 0.5px;">PRODUCTION</span>
             </div>
             <div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">
-              Enterprise Operating System &bull; Connected: <strong id="admin-header-email" style="color: #F5C45E;">tiwari0028@gmail.com</strong>
+              Enterprise Operating System &bull; Connected: <strong id="admin-header-email" style="color: #F5C45E;">Not Authenticated</strong>
             </div>
           </div>
         </div>
@@ -2695,10 +2697,10 @@
     const navRole = document.getElementById('admin-nav-role');
 
     if (currentUserSession) {
-      if (emailEl) emailEl.textContent = currentUserSession.email || 'tiwari0028@gmail.com';
-      if (roleEl) roleEl.textContent = currentUserSession.role || 'OWNER';
-      if (navEmail) navEmail.textContent = currentUserSession.email || '';
-      if (navRole) navRole.textContent = currentUserSession.role || 'OWNER';
+      if (emailEl) emailEl.textContent = currentUserSession.email || currentUserSession.identifier || 'Authorized Staff';
+      if (roleEl) roleEl.textContent = currentUserSession.role || 'ADMIN';
+      if (navEmail) navEmail.textContent = currentUserSession.email || currentUserSession.identifier || '';
+      if (navRole) navRole.textContent = currentUserSession.role || 'ADMIN';
       if (navUser) navUser.style.display = 'flex';
     }
     if (typeof startAdminSessionCountdown === 'function') {
