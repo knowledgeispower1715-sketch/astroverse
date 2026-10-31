@@ -406,7 +406,8 @@ class ResilientDatabase {
   private prisma: any = null;
   private dbFilePath: string;
   private schemaBootstrapPromise: Promise<boolean> | null = null;
-  private cachedMonitorMetrics: { data: any; expiresAt: number } | null = null;
+  private cachedMonitorMetrics: { data: any; expiresAt: number; timestamp: number } | null = null;
+  private lastForceFreshAt: number = 0;
 
   constructor() {
     const paths = resolveDbPaths();
@@ -511,16 +512,12 @@ class ResilientDatabase {
     }
   }
 
-  assertDurableStorage(): void {
+  assertDurableStorage(operation: string = 'financial operation'): void {
     const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
     const isProd = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
-    const hasSupabase = Boolean(
-      process.env.SUPABASE_URL && 
-      (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
-    );
-    if (isProd && !this.isPostgresAvailable && !hasSupabase) {
+    if (isProd && (!this.isPostgresAvailable || !this.prisma)) {
       throw new Error(
-        'DURABLE_STORAGE_REQUIRED: Production deployment requires a configured and connected PostgreSQL database (DATABASE_URL) or Supabase project. Ephemeral storage fallback is strictly disabled in production.'
+        `DURABLE_STORAGE_REQUIRED: DURABLE_STORAGE_UNAVAILABLE: Authoritative PostgreSQL database connection is unavailable for ${operation}. In-memory fallback is strictly prohibited in production to prevent data loss and ledger divergence.`
       );
     }
   }
@@ -538,11 +535,11 @@ class ResilientDatabase {
       process.env.SUPABASE_URL && 
       (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
     );
-    const isDurable = this.isPostgresAvailable || hasSupabase;
+    const isDurable = this.isPostgresAvailable || (hasSupabase && !isProd);
     let mode = 'LOCAL_DEVELOPMENT_FILE';
     if (this.isPostgresAvailable) {
       mode = 'POSTGRES_PRISMA';
-    } else if (hasSupabase) {
+    } else if (hasSupabase && !isProd) {
       mode = 'SUPABASE_CLOUD';
     } else if (isVercelPreview) {
       mode = 'PREVIEW_EPHEMERAL_MODE';
@@ -552,9 +549,10 @@ class ResilientDatabase {
 
     return {
       durable: isDurable,
+      isDurable,
       mode,
       databaseConfigured: hasDbUrl || hasSupabase,
-      connected: isDurable,
+      connected: this.isPostgresAvailable,
       isProduction: isProd,
       isPreview: isVercelPreview,
       supabaseConnected: hasSupabase
@@ -4013,11 +4011,27 @@ class ResilientDatabase {
   }
 
   async getDatabaseMonitorMetrics(forceFresh: boolean = false) {
-    if (!forceFresh && this.cachedMonitorMetrics && Date.now() < this.cachedMonitorMetrics.expiresAt) {
+    const now = Date.now();
+    let forcedBypassThrottled = false;
+
+    if (forceFresh && this.cachedMonitorMetrics) {
+      if (now - this.lastForceFreshAt < 2000) {
+        // Query amplification protection: throttle forceFresh to once every 2 seconds
+        forcedBypassThrottled = true;
+      } else {
+        this.lastForceFreshAt = now;
+      }
+    }
+
+    if ((!forceFresh || forcedBypassThrottled) && this.cachedMonitorMetrics && now < this.cachedMonitorMetrics.expiresAt) {
+      const telemetryAgeMs = now - (this.cachedMonitorMetrics.timestamp || (this.cachedMonitorMetrics.expiresAt - 5000));
       return {
         ...this.cachedMonitorMetrics.data,
         cached: true,
-        cachedRemainingMs: Math.max(0, this.cachedMonitorMetrics.expiresAt - Date.now())
+        cachedRemainingMs: Math.max(0, this.cachedMonitorMetrics.expiresAt - now),
+        telemetryAgeMs,
+        isStale: telemetryAgeMs > 5000,
+        forcedBypassThrottled
       };
     }
 
@@ -4065,58 +4079,69 @@ class ResilientDatabase {
     let consultationCount = (this.data.consultationSessions || []).length;
     let pujaCount = (this.data.pujaBookings || []).length;
 
+    const failedTables: string[] = [];
     if (this.isPostgresAvailable && this.prisma) {
       try {
-        const counts = await Promise.allSettled([
-          this.prisma.user.count(),
-          this.prisma.userSession.count(),
-          this.prisma.birthProfile.count(),
-          this.prisma.savedReport.count(),
-          this.prisma.paymentOrder.count(),
-          this.prisma.walletLedger.count(),
-          this.prisma.auditEvent.count(),
-          this.prisma.platformIncident.count(),
-          this.prisma.featureFlag.count(),
-          this.prisma.privacyRequest.count(),
-          this.prisma.kundliCalculation.count(),
-          this.prisma.astrologer.count(),
-          this.prisma.consultationSession.count(),
-          this.prisma.pujaBooking.count()
-        ]);
-        if (counts[0].status === 'fulfilled') userCount = counts[0].value;
-        if (counts[1].status === 'fulfilled') sessionCount = counts[1].value;
-        if (counts[2].status === 'fulfilled') profileCount = counts[2].value;
-        if (counts[3].status === 'fulfilled') reportCount = counts[3].value;
-        if (counts[4].status === 'fulfilled') orderCount = counts[4].value;
-        if (counts[5].status === 'fulfilled') ledgerCount = counts[5].value;
-        if (counts[6].status === 'fulfilled') auditCount = counts[6].value;
-        if (counts[7].status === 'fulfilled') incidentCount = counts[7].value;
-        if (counts[8].status === 'fulfilled') flagCount = counts[8].value;
-        if (counts[9].status === 'fulfilled') privacyCount = counts[9].value;
-        if (counts[10].status === 'fulfilled') calculationCount = counts[10].value;
-        if (counts[11].status === 'fulfilled') astrologerCount = counts[11].value;
-        if (counts[12].status === 'fulfilled') consultationCount = counts[12].value;
-        if (counts[13].status === 'fulfilled') pujaCount = counts[13].value;
-      } catch (e) {
-        console.warn('[DB] Could not query Prisma table counts:', e);
+        const tableDefinitions = [
+          { name: 'User', run: () => this.prisma.user.count() },
+          { name: 'UserSession', run: () => this.prisma.userSession.count() },
+          { name: 'BirthProfile', run: () => this.prisma.birthProfile.count() },
+          { name: 'SavedReport', run: () => this.prisma.savedReport.count() },
+          { name: 'PaymentOrder', run: () => this.prisma.paymentOrder.count() },
+          { name: 'WalletLedger', run: () => this.prisma.walletLedger.count() },
+          { name: 'AuditEvent', run: () => this.prisma.auditEvent.count() },
+          { name: 'PlatformIncident', run: () => this.prisma.platformIncident.count() },
+          { name: 'FeatureFlag', run: () => this.prisma.featureFlag.count() },
+          { name: 'PrivacyRequest', run: () => this.prisma.privacyRequest.count() },
+          { name: 'KundliCalculation', run: () => this.prisma.kundliCalculation.count() },
+          { name: 'Astrologer', run: () => this.prisma.astrologer.count() },
+          { name: 'ConsultationSession', run: () => this.prisma.consultationSession.count() },
+          { name: 'PujaBooking', run: () => this.prisma.pujaBooking.count() }
+        ];
+
+        const counts = await Promise.allSettled(tableDefinitions.map(t => t.run()));
+        tableDefinitions.forEach((td, idx) => {
+          const res = counts[idx];
+          if (res.status === 'fulfilled') {
+            const val = res.value;
+            if (td.name === 'User') userCount = val;
+            else if (td.name === 'UserSession') sessionCount = val;
+            else if (td.name === 'BirthProfile') profileCount = val;
+            else if (td.name === 'SavedReport') reportCount = val;
+            else if (td.name === 'PaymentOrder') orderCount = val;
+            else if (td.name === 'WalletLedger') ledgerCount = val;
+            else if (td.name === 'AuditEvent') auditCount = val;
+            else if (td.name === 'PlatformIncident') incidentCount = val;
+            else if (td.name === 'FeatureFlag') flagCount = val;
+            else if (td.name === 'PrivacyRequest') privacyCount = val;
+            else if (td.name === 'KundliCalculation') calculationCount = val;
+            else if (td.name === 'Astrologer') astrologerCount = val;
+            else if (td.name === 'ConsultationSession') consultationCount = val;
+            else if (td.name === 'PujaBooking') pujaCount = val;
+          } else {
+            failedTables.push(td.name);
+          }
+        });
+      } catch (e: any) {
+        console.warn('[DB] Could not query Prisma table counts:', e?.message || e);
       }
     }
 
     const tables = [
-      { schema: 'public', name: 'User', records: userCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Registered customer & admin identities, passwords, & balances' },
-      { schema: 'public', name: 'UserSession', records: sessionCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Active 256-bit SHA-256 authenticated customer sessions' },
-      { schema: 'public', name: 'BirthProfile', records: profileCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Janam Kundli birth charts, coordinates, & timezones' },
-      { schema: 'public', name: 'SavedReport', records: reportCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Personalized multi-horizon PDF horoscopes & blueprints' },
-      { schema: 'public', name: 'KundliCalculation', records: calculationCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Swiss Ephemeris v2.10 planetary positions & Dashas' },
-      { schema: 'public', name: 'PaymentOrder', records: orderCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Cashfree & gateway checkout orders & UTR references' },
-      { schema: 'public', name: 'WalletLedger', records: ledgerCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Double-entry append-only integer-paise financial ledgers' },
-      { schema: 'public', name: 'AuditEvent', records: auditCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Immutable security, RBAC, & administration audit trail' },
-      { schema: 'public', name: 'PlatformIncident', records: incidentCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Operational incident tracking and outage diagnostics' },
-      { schema: 'public', name: 'FeatureFlag', records: flagCount, primaryKey: 'key (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Dynamic runtime configuration & monetization flags' },
-      { schema: 'public', name: 'PrivacyRequest', records: privacyCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'DPDP Act compliance data export & deletion records' },
-      { schema: 'public', name: 'Astrologer', records: astrologerCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Verified Vedic astrologer profiles, ratings, & rates' },
-      { schema: 'public', name: 'ConsultationSession', records: consultationCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Private consultation chat & audio sessions' },
-      { schema: 'public', name: 'PujaBooking', records: pujaCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: 'HEALTHY', description: 'Sacred ritual reservations, gotra, & payment bindings' }
+      { schema: 'public', name: 'User', records: userCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('User') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('User') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Registered customer & admin identities, passwords, & balances' },
+      { schema: 'public', name: 'UserSession', records: sessionCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('UserSession') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('UserSession') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Active 256-bit SHA-256 authenticated customer sessions' },
+      { schema: 'public', name: 'BirthProfile', records: profileCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('BirthProfile') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('BirthProfile') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Janam Kundli birth charts, coordinates, & timezones' },
+      { schema: 'public', name: 'SavedReport', records: reportCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('SavedReport') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('SavedReport') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Personalized multi-horizon PDF horoscopes & blueprints' },
+      { schema: 'public', name: 'KundliCalculation', records: calculationCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('KundliCalculation') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('KundliCalculation') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Swiss Ephemeris v2.10 planetary positions & Dashas' },
+      { schema: 'public', name: 'PaymentOrder', records: orderCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('PaymentOrder') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('PaymentOrder') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Cashfree & gateway checkout orders & UTR references' },
+      { schema: 'public', name: 'WalletLedger', records: ledgerCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('WalletLedger') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('WalletLedger') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Double-entry append-only integer-paise financial ledgers' },
+      { schema: 'public', name: 'AuditEvent', records: auditCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('AuditEvent') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('AuditEvent') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Immutable security, RBAC, & administration audit trail' },
+      { schema: 'public', name: 'PlatformIncident', records: incidentCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('PlatformIncident') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('PlatformIncident') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Operational incident tracking and outage diagnostics' },
+      { schema: 'public', name: 'FeatureFlag', records: flagCount, primaryKey: 'key (VARCHAR)', rlsEnabled: true, status: failedTables.includes('FeatureFlag') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('FeatureFlag') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Dynamic runtime configuration & monetization flags' },
+      { schema: 'public', name: 'PrivacyRequest', records: privacyCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('PrivacyRequest') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('PrivacyRequest') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'DPDP Act compliance data export & deletion records' },
+      { schema: 'public', name: 'Astrologer', records: astrologerCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('Astrologer') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('Astrologer') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Verified Vedic astrologer profiles, ratings, & rates' },
+      { schema: 'public', name: 'ConsultationSession', records: consultationCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('ConsultationSession') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('ConsultationSession') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Private consultation chat & audio sessions' },
+      { schema: 'public', name: 'PujaBooking', records: pujaCount, primaryKey: 'id (VARCHAR)', rlsEnabled: true, status: failedTables.includes('PujaBooking') ? 'DEGRADED_FALLBACK' : 'HEALTHY', queryStatus: failedTables.includes('PujaBooking') ? 'FAILED_FALLBACK' : 'RESOLVED', description: 'Sacred ritual reservations, gotra, & payment bindings' }
     ];
 
     const totalRecords = tables.reduce((acc, t) => acc + t.records, 0);
@@ -4202,12 +4227,23 @@ class ResilientDatabase {
       lastBackupAt: new Date(Date.now() - 3600000).toISOString()
     };
 
+    const queryId = 'qry_' + crypto.randomBytes(8).toString('hex');
+    const queryTimestamp = new Date().toISOString();
+    const inventoryStatus = failedTables.length > 0 ? 'PARTIAL' : 'COMPLETE';
+
     const payload = {
       status: livenessStatus === 'UP' ? 'ONLINE' : 'DEGRADED',
       health: livenessStatus === 'UP' ? 'HEALTHY' : 'DEGRADED',
       engine,
       mode: this.isPostgresAvailable ? 'PRODUCTION_PERSISTENT' : 'STANDALONE_DURABLE',
       pingMs: dbPingMs,
+      queryId,
+      queryTimestamp,
+      telemetryAgeMs: 0,
+      isStale: false,
+      forcedBypassThrottled: false,
+      inventoryStatus,
+      failedTables,
       liveness,
       readiness,
       writePath,
@@ -4222,7 +4258,8 @@ class ResilientDatabase {
 
     this.cachedMonitorMetrics = {
       data: payload,
-      expiresAt: Date.now() + 5000
+      expiresAt: Date.now() + 5000,
+      timestamp: Date.now()
     };
 
     return payload;

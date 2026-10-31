@@ -126,6 +126,14 @@ export const adminLimiter = createRateLimiter({
   message: 'Too many administrative requests. Rate limit enforced.'
 });
 
+export const adminMonitoringLimiter = adminLimiter;
+
+export const adminSensitiveMutationsLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: 'Too many sensitive administrative requests. Mutation rate limit is 20 requests per minute.'
+});
+
 // Apply Global Rate Limiting across all API routes
 app.use('/api', globalApiLimiter);
 
@@ -169,9 +177,10 @@ function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-// Helper: Sanitize user record (never return passwords or reset tokens to client)
+// Helper: Sanitize user record (never return passwords, salts, MFA secrets, or reset tokens to client)
 function sanitizeUser(user: UserRecord): any {
-  const { passwordHash, passwordSalt, resetTokenHash, resetTokenExpiresAt, ...safe } = user as any;
+  if (!user) return user;
+  const { passwordHash, passwordSalt, resetTokenHash, resetTokenExpiresAt, mfaSecret, ...safe } = user as any;
   return safe;
 }
 
@@ -3646,7 +3655,10 @@ app.get('/api/admin/users', authenticate, requireAdmin(AdminPermission.VIEW_USER
       page: page ? Number(page) : 1,
       limit: limit ? Number(limit) : 20
     });
-    res.json(result);
+    res.json({
+      ...result,
+      users: (result.users || []).map(sanitizeUser)
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -3674,7 +3686,7 @@ app.get('/api/admin/users/:id/details', authenticate, requireAdmin(AdminPermissi
   }
 });
 
-app.put('/api/admin/users/:id/status', authenticate, requireAdmin(AdminPermission.MANAGE_USER_STATUS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
+app.put('/api/admin/users/:id/status', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_USER_STATUS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { status, reason } = req.body;
 
@@ -3766,7 +3778,7 @@ app.get('/api/admin/roles/admins', authenticate, requireAdmin(AdminPermission.VI
   }
 });
 
-app.put('/api/admin/users/:id/role', authenticate, requireAdmin(AdminPermission.MANAGE_ROLES), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
+app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_ROLES), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { role, reason } = req.body;
 
@@ -3967,7 +3979,7 @@ app.post('/api/admin/mfa/challenge', authenticate, requireAdmin(), async (req: A
   }
 });
 
-app.post('/api/admin/users/:id/revoke-sessions', authenticate, requireAdmin(AdminPermission.MANAGE_SECURITY_MFA), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/users/:id/revoke-sessions', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SECURITY_MFA), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
   try {
     await db.deleteUserSessions(req.params.id);
     await db.recordAuditEvent({
@@ -4188,7 +4200,7 @@ app.get('/api/admin/payments/transactions', authenticate, requireAdmin(AdminPerm
   }
 });
 
-app.post('/api/admin/payments/reconcile', authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/payments/reconcile', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
   let autoReconciled = 0;
   try {
     const pendingOrders = await db.getPendingPaymentOrdersAsync(100);
@@ -4257,7 +4269,7 @@ app.post('/api/admin/payments/reconcile', authenticate, requireAdmin(AdminPermis
 });
 
 // POST /api/admin/wallet/adjust-balance (Admin balance adjustment with reason and audit log)
-app.post('/api/admin/wallet/adjust-balance', authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/wallet/adjust-balance', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
   const { userId, amount, type, reason, category } = req.body;
   const admin = req.user!;
 
@@ -4329,7 +4341,7 @@ app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.V
   });
 });
 
-app.post('/api/admin/payments/refund', authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/payments/refund', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
   const { orderId, amount, reason } = req.body;
   if (!orderId) {
     return res.status(400).json({ error: 'ORDER_ID_REQUIRED' });
@@ -4370,7 +4382,7 @@ app.post('/api/admin/payments/refund', authenticate, requireAdmin(AdminPermissio
   }
 });
 
-app.post('/api/admin/payments/recover-order', authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/payments/recover-order', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
   const { orderId } = req.body;
   if (!orderId || typeof orderId !== 'string' || !orderId.trim()) {
     return res.status(400).json({ error: 'ORDER_ID_REQUIRED', message: 'A valid orderId is required for recovery.' });
@@ -5723,7 +5735,7 @@ app.post('/api/admin/products/preview', authenticate, requireAdmin(AdminPermissi
 });
 
 // PUT /api/admin/products/:id (Authorized price update with audit logging and price version increment)
-app.put('/api/admin/products/:id', authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), async (req: AuthenticatedRequest, res: Response) => {
+app.put('/api/admin/products/:id', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { amountRupees, annualPriceRupees, active, description } = req.body;
   const adminUser = req.user!;
@@ -5813,7 +5825,7 @@ app.get('/api/admin/payment-readiness', authenticate, requireAdmin(AdminPermissi
 });
 
 // POST /api/admin/gateway-credentials (Super Admin / Owner activates Cashfree credentials)
-app.post('/api/admin/gateway-credentials', authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/gateway-credentials', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { secretKey, appId, env } = req.body;
     if (!secretKey || typeof secretKey !== 'string') {
@@ -7655,6 +7667,9 @@ module.exports.MIN_RECHARGE_AMOUNT = MIN_RECHARGE_AMOUNT;
 module.exports.MAX_RECHARGE_AMOUNT = MAX_RECHARGE_AMOUNT;
 module.exports.RECHARGE_GST_RATE = RECHARGE_GST_RATE;
 module.exports.APPROVED_RECHARGE_PACKAGES = APPROVED_RECHARGE_PACKAGES;
+module.exports.adminLimiter = adminLimiter;
+module.exports.adminMonitoringLimiter = adminMonitoringLimiter;
+module.exports.adminSensitiveMutationsLimiter = adminSensitiveMutationsLimiter;
 module.exports.reconcileCashfreeOrder = reconcileCashfreeOrder;
 module.exports.reconcileUserPendingOrders = reconcileUserPendingOrders;
 export default app;

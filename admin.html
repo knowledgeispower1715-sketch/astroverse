@@ -5217,13 +5217,17 @@
           if (engineEl) engineEl.textContent = data.engine || 'PostgreSQL 16 (Supabase Managed Cloud)';
           if (modeEl) modeEl.textContent = data.mode === 'PRODUCTION_PERSISTENT' ? 'PostgreSQL Persistent (Active)' : 'Standalone Durable Store';
           if (recordsEl) recordsEl.textContent = (data.storageFootprint?.totalRecords || 0).toLocaleString();
-          if (monitoredCountEl) monitoredCountEl.textContent = `Across ${data.tables?.length || 14} Monitored Tables`;
+          const ageSec = Math.round((data.telemetryAgeMs || 0) / 1000);
+          const cacheLabel = data.cached ? ` &bull; Cached (${ageSec}s ago)` : ' &bull; Live Telemetry';
+          const invStatus = data.inventoryStatus === 'PARTIAL' ? ' [PARTIAL]' : '';
+          if (monitoredCountEl) monitoredCountEl.textContent = `Across ${data.tables?.length || 14} Monitored Tables${invStatus}${cacheLabel}`;
 
           if (poolStatusEl) poolStatusEl.innerHTML = 'Connected &bull; Active';
           if (poolDescEl) poolDescEl.textContent = `Max Pool: ${data.connectionPool?.maxPoolSize || 20} &bull; Transaction Mode`;
 
           if (durabilityStatusEl) durabilityStatusEl.textContent = data.writePath?.durabilityStrategy ? 'PostgreSQL WAL Protected' : 'Atomic Write-Ahead Sync';
-          if (durabilityDescEl) durabilityDescEl.textContent = data.readiness?.schemaSynced ? 'Self-Healing Schema Verified' : 'Schema Synchronization Active';
+          const qryRef = data.queryId ? ` &bull; Ref: ${data.queryId.substring(0, 12)}` : '';
+          if (durabilityDescEl) durabilityDescEl.textContent = (data.readiness?.schemaSynced ? 'Self-Healing Schema Verified' : 'Schema Synchronization Active') + qryRef;
 
           renderDbTables(data.tables || []);
           renderDbSafeguards(data.safeguards || []);

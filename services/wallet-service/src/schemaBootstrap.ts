@@ -617,6 +617,13 @@ export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
         return true;
       }
 
+      const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
+      const isProd = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
+      if (isProd && process.env.ALLOW_PRODUCTION_AUTO_DDL !== '1') {
+        console.warn('[DB_BOOTSTRAP] Automated runtime DDL creation is disabled in production. Run migrations through Prisma CLI.');
+        return false;
+      }
+
       console.log('[DB_BOOTSTRAP] PostgreSQL "User" table missing. Executing self-healing schema creation...');
 
       for (const statement of DDL_STATEMENTS) {
