@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import http from 'http';

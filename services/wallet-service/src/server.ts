@@ -5883,6 +5883,283 @@ app.post('/api/admin/gateway-credentials', adminSensitiveMutationsLimiter, authe
 });
 
 // ============================================================================
+// ENTERPRISE OWNER CONTROL CENTRE & BUSINESS MANAGEMENT APIS
+// ============================================================================
+
+// GET /api/admin/customers/:id/360 (Comprehensive Customer 360 Profile)
+app.get('/api/admin/customers/:id/360', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const customer360 = await db.getCustomer360(req.params.id);
+    if (!customer360) {
+      return res.status(404).json({ error: 'CUSTOMER_NOT_FOUND', message: 'Customer record does not exist.' });
+    }
+    return res.json({ success: true, customer: customer360 });
+  } catch (err: any) {
+    return handleServiceError(res, err, 'Failed to fetch customer 360 profile');
+  }
+});
+
+// POST /api/admin/customers/:id/notes (Add Internal Administrative Support Note)
+app.post('/api/admin/customers/:id/notes', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { content, category } = req.body;
+    if (!content || typeof content !== 'string' || !content.trim()) {
+      return res.status(400).json({ error: 'CONTENT_REQUIRED', message: 'Note content is required.' });
+    }
+    const adminUser = req.user!;
+    const note = await db.addCustomerNote(
+      req.params.id,
+      adminUser.id,
+      adminUser.email || 'admin@astroverse.app',
+      content.trim(),
+      category || 'GENERAL'
+    );
+    return res.status(201).json({ success: true, note });
+  } catch (err: any) {
+    return handleServiceError(res, err, 'Failed to add customer note');
+  }
+});
+
+// GET /api/admin/entitlements (List Platform Entitlements)
+app.get('/api/admin/entitlements', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.query.userId as string | undefined;
+    const activeOnly = req.query.activeOnly === 'true';
+    const entitlements = await db.listEntitlements({ userId, activeOnly });
+    return res.json({ success: true, entitlements, count: entitlements.length });
+  } catch (err: any) {
+    return handleServiceError(res, err, 'Failed to list entitlements');
+  }
+});
+
+// POST /api/admin/entitlements/grant (Grant Platform Feature Entitlement)
+app.post('/api/admin/entitlements/grant', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { userId, featureKey, durationDays, source, reason, metadata } = req.body;
+    if (!userId || !featureKey) {
+      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and featureKey are required.' });
+    }
+    const validSources = ['ADMIN_GRANT', 'PROMOTIONAL_GRANT', 'SUPPORT_COMPENSATION', 'TRIAL_GRANT', 'PAID_SUBSCRIPTION'];
+    const effectiveSource = validSources.includes(source) ? source : 'ADMIN_GRANT';
+    const effectiveReason = reason && typeof reason === 'string' ? reason.trim() : 'Administrative grant by Owner';
+    const effectiveDays = durationDays !== undefined && durationDays !== null ? Number(durationDays) : null;
+
+    const entitlement = await db.grantEntitlement(
+      userId,
+      featureKey,
+      effectiveDays,
+      effectiveSource as any,
+      req.user!.email || req.user!.id,
+      effectiveReason,
+      metadata
+    );
+
+    return res.status(201).json({ success: true, entitlement });
+  } catch (err: any) {
+    if (err?.message === 'USER_NOT_FOUND') {
+      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'Target user does not exist.' });
+    }
+    return handleServiceError(res, err, 'Failed to grant entitlement');
+  }
+});
+
+// POST /api/admin/entitlements/revoke (Revoke Platform Feature Entitlement)
+app.post('/api/admin/entitlements/revoke', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { entitlementId, reason } = req.body;
+    if (!entitlementId) {
+      return res.status(400).json({ error: 'ENTITLEMENT_ID_REQUIRED', message: 'entitlementId is required.' });
+    }
+    const effectiveReason = reason && typeof reason === 'string' ? reason.trim() : 'Administrative revocation';
+    const result = await db.revokeEntitlement(entitlementId, req.user!.email || req.user!.id, effectiveReason);
+    return res.json(result);
+  } catch (err: any) {
+    if (err?.message === 'ENTITLEMENT_NOT_FOUND') {
+      return res.status(404).json({ error: 'ENTITLEMENT_NOT_FOUND', message: 'Entitlement record not found.' });
+    }
+    return handleServiceError(res, err, 'Failed to revoke entitlement');
+  }
+});
+
+// POST /api/admin/subscriptions/assign (Direct Plan Assignment & Override)
+app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_SUBSCRIPTIONS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { userId, tier, billingPeriod, durationDays, reason } = req.body;
+    if (!userId || !tier) {
+      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and tier are required.' });
+    }
+    if (!['FREE', 'PLUS', 'PREMIUM'].includes(tier)) {
+      return res.status(400).json({ error: 'INVALID_TIER', message: 'tier must be FREE, PLUS, or PREMIUM.' });
+    }
+    const effectivePeriod = billingPeriod === 'ANNUAL' ? 'ANNUAL' : (tier === 'FREE' ? null : 'MONTHLY');
+    const effectiveDays = durationDays !== undefined && durationDays !== null ? Number(durationDays) : (tier === 'FREE' ? null : (effectivePeriod === 'ANNUAL' ? 365 : 30));
+    const effectiveReason = reason && typeof reason === 'string' ? reason.trim() : 'Manual plan assignment by Owner';
+
+    const updatedUser = await db.assignSubscriptionTier(
+      userId,
+      tier,
+      effectivePeriod,
+      effectiveDays,
+      req.user!.email || req.user!.id,
+      effectiveReason
+    );
+
+    return res.json({
+      success: true,
+      message: `Subscription plan ${tier} successfully assigned to user ${userId}.`,
+      user: {
+        id: updatedUser.id,
+        subscriptionTier: updatedUser.subscriptionTier,
+        subscriptionStatus: updatedUser.subscriptionStatus,
+        subscriptionBillingPeriod: updatedUser.subscriptionBillingPeriod,
+        subscriptionExpiresAt: updatedUser.subscriptionExpiresAt
+      }
+    });
+  } catch (err: any) {
+    if (err?.message === 'USER_NOT_FOUND') {
+      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'Target user does not exist.' });
+    }
+    return handleServiceError(res, err, 'Failed to assign subscription tier');
+  }
+});
+
+// POST /api/admin/subscriptions/extend (Extend Active Subscription Expiration)
+app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_SUBSCRIPTIONS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { userId, additionalDays, reason } = req.body;
+    if (!userId || !additionalDays || typeof additionalDays !== 'number' || additionalDays <= 0) {
+      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and positive additionalDays are required.' });
+    }
+    const effectiveReason = reason && typeof reason === 'string' ? reason.trim() : `Manual extension by ${additionalDays} days`;
+
+    const updatedUser = await db.extendSubscription(
+      userId,
+      additionalDays,
+      req.user!.email || req.user!.id,
+      effectiveReason
+    );
+
+    return res.json({
+      success: true,
+      message: `Subscription successfully extended by ${additionalDays} days.`,
+      user: {
+        id: updatedUser.id,
+        subscriptionTier: updatedUser.subscriptionTier,
+        subscriptionStatus: updatedUser.subscriptionStatus,
+        subscriptionExpiresAt: updatedUser.subscriptionExpiresAt
+      }
+    });
+  } catch (err: any) {
+    if (err?.message === 'USER_NOT_FOUND') {
+      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'Target user does not exist.' });
+    }
+    if (err?.message === 'NO_ACTIVE_SUBSCRIPTION_TO_EXTEND') {
+      return res.status(400).json({ error: 'NO_ACTIVE_SUBSCRIPTION', message: 'User does not have an active PLUS or PREMIUM subscription to extend.' });
+    }
+    return handleServiceError(res, err, 'Failed to extend subscription');
+  }
+});
+
+// GET /api/admin/analytics/overview (Platform Business Analytics & KPI Overview)
+app.get('/api/admin/analytics/overview', authenticate, requireAdmin(AdminPermission.VIEW_OVERVIEW), async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const analytics = await db.getBusinessAnalytics();
+    return res.json({ success: true, ...analytics });
+  } catch (err: any) {
+    return handleServiceError(res, err, 'Failed to compute business analytics');
+  }
+});
+
+// GET /api/admin/promotions (List Platform Promotional Campaigns & Coupons)
+app.get('/api/admin/promotions', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const promotions = await db.listPromotions();
+    return res.json({ success: true, promotions, count: promotions.length });
+  } catch (err: any) {
+    return handleServiceError(res, err, 'Failed to list promotions');
+  }
+});
+
+// POST /api/admin/promotions (Create New Promotional Campaign or Coupon Code)
+app.post('/api/admin/promotions', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { code, description, discountType, discountValue, applicableTo, minOrderAmount, maxDiscount, maxUses, durationDays } = req.body;
+    if (!code || !discountType || discountValue === undefined || !applicableTo) {
+      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'code, discountType, discountValue, and applicableTo are required.' });
+    }
+    const promo = await db.createPromotion({
+      code,
+      description: description || `Promotion code ${code.toUpperCase()}`,
+      discountType,
+      discountValue: Number(discountValue),
+      applicableTo,
+      minOrderAmount: minOrderAmount ? Number(minOrderAmount) : 0,
+      maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
+      maxUses: maxUses ? Number(maxUses) : 1000,
+      durationDays: durationDays ? Number(durationDays) : 30,
+      createdBy: req.user!.email || req.user!.id
+    });
+    return res.status(201).json({ success: true, promotion: promo });
+  } catch (err: any) {
+    if (err?.message === 'PROMO_CODE_EXISTS') {
+      return res.status(409).json({ error: 'PROMO_CODE_EXISTS', message: 'A promotional campaign with this code already exists.' });
+    }
+    return handleServiceError(res, err, 'Failed to create promotion');
+  }
+});
+
+// PUT /api/admin/promotions/:id/status (Toggle Promotion Active State)
+app.put('/api/admin/promotions/:id/status', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { isActive } = req.body;
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ error: 'INVALID_STATUS', message: 'isActive boolean is required.' });
+    }
+    const promo = await db.togglePromotion(req.params.id, isActive);
+    return res.json({ success: true, promotion: promo });
+  } catch (err: any) {
+    if (err?.message === 'PROMOTION_NOT_FOUND') {
+      return res.status(404).json({ error: 'PROMOTION_NOT_FOUND', message: 'Promotional campaign not found.' });
+    }
+    return handleServiceError(res, err, 'Failed to update promotion status');
+  }
+});
+
+// GET /api/admin/astrologers (List Astrologers with Operational Metrics)
+app.get('/api/admin/astrologers', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const astrologers = await db.listAstrologers();
+    return res.json({ success: true, astrologers, count: astrologers.length });
+  } catch (err: any) {
+    return handleServiceError(res, err, 'Failed to list astrologers');
+  }
+});
+
+// POST /api/admin/astrologers/:id/verify (Verify or Unverify Astrologer)
+app.post('/api/admin/astrologers/:id/verify', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const isVerified = req.body.isVerified !== false;
+    const astro = await db.verifyAstrologer(req.params.id, isVerified);
+    return res.json({ success: true, astrologer: astro });
+  } catch (err: any) {
+    if (err?.message === 'ASTROLOGER_NOT_FOUND') {
+      return res.status(404).json({ error: 'ASTROLOGER_NOT_FOUND', message: 'Astrologer not found.' });
+    }
+    return handleServiceError(res, err, 'Failed to update astrologer verification');
+  }
+});
+
+// GET /api/admin/consultations (List Platform Consultations & Free Trial Sessions)
+app.get('/api/admin/consultations', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const sessions = await db.listConsultationSessions(100);
+    return res.json({ success: true, sessions, count: sessions.length });
+  } catch (err: any) {
+    return handleServiceError(res, err, 'Failed to list consultation sessions');
+  }
+});
+
+// ============================================================================
 // CANONICAL LOCATION INTELLIGENCE & GEOCODING PROXY
 // ============================================================================
 
@@ -6019,6 +6296,13 @@ export async function resolveGeocodeQuery(rawQuery: string): Promise<{ query: st
     .map(g => ({ ...g, resolved_at: nowIso }));
 
   const fallbackPayload = { query: q, results: gazetteerMatches };
+  if (gazetteerMatches.length > 0) {
+    if (geocodeCache.size >= MAX_GEOCODE_CACHE_SIZE) {
+      const firstKey = geocodeCache.keys().next().value;
+      if (firstKey) geocodeCache.delete(firstKey);
+    }
+    geocodeCache.set(cacheKey, { timestamp: Date.now(), data: fallbackPayload });
+  }
   return fallbackPayload;
 }
 

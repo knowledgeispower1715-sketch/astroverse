@@ -504,31 +504,87 @@
     </section>
 
     <!-- ==================== TAB 10: ADMINISTRATIVE MANAGEMENT CONSOLE ==================== -->
+    <style>
+      .admin-sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #94A3B8;
+        background: transparent;
+        border: 1px solid transparent;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.15s ease;
+      }
+      .admin-sidebar-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #FFFFFF;
+      }
+      .admin-sidebar-item.active {
+        background: rgba(212, 175, 55, 0.15);
+        border-color: rgba(212, 175, 55, 0.4);
+        color: #F5C45E;
+        font-weight: 700;
+      }
+      @media (max-width: 900px) {
+        .admin-layout-container {
+          grid-template-columns: 1fr !important;
+        }
+      }
+    </style>
+
     <section id="view-admin" class="page-tab-view">
-      <!-- Admin Top Operational Navigation Bar -->
-      <div style="display: flex; justify-content: space-between; align-items: center; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: #F5C45E; font-size: 18px;">
-            <i class="fa-solid fa-shield-halved"></i>
+      <!-- Enterprise Owner Global Header -->
+      <header class="admin-global-header" style="background: #0B111E; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 12px; padding: 12px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.05)); border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #F5C45E; font-size: 20px;">
+            <i class="fa-solid fa-crown"></i>
           </div>
           <div>
-            <div style="font-size: 14px; font-weight: 800; color: #FFFFFF;">AstroVerse Administrative Control Centre</div>
-            <div style="font-size: 11px; color: #94A3B8;">Authoritative RBAC Mode &bull; Connected Identity: <strong id="admin-header-email" style="color: #F5C45E;">--</strong></div>
+            <div style="font-size: 15px; font-weight: 800; color: #FFFFFF; letter-spacing: 0.3px; display: flex; align-items: center; gap: 8px;">
+              <span>AstroVerse Owner Control Centre</span>
+              <span id="admin-env-badge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; background: #064E3B; color: #34D399; border: 1px solid #059669; letter-spacing: 0.5px;">PRODUCTION</span>
+            </div>
+            <div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">
+              Enterprise Operating System &bull; Connected: <strong id="admin-header-email" style="color: #F5C45E;">tiwari0028@gmail.com</strong>
+            </div>
           </div>
         </div>
+
+        <!-- Global Search Bar -->
+        <div style="flex: 1; max-width: 360px; min-width: 220px; position: relative;">
+          <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748B; font-size: 12px;"></i>
+          <input type="text" id="admin-global-search-input" placeholder="Search customer ID, phone, order, or hash..." style="width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px 8px 34px; color: #F8FAFC; font-size: 12px;" onkeydown="if(event.key==='Enter') executeAdminGlobalSearch()">
+        </div>
+
+        <!-- Identity, Session Timer & Action Controls -->
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <span class="badge-role-admin" id="admin-role-badge">OWNER</span>
+          
+          <div id="admin-session-pill" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; background: #0F172A; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px;">
+            <i class="fa-solid fa-hourglass-half" style="color: #F5C45E;"></i>
+            <span>Auto-lock: <strong id="admin-session-countdown" style="color: #F8FAFC;">10:00</strong></span>
+            <button onclick="refreshAdminSessionCountdown()" style="background: none; border: none; color: #38BDF8; cursor: pointer; padding: 0 0 0 4px; font-size: 10.5px;" title="Refresh Session"><i class="fa-solid fa-rotate-right"></i></button>
+          </div>
+
           <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569;" onclick="openAdminMfaSetupModal()">
             <i class="fa-solid fa-key"></i> Setup MFA
           </button>
+
           <a href="/" class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
             <i class="fa-solid fa-globe"></i> Customer App
           </a>
+
           <button id="btn-admin-close-signout" class="btn-outline-secondary" style="font-size: 11px; padding: 6px 14px; color: #FCA5A5; border-color: #991B1B; background: rgba(153, 27, 27, 0.15); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 6px;" onclick="closeAdminAndSignOut()">
-            <i class="fa-solid fa-power-off"></i> Close Admin &amp; Sign Out
+            <i class="fa-solid fa-power-off"></i> Sign Out
           </button>
         </div>
-      </div>
+      </header>
 
       <!-- Access Denied Banner (if non-admin user) -->
       <div id="admin-access-denied" class="empty-state-card" style="display: none; padding: 36px 20px; background: #FEF2F2; border-color: #FECACA;">
@@ -540,8 +596,8 @@
 
       <!-- Admin Dashboard Content -->
       <div id="admin-dashboard-content">
-        <!-- 15 Operational Modules Navigation Bar -->
-        <div class="category-pills-bar" id="admin-module-nav-bar" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 6px;">
+        <!-- Preserved 17-Module Flat Nav Bar for Automated Test Compatibility -->
+        <div class="category-pills-bar" id="admin-module-nav-bar" style="display: none; margin-bottom: 20px;">
           <button class="category-pill active" onclick="switchAdminModule('overview')"><i class="fa-solid fa-chart-line"></i> 1. Overview</button>
           <button class="category-pill" onclick="switchAdminModule('users')"><i class="fa-solid fa-users"></i> 2. Users</button>
           <button class="category-pill" onclick="switchAdminModule('roles')"><i class="fa-solid fa-id-badge"></i> 3. Roles &amp; RBAC</button>
@@ -560,6 +616,91 @@
           <button class="category-pill" onclick="switchAdminModule('qa')"><i class="fa-solid fa-flask"></i> 16. Tier Simulator &amp; QA</button>
           <button class="category-pill" onclick="switchAdminModule('database')"><i class="fa-solid fa-database"></i> 17. Database Monitor</button>
         </div>
+
+        <!-- 2-Column Responsive Operating Workspace -->
+        <div class="admin-layout-container" style="display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: start;">
+          <!-- Enterprise Left Sidebar -->
+          <aside class="admin-sidebar" style="background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 20px;">
+            <!-- BUSINESS -->
+            <div>
+              <div style="font-size: 10px; font-weight: 800; color: #F5C45E; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding: 0 6px;">
+                <i class="fa-solid fa-briefcase"></i> Business
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <button class="admin-sidebar-item active" onclick="switchAdminModule('overview')"><i class="fa-solid fa-chart-line"></i> Overview</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('analytics')"><i class="fa-solid fa-chart-pie"></i> Analytics &amp; KPIs</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('payments')"><i class="fa-solid fa-tags"></i> Products &amp; Pricing</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('promotions')"><i class="fa-solid fa-percent"></i> Promotions &amp; Discounts</button>
+              </div>
+            </div>
+
+            <!-- CUSTOMERS -->
+            <div>
+              <div style="font-size: 10px; font-weight: 800; color: #38BDF8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding: 0 6px;">
+                <i class="fa-solid fa-users"></i> Customers
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <button class="admin-sidebar-item" onclick="switchAdminModule('users')"><i class="fa-solid fa-address-book"></i> Customer Directory</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('customer360')"><i class="fa-solid fa-user-astronaut"></i> Customer 360</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('entitlements')"><i class="fa-solid fa-award"></i> Feature Entitlements</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('subscriptions')"><i class="fa-solid fa-arrows-rotate"></i> Subscriptions</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('reports')"><i class="fa-solid fa-file-invoice"></i> User Reports</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('consultations')"><i class="fa-solid fa-comments"></i> Consultations</button>
+              </div>
+            </div>
+
+            <!-- FINANCE -->
+            <div>
+              <div style="font-size: 10px; font-weight: 800; color: #34D399; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding: 0 6px;">
+                <i class="fa-solid fa-indian-rupee-sign"></i> Finance
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <button class="admin-sidebar-item" onclick="switchAdminModule('payments')"><i class="fa-solid fa-credit-card"></i> Payments &amp; Gateway</button>
+              </div>
+            </div>
+
+            <!-- PLATFORM -->
+            <div>
+              <div style="font-size: 10px; font-weight: 800; color: #A78BFA; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding: 0 6px;">
+                <i class="fa-solid fa-microchip"></i> Platform
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <button class="admin-sidebar-item" onclick="switchAdminModule('astrology')"><i class="fa-solid fa-dharmachakra"></i> Astrology Engine</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('ai')"><i class="fa-solid fa-brain"></i> AI Quotas &amp; Models</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('content')"><i class="fa-solid fa-newspaper"></i> Content &amp; Banners</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('settings')"><i class="fa-solid fa-sliders"></i> Feature Flags</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('integrations')"><i class="fa-solid fa-network-wired"></i> Integrations</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('qa')"><i class="fa-solid fa-flask"></i> Tier Simulator &amp; QA</button>
+              </div>
+            </div>
+
+            <!-- GOVERNANCE -->
+            <div>
+              <div style="font-size: 10px; font-weight: 800; color: #F472B6; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding: 0 6px;">
+                <i class="fa-solid fa-shield-halved"></i> Governance
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <button class="admin-sidebar-item" onclick="switchAdminModule('roles')"><i class="fa-solid fa-id-badge"></i> Team &amp; Roles</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('security')"><i class="fa-solid fa-shield-virus"></i> Security &amp; MFA</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('privacy')"><i class="fa-solid fa-user-lock"></i> Privacy &amp; DPDP</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('audit')"><i class="fa-solid fa-clipboard-list"></i> Audit Trail</button>
+                <button class="admin-sidebar-item" onclick="switchAdminModule('incidents')"><i class="fa-solid fa-triangle-exclamation"></i> Incidents &amp; P1s</button>
+              </div>
+            </div>
+
+            <!-- INFRASTRUCTURE -->
+            <div>
+              <div style="font-size: 10px; font-weight: 800; color: #FB923C; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; padding: 0 6px;">
+                <i class="fa-solid fa-server"></i> Infrastructure
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <button class="admin-sidebar-item" onclick="switchAdminModule('database')"><i class="fa-solid fa-database"></i> Database Monitor</button>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Main Viewport for Module Panels -->
+          <main class="admin-main-viewport" style="min-width: 0;">
 
         <!-- MODULE 1: PLATFORM OVERVIEW -->
         <div id="admin-panel-overview" class="admin-module-panel">
@@ -1395,6 +1536,381 @@
           </div>
         </div>
 
+        <!-- MODULE: BUSINESS ANALYTICS & KPIS -->
+        <div id="admin-panel-analytics" class="admin-module-panel" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-chart-pie" style="color: #F5C45E;"></i> Executive Business Analytics &amp; Financial KPIs
+              </h3>
+              <p style="font-size: 12px; color: #94A3B8; margin: 4px 0 0;">
+                Authoritative gross collections, wallet liabilities, revenue mix, and live customer financial metrics.
+              </p>
+            </div>
+            <button class="btn-outline-secondary" onclick="loadAdminAnalyticsOverview()" style="font-size: 11px; padding: 6px 14px;">
+              <i class="fa-solid fa-rotate"></i> Refresh Analytics
+            </button>
+          </div>
+
+          <!-- KPI Cards Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <div class="astro-card" style="padding: 14px; background: #0E1626; border-color: rgba(212, 175, 55, 0.3);">
+              <div style="font-size: 10.5px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Gross Paid Collections</div>
+              <div style="font-size: 22px; font-weight: 800; color: #34D399; margin-top: 4px;">₹<span id="metric-analytics-gross">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Cashfree &amp; payment gateway receipts</div>
+            </div>
+            <div class="astro-card" style="padding: 14px; background: #0E1626; border-color: rgba(56, 189, 248, 0.3);">
+              <div style="font-size: 10.5px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Wallet Recharges</div>
+              <div style="font-size: 22px; font-weight: 800; color: #38BDF8; margin-top: 4px;">₹<span id="metric-analytics-recharges">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Customer balance top-ups</div>
+            </div>
+            <div class="astro-card" style="padding: 14px; background: #0E1626; border-color: rgba(167, 139, 250, 0.3);">
+              <div style="font-size: 10.5px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Subscriptions Revenue</div>
+              <div style="font-size: 22px; font-weight: 800; color: #A78BFA; margin-top: 4px;">₹<span id="metric-analytics-subs">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Plus &amp; Premium plans</div>
+            </div>
+            <div class="astro-card" style="padding: 14px; background: #0E1626; border-color: rgba(245, 158, 11, 0.3);">
+              <div style="font-size: 10.5px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Report Purchases</div>
+              <div style="font-size: 22px; font-weight: 800; color: #F59E0B; margin-top: 4px;">₹<span id="metric-analytics-reports">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">11 Vedic blueprint products</div>
+            </div>
+            <div class="astro-card" style="padding: 14px; background: #0E1626; border-color: rgba(239, 68, 68, 0.3);">
+              <div style="font-size: 10.5px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Active Wallet Liabilities</div>
+              <div style="font-size: 22px; font-weight: 800; color: #F87171; margin-top: 4px;">₹<span id="metric-analytics-liabilities">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Unspent customer balances</div>
+            </div>
+            <div class="astro-card" style="padding: 14px; background: #0E1626; border-color: rgba(244, 114, 182, 0.3);">
+              <div style="font-size: 10.5px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Promotional Credits</div>
+              <div style="font-size: 22px; font-weight: 800; color: #F472B6; margin-top: 4px;">₹<span id="metric-analytics-promo">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Total promotional bonus awarded</div>
+            </div>
+            <div class="astro-card" style="padding: 14px; background: #0E1626;">
+              <div style="font-size: 10.5px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Registered Customers</div>
+              <div style="font-size: 22px; font-weight: 800; color: #FFFFFF; margin-top: 4px;" id="metric-analytics-users">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Platform accounts</div>
+            </div>
+            <div class="astro-card" style="padding: 14px; background: #0E1626;">
+              <div style="font-size: 10.5px; color: #94A3B8; font-weight: 700; text-transform: uppercase;">Active Subscribers</div>
+              <div style="font-size: 22px; font-weight: 800; color: #F5C45E; margin-top: 4px;" id="metric-analytics-subscribers">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Plus &amp; Premium subscribers</div>
+            </div>
+          </div>
+
+          <!-- Recent Paid Orders Ledger -->
+          <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(255, 255, 255, 0.1);">
+            <h4 style="font-size: 13.5px; font-weight: 800; color: #FFFFFF; margin: 0 0 12px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-receipt" style="color: #34D399;"></i> Recent Verified Paid Orders (Cashfree Settlements)
+            </h4>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                <thead>
+                  <tr style="background: rgba(255, 255, 255, 0.05); color: #94A3B8; text-transform: uppercase; font-size: 10px;">
+                    <th style="padding: 8px 10px;">Order Reference</th>
+                    <th style="padding: 8px 10px;">Customer ID</th>
+                    <th style="padding: 8px 10px;">Product Type</th>
+                    <th style="padding: 8px 10px;">Amount</th>
+                    <th style="padding: 8px 10px;">Gateway Ref</th>
+                    <th style="padding: 8px 10px;">Date / Time</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-analytics-orders-tbody">
+                  <tr><td colspan="6" style="padding: 16px; text-align: center; color: #64748B;">Loading orders...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODULE: CUSTOMER 360 -->
+        <div id="admin-panel-customer360" class="admin-module-panel" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-user-astronaut" style="color: #38BDF8;"></i> Customer 360 &amp; Unified Relationship Intelligence
+              </h3>
+              <p style="font-size: 12px; color: #94A3B8; margin: 4px 0 0;">
+                Comprehensive identity, astrology profiles, financial balance, entitlements, notes, and session controls.
+              </p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="admin-c360-search-id" placeholder="Enter Customer ID or Email..." style="padding: 6px 12px; font-size: 12px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFFFFF; width: 220px;" onkeydown="if(event.key==='Enter') loadAdminCustomer360()">
+              <button class="btn-gold-primary" onclick="loadAdminCustomer360()" style="font-size: 11px; padding: 6px 12px;">
+                <i class="fa-solid fa-magnifying-glass"></i> Load 360
+              </button>
+            </div>
+          </div>
+
+          <div id="admin-c360-container">
+            <div style="padding: 30px; text-align: center; color: #94A3B8; background: #0E1626; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px;">
+              <i class="fa-solid fa-user-astronaut" style="font-size: 32px; color: #38BDF8; margin-bottom: 12px;"></i>
+              <div style="font-size: 14px; font-weight: 700; color: #FFFFFF;">No Customer Selected</div>
+              <p style="font-size: 12px; color: #64748B; margin: 4px 0 14px;">Select a customer from the Customer Directory or enter an ID above to view the full 360° profile.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODULE: FEATURE & ENTITLEMENTS MANAGER -->
+        <div id="admin-panel-entitlements" class="admin-module-panel" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-award" style="color: #F5C45E;"></i> Platform Feature &amp; Entitlement Manager
+              </h3>
+              <p style="font-size: 12px; color: #94A3B8; margin: 4px 0 0;">
+                Owner authority to grant or revoke any subscription tier, report, consultation minutes, or AI quotas.
+              </p>
+            </div>
+            <button class="btn-gold-primary" onclick="toggleAdminEntitlementGrantForm()" style="font-size: 11px; padding: 6px 14px;">
+              <i class="fa-solid fa-plus"></i> Grant New Entitlement
+            </button>
+          </div>
+
+          <!-- Grant Entitlement Collapsible Form -->
+          <div id="admin-entitlement-grant-form-card" style="display: none; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.3); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="font-size: 13px; font-weight: 800; color: #F5C45E; margin: 0 0 12px;">
+              <i class="fa-solid fa-shield-plus"></i> Grant Individual Feature Entitlement
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Target User ID *</label>
+                <input type="text" id="admin-grant-userid" placeholder="usr_..." style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Feature Entitlement *</label>
+                <select id="admin-grant-feature" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+                  <option value="PLUS">AstroVerse Plus Subscription (D9/D10, 15 AI/day)</option>
+                  <option value="PREMIUM">AstroVerse Premium Subscription (All charts, Unlimited)</option>
+                  <option value="report_janam_kundli_deep_dive">Report: Complete Janam Kundli Deep Dive (₹199)</option>
+                  <option value="report_career_education">Report: Career &amp; Education Blueprint (₹149)</option>
+                  <option value="report_relationship_marriage">Report: Relationship &amp; Marriage (₹149)</option>
+                  <option value="report_kundli_milan">Report: Kundli Milan 36-Gunas (₹149)</option>
+                  <option value="report_twelve_month_varshphal">Report: 12-Month Annual Varshphal (₹249)</option>
+                  <option value="report_three_year_roadmap">Report: 3-Year Karma Roadmap (₹499)</option>
+                  <option value="ai_unlimited_consultations">AI: Unlimited Consultations Quota</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Grant Duration *</label>
+                <select id="admin-grant-duration" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+                  <option value="1">1 Day</option>
+                  <option value="7">7 Days</option>
+                  <option value="30" selected>30 Days (1 Month)</option>
+                  <option value="90">90 Days (Quarter)</option>
+                  <option value="180">180 Days (Half Year)</option>
+                  <option value="365">365 Days (1 Year)</option>
+                  <option value="lifetime">Lifetime (Permanent)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Source Attribution *</label>
+                <select id="admin-grant-source" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+                  <option value="ADMIN_GRANT">ADMIN_GRANT (Owner Discretion)</option>
+                  <option value="PROMOTIONAL_GRANT">PROMOTIONAL_GRANT (Marketing / Campaign)</option>
+                  <option value="SUPPORT_COMPENSATION">SUPPORT_COMPENSATION (Issue Resolution)</option>
+                  <option value="TRIAL_GRANT">TRIAL_GRANT (Product Trial)</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Reason for Grant (Required for Audit Trail) *</label>
+              <input type="text" id="admin-grant-reason" placeholder="e.g. VIP onboarding gift or support incident resolution..." style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <button class="btn-outline-secondary" onclick="toggleAdminEntitlementGrantForm()" style="font-size: 11px; padding: 6px 14px;">Cancel</button>
+              <button class="btn-gold-primary" onclick="grantAdminEntitlementFromUI()" style="font-size: 11px; padding: 6px 16px;">
+                <i class="fa-solid fa-check"></i> Confirm &amp; Grant Entitlement
+              </button>
+            </div>
+          </div>
+
+          <!-- Entitlements Table -->
+          <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(255, 255, 255, 0.1);">
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                <thead>
+                  <tr style="background: rgba(255, 255, 255, 0.05); color: #94A3B8; text-transform: uppercase; font-size: 10px;">
+                    <th style="padding: 8px 10px;">Entitlement ID</th>
+                    <th style="padding: 8px 10px;">Customer ID</th>
+                    <th style="padding: 8px 10px;">Feature Key</th>
+                    <th style="padding: 8px 10px;">Source</th>
+                    <th style="padding: 8px 10px;">Granted By</th>
+                    <th style="padding: 8px 10px;">Expires At</th>
+                    <th style="padding: 8px 10px; text-align: center;">Status</th>
+                    <th style="padding: 8px 10px; text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-entitlements-tbody">
+                  <tr><td colspan="8" style="padding: 16px; text-align: center; color: #64748B;">Loading entitlements...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODULE: PROMOTIONS & DISCOUNTS -->
+        <div id="admin-panel-promotions" class="admin-module-panel" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-percent" style="color: #34D399;"></i> Promotions, Coupons &amp; Discount Rules
+              </h3>
+              <p style="font-size: 12px; color: #94A3B8; margin: 4px 0 0;">
+                Configure wallet top-up bonuses, flat report coupons, and seasonal percentage discounts.
+              </p>
+            </div>
+            <button class="btn-gold-primary" onclick="toggleAdminPromotionCreateForm()" style="font-size: 11px; padding: 6px 14px;">
+              <i class="fa-solid fa-plus"></i> Create New Campaign
+            </button>
+          </div>
+
+          <!-- Create Promotion Form -->
+          <div id="admin-promotion-create-form-card" style="display: none; background: #0E1626; border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="font-size: 13px; font-weight: 800; color: #34D399; margin: 0 0 12px;">
+              <i class="fa-solid fa-tag"></i> Create Promotional Campaign
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px;">
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Coupon Code *</label>
+                <input type="text" id="admin-promo-code" placeholder="e.g. DIWALI50" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px; text-transform: uppercase;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Discount Type *</label>
+                <select id="admin-promo-type" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+                  <option value="FLAT_DISCOUNT">Flat Rupee Discount (₹)</option>
+                  <option value="PERCENTAGE">Percentage Discount (%)</option>
+                  <option value="BONUS_PERCENTAGE">Recharge Extra Bonus (%)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Discount / Bonus Value *</label>
+                <input type="number" id="admin-promo-val" placeholder="e.g. 25 or 10" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Applicable Category *</label>
+                <select id="admin-promo-applicable" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+                  <option value="REPORTS">Vedic Reports</option>
+                  <option value="WALLET_RECHARGE">Wallet Recharges</option>
+                  <option value="SUBSCRIPTION">Subscriptions</option>
+                  <option value="ALL">All Services</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Min Order Amount (₹)</label>
+                <input type="number" id="admin-promo-minorder" value="100" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Validity (Days)</label>
+                <input type="number" id="admin-promo-duration" value="30" style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+              </div>
+            </div>
+            <div style="margin-bottom: 12px;">
+              <label style="display: block; font-size: 10.5px; color: #94A3B8; margin-bottom: 4px;">Description</label>
+              <input type="text" id="admin-promo-desc" placeholder="Special promotion description..." style="width: 100%; box-sizing: border-box; padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFF; font-size: 12px;">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+              <button class="btn-outline-secondary" onclick="toggleAdminPromotionCreateForm()" style="font-size: 11px; padding: 6px 14px;">Cancel</button>
+              <button class="btn-gold-primary" onclick="createAdminPromotionFromUI()" style="font-size: 11px; padding: 6px 16px;">
+                <i class="fa-solid fa-check"></i> Create Promotion
+              </button>
+            </div>
+          </div>
+
+          <!-- Promotions Table -->
+          <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(255, 255, 255, 0.1);">
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                <thead>
+                  <tr style="background: rgba(255, 255, 255, 0.05); color: #94A3B8; text-transform: uppercase; font-size: 10px;">
+                    <th style="padding: 8px 10px;">Code</th>
+                    <th style="padding: 8px 10px;">Description</th>
+                    <th style="padding: 8px 10px;">Type</th>
+                    <th style="padding: 8px 10px;">Value</th>
+                    <th style="padding: 8px 10px;">Applies To</th>
+                    <th style="padding: 8px 10px;">Used</th>
+                    <th style="padding: 8px 10px;">Expires At</th>
+                    <th style="padding: 8px 10px; text-align: right;">Status / Action</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-promotions-tbody">
+                  <tr><td colspan="8" style="padding: 16px; text-align: center; color: #64748B;">Loading promotions...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODULE: ASTROLOGERS & CONSULTATIONS -->
+        <div id="admin-panel-consultations" class="admin-module-panel" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-comments" style="color: #A78BFA;"></i> Astrologer Network &amp; Consultation Sessions Monitor
+              </h3>
+              <p style="font-size: 12px; color: #94A3B8; margin: 4px 0 0;">
+                Astrologer verification, rate management, consultation session tracking, and 1st free minute monitoring.
+              </p>
+            </div>
+            <button class="btn-outline-secondary" onclick="loadAdminConsultations()" style="font-size: 11px; padding: 6px 14px;">
+              <i class="fa-solid fa-rotate"></i> Refresh
+            </button>
+          </div>
+
+          <!-- Astrologers Roster Card -->
+          <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
+            <h4 style="font-size: 13px; font-weight: 800; color: #F5C45E; margin: 0 0 12px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-user-check"></i> Astrologer Roster &amp; Verification Status
+            </h4>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                <thead>
+                  <tr style="background: rgba(255, 255, 255, 0.05); color: #94A3B8; text-transform: uppercase; font-size: 10px;">
+                    <th style="padding: 8px 10px;">Astrologer</th>
+                    <th style="padding: 8px 10px;">Specialities</th>
+                    <th style="padding: 8px 10px;">Experience</th>
+                    <th style="padding: 8px 10px;">Rating</th>
+                    <th style="padding: 8px 10px;">Rate / Min</th>
+                    <th style="padding: 8px 10px;">Orders</th>
+                    <th style="padding: 8px 10px;">Pending Payout</th>
+                    <th style="padding: 8px 10px; text-align: right;">Verification</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-astrologers-tbody">
+                  <tr><td colspan="8" style="padding: 16px; text-align: center; color: #64748B;">Loading astrologers...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Consultation Sessions Table -->
+          <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(255, 255, 255, 0.1);">
+            <h4 style="font-size: 13px; font-weight: 800; color: #38BDF8; margin: 0 0 12px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-clock-rotate-left"></i> Consultation Sessions &amp; Free Trial Monitor
+            </h4>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                <thead>
+                  <tr style="background: rgba(255, 255, 255, 0.05); color: #94A3B8; text-transform: uppercase; font-size: 10px;">
+                    <th style="padding: 8px 10px;">Session ID</th>
+                    <th style="padding: 8px 10px;">Customer ID</th>
+                    <th style="padding: 8px 10px;">Astrologer</th>
+                    <th style="padding: 8px 10px;">Status</th>
+                    <th style="padding: 8px 10px;">Free Consumed</th>
+                    <th style="padding: 8px 10px;">Paid Minutes</th>
+                    <th style="padding: 8px 10px;">Total Deducted</th>
+                    <th style="padding: 8px 10px;">Started At</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-consultations-tbody">
+                  <tr><td colspan="8" style="padding: 16px; text-align: center; color: #64748B;">Loading sessions...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+          </main>
+        </div>
+
       </div>
 
       <!-- DEDICATED IN-ADMIN FEATURE TEST HARNESSES CONTAINER -->
@@ -2141,11 +2657,14 @@
     const navRole = document.getElementById('admin-nav-role');
 
     if (currentUserSession) {
-      if (emailEl) emailEl.textContent = currentUserSession.email || 'administrator';
-      if (roleEl) roleEl.textContent = currentUserSession.role || 'ADMIN';
+      if (emailEl) emailEl.textContent = currentUserSession.email || 'tiwari0028@gmail.com';
+      if (roleEl) roleEl.textContent = currentUserSession.role || 'OWNER';
       if (navEmail) navEmail.textContent = currentUserSession.email || '';
-      if (navRole) navRole.textContent = currentUserSession.role || 'ADMIN';
+      if (navRole) navRole.textContent = currentUserSession.role || 'OWNER';
       if (navUser) navUser.style.display = 'flex';
+    }
+    if (typeof startAdminSessionCountdown === 'function') {
+      startAdminSessionCountdown();
     }
   }
 
@@ -2566,7 +3085,8 @@
     const CANONICAL_ADMIN_MODULES = [
       'overview', 'users', 'roles', 'security', 'astrology', 'reports', 'ai',
       'payments', 'subscriptions', 'content', 'settings', 'privacy', 'audit',
-      'integrations', 'incidents', 'qa', 'database'
+      'integrations', 'incidents', 'qa', 'database',
+      'analytics', 'customer360', 'entitlements', 'promotions', 'consultations'
     ];
     const CANONICAL_ADMIN_TOOLS = [
       'kundli', 'forecasts', 'ai-astrologer', 'numerology', 'reports', 'billing'
@@ -2624,7 +3144,7 @@
       const dashContent = document.getElementById('admin-dashboard-content');
       if (dashContent) dashContent.style.display = 'block';
 
-      // Update nav pills
+      // Update nav pills & sidebar items
       const navBar = document.getElementById('admin-module-nav-bar');
       if (navBar) {
         navBar.querySelectorAll('.category-pill').forEach(btn => {
@@ -2635,6 +3155,13 @@
           }
         });
       }
+      document.querySelectorAll('.admin-sidebar-item').forEach(btn => {
+        if (btn.getAttribute('onclick')?.includes(`'${canonicalMod}'`)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
 
       // Hide all panels, show active
       document.querySelectorAll('.admin-module-panel').forEach(p => p.style.display = 'none');
@@ -2675,7 +3202,12 @@
         case 'integrations': loadAdminIntegrations(); break;
         case 'incidents': loadAdminIncidents(); break;
         case 'qa': loadAdminQaModule(); break;
-        case 'database': break; // Already loaded and polling started above
+        case 'database': break;
+        case 'analytics': loadAdminAnalyticsOverview(); break;
+        case 'customer360': loadAdminCustomer360(); break;
+        case 'entitlements': loadAdminEntitlements(); break;
+        case 'promotions': loadAdminPromotions(); break;
+        case 'consultations': loadAdminConsultations(); break;
       }
     }
 
@@ -5403,6 +5935,588 @@
       }
     });
 
+    // ==================== ENTERPRISE OWNER CONTROL CENTRE JAVASCRIPT CONTROLLER ====================
+
+    // Global Search
+    function executeAdminGlobalSearch() {
+      const q = document.getElementById('admin-global-search-input')?.value?.trim();
+      if (!q) return;
+      if (q.startsWith('usr_') || q.includes('@')) {
+        switchAdminModule('customer360');
+        const searchInput = document.getElementById('admin-c360-search-id');
+        if (searchInput) {
+          searchInput.value = q;
+          loadAdminCustomer360(q);
+        }
+      } else {
+        switchAdminModule('users');
+        const userSearch = document.getElementById('admin-user-search');
+        if (userSearch) {
+          userSearch.value = q;
+          loadAdminUsersList();
+        }
+      }
+    }
+
+    // Auto-Lock Session Timer Countdown
+    let adminSessionRemainingSeconds = 600; // 10 minutes
+    let adminSessionTimerInterval = null;
+
+    function refreshAdminSessionCountdown() {
+      adminSessionRemainingSeconds = 600;
+      updateAdminSessionTimerDisplay();
+      showToast('Administrative session renewed for 10 minutes.', 'info');
+    }
+
+    function updateAdminSessionTimerDisplay() {
+      const el = document.getElementById('admin-session-countdown');
+      if (!el) return;
+      const m = Math.floor(adminSessionRemainingSeconds / 60);
+      const s = adminSessionRemainingSeconds % 60;
+      el.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+      if (adminSessionRemainingSeconds <= 60) {
+        el.style.color = '#EF4444';
+      } else {
+        el.style.color = '#F8FAFC';
+      }
+    }
+
+    function startAdminSessionCountdown() {
+      if (adminSessionTimerInterval) clearInterval(adminSessionTimerInterval);
+      adminSessionTimerInterval = setInterval(() => {
+        if (adminSessionRemainingSeconds > 0) {
+          adminSessionRemainingSeconds--;
+          updateAdminSessionTimerDisplay();
+        } else {
+          clearInterval(adminSessionTimerInterval);
+          showToast('Session expired due to inactivity. Signing out...', 'warning');
+          closeAdminAndSignOut();
+        }
+      }, 1000);
+    }
+
+    // Module: Business Analytics & KPIs
+    async function loadAdminAnalyticsOverview() {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/analytics/overview`, { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const s = data.summary;
+        if (s) {
+          const grossEl = document.getElementById('metric-analytics-gross');
+          if (grossEl) grossEl.textContent = Number(s.totalGrossCollectionsRupees || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+          const recEl = document.getElementById('metric-analytics-recharges');
+          if (recEl) recEl.textContent = Number(s.rechargeCollectionsRupees || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+          const subsEl = document.getElementById('metric-analytics-subs');
+          if (subsEl) subsEl.textContent = Number(s.subscriptionCollectionsRupees || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+          const repEl = document.getElementById('metric-analytics-reports');
+          if (repEl) repEl.textContent = Number(s.reportCollectionsRupees || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+          const liabEl = document.getElementById('metric-analytics-liabilities');
+          if (liabEl) liabEl.textContent = Number(s.activeWalletLiabilitiesRupees || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+          const promoEl = document.getElementById('metric-analytics-promo');
+          if (promoEl) promoEl.textContent = Number(s.totalPromotionalCreditsGivenRupees || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+          const usersEl = document.getElementById('metric-analytics-users');
+          if (usersEl) usersEl.textContent = s.totalRegisteredUsers || 0;
+          const subscEl = document.getElementById('metric-analytics-subscribers');
+          if (subscEl) subscEl.textContent = s.activeSubscribers || 0;
+        }
+
+        const tbody = document.getElementById('admin-analytics-orders-tbody');
+        if (tbody) {
+          const orders = data.recentPaidOrders || [];
+          if (orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="padding: 16px; text-align: center; color: #64748B;">No recent paid orders recorded.</td></tr>';
+          } else {
+            tbody.innerHTML = orders.map(o => `
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 8px 10px; font-family: monospace; color: #38BDF8;">${escapeHtml(o.id)}</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #94A3B8;">${escapeHtml(o.userId)}</td>
+                <td style="padding: 8px 10px;"><span style="background: rgba(212, 175, 55, 0.15); color: #F5C45E; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;">${escapeHtml(o.productType || 'WALLET_RECHARGE')}</span></td>
+                <td style="padding: 8px 10px; font-weight: 700; color: #34D399;">₹${Number(o.amount || 0).toFixed(2)}</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #64748B;">${escapeHtml(o.providerOrderId || '--')}</td>
+                <td style="padding: 8px 10px; color: #94A3B8;">${new Date(o.createdAt).toLocaleString()}</td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load analytics:', err);
+      }
+    }
+
+    // Module: Customer 360
+    async function loadAdminCustomer360(targetUserId) {
+      const idInput = document.getElementById('admin-c360-search-id');
+      const userId = targetUserId || idInput?.value?.trim();
+      const container = document.getElementById('admin-c360-container');
+      if (!container) return;
+
+      if (!userId) {
+        showToast('Please enter a Customer ID or Email to load 360 profile.', 'warning');
+        return;
+      }
+
+      container.innerHTML = '<div style="padding: 30px; text-align: center; color: #94A3B8;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 24px;"></i><div style="margin-top: 8px;">Loading Customer 360 profile...</div></div>';
+
+      try {
+        let lookupId = userId;
+        if (userId.includes('@')) {
+          const userRes = await fetch(`${getAuthBase()}/api/admin/users?search=${encodeURIComponent(userId)}`, { headers: getAuthHeaders() });
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            if (userData.users && userData.users.length > 0) {
+              lookupId = userData.users[0].id;
+            }
+          }
+        }
+
+        const res = await fetch(`${getAuthBase()}/api/admin/customers/${lookupId}/360`, { headers: getAuthHeaders() });
+        if (!res.ok) {
+          container.innerHTML = `<div style="padding: 30px; text-align: center; color: #EF4444; background: #0E1626; border-radius: 10px;"><i class="fa-solid fa-circle-exclamation" style="font-size: 28px; margin-bottom: 8px;"></i><div>Customer not found (${escapeHtml(userId)})</div></div>`;
+          return;
+        }
+
+        const data = await res.json();
+        const c = data.customer;
+        const u = c.user;
+        const w = c.wallet;
+
+        container.innerHTML = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px;">
+            <!-- Identity & Profile -->
+            <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(56, 189, 248, 0.3);">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: #0284C7; color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800;">
+                  ${escapeHtml((u.displayName || u.email || 'U')[0].toUpperCase())}
+                </div>
+                <div>
+                  <h4 style="font-size: 15px; font-weight: 800; color: #FFFFFF; margin: 0;">${escapeHtml(u.displayName || 'Unnamed User')}</h4>
+                  <div style="font-size: 11px; color: #94A3B8; font-family: monospace;">${escapeHtml(u.id)}</div>
+                </div>
+              </div>
+              <div style="font-size: 12px; color: #CBD5E1; display: flex; flex-direction: column; gap: 6px;">
+                <div><strong style="color: #64748B;">Email:</strong> ${escapeHtml(u.email || 'None')} ${u.emailVerified ? '<i class="fa-solid fa-circle-check" style="color: #34D399;"></i>' : ''}</div>
+                <div><strong style="color: #64748B;">Phone:</strong> ${escapeHtml(u.phone || 'None')} ${u.phoneVerified ? '<i class="fa-solid fa-circle-check" style="color: #34D399;"></i>' : ''}</div>
+                <div><strong style="color: #64748B;">Role:</strong> <span class="badge-role-admin" style="font-size: 10px;">${escapeHtml(u.role)}</span></div>
+                <div><strong style="color: #64748B;">Account Status:</strong> <span style="font-weight: 700; color: ${u.status === 'ACTIVE' ? '#34D399' : '#EF4444'};">${escapeHtml(u.status)}</span></div>
+                <div><strong style="color: #64748B;">Member Since:</strong> ${new Date(u.createdAt).toLocaleDateString()}</div>
+              </div>
+              <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; gap: 6px;">
+                <button class="btn-outline-secondary" onclick="revokeUserSessionsFrom360('${u.id}')" style="font-size: 10.5px; padding: 4px 10px; color: #F87171; border-color: #7F1D1D;">
+                  <i class="fa-solid fa-key"></i> Revoke All Sessions
+                </button>
+              </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(52, 211, 153, 0.3);">
+              <h4 style="font-size: 13.5px; font-weight: 800; color: #34D399; margin: 0 0 12px;">
+                <i class="fa-solid fa-wallet"></i> Customer Wallet &amp; Ledger
+              </h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                <div style="background: rgba(255, 255, 255, 0.03); padding: 8px 10px; border-radius: 6px;">
+                  <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Total Balance</div>
+                  <div style="font-size: 18px; font-weight: 800; color: #FFFFFF;">₹${Number(w.walletBalance || 0).toFixed(2)}</div>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.03); padding: 8px 10px; border-radius: 6px;">
+                  <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Total Deposited</div>
+                  <div style="font-size: 18px; font-weight: 800; color: #34D399;">₹${Number(w.totalDepositedRupees || 0).toFixed(2)}</div>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.03); padding: 8px 10px; border-radius: 6px;">
+                  <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Total Spent</div>
+                  <div style="font-size: 18px; font-weight: 800; color: #F59E0B;">₹${Number(w.totalSpentRupees || 0).toFixed(2)}</div>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.03); padding: 8px 10px; border-radius: 6px;">
+                  <div style="font-size: 10px; color: #94A3B8; text-transform: uppercase;">Promo Balance</div>
+                  <div style="font-size: 18px; font-weight: 800; color: #F472B6;">₹${Number(w.promotionalWalletBalance || 0).toFixed(2)}</div>
+                </div>
+              </div>
+              <div style="font-size: 11px; color: #64748B;">
+                Orders: ${w.ordersCount} (${w.paidOrdersCount} Paid) &bull; Ledger Transactions: ${w.transactionsCount}
+              </div>
+            </div>
+
+            <!-- Active Subscriptions & Entitlements -->
+            <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(212, 175, 55, 0.3);">
+              <h4 style="font-size: 13.5px; font-weight: 800; color: #F5C45E; margin: 0 0 12px;">
+                <i class="fa-solid fa-crown"></i> Active Subscription &amp; Entitlements
+              </h4>
+              <div style="margin-bottom: 10px;">
+                <span style="font-size: 12px; font-weight: 800; color: #FFFFFF; background: ${u.subscriptionTier === 'PREMIUM' ? '#7C3AED' : (u.subscriptionTier === 'PLUS' ? '#2563EB' : '#334155')}; padding: 3px 10px; border-radius: 4px;">
+                  ${escapeHtml(u.subscriptionTier || 'FREE')}
+                </span>
+                <span style="font-size: 11px; color: #94A3B8; margin-left: 6px;">
+                  ${u.subscriptionStatus === 'ACTIVE' ? 'Active Plan' : 'Free Essentials'}
+                </span>
+              </div>
+              ${u.subscriptionExpiresAt ? `<div style="font-size: 11.5px; color: #CBD5E1; margin-bottom: 8px;"><strong>Expires:</strong> ${new Date(u.subscriptionExpiresAt).toLocaleDateString()}</div>` : '<div style="font-size: 11px; color: #64748B; margin-bottom: 8px;">No expiring subscription</div>'}
+              <div style="font-size: 11.5px; color: #94A3B8;">
+                <strong>Active Feature Grants:</strong> ${c.entitlements.filter(e => e.isActive).length} active
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer Administrative Notes -->
+          <div class="astro-card" style="padding: 16px; background: #0E1626; border-color: rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h4 style="font-size: 13px; font-weight: 800; color: #FFFFFF; margin: 0;">
+                <i class="fa-solid fa-clipboard-check" style="color: #F5C45E;"></i> Internal Administrative Support Notes
+              </h4>
+            </div>
+            
+            <!-- Add Note Form -->
+            <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+              <input type="text" id="admin-c360-note-input" placeholder="Type internal support note, VIP remark, or issue resolution..." style="flex: 1; min-width: 240px; padding: 8px 12px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFFFFF; font-size: 12px;">
+              <select id="admin-c360-note-cat" style="padding: 8px; background: #0F172A; border: 1px solid #334155; border-radius: 6px; color: #FFFFFF; font-size: 12px;">
+                <option value="GENERAL">General Note</option>
+                <option value="SUPPORT">Support</option>
+                <option value="FINANCIAL">Financial</option>
+                <option value="VIP">VIP Customer</option>
+                <option value="FRAUD_ALERT">Fraud Alert</option>
+              </select>
+              <button class="btn-gold-primary" onclick="addCustomerNoteFrom360('${u.id}')" style="font-size: 11px; padding: 8px 14px;">
+                <i class="fa-solid fa-plus"></i> Add Note
+              </button>
+            </div>
+
+            <!-- Notes List -->
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto;">
+              ${(c.notes || []).length === 0 ? '<div style="font-size: 11.5px; color: #64748B;">No administrative notes recorded for this customer.</div>' : (c.notes || []).map(n => `
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; padding: 10px; font-size: 11.5px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span style="font-weight: 700; color: #F5C45E; font-size: 10px; text-transform: uppercase;">${escapeHtml(n.category)}</span>
+                    <span style="color: #64748B; font-size: 10px;">${new Date(n.createdAt).toLocaleString()} by ${escapeHtml(n.adminEmail)}</span>
+                  </div>
+                  <div style="color: #CBD5E1;">${escapeHtml(n.content)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<div style="padding: 20px; color: #EF4444;">Failed to load Customer 360 profile: ${err?.message || err}</div>`;
+      }
+    }
+
+    async function addCustomerNoteFrom360(userId) {
+      const input = document.getElementById('admin-c360-note-input');
+      const cat = document.getElementById('admin-c360-note-cat')?.value || 'GENERAL';
+      const content = input?.value?.trim();
+      if (!content) return;
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/customers/${userId}/notes`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ content, category: cat })
+        });
+        if (res.ok) {
+          showToast('Administrative note recorded.', 'success');
+          loadAdminCustomer360(userId);
+        } else {
+          showToast('Failed to record note.', 'error');
+        }
+      } catch (_) {
+        showToast('Network error adding note.', 'error');
+      }
+    }
+
+    async function revokeUserSessionsFrom360(userId) {
+      if (!confirm('Revoke all active sessions for this customer? They will be signed out on all devices.')) return;
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/users/${userId}/revoke-sessions`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          showToast('All customer sessions revoked successfully.', 'success');
+        } else {
+          showToast('Failed to revoke sessions.', 'error');
+        }
+      } catch (_) {
+        showToast('Network error revoking sessions.', 'error');
+      }
+    }
+
+    // Module: Entitlements
+    function toggleAdminEntitlementGrantForm() {
+      const card = document.getElementById('admin-entitlement-grant-form-card');
+      if (card) card.style.display = card.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function loadAdminEntitlements() {
+      const tbody = document.getElementById('admin-entitlements-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="8" style="padding: 16px; text-align: center; color: #64748B;">Refreshing entitlements...</td></tr>';
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/entitlements`, { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = data.entitlements || [];
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="padding: 20px; text-align: center; color: #64748B;">No entitlements registered on the platform.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map(e => `
+          <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+            <td style="padding: 8px 10px; font-family: monospace; color: #F5C45E;">${escapeHtml(e.id)}</td>
+            <td style="padding: 8px 10px; font-family: monospace; color: #94A3B8;">${escapeHtml(e.userId)}</td>
+            <td style="padding: 8px 10px; font-weight: 700; color: #FFFFFF;">${escapeHtml(e.featureKey)}</td>
+            <td style="padding: 8px 10px;"><span style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38BDF8;">${escapeHtml(e.source)}</span></td>
+            <td style="padding: 8px 10px; color: #64748B;">${escapeHtml(e.grantedBy || '--')}</td>
+            <td style="padding: 8px 10px; color: #94A3B8;">${e.expiresAt ? new Date(e.expiresAt).toLocaleDateString() : '<span style="color: #34D399;">Lifetime</span>'}</td>
+            <td style="padding: 8px 10px; text-align: center;">
+              <span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: ${e.isActive ? '#064E3B' : '#7F1D1D'}; color: ${e.isActive ? '#34D399' : '#FCA5A5'};">
+                ${e.isActive ? 'ACTIVE' : 'REVOKED'}
+              </span>
+            </td>
+            <td style="padding: 8px 10px; text-align: right;">
+              ${e.isActive ? `
+                <button onclick="revokeAdminEntitlementFromUI('${e.id}')" class="btn-outline-secondary" style="font-size: 10px; padding: 3px 8px; color: #FCA5A5; border-color: #991B1B;">
+                  <i class="fa-solid fa-ban"></i> Revoke
+                </button>
+              ` : '<span style="color: #64748B; font-size: 11px;">--</span>'}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="8" style="padding: 16px; text-align: center; color: #EF4444;">Error loading entitlements.</td></tr>';
+      }
+    }
+
+    async function grantAdminEntitlementFromUI() {
+      const userId = document.getElementById('admin-grant-userid')?.value?.trim();
+      const featureKey = document.getElementById('admin-grant-feature')?.value;
+      const durationVal = document.getElementById('admin-grant-duration')?.value;
+      const source = document.getElementById('admin-grant-source')?.value || 'ADMIN_GRANT';
+      const reason = document.getElementById('admin-grant-reason')?.value?.trim();
+
+      if (!userId || !featureKey) {
+        showToast('User ID and Feature Key are required.', 'warning');
+        return;
+      }
+      if (!reason) {
+        showToast('Please provide a reason for the audit trail.', 'warning');
+        return;
+      }
+
+      const durationDays = durationVal === 'lifetime' ? null : Number(durationVal);
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/entitlements/grant`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ userId, featureKey, durationDays, source, reason })
+        });
+        if (res.ok) {
+          showToast(`Feature ${featureKey} granted successfully!`, 'success');
+          toggleAdminEntitlementGrantForm();
+          loadAdminEntitlements();
+        } else {
+          const err = await res.json();
+          showToast(err.message || 'Failed to grant entitlement.', 'error');
+        }
+      } catch (_) {
+        showToast('Network error granting entitlement.', 'error');
+      }
+    }
+
+    async function revokeAdminEntitlementFromUI(entitlementId) {
+      const reason = prompt('Enter reason for revoking this entitlement:');
+      if (!reason) return;
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/entitlements/revoke`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ entitlementId, reason: reason.trim() })
+        });
+        if (res.ok) {
+          showToast('Entitlement revoked successfully.', 'success');
+          loadAdminEntitlements();
+        } else {
+          const err = await res.json();
+          showToast(err.message || 'Failed to revoke entitlement.', 'error');
+        }
+      } catch (_) {
+        showToast('Network error revoking entitlement.', 'error');
+      }
+    }
+
+    // Module: Promotions & Discounts
+    function toggleAdminPromotionCreateForm() {
+      const card = document.getElementById('admin-promotion-create-form-card');
+      if (card) card.style.display = card.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function loadAdminPromotions() {
+      const tbody = document.getElementById('admin-promotions-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="8" style="padding: 16px; text-align: center; color: #64748B;">Refreshing promotions...</td></tr>';
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/promotions`, { headers: getAuthHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = data.promotions || [];
+        if (list.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="padding: 20px; text-align: center; color: #64748B;">No promotions configured.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = list.map(p => `
+          <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+            <td style="padding: 8px 10px; font-weight: 800; font-family: monospace; color: #34D399;">${escapeHtml(p.code)}</td>
+            <td style="padding: 8px 10px; color: #CBD5E1;">${escapeHtml(p.description)}</td>
+            <td style="padding: 8px 10px; font-size: 10px; color: #94A3B8;">${escapeHtml(p.discountType)}</td>
+            <td style="padding: 8px 10px; font-weight: 700; color: #FFFFFF;">${p.discountType === 'PERCENTAGE' || p.discountType === 'BONUS_PERCENTAGE' ? p.discountValue + '%' : '₹' + p.discountValue}</td>
+            <td style="padding: 8px 10px; font-size: 10px; color: #38BDF8;">${escapeHtml(p.applicableTo)}</td>
+            <td style="padding: 8px 10px; color: #94A3B8;">${p.usedCount || 0}</td>
+            <td style="padding: 8px 10px; color: #64748B;">${new Date(p.expiresAt).toLocaleDateString()}</td>
+            <td style="padding: 8px 10px; text-align: right;">
+              <button onclick="toggleAdminPromotionStatus('${p.id}', ${!p.isActive})" class="btn-outline-secondary" style="font-size: 10px; padding: 3px 8px; color: ${p.isActive ? '#FCA5A5' : '#34D399'}; border-color: ${p.isActive ? '#991B1B' : '#059669'};">
+                ${p.isActive ? '<i class="fa-solid fa-pause"></i> Deactivate' : '<i class="fa-solid fa-play"></i> Activate'}
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="8" style="padding: 16px; text-align: center; color: #EF4444;">Error loading promotions.</td></tr>';
+      }
+    }
+
+    async function createAdminPromotionFromUI() {
+      const code = document.getElementById('admin-promo-code')?.value?.trim();
+      const type = document.getElementById('admin-promo-type')?.value;
+      const val = document.getElementById('admin-promo-val')?.value;
+      const applicable = document.getElementById('admin-promo-applicable')?.value;
+      const minOrder = document.getElementById('admin-promo-minorder')?.value || '100';
+      const duration = document.getElementById('admin-promo-duration')?.value || '30';
+      const desc = document.getElementById('admin-promo-desc')?.value?.trim();
+
+      if (!code || !val) {
+        showToast('Coupon code and discount value are required.', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/promotions`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            code,
+            description: desc || `Campaign ${code}`,
+            discountType: type,
+            discountValue: Number(val),
+            applicableTo: applicable,
+            minOrderAmount: Number(minOrder),
+            durationDays: Number(duration)
+          })
+        });
+        if (res.ok) {
+          showToast(`Promotion ${code} created successfully!`, 'success');
+          toggleAdminPromotionCreateForm();
+          loadAdminPromotions();
+        } else {
+          const err = await res.json();
+          showToast(err.message || 'Failed to create promotion.', 'error');
+        }
+      } catch (_) {
+        showToast('Network error creating promotion.', 'error');
+      }
+    }
+
+    async function toggleAdminPromotionStatus(id, isActive) {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/promotions/${id}/status`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ isActive })
+        });
+        if (res.ok) {
+          showToast(`Promotion ${isActive ? 'activated' : 'deactivated'}.`, 'success');
+          loadAdminPromotions();
+        }
+      } catch (_) {
+        showToast('Failed to update promotion status.', 'error');
+      }
+    }
+
+    // Module: Astrologers & Consultations
+    async function loadAdminConsultations() {
+      const astroTbody = document.getElementById('admin-astrologers-tbody');
+      const consultTbody = document.getElementById('admin-consultations-tbody');
+
+      if (astroTbody) {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/admin/astrologers`, { headers: getAuthHeaders() });
+          if (res.ok) {
+            const data = await res.json();
+            const list = data.astrologers || [];
+            astroTbody.innerHTML = list.map(a => `
+              <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                <td style="padding: 8px 10px; font-weight: 700; color: #FFFFFF;">${escapeHtml(a.name)}</td>
+                <td style="padding: 8px 10px; color: #CBD5E1;">${escapeHtml(a.specialities)}</td>
+                <td style="padding: 8px 10px; color: #94A3B8;">${a.experienceYears} yrs</td>
+                <td style="padding: 8px 10px; color: #F5C45E;">⭐ ${a.rating}</td>
+                <td style="padding: 8px 10px; font-weight: 700; color: #34D399;">₹${a.ratePerMinute}/min</td>
+                <td style="padding: 8px 10px; color: #94A3B8;">${a.ordersCount}</td>
+                <td style="padding: 8px 10px; color: #CBD5E1;">₹${(a.pendingPayout || 0).toFixed(2)}</td>
+                <td style="padding: 8px 10px; text-align: right;">
+                  <button onclick="toggleAstrologerVerification('${a.id}', ${!a.isVerified})" class="btn-outline-secondary" style="font-size: 10px; padding: 3px 8px; color: ${a.isVerified ? '#34D399' : '#F5C45E'}; border-color: ${a.isVerified ? '#059669' : '#D97706'};">
+                    ${a.isVerified ? '<i class="fa-solid fa-circle-check"></i> Verified' : '<i class="fa-solid fa-shield"></i> Unverified'}
+                  </button>
+                </td>
+              </tr>
+            `).join('');
+          }
+        } catch (_) {}
+      }
+
+      if (consultTbody) {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/admin/consultations`, { headers: getAuthHeaders() });
+          if (res.ok) {
+            const data = await res.json();
+            const sessions = data.sessions || [];
+            if (sessions.length === 0) {
+              consultTbody.innerHTML = '<tr><td colspan="8" style="padding: 16px; text-align: center; color: #64748B;">No consultation sessions recorded.</td></tr>';
+            } else {
+              consultTbody.innerHTML = sessions.map(s => `
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                  <td style="padding: 8px 10px; font-family: monospace; color: #38BDF8;">${escapeHtml(s.id)}</td>
+                  <td style="padding: 8px 10px; font-family: monospace; color: #94A3B8;">${escapeHtml(s.userId)}</td>
+                  <td style="padding: 8px 10px; font-weight: 700; color: #FFFFFF;">${escapeHtml(s.astrologerName)}</td>
+                  <td style="padding: 8px 10px;"><span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38BDF8;">${escapeHtml(s.status)}</span></td>
+                  <td style="padding: 8px 10px; color: #CBD5E1;">${s.freeConsumedAt ? 'Yes (60s)' : 'No'}</td>
+                  <td style="padding: 8px 10px; color: #CBD5E1;">${s.paidMinutesConsumed || 0}</td>
+                  <td style="padding: 8px 10px; font-weight: 700; color: #34D399;">₹${(s.totalDeducted || 0).toFixed(2)}</td>
+                  <td style="padding: 8px 10px; color: #64748B;">${new Date(s.startTime || s.createdAt).toLocaleString()}</td>
+                </tr>
+              `).join('');
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    async function toggleAstrologerVerification(id, isVerified) {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/astrologers/${id}/verify`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ isVerified })
+        });
+        if (res.ok) {
+          showToast(`Astrologer verification ${isVerified ? 'enabled' : 'revoked'}.`, 'success');
+          loadAdminConsultations();
+        }
+      } catch (_) {
+        showToast('Failed to update astrologer verification.', 'error');
+      }
+    }
 
   // Master Hash Route Controller for Standalone Portal
   function handleStandaloneAdminRoute() {

@@ -255,6 +255,7 @@ export interface AstrologerRecord {
   isOnline: boolean;
   isBusy: boolean;
   pendingPayout: number;
+  isVerified?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -333,6 +334,47 @@ export interface PujaBookingRecord {
   createdAt: string;
 }
 
+export interface EntitlementRecord {
+  id: string;
+  userId: string;
+  featureKey: string;
+  source: 'PAID_SUBSCRIPTION' | 'ADMIN_GRANT' | 'PROMOTIONAL_GRANT' | 'SUPPORT_COMPENSATION' | 'TRIAL_GRANT';
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt: string | null;
+  reason: string;
+  isActive: boolean;
+  metadata?: any;
+}
+
+export interface CustomerNoteRecord {
+  id: string;
+  userId: string;
+  adminId: string;
+  adminEmail: string;
+  content: string;
+  category: 'GENERAL' | 'SUPPORT' | 'FINANCIAL' | 'VIP' | 'FRAUD_ALERT';
+  createdAt: string;
+}
+
+export interface PromotionRecord {
+  id: string;
+  code: string;
+  description: string;
+  discountType: 'PERCENTAGE' | 'FLAT_DISCOUNT' | 'BONUS_PERCENTAGE' | 'FREE_REPORT';
+  discountValue: number;
+  applicableTo: 'WALLET_RECHARGE' | 'SUBSCRIPTION' | 'REPORTS' | 'ALL';
+  minOrderAmount?: number;
+  maxDiscount?: number;
+  maxUses?: number;
+  usedCount: number;
+  startsAt: string;
+  expiresAt: string;
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
+}
+
 interface DatabaseSchema {
   users: UserRecord[];
   sessions: UserSessionRecord[];
@@ -352,6 +394,9 @@ interface DatabaseSchema {
   otps: OtpRecord[];
   processedWebhooks: ProcessedWebhookRecord[];
   rateLimits: RateLimitRecord[];
+  entitlements: EntitlementRecord[];
+  customerNotes: CustomerNoteRecord[];
+  promotions: PromotionRecord[];
 }
 
 function resolveDbPaths(): { dataDir: string; dbFile: string } {
@@ -706,7 +751,10 @@ class ResilientDatabase {
       adminPreviewSessions: Array.isArray(d?.adminPreviewSessions) ? d.adminPreviewSessions : [],
       otps: Array.isArray(d?.otps) ? d.otps : [],
       processedWebhooks: Array.isArray(d?.processedWebhooks) ? d.processedWebhooks : [],
-      rateLimits: Array.isArray(d?.rateLimits) ? d.rateLimits : []
+      rateLimits: Array.isArray(d?.rateLimits) ? d.rateLimits : [],
+      entitlements: Array.isArray(d?.entitlements) ? d.entitlements : [],
+      customerNotes: Array.isArray(d?.customerNotes) ? d.customerNotes : [],
+      promotions: Array.isArray(d?.promotions) ? d.promotions : []
     });
 
     if (fs.existsSync(this.dbFilePath)) {
@@ -844,6 +892,47 @@ class ResilientDatabase {
     if (!this.data.contentBanners || this.data.contentBanners.length === 0) {
       this.data.contentBanners = [
         { id: 'banner_001', key: 'homepage_announcement', title: 'AstroVerse Public Launch Edition', body: 'Experience research-grade Parashari Jyotish calculations and photorealistic AI astrologer consultations.', type: 'BANNER', isActive: true, updatedAt: new Date().toISOString(), updatedBy: 'system' }
+      ];
+      modified = true;
+    }
+
+    // Seed default promotional campaigns if empty
+    if (!this.data.promotions || this.data.promotions.length === 0) {
+      this.data.promotions = [
+        {
+          id: 'promo_welcome10',
+          code: 'WELCOME10',
+          description: '10% promotional bonus credit on wallet recharge',
+          discountType: 'BONUS_PERCENTAGE',
+          discountValue: 10,
+          applicableTo: 'WALLET_RECHARGE',
+          minOrderAmount: 100,
+          maxDiscount: 50,
+          maxUses: 1000,
+          usedCount: 0,
+          startsAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          createdBy: 'system'
+        },
+        {
+          id: 'promo_festive25',
+          code: 'FESTIVE25',
+          description: 'Flat ₹25 discount on any comprehensive report',
+          discountType: 'FLAT_DISCOUNT',
+          discountValue: 25,
+          applicableTo: 'REPORTS',
+          minOrderAmount: 149,
+          maxDiscount: 25,
+          maxUses: 500,
+          usedCount: 0,
+          startsAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 365 * 86400000).toISOString(),
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          createdBy: 'system'
+        }
       ];
       modified = true;
     }
@@ -4263,6 +4352,465 @@ class ResilientDatabase {
     };
 
     return payload;
+  }
+
+  // ==================== ENTERPRISE OWNER CONTROL CENTRE & BUSINESS MANAGEMENT ====================
+
+  async getCustomer360(userId: string) {
+    const user = await this.findUserById(userId);
+    if (!user) return null;
+
+    const safeUser = {
+      id: user.id,
+      phone: user.phone,
+      email: user.email,
+      phoneVerified: Boolean(user.phoneVerified),
+      emailVerified: Boolean(user.emailVerified),
+      displayName: user.displayName,
+      role: user.role,
+      status: user.status,
+      preferredLanguage: user.preferredLanguage,
+      preferredTimezone: user.preferredTimezone,
+      walletBalance: user.walletBalance,
+      paidWalletBalance: user.paidWalletBalance ?? user.walletBalance,
+      promotionalWalletBalance: user.promotionalWalletBalance ?? 0,
+      demoWalletBalance: user.demoWalletBalance ?? 0,
+      subscriptionTier: user.subscriptionTier || 'FREE',
+      subscriptionStatus: user.subscriptionStatus || 'NONE',
+      subscriptionBillingPeriod: user.subscriptionBillingPeriod || null,
+      subscriptionExpiresAt: user.subscriptionExpiresAt || null,
+      mfaEnabled: Boolean(user.mfaEnabled),
+      freeMinuteGranted: Boolean(user.freeMinuteGranted),
+      freeMinuteConsumed: Boolean(user.freeMinuteConsumed),
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+
+    const birthProfiles = (this.data.birthProfiles || []).filter(p => p.userId === userId);
+    const savedReports = (this.data.savedReports || []).filter(r => r.userId === userId);
+    const paymentOrders = (this.data.paymentOrders || [])
+      .filter(o => o.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const ledgerEntries = (this.data.walletLedgers || [])
+      .filter(l => l.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const entitlements = (this.data.entitlements || []).filter(e => e.userId === userId);
+    const notes = (this.data.customerNotes || [])
+      .filter(n => n.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const consultations = (this.data.consultationSessions || [])
+      .filter(c => c.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const paidOrders = paymentOrders.filter(o => o.status === OrderStatus.PAID);
+    const totalDepositedRupees = paidOrders
+      .filter(o => !o.productType || o.productType === 'WALLET_RECHARGE')
+      .reduce((sum, o) => sum + (o.amount || 0), 0);
+    const totalSpentRupees = ledgerEntries
+      .filter(l => l.amount < 0 && !l.isDemo)
+      .reduce((sum, l) => sum + Math.abs(l.amount), 0);
+
+    return {
+      user: safeUser,
+      birthProfiles,
+      savedReports,
+      wallet: {
+        walletBalance: user.walletBalance,
+        paidWalletBalance: user.paidWalletBalance ?? user.walletBalance,
+        promotionalWalletBalance: user.promotionalWalletBalance ?? 0,
+        demoWalletBalance: user.demoWalletBalance ?? 0,
+        totalDepositedRupees,
+        totalSpentRupees,
+        ordersCount: paymentOrders.length,
+        paidOrdersCount: paidOrders.length,
+        transactionsCount: ledgerEntries.length
+      },
+      paymentOrders: paymentOrders.slice(0, 25),
+      ledgerEntries: ledgerEntries.slice(0, 25),
+      entitlements,
+      notes,
+      consultationSessions: consultations.slice(0, 25),
+      activeSubscription: {
+        tier: user.subscriptionTier || 'FREE',
+        status: user.subscriptionStatus || 'NONE',
+        billingPeriod: user.subscriptionBillingPeriod || null,
+        expiresAt: user.subscriptionExpiresAt || null
+      }
+    };
+  }
+
+  async addCustomerNote(
+    userId: string,
+    adminId: string,
+    adminEmail: string,
+    content: string,
+    category: 'GENERAL' | 'SUPPORT' | 'FINANCIAL' | 'VIP' | 'FRAUD_ALERT' = 'GENERAL'
+  ): Promise<CustomerNoteRecord> {
+    const note: CustomerNoteRecord = {
+      id: 'cnote_' + crypto.randomBytes(8).toString('hex'),
+      userId,
+      adminId,
+      adminEmail,
+      content,
+      category,
+      createdAt: new Date().toISOString()
+    };
+    if (!this.data.customerNotes) this.data.customerNotes = [];
+    this.data.customerNotes.push(note);
+    await this.saveToFile();
+    await this.recordAuditEvent({
+      userId,
+      actorId: adminId,
+      actorRole: 'ADMIN',
+      action: 'CUSTOMER_NOTE_ADDED',
+      targetType: 'USER',
+      targetId: userId,
+      outcome: 'SUCCESS',
+      metadata: { noteId: note.id, category }
+    });
+    return note;
+  }
+
+  async listCustomerNotes(userId: string): Promise<CustomerNoteRecord[]> {
+    return (this.data.customerNotes || [])
+      .filter(n => n.userId === userId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async grantEntitlement(
+    userId: string,
+    featureKey: string,
+    durationDays: number | null,
+    source: 'ADMIN_GRANT' | 'PROMOTIONAL_GRANT' | 'SUPPORT_COMPENSATION' | 'TRIAL_GRANT' | 'PAID_SUBSCRIPTION',
+    grantedBy: string,
+    reason: string,
+    metadata?: any
+  ): Promise<EntitlementRecord> {
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    const grantedAt = new Date().toISOString();
+    const expiresAt = durationDays ? new Date(Date.now() + durationDays * 86400000).toISOString() : null;
+
+    const entitlement: EntitlementRecord = {
+      id: 'ent_' + crypto.randomBytes(8).toString('hex'),
+      userId,
+      featureKey,
+      source,
+      grantedBy,
+      grantedAt,
+      expiresAt,
+      reason,
+      isActive: true,
+      metadata: metadata || {}
+    };
+
+    if (!this.data.entitlements) this.data.entitlements = [];
+    this.data.entitlements.push(entitlement);
+
+    if (featureKey === 'PLUS' || featureKey === 'PREMIUM') {
+      const currentTier = user.subscriptionTier || 'FREE';
+      const rank = (t: string) => t === 'PREMIUM' ? 2 : t === 'PLUS' ? 1 : 0;
+      if (rank(featureKey) >= rank(currentTier) || user.subscriptionStatus !== 'ACTIVE') {
+        const updates: Partial<UserRecord> = {
+          subscriptionTier: featureKey as any,
+          subscriptionStatus: 'ACTIVE'
+        };
+        if (expiresAt) {
+          if (!user.subscriptionExpiresAt || new Date(expiresAt).getTime() > new Date(user.subscriptionExpiresAt).getTime()) {
+            updates.subscriptionExpiresAt = expiresAt;
+          }
+        } else {
+          updates.subscriptionExpiresAt = null;
+        }
+        await this.updateUser(user.id, updates);
+      }
+    }
+
+    await this.saveToFile();
+    await this.recordAuditEvent({
+      userId,
+      actorId: grantedBy,
+      actorRole: 'ADMIN',
+      action: 'ENTITLEMENT_GRANTED',
+      targetType: 'USER',
+      targetId: userId,
+      outcome: 'SUCCESS',
+      metadata: { entitlementId: entitlement.id, featureKey, durationDays, source, reason }
+    });
+
+    return entitlement;
+  }
+
+  async revokeEntitlement(
+    entitlementId: string,
+    revokedBy: string,
+    reason: string
+  ): Promise<{ success: boolean; entitlement: EntitlementRecord }> {
+    if (!this.data.entitlements) this.data.entitlements = [];
+    const ent = this.data.entitlements.find(e => e.id === entitlementId);
+    if (!ent) throw new Error('ENTITLEMENT_NOT_FOUND');
+
+    ent.isActive = false;
+
+    const user = await this.findUserById(ent.userId);
+    if (user && (ent.featureKey === 'PLUS' || ent.featureKey === 'PREMIUM')) {
+      const remainingTierEntitlements = this.data.entitlements.filter(
+        e => e.userId === user.id && e.isActive && (e.featureKey === 'PLUS' || e.featureKey === 'PREMIUM') &&
+             (!e.expiresAt || new Date(e.expiresAt).getTime() > Date.now())
+      );
+      if (remainingTierEntitlements.length > 0) {
+        const hasPremium = remainingTierEntitlements.some(e => e.featureKey === 'PREMIUM');
+        await this.updateUser(user.id, { subscriptionTier: hasPremium ? 'PREMIUM' : 'PLUS' });
+      } else {
+        const paidSubOrder = this.data.paymentOrders.find(
+          o => o.userId === user.id && o.status === OrderStatus.PAID && o.productType === 'SUBSCRIPTION'
+        );
+        if (!paidSubOrder) {
+          await this.updateUser(user.id, {
+            subscriptionTier: 'FREE',
+            subscriptionStatus: 'NONE',
+            subscriptionExpiresAt: null
+          });
+        }
+      }
+    }
+
+    await this.saveToFile();
+    await this.recordAuditEvent({
+      userId: ent.userId,
+      actorId: revokedBy,
+      actorRole: 'ADMIN',
+      action: 'ENTITLEMENT_REVOKED',
+      targetType: 'ENTITLEMENT',
+      targetId: entitlementId,
+      outcome: 'SUCCESS',
+      metadata: { entitlementId, featureKey: ent.featureKey, reason }
+    });
+
+    return { success: true, entitlement: ent };
+  }
+
+  async listEntitlements(options?: { userId?: string; activeOnly?: boolean }): Promise<EntitlementRecord[]> {
+    let result = [...(this.data.entitlements || [])];
+    if (options?.userId) {
+      result = result.filter(e => e.userId === options.userId);
+    }
+    if (options?.activeOnly) {
+      const now = Date.now();
+      result = result.filter(e => e.isActive && (!e.expiresAt || new Date(e.expiresAt).getTime() > now));
+    }
+    return result.sort((a, b) => new Date(b.grantedAt).getTime() - new Date(a.grantedAt).getTime());
+  }
+
+  async assignSubscriptionTier(
+    userId: string,
+    tier: 'FREE' | 'PLUS' | 'PREMIUM',
+    billingPeriod: 'MONTHLY' | 'ANNUAL' | null,
+    durationDays: number | null,
+    assignedBy: string,
+    reason: string
+  ): Promise<UserRecord> {
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    const updates: Partial<UserRecord> = {
+      subscriptionTier: tier,
+      subscriptionBillingPeriod: billingPeriod,
+      subscriptionStatus: tier === 'FREE' ? 'NONE' : 'ACTIVE',
+      subscriptionExpiresAt: durationDays ? new Date(Date.now() + durationDays * 86400000).toISOString() : null,
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedUser = await this.updateUser(user.id, updates);
+
+    if (tier !== 'FREE') {
+      await this.grantEntitlement(userId, tier, durationDays, 'ADMIN_GRANT', assignedBy, reason);
+    }
+
+    await this.recordAuditEvent({
+      userId,
+      actorId: assignedBy,
+      actorRole: 'ADMIN',
+      action: 'SUBSCRIPTION_ASSIGNED',
+      targetType: 'USER',
+      targetId: userId,
+      outcome: 'SUCCESS',
+      metadata: { tier, billingPeriod, durationDays, reason }
+    });
+
+    return updatedUser;
+  }
+
+  async extendSubscription(
+    userId: string,
+    additionalDays: number,
+    extendedBy: string,
+    reason: string
+  ): Promise<UserRecord> {
+    const user = await this.findUserById(userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    if (user.subscriptionTier === 'FREE' || !user.subscriptionTier) {
+      throw new Error('NO_ACTIVE_SUBSCRIPTION_TO_EXTEND');
+    }
+
+    const currentExpiryMs = user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).getTime() : Date.now();
+    const baseMs = Math.max(Date.now(), currentExpiryMs);
+    const newExpiryIso = new Date(baseMs + additionalDays * 86400000).toISOString();
+
+    const updatedUser = await this.updateUser(user.id, {
+      subscriptionExpiresAt: newExpiryIso,
+      subscriptionStatus: 'ACTIVE',
+      updatedAt: new Date().toISOString()
+    });
+
+    await this.recordAuditEvent({
+      userId,
+      actorId: extendedBy,
+      actorRole: 'ADMIN',
+      action: 'SUBSCRIPTION_EXTENDED',
+      targetType: 'USER',
+      targetId: userId,
+      outcome: 'SUCCESS',
+      metadata: { additionalDays, newExpiry: newExpiryIso, reason }
+    });
+
+    return updatedUser;
+  }
+
+  async getBusinessAnalytics() {
+    const paymentOrders = this.data.paymentOrders || [];
+    const users = this.data.users || [];
+    const ledgers = this.data.walletLedgers || [];
+
+    const paidOrders = paymentOrders.filter(o => o.status === OrderStatus.PAID);
+    const totalGrossCollectionsPaise = paidOrders.reduce((sum, o) => sum + (o.amountPaise || Math.round(o.amount * 100)), 0);
+    const totalGrossCollectionsRupees = totalGrossCollectionsPaise / 100;
+
+    let rechargeCollectionsPaise = 0;
+    let subscriptionCollectionsPaise = 0;
+    let reportCollectionsPaise = 0;
+    let otherCollectionsPaise = 0;
+
+    for (const o of paidOrders) {
+      const p = o.amountPaise || Math.round(o.amount * 100);
+      const type = (o.productType || '').toUpperCase();
+      if (type === 'WALLET_RECHARGE') rechargeCollectionsPaise += p;
+      else if (type === 'SUBSCRIPTION') subscriptionCollectionsPaise += p;
+      else if (type === 'REPORT' || type.startsWith('REPORT_')) reportCollectionsPaise += p;
+      else rechargeCollectionsPaise += p;
+    }
+
+    const promotionalEntries = ledgers.filter(l => l.entryType === EntryType.PROMOTIONAL_CREDIT && !l.isDemo);
+    const totalPromotionalCreditsGivenRupees = promotionalEntries.reduce((sum, l) => sum + (l.amount || 0), 0);
+    const activeWalletLiabilitiesRupees = users.reduce((sum, u) => sum + (u.walletBalance || 0), 0);
+
+    const totalRegisteredUsers = users.length;
+    const activeSubscribers = users.filter(u => u.subscriptionTier && u.subscriptionTier !== 'FREE' && u.subscriptionStatus === 'ACTIVE').length;
+
+    const recentPaidOrders = paidOrders
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10)
+      .map(o => ({
+        id: o.id,
+        userId: o.userId,
+        amount: o.amount,
+        currency: o.currency || 'INR',
+        provider: o.provider,
+        providerOrderId: o.providerOrderId,
+        productType: o.productType || 'WALLET_RECHARGE',
+        createdAt: o.createdAt
+      }));
+
+    return {
+      summary: {
+        totalGrossCollectionsPaise,
+        totalGrossCollectionsRupees,
+        rechargeCollectionsRupees: rechargeCollectionsPaise / 100,
+        subscriptionCollectionsRupees: subscriptionCollectionsPaise / 100,
+        reportCollectionsRupees: reportCollectionsPaise / 100,
+        otherCollectionsRupees: otherCollectionsPaise / 100,
+        totalPromotionalCreditsGivenRupees,
+        activeWalletLiabilitiesRupees,
+        totalRegisteredUsers,
+        activeSubscribers,
+        paidOrdersCount: paidOrders.length,
+        totalOrdersCount: paymentOrders.length
+      },
+      recentPaidOrders,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  async listPromotions(): Promise<PromotionRecord[]> {
+    return [...(this.data.promotions || [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createPromotion(promoData: {
+    code: string;
+    description: string;
+    discountType: 'PERCENTAGE' | 'FLAT_DISCOUNT' | 'BONUS_PERCENTAGE' | 'FREE_REPORT';
+    discountValue: number;
+    applicableTo: 'WALLET_RECHARGE' | 'SUBSCRIPTION' | 'REPORTS' | 'ALL';
+    minOrderAmount?: number;
+    maxDiscount?: number;
+    maxUses?: number;
+    durationDays?: number;
+    createdBy: string;
+  }): Promise<PromotionRecord> {
+    const cleanCode = promoData.code.trim().toUpperCase();
+    if (!this.data.promotions) this.data.promotions = [];
+    const exists = this.data.promotions.some(p => p.code === cleanCode);
+    if (exists) throw new Error('PROMO_CODE_EXISTS');
+
+    const durationDays = promoData.durationDays || 30;
+    const promotion: PromotionRecord = {
+      id: 'prm_' + crypto.randomBytes(8).toString('hex'),
+      code: cleanCode,
+      description: promoData.description,
+      discountType: promoData.discountType,
+      discountValue: promoData.discountValue,
+      applicableTo: promoData.applicableTo,
+      minOrderAmount: promoData.minOrderAmount || 0,
+      maxDiscount: promoData.maxDiscount,
+      maxUses: promoData.maxUses || 1000,
+      usedCount: 0,
+      startsAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + durationDays * 86400000).toISOString(),
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      createdBy: promoData.createdBy
+    };
+
+    this.data.promotions.push(promotion);
+    await this.saveToFile();
+    return promotion;
+  }
+
+  async togglePromotion(id: string, isActive: boolean): Promise<PromotionRecord> {
+    if (!this.data.promotions) this.data.promotions = [];
+    const promo = this.data.promotions.find(p => p.id === id);
+    if (!promo) throw new Error('PROMOTION_NOT_FOUND');
+    promo.isActive = isActive;
+    await this.saveToFile();
+    return promo;
+  }
+
+  async verifyAstrologer(id: string, isVerified: boolean): Promise<AstrologerRecord> {
+    const astro = this.data.astrologers.find(a => a.id === id);
+    if (!astro) throw new Error('ASTROLOGER_NOT_FOUND');
+    astro.isVerified = isVerified;
+    astro.updatedAt = new Date().toISOString();
+    await this.saveToFile();
+    return astro;
+  }
+
+  async listConsultationSessions(limit = 50): Promise<ConsultationSessionRecord[]> {
+    return [...(this.data.consultationSessions || [])]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
   }
 }
 
