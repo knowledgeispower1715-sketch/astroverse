@@ -4340,6 +4340,60 @@ app.post('/api/dasha/pds', async (req: Request, res: Response) => {
   });
 });
 
+app.post('/api/dasha/conventions', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const r = await fetch(`${kundliUrl}/api/dasha/conventions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(3000)
+    });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+  const { dob, lat, lon, moon_degree } = req.body || {};
+  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  const dobDate = new Date(dob);
+  let moonDeg = moon_degree;
+  if (moonDeg === undefined || moonDeg === null) {
+    const p = dob.split('T')[0];
+    const t = dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00';
+    const c = AstroCalculator.calculateChart(p, t, Number(lat) || 28.6139, Number(lon) || 77.2090, false);
+    moonDeg = c.planets.Moon.total_degree;
+  }
+  const result = AstroCalculator.compareVimshottariConventions(moonDeg, dobDate);
+  return res.json(result);
+});
+
+app.post('/api/birth-data/validate', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const r = await fetch(`${kundliUrl}/api/birth-data/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(3000)
+    });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+  const { dob, tob, lat, lon, timezone, is_unknown_time, birthplace } = req.body || {};
+  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  return res.json({
+    status: 'SUCCESS',
+    validation: {
+      birth_date: dob,
+      birth_time_local: is_unknown_time ? null : (tob || '12:00'),
+      is_unknown_time: Boolean(is_unknown_time),
+      time_precision_classification: is_unknown_time ? 'UNKNOWN_TIME_NOMINAL_MIDDAY' : 'EXACT_CIVIL_RECORDED',
+      latitude: Number(lat) || 28.6139,
+      longitude: Number(lon) || 77.2090,
+      iana_timezone: timezone || 'Asia/Kolkata',
+      birthplace: birthplace || 'New Delhi, India',
+      source: 'Node.js Express local validation'
+    }
+  });
+});
+
 // -----------------------------------------------------------------------------
 // MODULE 6: PERSONALISED REPORT DIAGNOSTICS
 // -----------------------------------------------------------------------------

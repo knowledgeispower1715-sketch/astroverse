@@ -99,6 +99,30 @@ for (const m of tsDasha.timeline) {
 assert(tsTotalAds === 81, `TypeScript Dasha must generate exactly 81 Antardashas (got: ${tsTotalAds})`);
 assert(tsTotalPds === 729, `TypeScript Dasha must generate exactly 729 Pratyantardashas (got: ${tsTotalPds})`);
 
+// Verify dual-key compatibility in active_now
+assert(tsDasha.active_now.maha_start !== undefined && tsDasha.active_now.maha_start_date !== undefined, 'active_now must provide both maha_start and maha_start_date');
+assert(tsDasha.active_now.antar_start !== undefined && tsDasha.active_now.antar_start_date !== undefined, 'active_now must provide both antar_start and antar_start_date');
+assert(tsDasha.active_now.pratyantar_start !== undefined && tsDasha.active_now.pratyantar_start_date !== undefined, 'active_now must provide both pratyantar_start and pratyantar_start_date');
+
+// Verify Vimshottari conventions comparison (DEF-003 / Phase 2)
+const convComp = AstroCalculator.compareVimshottariConventions(43.5, new Date('2000-01-01T12:00:00Z'));
+assert('gregorian_mean' in convComp.conventions, 'Conventions comparison must include gregorian_mean');
+assert('julian' in convComp.conventions, 'Conventions comparison must include julian');
+assert('savana_360' in convComp.conventions, 'Conventions comparison must include savana_360');
+assert(convComp.conventions.gregorian_mean.days_per_year === 365.2425, 'Gregorian mean-year must be 365.2425 days');
+assert(convComp.conventions.savana_360.days_per_year === 360.0, 'Savana year must be 360.0 days');
+assert(Math.abs(convComp.conventions.julian.drift_vs_gregorian_days) < 10, 'Julian drift over lifespan must be under 10 days');
+assert(Math.abs(convComp.conventions.savana_360.drift_vs_gregorian_days) > 100, 'Savana drift over lifespan must reflect >100 days difference');
+
+// Verify dynamic tzOffsetHours and methodology metadata in calculateChart (DEF-004)
+const chartIST = AstroCalculator.calculateChart('1990-05-15', '14:30', 28.6139, 77.2090, false, undefined, 5.5);
+const chartUTC = AstroCalculator.calculateChart('1990-05-15', '14:30', 28.6139, 77.2090, false, undefined, 0.0);
+assert(chartIST.lagna.total_degree !== chartUTC.lagna.total_degree, 'Lagna total degree must shift when tzOffsetHours varies between 5.5 and 0.0');
+assert(chartIST.metadata !== undefined, 'Chart must contain methodology metadata');
+assert(chartIST.metadata!.methodology_profile === 'ASTROVERSE_PARASHARI_LAHIRI_DRIK', 'Chart metadata must declare ASTROVERSE_PARASHARI_LAHIRI_DRIK');
+assert(chartIST.metadata!.ayanamsha === 'Lahiri / Chitra Paksha', 'Chart metadata must declare Lahiri / Chitra Paksha');
+assert(chartIST.metadata!.dasha_year_convention === 'Gregorian Mean-Year (365.2425 days)', 'Chart metadata must declare Gregorian Mean-Year convention');
+
 // ==============================================================================
 // 2. UPAGRAHA & KALAVELA MATHEMATICAL INVARIANTS
 // ==============================================================================

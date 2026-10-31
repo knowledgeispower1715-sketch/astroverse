@@ -286,6 +286,23 @@ class LiveTransitsRequest(BaseModel):
     natal_moon_idx: Optional[int] = Field(None, ge=0, le=11, description="Natal Moon sign index (0=Aries, 11=Pisces)")
     sav_bindus: Optional[List[int]] = Field(None, description="Sarvashtakavarga 12-element bindu array")
 
+class DashaConventionsRequest(BaseModel):
+    dob: str = Field(..., description="ISO 8601 birth datetime, e.g. '1995-06-15T10:30:00'")
+    lat: Optional[float] = 28.6139
+    lon: Optional[float] = 77.2090
+    timezone: Optional[str] = "Asia/Kolkata"
+    moon_degree: Optional[float] = None
+
+class BirthDataValidationRequest(BaseModel):
+    dob: str = Field(..., description="Birth date YYYY-MM-DD or ISO")
+    tob: Optional[str] = "12:00"
+    lat: float = Field(28.6139, ge=-90.0, le=90.0)
+    lon: float = Field(77.2090, ge=-180.0, le=180.0)
+    timezone: str = "Asia/Kolkata"
+    birthplace: Optional[str] = "New Delhi, India"
+    is_unknown_time: bool = False
+    time_uncertainty_minutes: int = 0
+
 @app.get("/api/health")
 def health_check():
     return {
@@ -667,6 +684,60 @@ def get_dasha_pds_endpoint(req: DashaPDSRequest):
             "antar_end": req.antar_end,
             "count": len(pds),
             "pratyantardashas": pds
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/dasha/conventions")
+def get_dasha_conventions_endpoint(req: DashaConventionsRequest):
+    """
+    Compares Vimshottari timelines across the three classical conventions:
+    1. Gregorian Mean-Year (365.2425 days) - Default
+    2. Julian (365.25 days)
+    3. Savana (360.0 days)
+    """
+    try:
+        from dasha_engine import compare_vimshottari_conventions
+        moon_deg = _resolve_moon_degree(req.dob, req.lat or 28.6139, req.lon or 77.2090, req.timezone or "Asia/Kolkata", req.moon_degree)
+        dob_clean = req.dob.replace("Z", "+00:00") if "Z" in req.dob else req.dob
+        dob_dt = datetime.fromisoformat(dob_clean)
+        return compare_vimshottari_conventions(moon_deg, dob_dt)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/birth-data/validate")
+def validate_birth_data_endpoint(req: BirthDataValidationRequest):
+    """
+    Validates birth data inputs, resolves historical IANA timezones and DST,
+    and returns sensitivity analysis for unknown or uncertain birth times.
+    """
+    try:
+        from birth_data_service import (
+            validate_and_normalize_birth_data,
+            analyze_unknown_time_sensitivity,
+            analyze_time_window_uncertainty
+        )
+        norm_res = validate_and_normalize_birth_data(
+            dob_str=req.dob,
+            tob_str=req.tob,
+            lat=req.lat,
+            lon=req.lon,
+            tz_str=req.timezone,
+            is_unknown_time=req.is_unknown_time,
+            birthplace=req.birthplace or "New Delhi, India",
+            time_uncertainty_minutes=req.time_uncertainty_minutes
+        )
+        sensitivity = None
+        if req.is_unknown_time:
+            sensitivity = analyze_unknown_time_sensitivity(req.dob, req.lat, req.lon, req.timezone)
+        elif req.time_uncertainty_minutes > 0 and req.tob:
+            sensitivity = analyze_time_window_uncertainty(
+                req.dob, req.tob, req.lat, req.lon, req.timezone, req.time_uncertainty_minutes
+            )
+        return {
+            "status": "SUCCESS",
+            "validation": norm_res,
+            "sensitivity_analysis": sensitivity
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

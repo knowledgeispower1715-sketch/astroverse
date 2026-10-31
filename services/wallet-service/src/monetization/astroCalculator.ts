@@ -11,6 +11,7 @@ import {
   EvaluatedTransits,
   YogaDoshaStatus
 } from './yogaDoshaRegistry';
+import { MethodologyMetadata, getMethodologyMetadataTS } from './astrologySettings';
 
 export const SIGNS = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -164,6 +165,7 @@ export interface CalculatedChart {
     sade_sati_active: boolean;
   };
   upagrahas?: EvaluatedUpagrahas;
+  metadata?: MethodologyMetadata;
 }
 
 export class AstroCalculator {
@@ -186,7 +188,8 @@ export class AstroCalculator {
     lat: number = 28.6139,
     lon: number = 77.2090,
     isUnknownTime: boolean = false,
-    externalD1Data?: any
+    externalD1Data?: any,
+    tzOffsetHours: number = 5.5
   ): CalculatedChart {
     const parts = dobStr.split('-');
     const year = parseInt(parts[0], 10) || 1995;
@@ -198,7 +201,7 @@ export class AstroCalculator {
       const tParts = tobStr.split(':');
       hours = (parseInt(tParts[0], 10) || 12) + (parseInt(tParts[1], 10) || 0) / 60.0;
     }
-    const utHours = hours - 5.5; // Indian Standard Time offset
+    const utHours = hours - tzOffsetHours; // Dynamic civil timezone offset (default: +5:30 IST)
     const jd = this.computeJD(year, month, day, utHours);
     const T = (jd - 2451545.0) / 36525.0;
     const d2r = Math.PI / 180;
@@ -459,7 +462,8 @@ export class AstroCalculator {
       doshas: yogaDoshaResult.doshas,
       transits: yogaDoshaResult.transits,
       yogaDoshaSummary: yogaDoshaResult.summary,
-      upagrahas: upagrahasResult
+      upagrahas: upagrahasResult,
+      metadata: getMethodologyMetadataTS('Asia/Kolkata')
     };
   }
 
@@ -733,10 +737,16 @@ export class AstroCalculator {
         pratyantar_dasha: activePds ? activePds.pratyantar_dasha : (activeAntar ? activeAntar.antar_dasha : activeMaha.maha_dasha),
         maha_start_date: activeMaha.start_date,
         maha_end_date: activeMaha.end_date,
+        maha_start: activeMaha.start_date,
+        maha_end: activeMaha.end_date,
         antar_start_date: activeAntar ? activeAntar.start_date : activeMaha.start_date,
         antar_end_date: activeAntar ? activeAntar.end_date : activeMaha.end_date,
+        antar_start: activeAntar ? activeAntar.start_date : activeMaha.start_date,
+        antar_end: activeAntar ? activeAntar.end_date : activeMaha.end_date,
         pratyantar_start_date: activePds ? activePds.start_date : (activeAntar ? activeAntar.start_date : activeMaha.start_date),
         pratyantar_end_date: activePds ? activePds.end_date : (activeAntar ? activeAntar.end_date : activeMaha.end_date),
+        pratyantar_start: activePds ? activePds.start_date : (activeAntar ? activeAntar.start_date : activeMaha.start_date),
+        pratyantar_end: activePds ? activePds.end_date : (activeAntar ? activeAntar.end_date : activeMaha.end_date),
         next_transition_date: activePds ? activePds.end_date : (activeAntar ? activeAntar.end_date : activeMaha.end_date),
         next_antar_dasha: nextAntarLord,
         next_maha_dasha: nextMahaLord,
@@ -753,9 +763,69 @@ export class AstroCalculator {
         pds_days_elapsed: Math.round(pPassedSec / 86400 * 10) / 10,
         pds_days_remaining: Math.round(Math.max(0, (pEndMs - refMs) / 86400000) * 10) / 10,
         pds_total_days: Math.round(pTotalSec / 86400 * 10) / 10,
-        pratyantardashas: activePdsList
+        pratyantardashas: activePdsList,
+        is_reference_instant_contained: true,
+        out_of_range_status: null
       },
       timeline
+    };
+  }
+
+  /**
+   * Comparative Vimshottari Convention Engine (365.2425 vs 365.25 vs 360.0 days)
+   */
+  public static compareVimshottariConventions(moonDegree: number, dob: Date): {
+    moon_degree: number;
+    nakshatra: string;
+    birth_lord: string;
+    conventions: Record<string, { days_per_year: number; total_120_cycle_days: number; birth_balance_days: number; timeline_end_iso: string; drift_vs_gregorian_days: number }>;
+    methodology_note: string;
+  } {
+    const nakSpan = 360.0 / 27.0;
+    const normMoon = ((moonDegree % 360.0) + 360.0) % 360.0;
+    const nakIdx = Math.floor(normMoon / nakSpan) % 27;
+    const degInNak = normMoon % nakSpan;
+    const fractionRemaining = 1.0 - (degInNak / nakSpan);
+
+    const firstLord = NAK_LORDS[nakIdx % 9];
+    const firstLordYears = DASHA_YEARS[firstLord] || 10;
+    const balanceYears = firstLordYears * fractionRemaining;
+    const dobMs = dob.getTime();
+
+    const conventions: Record<string, number> = {
+      gregorian_mean: 365.2425,
+      julian: 365.25,
+      savana_360: 360.0
+    };
+
+    const results: Record<string, any> = {};
+    let gregEndMs = 0;
+
+    for (const [convName, dPerYr] of Object.entries(conventions)) {
+      const totalCycleDays = 120.0 * dPerYr;
+      const balanceDays = balanceYears * dPerYr;
+      const livedDays = (120.0 - (firstLordYears - balanceYears)) * dPerYr;
+      const livedEndMs = dobMs + livedDays * 86400000;
+      if (convName === 'gregorian_mean') {
+        gregEndMs = livedEndMs;
+      }
+      const driftDays = Math.round(((livedEndMs - gregEndMs) / 86400000) * 100) / 100;
+
+      results[convName] = {
+        days_per_year: dPerYr,
+        total_120_cycle_days: Math.round(totalCycleDays * 10) / 10,
+        birth_balance_days: Math.round(balanceDays * 100) / 100,
+        timeline_end_iso: new Date(livedEndMs).toISOString().slice(0, 10),
+        drift_vs_gregorian_days: driftDays
+      };
+    }
+
+    return {
+      moon_degree: Math.round(normMoon * 10000) / 10000,
+      nakshatra: NAKSHATRAS[nakIdx] || 'Ashwini',
+      birth_lord: firstLord,
+      conventions: results,
+      methodology_note: 'AstroVerse defaults to Gregorian Mean-Year (365.2425 d) for civil calendar alignment. Julian differs by <1 day over 120 years. Savana 360-day accumulates -629 days (~1.72 years) drift.'
     };
   }
 

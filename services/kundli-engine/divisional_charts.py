@@ -588,9 +588,9 @@ def calculate_shashtyamsha(planets_d1: dict, lagna_d1_degree: float):
         "planets": d60_planets
     }
 
-def calculate_all_vargas(planets_d1: dict, lagna_d1_degree: float) -> dict:
+def calculate_all_vargas(planets_d1: dict, lagna_d1_degree: float, is_unknown_time: bool = False, include_metadata: bool = False) -> dict:
     """Calculates all 16 classical Parashari divisional charts (Complete Shodashavarga Suite D1 through D60)."""
-    return {
+    vargas = {
         "D1": {"lagna": round(lagna_d1_degree, 2), "planets": planets_d1},
         "D2": calculate_hora(planets_d1, lagna_d1_degree),
         "D3": calculate_drekkana(planets_d1, lagna_d1_degree),
@@ -608,3 +608,11 @@ def calculate_all_vargas(planets_d1: dict, lagna_d1_degree: float) -> dict:
         "D45": calculate_akshavedamsha(planets_d1, lagna_d1_degree),
         "D60": calculate_shashtyamsha(planets_d1, lagna_d1_degree)
     }
+    if include_metadata:
+        vargas["metadata"] = {
+            "methodology_profile": "ASTROVERSE_PARASHARI_LAHIRI_DRIK",
+            "vargas_suite": "Parashari Shodashavarga (16 Charts)",
+            "is_unknown_time": is_unknown_time,
+            "epistemic_warning": "High-harmonic divisional charts (D16 through D60) shift sign every 2 to 7 minutes of clock time. Exact birth time verification is required for subtle karmic analysis." if is_unknown_time else None
+        }
+    return vargas

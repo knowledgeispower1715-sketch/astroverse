@@ -142,11 +142,12 @@ def calculate_sun_times(
     target_date: date,
     latitude: float,
     longitude: float,
-    tz_name: str = "Asia/Kolkata"
-) -> Tuple[datetime, datetime, datetime]:
+    tz_name: str = "Asia/Kolkata",
+    return_fallback_flag: bool = False
+) -> Tuple[Any, ...]:
     """
     Computes exact local solar sunrise, sunset, and next sunrise using Swiss Ephemeris.
-    Returns localized (sunrise_dt, sunset_dt, next_sunrise_dt).
+    Returns localized (sunrise_dt, sunset_dt, next_sunrise_dt) or with fallback flag if requested.
     """
     tz = ZoneInfo(tz_name)
     dummy_dt = datetime(target_date.year, target_date.month, target_date.day, 12, 0, tzinfo=tz)
@@ -168,6 +169,8 @@ def calculate_sun_times(
         s_rise = datetime(target_date.year, target_date.month, target_date.day, 6, 0, 0, tzinfo=tz)
         s_set = datetime(target_date.year, target_date.month, target_date.day, 18, 0, 0, tzinfo=tz)
         s_next = s_rise + timedelta(days=1)
+        if return_fallback_flag:
+            return s_rise, s_set, s_next, True
         return s_rise, s_set, s_next
 
     res_next_rise, tret_next_rise = swe.rise_trans(tret_set[0], swe.SUN, swe.CALC_RISE, geopos)
@@ -178,6 +181,8 @@ def calculate_sun_times(
     sunset_dt = _jd_to_datetime(tret_set[0], tz_name)
     next_sunrise_dt = _jd_to_datetime(tret_next_rise[0], tz_name)
 
+    if return_fallback_flag:
+        return sunrise_dt, sunset_dt, next_sunrise_dt, False
     return sunrise_dt, sunset_dt, next_sunrise_dt
 
 def calculate_special_periods(

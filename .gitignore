@@ -27,6 +27,7 @@ env/
 .devin/
 .factory/
 codedb.snapshot
+.backups/
 
 # Testing
 test-artifacts/

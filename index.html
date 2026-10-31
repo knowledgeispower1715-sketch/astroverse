@@ -12915,7 +12915,9 @@
 
       return {
         metadata: {
+          methodology_profile: 'ASTROVERSE_PARASHARI_LAHIRI_DRIK',
           calculation_methodology: '2.0.0-gregorian-exact',
+          dasha_convention: 'Gregorian Mean-Year (365.2425 days)',
           days_per_year: daysPerYear,
           cycle_years: 120.0
         },
@@ -12930,6 +12932,12 @@
           maha_dasha: activeMaha.maha_dasha,
           antar_dasha: activeAntar ? activeAntar.antar_dasha : activeMaha.maha_dasha,
           pratyantar_dasha: activePds ? activePds.pratyantar_dasha : (activeAntar ? activeAntar.antar_dasha : activeMaha.maha_dasha),
+          maha_start: activeMaha.start_date,
+          maha_end: activeMaha.end_date,
+          antar_start: activeAntar ? activeAntar.start_date : activeMaha.start_date,
+          antar_end: activeAntar ? activeAntar.end_date : activeMaha.end_date,
+          pratyantar_start: activePds ? activePds.start_date : (activeAntar ? activeAntar.start_date : activeMaha.start_date),
+          pratyantar_end: activePds ? activePds.end_date : (activeAntar ? activeAntar.end_date : activeMaha.end_date),
           maha_start_date: activeMaha.start_date,
           maha_end_date: activeMaha.end_date,
           antar_start_date: activeAntar ? activeAntar.start_date : activeMaha.start_date,

@@ -100,9 +100,11 @@ def calculate_kundli(dob_iso: str, lat: float = 28.6139, lon: float = 77.2090, t
 
     planets = {}
     raw_longitudes = {}
+    last_iflag = 0
 
     for name, pid in PLANETS.items():
-        res, _ = swe.calc_ut(jd_ut, pid, swe.FLG_SIDEREAL | swe.FLG_SPEED)
+        res, iflag = swe.calc_ut(jd_ut, pid, swe.FLG_SIDEREAL | swe.FLG_SPEED)
+        last_iflag = iflag
         deg_360, speed = res[0], res[3]
         raw_longitudes[name] = deg_360
 
@@ -202,13 +204,18 @@ def calculate_kundli(dob_iso: str, lat: float = 28.6139, lon: float = 77.2090, t
     # Ayanamsha value
     ayanamsha_deg = swe.get_ayanamsa_ut(jd_ut)
 
+    from astrology_settings import get_methodology_metadata, get_ephemeris_source_info
+    base_meta = get_methodology_metadata(tz_identifier=tz_str, iflag=last_iflag)
+
     return {
         "metadata": {
+            **base_meta,
             "dob": dob_iso,
             "latitude": lat,
             "longitude": lon,
             "timezone": tz_str,
             "ayanamsha": "Lahiri (Chitrapaksha)",
+            "ayanamsha_canonical": "Lahiri / Chitra Paksha",
             "ayanamsha_degree": round(ayanamsha_deg, 4),
             "julian_day": round(jd_ut, 4)
         },

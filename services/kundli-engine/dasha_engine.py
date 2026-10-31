@@ -44,6 +44,17 @@ SIGNS = [
 
 DAYS_PER_YEAR = 365.2425
 
+def _normalize_dt(d: Optional[datetime]) -> datetime:
+    """
+    Normalizes any datetime (offset-aware or naive) into an unambiguous
+    timezone-naive UTC datetime to prevent TypeError comparisons.
+    """
+    if d is None:
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+    if d.tzinfo is not None:
+        return d.astimezone(timezone.utc).replace(tzinfo=None)
+    return d
+
 def calculate_antardashas(
     maha_lord: str,
     maha_start: datetime,
@@ -56,6 +67,8 @@ def calculate_antardashas(
     Antardasha duration formula = (Maha_Years * Antar_Years) / 120.0
     Sum of 9 Antardashas exactly equals maha_years with zero cumulative drift.
     """
+    maha_start = _normalize_dt(maha_start)
+    ref_dt = _normalize_dt(ref_dt)
     start_idx = DASHA_LORDS.index(maha_lord)
     antardashas = []
     curr = maha_start
@@ -118,8 +131,9 @@ def calculate_pratyantardashas(
     Sum of 9 Pratyantardashas exactly equals the parent Antardasha duration with zero drift.
     Authority: Brihat Parashara Hora Shastra, Ch. 46 (Vimshottari Dasha Sub-Sub-Division).
     """
-    if ref_dt is None:
-        ref_dt = datetime.now()
+    antar_start = _normalize_dt(antar_start)
+    antar_end = _normalize_dt(antar_end)
+    ref_dt = _normalize_dt(ref_dt)
 
     start_idx = DASHA_LORDS.index(antar_lord)
     pratyantardashas = []
@@ -191,8 +205,8 @@ def calculate_vimshottari_dasha(
     - ref_dt: Query reference instant (defaults to current time).
     - include_all_pds: If True, populates all 9 Pratyantardashas for every Antardasha across the 120-year tree.
     """
-    if ref_dt is None:
-        ref_dt = datetime.now()
+    dob_dt = _normalize_dt(dob_dt)
+    ref_dt = _normalize_dt(ref_dt)
 
     # 1. Moon Nakshatra & Dasha Balance at Birth
     nak_span = 360.0 / 27.0  # 13°20' (13.3333... degrees)
@@ -278,18 +292,22 @@ def calculate_vimshottari_dasha(
     active_antar = None
     next_antar_lord = None
     next_maha_lord = None
+    out_of_range_status = None
 
     for m_idx, d in enumerate(dashas):
         d_start = datetime.fromisoformat(d["start_date"])
         d_end = datetime.fromisoformat(d["end_date"])
-        if d_start <= ref_dt <= d_end:
+        is_last_m = (m_idx == len(dashas) - 1)
+        # Use half-open interval [start, end) except closed on final boundary of 120-year cycle
+        if (d_start <= ref_dt < d_end) or (is_last_m and d_start <= ref_dt <= d_end):
             active_maha = d
             next_maha_lord = dashas[(m_idx + 1) % len(dashas)]["maha_dasha"]
             ads = d.get("antardashas", [])
             for a_idx, ad in enumerate(ads):
                 ad_start = datetime.fromisoformat(ad["start_date"])
                 ad_end = datetime.fromisoformat(ad["end_date"])
-                if ad_start <= ref_dt <= ad_end:
+                is_last_a = (a_idx == len(ads) - 1)
+                if (ad_start <= ref_dt < ad_end) or (is_last_a and ad_start <= ref_dt <= ad_end):
                     active_antar = ad
                     if a_idx + 1 < len(ads):
                         next_antar_lord = ads[a_idx + 1]["antar_dasha"]
@@ -299,12 +317,21 @@ def calculate_vimshottari_dasha(
                     break
             break
 
-    # Fallback to first if before nominal start or historical
+    # Out-of-range detection (before birth or past 120-year lifespan)
     if not active_maha:
-        active_maha = dashas[0]
-        active_antar = dashas[0]["antardashas"][0]
-        next_antar_lord = dashas[0]["antardashas"][1]["antar_dasha"] if len(dashas[0]["antardashas"]) > 1 else None
-        next_maha_lord = dashas[1]["maha_dasha"]
+        nominal_start_dt = datetime.fromisoformat(dashas[0]["start_date"])
+        if ref_dt < nominal_start_dt:
+            out_of_range_status = "PRE_NATAL"
+            active_maha = dashas[0]
+            active_antar = dashas[0]["antardashas"][0]
+            next_antar_lord = dashas[0]["antardashas"][1]["antar_dasha"] if len(dashas[0]["antardashas"]) > 1 else None
+            next_maha_lord = dashas[1]["maha_dasha"]
+        else:
+            out_of_range_status = "EXPIRED_LIFESPAN"
+            active_maha = dashas[-1]
+            active_antar = dashas[-1]["antardashas"][-1]
+            next_antar_lord = DASHA_LORDS[0]
+            next_maha_lord = DASHA_LORDS[0]
 
     # Calculate exact progress percentages & day counts
     m_start = datetime.fromisoformat(active_maha["start_date"])
@@ -332,10 +359,17 @@ def calculate_vimshottari_dasha(
     active_pds = None
     next_pds_lord = None
     for p_idx, p in enumerate(active_pds_list):
-        if p.get("is_active"):
+        p_start_dt = datetime.fromisoformat(p["start_date"])
+        p_end_dt = datetime.fromisoformat(p["end_date"])
+        is_last_p = (p_idx == len(active_pds_list) - 1)
+        if (p_start_dt <= ref_dt < p_end_dt) or (is_last_p and p_start_dt <= ref_dt <= p_end_dt):
             active_pds = p
+            p["is_active"] = True
+            p["status"] = "CURRENT"
             if p_idx + 1 < len(active_pds_list):
                 next_pds_lord = active_pds_list[p_idx + 1]["pratyantar_dasha"]
+            else:
+                next_pds_lord = next_antar_lord
             break
 
     if not active_pds and active_pds_list:
@@ -354,10 +388,12 @@ def calculate_vimshottari_dasha(
     return {
         "metadata": {
             "calculation_methodology": METHODOLOGY_VERSION,
+            "profile": "ASTROVERSE_PARASHARI_LAHIRI_DRIK",
             "days_per_year": DAYS_PER_YEAR,
             "cycle_years": TOTAL_CYCLE_YEARS,
             "dasha_levels": ["Mahadasha", "Antardasha", "Pratyantardasha"],
-            "ayanamsha": "Lahiri (Chitra Paksha)"
+            "ayanamsha": "Lahiri (Chitra Paksha)",
+            "out_of_range_status": out_of_range_status
         },
         "birth_balance": {
             "ruling_lord": first_lord,
@@ -372,10 +408,16 @@ def calculate_vimshottari_dasha(
             "pratyantar_dasha": active_pds["pratyantar_dasha"] if active_pds else active_antar_lord,
             "maha_start_date": active_maha["start_date"],
             "maha_end_date": active_maha["end_date"],
+            "maha_start": active_maha["start_date"],
+            "maha_end": active_maha["end_date"],
             "antar_start_date": active_antar["start_date"] if active_antar else active_maha["start_date"],
             "antar_end_date": active_antar["end_date"] if active_antar else active_maha["end_date"],
+            "antar_start": active_antar["start_date"] if active_antar else active_maha["start_date"],
+            "antar_end": active_antar["end_date"] if active_antar else active_maha["end_date"],
             "pratyantar_start_date": active_pds["start_date"] if active_pds else (active_antar["start_date"] if active_antar else active_maha["start_date"]),
             "pratyantar_end_date": active_pds["end_date"] if active_pds else (active_antar["end_date"] if active_antar else active_maha["end_date"]),
+            "pratyantar_start": active_pds["start_date"] if active_pds else (active_antar["start_date"] if active_antar else active_maha["start_date"]),
+            "pratyantar_end": active_pds["end_date"] if active_pds else (active_antar["end_date"] if active_antar else active_maha["end_date"]),
             "next_transition_date": active_pds["end_date"] if active_pds else (active_antar["end_date"] if active_antar else active_maha["end_date"]),
             "next_antar_dasha_transition_date": active_antar["end_date"] if active_antar else active_maha["end_date"],
             "next_antar_dasha": next_antar_lord,
@@ -394,12 +436,70 @@ def calculate_vimshottari_dasha(
             "pds_days_remaining": pds_days_remaining,
             "pds_total_days": pds_total_days,
             "pratyantardashas": active_pds_list,
+            "out_of_range_status": out_of_range_status,
+            "is_reference_instant_contained": out_of_range_status is None,
             # Backward-compatibility aliases:
             "start_date": active_maha["start_date"],
             "end_date": active_maha["end_date"],
             "progress_percent": maha_progress_pct
         },
         "timeline": dashas
+    }
+
+def compare_vimshottari_conventions(
+    moon_degree: float,
+    dob_dt: datetime
+) -> Dict[str, Any]:
+    """
+    Computes comparative Vimshottari timelines across the three classical year-length conventions:
+    1. Gregorian Mean-Year (365.2425 days) - AstroVerse Primary
+    2. Julian Calendar (365.25 days)
+    3. Savana Traditional 360-Day Year (360.0 days)
+    Returns comparative cycle durations and end-of-life cumulative drift.
+    """
+    dob_dt = _normalize_dt(dob_dt)
+    nak_span = 360.0 / 27.0
+    nak_idx = int(moon_degree / nak_span) % 27
+    degree_into_nak = moon_degree % nak_span
+    fraction_remaining = 1.0 - (degree_into_nak / nak_span)
+
+    first_lord = DASHA_LORDS[nak_idx % 9]
+    first_lord_total_years = DASHA_YEARS[first_lord]
+    balance_years = first_lord_total_years * fraction_remaining
+
+    conventions = {
+        "gregorian_mean": 365.2425,
+        "julian": 365.25,
+        "savana_360": 360.0
+    }
+
+    results = {}
+    greg_end = None
+
+    for conv_name, d_per_yr in conventions.items():
+        total_cycle_days = 120.0 * d_per_yr
+        balance_days = balance_years * d_per_yr
+        lived_120_end = dob_dt + timedelta(days=(120.0 - (first_lord_total_years - balance_years)) * d_per_yr)
+        
+        if conv_name == "gregorian_mean":
+            greg_end = lived_120_end
+
+        drift_days = round((lived_120_end - greg_end).total_seconds() / 86400.0, 2) if greg_end else 0.0
+
+        results[conv_name] = {
+            "days_per_year": d_per_yr,
+            "total_120_cycle_days": round(total_cycle_days, 1),
+            "birth_balance_days": round(balance_days, 2),
+            "timeline_end_iso": lived_120_end.strftime("%Y-%m-%d"),
+            "drift_vs_gregorian_days": drift_days
+        }
+
+    return {
+        "moon_degree": round(moon_degree, 4),
+        "nakshatra": NAKSHATRA_NAMES[nak_idx],
+        "birth_lord": first_lord,
+        "conventions": results,
+        "methodology_note": "AstroVerse defaults to Gregorian Mean-Year (365.2425 d) for civil calendar alignment. Julian differs by <1 day over 120 years. Savana 360-day accumulates -629 days (~1.72 years) drift."
     }
 
 def calculate_live_transits(
