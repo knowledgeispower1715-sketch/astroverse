@@ -1363,8 +1363,8 @@
     .nav-links-row {
       display: flex;
       align-items: center;
-      gap: 4px;
-      flex-shrink: 1;
+      gap: 6px;
+      flex-shrink: 0;
       min-width: 0;
     }
     .nav-link-btn {
@@ -3220,31 +3220,154 @@
       }
     }
 
-    /* Desktop Compact Breakpoint (< 1536px) */
-    @media (max-width: 1536px) {
-      .active-profile-pill {
+    /* =========================================================================
+       UNIVERSAL RESPONSIVE NAVIGATION SYSTEM (DESKTOP, LAPTOP, TABLET, MOBILE)
+       ========================================================================= */
+
+    /* 1. Large Screen / Wide Desktop (> 1680px) */
+    @media (min-width: 1681px) {
+      .active-profile-pill,
+      #global-header-profile-chip {
+        display: none !important;
+      }
+      .nav-collapsible-secondary {
+        display: flex !important;
+      }
+      .nav-more-item-secondary {
+        display: none !important;
+      }
+    }
+
+    /* 2. Standard High-Res Desktop (1441px to 1680px) */
+    @media (max-width: 1680px) and (min-width: 1441px) {
+      .active-profile-pill,
+      #global-header-profile-chip {
+        display: none !important;
+      }
+      #global-tier-badge,
+      .tier-chip {
+        display: none !important;
+      }
+      #nav-btn-signup {
+        display: none !important;
+      }
+      .nav-collapsible-secondary {
+        display: flex !important;
+      }
+      .nav-more-item-secondary {
         display: none !important;
       }
       .nav-links-row {
-        gap: 3px !important;
+        gap: 5px !important;
       }
       .nav-link-btn {
-        padding: 6px 8px !important;
+        padding: 6px 9px !important;
         font-size: 13px !important;
       }
     }
 
-    /* Tablet Landscape & Medium Screen Breakpoint (< 1100px) */
-    @media (max-width: 1100px) {
+    /* 3. Intermediate Desktop & Standard Laptop (1180px to 1440px) - EXACT 1280px / 1366px FIT */
+    @media (max-width: 1440px) and (min-width: 1180px) {
+      .active-profile-pill,
+      #global-header-profile-chip {
+        display: none !important;
+      }
+      #global-tier-badge,
+      .tier-chip {
+        display: none !important;
+      }
+      #nav-btn-signup {
+        display: none !important;
+      }
+      .brand-tag {
+        display: none !important;
+      }
+      .brand-title {
+        font-size: 18px !important;
+      }
+      .main-navbar {
+        gap: 16px !important;
+        padding: 9px 18px !important;
+      }
+      .nav-links-row {
+        gap: 5px !important;
+      }
+      .nav-link-btn {
+        padding: 6px 10px !important;
+        font-size: 12.5px !important;
+      }
+      /* Collapse secondary navigation links into More menu */
+      .nav-collapsible-secondary {
+        display: none !important;
+      }
+      .nav-more-item-secondary {
+        display: flex !important;
+      }
+      .nav-right-actions {
+        gap: 8px !important;
+      }
+    }
+
+    /* Dynamic Container/Class-Based Intermediate Mode (via ResizeObserver) */
+    .main-navbar.nav-intermediate .nav-collapsible-secondary {
+      display: none !important;
+    }
+    .main-navbar.nav-intermediate .nav-more-item-secondary {
+      display: flex !important;
+    }
+    .main-navbar.nav-intermediate #global-tier-badge,
+    .main-navbar.nav-intermediate #nav-btn-signup,
+    .main-navbar.nav-intermediate .active-profile-pill,
+    .main-navbar.nav-intermediate #global-header-profile-chip,
+    .main-navbar.nav-intermediate .brand-tag {
+      display: none !important;
+    }
+
+    /* 3. Compact Header for Tablets & Medium Screens (< 1180px) */
+    @media (max-width: 1179px) {
       .mobile-menu-btn {
         display: inline-flex !important;
       }
       .nav-links-row {
         display: none !important;
       }
-      .active-profile-pill {
+      .active-profile-pill,
+      #global-header-profile-chip {
         display: none !important;
       }
+      #global-tier-badge,
+      .tier-chip {
+        display: none !important;
+      }
+      #nav-btn-signup {
+        display: none !important;
+      }
+      .brand-tag {
+        display: none !important;
+      }
+      .main-navbar {
+        padding: 8px 14px !important;
+        gap: 10px !important;
+      }
+      .nav-right-actions {
+        gap: 8px !important;
+        margin-left: auto !important;
+      }
+    }
+
+    /* Dynamic Container/Class-Based Compact Mode (via ResizeObserver) */
+    .main-navbar.nav-compact .mobile-menu-btn {
+      display: inline-flex !important;
+    }
+    .main-navbar.nav-compact .nav-links-row {
+      display: none !important;
+    }
+    .main-navbar.nav-compact #global-tier-badge,
+    .main-navbar.nav-compact #nav-btn-signup,
+    .main-navbar.nav-compact .active-profile-pill,
+    .main-navbar.nav-compact #global-header-profile-chip,
+    .main-navbar.nav-compact .brand-tag {
+      display: none !important;
     }
 
 
@@ -4864,23 +4987,9 @@
     }
 
     /* Active Birth Profile Header Chip */
-    .active-profile-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      background: rgba(30, 4, 8, 0.75);
-      border: 1px solid rgba(212, 175, 55, 0.32);
-      border-radius: var(--av-radius-full);
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--av-text-warm, #FFFBEB);
-      cursor: pointer;
-      transition: all var(--av-duration-normal) var(--av-easing-standard);
-      max-width: 320px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .active-profile-pill,
+    #global-header-profile-chip {
+      display: none !important; /* Preserved in dashboard welcome banner and mobile drawer */
     }
     .active-profile-pill:hover {
       border-color: var(--av-gold-bright, #F5C45E);
@@ -6109,13 +6218,13 @@
       <button class="nav-link-btn" id="btn-nav-horas" onclick="switchNavSection('horas')">
         <i class="fa-solid fa-clock"></i> Today &amp; Timing
       </button>
-      <button class="nav-link-btn" id="btn-nav-matchmaking" onclick="switchNavSection('matchmaking')">
+      <button class="nav-link-btn nav-collapsible-secondary" id="btn-nav-matchmaking" onclick="switchNavSection('matchmaking')">
         <i class="fa-solid fa-heart-pulse"></i> Compatibility
       </button>
       <button class="nav-link-btn" id="btn-nav-astrologers" onclick="switchNavSection('astrologers')">
         <i class="fa-solid fa-user-tie"></i> AI Astrologer
       </button>
-      <button class="nav-link-btn" id="btn-nav-horoscope" onclick="switchNavSection('horoscope')">
+      <button class="nav-link-btn nav-collapsible-secondary" id="btn-nav-horoscope" onclick="switchNavSection('horoscope')">
         <i class="fa-solid fa-star-and-crescent"></i> Horoscope
       </button>
       <!-- Desktop More Dropdown for Secondary Tools -->
@@ -6124,6 +6233,12 @@
           <span>More</span> <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
         </button>
         <div id="nav-more-dropdown-menu" class="nav-more-menu av-glass-dark av-glass-popover" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; min-width: 210px; background: rgba(24, 35, 58, 0.94); backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); padding: 6px; z-index: 1000;">
+          <button type="button" class="nav-dropdown-item nav-link-btn nav-more-item-secondary" id="btn-more-matchmaking" onclick="switchNavSection('matchmaking'); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px; display: none;">
+            <i class="fa-solid fa-heart-pulse" style="width: 18px; color: #F5C45E;"></i> Compatibility
+          </button>
+          <button type="button" class="nav-dropdown-item nav-link-btn nav-more-item-secondary" id="btn-more-horoscope" onclick="switchNavSection('horoscope'); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px; display: none;">
+            <i class="fa-solid fa-star-and-crescent" style="width: 18px; color: #F5C45E;"></i> Horoscope
+          </button>
           <button type="button" class="nav-dropdown-item nav-link-btn" id="btn-nav-tools" onclick="switchNavSection('tools'); closeNavMoreDropdown();" style="width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px;">
             <i class="fa-solid fa-toolbox" style="width: 18px; color: #F5C45E;"></i> Tools Directory
           </button>
@@ -11006,7 +11121,42 @@
       if (!e.target.closest('.nav-more-dropdown-wrap')) {
         closeNavMoreDropdown();
       }
+      if (!e.target.closest('#nav-user-dropdown-wrap')) {
+        if (typeof closeUserProfileDropdown === 'function') {
+          closeUserProfileDropdown();
+        }
+      }
     });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeNavMoreDropdown();
+        if (typeof closeUserProfileDropdown === 'function') closeUserProfileDropdown();
+        closeMobileNavDrawer();
+      }
+    });
+
+    // Dynamic Navigation Header Resize Observer (Continuous Viewport & Zoom Adaptation)
+    (function initDynamicNavbarObserver() {
+      if (typeof ResizeObserver === 'undefined') return;
+      const navbar = document.querySelector('.main-navbar');
+      if (!navbar) return;
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const w = entry.contentRect.width;
+          if (w < 1180) {
+            navbar.classList.add('nav-compact');
+            navbar.classList.remove('nav-intermediate');
+          } else if (w <= 1440) {
+            navbar.classList.add('nav-intermediate');
+            navbar.classList.remove('nav-compact');
+          } else {
+            navbar.classList.remove('nav-compact', 'nav-intermediate');
+          }
+        }
+      });
+      observer.observe(navbar);
+    })();
 
     // Mobile Drawer Navigation Controllers
     function toggleMobileNavDrawer() {

@@ -532,8 +532,40 @@
         font-weight: 700;
       }
       @media (max-width: 900px) {
+        .btn-admin-sidebar-toggle {
+          display: inline-flex !important;
+        }
         .admin-layout-container {
           grid-template-columns: 1fr !important;
+          position: relative;
+        }
+        .admin-sidebar {
+          display: none !important;
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          bottom: 0 !important;
+          width: min(280px, 85vw) !important;
+          z-index: 10500 !important;
+          background: #0B111E !important;
+          box-shadow: 4px 0 30px rgba(0,0,0,0.8) !important;
+          overflow-y: auto !important;
+          border-right: 1px solid rgba(212, 175, 55, 0.4) !important;
+        }
+        .admin-sidebar.open {
+          display: flex !important;
+        }
+        .admin-sidebar-backdrop {
+          display: none;
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          z-index: 10499;
+        }
+        .admin-sidebar-backdrop.open {
+          display: block !important;
         }
       }
     </style>
@@ -542,6 +574,9 @@
       <!-- Enterprise Owner Global Header -->
       <header class="admin-global-header" style="background: #0B111E; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 12px; padding: 12px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
         <div style="display: flex; align-items: center; gap: 14px;">
+          <button type="button" class="btn-outline-secondary btn-admin-sidebar-toggle" id="btn-admin-sidebar-toggle" onclick="toggleAdminSidebar()" style="display: none; align-items: center; gap: 6px; font-size: 11px; padding: 6px 12px; color: #F5C45E; border-color: rgba(212, 175, 55, 0.4); cursor: pointer; border-radius: 6px; background: rgba(212, 175, 55, 0.1);" aria-label="Toggle Admin Navigation">
+            <i class="fa-solid fa-bars"></i> <span>Modules</span>
+          </button>
           <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.05)); border: 1px solid rgba(212, 175, 55, 0.4); display: flex; align-items: center; justify-content: center; color: #F5C45E; font-size: 20px;">
             <i class="fa-solid fa-crown"></i>
           </div>
@@ -616,6 +651,9 @@
           <button class="category-pill" onclick="switchAdminModule('qa')"><i class="fa-solid fa-flask"></i> 16. Tier Simulator &amp; QA</button>
           <button class="category-pill" onclick="switchAdminModule('database')"><i class="fa-solid fa-database"></i> 17. Database Monitor</button>
         </div>
+
+        <!-- Admin Sidebar Mobile Backdrop -->
+        <div id="admin-sidebar-backdrop" class="admin-sidebar-backdrop" onclick="toggleAdminSidebar()"></div>
 
         <!-- 2-Column Responsive Operating Workspace -->
         <div class="admin-layout-container" style="display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: start;">
@@ -3176,6 +3214,14 @@
         }
       }
 
+      // Close mobile sidebar on navigation selection
+      if (window.innerWidth <= 900) {
+        const sidebar = document.querySelector('.admin-sidebar');
+        const backdrop = document.getElementById('admin-sidebar-backdrop');
+        if (sidebar) sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
+      }
+
       // Manage background monitoring polling
       if (canonicalMod === 'database') {
         loadAdminDatabaseMonitor();
@@ -3210,6 +3256,29 @@
         case 'consultations': loadAdminConsultations(); break;
       }
     }
+
+    function toggleAdminSidebar() {
+      const sidebar = document.querySelector('.admin-sidebar');
+      const backdrop = document.getElementById('admin-sidebar-backdrop');
+      if (!sidebar) return;
+      const isOpen = sidebar.classList.contains('open');
+      if (isOpen) {
+        sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
+      } else {
+        sidebar.classList.add('open');
+        if (backdrop) backdrop.classList.add('open');
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const sidebar = document.querySelector('.admin-sidebar');
+        const backdrop = document.getElementById('admin-sidebar-backdrop');
+        if (sidebar) sidebar.classList.remove('open');
+        if (backdrop) backdrop.classList.remove('open');
+      }
+    });
 
     function openAdminToolHarness(toolKey, updateHash = true) {
       const normTool = (toolKey || '').toLowerCase();
