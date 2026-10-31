@@ -10,7 +10,12 @@ import json
 
 from ephemeris import calculate_kundli
 from hora_engine import calculate_sun_times, calculate_24h_horas
-from dasha_engine import calculate_vimshottari_dasha
+from dasha_engine import (
+    calculate_vimshottari_dasha,
+    calculate_pratyantardashas,
+    calculate_antardasha_pds,
+    calculate_live_transits
+)
 from divisional_charts import (
     calculate_navamsha,
     calculate_dashamsha,
@@ -250,6 +255,36 @@ class TimingEvaluationRequest(BaseModel):
     target_lat: float = Field(28.6139, ge=-90.0, le=90.0)
     target_lon: float = Field(77.2090, ge=-180.0, le=180.0)
     target_timezone: str = Field("Asia/Kolkata", description="Target IANA Timezone")
+
+class DashaCurrentRequest(BaseModel):
+    dob: str = Field(..., description="ISO 8601 birth date and time, e.g. '1995-06-15T12:00:00'")
+    lat: Optional[float] = Field(28.6139, description="Latitude")
+    lon: Optional[float] = Field(77.2090, description="Longitude")
+    timezone: Optional[str] = Field("Asia/Kolkata", description="Timezone")
+    moon_degree: Optional[float] = Field(None, description="Natal Moon sidereal longitude (0-360). Computed if omitted.")
+    ref_dt: Optional[str] = Field(None, description="Query reference ISO timestamp (defaults to current time)")
+
+class DashaTimelineRequest(BaseModel):
+    dob: str = Field(..., description="ISO 8601 birth date and time")
+    lat: Optional[float] = Field(28.6139, description="Latitude")
+    lon: Optional[float] = Field(77.2090, description="Longitude")
+    timezone: Optional[str] = Field("Asia/Kolkata", description="Timezone")
+    moon_degree: Optional[float] = Field(None, description="Natal Moon sidereal longitude (0-360)")
+    ref_dt: Optional[str] = Field(None, description="Query reference ISO timestamp")
+    include_all_pds: bool = Field(True, description="Whether to include full 3-tier hierarchy (all 729 PDS)")
+
+class DashaPDSRequest(BaseModel):
+    maha_lord: str = Field(..., description="Parent Mahadasha lord, e.g. 'Jupiter'")
+    antar_lord: str = Field(..., description="Parent Antardasha lord, e.g. 'Saturn'")
+    antar_start: str = Field(..., description="Antardasha start date / ISO string")
+    antar_end: str = Field(..., description="Antardasha end date / ISO string")
+    ref_dt: Optional[str] = Field(None, description="Query reference ISO timestamp")
+
+class LiveTransitsRequest(BaseModel):
+    ref_dt: Optional[str] = Field(None, description="Target evaluation ISO datetime (defaults to current UTC)")
+    natal_lagna_idx: Optional[int] = Field(None, ge=0, le=11, description="Natal Lagna sign index (0=Aries, 11=Pisces)")
+    natal_moon_idx: Optional[int] = Field(None, ge=0, le=11, description="Natal Moon sign index (0=Aries, 11=Pisces)")
+    sav_bindus: Optional[List[int]] = Field(None, description="Sarvashtakavarga 12-element bindu array")
 
 @app.get("/api/health")
 def health_check():
@@ -558,6 +593,112 @@ def evaluate_timing_endpoint(req: TimingEvaluationRequest):
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+def _resolve_moon_degree(dob: str, lat: float = 28.6139, lon: float = 77.2090, tz_str: str = "Asia/Kolkata", moon_deg: Optional[float] = None) -> float:
+    if moon_deg is not None and 0.0 <= moon_deg < 360.0:
+        return moon_deg
+    d1 = calculate_kundli(dob, lat, lon, tz_str)
+    SIGNS = [
+        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+    ]
+    moon_sign_idx = SIGNS.index(d1["planets"]["Moon"]["sign"])
+    return (moon_sign_idx * 30.0) + d1["planets"]["Moon"]["degree"]
+
+@app.post("/api/dasha/current")
+def get_dasha_current_post(req: DashaCurrentRequest):
+    """Retrieves active Mahadasha, Antardasha, and Pratyantardasha (PDS) with exact progress percentages."""
+    try:
+        moon_deg = _resolve_moon_degree(req.dob, req.lat or 28.6139, req.lon or 77.2090, req.timezone or "Asia/Kolkata", req.moon_degree)
+        dob_clean = req.dob.replace("Z", "+00:00") if "Z" in req.dob else req.dob
+        dob_dt = datetime.fromisoformat(dob_clean)
+        ref_dt = datetime.fromisoformat(req.ref_dt.replace("Z", "+00:00") if "Z" in req.ref_dt else req.ref_dt) if req.ref_dt else None
+        res = calculate_vimshottari_dasha(moon_deg, dob_dt, ref_dt=ref_dt, include_all_pds=False)
+        return {
+            "status": "SUCCESS",
+            "metadata": res.get("metadata", {}),
+            "birth_balance": res.get("birth_balance", {}),
+            "active_now": res.get("active_now", {})
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/dasha/current")
+def get_dasha_current_get(
+    dob: str,
+    lat: float = 28.6139,
+    lon: float = 77.2090,
+    timezone: str = "Asia/Kolkata",
+    moon_degree: Optional[float] = None,
+    ref_dt: Optional[str] = None
+):
+    req = DashaCurrentRequest(dob=dob, lat=lat, lon=lon, timezone=timezone, moon_degree=moon_degree, ref_dt=ref_dt)
+    return get_dasha_current_post(req)
+
+@app.post("/api/dasha/timeline")
+def get_dasha_timeline_endpoint(req: DashaTimelineRequest):
+    """Calculates the complete 120-year Vimshottari lifecycle tree including all 9 Mahadashas, 81 Antardashas, and 729 PDS."""
+    try:
+        moon_deg = _resolve_moon_degree(req.dob, req.lat or 28.6139, req.lon or 77.2090, req.timezone or "Asia/Kolkata", req.moon_degree)
+        dob_clean = req.dob.replace("Z", "+00:00") if "Z" in req.dob else req.dob
+        dob_dt = datetime.fromisoformat(dob_clean)
+        ref_dt = datetime.fromisoformat(req.ref_dt.replace("Z", "+00:00") if "Z" in req.ref_dt else req.ref_dt) if req.ref_dt else None
+        return calculate_vimshottari_dasha(moon_deg, dob_dt, ref_dt=ref_dt, include_all_pds=req.include_all_pds)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/dasha/pds")
+def get_dasha_pds_endpoint(req: DashaPDSRequest):
+    """Retrieves the 9 proportional Pratyantardashas (PDS) for a specific Antardasha."""
+    try:
+        start_clean = req.antar_start.replace("Z", "+00:00") if "Z" in req.antar_start else req.antar_start
+        end_clean = req.antar_end.replace("Z", "+00:00") if "Z" in req.antar_end else req.antar_end
+        start_dt = datetime.fromisoformat(start_clean)
+        end_dt = datetime.fromisoformat(end_clean)
+        ref_dt = datetime.fromisoformat(req.ref_dt.replace("Z", "+00:00") if "Z" in req.ref_dt else req.ref_dt) if req.ref_dt else None
+        pds = calculate_antardasha_pds(req.maha_lord, req.antar_lord, start_dt, end_dt, ref_dt)
+        return {
+            "status": "SUCCESS",
+            "maha_lord": req.maha_lord,
+            "antar_lord": req.antar_lord,
+            "antar_start": req.antar_start,
+            "antar_end": req.antar_end,
+            "count": len(pds),
+            "pratyantardashas": pds
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/transits/live")
+def get_live_transits_post(req: LiveTransitsRequest):
+    """Calculates live Swiss Ephemeris Gochara transits cross-referenced against natal Lagna, Moon, and SAV bindus."""
+    try:
+        dt = datetime.fromisoformat(req.ref_dt.replace("Z", "+00:00") if "Z" in req.ref_dt else req.ref_dt) if req.ref_dt else None
+        return calculate_live_transits(
+            ref_dt=dt,
+            natal_lagna_idx=req.natal_lagna_idx,
+            natal_moon_idx=req.natal_moon_idx,
+            sav_bindus=req.sav_bindus
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/transits/live")
+def get_live_transits_get(
+    ref_dt: Optional[str] = None,
+    natal_lagna_idx: Optional[int] = None,
+    natal_moon_idx: Optional[int] = None
+):
+    """GET endpoint for live Swiss Ephemeris Gochara transits."""
+    try:
+        dt = datetime.fromisoformat(ref_dt.replace("Z", "+00:00") if "Z" in ref_dt else ref_dt) if ref_dt else None
+        return calculate_live_transits(
+            ref_dt=dt,
+            natal_lagna_idx=natal_lagna_idx,
+            natal_moon_idx=natal_moon_idx
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

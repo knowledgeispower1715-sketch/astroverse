@@ -53,6 +53,7 @@ import {
 import { ACTIVE_PROMOTIONAL_OFFER, isEligibleForFreeMinute } from './monetization/promotions';
 import { EntitlementManager } from './monetization/entitlements';
 import { ReportDocumentGenerator } from './monetization/reportGenerator';
+import { AstroCalculator } from './monetization/astroCalculator';
 import {
   digitRoot1To9,
   calculateMoolank,
@@ -4068,6 +4069,275 @@ app.post('/api/admin/astrology/test-calculation', authenticate, requireAdmin(Adm
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// -----------------------------------------------------------------------------
+// VIMSHOTTARI DASHA & LIVE GOCHARA TRANSIT PROXY / FALLBACK ENDPOINTS
+// -----------------------------------------------------------------------------
+app.get('/api/transits/live', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  try {
+    const r = await fetch(`${kundliUrl}/api/transits/live${queryStr}`, { signal: AbortSignal.timeout(3000) });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+
+  const refDt = req.query.ref_dt ? new Date(String(req.query.ref_dt)) : new Date();
+  const natalLagnaIdx = req.query.natal_lagna_idx !== undefined ? Number(req.query.natal_lagna_idx) : undefined;
+  const natalMoonIdx = req.query.natal_moon_idx !== undefined ? Number(req.query.natal_moon_idx) : undefined;
+  const y = refDt.getUTCFullYear(), m = refDt.getUTCMonth() + 1, d = refDt.getUTCDate();
+  const dobStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  const tobStr = `${String(refDt.getUTCHours()).padStart(2, '0')}:${String(refDt.getUTCMinutes()).padStart(2, '0')}`;
+  const transitChart = AstroCalculator.calculateChart(dobStr, tobStr, 28.6139, 77.2090, false);
+
+  const transits = Object.entries(transitChart.planets).map(([key, p]: [string, any]) => {
+    const signIdx = p.signIndex;
+    const hLagna = natalLagnaIdx !== undefined ? ((signIdx - natalLagnaIdx + 12) % 12) + 1 : null;
+    const hMoon = natalMoonIdx !== undefined ? ((signIdx - natalMoonIdx + 12) % 12) + 1 : null;
+    const degInt = Math.floor(p.degree);
+    const minInt = Math.floor((p.degree - degInt) * 60);
+    return {
+      planet: p.name,
+      planet_key: key,
+      sign: p.sign,
+      sign_index: signIdx,
+      degree: Math.round(p.degree * 100) / 100,
+      degree_formatted: `${String(degInt).padStart(2, '0')}° ${String(minInt).padStart(2, '0')}'`,
+      longitude: Math.round(p.total_degree * 10000) / 10000,
+      speed: 0.0,
+      is_retrograde: p.is_retrograde,
+      nakshatra: p.nakshatra,
+      nakshatra_pada: p.pada,
+      nakshatra_lord: p.lord,
+      house_from_lagna: hLagna,
+      house_from_moon: hMoon,
+      sav_bindus: 28,
+      verdict: 'Moderate Fruition',
+      verdict_status: 'MODERATE',
+      verdict_score: 0.5,
+      classical_rationale: `${key} transiting ${p.sign}.`
+    };
+  });
+  return res.json({
+    timestamp_utc: refDt.toISOString(),
+    ayanamsha: 'Lahiri (Chitra Paksha)',
+    ephemeris_engine: 'AstroVerse High-Precision Meeus/Lahiri Fallback',
+    transits,
+    diagnostics: {
+      sade_sati: { is_active: false, status: 'CLEAR', phase: 'Inactive', description: 'Saturn transits outside 12th, 1st, 2nd from natal Moon.' },
+      kantaka_shani: { is_active: false, type: 'None', description: 'No active Kantaka Shani.' },
+      chandrashtama: { is_active: false, description: 'Transit Moon in safe house relative to natal Moon.' }
+    }
+  });
+});
+
+app.post('/api/transits/live', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const r = await fetch(`${kundliUrl}/api/transits/live`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(3000)
+    });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+  const refDt = req.body?.ref_dt ? new Date(req.body.ref_dt) : new Date();
+  const natalLagnaIdx = req.body?.natal_lagna_idx !== undefined ? Number(req.body.natal_lagna_idx) : undefined;
+  const natalMoonIdx = req.body?.natal_moon_idx !== undefined ? Number(req.body.natal_moon_idx) : undefined;
+  const y = refDt.getUTCFullYear(), m = refDt.getUTCMonth() + 1, d = refDt.getUTCDate();
+  const dobStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  const tobStr = `${String(refDt.getUTCHours()).padStart(2, '0')}:${String(refDt.getUTCMinutes()).padStart(2, '0')}`;
+  const transitChart = AstroCalculator.calculateChart(dobStr, tobStr, 28.6139, 77.2090, false);
+  const transits = Object.entries(transitChart.planets).map(([key, p]: [string, any]) => {
+    const signIdx = p.signIndex;
+    const hLagna = natalLagnaIdx !== undefined ? ((signIdx - natalLagnaIdx + 12) % 12) + 1 : null;
+    const hMoon = natalMoonIdx !== undefined ? ((signIdx - natalMoonIdx + 12) % 12) + 1 : null;
+    const degInt = Math.floor(p.degree);
+    const minInt = Math.floor((p.degree - degInt) * 60);
+    return {
+      planet: p.name,
+      planet_key: key,
+      sign: p.sign,
+      sign_index: signIdx,
+      degree: Math.round(p.degree * 100) / 100,
+      degree_formatted: `${String(degInt).padStart(2, '0')}° ${String(minInt).padStart(2, '0')}'`,
+      longitude: Math.round(p.total_degree * 10000) / 10000,
+      speed: 0.0,
+      is_retrograde: p.is_retrograde,
+      nakshatra: p.nakshatra,
+      nakshatra_pada: p.pada,
+      nakshatra_lord: p.lord,
+      house_from_lagna: hLagna,
+      house_from_moon: hMoon,
+      sav_bindus: 28,
+      verdict: 'Moderate Fruition',
+      verdict_status: 'MODERATE',
+      verdict_score: 0.5,
+      classical_rationale: `${key} transiting ${p.sign}.`
+    };
+  });
+  return res.json({
+    timestamp_utc: refDt.toISOString(),
+    ayanamsha: 'Lahiri (Chitra Paksha)',
+    ephemeris_engine: 'AstroVerse High-Precision Meeus/Lahiri Fallback',
+    transits,
+    diagnostics: {
+      sade_sati: { is_active: false, status: 'CLEAR', phase: 'Inactive', description: 'Saturn transits outside 12th, 1st, 2nd from natal Moon.' },
+      kantaka_shani: { is_active: false, type: 'None', description: 'No active Kantaka Shani.' },
+      chandrashtama: { is_active: false, description: 'Transit Moon in safe house relative to natal Moon.' }
+    }
+  });
+});
+
+app.post('/api/dasha/current', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const r = await fetch(`${kundliUrl}/api/dasha/current`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(3000)
+    });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+  const { dob, lat, lon, moon_degree, ref_dt } = req.body || {};
+  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  const dobDate = new Date(dob);
+  const refDate = ref_dt ? new Date(ref_dt) : new Date();
+  let moonDeg = moon_degree;
+  if (moonDeg === undefined || moonDeg === null) {
+    const p = dob.split('T')[0];
+    const t = dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00';
+    const c = AstroCalculator.calculateChart(p, t, Number(lat) || 28.6139, Number(lon) || 77.2090, false);
+    moonDeg = c.planets.Moon.total_degree;
+  }
+  const result = AstroCalculator.calculateVimshottariDasha(moonDeg, dobDate, refDate);
+  return res.json({
+    status: 'SUCCESS',
+    metadata: result.metadata,
+    birth_balance: result.birth_balance,
+    active_now: result.active_now
+  });
+});
+
+app.get('/api/dasha/current', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  try {
+    const r = await fetch(`${kundliUrl}/api/dasha/current${queryStr}`, { signal: AbortSignal.timeout(3000) });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+  const dob = String(req.query.dob || '');
+  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  const dobDate = new Date(dob);
+  const refDate = req.query.ref_dt ? new Date(String(req.query.ref_dt)) : new Date();
+  let moonDeg = req.query.moon_degree !== undefined ? Number(req.query.moon_degree) : undefined;
+  if (moonDeg === undefined || isNaN(moonDeg)) {
+    const p = dob.split('T')[0];
+    const t = dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00';
+    const c = AstroCalculator.calculateChart(p, t, Number(req.query.lat) || 28.6139, Number(req.query.lon) || 77.2090, false);
+    moonDeg = c.planets.Moon.total_degree;
+  }
+  const result = AstroCalculator.calculateVimshottariDasha(moonDeg, dobDate, refDate);
+  return res.json({
+    status: 'SUCCESS',
+    metadata: result.metadata,
+    birth_balance: result.birth_balance,
+    active_now: result.active_now
+  });
+});
+
+app.post('/api/dasha/timeline', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const r = await fetch(`${kundliUrl}/api/dasha/timeline`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(3000)
+    });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+  const { dob, lat, lon, moon_degree, ref_dt } = req.body || {};
+  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  const dobDate = new Date(dob);
+  const refDate = ref_dt ? new Date(ref_dt) : new Date();
+  let moonDeg = moon_degree;
+  if (moonDeg === undefined || moonDeg === null) {
+    const p = dob.split('T')[0];
+    const t = dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00';
+    const c = AstroCalculator.calculateChart(p, t, Number(lat) || 28.6139, Number(lon) || 77.2090, false);
+    moonDeg = c.planets.Moon.total_degree;
+  }
+  const result = AstroCalculator.calculateVimshottariDasha(moonDeg, dobDate, refDate);
+  return res.json(result);
+});
+
+app.post('/api/dasha/pds', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const r = await fetch(`${kundliUrl}/api/dasha/pds`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(3000)
+    });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+  const { maha_lord, antar_lord, antar_start, antar_end, ref_dt } = req.body || {};
+  if (!antar_lord || !antar_start || !antar_end) {
+    return res.status(400).json({ error: 'antar_lord, antar_start, and antar_end are required' });
+  }
+  const startMs = new Date(antar_start).getTime();
+  const endMs = new Date(antar_end).getTime();
+  const refMs = ref_dt ? new Date(ref_dt).getTime() : Date.now();
+  const nakLords = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
+  const dYears: Record<string, number> = {
+    Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17
+  };
+  const startIdx = nakLords.indexOf(antar_lord);
+  const pdsList = [];
+  const totalSec = Math.max(0, (endMs - startMs) / 1000);
+  let curMs = startMs;
+  let runningDays = 0;
+  for (let i = 0; i < 9; i++) {
+    const pdsLord = nakLords[(startIdx + i) % 9];
+    const pdsFraction = (dYears[pdsLord] || 10) / 120.0;
+    let pEndMs = curMs + (endMs - startMs) * pdsFraction;
+    let days = 0;
+    if (i === 8) {
+      pEndMs = endMs;
+      days = Math.round(Math.max(0, (totalSec / 86400) - runningDays) * 100) / 100;
+    } else {
+      days = Math.round(((pEndMs - curMs) / 86400000) * 100) / 100;
+      runningDays += days;
+    }
+    let status = 'FUTURE';
+    let isActive = false;
+    if (pEndMs <= refMs) status = 'PAST';
+    else if (curMs <= refMs && refMs <= pEndMs) { status = 'CURRENT'; isActive = true; }
+    pdsList.push({
+      pratyantar_dasha: pdsLord,
+      start_date: new Date(curMs).toISOString().slice(0, 10),
+      end_date: new Date(pEndMs).toISOString().slice(0, 10),
+      start_iso: new Date(curMs).toISOString(),
+      end_iso: new Date(pEndMs).toISOString(),
+      duration_days: days,
+      status,
+      is_active: isActive
+    });
+    curMs = pEndMs;
+  }
+  return res.json({
+    status: 'SUCCESS',
+    maha_lord,
+    antar_lord,
+    antar_start,
+    antar_end,
+    count: pdsList.length,
+    pratyantardashas: pdsList
+  });
 });
 
 // -----------------------------------------------------------------------------

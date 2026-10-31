@@ -135,8 +135,17 @@ export interface CalculatedChart {
   currentDasha: {
     maha: string;
     antar: string;
+    pratyantar?: string;
     startDate: string;
     endDate: string;
+    antarStartDate?: string;
+    antarEndDate?: string;
+    pratyantarStartDate?: string;
+    pratyantarEndDate?: string;
+    nextTransitionDate?: string;
+    mahaProgressPct?: number;
+    antarProgressPct?: number;
+    pdsProgressPct?: number;
   };
   ashtakavargaSAV: number[]; // 12 houses bindu count summing to 337
   kujaDosha: {
@@ -377,30 +386,8 @@ export class AstroCalculator {
     }
 
     // Active Vimshottari Dasha calculation from Natal Moon
-    const moonNakIdx = planets.Moon.nakshatraIndex;
-    const moonNakDeg = (planets.Moon.total_degree % (360 / 27));
-    const nakSpan = 360 / 27; // 13°20' = 13.3333°
-    const elapsedFrac = moonNakDeg / nakSpan;
-    const birthLord = NAK_LORDS[moonNakIdx % 9];
-    const totalDashaYears = DASHA_YEARS[birthLord] || 10;
-    const remainingYears = totalDashaYears * (1 - elapsedFrac);
-
-    const birthDate = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
-    const ageNow = (Date.now() - birthDate.getTime()) / (365.25 * 86400000);
-
-    // Progress Dasha forward to current time
-    let curAge = 0;
-    let activeMaha = birthLord;
-    let lordIdx = NAK_LORDS.indexOf(birthLord);
-    let span = remainingYears;
-
-    while (curAge + span < ageNow) {
-      curAge += span;
-      lordIdx = (lordIdx + 1) % 9;
-      activeMaha = NAK_LORDS[lordIdx];
-      span = DASHA_YEARS[activeMaha];
-    }
-    const antarLord = NAK_LORDS[(lordIdx + 1) % 9];
+    const birthDate = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${tobStr || '12:00'}:00Z`);
+    const dashaResult = AstroCalculator.calculateVimshottariDasha(planets.Moon.total_degree, birthDate);
 
     // Sarvashtakavarga 337-Bindu Distribution (Canonical Baseline summing to exactly 337)
     const baseSAV = [28, 30, 28, 31, 29, 27, 29, 25, 31, 27, 28, 24]; // Sums exactly to 337
@@ -446,10 +433,19 @@ export class AstroCalculator {
       d10Planets,
       d10Lagna: { sign: SIGNS[d10LagnaSign], signIndex: d10LagnaSign },
       currentDasha: {
-        maha: activeMaha,
-        antar: antarLord,
-        startDate: new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0],
-        endDate: new Date(Date.now() + 275 * 86400000).toISOString().split('T')[0]
+        maha: dashaResult.active_now.maha_dasha,
+        antar: dashaResult.active_now.antar_dasha,
+        pratyantar: dashaResult.active_now.pratyantar_dasha,
+        startDate: dashaResult.active_now.maha_start_date,
+        endDate: dashaResult.active_now.maha_end_date,
+        antarStartDate: dashaResult.active_now.antar_start_date,
+        antarEndDate: dashaResult.active_now.antar_end_date,
+        pratyantarStartDate: dashaResult.active_now.pratyantar_start_date,
+        pratyantarEndDate: dashaResult.active_now.pratyantar_end_date,
+        nextTransitionDate: dashaResult.active_now.next_transition_date,
+        mahaProgressPct: dashaResult.active_now.maha_progress_pct,
+        antarProgressPct: dashaResult.active_now.antar_progress_pct,
+        pdsProgressPct: dashaResult.active_now.pds_progress_pct,
       },
       ashtakavargaSAV,
       kujaDosha: {
@@ -464,6 +460,302 @@ export class AstroCalculator {
       transits: yogaDoshaResult.transits,
       yogaDoshaSummary: yogaDoshaResult.summary,
       upagrahas: upagrahasResult
+    };
+  }
+
+  /**
+   * Authoritative 120-Year Vimshottari Dasha Engine (Parashari Cycle)
+   * Calculates Mahadasha, Antardasha, and Pratyantardasha (PDS) boundaries with 0-drift continuous intervals.
+   */
+  public static calculateVimshottariDasha(
+    moonDegree: number,
+    dob: Date,
+    refDate: Date = new Date()
+  ) {
+    const nakSpan = 360.0 / 27.0;
+    const normMoon = ((moonDegree % 360.0) + 360.0) % 360.0;
+    const nakIdx = Math.floor(normMoon / nakSpan) % 27;
+    const degInNak = normMoon % nakSpan;
+    const fractionPassed = degInNak / nakSpan;
+    const fractionRemaining = 1.0 - fractionPassed;
+
+    const firstLordIdx = nakIdx % 9;
+    const firstLord = NAK_LORDS[firstLordIdx];
+    const firstLordTotalYears = DASHA_YEARS[firstLord] || 10;
+    const remainingYearsFirst = firstLordTotalYears * fractionRemaining;
+    const elapsedYearsFirst = firstLordTotalYears * fractionPassed;
+
+    const dobMs = dob.getTime();
+    const refMs = refDate.getTime();
+    const daysPerYear = 365.2425;
+    const msPerYear = daysPerYear * 86400000;
+
+    const toIsoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+    const nominalBirthDashaStartMs = dobMs - (elapsedYearsFirst * msPerYear);
+
+    const getPDS = (antarLord: string, antarStartMs: number, antarEndMs: number) => {
+      const startIdx = NAK_LORDS.indexOf(antarLord);
+      const pdsList = [];
+      const totalSec = Math.max(0, (antarEndMs - antarStartMs) / 1000);
+      let curMs = antarStartMs;
+      let runningPdsDays = 0;
+
+      for (let i = 0; i < 9; i++) {
+        const pdsLord = NAK_LORDS[(startIdx + i) % 9];
+        const pdsFraction = (DASHA_YEARS[pdsLord] || 10) / 120.0;
+        let endMs = curMs + (antarEndMs - antarStartMs) * pdsFraction;
+        let pdsDays = 0;
+
+        if (i === 8) {
+          endMs = antarEndMs;
+          pdsDays = Math.round(Math.max(0, (totalSec / 86400) - runningPdsDays) * 100) / 100;
+        } else {
+          pdsDays = Math.round(((endMs - curMs) / 86400000) * 100) / 100;
+          runningPdsDays += pdsDays;
+        }
+
+        let status = 'FUTURE';
+        let isActive = false;
+        if (endMs <= refMs) {
+          status = 'PAST';
+        } else if (curMs <= refMs && refMs <= endMs) {
+          status = 'CURRENT';
+          isActive = true;
+        }
+
+        pdsList.push({
+          pratyantar_dasha: pdsLord,
+          start_date: toIsoDate(curMs),
+          end_date: toIsoDate(endMs),
+          start_iso: new Date(curMs).toISOString(),
+          end_iso: new Date(endMs).toISOString(),
+          duration_days: pdsDays,
+          status,
+          is_active: isActive
+        });
+        curMs = endMs;
+      }
+      return pdsList;
+    };
+
+    const getAntardashas = (mahaLord: string, mahaStartMs: number, mahaYears: number) => {
+      const startIdx = NAK_LORDS.indexOf(mahaLord);
+      const antars = [];
+      let curMs = mahaStartMs;
+      const totalMahaEndMs = mahaStartMs + (mahaYears * msPerYear);
+      let runningAdDays = 0;
+
+      for (let i = 0; i < 9; i++) {
+        const antarLord = NAK_LORDS[(startIdx + i) % 9];
+        const antarFraction = (DASHA_YEARS[antarLord] || 10) / 120.0;
+        const antarYears = mahaYears * antarFraction;
+        let endMs = curMs + (antarYears * msPerYear);
+        let adDays = 0;
+
+        if (i === 8) {
+          endMs = totalMahaEndMs;
+          adDays = Math.round(Math.max(0, ((totalMahaEndMs - mahaStartMs) / 86400000) - runningAdDays) * 100) / 100;
+        } else {
+          adDays = Math.round(((endMs - curMs) / 86400000) * 100) / 100;
+          runningAdDays += adDays;
+        }
+
+        let status = 'FUTURE';
+        let isActive = false;
+        if (endMs <= refMs) {
+          status = 'PAST';
+        } else if (curMs <= refMs && refMs <= endMs) {
+          status = 'CURRENT';
+          isActive = true;
+        }
+
+        const pds = getPDS(antarLord, curMs, endMs);
+
+        antars.push({
+          antar_dasha: antarLord,
+          start_date: toIsoDate(curMs),
+          end_date: toIsoDate(endMs),
+          start_iso: new Date(curMs).toISOString(),
+          end_iso: new Date(endMs).toISOString(),
+          duration_months: Math.round(antarYears * 12.0 * 10) / 10,
+          duration_years: Math.round(antarYears * 1000) / 1000,
+          duration_days: adDays,
+          status,
+          is_active: isActive,
+          pratyantardashas: pds
+        });
+        curMs = endMs;
+      }
+      return antars;
+    };
+
+    const firstMahaEndMs = nominalBirthDashaStartMs + (firstLordTotalYears * msPerYear);
+    const firstAntardashas = getAntardashas(firstLord, nominalBirthDashaStartMs, firstLordTotalYears);
+
+    let firstStatus = 'FUTURE';
+    let firstIsActive = false;
+    if (firstMahaEndMs <= refMs) {
+      firstStatus = 'PAST';
+    } else if (dobMs <= refMs && refMs <= firstMahaEndMs) {
+      firstStatus = 'CURRENT';
+      firstIsActive = true;
+    }
+
+    const timeline = [{
+      maha_dasha: firstLord,
+      start_date: toIsoDate(dobMs),
+      end_date: toIsoDate(firstMahaEndMs),
+      start_iso: new Date(dobMs).toISOString(),
+      end_iso: new Date(firstMahaEndMs).toISOString(),
+      duration_years: Math.round(remainingYearsFirst * 100) / 100,
+      years_remaining_at_birth: Math.round(remainingYearsFirst * 100) / 100,
+      status: firstStatus,
+      is_active: firstIsActive,
+      is_active_at_birth: true,
+      antardashas: firstAntardashas
+    }];
+
+    let currentStartMs = firstMahaEndMs;
+    for (let i = 1; i < 9; i++) {
+      const lord = NAK_LORDS[(firstLordIdx + i) % 9];
+      const years = DASHA_YEARS[lord] || 10;
+      const dEndMs = currentStartMs + (years * msPerYear);
+      const antardashas = getAntardashas(lord, currentStartMs, years);
+
+      let status = 'FUTURE';
+      let isActive = false;
+      if (dEndMs <= refMs) {
+        status = 'PAST';
+      } else if (currentStartMs <= refMs && refMs <= dEndMs) {
+        status = 'CURRENT';
+        isActive = true;
+      }
+
+      timeline.push({
+        maha_dasha: lord,
+        start_date: toIsoDate(currentStartMs),
+        end_date: toIsoDate(dEndMs),
+        start_iso: new Date(currentStartMs).toISOString(),
+        end_iso: new Date(dEndMs).toISOString(),
+        duration_years: years,
+        years_remaining_at_birth: years,
+        status,
+        is_active: isActive,
+        is_active_at_birth: false,
+        antardashas
+      });
+      currentStartMs = dEndMs;
+    }
+
+    let activeMaha: any = null;
+    let activeAntar: any = null;
+    let nextAntarLord: string | null = null;
+    let nextMahaLord: string | null = null;
+
+    for (let mIdx = 0; mIdx < timeline.length; mIdx++) {
+      const d = timeline[mIdx];
+      const dStart = new Date(d.start_iso).getTime();
+      const dEnd = new Date(d.end_iso).getTime();
+      if (dStart <= refMs && refMs <= dEnd) {
+        activeMaha = d;
+        nextMahaLord = timeline[(mIdx + 1) % timeline.length].maha_dasha;
+        const ads = d.antardashas || [];
+        for (let aIdx = 0; aIdx < ads.length; aIdx++) {
+          const ad = ads[aIdx];
+          const adStart = new Date(ad.start_iso).getTime();
+          const adEnd = new Date(ad.end_iso).getTime();
+          if (adStart <= refMs && refMs <= adEnd) {
+            activeAntar = ad;
+            if (aIdx + 1 < ads.length) {
+              nextAntarLord = ads[aIdx + 1].antar_dasha;
+            } else {
+              const nextAdLordIdx = (NAK_LORDS.indexOf(nextMahaLord)) % 9;
+              nextAntarLord = NAK_LORDS[nextAdLordIdx];
+            }
+            break;
+          }
+        }
+        break;
+      }
+    }
+
+    if (!activeMaha) {
+      activeMaha = timeline[0];
+      activeAntar = timeline[0].antardashas[0];
+      nextAntarLord = timeline[0].antardashas[1]?.antar_dasha || null;
+      nextMahaLord = timeline[1]?.maha_dasha || null;
+    }
+
+    const mStartMs = new Date(activeMaha.start_iso).getTime();
+    const mEndMs = new Date(activeMaha.end_iso).getTime();
+    const mTotalSec = Math.max(1, (mEndMs - mStartMs) / 1000);
+    const mPassedSec = Math.max(0, Math.min(mTotalSec, (refMs - mStartMs) / 1000));
+    const mahaProgressPct = Math.round((mPassedSec / mTotalSec) * 1000) / 10;
+
+    const aStartMs = activeAntar ? new Date(activeAntar.start_iso).getTime() : mStartMs;
+    const aEndMs = activeAntar ? new Date(activeAntar.end_iso).getTime() : mEndMs;
+    const aTotalSec = Math.max(1, (aEndMs - aStartMs) / 1000);
+    const aPassedSec = Math.max(0, Math.min(aTotalSec, (refMs - aStartMs) / 1000));
+    const antarProgressPct = Math.round((aPassedSec / aTotalSec) * 1000) / 10;
+
+    const activePdsList = activeAntar?.pratyantardashas || [];
+    let activePds = activePdsList.find((p: any) => p.is_active) || activePdsList[0] || null;
+    let nextPdsLord: string | null = null;
+    if (activePds) {
+      const pIdx = activePdsList.indexOf(activePds);
+      if (pIdx + 1 < activePdsList.length) {
+        nextPdsLord = activePdsList[pIdx + 1].pratyantar_dasha;
+      }
+    }
+
+    const pStartMs = activePds ? new Date(activePds.start_iso).getTime() : aStartMs;
+    const pEndMs = activePds ? new Date(activePds.end_iso).getTime() : aEndMs;
+    const pTotalSec = Math.max(1, (pEndMs - pStartMs) / 1000);
+    const pPassedSec = Math.max(0, Math.min(pTotalSec, (refMs - pStartMs) / 1000));
+    const pdsProgressPct = Math.round((pPassedSec / pTotalSec) * 1000) / 10;
+
+    return {
+      metadata: {
+        calculation_methodology: '2.0.0-gregorian-exact',
+        days_per_year: daysPerYear,
+        cycle_years: 120.0
+      },
+      birth_balance: {
+        ruling_lord: firstLord,
+        years_remaining: Math.round(remainingYearsFirst * 100) / 100,
+        nakshatra_number: nakIdx + 1,
+        nakshatra_name: NAKSHATRAS[nakIdx] || 'Ashwini',
+        fraction_remaining: Math.round(fractionRemaining * 10000) / 10000
+      },
+      active_now: {
+        maha_dasha: activeMaha.maha_dasha,
+        antar_dasha: activeAntar ? activeAntar.antar_dasha : activeMaha.maha_dasha,
+        pratyantar_dasha: activePds ? activePds.pratyantar_dasha : (activeAntar ? activeAntar.antar_dasha : activeMaha.maha_dasha),
+        maha_start_date: activeMaha.start_date,
+        maha_end_date: activeMaha.end_date,
+        antar_start_date: activeAntar ? activeAntar.start_date : activeMaha.start_date,
+        antar_end_date: activeAntar ? activeAntar.end_date : activeMaha.end_date,
+        pratyantar_start_date: activePds ? activePds.start_date : (activeAntar ? activeAntar.start_date : activeMaha.start_date),
+        pratyantar_end_date: activePds ? activePds.end_date : (activeAntar ? activeAntar.end_date : activeMaha.end_date),
+        next_transition_date: activePds ? activePds.end_date : (activeAntar ? activeAntar.end_date : activeMaha.end_date),
+        next_antar_dasha: nextAntarLord,
+        next_maha_dasha: nextMahaLord,
+        next_pratyantar_dasha: nextPdsLord,
+        maha_progress_pct: mahaProgressPct,
+        antar_progress_pct: antarProgressPct,
+        pds_progress_pct: pdsProgressPct,
+        maha_days_elapsed: Math.round(mPassedSec / 86400 * 10) / 10,
+        maha_days_remaining: Math.round(Math.max(0, (mEndMs - refMs) / 86400000) * 10) / 10,
+        maha_total_days: Math.round(mTotalSec / 86400 * 10) / 10,
+        antar_days_elapsed: Math.round(aPassedSec / 86400 * 10) / 10,
+        antar_days_remaining: Math.round(Math.max(0, (aEndMs - refMs) / 86400000) * 10) / 10,
+        antar_total_days: Math.round(aTotalSec / 86400 * 10) / 10,
+        pds_days_elapsed: Math.round(pPassedSec / 86400 * 10) / 10,
+        pds_days_remaining: Math.round(Math.max(0, (pEndMs - refMs) / 86400000) * 10) / 10,
+        pds_total_days: Math.round(pTotalSec / 86400 * 10) / 10,
+        pratyantardashas: activePdsList
+      },
+      timeline
     };
   }
 

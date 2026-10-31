@@ -7430,14 +7430,19 @@
                     <span style="font-size: 12px; font-weight: 800; color: #78350F; background: #FDE68A; padding: 3px 10px; border-radius: 999px;" id="disp-cur-maha">--</span>
                   </div>
 
-                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #451A03; margin-bottom: 12px; flex-wrap: wrap; gap: 4px;">
-                    <div>Current Antardasha: <strong id="disp-cur-antar" style="color: var(--av-color-maroon-800);">--</strong></div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #451A03; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <div>Current Antardasha: <strong id="disp-cur-antar" style="color: var(--av-color-maroon-800);">--</strong></div>
+                      <div style="font-size: 12px; font-weight: 700; color: #78350F; background: #FDE68A; padding: 2px 8px; border-radius: 6px;">
+                        Active PDS: <strong id="disp-cur-pds" style="color: #92400E;">--</strong>
+                      </div>
+                    </div>
                     <div id="disp-next-transition-box" style="font-size: 11.5px; font-weight: 700; color: #B45309; background: #FEF3C7; border: 1px solid #FCD34D; padding: 2px 8px; border-radius: 6px;">
                       <i class="fa-solid fa-arrow-right"></i> Next Transition: <span id="disp-next-transition-val">--</span>
                     </div>
                   </div>
 
-                  <!-- Dual Progress Bars: Mahadasha & Antardasha -->
+                  <!-- Triple Progress Bars: Mahadasha, Antardasha & Pratyantardasha (PDS) -->
                   <div style="margin-bottom: 12px;">
                     <div style="display: flex; justify-content: space-between; font-size: 11px; color: #78350F; margin-bottom: 3px;">
                       <span>Mahadasha Progress: <strong id="disp-maha-prog-pct">--%</strong></span>
@@ -7451,8 +7456,16 @@
                       <span>Antardasha Progress: <strong id="disp-antar-prog-pct">--%</strong></span>
                       <span id="disp-antar-dates">-- to --</span>
                     </div>
-                    <div style="height: 6px; background: #A7F3D0; border-radius: 3px; overflow: hidden;">
+                    <div style="height: 6px; background: #A7F3D0; border-radius: 3px; overflow: hidden; margin-bottom: 8px;">
                       <div id="disp-antar-fill" style="width: 0%; height: 100%; background: #059669; transition: width 0.5s;"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #9A3412; margin-bottom: 3px;">
+                      <span>Pratyantardasha (PDS) Progress: <strong id="disp-pds-prog-pct">--%</strong></span>
+                      <span id="disp-pds-dates">-- to --</span>
+                    </div>
+                    <div style="height: 6px; background: #FFEDD5; border-radius: 3px; overflow: hidden;">
+                      <div id="disp-pds-fill" style="width: 0%; height: 100%; background: #EA580C; transition: width 0.5s;"></div>
                     </div>
                   </div>
 
@@ -7559,6 +7572,12 @@
                   <span id="title-live-gochara">Live Planetary Gochara (Natal Lagna, Moon &amp; SAV Cross-Reference)</span>
                 </h4>
                 <p style="font-size: 12px; color: var(--av-color-text-secondary); margin-bottom: 12px;" id="desc-live-gochara">Active planetary transits evaluated against your birth chart's Sarvashtakavarga bindus and active Dasha lords.</p>
+
+                <!-- Dynamic Transit Diagnostics Badges -->
+                <div id="gochara-diagnostics-bar" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 14px;">
+                  <!-- Populated dynamically: Sade Sati, Kantaka Shani, Chandrashtama, Dasha-Transit Synergy -->
+                </div>
+
                 <div class="table-responsive-box">
                   <table class="table-astro-data">
                     <thead>
@@ -12676,15 +12695,26 @@
 
       const nominalBirthDashaStartMs = dobMs - (elapsedYearsFirst * msPerYear);
 
-      function getAntardashas(mahaLord, mahaStartMs, mahaYears) {
-        const startIdx = nakLordCycle.indexOf(mahaLord);
-        const antars = [];
-        let curMs = mahaStartMs;
+      function getPratyantardashas(antarLord, antarStartMs, antarEndMs) {
+        const startIdx = nakLordCycle.indexOf(antarLord);
+        const pdsList = [];
+        const totalSec = Math.max(0, (antarEndMs - antarStartMs) / 1000);
+        let curMs = antarStartMs;
+        let runningPdsDays = 0;
+
         for (let i = 0; i < 9; i++) {
-          const antarLord = nakLordCycle[(startIdx + i) % 9];
-          const antarFraction = dashaYears[antarLord] / 120.0;
-          const antarYears = mahaYears * antarFraction;
-          const endMs = curMs + (antarYears * msPerYear);
+          const pdsLord = nakLordCycle[(startIdx + i) % 9];
+          const pdsFraction = dashaYears[pdsLord] / 120.0;
+          let endMs = curMs + (antarEndMs - antarStartMs) * pdsFraction;
+          let pdsDays = 0;
+
+          if (i === 8) {
+            endMs = antarEndMs;
+            pdsDays = Math.round(Math.max(0, (totalSec / 86400) - runningPdsDays) * 100) / 100;
+          } else {
+            pdsDays = Math.round(((endMs - curMs) / 86400000) * 100) / 100;
+            runningPdsDays += pdsDays;
+          }
 
           let status = 'FUTURE';
           let isActive = false;
@@ -12695,14 +12725,66 @@
             isActive = true;
           }
 
+          pdsList.push({
+            pratyantar_dasha: pdsLord,
+            start_date: toIsoDate(curMs),
+            end_date: toIsoDate(endMs),
+            start_iso: new Date(curMs).toISOString(),
+            end_iso: new Date(endMs).toISOString(),
+            duration_days: pdsDays,
+            status,
+            is_active: isActive
+          });
+          curMs = endMs;
+        }
+        return pdsList;
+      }
+
+      function getAntardashas(mahaLord, mahaStartMs, mahaYears) {
+        const startIdx = nakLordCycle.indexOf(mahaLord);
+        const antars = [];
+        let curMs = mahaStartMs;
+        const totalMahaEndMs = mahaStartMs + (mahaYears * msPerYear);
+        let runningAdDays = 0;
+
+        for (let i = 0; i < 9; i++) {
+          const antarLord = nakLordCycle[(startIdx + i) % 9];
+          const antarFraction = dashaYears[antarLord] / 120.0;
+          const antarYears = mahaYears * antarFraction;
+          let endMs = curMs + (antarYears * msPerYear);
+          let adDays = 0;
+
+          if (i === 8) {
+            endMs = totalMahaEndMs;
+            adDays = Math.round(Math.max(0, ((totalMahaEndMs - mahaStartMs) / 86400000) - runningAdDays) * 100) / 100;
+          } else {
+            adDays = Math.round(((endMs - curMs) / 86400000) * 100) / 100;
+            runningAdDays += adDays;
+          }
+
+          let status = 'FUTURE';
+          let isActive = false;
+          if (endMs <= refMs) {
+            status = 'PAST';
+          } else if (curMs <= refMs && refMs <= endMs) {
+            status = 'CURRENT';
+            isActive = true;
+          }
+
+          const pdsList = getPratyantardashas(antarLord, curMs, endMs);
+
           antars.push({
             antar_dasha: antarLord,
             start_date: toIsoDate(curMs),
             end_date: toIsoDate(endMs),
+            start_iso: new Date(curMs).toISOString(),
+            end_iso: new Date(endMs).toISOString(),
             duration_months: Math.round(antarYears * 12.0 * 10) / 10,
             duration_years: Math.round(antarYears * 1000) / 1000,
+            duration_days: adDays,
             status,
-            is_active: isActive
+            is_active: isActive,
+            pratyantardashas: pdsList
           });
           curMs = endMs;
         }
@@ -12815,7 +12897,28 @@
       const aPassedSec = Math.max(0, Math.min(aTotalSec, (refMs - aStartMs) / 1000));
       const antarProgressPct = Math.round((aPassedSec / aTotalSec) * 1000) / 10;
 
+      const activePdsList = activeAntar?.pratyantardashas || [];
+      let activePds = activePdsList.find(p => p.is_active) || activePdsList[0] || null;
+      let nextPdsLord = null;
+      if (activePds) {
+        const pIdx = activePdsList.indexOf(activePds);
+        if (pIdx + 1 < activePdsList.length) {
+          nextPdsLord = activePdsList[pIdx + 1].pratyantar_dasha;
+        }
+      }
+
+      const pStartMs = activePds ? new Date(activePds.start_date).getTime() : aStartMs;
+      const pEndMs = activePds ? new Date(activePds.end_date).getTime() : aEndMs;
+      const pTotalSec = Math.max(1, (pEndMs - pStartMs) / 1000);
+      const pPassedSec = Math.max(0, Math.min(pTotalSec, (refMs - pStartMs) / 1000));
+      const pdsProgressPct = Math.round((pPassedSec / pTotalSec) * 1000) / 10;
+
       return {
+        metadata: {
+          calculation_methodology: '2.0.0-gregorian-exact',
+          days_per_year: daysPerYear,
+          cycle_years: 120.0
+        },
         birth_balance: {
           ruling_lord: firstLord,
           years_remaining: Math.round(remainingYearsFirst * 100) / 100,
@@ -12826,15 +12929,30 @@
         active_now: {
           maha_dasha: activeMaha.maha_dasha,
           antar_dasha: activeAntar ? activeAntar.antar_dasha : activeMaha.maha_dasha,
+          pratyantar_dasha: activePds ? activePds.pratyantar_dasha : (activeAntar ? activeAntar.antar_dasha : activeMaha.maha_dasha),
           maha_start_date: activeMaha.start_date,
           maha_end_date: activeMaha.end_date,
           antar_start_date: activeAntar ? activeAntar.start_date : activeMaha.start_date,
           antar_end_date: activeAntar ? activeAntar.end_date : activeMaha.end_date,
-          next_transition_date: activeAntar ? activeAntar.end_date : activeMaha.end_date,
+          pratyantar_start_date: activePds ? activePds.start_date : (activeAntar ? activeAntar.start_date : activeMaha.start_date),
+          pratyantar_end_date: activePds ? activePds.end_date : (activeAntar ? activeAntar.end_date : activeMaha.end_date),
+          next_transition_date: activePds ? activePds.end_date : (activeAntar ? activeAntar.end_date : activeMaha.end_date),
           next_antar_dasha: nextAntarLord,
           next_maha_dasha: nextMahaLord,
+          next_pratyantar_dasha: nextPdsLord,
           maha_progress_pct: mahaProgressPct,
           antar_progress_pct: antarProgressPct,
+          pds_progress_pct: pdsProgressPct,
+          maha_days_elapsed: Math.round(mPassedSec / 86400 * 10) / 10,
+          maha_days_remaining: Math.round(Math.max(0, (mEndMs - refMs) / 86400000) * 10) / 10,
+          maha_total_days: Math.round(mTotalSec / 86400 * 10) / 10,
+          antar_days_elapsed: Math.round(aPassedSec / 86400 * 10) / 10,
+          antar_days_remaining: Math.round(Math.max(0, (aEndMs - refMs) / 86400000) * 10) / 10,
+          antar_total_days: Math.round(aTotalSec / 86400 * 10) / 10,
+          pds_days_elapsed: Math.round(pPassedSec / 86400 * 10) / 10,
+          pds_days_remaining: Math.round(Math.max(0, (pEndMs - refMs) / 86400000) * 10) / 10,
+          pds_total_days: Math.round(pTotalSec / 86400 * 10) / 10,
+          pratyantardashas: activePdsList,
           start_date: activeMaha.start_date,
           end_date: activeMaha.end_date,
           progress_percent: mahaProgressPct
@@ -31706,13 +31824,168 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
     }
 
     // ==============================================================================
-    // DASHA & TRANSITS VIEW WITH INTERACTIVE ANTARDASHA DRILL-DOWN & GOCHARA TABLE
+    // DASHA & TRANSITS VIEW WITH 3-TIER EXPANDABLE TIMELINE & LIVE GOCHARA ENGINE
     // ==============================================================================
     let expandedDashaLord = null;
+    let expandedAntarKey = null;
 
     function toggleDashaTimelineExpand(lord) {
       expandedDashaLord = (expandedDashaLord === lord) ? null : lord;
       renderKundliDashasView();
+    }
+
+    function toggleAntarTimelineExpand(mahaLord, antarLord) {
+      const key = `${mahaLord}_${antarLord}`;
+      expandedAntarKey = (expandedAntarKey === key) ? null : key;
+      renderKundliDashasView();
+    }
+
+    function calculateClientLiveTransits(refDate, natalLagnaIdx, natalMoonIdx, savData) {
+      const dt = refDate ? new Date(refDate) : new Date();
+      const y = dt.getUTCFullYear();
+      const m = dt.getUTCMonth() + 1;
+      const d = dt.getUTCDate();
+      const dobStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const tobStr = `${String(dt.getUTCHours()).padStart(2, '0')}:${String(dt.getUTCMinutes()).padStart(2, '0')}`;
+      const c = calculateClientKundli(dobStr, tobStr, 28.6139, 77.2090, false);
+      const planets = c.planets || {};
+
+      const planetSpecs = [
+        { key: 'Sun', display: 'Sun (Surya)', fav: [3, 6, 10, 11] },
+        { key: 'Moon', display: 'Moon (Chandra)', fav: [1, 3, 6, 7, 10, 11] },
+        { key: 'Mars', display: 'Mars (Mangal)', fav: [3, 6, 11] },
+        { key: 'Mercury', display: 'Mercury (Budha)', fav: [2, 4, 6, 8, 10, 11] },
+        { key: 'Jupiter', display: 'Jupiter (Guru)', fav: [2, 5, 7, 9, 11] },
+        { key: 'Venus', display: 'Venus (Shukra)', fav: [1, 2, 3, 4, 5, 8, 9, 11, 12] },
+        { key: 'Saturn', display: 'Saturn (Shani)', fav: [3, 6, 11] },
+        { key: 'Rahu', display: 'Rahu (North Node)', fav: [3, 6, 11] },
+        { key: 'Ketu', display: 'Ketu (South Node)', fav: [3, 6, 11] }
+      ];
+
+      const getSav = (s) => (typeof savData === 'object' && !Array.isArray(savData)) ? (savData[s] ?? savData[s.toLowerCase()] ?? 28) : (Array.isArray(savData) ? (savData[signsList.indexOf(s)] ?? 28) : 28);
+
+      const transits = planetSpecs.map(spec => {
+        const p = planets[spec.key] || { sign: 'Pisces', degree: 15.0, total_degree: 345.0, nakshatra: 'Uttara Bhadrapada' };
+        const sIdx = signsList.indexOf(p.sign);
+        const fromLagna = natalLagnaIdx !== undefined ? (((sIdx - natalLagnaIdx + 12) % 12) + 1) : 1;
+        const fromMoon = natalMoonIdx !== undefined ? (((sIdx - natalMoonIdx + 12) % 12) + 1) : 1;
+        const bindus = getSav(p.sign);
+        const isFav = spec.fav.includes(fromMoon);
+        const degInt = Math.floor(p.degree);
+        const minInt = Math.floor((p.degree - degInt) * 60);
+
+        let verdictLabel = 'Moderate Fruition';
+        let verdictClass = '#92400E';
+
+        if (isFav && bindus >= 28) {
+          verdictLabel = 'Highly Auspicious & High Support';
+          verdictClass = '#047857';
+        } else if (isFav && bindus < 25) {
+          verdictLabel = 'Subdued Beneficence';
+          verdictClass = '#D97706';
+        } else if (!isFav && bindus >= 28) {
+          verdictLabel = 'Auspicious SAV Mitigation';
+          verdictClass = '#059669';
+        } else {
+          verdictLabel = 'Cautionary / Demands Care';
+          verdictClass = '#991B1B';
+        }
+
+        return {
+          planet: spec.display,
+          planet_key: spec.key,
+          sign: p.sign,
+          deg: `${String(degInt).padStart(2, '0')}° ${String(minInt).padStart(2, '0')}'`,
+          fromLagna,
+          fromMoon,
+          bindus,
+          verdictLabel,
+          verdictClass,
+          nakshatra: p.nakshatra || ''
+        };
+      });
+
+      const saturn = transits.find(t => t.planet_key === 'Saturn');
+      const moon = transits.find(t => t.planet_key === 'Moon');
+
+      let sadeSati = { is_active: false, phase: 'Inactive', description: 'Saturn is transiting outside the 12th, 1st, and 2nd houses from natal Moon.' };
+      if (saturn && natalMoonIdx !== undefined) {
+        if (saturn.fromMoon === 12) {
+          sadeSati = { is_active: true, phase: 'Phase 1 (Rising / Aroha)', description: `Saturn in ${saturn.sign} is transiting 12th from natal Moon (Rising phase). Exercise financial prudence and maintain calmness.` };
+        } else if (saturn.fromMoon === 1) {
+          sadeSati = { is_active: true, phase: 'Phase 2 (Peak / Janma Shani)', description: `Saturn in ${saturn.sign} is transiting over natal Moon (Peak phase). High endurance, disciplined routine, and karmic maturation.` };
+        } else if (saturn.fromMoon === 2) {
+          sadeSati = { is_active: true, phase: 'Phase 3 (Setting / Avaroha)', description: `Saturn in ${saturn.sign} is transiting 2nd from natal Moon (Setting phase). Resource consolidation and stabilization.` };
+        }
+      }
+
+      let kantakaShani = { is_active: false, type: 'None', description: 'No active 4th or 8th house Saturn afflictions.' };
+      if (saturn && (saturn.fromMoon === 4 || saturn.fromMoon === 8)) {
+        kantakaShani = {
+          is_active: true,
+          type: saturn.fromMoon === 4 ? 'Ardha-Ashtama Shani (4th House)' : 'Ashtama Shani (8th House)',
+          description: saturn.fromMoon === 4 ? 'Saturn in 4th from Moon; focus on emotional equilibrium.' : 'Saturn in 8th from Moon; exercise safety and measured caution.'
+        };
+      }
+
+      let chandrashtama = { is_active: false, description: 'Moon is in an auspicious or neutral house from natal Moon.' };
+      if (moon && moon.fromMoon === 8) {
+        chandrashtama = { is_active: true, description: 'Chandrashtama Active: Transit Moon in 8th from natal Moon (~54h). Postpone high-stakes decisions.' };
+      }
+
+      return {
+        transits,
+        diagnostics: { sade_sati: sadeSati, kantaka_shani: kantakaShani, chandrashtama }
+      };
+    }
+
+    function renderGocharaTransitsTable(transitsList, diagnostics, activeMaha, activeAntar) {
+      const gocharaTbody = document.getElementById('tbody-gochara-transits');
+      const diagBar = document.getElementById('gochara-diagnostics-bar');
+
+      if (diagBar && diagnostics) {
+        const ss = diagnostics.sade_sati || {};
+        const ks = diagnostics.kantaka_shani || {};
+        const ca = diagnostics.chandrashtama || {};
+
+        const ssHtml = ss.is_active
+          ? `<div style="padding:10px 14px; background:#FEF3C7; border:1px solid #FCD34D; border-radius:6px; font-size:11.5px; color:#78350F;"><strong style="display:block; margin-bottom:2px;"><i class="fa-solid fa-shield-halved" style="color:#B45309;"></i> Shani Sade Sati: ${escapeHtml(ss.phase)}</strong>${escapeHtml(ss.description)}</div>`
+          : `<div style="padding:10px 14px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:6px; font-size:11.5px; color:#166534;"><strong style="display:block; margin-bottom:2px;"><i class="fa-solid fa-shield-check" style="color:#16A34A;"></i> Shani Sade Sati: CLEAR</strong>${escapeHtml(ss.description)}</div>`;
+
+        const ksHtml = ks.is_active
+          ? `<div style="padding:10px 14px; background:#FFFBEB; border:1px solid #FDE68A; border-radius:6px; font-size:11.5px; color:#92400E;"><strong style="display:block; margin-bottom:2px;"><i class="fa-solid fa-triangle-exclamation" style="color:#D97706;"></i> ${escapeHtml(ks.type)}</strong>${escapeHtml(ks.description)}</div>`
+          : `<div style="padding:10px 14px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; font-size:11.5px; color:#334155;"><strong style="display:block; margin-bottom:2px;"><i class="fa-solid fa-circle-check" style="color:#64748B;"></i> Kantaka Shani: Inactive</strong>${escapeHtml(ks.description || 'No 4th/8th house Saturn afflictions.')}</div>`;
+
+        const caHtml = ca.is_active
+          ? `<div style="padding:10px 14px; background:#FEF2F2; border:1px solid #FECACA; border-radius:6px; font-size:11.5px; color:#991B1B;"><strong style="display:block; margin-bottom:2px;"><i class="fa-solid fa-moon" style="color:#DC2626;"></i> Chandrashtama ACTIVE</strong>${escapeHtml(ca.description)}</div>`
+          : `<div style="padding:10px 14px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:6px; font-size:11.5px; color:#166534;"><strong style="display:block; margin-bottom:2px;"><i class="fa-solid fa-moon" style="color:#16A34A;"></i> Lunar Transit: Safe</strong>${escapeHtml(ca.description || 'Moon in favorable or neutral house.')}</div>`;
+
+        const synergyHtml = `<div style="padding:10px 14px; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:6px; font-size:11.5px; color:#1E40AF;"><strong style="display:block; margin-bottom:2px;"><i class="fa-solid fa-arrows-split-up-and-left" style="color:#3B82F6;"></i> Active Dasha-Transit Synergy</strong>Current Dasha Lords: <strong>${escapeHtml(activeMaha)}</strong> &amp; <strong>${escapeHtml(activeAntar)}</strong>. Their transits carry double fruition weight.</div>`;
+
+        diagBar.innerHTML = `${ssHtml}${ksHtml}${caHtml}${synergyHtml}`;
+      }
+
+      if (gocharaTbody && Array.isArray(transitsList)) {
+        gocharaTbody.innerHTML = transitsList.map(t => {
+          const isDashaLord = (t.planet_key === activeMaha || t.planet_key === activeAntar);
+          const dashaTag = isDashaLord ? '<span style="font-size:9px; font-weight:800; background:#FDE68A; color:#78350F; padding:1px 5px; border-radius:4px; margin-left:4px;">DASHA LORD</span>' : '';
+
+          return `
+            <tr>
+              <td><strong><i class="fa-solid fa-planet-ringed" style="font-size:10px; color:var(--av-color-focus); margin-right:4px;"></i> ${t.planet}</strong>${dashaTag}</td>
+              <td>${t.sign} (${t.deg})</td>
+              <td>House ${t.fromLagna}</td>
+              <td>House ${t.fromMoon}</td>
+              <td style="font-weight:700; color:${t.verdictClass};">${t.bindus} Bindus</td>
+              <td>
+                <span style="font-size:10.5px; font-weight:700; color:${t.verdictClass};">
+                  ${t.verdictLabel}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
     }
 
     function renderKundliDashasView() {
@@ -31740,6 +32013,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       const activeNow = vd.active_now || {};
       const activeLord = activeNow.maha_dasha || 'Jupiter';
       const activeAntar = activeNow.antar_dasha || 'Jupiter';
+      const activePds = activeNow.pratyantar_dasha || activeAntar;
       const isHi = (currentLanguage === 'hi');
 
       // 1. Update Active Card Details
@@ -31749,25 +32023,40 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       const dispAntar = document.getElementById('disp-cur-antar');
       if (dispAntar) dispAntar.textContent = `${activeAntar} Antardasha`;
 
+      const dispPds = document.getElementById('disp-cur-pds');
+      if (dispPds) dispPds.textContent = `${activePds} PDS`;
+
       const dispNextTrans = document.getElementById('disp-next-transition-val');
       if (dispNextTrans) {
         const nextDate = activeNow.next_transition_date || activeNow.end_date || '--';
-        const nextLord = activeNow.next_antar_dasha ? ` (${activeNow.next_antar_dasha} Antardasha)` : '';
-        dispNextTrans.textContent = `${nextDate}${nextLord}`;
+        const nextTarget = activeNow.next_pratyantar_dasha ? ` (${activeNow.next_pratyantar_dasha} PDS)` : (activeNow.next_antar_dasha ? ` (${activeNow.next_antar_dasha} Antardasha)` : '');
+        dispNextTrans.textContent = `${nextDate}${nextTarget}`;
       }
 
-      // Dual Progress Bars
+      // Triple Progress Bars: Mahadasha, Antardasha & PDS
       const mahaFill = document.getElementById('disp-dasha-fill');
       const mahaPctLbl = document.getElementById('disp-dasha-pct-label');
+      const mahaDates = document.getElementById('disp-maha-dates');
       const mahaPct = activeNow.maha_progress_pct !== undefined ? activeNow.maha_progress_pct : (activeNow.progress_percent || 0);
       if (mahaFill) mahaFill.style.width = `${Math.min(100, Math.max(0, mahaPct))}%`;
       if (mahaPctLbl) mahaPctLbl.textContent = `${mahaPct}% Elapsed`;
+      if (mahaDates) mahaDates.textContent = `${activeNow.maha_start_date || '--'} to ${activeNow.maha_end_date || '--'}`;
 
       const antarFill = document.getElementById('disp-antar-fill');
       const antarPctLbl = document.getElementById('disp-antar-pct-label');
+      const antarDates = document.getElementById('disp-antar-dates');
       const antarPct = activeNow.antar_progress_pct !== undefined ? activeNow.antar_progress_pct : 0;
       if (antarFill) antarFill.style.width = `${Math.min(100, Math.max(0, antarPct))}%`;
       if (antarPctLbl) antarPctLbl.textContent = `${antarPct}% Elapsed`;
+      if (antarDates) antarDates.textContent = `${activeNow.antar_start_date || '--'} to ${activeNow.antar_end_date || '--'}`;
+
+      const pdsFill = document.getElementById('disp-pds-fill');
+      const pdsPctLbl = document.getElementById('disp-pds-prog-pct');
+      const pdsDates = document.getElementById('disp-pds-dates');
+      const pdsPct = activeNow.pds_progress_pct !== undefined ? activeNow.pds_progress_pct : 0;
+      if (pdsFill) pdsFill.style.width = `${Math.min(100, Math.max(0, pdsPct))}%`;
+      if (pdsPctLbl) pdsPctLbl.textContent = `${pdsPct}%`;
+      if (pdsDates) pdsDates.textContent = `${activeNow.pratyantar_start_date || '--'} to ${activeNow.pratyantar_end_date || '--'}`;
 
       // 2. Generate and Render Structured Interpretation
       const interp = generateDashaInterpretation(currentCalculatedChart, currentLanguage);
@@ -31817,7 +32106,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
         remListEl.innerHTML = `<div style="display:flex; flex-direction:column; gap:6px;">${interp.remedies.map(r => `<div>${r}</div>`).join('')}</div>`;
       }
 
-      // 3. 120-Year Chronological Timeline Tree
+      // 3. 120-Year Chronological Timeline Tree (3-Tier: Mahadasha -> Antardasha -> PDS)
       const container = document.getElementById('dashas-timeline-tree');
       if (container && Array.isArray(vd.timeline)) {
         const treeHtml = vd.timeline.map((m, mIdx) => {
@@ -31837,10 +32126,53 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           if (isExpanded && Array.isArray(m.antardashas)) {
             const subRows = m.antardashas.map(ad => {
               const isSubActive = ad.is_active;
+              const antarKey = `${m.maha_dasha}_${ad.antar_dasha}`;
+              const isAntarExpanded = (expandedAntarKey === antarKey);
+
+              let pdsHtml = '';
+              if (isAntarExpanded && Array.isArray(ad.pratyantardashas)) {
+                const pdsRows = ad.pratyantardashas.map(p => {
+                  const isPdsActive = p.is_active;
+                  let pBadgeBg = '#F1F5F9', pBadgeColor = '#64748B', pBadgeText = 'UPCOMING';
+                  if (isPdsActive) {
+                    pBadgeBg = '#FDE68A'; pBadgeColor = '#78350F'; pBadgeText = 'ACTIVE';
+                  } else if (p.status === 'PAST') {
+                    pBadgeBg = '#E2E8F0'; pBadgeColor = '#475569'; pBadgeText = 'COMPLETED';
+                  }
+                  return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px; font-size:11px; border-bottom:1px solid #E2E8F0; background:${isPdsActive ? '#FEF3C7' : '#FFFFFF'}; border-radius:4px;">
+                      <span>
+                        <strong style="color:${isPdsActive ? '#78350F' : 'inherit'};">${m.maha_dasha} - ${ad.antar_dasha} - ${p.pratyantar_dasha}</strong>
+                        <span style="font-size:9px; font-weight:800; background:${pBadgeBg}; color:${pBadgeColor}; padding:1px 5px; border-radius:3px; margin-left:6px;">${pBadgeText}</span>
+                      </span>
+                      <span style="color:var(--av-color-text-secondary); font-size:10.5px;">${p.start_date} to ${p.end_date} &bull; ${p.duration_days}d</span>
+                    </div>
+                  `;
+                }).join('');
+
+                pdsHtml = `
+                  <div style="margin-top:6px; padding:8px 10px; background:#F8FAFC; border:1px solid #CBD5E1; border-radius:4px;">
+                    <div style="font-size:10.5px; font-weight:700; color:#92400E; margin-bottom:4px; text-transform:uppercase;">
+                      9 Pratyantardashas (PDS) for ${m.maha_dasha} - ${ad.antar_dasha}
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:2px;">${pdsRows}</div>
+                  </div>
+                `;
+              }
+
               return `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:5px 8px; font-size:11.5px; border-bottom:1px solid #F1F5F9; background:${isSubActive ? '#FEF3C7' : 'transparent'}; border-radius:4px;">
-                  <span><strong>${m.maha_dasha} - ${ad.antar_dasha}</strong> ${isSubActive ? '<span style="font-size:9.5px; font-weight:800; color:#78350F; background:#FDE68A; padding:1px 5px; border-radius:4px; margin-left:4px;">CURRENT</span>' : ''}</span>
-                  <span style="color:var(--av-color-text-secondary);">${ad.start_date} to ${ad.end_date} &bull; ${ad.duration_months} mo (${ad.duration_years}y)</span>
+                <div style="margin-bottom:4px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; font-size:11.5px; background:${isSubActive ? '#FEF3C7' : '#FFFFFF'}; border:1px solid ${isSubActive ? '#FCD34D' : '#E2E8F0'}; border-radius:4px; cursor:pointer;" onclick="event.stopPropagation(); toggleAntarTimelineExpand('${m.maha_dasha}', '${ad.antar_dasha}')">
+                    <div>
+                      <strong>${m.maha_dasha} - ${ad.antar_dasha}</strong>
+                      ${isSubActive ? '<span style="font-size:9.5px; font-weight:800; color:#78350F; background:#FDE68A; padding:1px 5px; border-radius:4px; margin-left:6px;">CURRENT</span>' : ''}
+                      <span style="color:var(--av-color-text-secondary); margin-left:8px;">${ad.start_date} to ${ad.end_date} &bull; ${ad.duration_months} mo (${ad.duration_years}y)</span>
+                    </div>
+                    <div style="font-size:11px; font-weight:700; color:var(--av-color-focus);">
+                      ${isAntarExpanded ? '<i class="fa-solid fa-chevron-up"></i> Collapse PDS' : '<i class="fa-solid fa-chevron-down"></i> 9 PDS'}
+                    </div>
+                  </div>
+                  ${pdsHtml}
                 </div>
               `;
             }).join('');
@@ -31848,7 +32180,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             antardashasHtml = `
               <div style="margin-top:8px; padding:10px 12px; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:var(--av-radius-sm);">
                 <div style="font-size:11px; font-weight:700; color:var(--av-color-maroon-800); text-transform:uppercase; margin-bottom:6px;">
-                  9 Antardashas for ${m.maha_dasha} Mahadasha (${m.duration_years} Years)
+                  9 Antardashas for ${m.maha_dasha} Mahadasha (${m.duration_years} Years) &bull; Click any row to expand 9 Pratyantardashas
                 </div>
                 <div style="display:flex; flex-direction:column; gap:2px;">${subRows}</div>
               </div>
@@ -31882,51 +32214,41 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
         }, 60);
       }
 
-      // 4. Live Gochara Transits Table
+      // 4. Live Gochara Transits Table & Diagnostics
       const gocharaTbody = document.getElementById('tbody-gochara-transits');
       if (gocharaTbody) {
         const natalLagnaIdx = currentCalculatedChart.lagnaIdx !== undefined ? currentCalculatedChart.lagnaIdx : signsList.indexOf(currentCalculatedChart.lagnaSign || 'Scorpio');
         const natalMoonIdx = currentCalculatedChart.moonIdx !== undefined ? currentCalculatedChart.moonIdx : signsList.indexOf(currentCalculatedChart.moonSign || 'Aquarius');
 
         const savData = fd.ashtakavarga?.sarvashtakavarga || (typeof calculateClientAshtakavarga === 'function' ? calculateClientAshtakavarga(fd.d1_rashi_chart?.planets || {}, currentCalculatedChart.lagnaSign).sarvashtakavarga : {});
-        const getSav = (s) => (typeof savData === 'object' && !Array.isArray(savData)) ? (savData[s] ?? savData[s.toLowerCase()] ?? 28) : (savData[signsList.indexOf(s)] ?? 28);
 
-        const transits = [
-          { planet: 'Saturn (Shani)', sign: 'Pisces', deg: '18°' },
-          { planet: 'Jupiter (Guru)', sign: 'Taurus', deg: '22°' },
-          { planet: 'Rahu (North Node)', sign: 'Pisces', deg: '08°' },
-          { planet: 'Ketu (South Node)', sign: 'Virgo', deg: '08°' },
-          { planet: 'Sun (Surya)', sign: 'Scorpio', deg: '12°' },
-          { planet: 'Mars (Mangal)', sign: 'Cancer', deg: '05°' }
-        ];
+        // Instant baseline calculation
+        const clientTransitResult = calculateClientLiveTransits(null, natalLagnaIdx, natalMoonIdx, savData);
+        renderGocharaTransitsTable(clientTransitResult.transits, clientTransitResult.diagnostics, activeLord, activeAntar);
 
-        gocharaTbody.innerHTML = transits.map(t => {
-          const tIdx = signsList.indexOf(t.sign);
-          const fromLagna = ((tIdx - natalLagnaIdx + 12) % 12) + 1;
-          const fromMoon = ((tIdx - natalMoonIdx + 12) % 12) + 1;
-          const bindus = getSav(t.sign);
-
-          const isAuspicious = bindus >= 28;
-          const isChallenging = bindus < 25;
-          const verdictClass = isAuspicious ? '#047857' : (isChallenging ? '#991B1B' : '#92400E');
-          const verdictLabel = isAuspicious ? 'Auspicious &amp; High Support' : (isChallenging ? 'Cautionary / Demands Care' : 'Moderate Fruition');
-
-          return `
-            <tr>
-              <td><strong><i class="fa-solid fa-planet-ringed" style="font-size:10px; color:var(--av-color-focus); margin-right:4px;"></i> ${t.planet}</strong></td>
-              <td>${t.sign} (${t.deg})</td>
-              <td>House ${fromLagna}</td>
-              <td>House ${fromMoon}</td>
-              <td style="font-weight:700; color:${verdictClass};">${bindus} Bindus</td>
-              <td>
-                <span style="font-size:10.5px; font-weight:700; color:${verdictClass};">
-                  ${verdictLabel}
-                </span>
-              </td>
-            </tr>
-          `;
-        }).join('');
+        // Asynchronous live Swiss Ephemeris synchronization
+        fetch(`/api/transits/live?natal_lagna_idx=${natalLagnaIdx}&natal_moon_idx=${natalMoonIdx}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(liveRes => {
+            if (liveRes && Array.isArray(liveRes.transits) && liveRes.transits.length === 9) {
+              const liveTransits = liveRes.transits.map(t => ({
+                planet: t.planet,
+                planet_key: t.planet_key,
+                sign: t.sign,
+                deg: `${t.degree_formatted}${t.is_retrograde ? ' [R]' : ''}`,
+                fromLagna: t.house_from_lagna,
+                fromMoon: t.house_from_moon,
+                bindus: (typeof savData === 'object' && !Array.isArray(savData)) ? (savData[t.sign] ?? savData[t.sign.toLowerCase()] ?? 28) : (Array.isArray(savData) ? (savData[signsList.indexOf(t.sign)] ?? 28) : 28),
+                verdictLabel: t.verdict,
+                verdictClass: t.verdict_status === 'FAVORABLE' ? '#047857' : (t.verdict_status === 'CAUTION' ? '#991B1B' : '#92400E'),
+                nakshatra: t.nakshatra
+              }));
+              renderGocharaTransitsTable(liveTransits, liveRes.diagnostics || clientTransitResult.diagnostics, activeLord, activeAntar);
+            }
+          })
+          .catch(() => {});
       }
+    }
     }
 
     function renderKundliYogasView() {

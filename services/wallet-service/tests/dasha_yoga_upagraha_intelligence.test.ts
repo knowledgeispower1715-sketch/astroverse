@@ -78,6 +78,27 @@ const fractionRemaining = 1.0 - fractionPassed;
 const balanceYears = DASHA_YEARS[firstLord] * fractionRemaining;
 assert(balanceYears > 0 && balanceYears < DASHA_YEARS[firstLord], 'Birth balance years must be between 0 and 10');
 
+// Test AstroCalculator.calculateVimshottariDasha 3-tier hierarchy & 0-drift
+import { AstroCalculator } from '../src/monetization/astroCalculator';
+const tsDasha = AstroCalculator.calculateVimshottariDasha(43.5, new Date('2000-01-01T12:00:00Z'), new Date('2024-06-01T12:00:00Z'));
+assert(tsDasha.timeline.length === 9, 'TypeScript Dasha must generate 9 Mahadashas');
+assert(tsDasha.active_now.pratyantar_dasha !== undefined, 'TypeScript Dasha must compute active Pratyantardasha');
+assert(tsDasha.active_now.pratyantardashas.length === 9, 'Active Antardasha must contain 9 Pratyantardashas');
+
+let tsTotalAds = 0;
+let tsTotalPds = 0;
+for (const m of tsDasha.timeline) {
+  tsTotalAds += m.antardashas.length;
+  for (const ad of m.antardashas) {
+    tsTotalPds += ad.pratyantardashas.length;
+    // Check timestamp closure
+    assert(ad.pratyantardashas[0].start_iso === ad.start_iso, `PDS start boundary must match Antardasha start in ${ad.antar_dasha}`);
+    assert(ad.pratyantardashas[8].end_iso === ad.end_iso, `PDS end boundary must match Antardasha end in ${ad.antar_dasha}`);
+  }
+}
+assert(tsTotalAds === 81, `TypeScript Dasha must generate exactly 81 Antardashas (got: ${tsTotalAds})`);
+assert(tsTotalPds === 729, `TypeScript Dasha must generate exactly 729 Pratyantardashas (got: ${tsTotalPds})`);
+
 // ==============================================================================
 // 2. UPAGRAHA & KALAVELA MATHEMATICAL INVARIANTS
 // ==============================================================================
