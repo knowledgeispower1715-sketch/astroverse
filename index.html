@@ -11140,22 +11140,30 @@
     (function initDynamicNavbarObserver() {
       if (typeof ResizeObserver === 'undefined') return;
       const navbar = document.querySelector('.main-navbar');
-      if (!navbar) return;
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const w = entry.contentRect.width;
-          if (w < 1180) {
-            navbar.classList.add('nav-compact');
-            navbar.classList.remove('nav-intermediate');
-          } else if (w <= 1440) {
-            navbar.classList.add('nav-intermediate');
-            navbar.classList.remove('nav-compact');
-          } else {
-            navbar.classList.remove('nav-compact', 'nav-intermediate');
-          }
+      if (!navbar || window.__astroNavbarObserverActive) return;
+      window.__astroNavbarObserverActive = true;
+
+      function updateNavbarTier() {
+        const vpW = window.innerWidth || document.documentElement.clientWidth || 1280;
+        if (vpW < 1180) {
+          navbar.classList.add('nav-compact');
+          navbar.classList.remove('nav-intermediate');
+        } else if (vpW <= 1440) {
+          navbar.classList.add('nav-intermediate');
+          navbar.classList.remove('nav-compact');
+        } else {
+          navbar.classList.remove('nav-compact', 'nav-intermediate');
         }
+      }
+
+      const observer = new ResizeObserver(() => {
+        window.requestAnimationFrame(updateNavbarTier);
       });
-      observer.observe(navbar);
+      observer.observe(document.documentElement);
+
+      window.addEventListener('resize', updateNavbarTier, { passive: true });
+      window.addEventListener('orientationchange', updateNavbarTier, { passive: true });
+      updateNavbarTier();
     })();
 
     // Mobile Drawer Navigation Controllers
