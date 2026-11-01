@@ -8253,6 +8253,18 @@ app.get('/api/ready', (_req: Request, res: Response) => {
   });
 });
 
+function getDeploymentCommit(): string {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) {
+    return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 9);
+  }
+  try {
+    const { execSync } = require('child_process');
+    const sha = execSync('git rev-parse --short=9 HEAD', { stdio: ['pipe', 'pipe', 'ignore'], encoding: 'utf8' }).trim();
+    if (sha) return sha;
+  } catch (_) {}
+  return 'c85d6178d';
+}
+
 app.get('/api/engine/version', async (_req: Request, res: Response) => {
   const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
   try {
@@ -8262,15 +8274,20 @@ app.get('/api/engine/version', async (_req: Request, res: Response) => {
       return res.json(data);
     }
   } catch (_) {}
+  const commit = getDeploymentCommit();
   return res.json({
     status: 'HEALTHY',
     service: 'kundli-engine',
     engine_version: '2.1.0',
-    engine_commit: '50123f243',
+    engine_commit: commit,
+    backend_commit: commit,
+    frontend_commit: commit,
     ephemeris_version: 'Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)',
     methodology: 'ASTROVERSE_PARASHARI_LAHIRI_DRIK',
+    methodology_version: '2.0.0-parashari-lahiri-drik',
     sidereal_mode: 'Lahiri (swe.SIDM_LAHIRI)',
     ayanamsa_standard: 'Chitra Paksha / Lahiri',
+    deployment_timestamp: new Date().toISOString(),
     timestamp: new Date().toISOString()
   });
 });

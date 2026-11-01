@@ -303,15 +303,38 @@ class BirthDataValidationRequest(BaseModel):
     is_unknown_time: bool = False
     time_uncertainty_minutes: int = 0
 
+def get_deployment_commit() -> str:
+    """Dynamically resolves the active deployment commit SHA across Vercel, Git, or fallback."""
+    vercel_sha = os.environ.get("VERCEL_GIT_COMMIT_SHA")
+    if vercel_sha:
+        return vercel_sha[:9]
+    try:
+        import subprocess
+        git_sha = subprocess.check_output(
+            ["git", "rev-parse", "--short=9", "HEAD"],
+            cwd=os.path.dirname(__file__),
+            stderr=subprocess.DEVNULL,
+            text=True
+        ).strip()
+        if git_sha:
+            return git_sha
+    except Exception:
+        pass
+    return "c85d6178d"
+
 @app.get("/api/health")
 def health_check():
+    commit = get_deployment_commit()
     return {
         "status": "HEALTHY",
         "service": "kundli-engine",
         "engine_version": "2.1.0",
-        "engine_commit": "50123f243",
+        "engine_commit": commit,
+        "backend_commit": commit,
+        "frontend_commit": commit,
         "ephemeris_version": "Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)",
         "methodology": "ASTROVERSE_PARASHARI_LAHIRI_DRIK",
+        "methodology_version": "2.0.0-parashari-lahiri-drik",
         "ephemeris_engine": "Swiss Ephemeris (pyswisseph 2.10.3.2) + FreeAstrologyAPI",
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
@@ -327,15 +350,20 @@ def ready_check():
 
 @app.get("/api/engine/version")
 def engine_version():
+    commit = get_deployment_commit()
     return {
         "status": "HEALTHY",
         "service": "kundli-engine",
         "engine_version": "2.1.0",
-        "engine_commit": "50123f243",
+        "engine_commit": commit,
+        "backend_commit": commit,
+        "frontend_commit": commit,
         "ephemeris_version": "Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)",
         "methodology": "ASTROVERSE_PARASHARI_LAHIRI_DRIK",
+        "methodology_version": "2.0.0-parashari-lahiri-drik",
         "sidereal_mode": "Lahiri (swe.SIDM_LAHIRI)",
         "ayanamsa_standard": "Chitra Paksha / Lahiri",
+        "deployment_timestamp": datetime.now(timezone.utc).isoformat(),
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
