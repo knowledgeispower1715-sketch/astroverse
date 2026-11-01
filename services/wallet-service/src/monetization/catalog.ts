@@ -295,7 +295,7 @@ export const REPORT_CATALOGUE: Record<string, ReportProductDefinition> = {
     onlineReaderOnly: true,
     sampleOutline: [
       { title: 'Month Overview & Predominant Energy', subtitle: 'Governing planetary frequencies for the 30-day cycle', icon: 'fa-calendar-day' },
-      { title: 'Weekly Milestone Trajectories', subtitle: 'Week 1 through Week 4 focus areas', icon: 'fa-calendar-week' },
+      { title: 'Weekly Milestone Trajectories', subtitle: 'Complete calendar-month progression — 4 or 5 weekly focus areas', icon: 'fa-calendar-week' },
       { title: 'Favorable Timing Windows', subtitle: 'Optimal days for contracts, travel, and personal milestones', icon: 'fa-star' }
     ],
     disclaimer: 'Monthly forecasts describe symbolic celestial weather; individual discretion and initiative always remain paramount.'

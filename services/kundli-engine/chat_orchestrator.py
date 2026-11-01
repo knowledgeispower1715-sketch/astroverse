@@ -889,7 +889,7 @@ def generate_scope_grounded_response(
             "hourly_hora": "24-Hour Planetary Hora Guidance",
             "daily_forecast": "Daily Astrological Forecast",
             "weekly_forecast": "7-Day Weekly Transit Forecast",
-            "monthly_forecast": "4-Week Monthly Astrological Outlook",
+            "monthly_forecast": "Complete Calendar-Month Astrological Outlook",
             "yearly_forecast": "12-Month Annual Transit Forecast",
             "mahadasha_guidance": "5-Year Vimshottari Mahadasha Analysis"
         }
@@ -897,7 +897,7 @@ def generate_scope_grounded_response(
             "hourly_hora": "24 घंटे की ग्रहीय होरा समय सारणी",
             "daily_forecast": "दैनिक ज्योतिषीय राशिफल",
             "weekly_forecast": "7 दिवसीय साप्ताहिक गोचर फलादेश",
-            "monthly_forecast": "4 सप्ताह का मासिक ज्योतिषीय परिदृश्य",
+            "monthly_forecast": "संपूर्ण मासिक ज्योतिषीय परिदृश्य",
             "yearly_forecast": "12 महीने का वार्षिक गोचर फलादेश",
             "mahadasha_guidance": "5 वर्षीय विंशोत्तरी महादशा विश्लेषण"
         }

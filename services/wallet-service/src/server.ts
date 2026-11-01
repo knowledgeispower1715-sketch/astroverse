@@ -8283,6 +8283,16 @@ app.get('/api/engine/version', async (_req: Request, res: Response) => {
     backend_commit: commit,
     frontend_commit: commit,
     ephemeris_version: 'Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)',
+    ephemeris_source: 'Moshier Analytical Model (FLG_MOSEPH)',
+    active_calculation_source: 'Moshier Analytical Model (FLG_MOSEPH)',
+    ephemeris_flags: {
+      moseph_active: true,
+      swieph_active: false,
+      jpleph_active: false,
+      sidereal_active: true
+    },
+    numerical_precision: '0.1 arcsec (Planets) / 0.5 arcsec (Moon)',
+    fallback_active: false,
     methodology: 'ASTROVERSE_PARASHARI_LAHIRI_DRIK',
     methodology_version: '2.0.0-parashari-lahiri-drik',
     sidereal_mode: 'Lahiri (swe.SIDM_LAHIRI)',

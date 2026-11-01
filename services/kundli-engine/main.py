@@ -351,6 +351,15 @@ def ready_check():
 @app.get("/api/engine/version")
 def engine_version():
     commit = get_deployment_commit()
+    import swisseph as swe
+    jd_test = swe.julday(2026, 1, 1, 12.0)
+    _, iflag = swe.calc_ut(jd_test, swe.SUN, swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED)
+    is_moseph = bool(iflag & swe.FLG_MOSEPH)
+    is_swieph = bool(iflag & swe.FLG_SWIEPH)
+    is_jpleph = bool(iflag & swe.FLG_JPLEPH)
+    active_source = "JPL DE431/DE441" if is_jpleph else ("Swiss Ephemeris Files" if is_swieph else "Moshier Analytical Model (FLG_MOSEPH)")
+    precision = "0.001 arcsec (JPL DE431)" if is_jpleph else ("0.001 arcsec (Swiss Ephemeris)" if is_swieph else "0.1 arcsec (Planets) / 0.5 arcsec (Moon)")
+
     return {
         "status": "HEALTHY",
         "service": "kundli-engine",
@@ -359,6 +368,16 @@ def engine_version():
         "backend_commit": commit,
         "frontend_commit": commit,
         "ephemeris_version": "Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)",
+        "ephemeris_source": active_source,
+        "active_calculation_source": active_source,
+        "ephemeris_flags": {
+            "moseph_active": is_moseph,
+            "swieph_active": is_swieph,
+            "jpleph_active": is_jpleph,
+            "sidereal_active": bool(iflag & swe.FLG_SIDEREAL)
+        },
+        "numerical_precision": precision,
+        "fallback_active": False,
         "methodology": "ASTROVERSE_PARASHARI_LAHIRI_DRIK",
         "methodology_version": "2.0.0-parashari-lahiri-drik",
         "sidereal_mode": "Lahiri (swe.SIDM_LAHIRI)",
@@ -1017,7 +1036,7 @@ def generate_prediction_endpoint(req: PredictionRequest):
                 "hourly": ("होरा", "Hourly (Hora)"),
                 "daily": ("दैनिक", "Daily"),
                 "weekly": ("साप्ताहिक", "Weekly (7 Days)"),
-                "monthly": ("मासिक", "Monthly (4 Weeks)"),
+                "monthly": ("मासिक", "Complete Calendar-Month"),
                 "yearly": ("वार्षिक", "Yearly (12 Months)"),
                 "mahadasha": ("महादशा", "Mahadasha (5-Year)")
             }

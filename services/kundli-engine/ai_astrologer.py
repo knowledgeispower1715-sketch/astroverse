@@ -1243,7 +1243,7 @@ def _build_period_items(
                     f"{tpl[1]} अंतर्गत करियर और वित्तीय गोचर। संपूर्ण मासिक विश्लेषण ₹49 में अनलॉक करें।"
                 ) if is_hi else (
                     f"🔒 Week {w+1} ({w_start.strftime('%b %d')} – {w_end.strftime('%b %d')}): "
-                    f"Deep transit analysis for {tpl[1]}. Unlock complete 4-week blueprint for ₹49."
+                    f"Deep transit analysis for {tpl[1]}. Unlock complete calendar-month blueprint for ₹49."
                 )
                 weeks.append({
                     "period_index": w + 1,
@@ -1855,7 +1855,7 @@ def generate_structured_prediction(
                 ]
                 challenges = [
                     "Avoid overextending commitments or taking speculative financial risks during planetary transitions.",
-                    "Maintain healthy dietary and rest habits to sustain stamina across the 4-week cycle.",
+                    "Maintain healthy dietary and rest habits to sustain stamina across the complete monthly cycle.",
                     "Ensure critical agreements are documented clearly in writing."
                 ]
                 windows = [
@@ -2371,15 +2371,15 @@ def generate_structured_prediction(
         else:
             report_title = f"Monthly Personal Analysis: Planetary Transits & Dasha Synthesis ({target_date_str})"
             summary = (
-            f"This 4-week transit arc stabilizes your natal {lagna} Lagna's 10th house vocational axis and financial sectors under ongoing {active_maha} Mahadasha governance. "
-            f"Waxing Shukla Paksha currents catalyze career expansion, leadership visibility, and stakeholder endorsement across Weeks 1–2, transitioning into capital audits and asset consolidation in Weeks 3–4. "
+            f"This complete monthly transit arc stabilizes your natal {lagna} Lagna's 10th house vocational axis and financial sectors under ongoing {active_maha} Mahadasha governance. "
+            f"Waxing Shukla Paksha currents catalyze career expansion, leadership visibility, and stakeholder endorsement across Weeks 1–2, transitioning into capital audits and asset consolidation in Weeks 3–4 (and final synthesis through Month's end). "
             f"Peak opportunities coincide with the waxing Moon for formalizing alliances, whereas high-volatility financial speculation must be strictly avoided during dark-moon Amavasya. "
             f"Incorporate regular morning contemplation to maintain emotional poise and nervous equilibrium."
         )
             overall = (
                 f"This monthly cycle presents a structured phase of institutional elevation and capital consolidation. "
                 f"With your 10th House {h10_occ} and your active {active_maha} Mahadasha progressing steadily, "
-                f"the upcoming four weeks reward patience, systematic labor, and measured long-term investments."
+                f"the upcoming calendar month rewards patience, systematic labor, and measured long-term investments."
             )
             supportive = [
                 "Weeks 1 & 2: Career expansion, leadership visibility, and endorsement from senior mentors.",

@@ -7772,7 +7772,7 @@
               <i class="fa-solid fa-calendar-week"></i> Weekly (7 Days)
             </button>
             <button class="horizon-btn" id="btn-hz-monthly" onclick="selectGuidanceHorizon('monthly')">
-              <i class="fa-solid fa-calendar-days"></i> Monthly (4 Weeks)
+              <i class="fa-solid fa-calendar-days"></i> Monthly (Full Month)
             </button>
             <button class="horizon-btn" id="btn-hz-yearly" onclick="selectGuidanceHorizon('yearly')">
               <i class="fa-solid fa-calendar"></i> Yearly (12 Months)
@@ -7919,12 +7919,12 @@
               </div>
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                  <span style="font-size: 11px; font-weight: 800; color: #1E40AF; background: #DBEAFE; padding: 2px 8px; border-radius: 6px; border: 1px solid #BFDBFE;">4-Week Progression</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #1E40AF; background: #DBEAFE; padding: 2px 8px; border-radius: 6px; border: 1px solid #BFDBFE;">Complete Calendar-Month</span>
                   <span style="font-size: 11px; font-weight: 700; color: #B45309;"><i class="fa-solid fa-lock"></i> Deep Horizon</span>
                 </div>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">Monthly (4 Weeks) Analysis</h4>
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--av-text-primary, #20263A); margin: 0 0 6px;">Complete Calendar-Month Forecast</h4>
                 <p style="font-size: 12.5px; color: var(--av-text-secondary, #566074); line-height: 1.5; margin: 0 0 12px;">
-                  Strategic 4-week progression mapping foundational inception, execution momentum, financial consolidation, and monthly review.
+                  Full monthly analysis covering 4 or 5 calendar weeks: foundational inception, execution momentum, financial consolidation, and lunar culminations across all 28–31 days.
                 </p>
               </div>
               <button class="btn-outline-secondary" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 12px;" onclick="enterGeneralTransitPreview('monthly')">
@@ -8018,7 +8018,7 @@
             </ul>
           </div>
 
-          <!-- Rich Period Progression: 7-Day / 4-Week / 12-Month / 5-Year / 3-Diurnal / 3-Hora Detailed Cards -->
+          <!-- Rich Period Progression: 7-Day / Complete Monthly (4-5 Weeks) / 12-Month / 5-Year / 3-Diurnal / 3-Hora Detailed Cards -->
           <div id="guidance-period-items-container" class="guidance-period-items-container" style="margin-top: 18px;"></div>
 
           <!-- Section: Auspicious Vedic Remedies Card (Phase 9) -->
@@ -8118,7 +8118,7 @@
             <div style="font-size: 26px; color: #D97706; margin-bottom: 8px;"><i class="fa-solid fa-crown"></i></div>
             <h4 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">Unlock Complete Multi-Horizon Deep Report</h4>
             <p style="font-size: 13px; color: #64748B; max-width: 520px; margin: 0 auto 16px;">
-              Unlock full 7-Day Day-by-Day Forecasts, 4-Week Monthly Blueprints, 12-Month Annual Transit Maps, and 5-Year Mahadasha Karmic Blueprints personalized to your Janam Kundli.
+              Unlock full 7-Day Day-by-Day Forecasts, Complete Calendar-Month Blueprints (4 or 5 Calendar Weeks), 12-Month Annual Transit Maps, and 5-Year Mahadasha Karmic Blueprints personalized to your Janam Kundli.
             </p>
             <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
               <span class="price-pill" style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); background: #FEF3C7; padding: 6px 14px; border-radius: 20px;">₹49 <span style="font-size: 11px; font-weight: 500; color: #78350F;">All Horizons Access</span></span>
@@ -9922,7 +9922,7 @@
         <div style="font-size: 13px; font-weight: 700; color: #1E293B; margin-bottom: 8px;">What's included in this unlock:</div>
         <ul style="font-size: 12px; color: #475569; padding-left: 18px; margin: 0; line-height: 1.6;">
           <li><strong>7-Day Parashari Cycle:</strong> Day-by-day transit transitions &amp; peak timing</li>
-          <li><strong>4-Week Monthly Blueprint:</strong> Week-by-week synthesis &amp; asset deliberations</li>
+          <li><strong>Complete Calendar-Month Forecast:</strong> Week-by-week synthesis (4 or 5 calendar weeks) &amp; asset deliberations</li>
           <li><strong>12-Month Annual Map:</strong> Slow-moving transits (Guru/Shani) &amp; quarterly roadmap</li>
           <li><strong>5-Year Mahadasha Arc:</strong> Vimshottari karmic trajectory &amp; house lordship</li>
         </ul>
@@ -18834,9 +18834,9 @@
       if (isMonthlyForecast) {
         let monthlyMsg = '';
         if (isHi) {
-          monthlyMsg = `### 4-सप्ताह मासिक ज्योतिषीय विश्लेषण\nमासिक फलादेश मुख्य रूप से सूर्य देव की संक्रांति (सूर्य का राशि परिवर्तन), पूर्णिमा व अमावस्या के भावनात्मक चक्रों और तेज गति वाले ग्रहों (बुध, शुक्र, मंगल) के गोचर पर केंद्रित होता है।\n\n#### इस माह के प्रमुख बिंदु\n1. **संक्रांति प्रभाव:** सूर्य का नवीन राशि में प्रवेश सामाजिक व व्यावसायिक दायित्वों में नया दृष्टिकोण लाता है।\n2. **पक्ष चक्र:** शुक्ल पक्ष में नवीन योजनाओं का विस्तार करें; कृष्ण पक्ष में लंबित कार्यों का समापन करें।\n3. **वित्तीय एवं कार्यक्षेत्र स्थिरता:** वक्री ग्रहों के प्रभाव को ध्यान में रखते हुए बड़े निर्णयों में सावधानी बरतें।\n\n👉 [**मासिक 4-सप्ताह विश्लेषण देखें**](javascript:switchNavSection('horas'))`;
+          monthlyMsg = `### संपूर्ण मासिक ज्योतिषीय विश्लेषण\nमासिक फलादेश मुख्य रूप से सूर्य देव की संक्रांति (सूर्य का राशि परिवर्तन), पूर्णिमा व अमावस्या के भावनात्मक चक्रों और तेज गति वाले ग्रहों (बुध, शुक्र, मंगल) के गोचर पर केंद्रित होता है।\n\n#### इस माह के प्रमुख बिंदु\n1. **संक्रांति प्रभाव:** सूर्य का नवीन राशि में प्रवेश सामाजिक व व्यावसायिक दायित्वों में नया दृष्टिकोण लाता है।\n2. **पक्ष चक्र:** शुक्ल पक्ष में नवीन योजनाओं का विस्तार करें; कृष्ण पक्ष में लंबित कार्यों का समापन करें।\n3. **वित्तीय एवं कार्यक्षेत्र स्थिरता:** वक्री ग्रहों के प्रभाव को ध्यान में रखते हुए बड़े निर्णयों में सावधानी बरतें।\n\n👉 [**संपूर्ण मासिक विश्लेषण देखें**](javascript:switchNavSection('horas'))`;
         } else {
-          monthlyMsg = `### 4-Week Monthly Planetary Trajectory\nMonthly forecasting synthesizes solar ingress (*Sankranti*), lunar phases (Shukla and Krishna Paksha), and intermediate planetary transits across Mercury, Venus, and Mars.\n\n#### Key Monthly Focus Areas\n1. **Solar Ingress Alignment:** Solar movement illuminates evolving life priorities and authority structures.\n2. **Paksha Dynamics:** Leverage waxing Shukla Paksha for outward expansion; utilize waning Krishna Paksha for consolidation.\n3. **Financial & Strategic Stability:** Exercise discernment during planetary retrograde stations before making irreversible commitments.\n\n👉 [**View Monthly Analysis**](javascript:switchNavSection('horas'))`;
+          monthlyMsg = `### Complete Calendar-Month Planetary Trajectory\nMonthly forecasting synthesizes solar ingress (*Sankranti*), lunar phases (Shukla and Krishna Paksha), and intermediate planetary transits across 4 or 5 calendar weeks.\n\n#### Key Monthly Focus Areas\n1. **Solar Ingress Alignment:** Solar movement illuminates evolving life priorities and authority structures.\n2. **Paksha Dynamics:** Leverage waxing Shukla Paksha for outward expansion; utilize waning Krishna Paksha for consolidation.\n3. **Financial & Strategic Stability:** Exercise discernment during planetary retrograde stations before making irreversible commitments.\n\n👉 [**View Complete Monthly Forecast**](javascript:switchNavSection('horas'))`;
         }
         return {
           intent: 'monthly_forecast',
@@ -18855,8 +18855,8 @@
             "Is this month favorable for long-distance relocation?"
           ],
           bilingual_summary: {
-            en: "Analyzed 4-week monthly forecast, solar Sankranti ingress, and lunar Paksha dynamics.",
-            hi: "मासिक 4-सप्ताह फलादेश, सूर्य संक्रांति एवं पक्ष चक्रों का विश्लेषण प्रस्तुत किया।"
+            en: "Analyzed complete calendar-month forecast across 4 or 5 weeks, solar Sankranti ingress, and lunar Paksha dynamics.",
+            hi: "संपूर्ण मासिक (4-5 सप्ताह) फलादेश, सूर्य संक्रांति एवं पक्ष चक्रों का विश्लेषण प्रस्तुत किया।"
           },
           remedyCard: null,
           status: 'completed'
@@ -24191,8 +24191,8 @@ ${upTable}
             sectionId: 'sec_month_weekly',
             chapterNumber: 4,
             title: 'Chapter 4: Week-by-Week Astrological Guidance',
-            subtitle: 'Four-Week Chronological Breakdown of Opportunities and Watchouts',
-            contentMarkdown: `### Four-Week Tactical Chronology\n- **Week 1 (Days 1–7): Foundation & Strategic Framing:** Clarify monthly deliverables, organize operational workflows, and conduct preliminary stakeholder reviews. Favorable for deep analytical work and setting measurable boundaries.\n- **Week 2 (Days 8–14): High Momentum & Commercial Pitching:** Maximum planetary momentum for executing key presentations, closing agreements, and pitching new initiatives. Express ideas with confidence and precision.\n- **Week 3 (Days 15–21): Consolidation & Partnership Alignment:** Review midway metrics, address operational friction points, and strengthen bilateral relationships. Cultivate patience and transparent communication.\n- **Week 4 (Days 22–30): Synthesis, Rest & Preparation:** Finalize pending tasks, celebrate project milestones, and clear mental clutter in preparation for the upcoming astrological cycle.`
+            subtitle: 'Complete Calendar-Month Progression of Opportunities and Watchouts (4 or 5 Weeks)',
+            contentMarkdown: `### Complete Monthly Tactical Chronology (Calendar Weeks 1 to 4/5)\n- **Week 1 (Days 1–7): Foundation & Strategic Framing:** Clarify monthly deliverables, organize operational workflows, and conduct preliminary stakeholder reviews. Favorable for deep analytical work and setting measurable boundaries.\n- **Week 2 (Days 8–14): High Momentum & Commercial Pitching:** Maximum planetary momentum for executing key presentations, closing agreements, and pitching new initiatives. Express ideas with confidence and precision.\n- **Week 3 (Days 15–21): Consolidation & Partnership Alignment:** Review midway metrics, address operational friction points, and strengthen bilateral relationships. Cultivate patience and transparent communication.\n- **Week 4 (Days 22–28): Synthesis & Strategic Review:** Focus on execution refinement, milestone verification, and asset consolidation.\n- **Week 5 (Days 29–31 / Month Culmination, where applicable): Final Synthesis, Rest & Preparation:** Finalize pending deliverables, celebrate milestones, and clear mental clutter in preparation for the upcoming astrological cycle.`
           },
           {
             sectionId: 'sec_month_dates',
@@ -27735,7 +27735,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       hourly: { en: "Hourly (Hora) Guidance", hi: "प्रति घंटा (होरा) मार्गदर्शन" },
       daily: { en: "Daily Forecast", hi: "दैनिक फलादेश" },
       weekly: { en: "Weekly (7 Days) Forecast", hi: "साप्ताहिक (7 दिवसीय) फलादेश" },
-      monthly: { en: "Monthly (4 Weeks) Analysis", hi: "मासिक (4 सप्ताह) विश्लेषण" },
+      monthly: { en: "Complete Calendar-Month Forecast", hi: "संपूर्ण मासिक फलादेश" },
       yearly: { en: "Yearly (12 Months) Outlook", hi: "वार्षिक (12 माह) दृष्टिकोण" },
       mahadasha: { en: "Mahadasha (5-Yr) Arc", hi: "महादशा (5-वर्षीय) कालचक्र" }
     };
@@ -28056,12 +28056,12 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           ${horizon === 'hourly' ? (isHi ? 'आगामी होरा कालचक्र' : 'Upcoming Planetary Hora Sequence') :
            (horizon === 'daily' ? (isHi ? 'दैनिक 3 अहोरात्र चरण' : '3 Diurnal Phase Breakdown') :
            (horizon === 'weekly' ? (isHi ? '7-दिवसीय दैनिक गोचर मानचित्र' : '7-Day Day-by-Day Forecast') :
-           (horizon === 'monthly' ? (isHi ? '4-सप्ताह विस्तृत मासिक प्रगति' : '4-Week Strategic Progression') :
+           (horizon === 'monthly' ? (isHi ? 'विस्तृत मासिक प्रगति (संपूर्ण कैलेंडर माह)' : 'Complete Calendar-Month Progression') :
            (horizon === 'yearly' ? (isHi ? '12-माह वार्षिक सौर व ग्रहीय गोचर' : '12-Month Annual Transit Timeline') :
            (isHi ? '5-वर्षीय विंशोत्तरी महादशा कालखंड' : '5-Year Vimshottari Karmic Timeline')))))}
         </h4>
         <span class="period-count-badge" style="font-size: 11px; font-weight: 700; background: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 999px;">
-          ${items.length} ${horizon === 'yearly' ? (isHi ? 'माह + 4 त्रैमास' : 'Months + 4 Quarters') : (isHi ? 'चरण' : 'Phases')}
+          ${items.length} ${horizon === 'yearly' ? (isHi ? 'माह + 4 त्रैमास' : 'Months + 4 Quarters') : (horizon === 'monthly' ? (isHi ? 'कैलेंडर सप्ताह' : 'Calendar Weeks') : (isHi ? 'चरण' : 'Phases'))}
         </span>
       </div>`;
 
@@ -28321,7 +28321,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
               <div style="font-size: 26px; color: #D97706; margin-bottom: 8px;"><i class="fa-solid fa-crown"></i></div>
               <h4 style="font-size: 18px; font-weight: 800; color: #1E1B4B; margin: 0 0 6px;">${isHi ? 'संपूर्ण षड्-काल विस्तृत रिपोर्ट अनलॉक करें' : 'Unlock Complete Multi-Horizon Deep Report'}</h4>
               <p style="font-size: 13px; color: #64748B; max-width: 520px; margin: 0 auto 16px;">
-                ${isHi ? 'अपनी जन्म कुंडली पर आधारित विस्तृत ७-दिवसीय दैनिक फलादेश, ४-सप्ताह मासिक योजना, १२-माह वार्षिक गोचर मानचित्र और ५-वर्षीय विंशोत्तरी महादशा चक्र अनलॉक करें।' : 'Unlock full 7-Day Day-by-Day Forecasts, 4-Week Monthly Blueprints, 12-Month Annual Transit Maps, and 5-Year Mahadasha Karmic Blueprints personalized to your Janam Kundli.'}
+                ${isHi ? 'अपनी जन्म कुंडली पर आधारित विस्तृत ७-दिवसीय दैनिक फलादेश, संपूर्ण मासिक योजना (४-५ सप्ताह), १२-माह वार्षिक गोचर मानचित्र और ५-वर्षीय विंशोत्तरी महादशा चक्र अनलॉक करें।' : 'Unlock full 7-Day Day-by-Day Forecasts, Complete Calendar-Month Blueprints (4 or 5 Calendar Weeks), 12-Month Annual Transit Maps, and 5-Year Mahadasha Karmic Blueprints personalized to your Janam Kundli.'}
               </p>
               <div style="display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap;">
                 <span class="price-pill" style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); background: #FEF3C7; padding: 6px 14px; border-radius: 20px;">₹49 <span style="font-size: 11px; font-weight: 500; color: #78350F;">${isHi ? 'सभी होराइजन' : 'All Horizons Access'}</span></span>
@@ -28901,8 +28901,8 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
           };
         } else {
           reportTitle = hasChart
-            ? `MONTHLY 4-Week Personal Analysis: Transit & Dasha Synthesis`
-            : `MONTHLY 4-Week Universal Transit Analysis: Ephemeris Synthesis`;
+            ? `MONTHLY Complete Personal Analysis: Transit & Dasha Synthesis`
+            : `MONTHLY Complete Universal Transit Analysis: Ephemeris Synthesis`;
           const supportive = hasChart ? [
             `Weeks 1 & 2: Career expansion, leadership visibility, and endorsement from senior mentors.`,
             `Week 3: Financial optimization, settlement of pending obligations, and property/asset deliberations.`,
@@ -28922,10 +28922,10 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
             : `Synthesized from lunar month phases and major planetary ingress across sidereal zodiacs. Calculate Janam Kundli for personal bhava analysis.`;
           s = {
             executive_summary: hasChart
-              ? `This 4-week transit arc stabilizes your natal ${lagna} Lagna's 10th house vocational axis and financial sectors under ongoing ${activeMaha}-${activeAntar} Dasha governance. Waxing Shukla Paksha currents catalyze career expansion, leadership visibility, and stakeholder endorsement across Weeks 1–2, transitioning into capital audits and asset consolidation in Weeks 3–4. Peak opportunities coincide with the waxing Moon for formalizing alliances, whereas high-volatility financial speculation must be strictly avoided during dark-moon Amavasya. Incorporate regular morning contemplation to maintain emotional poise and nervous equilibrium.`
-              : `Four-week universal transit progression synthesizes the 28-day solar-lunar cycle across waxing Shukla Paksha and waning Krishna Paksha via Swiss Ephemeris. Cosmic alignments support foundational launches and stakeholder visibility in Weeks 1–2, followed by capital consolidation, budget audits, and reflective restructuring in Weeks 3–4. Optimal momentum aligns with the waxing Moon toward Purnima, while speculative overextension should be avoided during the dark-moon phase. Enter birth details to map these monthly transit movements to your natal chart houses.`,
+              ? `This complete monthly transit arc stabilizes your natal ${lagna} Lagna's 10th house vocational axis and financial sectors under ongoing ${activeMaha}-${activeAntar} Dasha governance. Waxing Shukla Paksha currents catalyze career expansion, leadership visibility, and stakeholder endorsement across Weeks 1–2, transitioning into capital audits and asset consolidation in Weeks 3–4 (and final synthesis through Month's end). Peak opportunities coincide with the waxing Moon for formalizing alliances, whereas high-volatility financial speculation must be strictly avoided during dark-moon Amavasya. Incorporate regular morning contemplation to maintain emotional poise and nervous equilibrium.`
+              : `Complete monthly universal transit progression synthesizes the calendar solar-lunar cycle across 4 or 5 calendar weeks via Swiss Ephemeris. Cosmic alignments support foundational launches and stakeholder visibility in Weeks 1–2, followed by capital consolidation, budget audits, and reflective restructuring in Weeks 3–4 (and month culmination). Optimal momentum aligns with the waxing Moon toward Purnima, while speculative overextension should be avoided during the dark-moon phase. Enter birth details to map these monthly transit movements to your natal chart houses.`,
             overall_outlook: hasChart
-              ? `This monthly cycle presents a structured phase of institutional elevation and capital consolidation for your ${lagna} Lagna. With your 10th House aspected by functional benefics and your active ${activeMaha}-${activeAntar} Dasha progressing steadily, the upcoming four weeks reward patience, systematic labor, and measured long-term investments.`
+              ? `This monthly cycle presents a structured phase of institutional elevation and capital consolidation for your ${lagna} Lagna. With your 10th House aspected by functional benefics and your active ${activeMaha}-${activeAntar} Dasha progressing steadily, the upcoming calendar month rewards patience, systematic labor, and measured long-term investments.`
               : `This monthly transit cycle traces significant solar, lunar, and planetary ingress across sidereal zodiacs. Cosmic alignments support steady structural labor, prudent financial management, and deliberate long-range planning.`,
             supportive_themes: supportive,
             supportive_developments: supportive,

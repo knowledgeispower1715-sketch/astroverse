@@ -162,7 +162,7 @@ async function main() {
       { id: 'hourly', expectedTitle: 'Personalized Hourly (Hora) Guidance Requires Your Birth Chart', allowUniversal: true },
       { id: 'daily', expectedTitle: 'Personalized Daily Forecast Requires Your Birth Chart', allowUniversal: true },
       { id: 'weekly', expectedTitle: 'Personalized Weekly (7 Days) Forecast Requires Your Birth Chart', allowUniversal: true },
-      { id: 'monthly', expectedTitle: 'Personalized Monthly (4 Weeks) Analysis Requires Your Birth Chart', allowUniversal: true },
+      { id: 'monthly', expectedTitle: 'Personalized Complete Calendar-Month Forecast Requires Your Birth Chart', allowUniversal: true },
       { id: 'yearly', expectedTitle: 'Personalized Yearly (12 Months) Outlook Requires Your Birth Chart', allowUniversal: true },
       { id: 'mahadasha', expectedTitle: 'Vimshottari Mahadasha Timeline Strictly Requires Your Birth Chart', allowUniversal: false }
     ];

@@ -355,9 +355,9 @@ async function runLuxuryContrastVerification() {
         const challenges = document.getElementById('guidance-disp-challenges');
         const windows = document.getElementById('guidance-disp-windows');
 
-        if (title) title.textContent = "Monthly (4 Weeks) Outlook";
+        if (title) title.textContent = "Complete Calendar-Month Forecast";
         if (summary) summary.textContent = "Monthly Summary: Jupiter transits the 10th house this month.";
-        if (outlook) outlook.textContent = "STALE MONTHLY TEXT: Focus on career expansion and collaborative ventures during this 4-week window.";
+        if (outlook) outlook.textContent = "STALE MONTHLY TEXT: Focus on career expansion and collaborative ventures during this monthly window.";
         if (supportive) supportive.innerHTML = "<li>Stale Monthly benefic alignment</li>";
         if (challenges) challenges.innerHTML = "<li>Stale Monthly cautionary transit</li>";
         if (windows) windows.innerHTML = "<div>Stale Monthly key dates</div>";

@@ -847,14 +847,15 @@ Chandra (the Moon) acts as the celestial reflector of the mind (*Manas*). Tracki
       {
         sectionId: 'sec_month_weekly',
         chapterNumber: 4,
-        title: 'Chapter 4: Weekly Operational Breakdown (Weeks 1 to 4)',
-        subtitle: 'Week-by-Week Focus Across Career, Relationships & Vitality',
+        title: 'Chapter 4: Weekly Operational Breakdown (Complete Calendar-Month Progression)',
+        subtitle: 'Sequential Week-by-Week Focus Across Career, Relationships & Vitality',
         icon: 'fa-calendar-week',
-        contentMarkdown: `### Four-Week Tactical Chronology
+        contentMarkdown: `### Complete Monthly Tactical Chronology (Calendar Weeks 1 to 4/5)
 - **Week 1 (Days 1–7): Foundation & Strategic Framing:** Clarify monthly deliverables, organize operational workflows, and conduct preliminary stakeholder reviews. Favorable for deep analytical work and setting measurable boundaries.
 - **Week 2 (Days 8–14): High Momentum & Commercial Pitching:** Maximum planetary momentum for executing key presentations, closing agreements, and pitching new initiatives. Express ideas with confidence and precision.
 - **Week 3 (Days 15–21): Consolidation & Partnership Alignment:** Review midway metrics, address operational friction points, and strengthen bilateral relationships. Cultivate patience and transparent communication.
-- **Week 4 (Days 22–30): Synthesis, Rest & Preparation:** Finalize pending tasks, celebrate project milestones, and clear mental clutter in preparation for the upcoming astrological cycle.`
+- **Week 4 (Days 22–28): Synthesis & Strategic Review:** Focus on execution refinement, milestone verification, and asset consolidation.
+- **Week 5 (Days 29–31 / Month Culmination, where applicable): Final Synthesis, Rest & Preparation:** Finalize pending tasks, celebrate project milestones, and clear mental clutter in preparation for the upcoming astrological cycle.`
       },
       {
         sectionId: 'sec_month_dates',
