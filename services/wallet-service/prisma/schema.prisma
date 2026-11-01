@@ -43,6 +43,7 @@ enum OrderStatus {
   CREATED
   PAID
   FAILED
+  PARTIALLY_REFUNDED
   REFUNDED
 }
 

@@ -25,9 +25,15 @@ export const DDL_STATEMENTS: string[] = [
   END $$;`,
 
   `DO $$ BEGIN
-    CREATE TYPE "OrderStatus" AS ENUM ('CREATED', 'PAID', 'FAILED', 'REFUNDED');
+    CREATE TYPE "OrderStatus" AS ENUM ('CREATED', 'PAID', 'FAILED', 'PARTIALLY_REFUNDED', 'REFUNDED');
   EXCEPTION
     WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    ALTER TYPE "OrderStatus" ADD VALUE IF NOT EXISTS 'PARTIALLY_REFUNDED';
+  EXCEPTION
+    WHEN others THEN null;
   END $$;`,
 
   `DO $$ BEGIN

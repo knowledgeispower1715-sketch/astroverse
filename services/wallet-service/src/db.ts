@@ -1504,6 +1504,25 @@ class ResilientDatabase {
     return s;
   }
 
+  async updateSessionExpiresAt(tokenHash: string, newExpiresAt: Date): Promise<void> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.userSession.updateMany({
+          where: { tokenHash },
+          data: { expiresAt: newExpiresAt }
+        });
+      } catch (err: any) {
+        console.error('[DB] updateSessionExpiresAt Prisma error:', err?.message || err);
+      }
+    }
+
+    const session = this.data.sessions.find(s => s.tokenHash === tokenHash);
+    if (session) {
+      session.expiresAt = newExpiresAt.toISOString();
+      this.saveToFile();
+    }
+  }
+
   async deleteSession(tokenHash: string): Promise<void> {
     this.assertDurableStorage();
 

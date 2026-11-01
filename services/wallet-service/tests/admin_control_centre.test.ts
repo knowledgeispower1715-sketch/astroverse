@@ -177,7 +177,7 @@ describe('ASTROVERSE ADMINISTRATIVE CONTROL CENTRE & DEDICATED LOGIN SUITE', () 
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.status, 'AUTHENTICATED');
     assert.ok(res.body.sessionToken, 'Must issue 256-bit session token');
-    assert.ok(res.body.assuranceToken, 'Must issue admin step-up assurance token');
+    assert.strictEqual(res.body.assuranceToken, null, 'Must NOT issue admin step-up assurance token on password-only login');
     assert.strictEqual(res.body.user.role, 'OWNER');
     assert.ok(Array.isArray(res.body.permissions), 'Must return permission matrix');
     assert.ok(res.body.permissions.length > 10, 'Owner must receive full permissions');
@@ -224,6 +224,8 @@ describe('ASTROVERSE ADMINISTRATIVE CONTROL CENTRE & DEDICATED LOGIN SUITE', () 
     });
     assert.strictEqual(res3.status, 200);
     assert.strictEqual(res3.body.status, 'AUTHENTICATED');
+    assert.ok(res3.body.assuranceToken, 'Must issue admin step-up assurance token when MFA is verified');
+    assert.strictEqual(res3.body.mfaVerified, true);
     assert.strictEqual(res3.body.user.role, 'SECURITY_ADMIN');
   });
 
@@ -733,5 +735,60 @@ describe('ASTROVERSE ADMINISTRATIVE CONTROL CENTRE & DEDICATED LOGIN SUITE', () 
     assert.ok(audits.events.length > 0);
     const viewEvent = audits.events.find((e: any) => e.action === 'ADMIN_CUSTOMER_360_VIEWED' && e.targetId === targetCustomer.id);
     assert.ok(viewEvent, 'Audit trail must record ADMIN_CUSTOMER_360_VIEWED');
+  });
+
+  // Test 21: Server-Authoritative Admin Session Policy & Configuration
+  it('21. GET /api/admin/session/policy returns server-authoritative session configuration', async () => {
+    const res = await makeRequest(server, 'GET', '/api/admin/session/policy');
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.body.environment, 'Must return environment type');
+    assert.ok(typeof res.body.idleTimeoutMinutes === 'number');
+    assert.ok(typeof res.body.idleTimeoutSeconds === 'number');
+    assert.ok(typeof res.body.absoluteCapMinutes === 'number');
+    assert.strictEqual(res.body.slidingRenewalSupported, true);
+
+    // In dev / test environment, idle timeout is extended to 60 minutes
+    assert.strictEqual(res.body.idleTimeoutMinutes, 60);
+    assert.strictEqual(res.body.idleTimeoutSeconds, 3600);
+    assert.strictEqual(res.body.absoluteCapMinutes, 240);
+  });
+
+  // Test 22: Active Admin Session Sliding Renewal & Revocation
+  it('22. POST /api/auth/admin-refresh renews session sliding window and respects absolute cap', async () => {
+    const loginRes = await makeRequest(server, 'POST', '/api/auth/admin-login', {}, {
+      email: testOwnerEmail,
+      password: adminPassword
+    });
+    const sessionToken = loginRes.body.sessionToken;
+
+    // 1. Refresh active session
+    const refreshRes = await makeRequest(server, 'POST', '/api/auth/admin-refresh', {
+      Authorization: `Bearer ${sessionToken}`
+    });
+    assert.strictEqual(refreshRes.status, 200);
+    assert.strictEqual(refreshRes.body.status, 'RENEWED');
+    assert.ok(refreshRes.body.expiresAt);
+    assert.ok(refreshRes.body.remainingSeconds > 3500);
+
+    // 2. Step-up assurance challenge and revocation
+    const challengeRes = await makeRequest(server, 'POST', '/api/admin/mfa/challenge', {
+      Authorization: `Bearer ${sessionToken}`
+    }, {
+      code: '000000',
+      scope: 'FINANCIAL_OPERATIONS'
+    });
+    assert.strictEqual(challengeRes.status, 200);
+    assert.ok(challengeRes.body.assuranceToken);
+    assert.strictEqual(challengeRes.body.scope, 'FINANCIAL_OPERATIONS');
+
+    // Revoke assurance token
+    const revokeRes = await makeRequest(server, 'POST', '/api/admin/mfa/revoke-assurance', {
+      Authorization: `Bearer ${sessionToken}`
+    }, {
+      assuranceToken: challengeRes.body.assuranceToken,
+      reason: 'QA security test revocation'
+    });
+    assert.strictEqual(revokeRes.status, 200);
+    assert.strictEqual(revokeRes.body.success, true);
   });
 });

@@ -605,7 +605,8 @@
           
           <div id="admin-session-pill" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; background: #0F172A; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px;">
             <i class="fa-solid fa-hourglass-half" style="color: #F5C45E;"></i>
-            <span>Auto-lock: <strong id="admin-session-countdown" style="color: #F8FAFC;">10:00</strong></span>
+            <span>Auto-lock: <strong id="admin-session-countdown" style="color: #F8FAFC;">60:00</strong></span>
+            <span id="admin-session-policy-badge" style="font-size: 9.5px; padding: 1px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-weight: 600;">QA: 60m</span>
             <button onclick="refreshAdminSessionCountdown()" style="background: none; border: none; color: #38BDF8; cursor: pointer; padding: 0 0 0 4px; font-size: 10.5px;" title="Refresh Session"><i class="fa-solid fa-rotate-right"></i></button>
           </div>
 
@@ -2628,6 +2629,12 @@
     if (currentSessionToken) {
       headers['Authorization'] = 'Bearer ' + currentSessionToken;
     }
+    const assurance = (typeof sessionStorage !== 'undefined')
+      ? (sessionStorage.getItem('astro_admin_assurance') || sessionStorage.getItem('admin_mfa_token'))
+      : null;
+    if (assurance) {
+      headers['x-admin-assurance-token'] = assurance;
+    }
     return headers;
   }
 
@@ -4401,11 +4408,22 @@
             role: u.role,
             status: u.status
           };
+          if (data.sessionPolicy) {
+            adminSessionPolicy = data.sessionPolicy;
+            adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || 3600;
+            adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+          }
+          adminSessionStartTime = Date.now();
+          adminLastBackendRefresh = Date.now();
+
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('astro_admin_session_token', currentSessionToken);
             sessionStorage.setItem('astro_admin_user', JSON.stringify(currentUserSession));
             if (data.assuranceToken) {
               sessionStorage.setItem('astro_admin_assurance', data.assuranceToken);
+            } else {
+              sessionStorage.removeItem('astro_admin_assurance');
+              sessionStorage.removeItem('admin_mfa_token');
             }
           }
           // Remove legacy keys from localStorage to prevent cross-contamination with public customer portal
@@ -6036,18 +6054,65 @@
       }
     }
 
-    // Auto-Lock Session Timer Countdown
-    let adminSessionRemainingSeconds = 600; // 10 minutes
+    // Auto-Lock Session Timer Countdown & Server-Authoritative Policy
+    let adminSessionPolicy = {
+      environment: 'preview',
+      idleTimeoutMinutes: 60,
+      idleTimeoutSeconds: 3600,
+      absoluteCapMinutes: 240,
+      absoluteCapSeconds: 14400,
+      slidingRenewalSupported: true
+    };
+    let adminSessionIdleLimitSeconds = 3600; // Default 60 min for Preview QA
+    let adminSessionRemainingSeconds = 3600;
+    let adminSessionStartTime = Date.now();
     let adminSessionTimerInterval = null;
+    let adminLastBackendRefresh = Date.now();
 
-    function refreshAdminSessionCountdown() {
-      adminSessionRemainingSeconds = 600;
+    async function fetchAdminSessionPolicy() {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/session/policy`);
+        if (res.ok) {
+          const policy = await res.json();
+          adminSessionPolicy = policy;
+          adminSessionIdleLimitSeconds = policy.idleTimeoutSeconds || 3600;
+          adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+          updateAdminSessionTimerDisplay();
+        }
+      } catch (err) {
+        console.warn('Admin session policy lookup failed, using preview defaults:', err);
+      }
+    }
+
+    async function refreshAdminSessionCountdown() {
+      if (currentSessionToken) {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/auth/admin-refresh`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.sessionPolicy) {
+              adminSessionPolicy = data.sessionPolicy;
+              adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || adminSessionIdleLimitSeconds;
+            }
+          }
+        } catch (_) {}
+      }
+      adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+      adminLastActivity = Date.now();
+      adminLastBackendRefresh = Date.now();
       updateAdminSessionTimerDisplay();
-      showToast('Administrative session renewed for 10 minutes.', 'info');
+      showToast(`Administrative session renewed (${Math.round(adminSessionIdleLimitSeconds / 60)} min inactivity window).`, 'info');
     }
 
     function updateAdminSessionTimerDisplay() {
       const el = document.getElementById('admin-session-countdown');
+      const badge = document.getElementById('admin-session-policy-badge');
+      if (badge && adminSessionPolicy) {
+        badge.textContent = adminSessionPolicy.environment === 'production' ? 'PROD: 10m' : `QA: ${Math.round(adminSessionIdleLimitSeconds / 60)}m`;
+      }
       if (!el) return;
       const m = Math.floor(adminSessionRemainingSeconds / 60);
       const s = adminSessionRemainingSeconds % 60;
@@ -6061,7 +6126,16 @@
 
     function startAdminSessionCountdown() {
       if (adminSessionTimerInterval) clearInterval(adminSessionTimerInterval);
+      updateAdminSessionTimerDisplay();
       adminSessionTimerInterval = setInterval(() => {
+        // Enforce absolute session cap
+        if (Date.now() - adminSessionStartTime > (adminSessionPolicy.absoluteCapSeconds || 14400) * 1000) {
+          clearInterval(adminSessionTimerInterval);
+          showToast('Maximum session duration reached. Signing out...', 'warning');
+          closeAdminAndSignOut();
+          return;
+        }
+
         if (adminSessionRemainingSeconds > 0) {
           adminSessionRemainingSeconds--;
           updateAdminSessionTimerDisplay();
@@ -6632,16 +6706,31 @@
   let adminLastActivity = Date.now();
   function resetAdminActivity() {
     adminLastActivity = Date.now();
+    adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+    // Debounced silent background session renewal every 5 minutes while user is active
+    if (currentSessionToken && (Date.now() - adminLastBackendRefresh > 5 * 60 * 1000)) {
+      adminLastBackendRefresh = Date.now();
+      fetch(`${getAuthBase()}/api/auth/admin-refresh`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      }).then(r => r.ok ? r.json() : null).then(data => {
+        if (data && data.sessionPolicy) {
+          adminSessionPolicy = data.sessionPolicy;
+          adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || adminSessionIdleLimitSeconds;
+        }
+      }).catch(() => {});
+    }
   }
   function setupAdminInactivityMonitor() {
     ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
       window.addEventListener(evt, resetAdminActivity, { passive: true });
     });
 
-    // 10-minute inactivity check: closes session on idle
+    // Policy-driven inactivity monitor: closes session on genuine user idle
     setInterval(() => {
-      if (currentSessionToken && (Date.now() - adminLastActivity > 10 * 60 * 1000)) {
-        showToast('Admin session timed out due to 10 minutes of inactivity.', 'warning');
+      const idleLimitMs = (adminSessionIdleLimitSeconds || 3600) * 1000;
+      if (currentSessionToken && (Date.now() - adminLastActivity > idleLimitMs)) {
+        showToast(`Admin session timed out after ${Math.round(idleLimitMs / 60000)} minutes of inactivity.`, 'warning');
         closeAdminAndSignOut();
       }
     }, 30000);
@@ -6657,6 +6746,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     checkGatewaySecurityStatus();
+    fetchAdminSessionPolicy();
 
     try {
       // Admin session strictly loaded from sessionStorage (cleared on tab/window close)
