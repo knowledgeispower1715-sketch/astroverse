@@ -112,7 +112,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Health checks bypass rate limiting
-        if request.url.path in ("/api/health", "/api/ready", "/api/admin/health"):
+        if request.url.path in ("/api/health", "/api/ready", "/api/admin/health", "/api/engine/version"):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "127.0.0.1"
@@ -309,8 +309,11 @@ def health_check():
         "status": "HEALTHY",
         "service": "kundli-engine",
         "engine_version": "2.1.0",
+        "engine_commit": "50123f243",
+        "ephemeris_version": "Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)",
+        "methodology": "ASTROVERSE_PARASHARI_LAHIRI_DRIK",
         "ephemeris_engine": "Swiss Ephemeris (pyswisseph 2.10.3.2) + FreeAstrologyAPI",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/api/ready")
@@ -318,7 +321,22 @@ def ready_check():
     return {
         "status": "READY",
         "service": "kundli-engine",
-        "ephemeris": "Swiss Ephemeris 2.10.3.2"
+        "ephemeris": "Swiss Ephemeris 2.10.3.2",
+        "methodology": "ASTROVERSE_PARASHARI_LAHIRI_DRIK"
+    }
+
+@app.get("/api/engine/version")
+def engine_version():
+    return {
+        "status": "HEALTHY",
+        "service": "kundli-engine",
+        "engine_version": "2.1.0",
+        "engine_commit": "50123f243",
+        "ephemeris_version": "Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)",
+        "methodology": "ASTROVERSE_PARASHARI_LAHIRI_DRIK",
+        "sidereal_mode": "Lahiri (swe.SIDM_LAHIRI)",
+        "ayanamsa_standard": "Chitra Paksha / Lahiri",
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/api/admin/health")

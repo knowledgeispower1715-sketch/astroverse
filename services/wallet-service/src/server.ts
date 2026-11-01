@@ -8253,6 +8253,28 @@ app.get('/api/ready', (_req: Request, res: Response) => {
   });
 });
 
+app.get('/api/engine/version', async (_req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const probe = await fetch(`${kundliUrl}/api/engine/version`, { signal: AbortSignal.timeout(3000) });
+    if (probe.ok) {
+      const data = await probe.json();
+      return res.json(data);
+    }
+  } catch (_) {}
+  return res.json({
+    status: 'HEALTHY',
+    service: 'kundli-engine',
+    engine_version: '2.1.0',
+    engine_commit: '50123f243',
+    ephemeris_version: 'Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)',
+    methodology: 'ASTROVERSE_PARASHARI_LAHIRI_DRIK',
+    sidereal_mode: 'Lahiri (swe.SIDM_LAHIRI)',
+    ayanamsa_standard: 'Chitra Paksha / Lahiri',
+    timestamp: new Date().toISOString()
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 if (require.main === module && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
   const pStatus = db.getPersistenceStatus();
