@@ -682,8 +682,11 @@ export async function checkSchemaReadiness(prisma: any): Promise<SchemaReadiness
     const rlsEnabledTables: string[] = (rows || []).filter((r: any) => r.rls_enabled).map((r: any) => r.table_name || r.TABLE_NAME).filter(Boolean);
     const missingRlsTables = APPLICATION_TABLES.filter(t => existingTables.includes(t) && !rlsEnabledTables.includes(t));
 
+    // Both all tables must exist AND all tables must have Row Level Security enabled
+    const isReady = missingTables.length === 0 && missingRlsTables.length === 0;
+
     return {
-      isReady: missingTables.length === 0,
+      isReady,
       totalExpected: APPLICATION_TABLES.length,
       existingTables,
       missingTables,
@@ -732,15 +735,22 @@ export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
 
       console.log(`[DB_BOOTSTRAP] PostgreSQL schema incomplete (missing: ${readiness.missingTables.join(', ')}). Executing self-healing schema creation...`);
 
+      let hasUnexpectedDdlError = false;
       for (const statement of DDL_STATEMENTS) {
         try {
           await prisma.$executeRawUnsafe(statement);
         } catch (stmtErr: any) {
           const msg = stmtErr?.message || '';
           if (!msg.includes('already exists') && !msg.includes('duplicate')) {
-            console.warn('[DB_BOOTSTRAP] DDL notice:', msg);
+            console.error('[DB_BOOTSTRAP] Unexpected DDL failure:', msg);
+            hasUnexpectedDdlError = true;
           }
         }
+      }
+
+      if (hasUnexpectedDdlError) {
+        console.error('[DB_BOOTSTRAP] Schema self-healing encountered unexpected DDL errors. Failing closed.');
+        return false;
       }
 
       console.log('[DB_BOOTSTRAP] Schema self-healing successfully completed. Tables and enums active.');

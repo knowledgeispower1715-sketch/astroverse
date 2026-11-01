@@ -306,6 +306,7 @@ export interface PaymentOrderRecord {
   cfOrderId?: string | null;
   cfPaymentSessionId?: string | null;
   idempotencyKey?: string | null;
+  metadata?: any;
 }
 
 export interface OtpRecord {
