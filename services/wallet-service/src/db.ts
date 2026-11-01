@@ -4490,8 +4490,7 @@ class ResilientDatabase {
           pendingPrivacyRequests,
           astrologerCount,
           depositAgg,
-          consultAgg,
-          pendingRefundsCount
+          consultAgg
         ] = await Promise.all([
           this.prisma.user.count(),
           this.prisma.user.count({ where: { status: 'ACTIVE' } }),
@@ -4516,9 +4515,15 @@ class ResilientDatabase {
           this.prisma.walletLedger.aggregate({
             _sum: { amount: true },
             where: { entryType: 'CONSULTATION_DEBIT' }
-          }),
-          this.prisma.paymentOrder.count({ where: { status: 'PARTIALLY_REFUNDED' } })
+          })
         ]);
+
+        let pendingRefundsCount = 0;
+        try {
+          pendingRefundsCount = await this.prisma.paymentOrder.count({ where: { status: 'REFUNDED' } });
+        } catch (_) {
+          pendingRefundsCount = 0;
+        }
 
         const failedReportsCount = 0;
         const totalWalletDeposits = Number(depositAgg?._sum?.amount || 0);
