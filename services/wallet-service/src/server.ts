@@ -1352,7 +1352,7 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
           });
           return res.status(401).json({
             error: 'INVALID_MFA_CODE',
-            message: 'Invalid two-factor authentication code.'
+            message: 'Invalid two-factor authentication code. Verify device clock sync or enter a backup recovery code.'
           });
         }
       }
@@ -1549,6 +1549,65 @@ app.post('/api/admin/mfa/revoke-assurance', authenticate, requireAdmin(), async 
     });
   }
   res.json({ success: true, message: 'Administrative assurance token revoked successfully.' });
+});
+
+// POST /api/auth/admin-reset-mfa
+// Dedicated MFA reset endpoint for administrators in non-production environments (Preview/Dev).
+// Authenticated strictly by verified email and password. Fails closed in production.
+app.post('/api/auth/admin-reset-mfa', authLimiter, async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Administrator email and password are required.' });
+  }
+
+  if (isProductionEnvironment()) {
+    return res.status(403).json({
+      error: 'FORBIDDEN_IN_PRODUCTION',
+      message: 'MFA reset via HTTP endpoint is strictly disabled in production. Contact platform security.'
+    });
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+
+  try {
+    let user = await db.findUserByIdentifier(cleanEmail);
+    if (!user || !user.passwordHash || !user.passwordSalt) {
+      return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid administrator email or password.' });
+    }
+
+    const valid = verifyPassword(String(password), user.passwordSalt, user.passwordHash);
+    if (!valid) {
+      return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid administrator email or password.' });
+    }
+
+    if (!isAnyAdmin(user.role)) {
+      return res.status(403).json({ error: 'ADMIN_NOT_AUTHORIZED', message: 'This account does not have administrative privileges.' });
+    }
+
+    await db.updateUser(user.id, {
+      mfaEnabled: false,
+      mfaSecret: null,
+      mfaRecoveryCodes: []
+    });
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: 'ADMIN_MFA_RESET_PREVIEW',
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: clientIp,
+      outcome: 'SUCCESS',
+      reason: 'Administrator MFA reset in non-production environment'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Multi-Factor Authentication has been successfully reset. You may now sign in and re-enroll MFA.'
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/auth/forgot-password

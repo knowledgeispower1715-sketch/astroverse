@@ -480,8 +480,11 @@
             <label for="admin-login-mfa" style="display: block; font-size: 12px; font-weight: 700; color: #F5C45E; margin-bottom: 6px;">
               <i class="fa-solid fa-key"></i> Authenticator 6-Digit TOTP Code
             </label>
-            <input type="text" id="admin-login-mfa" maxlength="6" placeholder="123456" style="width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 10px; color: #FFFFFF; font-size: 16px; letter-spacing: 4px; text-align: center; font-family: monospace;">
-            <span style="display: block; font-size: 11px; color: #94A3B8; margin-top: 4px;">Enter the code from your authenticator app or an 8-character recovery code.</span>
+            <input type="text" id="admin-login-mfa" maxlength="16" placeholder="123456" style="width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 10px; color: #FFFFFF; font-size: 16px; letter-spacing: 4px; text-align: center; font-family: monospace;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
+              <span style="font-size: 11px; color: #94A3B8;">Enter 6-digit TOTP or backup recovery code</span>
+              <button type="button" onclick="handlePreviewMfaReset()" style="background: none; border: none; color: #F5C45E; font-size: 11px; text-decoration: underline; cursor: pointer; padding: 0;">Reset MFA (Preview)</button>
+            </div>
           </div>
 
           <button type="submit" id="btn-admin-login-submit" class="btn-gold-primary" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 700; justify-content: center; min-height: 44px; margin-top: 8px;">
@@ -4464,6 +4467,63 @@
         }
       }
     }
+
+    async function handlePreviewMfaReset() {
+      const emailInput = document.getElementById('admin-login-email');
+      const pwdInput = document.getElementById('admin-login-password');
+      const email = emailInput?.value?.trim() || '';
+      const password = pwdInput?.value || '';
+      const errBox = document.getElementById('admin-login-error');
+
+      if (!email || !password) {
+        if (errBox) {
+          errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+          errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+          errBox.style.color = '#FCA5A5';
+          errBox.textContent = 'Please enter your administrator email and password above to reset MFA.';
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+
+      if (!confirm(`Reset Multi-Factor Authentication for ${email} in Preview/Development? You will be able to sign in immediately and re-enroll your authenticator app.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/admin-reset-mfa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const mfaContainer = document.getElementById('admin-mfa-container');
+          const mfaInput = document.getElementById('admin-login-mfa');
+          if (mfaContainer) mfaContainer.style.display = 'none';
+          if (mfaInput) mfaInput.value = '';
+          if (errBox) {
+            errBox.style.background = 'rgba(16, 185, 129, 0.15)';
+            errBox.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            errBox.style.color = '#6EE7B7';
+            errBox.textContent = 'MFA has been successfully reset! Click "Sign In to Admin Console" to continue.';
+            errBox.style.display = 'block';
+          }
+          showToast('MFA has been successfully reset. Please sign in.', 'success');
+        } else {
+          if (errBox) {
+            errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+            errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+            errBox.style.color = '#FCA5A5';
+            errBox.textContent = data.message || 'MFA reset failed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        showToast('Failed to reset MFA: ' + (e.message || e), 'error');
+      }
+    }
+    window.handlePreviewMfaReset = handlePreviewMfaReset;
 
     async function closeAdminAndSignOut() {
       const token = currentSessionToken || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_session_token') : null);

@@ -222,9 +222,13 @@ describe('ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING', () => {
     assert.strictEqual(token.length, 6);
     assert.strictEqual(verifyTotpCode(secret, token), true);
 
-    // C. Verify clock drift window (+/- 30s)
-    const pastToken = generateTotpCode(secret, Date.now() - 25000);
-    assert.strictEqual(verifyTotpCode(secret, pastToken), true);
+    // B2. Whitespace and hyphen formatting tolerance
+    assert.strictEqual(verifyTotpCode(secret, ` ${token.slice(0, 3)} ${token.slice(3)} `), true, 'Must accept spaced TOTP');
+    assert.strictEqual(verifyTotpCode(secret, `${token.slice(0, 3)}-${token.slice(3)}`), true, 'Must accept hyphenated TOTP');
+
+    // C. Verify clock drift window (+/- 60s with window = 2)
+    const pastToken = generateTotpCode(secret, Date.now() - 50000);
+    assert.strictEqual(verifyTotpCode(secret, pastToken), true, 'Must accept 50s drift with window=2');
 
     // D. Reject invalid token
     assert.strictEqual(verifyTotpCode(secret, '000000' === token ? '111111' : '000000'), false);
@@ -235,8 +239,10 @@ describe('ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING', () => {
     assert.strictEqual(hashedCodes.length, 4);
 
     const firstCode = plaintextCodes[0];
-    const consumed = verifyAndConsumeRecoveryCode(hashedCodes, firstCode);
-    assert.strictEqual(consumed.valid, true);
+    // Candidate without hyphen should also match
+    const unhyphenated = firstCode.replace(/-/g, '');
+    const consumed = verifyAndConsumeRecoveryCode(hashedCodes, unhyphenated);
+    assert.strictEqual(consumed.valid, true, 'Recovery code must match without hyphen');
     assert.strictEqual(consumed.remainingHashedCodes.length, 3);
 
     // Single-use replay attack must fail
@@ -280,6 +286,35 @@ describe('ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING', () => {
     }, { code: validCode });
     assert.strictEqual(challengeRes.status, 200);
     assert.ok(challengeRes.body.assuranceToken);
+
+    // 4. Test POST /api/auth/admin-reset-mfa
+    const pwdSalt = crypto.randomBytes(16).toString('hex');
+    const pwdHash = crypto.scryptSync('SecureAdminPass123!', pwdSalt, 64).toString('hex');
+    const ownerUserRecord = await db.findUserById(ownerId);
+    await db.updateUser(ownerId, { passwordHash: pwdHash, passwordSalt: pwdSalt });
+
+    // Wrong password rejected
+    const badReset = await makeRequest(server, 'POST', '/api/auth/admin-reset-mfa', {}, {
+      email: ownerUserRecord?.email,
+      password: 'WrongPassword999!'
+    });
+    assert.strictEqual(badReset.status, 401);
+
+    // Correct password resets MFA in non-production
+    const goodReset = await makeRequest(server, 'POST', '/api/auth/admin-reset-mfa', {}, {
+      email: ownerUserRecord?.email,
+      password: 'SecureAdminPass123!'
+    });
+    assert.strictEqual(goodReset.status, 200);
+    assert.strictEqual(goodReset.body.success, true);
+
+    const postResetUser = await db.findUserById(ownerId);
+    assert.strictEqual(postResetUser?.mfaEnabled, false);
+    assert.strictEqual(postResetUser?.mfaSecret, null);
+    assert.deepStrictEqual(postResetUser?.mfaRecoveryCodes, []);
+
+    // Re-enable MFA for subsequent tests that expect owner MFA active
+    await db.updateUser(ownerId, { mfaEnabled: true, mfaSecret: setupRes.body.secret });
   });
 
   it('Requires MFA step-up assurance token for high-impact mutations when MFA is active', async () => {

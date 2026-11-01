@@ -101,14 +101,19 @@ export function generateTotpCode(secretBase32: string, timestampMs = Date.now(),
 }
 
 /**
- * Verifies a candidate TOTP token allowing clock skew window of +/- 1 time step (30s)
+ * Verifies a candidate TOTP token allowing clock skew window of +/- 2 time steps (60s)
+ * Automatically strips whitespace and hyphens, and uses constant-time comparison
  */
-export function verifyTotpCode(secretBase32: string, candidateToken: string, window = 1): boolean {
-  if (!candidateToken || !/^\d{6}$/.test(candidateToken.trim())) {
+export function verifyTotpCode(secretBase32: string, candidateToken: string, window = 2): boolean {
+  if (!candidateToken) {
     return false;
   }
 
-  const cleanToken = candidateToken.trim();
+  const cleanToken = String(candidateToken).replace(/[\s-]/g, '').trim();
+  if (!/^\d{6}$/.test(cleanToken)) {
+    return false;
+  }
+
   const now = Date.now();
 
   for (let errorWindow = -window; errorWindow <= window; errorWindow++) {
@@ -143,17 +148,41 @@ export function generateMfaRecoveryCodes(count = 8): { plaintextCodes: string[];
 
 /**
  * Verifies and consumes a recovery code
+ * Tolerates codes entered with or without hyphens and spaces
  */
 export function verifyAndConsumeRecoveryCode(hashedCodes: string[], candidateCode: string): { valid: boolean; remainingHashedCodes: string[] } {
-  const candidateHash = crypto.createHash('sha256').update(candidateCode.trim().toUpperCase()).digest('hex');
-  const index = hashedCodes.findIndex(h => h === candidateHash);
+  if (!candidateCode || !Array.isArray(hashedCodes) || hashedCodes.length === 0) {
+    return { valid: false, remainingHashedCodes: hashedCodes || [] };
+  }
 
-  if (index === -1) {
+  const cleanCode = String(candidateCode).replace(/[\s]/g, '').toUpperCase();
+  const candidatesToMatch = [cleanCode];
+
+  // If candidate was entered without a hyphen, test with hyphen inserted in the middle
+  if (!cleanCode.includes('-')) {
+    if (cleanCode.length === 12) {
+      candidatesToMatch.push(`${cleanCode.slice(0, 6)}-${cleanCode.slice(6)}`);
+    } else if (cleanCode.length === 8) {
+      candidatesToMatch.push(`${cleanCode.slice(0, 4)}-${cleanCode.slice(4)}`);
+    }
+  }
+
+  let matchedIndex = -1;
+  for (const c of candidatesToMatch) {
+    const candidateHash = crypto.createHash('sha256').update(c).digest('hex');
+    const idx = hashedCodes.findIndex(h => h === candidateHash);
+    if (idx !== -1) {
+      matchedIndex = idx;
+      break;
+    }
+  }
+
+  if (matchedIndex === -1) {
     return { valid: false, remainingHashedCodes: hashedCodes };
   }
 
   const remaining = [...hashedCodes];
-  remaining.splice(index, 1);
+  remaining.splice(matchedIndex, 1);
   return { valid: true, remainingHashedCodes: remaining };
 }
 
