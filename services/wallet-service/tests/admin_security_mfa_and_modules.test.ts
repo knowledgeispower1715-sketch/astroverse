@@ -338,7 +338,7 @@ describe('ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING', () => {
     });
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.roles.length, 8);
-    assert.strictEqual(res.body.modules.length, 15);
+    assert.strictEqual(res.body.modules.length, 22);
   });
 
   it('Module 4: Security Events audit stream', async () => {

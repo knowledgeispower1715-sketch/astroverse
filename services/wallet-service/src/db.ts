@@ -51,7 +51,33 @@ export enum OrderStatus {
   CREATED = 'CREATED',
   PAID = 'PAID',
   FAILED = 'FAILED',
+  PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED',
   REFUNDED = 'REFUNDED'
+}
+
+export enum RefundState {
+  REQUESTED = 'REQUESTED',
+  PROCESSING = 'PROCESSING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED'
+}
+
+export interface RefundRecord {
+  id: string;
+  orderId: string;
+  cfRefundId?: string;
+  cf_refund_id?: string;
+  amount: number;
+  amountPaise: number;
+  currency: string;
+  status: RefundState;
+  reason: string;
+  adminId: string;
+  adminEmail: string;
+  createdAt: string;
+  updatedAt: string;
+  gatewayResponse?: any;
+  error?: string;
 }
 
 export enum SessionStatus {
@@ -306,6 +332,8 @@ export interface PaymentOrderRecord {
   cfOrderId?: string | null;
   cfPaymentSessionId?: string | null;
   idempotencyKey?: string | null;
+  refundedAmountPaise?: number;
+  refunds?: RefundRecord[];
   metadata?: any;
 }
 

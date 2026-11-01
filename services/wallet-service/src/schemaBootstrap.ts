@@ -658,24 +658,11 @@ export async function checkSchemaReadiness(prisma: any): Promise<SchemaReadiness
 
   try {
     const rows: any = await prisma.$queryRawUnsafe(`
-      SELECT c.relname as table_name, c.relrowsecurity as rls_enabled
+      SELECT c.relname as table_name, c.relrowsecurity as rls_enabled, c.relforcerowsecurity as rls_forced
       FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relkind = 'r';
     `);
-
-    // Gracefully handle test harness mocks returning [{ exists: 1 }]
-    if (Array.isArray(rows) && rows.length > 0 && rows[0].exists !== undefined) {
-      const allExist = Boolean(rows[0].exists);
-      return {
-        isReady: allExist,
-        totalExpected: APPLICATION_TABLES.length,
-        existingTables: allExist ? [...APPLICATION_TABLES] : [],
-        missingTables: allExist ? [] : [...APPLICATION_TABLES],
-        rlsEnabledTables: allExist ? [...APPLICATION_TABLES] : [],
-        missingRlsTables: []
-      };
-    }
 
     const existingTables: string[] = (rows || []).map((r: any) => r.table_name || r.TABLE_NAME).filter(Boolean);
     const missingTables = APPLICATION_TABLES.filter(t => !existingTables.includes(t));
@@ -753,6 +740,13 @@ export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
         return false;
       }
 
+      // Independent post-DDL catalog check to prove tables and RLS actually exist
+      const postVerification = await checkSchemaReadiness(prisma);
+      if (!postVerification.isReady) {
+        console.error(`[DB_BOOTSTRAP] Independent catalog check failed post-DDL. Missing tables: ${postVerification.missingTables.join(', ')}, Missing RLS: ${postVerification.missingRlsTables.join(', ')}`);
+        return false;
+      }
+
       console.log('[DB_BOOTSTRAP] Schema self-healing successfully completed. Tables and enums active.');
       return true;
     } catch (err: any) {
@@ -763,4 +757,55 @@ export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
 
   bootstrapPromises.set(prisma, promise);
   return promise;
+}
+
+export async function inspectDatabaseRlsCatalog(prisma: any): Promise<{
+  tables: Array<{ name: string; rlsEnabled: boolean; rlsForced: boolean }>;
+  policies: Array<{ table: string; name: string; command: string; roles: string[]; qual: string; withCheck: string }>;
+  isFullyProtected: boolean;
+}> {
+  if (!prisma) {
+    return { tables: [], policies: [], isFullyProtected: false };
+  }
+
+  try {
+    const classRows: any = await prisma.$queryRawUnsafe(`
+      SELECT c.relname as table_name, c.relrowsecurity as rls_enabled, c.relforcerowsecurity as rls_forced
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r';
+    `);
+
+    const policyRows: any = await prisma.$queryRawUnsafe(`
+      SELECT tablename, policyname, cmd, roles, qual, with_check
+      FROM pg_policies
+      WHERE schemaname = 'public';
+    `);
+
+    const tables = (classRows || []).map((r: any) => ({
+      name: r.table_name || r.TABLE_NAME,
+      rlsEnabled: Boolean(r.rls_enabled),
+      rlsForced: Boolean(r.rls_forced)
+    }));
+
+    const policies = (policyRows || []).map((p: any) => ({
+      table: p.tablename,
+      name: p.policyname,
+      command: p.cmd,
+      roles: Array.isArray(p.roles) ? p.roles : [p.roles],
+      qual: p.qual,
+      withCheck: p.with_check
+    }));
+
+    const existingTableNames = tables.map((t: any) => t.name);
+    const missingTables = APPLICATION_TABLES.filter(t => !existingTableNames.includes(t));
+    const unsecureTables = tables.filter((t: any) => APPLICATION_TABLES.includes(t.name) && !t.rlsEnabled);
+
+    const isFullyProtected = missingTables.length === 0 && unsecureTables.length === 0 && policies.length > 0;
+
+    return { tables, policies, isFullyProtected };
+  } catch (err: any) {
+    console.error('[DB_BOOTSTRAP] inspectDatabaseRlsCatalog error:', err?.message || err);
+    return { tables: [], policies: [], isFullyProtected: false };
+  }
 }

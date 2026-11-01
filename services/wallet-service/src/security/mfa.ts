@@ -170,15 +170,34 @@ const ASSURANCE_LIFETIME_MS = 15 * 60 * 1000; // 15 minutes
 export interface AdminAssurancePayload {
   userId: string;
   role: string;
+  scope?: string;
   issuedAt: number;
   expiresAt: number;
 }
 
-export function issueAdminAssuranceToken(userId: string, role: string): string {
+const revokedAssuranceTokens = new Set<string>();
+
+export function revokeAdminAssuranceToken(token: string): void {
+  if (token && typeof token === 'string') {
+    revokedAssuranceTokens.add(token.trim());
+  }
+}
+
+export function isAssuranceTokenRevoked(token: string): boolean {
+  if (!token || typeof token !== 'string') return false;
+  return revokedAssuranceTokens.has(token.trim());
+}
+
+export function clearRevokedAssuranceTokens(): void {
+  revokedAssuranceTokens.clear();
+}
+
+export function issueAdminAssuranceToken(userId: string, role: string, scope: string = 'ADMIN_MUTATION'): string {
   const now = Date.now();
   const payload: AdminAssurancePayload = {
     userId,
     role,
+    scope,
     issuedAt: now,
     expiresAt: now + ASSURANCE_LIFETIME_MS
   };
@@ -191,6 +210,10 @@ export function issueAdminAssuranceToken(userId: string, role: string): string {
 
 export function verifyAdminAssuranceToken(token: string | undefined): AdminAssurancePayload | null {
   if (!token || typeof token !== 'string') return null;
+
+  if (isAssuranceTokenRevoked(token)) {
+    return null;
+  }
 
   const parts = token.split('.');
   if (parts.length !== 2) return null;

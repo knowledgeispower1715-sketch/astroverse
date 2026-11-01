@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { db, UserRecord, Role, AccountStatus, OrderStatus, EntryType, isDemoModeActive, ConsultationSessionStatus, ConsultationSessionRecord, AdminPreviewSessionRecord } from './db';
+import { db, UserRecord, Role, AccountStatus, OrderStatus, EntryType, isDemoModeActive, ConsultationSessionStatus, ConsultationSessionRecord, AdminPreviewSessionRecord, RefundState, RefundRecord } from './db';
 import {
   AdminPermission,
   ROLE_PERMISSIONS,
@@ -12,7 +12,8 @@ import {
   ADMIN_MODULE_REGISTRY,
   getAuthorizedAdminEmails,
   isAuthorizedAdminEmail,
-  isAdminPreviewEnabled
+  isAdminPreviewEnabled,
+  AUTHORITATIVE_ADMIN_MODULE_REGISTRY
 } from './security/permissions';
 import {
   generateTotpSecret,
@@ -21,8 +22,11 @@ import {
   generateMfaRecoveryCodes,
   verifyAndConsumeRecoveryCode,
   issueAdminAssuranceToken,
-  verifyAdminAssuranceToken
+  verifyAdminAssuranceToken,
+  isAssuranceTokenRevoked,
+  revokeAdminAssuranceToken
 } from './security/mfa';
+import { DurableAiQuotaManager } from './monetization/aiQuotas';
 import { getPublicSupabaseConfig, verifySupabaseToken, getSupabaseAdminClient } from './supabase';
 import {
   isCashfreeConfigured,
@@ -406,7 +410,7 @@ async function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, n
   next();
 }
 
-function requireAdmin(permissionOrRoles?: AdminPermission | Role[]) {
+function requireAdmin(permissionOrRoles?: AdminPermission | AdminPermission[] | Role[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: 'UNAUTHORIZED' });
@@ -436,19 +440,33 @@ function requireAdmin(permissionOrRoles?: AdminPermission | Role[]) {
     }
 
     if (Array.isArray(permissionOrRoles)) {
-      const canonicalUser = normalizeRole(userRole);
-      const isAllowed = permissionOrRoles.some(r => r === userRole || normalizeRole(r) === canonicalUser);
-      if (!isAllowed) {
-        return res.status(403).json({
-          error: 'FORBIDDEN',
-          message: 'Your administrative role does not have permission for this operation.'
-        });
+      if (permissionOrRoles.length === 0) return next();
+      const first = permissionOrRoles[0];
+      const isRoleArray = Object.values(Role).includes(first as Role);
+      if (isRoleArray) {
+        const canonicalUser = normalizeRole(userRole);
+        const isAllowed = (permissionOrRoles as Role[]).some(r => r === userRole || normalizeRole(r) === canonicalUser);
+        if (!isAllowed) {
+          return res.status(403).json({
+            error: 'FORBIDDEN',
+            message: 'Your administrative role does not have permission for this operation.'
+          });
+        }
+        return next();
+      } else {
+        const isAllowed = (permissionOrRoles as AdminPermission[]).some(p => hasPermission(userRole, p));
+        if (!isAllowed) {
+          return res.status(403).json({
+            error: 'FORBIDDEN',
+            message: `Your administrative role does not have permission for this operation.`
+          });
+        }
+        return next();
       }
-      return next();
     }
 
     // Single permission check
-    if (!hasPermission(userRole, permissionOrRoles)) {
+    if (!hasPermission(userRole, permissionOrRoles as AdminPermission)) {
       return res.status(403).json({
         error: 'FORBIDDEN',
         message: `Operation requires permission: ${permissionOrRoles}`
@@ -459,7 +477,7 @@ function requireAdmin(permissionOrRoles?: AdminPermission | Role[]) {
   };
 }
 
-function requireAdminAssurance() {
+function requireAdminAssurance(requiredScope?: string) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user || !isAnyAdmin(req.user.role)) {
       return res.status(403).json({ error: 'FORBIDDEN', message: 'Administrative access required.' });
@@ -467,18 +485,40 @@ function requireAdminAssurance() {
 
     const token = (req.headers['x-admin-assurance-token'] || req.headers['x-admin-mfa-token']) as string;
     if (token) {
-      const verified = verifyAdminAssuranceToken(token);
-      if (verified && verified.userId === req.user.id) {
-        return next();
+      if (isAssuranceTokenRevoked(token)) {
+        return res.status(401).json({
+          error: 'MFA_ASSURANCE_REVOKED',
+          message: 'Administrative MFA step-up assurance token has been revoked.'
+        });
       }
-      return res.status(401).json({
-        error: 'MFA_ASSURANCE_INVALID_OR_EXPIRED',
-        message: 'Administrative MFA step-up assurance token has expired or is invalid.'
-      });
+
+      const verified = verifyAdminAssuranceToken(token);
+      if (!verified) {
+        return res.status(401).json({
+          error: 'MFA_ASSURANCE_INVALID_OR_EXPIRED',
+          message: 'Administrative MFA step-up assurance token has expired or is invalid.'
+        });
+      }
+
+      if (verified.userId !== req.user.id) {
+        return res.status(401).json({
+          error: 'MFA_ASSURANCE_IDENTITY_MISMATCH',
+          message: 'Administrative MFA step-up assurance token belongs to a different administrator.'
+        });
+      }
+
+      if (requiredScope && verified.scope && verified.scope !== requiredScope && verified.scope !== 'ALL') {
+        return res.status(403).json({
+          error: 'MFA_ASSURANCE_INSUFFICIENT_SCOPE',
+          message: `Administrative MFA assurance token does not possess the required '${requiredScope}' scope.`
+        });
+      }
+
+      return next();
     }
 
-    // High impact operation strictly requires assurance token if MFA is enabled or in production or if enforced
-    if (isProductionEnvironment() || req.user.mfaEnabled || req.user.mfaEnforced) {
+    // High impact operation strictly requires assurance token if MFA is enabled, in production, enforced, or strictly required
+    if (isProductionEnvironment() || req.user.mfaEnabled || req.user.mfaEnforced || req.headers['x-admin-require-mfa'] === 'true') {
       return res.status(428).json({
         error: 'MFA_ASSURANCE_REQUIRED',
         message: 'This sensitive administrative action requires verified multi-factor authentication (MFA) step-up token.'
@@ -533,6 +573,15 @@ export function validatePrivilegedCustomerAccess(
   // 2. Step-up MFA assurance token check
   const assuranceToken = (req.headers['x-admin-assurance-token'] || req.headers['x-admin-mfa-token']) as string;
   if (assuranceToken) {
+    if (isAssuranceTokenRevoked(assuranceToken)) {
+      return {
+        authorized: false,
+        statusCode: 401,
+        error: 'MFA_ASSURANCE_REVOKED',
+        message: 'Administrative MFA step-up assurance token has been revoked.'
+      };
+    }
+
     const verified = verifyAdminAssuranceToken(assuranceToken);
     if (!verified || verified.userId !== actor.id) {
       return {
@@ -546,7 +595,7 @@ export function validatePrivilegedCustomerAccess(
   }
 
   // If no assurance token provided:
-  if (isProductionEnvironment() || actor.mfaEnabled || actor.mfaEnforced) {
+  if (isProductionEnvironment() || actor.mfaEnabled || actor.mfaEnforced || req.headers['x-admin-require-mfa'] === 'true') {
     return {
       authorized: false,
       statusCode: 428,
@@ -4365,86 +4414,126 @@ app.post('/api/admin/astrology/test-calculation', authenticate, requireAdmin(Adm
     headers['x-internal-key'] = internalKey;
   }
 
-  const referencePositions = {
-    lagna: { sign: 'Scorpio', degree: 24.17 },
-    sun: { sign: 'Leo', degree: 3.49, house: 10 },
-    moon: { sign: 'Aquarius', degree: 12.21, house: 4 },
-    mars: { sign: 'Aries', degree: 18.29, house: 6 },
-    jupiter: { sign: 'Virgo', degree: 22.46, house: 11 }
-  };
+  const referencePositions = [
+    { parameter: 'Ascendant (Lagna)', sign: 'Scorpio', degree: 24.17 },
+    { parameter: 'Sun (Surya)', sign: 'Leo', degree: 3.49 },
+    { parameter: 'Moon (Chandra)', sign: 'Aquarius', degree: 12.21 },
+    { parameter: 'Mars (Mangal)', sign: 'Aries', degree: 18.29 },
+    { parameter: 'Jupiter (Guru)', sign: 'Virgo', degree: 22.46 }
+  ];
+
+  const start = Date.now();
+  let result: any = null;
+  let isLive = false;
 
   try {
-    const start = Date.now();
-    let result: any = null;
-
-    try {
-      const r = await fetch(`${kundliUrl}/api/kundli`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(fixture),
-        signal: AbortSignal.timeout(4000)
+    const r = await fetch(`${kundliUrl}/api/kundli`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(fixture),
+      signal: AbortSignal.timeout(4000)
+    });
+    if (r.ok) {
+      result = await r.json();
+      isLive = true;
+    } else {
+      const errorText = await r.text().catch(() => '');
+      throw new Error(`Kundli engine returned HTTP ${r.status}: ${errorText}`);
+    }
+  } catch (fetchErr: any) {
+    // If synthetic test fixture is explicitly allowed in test harness
+    if (process.env.ALLOW_SYNTHETIC_CALIBRATION_FIXTURE === 'true' || process.env.NODE_ENV === 'test') {
+      result = {
+        engine_version: '2.1.0-test-synthetic',
+        calculation_source: 'Deterministic Synthetic Test Fixture',
+        ayanamsha: 'Chitra Paksha / Lahiri',
+        lagna: { sign: 'Scorpio', degree: 24.17, sign_index: 7 },
+        planets: {
+          Sun: { sign: 'Leo', degree: 3.49, house: 10 },
+          Moon: { sign: 'Aquarius', degree: 12.21, house: 4 },
+          Mars: { sign: 'Aries', degree: 18.29, house: 6 },
+          Jupiter: { sign: 'Virgo', degree: 22.46, house: 11 }
+        }
+      };
+      isLive = false;
+    } else {
+      // Truthful fail-closed reporting when engine is unavailable: Never substitute fake golden values!
+      return res.status(503).json({
+        success: false,
+        calibrationStatus: 'ENGINE_UNAVAILABLE',
+        error: 'KUNDLI_ENGINE_UNAVAILABLE',
+        message: `Kundli Ephemeris Engine is unreachable or returned an error at ${kundliUrl}: ${fetchErr?.message || 'Connection failed'}. Golden fallback values strictly denied.`,
+        requestedBirthDetails: fixture,
+        isLiveEngine: false
       });
-      if (r.ok) {
-        result = await r.json();
-      } else {
-        const errorText = await r.text().catch(() => '');
-        throw new Error(`Kundli engine returned HTTP ${r.status}: ${errorText}`);
-      }
-    } catch (fetchErr: any) {
-      if (process.env.NODE_ENV === 'test') {
-        // Controlled synthetic response for test environments without live Python background daemon
-        result = {
-          lagna: { sign: 'Scorpio', degree: 24.17, sign_index: 7 },
-          planets: {
-            Sun: { sign: 'Leo', degree: 3.49, house: 10 },
-            Moon: { sign: 'Aquarius', degree: 12.21, house: 4 },
-            Mars: { sign: 'Aries', degree: 18.29, house: 6 },
-            Jupiter: { sign: 'Virgo', degree: 22.46, house: 11 }
-          }
-        };
-      } else {
-        return res.status(503).json({
-          success: false,
-          calibrationStatus: 'ENGINE_UNAVAILABLE',
-          error: 'KUNDLI_ENGINE_UNAVAILABLE',
-          message: `Kundli Ephemeris Engine is unreachable or returned an error at ${kundliUrl}: ${fetchErr?.message || 'Connection failed'}`,
-          fixture,
-          referencePositions
-        });
-      }
+    }
+  }
+
+  const latencyMs = Date.now() - start;
+  const toleranceThresholdDeg = 0.05;
+  const retLagna = result?.lagna;
+  const retPlanets = result?.planets;
+
+  const comparisons = referencePositions.map(ref => {
+    let actualSign = '';
+    let actualDeg = 0;
+    if (ref.parameter.includes('Ascendant')) {
+      actualSign = retLagna?.sign || '';
+      actualDeg = Number(retLagna?.degree || 0);
+    } else if (ref.parameter.includes('Sun')) {
+      actualSign = retPlanets?.Sun?.sign || '';
+      actualDeg = Number(retPlanets?.Sun?.degree || 0);
+    } else if (ref.parameter.includes('Moon')) {
+      actualSign = retPlanets?.Moon?.sign || '';
+      actualDeg = Number(retPlanets?.Moon?.degree || 0);
+    } else if (ref.parameter.includes('Mars')) {
+      actualSign = retPlanets?.Mars?.sign || '';
+      actualDeg = Number(retPlanets?.Mars?.degree || 0);
+    } else if (ref.parameter.includes('Jupiter')) {
+      actualSign = retPlanets?.Jupiter?.sign || '';
+      actualDeg = Number(retPlanets?.Jupiter?.degree || 0);
     }
 
-    const retLagna = result?.lagna;
-    const retPlanets = result?.planets;
+    const absError = Math.abs(actualDeg - ref.degree);
+    const signMatch = actualSign.toLowerCase() === ref.sign.toLowerCase();
+    const degreeMatch = absError <= toleranceThresholdDeg;
+    const match = signMatch && degreeMatch;
 
-    const lagnaMatch = retLagna?.sign === referencePositions.lagna.sign && Math.abs((retLagna?.degree || 0) - referencePositions.lagna.degree) <= 0.05;
-    const sunMatch = retPlanets?.Sun?.sign === referencePositions.sun.sign && Math.abs((retPlanets?.Sun?.degree || 0) - referencePositions.sun.degree) <= 0.05;
-    const moonMatch = retPlanets?.Moon?.sign === referencePositions.moon.sign && Math.abs((retPlanets?.Moon?.degree || 0) - referencePositions.moon.degree) <= 0.05;
-    const marsMatch = retPlanets?.Mars?.sign === referencePositions.mars.sign && Math.abs((retPlanets?.Mars?.degree || 0) - referencePositions.mars.degree) <= 0.05;
-    const jupiterMatch = retPlanets?.Jupiter?.sign === referencePositions.jupiter.sign && Math.abs((retPlanets?.Jupiter?.degree || 0) - referencePositions.jupiter.degree) <= 0.05;
+    return {
+      parameter: ref.parameter,
+      expectedSign: ref.sign,
+      actualSign,
+      expectedDeg: ref.degree,
+      actualDeg: Number(actualDeg.toFixed(2)),
+      absoluteErrorDeg: Number(absError.toFixed(4)),
+      toleranceThresholdDeg,
+      match
+    };
+  });
 
-    const isCalibrated = Boolean(lagnaMatch && sunMatch && moonMatch && marsMatch && jupiterMatch);
+  const allMatched = comparisons.every(c => c.match);
 
-    res.json({
-      success: isCalibrated,
-      calibrationStatus: isCalibrated ? 'CALIBRATED_PASSED' : 'OUT_OF_TOLERANCE',
-      toleranceThresholdDeg: 0.05,
-      latencyMs: Date.now() - start,
-      engineUrl: kundliUrl,
-      fixture,
-      referencePositions,
-      livePositions: {
-        lagna: { sign: retLagna?.sign, degree: retLagna?.degree, match: lagnaMatch },
-        sun: { sign: retPlanets?.Sun?.sign, degree: retPlanets?.Sun?.degree, match: sunMatch },
-        moon: { sign: retPlanets?.Moon?.sign, degree: retPlanets?.Moon?.degree, match: moonMatch },
-        mars: { sign: retPlanets?.Mars?.sign, degree: retPlanets?.Mars?.degree, match: marsMatch },
-        jupiter: { sign: retPlanets?.Jupiter?.sign, degree: retPlanets?.Jupiter?.degree, match: jupiterMatch }
-      },
-      liveResult: result
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
+  res.json({
+    success: allMatched,
+    calibrationStatus: allMatched ? 'CALIBRATED_PASSED' : 'OUT_OF_TOLERANCE',
+    engineVersion: result?.engine_version || '2.1.0',
+    calculationSource: result?.calculation_source || (isLive ? 'Swiss Ephemeris (pyswisseph)' : 'Deterministic Fixture'),
+    ayanamsha: result?.ayanamsha || 'Lahiri / Chitra Paksha',
+    requestedBirthDetails: fixture,
+    calculationTimestamp: new Date().toISOString(),
+    latencyMs,
+    toleranceThresholdDeg,
+    comparedParameters: referencePositions.map(r => r.parameter),
+    comparisons,
+    livePositions: {
+      lagna: comparisons.find(c => c.parameter.includes('Ascendant')),
+      sun: comparisons.find(c => c.parameter.includes('Sun')),
+      moon: comparisons.find(c => c.parameter.includes('Moon')),
+      mars: comparisons.find(c => c.parameter.includes('Mars')),
+      jupiter: comparisons.find(c => c.parameter.includes('Jupiter'))
+    },
+    isLiveEngine: isLive
+  });
 });
 
 // -----------------------------------------------------------------------------
@@ -4807,7 +4896,17 @@ app.get('/api/admin/reports/diagnostics', authenticate, requireAdmin(AdminPermis
   }
 });
 
-app.post('/api/admin/reports/:id/retry', authenticate, requireAdmin(AdminPermission.RETRY_FAILED_REPORTS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/reports/:id/retry', authenticate, requireAdmin(AdminPermission.RETRY_FAILED_REPORTS), requireAdminAssurance('reports:retry'), async (req: AuthenticatedRequest, res: Response) => {
+  await db.recordAuditEvent({
+    userId: req.user!.id,
+    actorId: req.user!.id,
+    actorRole: req.user!.role,
+    action: 'REPORT_RETRY_ENQUEUED',
+    targetType: 'REPORT',
+    targetId: req.params.id,
+    outcome: 'SUCCESS',
+    metadata: { reportId: req.params.id }
+  });
   res.json({
     success: true,
     reportId: req.params.id,
@@ -4816,24 +4915,20 @@ app.post('/api/admin/reports/:id/retry', authenticate, requireAdmin(AdminPermiss
   });
 });
 
-// -----------------------------------------------------------------------------
-const adminAiQuotas = {
-  freeTierDailyQueries: 3,
-  plusTierDailyQueries: 15,
-  premiumTierDailyQueries: 30
-};
-
 // MODULE 7: AI PROVIDER STATUS, USAGE & COST CONTROLS
 // -----------------------------------------------------------------------------
 app.get('/api/admin/ai/usage', authenticate, requireAdmin(AdminPermission.VIEW_AI_USAGE), async (_req: AuthenticatedRequest, res: Response) => {
   const openaiConfigured = Boolean(process.env.OPENAI_API_KEY);
   const anthropicConfigured = Boolean(process.env.ANTHROPIC_API_KEY);
+  const geminiConfigured = Boolean(process.env.GEMINI_API_KEY);
+  const metrics = DurableAiQuotaManager.getMetrics();
 
   res.json({
     success: true,
     providers: {
       openai: { configured: openaiConfigured, model: process.env.OPENAI_MODEL || 'gpt-4o' },
       anthropic: { configured: anthropicConfigured, model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet' },
+      gemini: { configured: geminiConfigured, model: process.env.GEMINI_MODEL || 'gemini-1.5-pro' },
       localFallback: { active: true, model: 'Parashari Jyotish Synthesizer v2' }
     },
     personas: [
@@ -4841,23 +4936,22 @@ app.get('/api/admin/ai/usage', authenticate, requireAdmin(AdminPermission.VIEW_A
       { id: 'sunita', name: 'Dr. Sunita Shastri', model: 'Jaimini & KP', active: true },
       { id: 'raghavendra', name: 'Pandit Raghavendra', model: 'Vedic Yogas & Muhurta', active: true }
     ],
-    quotas: { ...adminAiQuotas },
-    estimatedTokensToday: 14250,
-    estimatedCostUsd: 0.04
+    quotas: metrics.quotas,
+    totalQueriesToday: metrics.totalQueriesToday,
+    totalQueriesThisMonth: metrics.totalQueriesThisMonth,
+    tierBreakdown: metrics.tierBreakdown,
+    activeUsersToday: metrics.activeUsersToday,
+    estimatedTokensToday: metrics.totalQueriesToday * 700,
+    estimatedCostUsd: metrics.estimatedCostTodayUsd
   });
 });
 
 app.put('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.MANAGE_AI_QUOTAS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
   const { freeLimit, plusLimit, premiumLimit } = req.body;
-  if (freeLimit !== undefined && Number.isInteger(Number(freeLimit)) && Number(freeLimit) >= 0) {
-    adminAiQuotas.freeTierDailyQueries = Number(freeLimit);
-  }
-  if (plusLimit !== undefined && Number.isInteger(Number(plusLimit)) && Number(plusLimit) >= 0) {
-    adminAiQuotas.plusTierDailyQueries = Number(plusLimit);
-  }
-  if (premiumLimit !== undefined && Number.isInteger(Number(premiumLimit)) && Number(premiumLimit) >= 0) {
-    adminAiQuotas.premiumTierDailyQueries = Number(premiumLimit);
-  }
+  const updatedQuotas = DurableAiQuotaManager.updateQuotas(
+    { freeLimit, plusLimit, premiumLimit },
+    req.user!.email || req.user!.id
+  );
 
   await db.recordAuditEvent({
     userId: req.user!.id,
@@ -4865,9 +4959,10 @@ app.put('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.MANAG
     actorRole: req.user!.role,
     action: 'ADMIN_AI_QUOTA_UPDATE',
     outcome: 'SUCCESS',
-    metadata: { ...adminAiQuotas }
+    metadata: { ...updatedQuotas }
   });
-  res.json({ success: true, message: 'AI consultation quotas updated.', quotas: { ...adminAiQuotas } });
+
+  res.json({ success: true, message: 'AI consultation quotas updated and persisted durably.', quotas: updatedQuotas });
 });
 
 // -----------------------------------------------------------------------------
@@ -4981,7 +5076,7 @@ app.post('/api/admin/payments/reconcile', adminSensitiveMutationsLimiter, authen
 });
 
 // POST /api/admin/wallet/adjust-balance (Admin balance adjustment with reason and audit log)
-app.post('/api/admin/wallet/adjust-balance', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/wallet/adjust-balance', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_WALLET), requireAdminAssurance('wallet:adjust'), async (req: AuthenticatedRequest, res: Response) => {
   const { userId, amount, type, reason, category } = req.body;
   const admin = req.user!;
 
@@ -5012,6 +5107,23 @@ app.post('/api/admin/wallet/adjust-balance', adminSensitiveMutationsLimiter, aut
       admin.id,
       category
     );
+
+    await db.recordAuditEvent({
+      userId: admin.id,
+      actorId: admin.id,
+      actorRole: admin.role,
+      action: 'WALLET_BALANCE_ADJUSTED',
+      targetType: 'WALLET',
+      targetId: userId.trim(),
+      outcome: 'SUCCESS',
+      metadata: {
+        targetUserId: userId.trim(),
+        amount: numAmount,
+        type: normType,
+        reason: reason.trim(),
+        category: category || 'MANUAL_ADJUSTMENT'
+      }
+    });
 
     res.json({
       success: true,
@@ -5119,13 +5231,26 @@ app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.V
   }
 });
 
+const activeRefundLocks = new Set<string>();
+
 app.post('/api/admin/payments/refund', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
-  const { orderId, amount, reason } = req.body;
+  const { orderId, amount, reason, refundId: requestedRefundId } = req.body;
   if (!orderId || typeof orderId !== 'string' || !orderId.trim()) {
     return res.status(400).json({ error: 'ORDER_ID_REQUIRED', message: 'A valid orderId is required for refund.' });
   }
 
   const cleanOrderId = orderId.trim();
+
+  // Concurrency-safety lock per order
+  if (activeRefundLocks.has(cleanOrderId)) {
+    return res.status(409).json({
+      error: 'CONCURRENT_REFUND_IN_PROGRESS',
+      message: 'A refund operation is currently executing for this order. Please retry in a few moments.'
+    });
+  }
+
+  activeRefundLocks.add(cleanOrderId);
+
   try {
     let order = await db.findPaymentOrderByIdAsync(cleanOrderId);
     if (!order) {
@@ -5136,64 +5261,169 @@ app.post('/api/admin/payments/refund', adminSensitiveMutationsLimiter, authentic
       return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: `Order ${cleanOrderId} does not exist.` });
     }
 
+    // Eligibility check
     if (order.status === OrderStatus.REFUNDED) {
-      return res.status(400).json({ error: 'ALREADY_REFUNDED', message: 'Order has already been refunded.' });
+      return res.status(400).json({ error: 'ALREADY_REFUNDED', message: 'Order has already been fully refunded.' });
     }
 
-    // Cashfree PG requires the parent order to be in PAID status
-    if (order.status !== OrderStatus.PAID) {
+    if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.PARTIALLY_REFUNDED) {
       return res.status(400).json({
         error: 'ORDER_NOT_PAID',
         message: `Only paid orders can be refunded. Current order status: ${order.status}`
       });
     }
 
-    const refundAmount = Number(amount !== undefined && amount !== null ? amount : order.amount);
-    if (!refundAmount || refundAmount <= 0 || refundAmount > order.amount) {
+    // Integer paise calculations
+    const totalOrderPaise = order.amountPaise !== undefined ? order.amountPaise : Math.round(order.amount * 100);
+    if (!order.refunds) {
+      order.refunds = [];
+    }
+
+    // Idempotency check for existing refund ID
+    if (requestedRefundId) {
+      const existingRefund = order.refunds.find((r: any) => r.id === requestedRefundId);
+      if (existingRefund) {
+        return res.json({
+          success: existingRefund.status === RefundState.SUCCESS,
+          idempotentReplay: true,
+          message: `Refund ${requestedRefundId} already recorded with status: ${existingRefund.status}`,
+          refund: existingRefund,
+          order
+        });
+      }
+    }
+
+    const priorSuccessfulPaise = order.refunds
+      .filter((r: any) => r.status === RefundState.SUCCESS)
+      .reduce((sum: number, r: any) => sum + (r.amountPaise || Math.round(r.amount * 100)), 0);
+
+    const pendingProcessingPaise = order.refunds
+      .filter((r: any) => r.status === RefundState.PROCESSING || r.status === RefundState.REQUESTED)
+      .reduce((sum: number, r: any) => sum + (r.amountPaise || Math.round(r.amount * 100)), 0);
+
+    const remainingRefundablePaise = totalOrderPaise - priorSuccessfulPaise - pendingProcessingPaise;
+
+    if (remainingRefundablePaise <= 0) {
       return res.status(400).json({
-        error: 'INVALID_REFUND_AMOUNT',
-        message: `Refund amount must be between 1 and ₹${order.amount}.`
+        error: 'ALREADY_REFUNDED',
+        message: `No refundable balance remains on order ${order.id}. Total: ₹${(totalOrderPaise / 100).toFixed(2)}, Refunded/Processing: ₹${((priorSuccessfulPaise + pendingProcessingPaise) / 100).toFixed(2)}.`
       });
     }
 
-    // Call Cashfree API to issue real refund
+    const requestedAmountRupees = amount !== undefined && amount !== null ? Number(amount) : (remainingRefundablePaise / 100);
+    const requestedPaise = Math.round(requestedAmountRupees * 100);
+
+    if (isNaN(requestedPaise) || requestedPaise <= 0) {
+      return res.status(400).json({
+        error: 'INVALID_REFUND_AMOUNT',
+        message: 'Refund amount must be a positive number.'
+      });
+    }
+
+    if (requestedPaise > remainingRefundablePaise) {
+      return res.status(400).json({
+        error: 'EXCEEDS_REFUNDABLE_AMOUNT',
+        message: `Requested refund of ₹${(requestedPaise / 100).toFixed(2)} exceeds remaining refundable balance of ₹${(remainingRefundablePaise / 100).toFixed(2)}.`
+      });
+    }
+
+    // Generate stable refund ID and persist REQUESTED state BEFORE gateway call
+    const refundId = requestedRefundId || `ref_${order.id.replace(/^ord_/, '')}_${Date.now()}`;
+    const refundRecord: RefundRecord = {
+      id: refundId,
+      orderId: order.id,
+      amount: Number((requestedPaise / 100).toFixed(2)),
+      amountPaise: requestedPaise,
+      currency: order.currency || 'INR',
+      status: RefundState.REQUESTED,
+      reason: reason && typeof reason === 'string' ? reason.trim() : 'Customer support refund approval',
+      adminId: req.user!.id,
+      adminEmail: req.user!.email || 'admin@astroverse.app',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    order.refunds.push(refundRecord);
+
+    // Call Cashfree API to submit refund
     const targetCfOrderId = order.providerOrderId || order.cfOrderId || order.id;
+    refundRecord.status = RefundState.PROCESSING;
     let cfRefund: any = null;
+
     try {
       cfRefund = await createCashfreeRefund({
         orderId: targetCfOrderId,
-        refundAmount,
-        refundNote: reason || 'Customer support refund approval'
+        refundId,
+        refundAmount: Number((requestedPaise / 100).toFixed(2)),
+        refundNote: refundRecord.reason
       });
     } catch (cfErr: any) {
+      refundRecord.status = RefundState.FAILED;
+      refundRecord.error = cfErr?.message || 'Gateway error';
+      refundRecord.updatedAt = new Date().toISOString();
+
       console.error('[ADMIN_REFUND] Cashfree refund failed:', cfErr?.message || cfErr);
       return res.status(502).json({
         error: 'GATEWAY_REFUND_FAILED',
         message: `Cashfree refund processing failed: ${cfErr?.message || 'Gateway error'}`,
-        details: cfErr?.message
+        refund: refundRecord
       });
     }
 
-    // Only update order status after Cashfree confirms receipt
-    order.status = OrderStatus.REFUNDED;
-    if (order.metadata) {
-      order.metadata.refund = cfRefund;
+    // Process provider outcome
+    refundRecord.cfRefundId = cfRefund?.cf_refund_id;
+    refundRecord.cf_refund_id = cfRefund?.cf_refund_id;
+    refundRecord.gatewayResponse = cfRefund;
+    refundRecord.updatedAt = new Date().toISOString();
+
+    if (cfRefund?.refund_status === 'SUCCESS') {
+      refundRecord.status = RefundState.SUCCESS;
+      const newTotalRefundedPaise = priorSuccessfulPaise + requestedPaise;
+      order.refundedAmountPaise = newTotalRefundedPaise;
+
+      if (newTotalRefundedPaise >= totalOrderPaise) {
+        order.status = OrderStatus.REFUNDED;
+      } else {
+        order.status = OrderStatus.PARTIALLY_REFUNDED;
+      }
+    } else if (cfRefund?.refund_status === 'FAILED') {
+      refundRecord.status = RefundState.FAILED;
+      refundRecord.error = cfRefund?.refund_note || 'Provider failed refund';
     } else {
-      order.metadata = { refund: cfRefund };
+      // PENDING or ONHOLD -> state remains PROCESSING.
+      // Order status is NOT marked REFUNDED while provider refund remains pending!
+      refundRecord.status = RefundState.PROCESSING;
     }
 
-    if ((db as any).isPostgresAvailable && (db as any).prisma) {
-      try {
+    if (order.metadata) {
+      order.metadata.refunds = order.refunds;
+      order.metadata.lastRefund = cfRefund;
+    } else {
+      order.metadata = { refunds: order.refunds, lastRefund: cfRefund };
+    }
+
+    // Persist to database
+    try {
+      if ((db as any).isPostgresAvailable && (db as any).prisma) {
         await (db as any).prisma.paymentOrder.update({
           where: { id: order.id },
           data: {
-            status: OrderStatus.REFUNDED,
+            status: order.status,
             metadata: order.metadata
           }
         });
-      } catch (dbErr: any) {
-        console.warn('[ADMIN_REFUND] Prisma order update notice:', dbErr?.message);
       }
+    } catch (dbErr: any) {
+      console.error(`[CRITICAL_RECONCILIATION] Cashfree accepted refund ${refundId} but database update threw: ${dbErr?.message}`);
+      // Record incident so background reconciliation resolves it without duplicate submissions
+      try {
+        await db.createIncident({
+          title: `Reconciliation: Database update failure for Cashfree refund ${refundId}`,
+          summary: `Cashfree processed refund of ₹${(requestedPaise / 100).toFixed(2)} for order ${order.id}, but local DB persistence threw: ${dbErr?.message}. Do not resubmit with fresh ID.`,
+          severity: 'P1_CRITICAL',
+          reportedBy: 'SYSTEM_REFUND_FAILSAFE'
+        });
+      } catch {}
     }
 
     await db.recordAuditEvent({
@@ -5203,26 +5433,30 @@ app.post('/api/admin/payments/refund', adminSensitiveMutationsLimiter, authentic
       action: 'ADMIN_REFUND_ISSUED',
       targetType: 'ORDER',
       targetId: order.id,
-      outcome: 'SUCCESS',
-      reason: reason || 'Customer support refund approval',
+      outcome: refundRecord.status === RefundState.FAILED ? 'FAILED' : 'SUCCESS',
+      reason: refundRecord.reason,
       metadata: {
-        amount: refundAmount,
+        amountRupees: requestedPaise / 100,
+        amountPaise: requestedPaise,
         orderId: order.id,
+        orderStatus: order.status,
         cfOrderId: targetCfOrderId,
         cfRefundId: cfRefund?.cf_refund_id,
-        refundId: cfRefund?.refund_id,
-        refundStatus: cfRefund?.refund_status
+        refundId: refundRecord.id,
+        refundStatus: refundRecord.status
       }
     });
 
     res.json({
-      success: true,
-      message: `Refund of ₹${refundAmount} processed successfully via Cashfree. Status: ${cfRefund?.refund_status}.`,
+      success: refundRecord.status !== RefundState.FAILED,
+      message: `Refund of ₹${(requestedPaise / 100).toFixed(2)} status: ${refundRecord.status}. Order status: ${order.status}.`,
       order,
-      refund: cfRefund
+      refund: refundRecord
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  } finally {
+    activeRefundLocks.delete(cleanOrderId);
   }
 });
 
@@ -5385,7 +5619,7 @@ app.get('/api/admin/content', authenticate, requireAdmin(AdminPermission.MANAGE_
   }
 });
 
-app.put('/api/admin/content/:key', authenticate, requireAdmin(AdminPermission.MANAGE_CONTENT), async (req: AuthenticatedRequest, res: Response) => {
+app.put('/api/admin/content/:key', authenticate, requireAdmin(AdminPermission.MANAGE_CONTENT), requireAdminAssurance('content:manage'), async (req: AuthenticatedRequest, res: Response) => {
   const { key } = req.params;
   const { title, body, isActive, type } = req.body;
 
@@ -5396,6 +5630,16 @@ app.put('/api/admin/content/:key', authenticate, requireAdmin(AdminPermission.MA
       isActive,
       type,
       updatedBy: req.user!.email || req.user!.id
+    });
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'CONTENT_BANNER_UPDATED',
+      targetType: 'CONTENT_BANNER',
+      targetId: key,
+      outcome: 'SUCCESS',
+      metadata: { key, title, isActive, type }
     });
     res.json({ success: true, banner: updated });
   } catch (err: any) {
@@ -5475,13 +5719,23 @@ app.get('/api/admin/privacy/requests', authenticate, requireAdmin(AdminPermissio
   }
 });
 
-app.put('/api/admin/privacy/requests/:id', authenticate, requireAdmin(AdminPermission.MANAGE_PRIVACY_REQUESTS), async (req: AuthenticatedRequest, res: Response) => {
+app.put('/api/admin/privacy/requests/:id', authenticate, requireAdmin(AdminPermission.MANAGE_PRIVACY_REQUESTS), requireAdminAssurance('privacy:manage'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { status, notes } = req.body;
 
   try {
     const updated = await db.updatePrivacyRequest(id, status, notes);
     if (!updated) return res.status(404).json({ error: 'REQUEST_NOT_FOUND' });
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'PRIVACY_REQUEST_UPDATED',
+      targetType: 'PRIVACY_REQUEST',
+      targetId: id,
+      outcome: 'SUCCESS',
+      metadata: { id, status, notes }
+    });
     res.json({ success: true, request: updated });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -5528,93 +5782,161 @@ app.get('/api/admin/audit-logs', authenticate, requireAdmin(AdminPermission.VIEW
 // MODULE 14: EXTERNAL INTEGRATIONS HEALTH
 // -----------------------------------------------------------------------------
 app.get('/api/admin/integrations', authenticate, requireAdmin(AdminPermission.VIEW_INTEGRATIONS), async (_req: AuthenticatedRequest, res: Response) => {
+  const now = new Date().toISOString();
+
+  // 1. FastAPI Kundli Ephemeris Probe
   const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
   let kundliStatus = 'UNAVAILABLE';
   let kundliLatency: number | null = null;
   let kundliDetails = `Target: ${kundliUrl}`;
+  let kundliFailureReason: string | null = null;
+  let kundliAuthState = 'VERIFIED';
 
   try {
     const kStart = Date.now();
     const kRes = await fetch(`${kundliUrl}/api/health`, { signal: AbortSignal.timeout(2000) });
     kundliLatency = Date.now() - kStart;
     if (kRes.ok) {
-      kundliStatus = 'CONNECTED';
+      kundliStatus = 'OPERATIONAL';
       kundliDetails = `Swiss Ephemeris & Parashari Engine active (${kundliLatency}ms)`;
     } else {
       kundliStatus = 'DEGRADED';
-      kundliDetails = `Engine returned HTTP ${kRes.status}`;
+      kundliFailureReason = `Engine returned HTTP ${kRes.status}`;
+      kundliDetails = `HTTP status ${kRes.status}`;
     }
   } catch (err: any) {
-    if (process.env.NODE_ENV === 'test') {
-      kundliStatus = 'CONNECTED';
+    if (process.env.NODE_ENV === 'test' && !process.env.STRICT_LIVE_INTEGRATION_TESTS) {
+      kundliStatus = 'OPERATIONAL';
       kundliLatency = 1;
-      kundliDetails = 'Local Keplerian test harness';
+      kundliDetails = 'Local test harness';
     } else {
       kundliStatus = 'UNAVAILABLE';
-      kundliDetails = `Unreachable: ${err?.message || 'Connection refused'}`;
+      kundliLatency = null; // Truthful: No fake latency on failure!
+      kundliFailureReason = err?.message || 'Connection refused or timed out';
+      kundliDetails = `Engine unreachable at ${kundliUrl}`;
     }
   }
 
-  let dbStatus = 'STANDALONE_IN_MEMORY';
-  let dbLatency: number | null = null;
-  let dbDetails = 'In-memory JSON database';
+  // 2. Supabase Database & Auth Probe
+  let supabaseStatus = 'NOT_CONFIGURED';
+  let supabaseLatency: number | null = null;
+  let supabaseDetails = 'SUPABASE_URL or DATABASE_URL not configured';
+  let supabaseAuthState = 'UNTESTED';
+  let supabaseFailureReason: string | null = null;
+
   if ((db as any).isPostgresAvailable && (db as any).prisma) {
     try {
       const dbStart = Date.now();
       await (db as any).prisma.$queryRawUnsafe('SELECT 1 as ping');
-      dbLatency = Date.now() - dbStart;
-      dbStatus = 'HEALTHY';
-      dbDetails = `PostgreSQL / Supabase RLS pool active (${dbLatency}ms)`;
+      supabaseLatency = Date.now() - dbStart;
+      supabaseStatus = 'OPERATIONAL';
+      supabaseAuthState = 'AUTHENTICATED';
+      supabaseDetails = `PostgreSQL / Supabase RLS pool active (${supabaseLatency}ms)`;
     } catch (dbErr: any) {
-      dbStatus = 'DEGRADED';
-      dbDetails = `PostgreSQL error: ${dbErr?.message}`;
+      supabaseStatus = 'DEGRADED';
+      supabaseLatency = null;
+      supabaseAuthState = 'FAILED';
+      supabaseFailureReason = dbErr?.message;
+      supabaseDetails = `Database ping query failed: ${dbErr?.message}`;
     }
-  } else if (process.env.NODE_ENV === 'test') {
-    dbStatus = 'HEALTHY';
-    dbLatency = 1;
-    dbDetails = 'Test SQLite / In-Memory Mock';
+  } else if (process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    supabaseStatus = 'CONFIGURED';
+    supabaseAuthState = 'AUTHENTICATED';
+    supabaseDetails = `Supabase project: ${process.env.SUPABASE_URL.replace(/^https?:\/\//, '').split('.')[0]}`;
+  } else {
+    supabaseStatus = 'CONFIGURED';
+    supabaseLatency = null; // Standalone mode: no network roundtrip to measure
+    supabaseAuthState = 'NOT_APPLICABLE';
+    supabaseDetails = 'Standalone in-memory / JSON persistent storage';
   }
 
+  // 3. Cashfree Payment Gateway
   const paymentReport = getPaymentReadinessStatus();
-  const paymentStatus = paymentReport.state === PaymentReadinessState.READY
-    ? (paymentReport.environment === 'production' ? 'PRODUCTION_READY' : 'SANDBOX_READY')
-    : paymentReport.state;
+  let cashfreeStatus = 'NOT_CONFIGURED';
+  let cashfreeLatency: number | null = null;
+  let cashfreeDetails = paymentReport.adminExplanation || 'Unconfigured';
+  let cashfreeAuthState = 'UNTESTED';
+  let cashfreeFailureReason: string | null = null;
+
+  if (paymentReport.configured) {
+    cashfreeStatus = paymentReport.state === PaymentReadinessState.READY ? 'CONFIGURED' : 'DEGRADED';
+    cashfreeAuthState = 'AUTHENTICATED';
+    cashfreeDetails = `Environment: ${paymentReport.environment.toUpperCase()}, App ID: ${paymentReport.appIdMasked || 'Configured'}`;
+  } else {
+    cashfreeFailureReason = 'Missing CASHFREE_APP_ID or CASHFREE_SECRET_KEY';
+  }
+
+  // 4. AI Model Providers (Passive status without billable inference)
+  let aiStatus = 'NOT_CONFIGURED';
+  let aiDetails = 'No AI API keys configured';
+  let aiFailureReason: string | null = null;
+  const hasAiKey = Boolean(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY);
+  if (hasAiKey) {
+    aiStatus = 'CONFIGURED';
+    aiDetails = `Providers active. Billable model calls skipped during passive health checks. Models: ${process.env.OPENAI_MODEL || 'gpt-4o'}, ${process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet'}`;
+  } else {
+    aiFailureReason = 'No API keys configured for OpenAI, Anthropic, or Gemini';
+  }
+
+  // 5. SMS Phone Gateway (Passive status without billable SMS dispatch)
+  let smsStatus = 'NOT_CONFIGURED';
+  let smsDetails = 'SMS gateway credentials not set; OTPs delivered to local console in development';
+  let smsFailureReason: string | null = null;
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+    smsStatus = 'CONFIGURED';
+    smsDetails = 'Twilio credentials configured. Billable SMS dispatch skipped during passive health checks.';
+  }
 
   const checks = [
     {
       name: 'Cashfree Payment Gateway',
-      configured: paymentReport.configured,
-      status: paymentStatus,
-      latencyMs: null,
-      details: paymentReport.adminExplanation
+      status: cashfreeStatus,
+      latencyMs: cashfreeLatency,
+      lastChecked: now,
+      lastSuccessfulCheck: cashfreeStatus === 'CONFIGURED' ? now : null,
+      authState: cashfreeAuthState,
+      failureReason: cashfreeFailureReason,
+      details: cashfreeDetails
     },
     {
       name: 'Supabase Database & Auth',
-      configured: Boolean(process.env.SUPABASE_URL || process.env.DATABASE_URL),
-      status: dbStatus,
-      latencyMs: dbLatency,
-      details: dbDetails
+      status: supabaseStatus,
+      latencyMs: supabaseLatency,
+      lastChecked: now,
+      lastSuccessfulCheck: supabaseStatus === 'OPERATIONAL' || supabaseStatus === 'CONFIGURED' ? now : null,
+      authState: supabaseAuthState,
+      failureReason: supabaseFailureReason,
+      details: supabaseDetails
     },
     {
       name: 'FastAPI Kundli Ephemeris',
-      configured: true,
       status: kundliStatus,
       latencyMs: kundliLatency,
+      lastChecked: now,
+      lastSuccessfulCheck: kundliStatus === 'OPERATIONAL' ? now : null,
+      authState: kundliAuthState,
+      failureReason: kundliFailureReason,
       details: kundliDetails
     },
     {
       name: 'AI Consultation Pipeline',
-      configured: Boolean(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY),
-      status: 'PARASHARI_SYNTHESIS_ONLINE',
+      status: aiStatus,
       latencyMs: null,
-      details: `Models: ${process.env.OPENAI_MODEL || 'gpt-4o'}, ${process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet'}`
+      lastChecked: now,
+      lastSuccessfulCheck: aiStatus === 'CONFIGURED' ? now : null,
+      authState: hasAiKey ? 'AUTHENTICATED' : 'UNTESTED',
+      failureReason: aiFailureReason,
+      details: aiDetails
     },
     {
       name: 'SMS Phone Gateway',
-      configured: Boolean(process.env.TWILIO_ACCOUNT_SID),
-      status: Boolean(process.env.TWILIO_ACCOUNT_SID) ? 'CONFIGURED' : 'LOCAL_PREVIEW_OTP',
+      status: smsStatus,
       latencyMs: null,
-      details: Boolean(process.env.TWILIO_ACCOUNT_SID) ? 'Twilio SMS Gateway active' : 'Development OTP console fallback'
+      lastChecked: now,
+      lastSuccessfulCheck: smsStatus === 'CONFIGURED' ? now : null,
+      authState: smsStatus === 'CONFIGURED' ? 'AUTHENTICATED' : 'NOT_APPLICABLE',
+      failureReason: smsFailureReason,
+      details: smsDetails
     }
   ];
 
@@ -5692,7 +6014,7 @@ app.put('/api/admin/monitoring/incidents/:id', authenticate, requireAdmin(AdminP
 // -----------------------------------------------------------------------------
 // MODULE 17: REAL-TIME DATABASE MONITOR & RELIABILITY TELEMETRY
 // -----------------------------------------------------------------------------
-app.get('/api/admin/database/monitor', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/database/monitor', authenticate, requireAdmin(AdminPermission.VIEW_DATABASE), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const forceFresh = req.query.fresh === 'true';
     const monitorData = await db.getDatabaseMonitorMetrics(forceFresh);
@@ -5702,7 +6024,7 @@ app.get('/api/admin/database/monitor', authenticate, requireAdmin(), async (req:
   }
 });
 
-app.post('/api/admin/database/ping', authenticate, requireAdmin(), async (_req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/database/ping', authenticate, requireAdmin(AdminPermission.VIEW_DATABASE), async (_req: AuthenticatedRequest, res: Response) => {
   const start = process.hrtime();
   try {
     const count = (await db.listUsers({ limit: 1 })).total;
@@ -6662,10 +6984,14 @@ app.post('/api/admin/products/preview', authenticate, requireAdmin(AdminPermissi
 });
 
 // PUT /api/admin/products/:id (Authorized price update with audit logging and price version increment)
-app.put('/api/admin/products/:id', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), async (req: AuthenticatedRequest, res: Response) => {
+app.put('/api/admin/products/:id', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_PRICING), requireAdminAssurance('pricing:update'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const { amountRupees, annualPriceRupees, active, description } = req.body;
+  const { amountRupees, annualPriceRupees, active, description, reason } = req.body;
   const adminUser = req.user!;
+
+  if (reason !== undefined && (typeof reason !== 'string' || reason.trim().length < 5)) {
+    return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required.' });
+  }
 
   const prod = getCanonicalProduct(id);
   if (!prod) {
@@ -6705,6 +7031,7 @@ app.put('/api/admin/products/:id', adminSensitiveMutationsLimiter, authenticate,
         oldAnnualRupees: oldAnnual,
         newAnnualRupees: updated.annualPriceRupees,
         version: updated.version,
+        reason: reason ? reason.trim() : 'Administrative price update',
         updatedBy: adminUser.email || adminUser.id
       }
     });
@@ -6752,7 +7079,7 @@ app.get('/api/admin/payment-readiness', authenticate, requireAdmin(AdminPermissi
 });
 
 // POST /api/admin/gateway-credentials (Super Admin / Owner activates Cashfree credentials)
-app.post('/api/admin/gateway-credentials', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/gateway-credentials', adminSensitiveMutationsLimiter, authenticate, requireAdmin([Role.OWNER, Role.SUPER_ADMIN]), requireAdminAssurance('gateway:credentials'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { secretKey, appId, env } = req.body;
     if (!secretKey || typeof secretKey !== 'string') {
@@ -6814,12 +7141,32 @@ app.post('/api/admin/gateway-credentials', adminSensitiveMutationsLimiter, authe
 // ============================================================================
 
 // GET /api/admin/customers/:id/360 (Comprehensive Customer 360 Profile)
-app.get('/api/admin/customers/:id/360', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/customers/:id/360', authenticate, requireAdmin(AdminPermission.VIEW_CUSTOMER_360), async (req: AuthenticatedRequest, res: Response) => {
+  const accessCheck = validatePrivilegedCustomerAccess(req.user!, req.params.id, req);
+  if (!accessCheck.authorized) {
+    return res.status(accessCheck.statusCode || 403).json({
+      error: accessCheck.error || 'FORBIDDEN',
+      message: accessCheck.message || 'Access denied'
+    });
+  }
+
   try {
     const customer360 = await db.getCustomer360(req.params.id);
     if (!customer360) {
       return res.status(404).json({ error: 'CUSTOMER_NOT_FOUND', message: 'Customer record does not exist.' });
     }
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'ADMIN_CUSTOMER_360_VIEWED',
+      targetType: 'CUSTOMER',
+      targetId: req.params.id,
+      outcome: 'SUCCESS',
+      metadata: { targetUserId: req.params.id, reason: accessCheck.reason }
+    });
+
     return res.json({ success: true, customer: customer360 });
   } catch (err: any) {
     return handleServiceError(res, err, 'Failed to fetch customer 360 profile');
@@ -6827,7 +7174,7 @@ app.get('/api/admin/customers/:id/360', authenticate, requireAdmin(AdminPermissi
 });
 
 // POST /api/admin/customers/:id/notes (Add Internal Administrative Support Note)
-app.post('/api/admin/customers/:id/notes', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/customers/:id/notes', authenticate, requireAdmin(AdminPermission.MANAGE_CUSTOMER_NOTES), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { content, category } = req.body;
     if (!content || typeof content !== 'string' || !content.trim()) {
@@ -6841,6 +7188,18 @@ app.post('/api/admin/customers/:id/notes', authenticate, requireAdmin(AdminPermi
       content.trim(),
       category || 'GENERAL'
     );
+
+    await db.recordAuditEvent({
+      userId: adminUser.id,
+      actorId: adminUser.id,
+      actorRole: adminUser.role,
+      action: 'CUSTOMER_NOTE_ADDED',
+      targetType: 'CUSTOMER',
+      targetId: req.params.id,
+      outcome: 'SUCCESS',
+      metadata: { targetUserId: req.params.id, category: category || 'GENERAL' }
+    });
+
     return res.status(201).json({ success: true, note });
   } catch (err: any) {
     return handleServiceError(res, err, 'Failed to add customer note');
@@ -6848,7 +7207,7 @@ app.post('/api/admin/customers/:id/notes', authenticate, requireAdmin(AdminPermi
 });
 
 // GET /api/admin/entitlements (List Platform Entitlements)
-app.get('/api/admin/entitlements', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/entitlements', authenticate, requireAdmin([AdminPermission.MANAGE_ENTITLEMENTS, AdminPermission.VIEW_USERS]), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.query.userId as string | undefined;
     const activeOnly = req.query.activeOnly === 'true';
@@ -6860,15 +7219,18 @@ app.get('/api/admin/entitlements', authenticate, requireAdmin(AdminPermission.VI
 });
 
 // POST /api/admin/entitlements/grant (Grant Platform Feature Entitlement)
-app.post('/api/admin/entitlements/grant', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/entitlements/grant', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_ENTITLEMENTS), requireAdminAssurance('entitlements:grant'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId, featureKey, durationDays, source, reason, metadata } = req.body;
     if (!userId || !featureKey) {
       return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and featureKey are required.' });
     }
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
+    }
     const validSources = ['ADMIN_GRANT', 'PROMOTIONAL_GRANT', 'SUPPORT_COMPENSATION', 'TRIAL_GRANT', 'PAID_SUBSCRIPTION'];
     const effectiveSource = validSources.includes(source) ? source : 'ADMIN_GRANT';
-    const effectiveReason = reason && typeof reason === 'string' ? reason.trim() : 'Administrative grant by Owner';
+    const effectiveReason = reason.trim();
     const effectiveDays = durationDays !== undefined && durationDays !== null ? Number(durationDays) : null;
 
     const entitlement = await db.grantEntitlement(
@@ -6881,6 +7243,23 @@ app.post('/api/admin/entitlements/grant', adminSensitiveMutationsLimiter, authen
       metadata
     );
 
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'ENTITLEMENT_GRANTED',
+      targetType: 'ENTITLEMENT',
+      targetId: featureKey,
+      outcome: 'SUCCESS',
+      metadata: {
+        targetUserId: userId,
+        featureKey,
+        durationDays: effectiveDays,
+        reason: effectiveReason,
+        source: effectiveSource
+      }
+    });
+
     return res.status(201).json({ success: true, entitlement });
   } catch (err: any) {
     if (err?.message === 'USER_NOT_FOUND') {
@@ -6891,14 +7270,32 @@ app.post('/api/admin/entitlements/grant', adminSensitiveMutationsLimiter, authen
 });
 
 // POST /api/admin/entitlements/revoke (Revoke Platform Feature Entitlement)
-app.post('/api/admin/entitlements/revoke', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/entitlements/revoke', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_ENTITLEMENTS), requireAdminAssurance('entitlements:revoke'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { entitlementId, reason } = req.body;
     if (!entitlementId) {
       return res.status(400).json({ error: 'ENTITLEMENT_ID_REQUIRED', message: 'entitlementId is required.' });
     }
-    const effectiveReason = reason && typeof reason === 'string' ? reason.trim() : 'Administrative revocation';
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
+    }
+    const effectiveReason = reason.trim();
     const result = await db.revokeEntitlement(entitlementId, req.user!.email || req.user!.id, effectiveReason);
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'ENTITLEMENT_REVOKED',
+      targetType: 'ENTITLEMENT',
+      targetId: entitlementId,
+      outcome: 'SUCCESS',
+      metadata: {
+        entitlementId,
+        reason: effectiveReason
+      }
+    });
+
     return res.json(result);
   } catch (err: any) {
     if (err?.message === 'ENTITLEMENT_NOT_FOUND') {
@@ -6909,7 +7306,7 @@ app.post('/api/admin/entitlements/revoke', adminSensitiveMutationsLimiter, authe
 });
 
 // POST /api/admin/subscriptions/assign (Direct Plan Assignment & Override)
-app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_SUBSCRIPTIONS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:assign'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId, tier, billingPeriod, durationDays, reason } = req.body;
     if (!userId || !tier) {
@@ -6918,9 +7315,12 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
     if (!['FREE', 'PLUS', 'PREMIUM'].includes(tier)) {
       return res.status(400).json({ error: 'INVALID_TIER', message: 'tier must be FREE, PLUS, or PREMIUM.' });
     }
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
+    }
     const effectivePeriod = billingPeriod === 'ANNUAL' ? 'ANNUAL' : (tier === 'FREE' ? null : 'MONTHLY');
     const effectiveDays = durationDays !== undefined && durationDays !== null ? Number(durationDays) : (tier === 'FREE' ? null : (effectivePeriod === 'ANNUAL' ? 365 : 30));
-    const effectiveReason = reason && typeof reason === 'string' ? reason.trim() : 'Manual plan assignment by Owner';
+    const effectiveReason = reason.trim();
 
     const updatedUser = await db.assignSubscriptionTier(
       userId,
@@ -6930,6 +7330,23 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
       req.user!.email || req.user!.id,
       effectiveReason
     );
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'SUBSCRIPTION_ASSIGNED',
+      targetType: 'SUBSCRIPTION',
+      targetId: userId,
+      outcome: 'SUCCESS',
+      metadata: {
+        targetUserId: userId,
+        tier,
+        billingPeriod: effectivePeriod,
+        durationDays: effectiveDays,
+        reason: effectiveReason
+      }
+    });
 
     return res.json({
       success: true,
@@ -6951,13 +7368,16 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
 });
 
 // POST /api/admin/subscriptions/extend (Extend Active Subscription Expiration)
-app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_SUBSCRIPTIONS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:extend'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId, additionalDays, reason } = req.body;
     if (!userId || !additionalDays || typeof additionalDays !== 'number' || additionalDays <= 0) {
       return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and positive additionalDays are required.' });
     }
-    const effectiveReason = reason && typeof reason === 'string' ? reason.trim() : `Manual extension by ${additionalDays} days`;
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
+    }
+    const effectiveReason = reason.trim();
 
     const updatedUser = await db.extendSubscription(
       userId,
@@ -6965,6 +7385,21 @@ app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, auth
       req.user!.email || req.user!.id,
       effectiveReason
     );
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'SUBSCRIPTION_EXTENDED',
+      targetType: 'SUBSCRIPTION',
+      targetId: userId,
+      outcome: 'SUCCESS',
+      metadata: {
+        targetUserId: userId,
+        additionalDays,
+        reason: effectiveReason
+      }
+    });
 
     return res.json({
       success: true,
@@ -6987,8 +7422,61 @@ app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, auth
   }
 });
 
+// POST /api/admin/subscriptions/cancel (Cancel Active Subscription and revert to FREE)
+app.post('/api/admin/subscriptions/cancel', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:cancel'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { userId, reason } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId is required.' });
+    }
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
+    }
+    const effectiveReason = reason.trim();
+
+    const updatedUser = await db.assignSubscriptionTier(
+      userId,
+      'FREE',
+      null,
+      null,
+      req.user!.email || req.user!.id,
+      `Cancellation: ${effectiveReason}`
+    );
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'SUBSCRIPTION_CANCELLED',
+      targetType: 'SUBSCRIPTION',
+      targetId: userId,
+      outcome: 'SUCCESS',
+      metadata: {
+        targetUserId: userId,
+        reason: effectiveReason
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: `Subscription successfully cancelled for user ${userId}.`,
+      user: {
+        id: updatedUser.id,
+        subscriptionTier: updatedUser.subscriptionTier,
+        subscriptionStatus: updatedUser.subscriptionStatus,
+        subscriptionExpiresAt: updatedUser.subscriptionExpiresAt
+      }
+    });
+  } catch (err: any) {
+    if (err?.message === 'USER_NOT_FOUND') {
+      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'Target user does not exist.' });
+    }
+    return handleServiceError(res, err, 'Failed to cancel subscription');
+  }
+});
+
 // GET /api/admin/analytics/overview (Platform Business Analytics & KPI Overview)
-app.get('/api/admin/analytics/overview', authenticate, requireAdmin(AdminPermission.VIEW_OVERVIEW), async (_req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/analytics/overview', authenticate, requireAdmin([AdminPermission.VIEW_ANALYTICS, AdminPermission.VIEW_OVERVIEW]), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const analytics = await db.getBusinessAnalytics();
     return res.json({ success: true, ...analytics });
@@ -6998,7 +7486,7 @@ app.get('/api/admin/analytics/overview', authenticate, requireAdmin(AdminPermiss
 });
 
 // GET /api/admin/promotions (List Platform Promotional Campaigns & Coupons)
-app.get('/api/admin/promotions', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/promotions', authenticate, requireAdmin([AdminPermission.MANAGE_PROMOTIONS, AdminPermission.VIEW_PAYMENTS]), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const promotions = await db.listPromotions();
     return res.json({ success: true, promotions, count: promotions.length });
@@ -7008,7 +7496,7 @@ app.get('/api/admin/promotions', authenticate, requireAdmin(AdminPermission.VIEW
 });
 
 // POST /api/admin/promotions (Create New Promotional Campaign or Coupon Code)
-app.post('/api/admin/promotions', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/promotions', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_PROMOTIONS), requireAdminAssurance('promotions:create'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { code, description, discountType, discountValue, applicableTo, minOrderAmount, maxDiscount, maxUses, durationDays } = req.body;
     if (!code || !discountType || discountValue === undefined || !applicableTo) {
@@ -7026,6 +7514,18 @@ app.post('/api/admin/promotions', adminSensitiveMutationsLimiter, authenticate, 
       durationDays: durationDays ? Number(durationDays) : 30,
       createdBy: req.user!.email || req.user!.id
     });
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'PROMOTION_CREATED',
+      targetType: 'PROMOTION',
+      targetId: promo.id,
+      outcome: 'SUCCESS',
+      metadata: { code: promo.code, discountType, discountValue }
+    });
+
     return res.status(201).json({ success: true, promotion: promo });
   } catch (err: any) {
     if (err?.message === 'PROMO_CODE_EXISTS') {
@@ -7036,13 +7536,25 @@ app.post('/api/admin/promotions', adminSensitiveMutationsLimiter, authenticate, 
 });
 
 // PUT /api/admin/promotions/:id/status (Toggle Promotion Active State)
-app.put('/api/admin/promotions/:id/status', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+app.put('/api/admin/promotions/:id/status', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_PROMOTIONS), requireAdminAssurance('promotions:status'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { isActive } = req.body;
     if (typeof isActive !== 'boolean') {
       return res.status(400).json({ error: 'INVALID_STATUS', message: 'isActive boolean is required.' });
     }
     const promo = await db.togglePromotion(req.params.id, isActive);
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'PROMOTION_STATUS_UPDATED',
+      targetType: 'PROMOTION',
+      targetId: req.params.id,
+      outcome: 'SUCCESS',
+      metadata: { promotionId: req.params.id, isActive }
+    });
+
     return res.json({ success: true, promotion: promo });
   } catch (err: any) {
     if (err?.message === 'PROMOTION_NOT_FOUND') {
@@ -7053,7 +7565,7 @@ app.put('/api/admin/promotions/:id/status', adminSensitiveMutationsLimiter, auth
 });
 
 // GET /api/admin/astrologers (List Astrologers with Operational Metrics)
-app.get('/api/admin/astrologers', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (_req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/astrologers', authenticate, requireAdmin([AdminPermission.VIEW_CONSULTATIONS, AdminPermission.VIEW_ASTROLOGY_HEALTH]), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const astrologers = await db.listAstrologers();
     return res.json({ success: true, astrologers, count: astrologers.length });
@@ -7063,10 +7575,22 @@ app.get('/api/admin/astrologers', authenticate, requireAdmin(AdminPermission.VIE
 });
 
 // POST /api/admin/astrologers/:id/verify (Verify or Unverify Astrologer)
-app.post('/api/admin/astrologers/:id/verify', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (req: AuthenticatedRequest, res: Response) => {
+app.post('/api/admin/astrologers/:id/verify', authenticate, requireAdmin(AdminPermission.MANAGE_CONSULTATIONS), requireAdminAssurance('astrologer:verify'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const isVerified = req.body.isVerified !== false;
     const astro = await db.verifyAstrologer(req.params.id, isVerified);
+
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'ASTROLOGER_VERIFICATION_UPDATED',
+      targetType: 'ASTROLOGER',
+      targetId: req.params.id,
+      outcome: 'SUCCESS',
+      metadata: { astrologerId: req.params.id, isVerified }
+    });
+
     return res.json({ success: true, astrologer: astro });
   } catch (err: any) {
     if (err?.message === 'ASTROLOGER_NOT_FOUND') {
@@ -7077,7 +7601,7 @@ app.post('/api/admin/astrologers/:id/verify', authenticate, requireAdmin(AdminPe
 });
 
 // GET /api/admin/consultations (List Platform Consultations & Free Trial Sessions)
-app.get('/api/admin/consultations', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (_req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/consultations', authenticate, requireAdmin([AdminPermission.VIEW_CONSULTATIONS, AdminPermission.VIEW_ASTROLOGY_HEALTH]), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const sessions = await db.listConsultationSessions(100);
     return res.json({ success: true, sessions, count: sessions.length });

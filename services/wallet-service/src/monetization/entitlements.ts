@@ -5,6 +5,7 @@
  */
 
 import { SUBSCRIPTION_PLANS, SubscriptionTier, calculateReportPrice } from './catalog';
+import { DurableAiQuotaManager } from './aiQuotas';
 
 export interface UserEntitlementSnapshot {
   userId: string;
@@ -115,15 +116,9 @@ export class EntitlementManager {
     const { tier, status, expiresAt, billingPeriod } = this.resolveEffectiveTier(user);
     const plan = SUBSCRIPTION_PLANS[tier] || SUBSCRIPTION_PLANS[SubscriptionTier.FREE];
 
-    const todayStr = new Date().toISOString().split('T')[0];
     const userId = user?.id || 'guest';
-    const userUsage = this.dailyAiUsageMap.get(userId);
-    let usedToday = 0;
-    if (userUsage && userUsage.dateStr === todayStr) {
-      usedToday = userUsage.count;
-    }
-
-    const totalDaily = plan.dailyAiLimit;
+    const usedToday = DurableAiQuotaManager.getUserUsageToday(userId);
+    const totalDaily = DurableAiQuotaManager.getDailyLimitForTier(tier);
     const remainingDaily = Math.max(0, totalDaily - usedToday);
     const maxProfiles = plan.maxProfiles;
     const canCreateMore = profilesCount < maxProfiles;
@@ -149,7 +144,7 @@ export class EntitlementManager {
   }
 
   /**
-   * Consumes one AI Astrologer query against the user's daily quota.
+   * Consumes one AI Astrologer query against the user's daily quota using durable persistence.
    * Throws Error('AI_QUOTA_EXCEEDED') if daily limit reached.
    */
   public static consumeAiQuery(userId: string, tier: SubscriptionTier = SubscriptionTier.FREE): {
@@ -157,32 +152,7 @@ export class EntitlementManager {
     totalAllowed: number;
     remaining: number;
   } {
-    const plan = SUBSCRIPTION_PLANS[tier] || SUBSCRIPTION_PLANS[SubscriptionTier.FREE];
-    const totalAllowed = plan.dailyAiLimit;
-    const todayStr = new Date().toISOString().split('T')[0];
-
-    let entry = this.dailyAiUsageMap.get(userId);
-    if (!entry || entry.dateStr !== todayStr) {
-      entry = { dateStr: todayStr, count: 0 };
-    }
-
-    if (entry.count >= totalAllowed) {
-      const err: any = new Error(`Daily AI consultation limit of ${totalAllowed} questions reached for ${plan.displayName}.`);
-      err.code = 'AI_QUOTA_EXCEEDED';
-      err.tier = tier;
-      err.dailyLimit = totalAllowed;
-      err.upgradeRequired = tier === SubscriptionTier.FREE ? SubscriptionTier.PLUS : SubscriptionTier.PREMIUM;
-      throw err;
-    }
-
-    entry.count += 1;
-    this.dailyAiUsageMap.set(userId, entry);
-
-    return {
-      usedToday: entry.count,
-      totalAllowed,
-      remaining: totalAllowed - entry.count
-    };
+    return DurableAiQuotaManager.consumeQuery(userId, tier);
   }
 
   /**
