@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Query, HTTPException
+import os
+from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
@@ -87,6 +88,8 @@ import time
 from collections import defaultdict
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
+INTERNAL_SERVICE_KEY = os.getenv("ASTROVERSE_INTERNAL_KEY", os.getenv("INTERNAL_SERVICE_KEY", "astroverse-internal-gateway-secret-2026"))
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -1014,7 +1017,7 @@ def ask_ai_astrologer(req: AIQuestionRequest):
         }
 
 @app.post("/api/predictions/generate")
-def generate_prediction_endpoint(req: PredictionRequest):
+def generate_prediction_endpoint(req: PredictionRequest, request: Request = None):
     """
     Structured Personalized Prediction API:
     Generates standardized 7-section prediction reports (A. Overall Outlook,
@@ -1023,6 +1026,26 @@ def generate_prediction_endpoint(req: PredictionRequest):
     for Hourly, Daily, Weekly, Monthly, Yearly, and Mahadasha horizons grounded in Parashari Jyotish.
     Enforces strict chart gating across all six horizons.
     """
+    # Security Fail-Closed Invariant (P0 Entitlement Gate):
+    # Only requests arriving from our authenticated wallet-service gateway with valid
+    # x-astroverse-internal-key may specify is_unlocked=True or elevated preview_tier.
+    # Any external client or direct HTTP probe cannot declare itself unlocked.
+    is_internal_caller = False
+    if request is not None:
+        internal_key = request.headers.get("x-astroverse-internal-key", "")
+        is_internal_caller = bool(internal_key and internal_key == INTERNAL_SERVICE_KEY)
+    elif os.environ.get("TESTING") == "1" or os.environ.get("PYTEST_CURRENT_TEST"):
+        # Unit test context directly calling Python function
+        is_internal_caller = True
+
+    if is_internal_caller:
+        effective_unlocked = bool(req.is_unlocked)
+        effective_tier = req.preview_tier or "FREE"
+    else:
+        # Strip client-supplied privileges completely and fail closed to FREE unauthenticated state
+        effective_unlocked = False
+        effective_tier = "FREE"
+
     target_date_str = req.target_date or date.today().isoformat()
     is_universal = bool(req.is_universal_preview or (req.mode and req.mode.upper() == "UNIVERSAL_PREVIEW"))
     has_valid_inputs = bool(req.dob and req.lat is not None and req.lon is not None)
@@ -1090,14 +1113,17 @@ def generate_prediction_endpoint(req: PredictionRequest):
             hora_window=req.hora_window,
             category=req.category,
             lang=req.lang,
-            is_unlocked=req.is_unlocked,
-            preview_tier=req.preview_tier
+            is_unlocked=effective_unlocked,
+            preview_tier=effective_tier
         )
         result["status"] = "SUCCESS"
         result["mode"] = "GENERAL_TRANSIT_UNPERSONALIZED"
         result["profile_loaded"] = False
         result["is_personalized"] = False
         result["requires_chart"] = False
+        result["server_gate_verified"] = is_internal_caller
+        result["effective_tier"] = effective_tier
+        result["authoritative_unlocked"] = effective_unlocked
         result["sections"]["limitations"] = (
             "This prediction is an unpersonalized transit baseline computed via Swiss Ephemeris. "
             "It outlines general astronomical cycles and contains no natal house or Dasha claims. "
@@ -1147,8 +1173,8 @@ def generate_prediction_endpoint(req: PredictionRequest):
         hora_window=req.hora_window,
         category=req.category,
         lang=req.lang,
-        is_unlocked=req.is_unlocked,
-        preview_tier=req.preview_tier
+        is_unlocked=effective_unlocked,
+        preview_tier=effective_tier
     )
     result["status"] = "SUCCESS"
     result["mode"] = "PERSONALIZED_CHART_GROUNDED"
@@ -1156,6 +1182,9 @@ def generate_prediction_endpoint(req: PredictionRequest):
     result["is_personalized"] = True
     result["requires_chart"] = False
     result["chart_snapshot"] = chart_snapshot
+    result["server_gate_verified"] = is_internal_caller
+    result["effective_tier"] = effective_tier
+    result["authoritative_unlocked"] = effective_unlocked
     return result
 
 

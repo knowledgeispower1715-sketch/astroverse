@@ -23,6 +23,11 @@ class CdpClient {
     this.wsUrl = wsUrl;
     this.id = 1;
     this.callbacks = new Map();
+    this.exceptions = [];
+    this.consoleErrors = [];
+    this.networkFailures = [];
+    this.httpErrors = [];
+    this.logEntries = [];
   }
 
   async connect() {
@@ -38,6 +43,30 @@ class CdpClient {
         this.callbacks.delete(msg.id);
         if (msg.error) reject(new Error(msg.error.message));
         else resolve(msg.result);
+      } else if (msg.method) {
+        // Collect CDP asynchronous event notifications
+        if (msg.method === 'Runtime.exceptionThrown') {
+          this.exceptions.push(msg.params);
+          console.error('  [CDP EXCEPTION]', msg.params.exceptionDetails?.text || 'Unhandled exception');
+        } else if (msg.method === 'Runtime.consoleAPICalled') {
+          if (msg.params.type === 'error') {
+            this.consoleErrors.push(msg.params);
+          }
+        } else if (msg.method === 'Log.entryAdded') {
+          if (msg.params.entry?.level === 'error') {
+            this.logEntries.push(msg.params.entry);
+          }
+        } else if (msg.method === 'Network.loadingFailed') {
+          this.networkFailures.push(msg.params);
+        } else if (msg.method === 'Network.responseReceived') {
+          if (msg.params.response && msg.params.response.status >= 400) {
+            this.httpErrors.push({
+              url: msg.params.response.url,
+              status: msg.params.response.status,
+              statusText: msg.params.response.statusText
+            });
+          }
+        }
       }
     });
   }
@@ -61,6 +90,26 @@ class CdpClient {
       throw new Error(`Eval exception: ${desc}`);
     }
     return res.result?.value;
+  }
+
+  async waitForSelector(selector, timeoutMs = 8000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const found = await this.eval(`!!document.querySelector('${selector}')`).catch(() => false);
+      if (found) return true;
+      await new Promise(r => setTimeout(r, 100));
+    }
+    throw new Error(`Timeout waiting for selector: ${selector}`);
+  }
+
+  async waitForFunction(fnStr, timeoutMs = 8000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const ok = await this.eval(`Boolean(${fnStr})`).catch(() => false);
+      if (ok) return true;
+      await new Promise(r => setTimeout(r, 100));
+    }
+    throw new Error(`Timeout waiting for condition: ${fnStr}`);
   }
 
   async setViewport(width, height, deviceScaleFactor = 1) {
@@ -132,6 +181,8 @@ async function runLiveAudit() {
     await cdp.send('Page.enable');
     await cdp.send('DOM.enable');
     await cdp.send('Network.enable');
+    await cdp.send('Runtime.enable');
+    await cdp.send('Log.enable');
 
     await new Promise((r) => setTimeout(r, 2500));
     await cdp.setViewport(1280, 800);
@@ -264,11 +315,19 @@ async function runLiveAudit() {
 
     // Save Summary Artifact
     const auditSummary = {
-      status: passCount === testCount ? 'PASSED' : 'DEFECTS_DETECTED',
+      status: passCount === testCount && cdp.exceptions.length === 0 ? 'PASSED' : 'DEFECTS_DETECTED',
       target_url: 'https://astroverse-eta.vercel.app/',
       total_tests: testCount,
       passed_tests: passCount,
       failed_tests: testCount - passCount,
+      exceptions_count: cdp.exceptions.length,
+      exceptions: cdp.exceptions,
+      console_errors_count: cdp.consoleErrors.length,
+      console_errors: cdp.consoleErrors.map(e => ({ text: e.args?.map(a => a.value || a.description).join(' ') })),
+      network_failures_count: cdp.networkFailures.length,
+      network_failures: cdp.networkFailures,
+      http_errors_count: cdp.httpErrors.length,
+      http_errors: cdp.httpErrors,
       timestamp: new Date().toISOString(),
       responsive_viewports_tested: responsiveResults.length,
       responsive_viewports: responsiveResults

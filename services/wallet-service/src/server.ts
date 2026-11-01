@@ -2021,6 +2021,29 @@ app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: R
   }
 });
 
+app.get('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profiles = await db.getProfilesByUserId(req.user!.id);
+    res.json(profiles);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/profiles/item/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    const profile = await db.getProfileById(id);
+    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Birth profile not found.' });
+    if (req.user!.role !== Role.SUPER_ADMIN && profile.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot access another user\'s birth profile.' });
+    }
+    res.json(profile);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/profiles/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { userId } = req.params;
   if (req.user!.role !== Role.SUPER_ADMIN && req.user!.id !== userId) {
@@ -8216,6 +8239,282 @@ app.post('/api/numerology/correct-name', authenticate, async (req: Authenticated
       });
     }
     handleServiceError(res, err, 'Name correction failed');
+  }
+});
+
+// ==================== 7B. AUTHORITATIVE PREDICTION GATEWAY ====================
+
+async function checkUserHasUnlockedReport(userId: string, targetTypes: string[]): Promise<boolean> {
+  try {
+    const [reports, entitlements] = await Promise.all([
+      db.getSavedReportsByUserId(userId),
+      db.listEntitlements({ userId, activeOnly: true })
+    ]);
+    const hasSavedReport = (reports || []).some(r => targetTypes.includes(r.reportType));
+    if (hasSavedReport) return true;
+    const hasEntitlement = (entitlements || []).some(e => e.isActive && targetTypes.includes(e.featureKey));
+    return hasEntitlement;
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * POST /api/predictions/generate
+ * Authoritative Server-Gated Structured Prediction Endpoint.
+ * Enforces strict session verification, customer profile ownership, and server-authoritative
+ * subscription tier resolution before delegating to the Python Swiss Ephemeris calculation engine.
+ * Eliminates client-tampered `is_unlocked` and `preview_tier` privilege escalation (P0 Security Invariant).
+ */
+app.post('/api/predictions/generate', async (req: Request, res: Response) => {
+  try {
+    const {
+      horizon = 'hourly',
+      target_date,
+      dob,
+      lat,
+      lon,
+      timezone = 'Asia/Kolkata',
+      profile_id,
+      profileId,
+      profile_name,
+      category = 'general',
+      lang = 'en',
+      active_hora_planet,
+      hora_window,
+      is_unknown_time,
+      is_universal_preview,
+      mode
+    } = req.body || {};
+
+    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+
+    // 1. Authoritative Identity & Session Resolution
+    let sessionUser: UserRecord | null = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      if (!authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+          error: 'UNAUTHORIZED',
+          message: 'Authentication token format must be Bearer <token>.'
+        });
+      }
+      const token = authHeader.split(' ')[1]?.trim();
+      if (!token) {
+        return res.status(401).json({
+          error: 'INVALID_OR_EXPIRED_SESSION',
+          message: 'Authentication token is empty or missing.'
+        });
+      }
+      const tokenHash = hashToken(token);
+      const session = await db.findSessionByTokenHash(tokenHash);
+      if (session) {
+        sessionUser = await db.findUserById(session.userId);
+      } else {
+        const supaResult = await verifySupabaseToken(token);
+        if (supaResult && supaResult.user) {
+          sessionUser = await db.syncSupabaseUser({
+            id: supaResult.user.id,
+            email: supaResult.user.email,
+            phone: supaResult.user.phone,
+            user_metadata: supaResult.user.user_metadata
+          });
+        }
+      }
+
+      if (!sessionUser) {
+        return res.status(401).json({
+          error: 'INVALID_OR_EXPIRED_SESSION',
+          message: 'Provided authentication token is invalid or has expired.'
+        });
+      }
+
+      if (sessionUser.status !== AccountStatus.ACTIVE) {
+        return res.status(403).json({
+          error: 'ACCOUNT_INACTIVE',
+          message: `Account is currently ${sessionUser.status.toLowerCase()}. Please contact support.`
+        });
+      }
+    }
+
+    // 2. Personal Profile Ownership Enforcement (Phase 2 Tenant Isolation)
+    const rawProfileId = String(profileId || profile_id || '').trim();
+    let targetDob = dob;
+    let targetLat = lat != null ? Number(lat) : null;
+    let targetLon = lon != null ? Number(lon) : null;
+    let targetTz = timezone || 'Asia/Kolkata';
+    let targetProfileName = profile_name;
+    let resolvedProfileId = rawProfileId;
+
+    if (rawProfileId && rawProfileId !== 'session_guest' && rawProfileId !== 'current') {
+      if (!sessionUser) {
+        return res.status(401).json({
+          error: 'AUTHENTICATION_REQUIRED',
+          message: 'Authentication required to access saved birth profiles.'
+        });
+      }
+
+      const profile = await db.getProfileById(rawProfileId);
+      if (!profile) {
+        return res.status(404).json({
+          error: 'PROFILE_NOT_FOUND',
+          message: 'The requested birth profile was not found.'
+        });
+      }
+
+      // Strict Cross-User Ownership Isolation
+      if (profile.userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: You do not own this birth profile.'
+        });
+      }
+
+      // Ground calculations in the canonical verified profile from the database
+      const cleanTob = (profile.timeOfBirth || '12:00:00').trim();
+      const normalizedTob = cleanTob.length === 5 ? `${cleanTob}:00` : cleanTob;
+      targetDob = `${profile.dateOfBirth}T${normalizedTob}`;
+      targetLat = profile.latitude;
+      targetLon = profile.longitude;
+      targetTz = profile.resolvedTimezone || 'Asia/Kolkata';
+      targetProfileName = profile.profileName;
+      resolvedProfileId = profile.id;
+    } else {
+      // Ad-hoc or guest calculation: enforce guest rate limits
+      if (!sessionUser) {
+        if (!checkIpRateLimit(clientIp)) {
+          return res.status(429).json({
+            error: 'RATE_LIMIT_EXCEEDED',
+            message: 'Too many prediction requests from this IP. Please wait a moment.'
+          });
+        }
+      }
+      resolvedProfileId = sessionUser ? `user_${sessionUser.id}` : 'session_guest';
+      targetProfileName = targetProfileName || (sessionUser ? (sessionUser.displayName || 'Seeker') : 'Consultant');
+    }
+
+    // 3. Server-Authoritative Entitlement Resolution (Phase 1 P0 Gate)
+    // NEVER TRUST client-sent req.body.is_unlocked or req.body.preview_tier!
+    const horizonClean = String(horizon || 'hourly').toLowerCase().trim();
+    let effectiveTier: SubscriptionTier = SubscriptionTier.FREE;
+    let serverUnlocked = false;
+
+    if (sessionUser) {
+      effectiveTier = resolveRequestTier(sessionUser, req);
+
+      if (effectiveTier === SubscriptionTier.PREMIUM) {
+        // Premium tier grants 100% full access to all six horizons
+        serverUnlocked = true;
+      } else if (effectiveTier === SubscriptionTier.PLUS) {
+        // Plus tier includes Hourly, Daily, and Weekly horizons
+        if (['hourly', 'daily', 'weekly'].includes(horizonClean)) {
+          serverUnlocked = true;
+        } else {
+          // Check if user purchased a one-off report for deeper horizons
+          const hasReport = await checkUserHasUnlockedReport(sessionUser.id, [
+            'kundli_deep_dive',
+            'yearly_varshphal',
+            'monthly_forecast',
+            'mahadasha_5year'
+          ]);
+          serverUnlocked = hasReport;
+        }
+      } else {
+        // FREE tier: Hourly and Daily are unlocked; Weekly, Monthly, Yearly, Mahadasha locked
+        if (['hourly', 'daily'].includes(horizonClean)) {
+          serverUnlocked = true;
+        } else {
+          // Check if free user purchased a one-off report product
+          let hasReport = false;
+          if (horizonClean === 'weekly') {
+            hasReport = await checkUserHasUnlockedReport(sessionUser.id, ['weekly_forecast', 'kundli_deep_dive']);
+          } else if (horizonClean === 'monthly') {
+            hasReport = await checkUserHasUnlockedReport(sessionUser.id, ['monthly_forecast', 'kundli_deep_dive', 'yearly_varshphal']);
+          } else if (horizonClean === 'yearly') {
+            hasReport = await checkUserHasUnlockedReport(sessionUser.id, ['yearly_varshphal', 'kundli_deep_dive']);
+          } else if (['mahadasha', '5year', 'five_year'].includes(horizonClean)) {
+            hasReport = await checkUserHasUnlockedReport(sessionUser.id, ['mahadasha_5year', 'kundli_deep_dive']);
+          }
+          serverUnlocked = hasReport;
+        }
+      }
+    } else {
+      // Unauthenticated Guest: strictly FREE tier, only hourly and daily unlocked
+      effectiveTier = SubscriptionTier.FREE;
+      serverUnlocked = ['hourly', 'daily'].includes(horizonClean);
+    }
+
+    // 4. Secure Gateway Upstream Proxy to Python Swiss Ephemeris Engine
+    const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+    const INTERNAL_SERVICE_KEY = process.env.ASTROVERSE_INTERNAL_KEY || process.env.INTERNAL_SERVICE_KEY || 'astroverse-internal-gateway-secret-2026';
+
+    const upstreamPayload = {
+      horizon: horizonClean,
+      target_date: target_date,
+      dob: targetDob,
+      lat: targetLat,
+      lon: targetLon,
+      timezone: targetTz,
+      profile_id: resolvedProfileId,
+      profile_name: targetProfileName,
+      active_hora_planet: active_hora_planet,
+      hora_window: hora_window,
+      category: category,
+      lang: lang,
+      is_unknown_time: !!is_unknown_time,
+      is_universal_preview: !!is_universal_preview,
+      mode: mode,
+      is_unlocked: serverUnlocked,       // STRICT SERVER-AUTHORITATIVE VALUE
+      preview_tier: effectiveTier       // STRICT SERVER-AUTHORITATIVE VALUE
+    };
+
+    let upstreamRes: any;
+    try {
+      upstreamRes = await fetch(`${kundliUrl}/api/predictions/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-astroverse-internal-key': INTERNAL_SERVICE_KEY
+        },
+        body: JSON.stringify(upstreamPayload),
+        signal: AbortSignal.timeout(10000)
+      });
+    } catch (netErr: any) {
+      console.error('[GATEWAY] Upstream kundli-engine fetch failed:', netErr?.message || netErr);
+      return res.status(502).json({
+        error: 'KUNDLI_ENGINE_UNAVAILABLE',
+        message: 'Astrological calculation service is temporarily unavailable. Please retry shortly.'
+      });
+    }
+
+    if (!upstreamRes.ok) {
+      const errText = await upstreamRes.text();
+      let errBody: any;
+      try {
+        errBody = JSON.parse(errText);
+      } catch (_) {
+        errBody = { error: 'PREDICTION_SERVICE_ERROR', message: errText };
+      }
+      return res.status(upstreamRes.status).json(errBody);
+    }
+
+    const predictionData = await upstreamRes.json();
+
+    // Augment with server-side authoritative provenance metadata
+    predictionData.server_authoritative = true;
+    predictionData.effective_tier = effectiveTier;
+    predictionData.authoritative_unlocked = serverUnlocked;
+    if (sessionUser) {
+      predictionData.authenticated_user_id = sessionUser.id;
+    }
+
+    return res.json(predictionData);
+  } catch (err: any) {
+    console.error('[GATEWAY] Error in /api/predictions/generate:', err);
+    return res.status(500).json({
+      error: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to generate prediction report.'
+    });
   }
 });
 
