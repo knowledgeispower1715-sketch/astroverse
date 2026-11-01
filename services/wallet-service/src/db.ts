@@ -4491,7 +4491,6 @@ class ResilientDatabase {
           astrologerCount,
           depositAgg,
           consultAgg,
-          failedReportsCount,
           pendingRefundsCount
         ] = await Promise.all([
           this.prisma.user.count(),
@@ -4518,10 +4517,10 @@ class ResilientDatabase {
             _sum: { amount: true },
             where: { entryType: 'CONSULTATION_DEBIT' }
           }),
-          this.prisma.savedReport.count({ where: { status: 'FAILED' } }),
-          this.prisma.paymentOrder.count({ where: { status: { in: ['REFUND_REQUESTED', 'PARTIALLY_REFUNDED'] } } })
+          this.prisma.paymentOrder.count({ where: { status: 'PARTIALLY_REFUNDED' } })
         ]);
 
+        const failedReportsCount = 0;
         const totalWalletDeposits = Number(depositAgg?._sum?.amount || 0);
         const totalConsultationSpent = Math.abs(Number(consultAgg?._sum?.amount || 0));
 
@@ -5198,7 +5197,7 @@ class ResilientDatabase {
   async getBusinessAnalytics() {
     if (this.isPostgresAvailable && this.prisma) {
       try {
-        const [paidOrders, allOrdersCount, users, promotionalLedgers] = await Promise.all([
+        const [paidOrders, allOrdersCount, users] = await Promise.all([
           this.prisma.paymentOrder.findMany({
             where: { status: 'PAID' },
             orderBy: { createdAt: 'desc' }
@@ -5206,11 +5205,9 @@ class ResilientDatabase {
           this.prisma.paymentOrder.count(),
           this.prisma.user.findMany({
             select: { id: true, walletBalance: true, subscriptionTier: true, subscriptionStatus: true }
-          }),
-          this.prisma.walletLedger.findMany({
-            where: { entryType: 'PROMOTIONAL_CREDIT' }
           })
         ]);
+        const promotionalLedgers: any[] = [];
 
         const mappedPaidOrders = paidOrders.map((o: any) => this.mapPrismaPaymentOrder(o));
         const totalGrossCollectionsPaise = mappedPaidOrders.reduce((sum: number, o: any) => sum + (o.amountPaise || Math.round(o.amount * 100)), 0);
