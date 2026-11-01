@@ -144,21 +144,25 @@ model SavedReport {
 }
 
 model BirthProfile {
-  id                 String              @id @default(uuid())
-  userId             String
-  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileName        String
-  relationship       String              @default("Self") // Self, Spouse, Child, Friend
-  dateOfBirth        DateTime
-  timeOfBirth        String              // "14:30"
-  birthTimeKnown     Boolean             @default(true)
-  birthplaceName     String
-  latitude           Decimal             @db.Decimal(9, 6)
-  longitude          Decimal             @db.Decimal(9, 6)
-  resolvedTimezone   String              @default("Asia/Kolkata")
-  calculations       KundliCalculation[]
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  id                       String              @id @default(uuid())
+  userId                   String
+  user                     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileName              String
+  relationship             String              @default("Self") // Self, Spouse, Child, Friend
+  dateOfBirth              DateTime
+  timeOfBirth              String?             // "14:30" (null or empty string when birth time is unknown)
+  birthTimeKnown           Boolean             @default(true)
+  birthTimeStatus          String              @default("EXACT") // "EXACT", "APPROXIMATE", "UNKNOWN"
+  approximateWindowMinutes Int?
+  approximateTimeRange     String?
+  birthTimeConfirmed       Boolean             @default(true)
+  birthplaceName           String
+  latitude                 Decimal             @db.Decimal(9, 6)
+  longitude                Decimal             @db.Decimal(9, 6)
+  resolvedTimezone         String              @default("Asia/Kolkata")
+  calculations             KundliCalculation[]
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
 
   @@index([userId, profileName])
 }

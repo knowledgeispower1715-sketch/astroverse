@@ -13,7 +13,7 @@ const MOCK_KUNDLI_PORT = 8099;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
 
 process.env.KUNDLI_ENGINE_URL = `http://127.0.0.1:${MOCK_KUNDLI_PORT}`;
-process.env.ASTROVERSE_INTERNAL_KEY = 'astroverse-internal-gateway-secret-2026';
+process.env.ASTROVERSE_INTERNAL_KEY = 'test_secure_internal_gateway_key_999888';
 
 let lastReceivedUpstreamPayload: any = null;
 let lastReceivedUpstreamHeaders: any = null;
@@ -180,9 +180,30 @@ async function runEntitlementAndIsolationSuite() {
       assert.strictEqual(lastReceivedUpstreamPayload.preview_tier, 'FREE', 'Upstream must receive preview_tier: FREE');
       assert.strictEqual(
         lastReceivedUpstreamHeaders['x-astroverse-internal-key'],
-        'astroverse-internal-gateway-secret-2026',
+        'test_secure_internal_gateway_key_999888',
         'Upstream must receive authorized internal service header'
       );
+    });
+
+    // Test: Compromised legacy credential is strictly rejected by gateway
+    await test('Compromised legacy credential is rejected by gateway', async () => {
+      const originalKey = process.env.ASTROVERSE_INTERNAL_KEY;
+      try {
+        process.env.ASTROVERSE_INTERNAL_KEY = 'astroverse-internal-gateway-secret-2026';
+        const res = await request('/api/predictions/generate', {
+          method: 'POST',
+          body: {
+            horizon: 'hourly',
+            dob: '1990-01-01T12:00:00',
+            lat: 28.61,
+            lon: 77.20
+          }
+        });
+        assert.strictEqual(res.status, 500);
+        assert.strictEqual(res.data.error, 'GATEWAY_CONFIGURATION_ERROR');
+      } finally {
+        process.env.ASTROVERSE_INTERNAL_KEY = originalKey;
+      }
     });
 
     // 2. Anonymous caller sending preview_tier: "PREMIUM" is strictly locked

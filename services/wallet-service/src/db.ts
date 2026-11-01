@@ -217,14 +217,20 @@ export interface ContentBannerRecord {
   updatedBy: string;
 }
 
+export type BirthTimeStatus = 'EXACT' | 'APPROXIMATE' | 'UNKNOWN';
+
 export interface BirthProfileRecord {
   id: string;
   userId: string;
   profileName: string;
   relationship: string;
   dateOfBirth: string;
-  timeOfBirth: string;
+  timeOfBirth: string | null;
   birthTimeKnown: boolean;
+  birthTimeStatus: BirthTimeStatus;
+  approximateWindowMinutes?: number | null;
+  approximateTimeRange?: string | null;
+  birthTimeConfirmed?: boolean;
   birthplaceName: string;
   latitude: number;
   longitude: number;
@@ -652,14 +658,19 @@ class ResilientDatabase {
   }
 
   private mapPrismaProfile(p: any): BirthProfileRecord {
+    const rawStatus = (p.birthTimeStatus as BirthTimeStatus) || (p.birthTimeKnown === false ? 'UNKNOWN' : 'EXACT');
     return {
       id: p.id,
       userId: p.userId,
       profileName: p.profileName,
       relationship: p.relationship,
       dateOfBirth: typeof p.dateOfBirth === 'string' ? p.dateOfBirth : p.dateOfBirth.toISOString().split('T')[0],
-      timeOfBirth: p.timeOfBirth,
-      birthTimeKnown: p.birthTimeKnown,
+      timeOfBirth: p.timeOfBirth || null,
+      birthTimeKnown: rawStatus === 'UNKNOWN' ? false : (p.birthTimeKnown ?? true),
+      birthTimeStatus: rawStatus,
+      approximateWindowMinutes: p.approximateWindowMinutes != null ? Number(p.approximateWindowMinutes) : null,
+      approximateTimeRange: p.approximateTimeRange || null,
+      birthTimeConfirmed: p.birthTimeConfirmed ?? true,
       birthplaceName: p.birthplaceName,
       latitude: Number(p.latitude),
       longitude: Number(p.longitude),
@@ -1861,13 +1872,26 @@ class ResilientDatabase {
     profileName: string;
     relationship?: string;
     dateOfBirth: string;
-    timeOfBirth: string;
+    timeOfBirth?: string | null;
+    birthTimeKnown?: boolean;
+    birthTimeStatus?: BirthTimeStatus;
+    approximateWindowMinutes?: number | null;
+    approximateTimeRange?: string | null;
+    birthTimeConfirmed?: boolean;
     birthplaceName: string;
     latitude: number;
     longitude: number;
     resolvedTimezone?: string;
   }): Promise<BirthProfileRecord> {
     this.assertDurableStorage();
+
+    const resolvedStatus: BirthTimeStatus =
+      data.birthTimeStatus === 'UNKNOWN' || data.birthTimeKnown === false
+        ? 'UNKNOWN'
+        : (data.birthTimeStatus === 'APPROXIMATE' ? 'APPROXIMATE' : 'EXACT');
+
+    const cleanTime = resolvedStatus === 'UNKNOWN' ? null : (data.timeOfBirth || null);
+    const birthTimeKnown = resolvedStatus !== 'UNKNOWN';
 
     if (this.isPostgresAvailable && this.prisma) {
       await this.ensurePostgresSchema();
@@ -1877,7 +1901,7 @@ class ResilientDatabase {
           where: {
             userId: data.userId,
             profileName: trimmedName,
-            timeOfBirth: data.timeOfBirth
+            timeOfBirth: cleanTime
           }
         });
         if (existing) {
@@ -1890,8 +1914,12 @@ class ResilientDatabase {
             profileName: trimmedName,
             relationship: data.relationship || 'Self',
             dateOfBirth: new Date(data.dateOfBirth),
-            timeOfBirth: data.timeOfBirth,
-            birthTimeKnown: true,
+            timeOfBirth: cleanTime,
+            birthTimeKnown,
+            birthTimeStatus: resolvedStatus,
+            approximateWindowMinutes: data.approximateWindowMinutes != null ? Number(data.approximateWindowMinutes) : null,
+            approximateTimeRange: data.approximateTimeRange || null,
+            birthTimeConfirmed: data.birthTimeConfirmed ?? true,
             birthplaceName: data.birthplaceName.trim(),
             latitude: Number(data.latitude),
             longitude: Number(data.longitude),
@@ -1911,7 +1939,8 @@ class ResilientDatabase {
     const existing = this.data.birthProfiles.find(p =>
       p.userId === data.userId &&
       p.dateOfBirth === data.dateOfBirth &&
-      p.timeOfBirth === data.timeOfBirth &&
+      p.timeOfBirth === cleanTime &&
+      p.birthTimeStatus === resolvedStatus &&
       p.profileName.toLowerCase() === trimmedName.toLowerCase() &&
       Math.abs(Number(p.latitude) - Number(data.latitude)) < 0.001 &&
       Math.abs(Number(p.longitude) - Number(data.longitude)) < 0.001
@@ -1927,8 +1956,12 @@ class ResilientDatabase {
       profileName: trimmedName,
       relationship: data.relationship || 'Self',
       dateOfBirth: data.dateOfBirth,
-      timeOfBirth: data.timeOfBirth,
-      birthTimeKnown: true,
+      timeOfBirth: cleanTime,
+      birthTimeKnown,
+      birthTimeStatus: resolvedStatus,
+      approximateWindowMinutes: data.approximateWindowMinutes != null ? Number(data.approximateWindowMinutes) : null,
+      approximateTimeRange: data.approximateTimeRange || null,
+      birthTimeConfirmed: data.birthTimeConfirmed ?? true,
       birthplaceName: data.birthplaceName.trim(),
       latitude: Number(data.latitude),
       longitude: Number(data.longitude),

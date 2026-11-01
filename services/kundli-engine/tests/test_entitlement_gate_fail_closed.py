@@ -1,11 +1,15 @@
 import sys
 import os
 import pytest
+
+TEST_KEY = "test-internal-secret-token-pytest-valid-2026"
+os.environ["ASTROVERSE_INTERNAL_KEY"] = TEST_KEY
+
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from main import app, INTERNAL_SERVICE_KEY
+from main import app
 
 client = TestClient(app)
 
@@ -67,6 +71,26 @@ def test_forged_internal_key_fails_closed():
     assert data["authoritative_unlocked"] is False
     assert data["effective_tier"] == "FREE"
 
+def test_compromised_legacy_key_strictly_rejected():
+    """
+    P0 Invariant: The publicly exposed fallback 'astroverse-internal-gateway-secret-2026'
+    is permanently blacklisted and MUST fail closed even if an attacker supplies it.
+    """
+    payload = {
+        **TEST_BIRTH_PAYLOAD,
+        "horizon": "monthly",
+        "is_unlocked": True,
+        "preview_tier": "PREMIUM"
+    }
+    headers = {"x-astroverse-internal-key": "astroverse-internal-gateway-secret-2026"}
+    resp = client.post("/api/predictions/generate", json=payload, headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert data["server_gate_verified"] is False
+    assert data["authoritative_unlocked"] is False
+    assert data["effective_tier"] == "FREE"
+
 def test_authorized_internal_gateway_request_honors_server_unlock():
     """
     Requests arriving from our internal wallet-service gateway with valid
@@ -78,7 +102,7 @@ def test_authorized_internal_gateway_request_honors_server_unlock():
         "is_unlocked": True,
         "preview_tier": "PREMIUM"
     }
-    headers = {"x-astroverse-internal-key": INTERNAL_SERVICE_KEY}
+    headers = {"x-astroverse-internal-key": TEST_KEY}
     resp = client.post("/api/predictions/generate", json=payload, headers=headers)
     assert resp.status_code == 200
     data = resp.json()

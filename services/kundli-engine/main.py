@@ -85,11 +85,40 @@ from prokerala_api import (
 
 import os
 import time
+import hmac
 from collections import defaultdict
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-INTERNAL_SERVICE_KEY = os.getenv("ASTROVERSE_INTERNAL_KEY", os.getenv("INTERNAL_SERVICE_KEY", "astroverse-internal-gateway-secret-2026"))
+KNOWN_COMPROMISED_INTERNAL_KEYS = frozenset([
+    "astroverse-internal-gateway-secret-2026",
+    "astroverse-internal-gateway-secret",
+    "dummy_internal_key",
+    "internal_secret"
+])
+
+def is_production_environment() -> bool:
+    return bool(
+        os.getenv("NODE_ENV") == "production"
+        or os.getenv("VERCEL") == "1"
+        or os.getenv("VERCEL_ENV") == "production"
+        or os.getenv("ENVIRONMENT") == "production"
+    )
+
+def get_validated_internal_service_key() -> str:
+    key = os.getenv("ASTROVERSE_INTERNAL_KEY", "").strip()
+    is_prod = is_production_environment()
+    if is_prod:
+        if not key:
+            raise RuntimeError("[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY must be configured in production.")
+        if key in KNOWN_COMPROMISED_INTERNAL_KEYS:
+            raise RuntimeError("[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY matches a known compromised fallback credential.")
+        if len(key) < 16:
+            raise RuntimeError("[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY must be at least 16 characters in production.")
+    return key
+
+# Internal service key read from environment (empty string if unset; never hardcoded)
+INTERNAL_SERVICE_KEY = os.getenv("ASTROVERSE_INTERNAL_KEY", "").strip()
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -160,6 +189,11 @@ app = FastAPI(
     title="Astroverse Engine - High-Precision Vedic Astrology & Ephemeris Service",
     version="2.1.0"
 )
+
+@app.on_event("startup")
+def validate_production_configuration():
+    if is_production_environment():
+        get_validated_internal_service_key()
 
 ALLOWED_ORIGINS = [
     "https://astroverse-eta.vercel.app",
@@ -1031,11 +1065,22 @@ def generate_prediction_endpoint(req: PredictionRequest, request: Request = None
     # x-astroverse-internal-key may specify is_unlocked=True or elevated preview_tier.
     # Any external client or direct HTTP probe cannot declare itself unlocked.
     is_internal_caller = False
+    is_prod = is_production_environment()
+    expected_key = os.getenv("ASTROVERSE_INTERNAL_KEY", "").strip()
+
     if request is not None:
-        internal_key = request.headers.get("x-astroverse-internal-key", "")
-        is_internal_caller = bool(internal_key and internal_key == INTERNAL_SERVICE_KEY)
-    elif os.environ.get("TESTING") == "1" or os.environ.get("PYTEST_CURRENT_TEST"):
-        # Unit test context directly calling Python function
+        internal_key = request.headers.get("x-astroverse-internal-key", "").strip()
+        # Fail closed immediately if key is missing, empty, matches compromised fallback, or expected_key is invalid
+        if (
+            internal_key
+            and expected_key
+            and internal_key not in KNOWN_COMPROMISED_INTERNAL_KEYS
+            and expected_key not in KNOWN_COMPROMISED_INTERNAL_KEYS
+        ):
+            # Constant-time comparison using hmac.compare_digest
+            is_internal_caller = hmac.compare_digest(internal_key, expected_key)
+    elif not is_prod and (os.environ.get("TESTING") == "1" or os.environ.get("PYTEST_CURRENT_TEST")):
+        # Unit test context directly calling Python function (STRICTLY NON-PRODUCTION)
         is_internal_caller = True
 
     if is_internal_caller:

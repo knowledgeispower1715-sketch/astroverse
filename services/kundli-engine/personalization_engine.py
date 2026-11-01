@@ -480,8 +480,56 @@ def analyze_personal_jyotish_evidence(
     sade_sati_data = transits.get("special_conditions", {}).get("sade_sati", {})
     chandrashtama_active = bool(t_moon_h_moon == 8)
 
+    if is_unknown_time:
+        return {
+            "is_unknown_time": True,
+            "natal": {
+                "lagna": "Indeterminate (Birth Time Unknown)",
+                "lagna_degree": None,
+                "lagnesha": None,
+                "lagnesha_house": None,
+                "lagnesha_sign": None,
+                "yogakaraka": None,
+                "functional_benefics": [],
+                "functional_malefics": [],
+                "marakas": [],
+                "moon_sign": moon_sign,
+                "moon_degree": moon_deg,
+                "moon_nakshatra": moon_nak,
+                "moon_house": None
+            },
+            "dasha": {
+                "maha_lord": maha_lord,
+                "maha_houses": get_planet_lordship_for_lagna(maha_lord, moon_sign),
+                "maha_natal_house": None,
+                "antar_lord": antar_lord,
+                "antar_houses": get_planet_lordship_for_lagna(antar_lord, moon_sign),
+                "antar_natal_house": None,
+                "prat_lord": prat_lord,
+                "mutual_relationship": dasha_rel
+            },
+            "transits": {
+                "saturn_house_lagna": None,
+                "saturn_house_moon": t_saturn.get("house_from_moon"),
+                "saturn_verdict": t_saturn.get("verdict_status"),
+                "jupiter_house_lagna": None,
+                "jupiter_house_moon": t_jupiter.get("house_from_moon"),
+                "jupiter_verdict": t_jupiter.get("verdict_status"),
+                "mars_house_lagna": None,
+                "sun_house_lagna": None,
+                "t_moon_sign": t_moon_sign,
+                "t_moon_nakshatra": t_moon_nak,
+                "t_moon_house_lagna": None,
+                "t_moon_house_moon": t_moon_h_moon,
+                "tarabala": tara_data,
+                "chandrabala": chandra_data,
+                "sade_sati": sade_sati_data,
+                "chandrashtama_active": chandrashtama_active
+            }
+        }
+
     return {
-        "is_unknown_time": is_unknown_time,
+        "is_unknown_time": False,
         "natal": {
             "lagna": lagna_sign,
             "lagna_degree": lagna_deg,
@@ -556,10 +604,17 @@ def generate_hourly_guidance(
     maha_hi = HINDI_PLANETS.get(maha, maha)
     antar_hi = HINDI_PLANETS.get(antar, antar)
 
-    # Identify houses ruled by Hora planet in this Lagna
-    hora_houses = get_planet_lordship_for_lagna(hora_planet, lagna)
-    hora_houses_str = ", ".join(f"{h}th" for h in hora_houses) if hora_houses else "Karmic Axis"
-    hora_houses_hi = ", ".join(f"{h}वें" for h in hora_houses) if hora_houses else "कर्म अक्ष"
+    is_unknown_time = evidence.get("is_unknown_time", False)
+
+    # Identify houses ruled by Hora planet (from Lagna or from Moon if birth time unknown)
+    if is_unknown_time:
+        hora_houses = get_planet_lordship_for_lagna(hora_planet, moon_sign)
+        hora_houses_str = ", ".join(f"{h}th from Moon" for h in hora_houses) if hora_houses else "Chandra Axis"
+        hora_houses_hi = ", ".join(f"चंद्र से {h}वें" for h in hora_houses) if hora_houses else "चंद्र अक्ष"
+    else:
+        hora_houses = get_planet_lordship_for_lagna(hora_planet, lagna)
+        hora_houses_str = ", ".join(f"{h}th" for h in hora_houses) if hora_houses else "Karmic Axis"
+        hora_houses_hi = ", ".join(f"{h}वें" for h in hora_houses) if hora_houses else "कर्म अक्ष"
 
     is_func_benefic = hora_planet in n["functional_benefics"]
     is_func_malefic = hora_planet in n["functional_malefics"]
@@ -691,9 +746,11 @@ def generate_daily_guidance(
     tara_ausp = tara.get("is_auspicious", True)
     tara_meaning = tara.get("meaning", "Well-being and safety")
 
+    is_unknown_time = evidence.get("is_unknown_time", False)
     t_moon_sign_hi = HINDI_SIGNS.get(t_moon_sign, t_moon_sign)
-    h_domain = HOUSE_DOMAINS.get(t_moon_h_lagna, {})
-    h_domain_hi = HOUSE_DOMAINS_HI.get(t_moon_h_lagna, {})
+    active_daily_h = t_moon_h_moon if is_unknown_time else t_moon_h_lagna
+    h_domain = HOUSE_DOMAINS.get(active_daily_h, {})
+    h_domain_hi = HOUSE_DOMAINS_HI.get(active_daily_h, {})
 
     is_sade_sati = t.get("sade_sati", {}).get("is_active", False)
     is_chandrashtama = t.get("chandrashtama_active", False)
@@ -701,7 +758,7 @@ def generate_daily_guidance(
     date_str = target_dt.strftime("%Y-%m-%d")
 
     if is_hi:
-        house_caution_hi = HOUSE_DAILY_CAUTIONS_HI.get(t_moon_h_lagna, "दैनिक दायित्वों में सजगता और अनुशासन बनाए रखें।")
+        house_caution_hi = HOUSE_DAILY_CAUTIONS_HI.get(active_daily_h, "दैनिक दायित्वों में सजगता और अनुशासन बनाए रखें।")
         report_title = f"दैनिक व्यक्तिगत फलादेश: {date_str} (चंद्र गोचर व ताराबल विश्लेषण)"
         if is_chandrashtama:
             summary = (
@@ -711,16 +768,25 @@ def generate_daily_guidance(
             )
             outlook = f"आज का दिन चंद्राष्टम के प्रभाव में है ({t_moon_sign_hi} राशि)। नए साहसिक उपक्रमों की बजाय नियमित कार्यों पर ध्यान दें।"
             challenges = [
-                f"{t_moon_h_lagna}वें भाव की सावधानी: {house_caution_hi}",
+                f"{active_daily_h}वें भाव की सावधानी: {house_caution_hi}",
                 "चंद्राष्टम प्रभाव: उतावलेपन में बड़े वित्तीय या भावनात्मक निर्णय लेने से बचें।",
                 "संवाद में कटुता न आने दें; सहयोगियों के साथ शांत चित्त से व्यवहार करें।"
             ]
         elif tara_ausp:
             summary = (
-                f"आपकी {lagna_hi} लग्न कुंडली में आज चंद्र का {t_moon_sign_hi} ({t_moon_nak} नक्षत्र) में गोचर आपके {t_moon_h_lagna}वें भाव ({h_domain_hi.get('name', 'शुभ भाव')}) को सक्रिय कर रहा है। "
-                f"आपकी जन्म चंद्र राशि से ताराबल '{tara_name}' ({tara_meaning}) प्राप्त हो रहा है, जो उच्च मानसिक स्पष्टता और कार्य सिद्धि का संकेत देता है। "
-                f"सक्रिय {maha_hi}-{antar_hi} दशा के अंतर्गत, आज का दिन {h_domain_hi.get('domains', 'प्रमुख जिम्मेदारियों')} को आगे बढ़ाने हेतु अत्यंत अनुकूल है।"
+                (f"जन्म समय अज्ञात होने के कारण आज का विश्लेषण चंद्र लग्न ({moon_hi} राशि) पर आधारित है। आज चंद्र का {t_moon_sign_hi} ({t_moon_nak} नक्षत्र) में गोचर चंद्र से {active_daily_h}वें भाव ({h_domain_hi.get('name', 'शुभ भाव')}) को सक्रिय कर रहा है। "
+                 f"ताराबल '{tara_name}' ({tara_meaning}) प्राप्त हो रहा है, जो उच्च मानसिक स्पष्टता का संकेत देता है।")
+                if is_unknown_time else
+                (f"आपकी {lagna_hi} लग्न कुंडली में आज चंद्र का {t_moon_sign_hi} ({t_moon_nak} नक्षत्र) में गोचर आपके {t_moon_h_lagna}वें भाव ({h_domain_hi.get('name', 'शुभ भाव')}) को सक्रिय कर रहा है। "
+                 f"आपकी जन्म चंद्र राशि से ताराबल '{tara_name}' ({tara_meaning}) प्राप्त हो रहा है, जो उच्च मानसिक स्पष्टता और कार्य सिद्धि का संकेत देता है। "
+                 f"सक्रिय {maha_hi}-{antar_hi} दशा के अंतर्गत, आज का दिन {h_domain_hi.get('domains', 'प्रमुख जिम्मेदारियों')} को आगे बढ़ाने हेतु अत्यंत अनुकूल है।")
             )
+            outlook = f"शुभ ताराबल ({tara_name}) और {'चंद्र लग्न' if is_unknown_time else 'लग्न'} से {active_daily_h}वें भाव में चंद्र गोचर से दिन सकारात्मक रहेगा।"
+            challenges = [
+                f"{active_daily_h}वें भाव की सावधानी: {house_caution_hi}",
+                "अति-उत्साह में अपनी सीमाओं से अधिक नए कार्य अपने ऊपर न लें।",
+                "दैनिक राहुकाल के दौरान महत्वपूर्ण अनुबंधों पर हस्ताक्षर करने से बचें।"
+            ]
             outlook = f"शुभ ताराबल ({tara_name}) और {t_moon_h_lagna}वें भाव में चंद्र गोचर से दिन सकारात्मक व प्रगतिशील रहेगा।"
             challenges = [
                 f"{t_moon_h_lagna}वें भाव की सावधानी: {house_caution_hi}",
@@ -752,54 +818,63 @@ def generate_daily_guidance(
             f"सावधानी काल: दैनिक स्थानीय राहुकाल अवधि"
         ]
         why = (
-            f"आज चंद्र देव गोचर में {t_moon_sign_hi} राशि ({t_moon_nak} नक्षत्र) में भ्रमण कर रहे हैं, "
-            f"जो आपके {lagna_hi} लग्न से {t_moon_h_lagna}वें भाव में और आपकी जन्म चंद्र राशि ({moon_hi}) से {t_moon_h_moon}वें भाव में स्थित है। "
-            f"ताराबल '{tara_name}' और सक्रिय विंशोत्तरी दशा {maha_hi}-{antar_hi} के अनुसार यह फलादेश संकलित है।"
+            (f"जन्म समय अज्ञात होने के कारण यह फलादेश चंद्र लग्न ({moon_hi} राशि) पर केंद्रित है। गोचर चंद्र {t_moon_sign_hi} ({t_moon_nak} नक्षत्र) में भ्रमण कर रहे हैं, जो जन्म चंद्र से {t_moon_h_moon}वें भाव में है। ताराबल '{tara_name}' तथा सक्रिय दशा {maha_hi}-{antar_hi} के अनुसार विश्लेषण प्रस्तुत है।")
+            if is_unknown_time else
+            (f"आज चंद्र देव गोचर में {t_moon_sign_hi} राशि ({t_moon_nak} नक्षत्र) में भ्रमण कर रहे हैं, "
+             f"जो आपके {lagna_hi} लग्न से {t_moon_h_lagna}वें भाव में और आपकी जन्म चंद्र राशि ({moon_hi}) से {t_moon_h_moon}वें भाव में स्थित है। "
+             f"ताराबल '{tara_name}' और सक्रिय विंशोत्तरी दशा {maha_hi}-{antar_hi} के अनुसार यह फलादेश संकलित है।")
         )
         reflection = f"आज अपने सबसे महत्वपूर्ण दायित्व पर ध्यान केंद्रित रखें और सात्विक आहार व नियमित प्रार्थना का पालन करें।"
     else:
-        house_caution_en = HOUSE_DAILY_CAUTIONS_EN.get(t_moon_h_lagna, "Maintain systematic attention to daily responsibilities.")
+        house_caution_en = HOUSE_DAILY_CAUTIONS_EN.get(active_daily_h, "Maintain systematic attention to daily responsibilities.")
         report_title = f"Daily Personal Forecast: {date_str} (Lunar Transit & Tara Bala Synthesis)"
         if is_chandrashtama:
             summary = (
-                f"For your natal {lagna} Lagna and {moon_sign} Moon, transiting Moon traverses your 8th house from Moon (Chandrashtama) in sidereal {t_moon_sign}. "
+                f"For your natal {moon_sign} Moon (Chandra Lagna), transiting Moon traverses your 8th house from Moon (Chandrashtama) in sidereal {t_moon_sign}. "
                 f"Classical Parashari Jyotish identifies Chandrashtama as an interval requiring psychological poise, where high-stakes speculative decisions or confrontational negotiations should be deferred. "
                 f"Prioritize routine consolidation, verify numerical details, and preserve equanimity under your ongoing {maha} Mahadasha ({antar} Antardasha)."
             )
             outlook = f"Today is governed by Chandrashtama transit in sidereal {t_moon_sign}. Exercise calm prudence and defer speculative risks."
             challenges = [
-                f"House {t_moon_h_lagna} Transit Caution: {house_caution_en}",
+                f"House {active_daily_h} Transit Caution: {house_caution_en}",
                 "Chandrashtama Phase: Avoid unvetted legal, financial, or interpersonal commitments.",
                 "Maintain emotional neutrality during contentious discussions to avoid unnecessary friction."
             ]
         elif tara_ausp:
             summary = (
-                f"In your natal {lagna} Lagna nativity, transiting Moon in {t_moon_sign} ({t_moon_nak} Nakshatra) illuminates your House {t_moon_h_lagna} ({h_domain.get('name', 'Benefic House')}). "
-                f"Your natal Moon receives highly favorable '{tara_name}' Tara Bala ({tara_meaning}), supporting lucid discernment and executive breakthroughs. "
-                f"Sustained by your active {maha}-{antar} Dasha, today's planetary currents favor advancing {h_domain.get('domains', 'high-priority goals')}."
+                (f"With birth time marked unknown, today's forecast is grounded in Chandra Lagna ({moon_sign} Moon). Transiting Moon in sidereal {t_moon_sign} ({t_moon_nak} Nakshatra) illuminates House {active_daily_h} ({h_domain.get('name', 'Benefic House')}) from your natal Moon. "
+                 f"Your natal Moon receives highly favorable '{tara_name}' Tara Bala ({tara_meaning}), supporting lucid discernment and steady progress. "
+                 f"Sustained by your active {maha}-{antar} Dasha, today's planetary currents favor advancing {h_domain.get('domains', 'high-priority goals')}.")
+                if is_unknown_time else
+                (f"In your natal {lagna} Lagna nativity, transiting Moon in {t_moon_sign} ({t_moon_nak} Nakshatra) illuminates your House {t_moon_h_lagna} ({h_domain.get('name', 'Benefic House')}). "
+                 f"Your natal Moon receives highly favorable '{tara_name}' Tara Bala ({tara_meaning}), supporting lucid discernment and executive breakthroughs. "
+                 f"Sustained by your active {maha}-{antar} Dasha, today's planetary currents favor advancing {h_domain.get('domains', 'high-priority goals')}.")
             )
-            outlook = f"Benefic Tara Bala ({tara_name}) and House {t_moon_h_lagna} lunar transit create a constructive, productive window."
+            outlook = f"Benefic Tara Bala ({tara_name}) and House {active_daily_h} lunar transit create a constructive, productive window."
             challenges = [
-                f"House {t_moon_h_lagna} Transit Caution: {house_caution_en}",
+                f"House {active_daily_h} Transit Caution: {house_caution_en}",
                 "Avoid over-extending your commitments simply because conditions feel harmonious.",
                 "Maintain heightened awareness during the localized daily Rahu Kaal window."
             ]
         else:
             summary = (
-                f"Today's Moon transit through sidereal {t_moon_sign} aspects your natal House {t_moon_h_lagna}, conferring '{tara_name}' Tara Bala ({tara_meaning}). "
-                f"Under your active {maha} Mahadasha, the celestial weather favors methodical audit, risk mitigation, and disciplined execution over uncalculated expansion."
+                (f"With birth time marked unknown, today's Moon transit through sidereal {t_moon_sign} aspects House {active_daily_h} from your natal {moon_sign} Moon, conferring '{tara_name}' Tara Bala ({tara_meaning}). "
+                 f"Under your active {maha} Mahadasha, the celestial weather favors methodical audit, risk mitigation, and disciplined execution over uncalculated expansion.")
+                if is_unknown_time else
+                (f"Today's Moon transit through sidereal {t_moon_sign} aspects your natal House {t_moon_h_lagna}, conferring '{tara_name}' Tara Bala ({tara_meaning}). "
+                 f"Under your active {maha} Mahadasha, the celestial weather favors methodical audit, risk mitigation, and disciplined execution over uncalculated expansion.")
             )
             outlook = f"Tara Bala ({tara_name}) indicates caution. Focus on patience, detailed review, and steady consolidation."
             challenges = [
-                f"House {t_moon_h_lagna} Transit Caution: {house_caution_en}",
+                f"House {active_daily_h} Transit Caution: {house_caution_en}",
                 f"Tara Bala Consideration ({tara_name}): Steer clear of unvetted speculative proposals.",
                 "Take structured 5-minute pauses between demanding tasks to mitigate mental strain."
             ]
 
         dasha_theme_en = DASHA_LORD_DAILY_THEMES_EN.get(maha, f"Under your ruling {maha} Mahadasha, maintain deliberate focus on primary responsibilities.")
-        benefic_theme_en = LAGNA_BENEFIC_DAILY_THEMES_EN.get(lagna, f"The functional benefics of your {lagna} Lagna channel constructive support into today's efforts.")
+        benefic_theme_en = f"Planetary transit currents align with your natal {moon_sign} Moon (Chandra Lagna) for balanced execution." if is_unknown_time else LAGNA_BENEFIC_DAILY_THEMES_EN.get(lagna, f"The functional benefics of your {lagna} Lagna channel constructive support into today's efforts.")
         supportive = [
-            f"Productive momentum across House {t_moon_h_lagna} significations ({h_domain.get('domains', 'responsibilities')}).",
+            f"Productive momentum across House {active_daily_h} significations ({h_domain.get('domains', 'responsibilities')}).",
             dasha_theme_en,
             benefic_theme_en
         ]
@@ -809,9 +884,13 @@ def generate_daily_guidance(
             "Cautionary Period: Daily localized Rahu Kaal interval"
         ]
         why = (
-            f"Transiting Moon resides in sidereal {t_moon_sign} ({t_moon_nak} Nakshatra), activating House {t_moon_h_lagna} from your {lagna} Lagna "
-            f"and House {t_moon_h_moon} from your {moon_sign} Moon. "
-            f"Tara Bala is evaluated as '{tara_name}' under your prevailing {maha}-{antar} Dasha governance."
+            (f"Birth time is marked unknown; calculations are grounded in Chandra Lagna ({moon_sign} Moon). "
+             f"Transiting Moon resides in sidereal {t_moon_sign} ({t_moon_nak} Nakshatra), activating House {t_moon_h_moon} from your natal Moon. "
+             f"Tara Bala is evaluated as '{tara_name}' under your prevailing {maha}-{antar} Dasha governance.")
+            if is_unknown_time else
+            (f"Transiting Moon resides in sidereal {t_moon_sign} ({t_moon_nak} Nakshatra), activating House {t_moon_h_lagna} from your {lagna} Lagna "
+             f"and House {t_moon_h_moon} from your {moon_sign} Moon. "
+             f"Tara Bala is evaluated as '{tara_name}' under your prevailing {maha}-{antar} Dasha governance.")
         )
         reflection = "Concentrate your energy on completing one primary milestone before midday. Maintain ethical duty (Dharma) in all interactions."
 
@@ -885,15 +964,17 @@ def generate_weekly_guidance(
         nak_idx = int(deg_360 / nak_span) % 27
         t_nak = NAKSHATRA_NAMES[nak_idx]
 
-        h_lagna = ((sign_idx - lagna_idx + 12) % 12) + 1
+        is_unknown_time = evidence.get("is_unknown_time", False)
+        h_lagna = ((sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
         h_moon = ((sign_idx - moon_idx + 12) % 12) + 1
-        houses_energized.append(h_lagna)
+        h_active = h_moon if is_unknown_time else h_lagna
+        houses_energized.append(h_active)
 
         tara = calculate_tarabala(b_nak_idx, nak_idx)
         chandra = calculate_chandrabala(moon_idx, sign_idx)
 
-        h_domain = HOUSE_DOMAINS.get(h_lagna, {})
-        h_domain_hi = HOUSE_DOMAINS_HI.get(h_lagna, {})
+        h_domain = HOUSE_DOMAINS.get(h_active, {})
+        h_domain_hi = HOUSE_DOMAINS_HI.get(h_active, {})
 
         # Score day based on Tara & Chandra Bala
         score = 0.5
@@ -917,6 +998,9 @@ def generate_weekly_guidance(
         if is_hi:
             day_theme = f"{h_domain_hi.get('name', 'भाव')} सक्रियता ({t_sign_disp} चंद्र)"
             guidance_txt = (
+                f"आज चंद्र का {t_sign_disp} राशि में गोचर आपके चंद्र से {h_moon}वें भाव ({h_domain_hi.get('domains', '')}) को सक्रिय कर रहा है। "
+                f"ताराबल '{tara.get('tarabala_name', 'क्षेम')}' के प्रभाव में, {ruler_disp} द्वारा शासित इस दिन में प्राथमिकताओं को अनुशासन से पूरा करें।"
+            ) if is_unknown_time else (
                 f"आज चंद्र का {t_sign_disp} राशि में गोचर आपके {h_lagna}वें भाव ({h_domain_hi.get('domains', '')}) को सक्रिय कर रहा है। "
                 f"ताराबल '{tara.get('tarabala_name', 'क्षेम')}' के प्रभाव में, {ruler_disp} द्वारा शासित इस दिन में प्राथमिकताओं को अनुशासन से पूरा करें।"
             )
@@ -924,6 +1008,9 @@ def generate_weekly_guidance(
         else:
             day_theme = f"{h_domain.get('name', 'House Focus')} ({t_sign} Moon)"
             guidance_txt = (
+                f"Transiting Moon in sidereal {t_sign} ({t_nak}) illuminates House {h_moon} ({h_domain.get('domains', '')}) from your natal {moon_sign} Moon (Chandra Lagna). "
+                f"Conferring '{tara.get('tarabala_name', 'Kshema')}' Tara Bala under {ruler}'s weekday rulership, align effort with essential goals."
+            ) if is_unknown_time else (
                 f"Transiting Moon in sidereal {t_sign} ({t_nak}) illuminates your natal House {h_lagna} ({h_domain.get('domains', '')}). "
                 f"Conferring '{tara.get('tarabala_name', 'Kshema')}' Tara Bala under {ruler}'s weekday rulership, align effort with essential goals."
             )
@@ -935,7 +1022,9 @@ def generate_weekly_guidance(
             "day_name": day_name,
             "weekday_ruler": ruler_disp,
             "transiting_moon": t_sign_disp,
-            "activated_house": h_lagna,
+            "activated_house": h_active,
+            "house_from_moon": h_moon,
+            "house_from_lagna": h_lagna,
             "house_signification": h_domain_hi.get("domains") if is_hi else h_domain.get("domains"),
             "focus_theme": day_theme,
             "guidance": guidance_txt,
@@ -984,12 +1073,21 @@ def generate_weekly_guidance(
     else:
         report_title = f"Weekly Personal Forecast: 7-Day Parashari Cycle ({start_date_str} to {end_date_str})"
         summary = (
+            f"Across this 7-day transit cycle, lunar movement activates houses {houses_str} from your natal {moon_sign} Moon (Chandra Lagna) under the governance of your active {maha} Mahadasha ({antar} Antardasha). "
+            f"Your most favorable operational window falls on {most_favorable_day}, backed by auspicious Tara Bala, "
+            f"whereas {most_challenging_day} demands deliberate patience against impulsive commitments or emotional haste. "
+            f"Align daily actions with the changing lunar houses to optimize productivity."
+        ) if is_unknown_time else (
             f"Across this 7-day transit cycle, lunar movement activates your natal {lagna} Lagna's {houses_str} under the governance of your active {maha} Mahadasha ({antar} Antardasha). "
             f"Your most favorable operational window falls on {most_favorable_day}, backed by auspicious Tara Bala, "
             f"whereas {most_challenging_day} demands deliberate patience against impulsive commitments or emotional haste. "
             f"Align daily actions with the changing lunar houses to optimize productivity."
         )
-        outlook = f"Seven-day lunar arc activates your {lagna} Lagna's {houses_str}. Peak auspicious window: {most_favorable_day}."
+        outlook = (
+            f"Seven-day lunar arc activates houses {houses_str} from your {moon_sign} Moon. Peak auspicious window: {most_favorable_day}."
+            if is_unknown_time else
+            f"Seven-day lunar arc activates your {lagna} Lagna's {houses_str}. Peak auspicious window: {most_favorable_day}."
+        )
         supportive = [
             f"Vocational Advancement: {most_favorable_day} provides prime celestial backing for executive pitches and crucial agreements.",
             "Financial Optimization: Mid-week lunar transitions support budget audits and asset consolidation.",
@@ -1006,6 +1104,9 @@ def generate_weekly_guidance(
             f"Weekend Harmonization: Friday evening to Saturday morning"
         ]
         why = (
+            f"Derived from real astronomical lunar ephemerides mapped across your natal {moon_sign} Moon (Chandra Lagna). "
+            f"Birth time is marked unknown: lunar transits across houses from Moon ({houses_str}) are cross-referenced with your active {maha}-{antar} Dasha."
+            if is_unknown_time else
             f"Derived from real astronomical lunar ephemerides mapped across your {lagna} Lagna ({n['lagna_degree']:.2f}°) "
             f"and {moon_sign} Moon. Lunar transits across {houses_str} are cross-referenced with your active {maha}-{antar} Dasha."
         )
@@ -1065,31 +1166,38 @@ def generate_monthly_guidance(
     sun_sign = SIGNS[sun_sign_idx]
     sun_sign_hi = HINDI_SIGNS.get(sun_sign, sun_sign)
 
-    sun_h_lagna = ((sun_sign_idx - lagna_idx + 12) % 12) + 1
-    h_domain = HOUSE_DOMAINS.get(sun_h_lagna, {})
-    h_domain_hi = HOUSE_DOMAINS_HI.get(sun_h_lagna, {})
+    is_unknown_time = evidence.get("is_unknown_time", False)
+    sun_h_lagna = ((sun_sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
+    sun_h_moon = ((sun_sign_idx - moon_idx + 12) % 12) + 1
+    sun_h_active = sun_h_moon if is_unknown_time else sun_h_lagna
+
+    h_domain = HOUSE_DOMAINS.get(sun_h_active, {})
+    h_domain_hi = HOUSE_DOMAINS_HI.get(sun_h_active, {})
 
     # Calculate outer planet positions at mid-month
     res_jup, _ = swe.calc_ut(jd_mid, swe.JUPITER, swe.FLG_SIDEREAL)
     jup_sign_idx = int(res_jup[0] / 30.0) % 12
     jup_sign = SIGNS[jup_sign_idx]
-    jup_h_lagna = ((jup_sign_idx - lagna_idx + 12) % 12) + 1
+    jup_h_lagna = ((jup_sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
+    jup_h_moon = ((jup_sign_idx - moon_idx + 12) % 12) + 1
 
     res_sat, _ = swe.calc_ut(jd_mid, swe.SATURN, swe.FLG_SIDEREAL)
     sat_sign_idx = int(res_sat[0] / 30.0) % 12
     sat_sign = SIGNS[sat_sign_idx]
-    sat_h_lagna = ((sat_sign_idx - lagna_idx + 12) % 12) + 1
+    sat_h_lagna = ((sat_sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
+    sat_h_moon = ((sat_sign_idx - moon_idx + 12) % 12) + 1
 
     res_rahu, _ = swe.calc_ut(jd_mid, swe.MEAN_NODE, swe.FLG_SIDEREAL)
     rahu_sign_idx = int(res_rahu[0] / 30.0) % 12
     rahu_sign = SIGNS[rahu_sign_idx]
-    rahu_h_lagna = ((rahu_sign_idx - lagna_idx + 12) % 12) + 1
+    rahu_h_lagna = ((rahu_sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
+    rahu_h_moon = ((rahu_sign_idx - moon_idx + 12) % 12) + 1
 
     significant_transits = {
-        "sun_transit": {"sign": sun_sign, "house_from_lagna": sun_h_lagna},
-        "jupiter_transit": {"sign": jup_sign, "house_from_lagna": jup_h_lagna},
-        "saturn_transit": {"sign": sat_sign, "house_from_lagna": sat_h_lagna},
-        "rahu_transit": {"sign": rahu_sign, "house_from_lagna": rahu_h_lagna}
+        "sun_transit": {"sign": sun_sign, "house_from_lagna": sun_h_lagna, "house_from_moon": sun_h_moon},
+        "jupiter_transit": {"sign": jup_sign, "house_from_lagna": jup_h_lagna, "house_from_moon": jup_h_moon},
+        "saturn_transit": {"sign": sat_sign, "house_from_lagna": sat_h_lagna, "house_from_moon": sat_h_moon},
+        "rahu_transit": {"sign": rahu_sign, "house_from_lagna": rahu_h_lagna, "house_from_moon": rahu_h_moon}
     }
 
     # Important dates calculation (favorable lunar days vs cautionary days like Chandrashtama)
@@ -1156,10 +1264,18 @@ def generate_monthly_guidance(
             w_title = f"सप्ताह {w_idx} ({w_start_day}–{w_end_day} {month_name_hi})"
             if w_idx == 1:
                 w_theme = "रणनीतिक आधारशिला एवं लक्ष्य निर्धारण"
-                w_guidance = f"माह के प्रथम सप्ताह में अपने {lagna_hi} लग्न अनुसार प्राथमिक लक्ष्यों को औपचारिक रूप दें। {maha_hi} महादशा का प्रभाव नए उपक्रमों में धैर्यपूर्वक नींव रखने का समर्थन करता है।"
+                w_guidance = (
+                    f"माह के प्रथम सप्ताह में अपनी {moon_hi} चंद्र राशि अनुसार प्राथमिक लक्ष्यों को औपचारिक रूप दें। {maha_hi} महादशा का प्रभाव नए उपक्रमों में धैर्यपूर्वक नींव रखने का समर्थन करता है।"
+                    if is_unknown_time else
+                    f"माह के प्रथम सप्ताह में अपने {lagna_hi} लग्न अनुसार प्राथमिक लक्ष्यों को औपचारिक रूप दें। {maha_hi} महादशा का प्रभाव नए उपक्रमों में धैर्यपूर्वक नींव रखने का समर्थन करता है।"
+                )
             elif w_idx == 2:
                 w_theme = "व्यावसायिक दृश्यता एवं क्रियान्वयन गति"
-                w_guidance = f"कार्यक्षेत्र में दृश्यता और सक्रिय सहयोगियों के साथ संवाद को प्राथमिकता दें। सौर ऊर्जा आपके {sun_h_lagna}वें भाव को प्रकाशित कर रही है।"
+                w_guidance = (
+                    f"कार्यक्षेत्र में दृश्यता और सक्रिय सहयोगियों के साथ संवाद को प्राथमिकता दें। सौर ऊर्जा चंद्र लग्न से {sun_h_moon}वें भाव को प्रकाशित कर रही है।"
+                    if is_unknown_time else
+                    f"कार्यक्षेत्र में दृश्यता और सक्रिय सहयोगियों के साथ संवाद को प्राथमिकता दें। सौर ऊर्जा आपके {sun_h_lagna}वें भाव को प्रकाशित कर रही है।"
+                )
             elif w_idx == 3:
                 w_theme = "पूंजी संचय एवं बजट संतुलन"
                 w_guidance = f"वित्तीय लेखा-जोखा, व्यय नियंत्रण और परिसंपत्ति समीक्षा हेतु अनुकूल कालखंड। अनावश्यक सट्टेबाजी से बचें।"
@@ -1173,10 +1289,18 @@ def generate_monthly_guidance(
             w_title = f"Week {w_idx} ({month_name_en} {w_start_day}–{w_end_day})"
             if w_idx == 1:
                 w_theme = "Strategic Inception & Milestone Alignment"
-                w_guidance = f"For your {lagna} Lagna, Week 1 favors establishing foundational workflows and setting firm targets under {maha} Mahadasha governance."
+                w_guidance = (
+                    f"For your natal {moon_sign} Moon (Chandra Lagna), Week 1 favors establishing foundational workflows and setting firm targets under {maha} Mahadasha governance."
+                    if is_unknown_time else
+                    f"For your {lagna} Lagna, Week 1 favors establishing foundational workflows and setting firm targets under {maha} Mahadasha governance."
+                )
             elif w_idx == 2:
                 w_theme = "Execution Velocity & Leadership Visibility"
-                w_guidance = f"Step forward in professional deliberations. Transiting Sun in {sun_sign} illuminates your natal House {sun_h_lagna}."
+                w_guidance = (
+                    f"Step forward in professional deliberations. Transiting Sun in {sun_sign} illuminates House {sun_h_moon} from your natal Moon."
+                    if is_unknown_time else
+                    f"Step forward in professional deliberations. Transiting Sun in {sun_sign} illuminates your natal House {sun_h_lagna}."
+                )
             elif w_idx == 3:
                 w_theme = "Capital Prudence & Balance Sheet Audit"
                 w_guidance = "Focus on financial consolidation, auditing recurring expenditures, and settling pending contractual terms."
@@ -1194,25 +1318,33 @@ def generate_monthly_guidance(
             "focus_theme": w_theme,
             "focus_guidance": w_guidance,
             "is_preview_locked": is_locked,
-            "teaser": f"Week {w_idx} ({w_start_day}–{w_end_day} {month_name_en}): House {sun_h_lagna} transit. Unlock with ₹49 pass." if is_locked else None
+            "teaser": f"Week {w_idx} ({w_start_day}–{w_end_day} {month_name_en}): House {sun_h_active} transit. Unlock with ₹49 pass." if is_locked else None
         })
 
     if is_hi:
         report_title = f"मासिक व्यक्तिगत विश्लेषण: {month_name_hi} {year} (सौर गोचर व दशा संश्लेषण)"
         summary = (
-            f"{month_name_hi} {year} का संपूर्ण {num_days}-दिवसीय गोचर चक्र आपकी {lagna_hi} लग्न कुंडली में सूर्य के {sun_sign_hi} राशि में संचरण द्वारा आपके {sun_h_lagna}वें भाव ({h_domain_hi.get('domains', '')}) को केंद्र में रखता है। "
-            f"आपकी सक्रिय {maha_hi} महादशा एवं {antar_hi} अंतर्दशा के अंतर्गत, माह का पूर्वार्ध आधिकारिक पहल व करियर विस्तार का समर्थन करता है, "
-            f"जबकि उत्तरार्ध पूंजी संचय, बजट अनुशासन और पारिवारिक संतुलन की मांग करता है। "
-            f"{sun_h_lagna}वें भाव की ऊर्जा का सदुपयोग करते हुए नैतिक पुरुषार्थ को प्राथमिकता दें।"
+            (f"{month_name_hi} {year} का {num_days}-दिवसीय गोचर चक्र (जन्म समय अज्ञात होने के कारण चंद्र लग्न {moon_hi} पर आधारित) सूर्य के {sun_sign_hi} राशि में संचरण द्वारा चंद्र से {sun_h_moon}वें भाव ({h_domain_hi.get('domains', '')}) को केंद्र में रखता है। "
+             f"आपकी सक्रिय {maha_hi} महादशा एवं {antar_hi} अंतर्दशा के अंतर्गत, माह का पूर्वार्ध आधिकारिक पहल का समर्थन करता है, "
+             f"जबकि उत्तरार्ध पूंजी संचय और बजट अनुशासन की मांग करता है।")
+            if is_unknown_time else
+            (f"{month_name_hi} {year} का संपूर्ण {num_days}-दिवसीय गोचर चक्र आपकी {lagna_hi} लग्न कुंडली में सूर्य के {sun_sign_hi} राशि में संचरण द्वारा आपके {sun_h_lagna}वें भाव ({h_domain_hi.get('domains', '')}) को केंद्र में रखता है। "
+             f"आपकी सक्रिय {maha_hi} महादशा एवं {antar_hi} अंतर्दशा के अंतर्गत, माह का पूर्वार्ध आधिकारिक पहल व करियर विस्तार का समर्थन करता है, "
+             f"जबकि उत्तरार्ध पूंजी संचय, बजट अनुशासन और पारिवारिक संतुलन की मांग करता है। "
+             f"{sun_h_lagna}वें भाव की ऊर्जा का सदुपयोग करते हुए नैतिक पुरुषार्थ को प्राथमिकता दें।")
         )
-        outlook = f"{month_name_hi} {year} ({num_days} दिन): सूर्य का आपके {sun_h_lagna}वें भाव ({sun_sign_hi}) में संचरण करियर व प्राथमिकताओं को गति प्रदान करेगा।"
+        outlook = (
+            f"{month_name_hi} {year} ({num_days} दिन): सूर्य का चंद्र लग्न से {sun_h_moon}वें भाव ({sun_sign_hi}) में संचरण प्राथमिकताओं को गति प्रदान करेगा।"
+            if is_unknown_time else
+            f"{month_name_hi} {year} ({num_days} दिन): सूर्य का आपके {sun_h_lagna}वें भाव ({sun_sign_hi}) में संचरण करियर व प्राथमिकताओं को गति प्रदान करेगा।"
+        )
         supportive = [
-            f"करियर एवं प्रतिष्ठा: सूर्य देव का {sun_h_lagna}वें भाव में गोचर आधिकारिक संवाद और नेतृत्व क्षमता को सशक्त बनाएगा।",
+            f"करियर एवं प्रतिष्ठा: सूर्य देव का {sun_h_active}वें भाव में गोचर आधिकारिक संवाद और नेतृत्व क्षमता को सशक्त बनाएगा।",
             f"वित्तीय अनुशासन: माह के तृतीय सप्ताह में बजट संतुलन और रणनीतिक साझेदारियों से लाभ के योग।",
             f"व्यक्तिगत विकास: नियमित स्वाध्याय, मंत्र साधना और योग से शारीरिक व मानसिक ऊर्जा में वृद्धि।"
         ]
         challenges = [
-            f"{sun_h_lagna}वें भाव के प्रभाव में अत्यधिक कार्यभार या अहंकार से बचें; सहयोगियों का सम्मान करें।",
+            f"{sun_h_active}वें भाव के प्रभाव में अत्यधिक कार्यभार या अहंकार से बचें; सहयोगियों का सम्मान करें।",
             "अमावस्या काल के आसपास सट्टेबाजी या जोखिम भरे वित्तीय निर्णयों से परहेज करें।",
             "कार्य और पारिवारिक समय के मध्य स्वस्थ संतुलन बनाए रखें।"
         ]
@@ -1222,26 +1354,37 @@ def generate_monthly_guidance(
             f"कृष्ण पक्ष (अंतिम सप्ताह): समीक्षा, आंतरिक संतुलन और ऑडिट हेतु श्रेष्ठ"
         ]
         why = (
-            f"यह मासिक विश्लेषण आपकी {lagna_hi} लग्न और {moon_hi} चंद्र राशि पर आधारित है। "
-            f"माह के दौरान सूर्य {sun_sign_hi} राशि (आपके {sun_h_lagna}वें भाव) में भ्रमण करेंगे, जिसे सक्रिय {maha_hi}-{antar_hi} दशा के साथ परिकलित किया गया है।"
+            (f"जन्म समय अज्ञात होने के कारण यह मासिक विश्लेषण चंद्र लग्न ({moon_hi} राशि) पर आधारित है। "
+             f"माह के दौरान सूर्य {sun_sign_hi} राशि (चंद्र से {sun_h_moon}वें भाव) में भ्रमण करेंगे, जिसे सक्रिय {maha_hi}-{antar_hi} दशा के साथ परिकलित किया गया है।")
+            if is_unknown_time else
+            (f"यह मासिक विश्लेषण आपकी {lagna_hi} लग्न और {moon_hi} चंद्र राशि पर आधारित है। "
+             f"माह के दौरान सूर्य {sun_sign_hi} राशि (आपके {sun_h_lagna}वें भाव) में भ्रमण करेंगे, जिसे सक्रिय {maha_hi}-{antar_hi} दशा के साथ परिकलित किया गया है।")
         )
-        reflection = f"{month_name_hi} के प्रारंभ में अपने त्रैमासिक लक्ष्यों की समीक्षा करें और {sun_h_lagna}वें भाव के दायित्वों को समयबद्ध पूर्ण करें।"
+        reflection = f"{month_name_hi} के प्रारंभ में अपने त्रैमासिक लक्ष्यों की समीक्षा करें और {sun_h_active}वें भाव के दायित्वों को समयबद्ध पूर्ण करें।"
     else:
         report_title = f"Monthly Personal Analysis: {month_name_en} {year} (Solar Transit & Dasha Synthesis)"
         summary = (
-            f"Throughout the complete {num_days}-day arc of {month_name_en} {year}, solar transit through sidereal {sun_sign} directly illuminates your natal {lagna} Lagna's House {sun_h_lagna} ({h_domain.get('domains', '')}). "
-            f"Supported by your active {maha} Mahadasha ({antar} Antardasha), the first half of the month fosters leadership visibility and career execution, "
-            f"transitioning into capital audits and asset security in the second half. "
-            f"Harness this solar illumination by focusing on ethical duty and operational precision."
+            (f"Throughout the complete {num_days}-day arc of {month_name_en} {year}, with birth time marked unknown, solar transit through sidereal {sun_sign} illuminates House {sun_h_moon} ({h_domain.get('domains', '')}) from your natal {moon_sign} Moon (Chandra Lagna). "
+             f"Supported by your active {maha} Mahadasha ({antar} Antardasha), the first half of the month fosters leadership visibility and focused execution, "
+             f"transitioning into capital audits and asset security in the second half.")
+            if is_unknown_time else
+            (f"Throughout the complete {num_days}-day arc of {month_name_en} {year}, solar transit through sidereal {sun_sign} directly illuminates your natal {lagna} Lagna's House {sun_h_lagna} ({h_domain.get('domains', '')}). "
+             f"Supported by your active {maha} Mahadasha ({antar} Antardasha), the first half of the month fosters leadership visibility and career execution, "
+             f"transitioning into capital audits and asset security in the second half. "
+             f"Harness this solar illumination by focusing on ethical duty and operational precision.")
         )
-        outlook = f"{month_name_en} {year} ({num_days} days): Sun in sidereal {sun_sign} activates your natal House {sun_h_lagna}."
+        outlook = (
+            f"{month_name_en} {year} ({num_days} days): Sun in sidereal {sun_sign} activates House {sun_h_moon} from your {moon_sign} Moon (Chandra Lagna)."
+            if is_unknown_time else
+            f"{month_name_en} {year} ({num_days} days): Sun in sidereal {sun_sign} activates your natal House {sun_h_lagna}."
+        )
         supportive = [
-            f"Vocational Growth: Transiting Sun energizing House {sun_h_lagna} supports executive presentations and stakeholder endorsement.",
+            f"Vocational Growth: Transiting Sun energizing House {sun_h_active} supports executive presentations and stakeholder endorsement.",
             "Treasury Optimization: Week 3 provides prime cosmic weather for auditing recurring expenses and securing balance sheets.",
             "Domestic Harmony: Late-month lunar currents encourage domestic calm, family bonding, and restorative study."
         ]
         challenges = [
-            f"Under House {sun_h_lagna} activation, guard against over-exertion or authoritativeness in team deliberations.",
+            f"Under House {sun_h_active} activation, guard against over-exertion or authoritativeness in team deliberations.",
             "Avoid speculative commitments during dark-moon (Amavasya) transition windows.",
             "Maintain intentional boundaries between demanding career milestones and domestic life."
         ]
@@ -1251,10 +1394,13 @@ def generate_monthly_guidance(
             "Waning Phase (Weeks 3 & 4): Optimal for consolidation, audits, and concluding legacy items"
         ]
         why = (
-            f"Calculated for your natal {lagna} Lagna and {moon_sign} Moon. "
-            f"The Sun traverses sidereal {sun_sign} across your natal House {sun_h_lagna}, synthesized with ongoing {maha}-{antar} Dasha governance."
+            (f"Calculated for your natal {moon_sign} Moon (Chandra Lagna, birth time unknown). "
+             f"The Sun traverses sidereal {sun_sign} across House {sun_h_moon} from Moon, synthesized with ongoing {maha}-{antar} Dasha governance.")
+            if is_unknown_time else
+            (f"Calculated for your natal {lagna} Lagna and {moon_sign} Moon. "
+             f"The Sun traverses sidereal {sun_sign} across your natal House {sun_h_lagna}, synthesized with ongoing {maha}-{antar} Dasha governance.")
         )
-        reflection = f"Establish three defining milestones at the outset of {month_name_en}. Align daily habits with the higher duty of House {sun_h_lagna}."
+        reflection = f"Establish three defining milestones at the outset of {month_name_en}. Align daily habits with the higher duty of House {sun_h_active}."
 
     return {
         "report_title": report_title,
@@ -1318,16 +1464,19 @@ def generate_yearly_guidance(
         s_sign_idx = int(res_s[0] / 30.0) % 12
         s_sign = SIGNS[s_sign_idx]
         s_sign_disp = HINDI_SIGNS.get(s_sign, s_sign) if is_hi else s_sign
-        h_sun = ((s_sign_idx - lagna_idx + 12) % 12) + 1
-        h_domain = HOUSE_DOMAINS.get(h_sun, {})
-        h_domain_hi = HOUSE_DOMAINS_HI.get(h_sun, {})
+        is_unknown_time = evidence.get("is_unknown_time", False)
+        h_sun = ((s_sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
+        h_sun_moon = ((s_sign_idx - moon_idx + 12) % 12) + 1
+        h_active = h_sun_moon if is_unknown_time else h_sun
+        h_domain = HOUSE_DOMAINS.get(h_active, {})
+        h_domain_hi = HOUSE_DOMAINS_HI.get(h_active, {})
 
         # Jupiter transit calculation
         res_j, _ = swe.calc_ut(jd_m, swe.JUPITER, swe.FLG_SIDEREAL)
         j_sign_idx = int(res_j[0] / 30.0) % 12
         j_sign = SIGNS[j_sign_idx]
         j_sign_disp = HINDI_SIGNS.get(j_sign, j_sign) if is_hi else j_sign
-        h_jup = ((j_sign_idx - lagna_idx + 12) % 12) + 1
+        h_jup = ((j_sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
         h_jup_moon = ((j_sign_idx - moon_idx + 12) % 12) + 1
 
         # Saturn transit calculation
@@ -1335,7 +1484,7 @@ def generate_yearly_guidance(
         sat_sign_idx = int(res_sat[0] / 30.0) % 12
         sat_sign = SIGNS[sat_sign_idx]
         sat_sign_disp = HINDI_SIGNS.get(sat_sign, sat_sign) if is_hi else sat_sign
-        h_sat = ((sat_sign_idx - lagna_idx + 12) % 12) + 1
+        h_sat = ((sat_sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
         h_sat_moon = ((sat_sign_idx - moon_idx + 12) % 12) + 1
 
         # Rahu/Ketu nodal transit
@@ -1343,17 +1492,26 @@ def generate_yearly_guidance(
         r_sign_idx = int(res_r[0] / 30.0) % 12
         r_sign = SIGNS[r_sign_idx]
         r_sign_disp = HINDI_SIGNS.get(r_sign, r_sign) if is_hi else r_sign
-        h_rahu = ((r_sign_idx - lagna_idx + 12) % 12) + 1
+        h_rahu = ((r_sign_idx - lagna_idx + 12) % 12) + 1 if not is_unknown_time else None
+        h_rahu_moon = ((r_sign_idx - moon_idx + 12) % 12) + 1
 
         is_locked = (not is_unlocked) and (m >= 3)
         if is_hi:
             guidance_m = (
+                f"{m_name} {cal_year} में सूर्य का {s_sign_disp} राशि में गोचर चंद्र लग्न से {h_sun_moon}वें भाव ({h_domain_hi.get('domains', '')}) को सक्रिय करेगा। "
+                f"गोचर में गुरु {j_sign_disp} राशि (चंद्र से {h_jup_moon}वां भाव) व शनि {sat_sign_disp} राशि (चंद्र से {h_sat_moon}वां भाव) में भ्रमणशील हैं। "
+                f"सक्रिय {maha_hi} महादशा के सहयोग से, यह माह {'व्यावसायिक प्रतिष्ठा व नेतृत्व' if h_sun_moon in [1, 10, 11] else ('वित्तीय सुदृढ़ता व संचय' if h_sun_moon in [2, 5, 9] else 'दैनिक अनुशासन व आत्म-सुधार')} हेतु फलदायी रहेगा।"
+            ) if is_unknown_time else (
                 f"{m_name} {cal_year} में सूर्य का {s_sign_disp} राशि में गोचर आपके {h_sun}वें भाव ({h_domain_hi.get('domains', '')}) को सक्रिय करेगा। "
                 f"गोचर में गुरु {j_sign_disp} राशि (लग्न से {h_jup}वां भाव) व शनि {sat_sign_disp} राशि (लग्न से {h_sat}वां भाव) में भ्रमणशील हैं। "
                 f"सक्रिय {maha_hi} महादशा के सहयोग से, यह माह {'व्यावसायिक प्रतिष्ठा व नेतृत्व' if h_sun in [1, 10, 11] else ('वित्तीय सुदृढ़ता व संचय' if h_sun in [2, 5, 9] else 'दैनिक अनुशासन व आत्म-सुधार')} हेतु फलदायी रहेगा।"
             )
         else:
             guidance_m = (
+                f"In {m_name} {cal_year}, the Sun traverses sidereal {s_sign}, activating House {h_sun_moon} ({h_domain.get('domains', '')}) from your natal {moon_sign} Moon (Chandra Lagna). "
+                f"Concurrent transits position Jupiter in {j_sign} (House {h_jup_moon} from Moon) and Saturn in {sat_sign} (House {h_sat_moon} from Moon). "
+                f"Supported by your {maha} Dasha, focus centers upon {'vocational authority and executive milestones' if h_sun_moon in [1, 10, 11] else ('treasury compounding and strategic intellect' if h_sun_moon in [2, 5, 9] else 'operational efficiency and personal discipline')}."
+            ) if is_unknown_time else (
                 f"In {m_name} {cal_year}, the Sun traverses sidereal {s_sign}, activating your natal House {h_sun} ({h_domain.get('domains', '')}). "
                 f"Concurrent transits position Jupiter in {j_sign} (House {h_jup} from Lagna) and Saturn in {sat_sign} (House {h_sat} from Lagna). "
                 f"Supported by your {maha} Dasha, focus centers upon {'vocational authority and executive milestones' if h_sun in [1, 10, 11] else ('treasury compounding and strategic intellect' if h_sun in [2, 5, 9] else 'operational efficiency and personal discipline')}."
@@ -1364,13 +1522,15 @@ def generate_yearly_guidance(
             "month_name": f"{m_name} {cal_year}",
             "quarter": f"Q{q_num}",
             "solar_sign": s_sign_disp,
-            "activated_house": h_sun,
+            "activated_house": h_active,
+            "house_from_moon": h_sun_moon,
+            "house_from_lagna": h_sun,
             "jupiter_transit": {"sign": j_sign_disp, "house_from_lagna": h_jup, "house_from_moon": h_jup_moon},
             "saturn_transit": {"sign": sat_sign_disp, "house_from_lagna": h_sat, "house_from_moon": h_sat_moon},
-            "rahu_transit": {"sign": r_sign_disp, "house_from_lagna": h_rahu},
+            "rahu_transit": {"sign": r_sign_disp, "house_from_lagna": h_rahu, "house_from_moon": h_rahu_moon},
             "guidance": guidance_m,
             "is_preview_locked": is_locked,
-            "teaser": f"Month {m+1} ({m_name} {cal_year}): Sun transit House {h_sun}. Unlock with ₹49 pass." if is_locked else None
+            "teaser": f"Month {m+1} ({m_name} {cal_year}): Sun transit House {h_active}. Unlock with ₹49 pass." if is_locked else None
         })
 
     # 4 Strategic Quarters
@@ -1462,21 +1622,21 @@ def generate_yearly_guidance(
     major_transits_overview = {
         "jupiter": {
             "sign": HINDI_SIGNS.get(j0_sign, j0_sign) if is_hi else j0_sign,
-            "house_from_lagna": ((SIGNS.index(j0_sign) - lagna_idx + 12) % 12) + 1,
+            "house_from_lagna": None if is_unknown_time else ((SIGNS.index(j0_sign) - lagna_idx + 12) % 12) + 1,
             "house_from_moon": ((SIGNS.index(j0_sign) - moon_idx + 12) % 12) + 1,
             "role": "Expansive wisdom and auspicious aspects (5th, 7th, 9th)" if not is_hi else "शुभ दृष्टि (5, 7, 9 भाव) व ज्ञान-समृद्धि"
         },
         "saturn": {
             "sign": HINDI_SIGNS.get(s0_sign, s0_sign) if is_hi else s0_sign,
-            "house_from_lagna": ((SIGNS.index(s0_sign) - lagna_idx + 12) % 12) + 1,
+            "house_from_lagna": None if is_unknown_time else ((SIGNS.index(s0_sign) - lagna_idx + 12) % 12) + 1,
             "house_from_moon": ((SIGNS.index(s0_sign) - moon_idx + 12) % 12) + 1,
             "sade_sati_status": t.get("sade_sati", {}).get("phase", "Free")
         },
         "rahu_ketu_axis": {
             "rahu_sign": HINDI_SIGNS.get(r0_sign, r0_sign) if is_hi else r0_sign,
             "ketu_sign": HINDI_SIGNS.get(k0_sign, k0_sign) if is_hi else k0_sign,
-            "rahu_house_lagna": ((SIGNS.index(r0_sign) - lagna_idx + 12) % 12) + 1,
-            "ketu_house_lagna": ((SIGNS.index(k0_sign) - lagna_idx + 12) % 12) + 1
+            "rahu_house_lagna": None if is_unknown_time else ((SIGNS.index(r0_sign) - lagna_idx + 12) % 12) + 1,
+            "ketu_house_lagna": None if is_unknown_time else ((SIGNS.index(k0_sign) - lagna_idx + 12) % 12) + 1
         }
     }
 
@@ -1806,7 +1966,10 @@ def generate_canonical_personalized_prediction(
         "key_time_windows": h_data["key_time_windows"],
         "relevant_time_windows": h_data["key_time_windows"],
         "relevant_chart_facts": {
-            "lagna": f"{HINDI_SIGNS.get(evidence['natal']['lagna'], evidence['natal']['lagna']) if is_hi else evidence['natal']['lagna']} ({evidence['natal']['lagna_degree']:.2f}°)",
+            "lagna": (
+                "Indeterminate (Birth Time Unknown)" if is_unknown_time else
+                f"{HINDI_SIGNS.get(evidence['natal']['lagna'], evidence['natal']['lagna']) if is_hi else evidence['natal']['lagna']} ({evidence['natal']['lagna_degree']:.2f}°)"
+            ),
             "moon": f"{HINDI_SIGNS.get(evidence['natal']['moon_sign'], evidence['natal']['moon_sign']) if is_hi else evidence['natal']['moon_sign']} ({evidence['natal']['moon_nakshatra']})",
             "active_dasha": (
                 f"{HINDI_PLANETS.get(evidence['dasha']['maha_lord'], evidence['dasha']['maha_lord'])} महादशा - {HINDI_PLANETS.get(evidence['dasha']['antar_lord'], evidence['dasha']['antar_lord'])} अंतर्दशा"
@@ -1815,10 +1978,13 @@ def generate_canonical_personalized_prediction(
             ),
             "dasha_relationship": evidence['dasha']['mutual_relationship'].get('relationship_type'),
             "saturn_transit": (
-                f"लग्न से {evidence['transits']['saturn_house_lagna']}वां भाव, चंद्र से {evidence['transits']['saturn_house_moon']}वां भाव"
+                (f"चंद्र से {evidence['transits']['saturn_house_moon']}वां भाव (चंद्र लग्न)" if is_hi else f"House {evidence['transits']['saturn_house_moon']} from Moon (Chandra Lagna)")
+                if is_unknown_time else
+                (f"लग्न से {evidence['transits']['saturn_house_lagna']}वां भाव, चंद्र से {evidence['transits']['saturn_house_moon']}वां भाव"
                 if is_hi else
-                f"House {evidence['transits']['saturn_house_lagna']} from Lagna, House {evidence['transits']['saturn_house_moon']} from Moon"
+                f"House {evidence['transits']['saturn_house_lagna']} from Lagna, House {evidence['transits']['saturn_house_moon']} from Moon")
             ),
+            "birth_time_status": "UNKNOWN" if is_unknown_time else "EXACT",
             "current_interval_lord": (
                 (HINDI_PLANETS.get(hora_p, hora_p) if horizon_clean == "hourly" else HINDI_SIGNS.get(evidence['transits']['t_moon_sign'], evidence['transits']['t_moon_sign']))
                 if is_hi else
@@ -1837,9 +2003,9 @@ def generate_canonical_personalized_prediction(
 
     if is_unknown_time:
         sections["limitations"] += (
-            " (नोट: जन्म समय अज्ञात होने के कारण लग्न एवं भाव-आधारित विश्लेषण सांकेतिक है; चंद्र व सूर्य गोचर को प्राथमिकता दी गई है।)"
+            " (नोट: जन्म समय अज्ञात होने के कारण लग्न एवं भाव-आधारित विश्लेषण सांकेतिक है; सूक्ष्म गणनाएं व उच्च वर्गीय कुंडलियां (D9, D10) स्थगित रखी गई हैं। चंद्र लग्न व गोचर को प्राथमिकता दी गई है।)"
             if is_hi else
-            " (Note: Birth time is marked unknown. House boundaries and Ascendant claims are qualitative indicators; lunar and solar transits are prioritized.)"
+            " (Note: Birth time is marked unknown. Ascendant degree and precise house cusp boundaries are indeterminate. Higher divisional harmonics (D9, D10) are withheld to prevent false precision. Predictions are grounded in Chandra Lagna (natal Moon), Janma Nakshatra, and planetary sign transits.)"
         )
 
     # Remedies and Precautions
@@ -1864,6 +2030,7 @@ def generate_canonical_personalized_prediction(
             "lagna_degree": evidence["natal"]["lagna_degree"],
             "moon_sign": evidence["natal"]["moon_sign"],
             "moon_nakshatra": evidence["natal"]["moon_nakshatra"],
+            "birth_time_status": "UNKNOWN" if is_unknown_time else "EXACT",
             "active_mahadasha": evidence["dasha"]["maha_lord"],
             "active_antardasha": evidence["dasha"]["antar_lord"],
             "active_hora_planet": hora_p,

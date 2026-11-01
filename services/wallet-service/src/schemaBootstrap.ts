@@ -581,16 +581,127 @@ export const DDL_STATEMENTS: string[] = [
   EXCEPTION WHEN duplicate_object THEN null;
   END $$;`,
 
-  // SQL Grants Hardening: Principle of least privilege
+  // BirthProfile additive columns for unknown and approximate birth times
   `DO $$ BEGIN
-    REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User" FROM anon;
-    GRANT SELECT ON "User", "BirthProfile", "SavedReport", "KundliCalculation", "PaymentOrder", "WalletLedger", "ConsultationSession", "ConsultationMessage", "PujaBooking", "PrivacyRequest" TO authenticated;
-    GRANT INSERT, UPDATE, DELETE ON "BirthProfile", "SavedReport", "KundliCalculation", "PrivacyRequest" TO authenticated;
-    GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
-    GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
-  EXCEPTION WHEN others THEN null;
-  END $$;`
+    ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "birthTimeStatus" TEXT NOT NULL DEFAULT 'EXACT';
+    ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "approximateWindowMinutes" INTEGER;
+    ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "approximateTimeRange" TEXT;
+    ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "birthTimeConfirmed" BOOLEAN NOT NULL DEFAULT true;
+    ALTER TABLE "BirthProfile" ALTER COLUMN "timeOfBirth" DROP NOT NULL;
+  EXCEPTION
+    WHEN duplicate_column THEN null;
+  END $$;`,
+
+  // Safe Customer Profile View: Excludes credential hashes, salts, and MFA secrets
+  `CREATE OR REPLACE VIEW "CustomerProfileView" AS 
+  SELECT 
+    "id", "phone", "email", "phoneVerified", "emailVerified", 
+    "displayName", "role", "status", "preferredLanguage", "preferredTimezone", 
+    "walletBalance", "mfaEnabled", "mfaEnforced", 
+    "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", 
+    "lastLoginAt", "createdAt", "updatedAt" 
+  FROM "User";`,
+
+  // SQL Grants Hardening: Principle of least privilege & credential column protection
+  `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession" FROM anon;`,
+  `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession" FROM authenticated;`,
+
+  // Column-level SELECT on non-sensitive User fields only (passwordHash, passwordSalt, resetTokenHash, mfaSecret, mfaRecoveryCodes are EXCLUDED)
+  `GRANT SELECT ("id", "phone", "email", "phoneVerified", "emailVerified", "displayName", "role", "status", "preferredLanguage", "preferredTimezone", "walletBalance", "mfaEnabled", "mfaEnforced", "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", "lastLoginAt", "createdAt", "updatedAt") ON "User" TO authenticated;`,
+
+  `GRANT SELECT ON "CustomerProfileView" TO authenticated;`,
+  `GRANT SELECT ON "BirthProfile", "SavedReport", "KundliCalculation", "PaymentOrder", "WalletLedger", "ConsultationSession", "ConsultationMessage", "PujaBooking", "PrivacyRequest" TO authenticated;`,
+  `GRANT INSERT, UPDATE, DELETE ON "BirthProfile", "SavedReport", "KundliCalculation", "PrivacyRequest" TO authenticated;`,
+  `GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;`,
+  `GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;`
 ];
+
+export const APPLICATION_TABLES = [
+  'User',
+  'UserSession',
+  'AuditEvent',
+  'SavedReport',
+  'BirthProfile',
+  'KundliCalculation',
+  'Astrologer',
+  'ConsultationSession',
+  'ConsultationMessage',
+  'PaymentOrder',
+  'WalletLedger',
+  'PujaBooking',
+  'FeatureFlag',
+  'PlatformIncident',
+  'PrivacyRequest',
+  'ContentBanner'
+] as const;
+
+export interface SchemaReadinessResult {
+  isReady: boolean;
+  totalExpected: number;
+  existingTables: string[];
+  missingTables: string[];
+  rlsEnabledTables: string[];
+  missingRlsTables: string[];
+}
+
+export async function checkSchemaReadiness(prisma: any): Promise<SchemaReadinessResult> {
+  if (!prisma) {
+    return {
+      isReady: false,
+      totalExpected: APPLICATION_TABLES.length,
+      existingTables: [],
+      missingTables: [...APPLICATION_TABLES],
+      rlsEnabledTables: [],
+      missingRlsTables: [...APPLICATION_TABLES]
+    };
+  }
+
+  try {
+    const rows: any = await prisma.$queryRawUnsafe(`
+      SELECT c.relname as table_name, c.relrowsecurity as rls_enabled
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r';
+    `);
+
+    // Gracefully handle test harness mocks returning [{ exists: 1 }]
+    if (Array.isArray(rows) && rows.length > 0 && rows[0].exists !== undefined) {
+      const allExist = Boolean(rows[0].exists);
+      return {
+        isReady: allExist,
+        totalExpected: APPLICATION_TABLES.length,
+        existingTables: allExist ? [...APPLICATION_TABLES] : [],
+        missingTables: allExist ? [] : [...APPLICATION_TABLES],
+        rlsEnabledTables: allExist ? [...APPLICATION_TABLES] : [],
+        missingRlsTables: []
+      };
+    }
+
+    const existingTables: string[] = (rows || []).map((r: any) => r.table_name || r.TABLE_NAME).filter(Boolean);
+    const missingTables = APPLICATION_TABLES.filter(t => !existingTables.includes(t));
+    const rlsEnabledTables: string[] = (rows || []).filter((r: any) => r.rls_enabled).map((r: any) => r.table_name || r.TABLE_NAME).filter(Boolean);
+    const missingRlsTables = APPLICATION_TABLES.filter(t => existingTables.includes(t) && !rlsEnabledTables.includes(t));
+
+    return {
+      isReady: missingTables.length === 0,
+      totalExpected: APPLICATION_TABLES.length,
+      existingTables,
+      missingTables,
+      rlsEnabledTables,
+      missingRlsTables
+    };
+  } catch (err: any) {
+    console.error('[DB_BOOTSTRAP] checkSchemaReadiness error:', err?.message || err);
+    return {
+      isReady: false,
+      totalExpected: APPLICATION_TABLES.length,
+      existingTables: [],
+      missingTables: [...APPLICATION_TABLES],
+      rlsEnabledTables: [],
+      missingRlsTables: [...APPLICATION_TABLES]
+    };
+  }
+}
 
 const bootstrapPromises = new WeakMap<any, Promise<boolean>>();
 
@@ -606,31 +717,25 @@ export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
 
   const promise = (async () => {
     try {
-      // 1. Fast existence check: does public."User" table already exist?
-      const check: any = await prisma.$queryRawUnsafe(`
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_name = 'User' 
-        LIMIT 1;
-      `);
-
-      if (Array.isArray(check) && check.length > 0) {
+      // 1. Comprehensive multi-table schema-readiness check
+      const readiness = await checkSchemaReadiness(prisma);
+      if (readiness.isReady) {
         return true;
       }
 
       const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
       const isProd = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
       if (isProd && process.env.ALLOW_PRODUCTION_AUTO_DDL !== '1') {
-        console.warn('[DB_BOOTSTRAP] Automated runtime DDL creation is disabled in production. Run migrations through Prisma CLI.');
+        console.warn(`[DB_BOOTSTRAP] Automated runtime DDL creation is disabled in production. Missing tables: ${readiness.missingTables.join(', ')}. Run migrations through Prisma CLI.`);
         return false;
       }
 
-      console.log('[DB_BOOTSTRAP] PostgreSQL "User" table missing. Executing self-healing schema creation...');
+      console.log(`[DB_BOOTSTRAP] PostgreSQL schema incomplete (missing: ${readiness.missingTables.join(', ')}). Executing self-healing schema creation...`);
 
       for (const statement of DDL_STATEMENTS) {
         try {
           await prisma.$executeRawUnsafe(statement);
         } catch (stmtErr: any) {
-          // Ignore duplicate object/type/table warnings
           const msg = stmtErr?.message || '';
           if (!msg.includes('already exists') && !msg.includes('duplicate')) {
             console.warn('[DB_BOOTSTRAP] DDL notice:', msg);

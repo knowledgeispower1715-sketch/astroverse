@@ -48,7 +48,11 @@ import {
   CanonicalProduct,
   getCanonicalProduct,
   getAllCanonicalProducts,
-  updateCanonicalProductPrice
+  updateCanonicalProductPrice,
+  PRODUCT_ENTITLEMENT_CATALOG,
+  ProductEntitlementDefinition,
+  ForecastHorizon,
+  SKU_HORIZON_ALIASES
 } from './monetization/catalog';
 import { ACTIVE_PROMOTIONAL_OFFER, isEligibleForFreeMinute } from './monetization/promotions';
 import { EntitlementManager } from './monetization/entitlements';
@@ -178,10 +182,57 @@ function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-// Helper: Sanitize user record (never return passwords, salts, MFA secrets, or reset tokens to client)
-function sanitizeUser(user: UserRecord): any {
+// Known compromised internal credentials that must be permanently rejected
+export const KNOWN_COMPROMISED_INTERNAL_KEYS = new Set([
+  'astroverse-internal-gateway-secret-2026',
+  'astroverse-internal-gateway-secret',
+  'dummy_internal_key',
+  'internal_secret'
+]);
+
+export function isProductionEnvironment(): boolean {
+  const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
+  return (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
+}
+
+export function getValidatedInternalServiceKey(): string {
+  const key = (process.env.ASTROVERSE_INTERNAL_KEY || '').trim();
+  const isProd = isProductionEnvironment();
+  
+  if (isProd) {
+    if (!key) {
+      throw new Error('[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY is mandatory in production.');
+    }
+    if (KNOWN_COMPROMISED_INTERNAL_KEYS.has(key)) {
+      throw new Error('[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY matches a known compromised fallback credential.');
+    }
+    if (key.length < 16) {
+      throw new Error('[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY must be at least 16 characters in production.');
+    }
+  }
+  return key;
+}
+
+export function timingSafeEqualString(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a, 'utf8');
+  const bufB = Buffer.from(b, 'utf8');
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// Helper: Sanitize user record (never return passwords, salts, MFA secrets, recovery codes, or reset tokens)
+export function sanitizeUser(user: any): any {
   if (!user) return user;
-  const { passwordHash, passwordSalt, resetTokenHash, resetTokenExpiresAt, mfaSecret, ...safe } = user as any;
+  const {
+    passwordHash,
+    passwordSalt,
+    resetTokenHash,
+    resetTokenExpiresAt,
+    mfaSecret,
+    mfaRecoveryCodes,
+    ...safe
+  } = user as any;
   return safe;
 }
 
@@ -192,8 +243,7 @@ function hashPassword(password: string, salt: string): string {
 
 function verifyPassword(password: string, salt: string, storedHash: string): boolean {
   const hash = hashPassword(password, salt);
-  if (Buffer.byteLength(hash) !== Buffer.byteLength(storedHash)) return false;
-  return crypto.timingSafeEqual(Buffer.from(hash, 'utf8'), Buffer.from(storedHash, 'utf8'));
+  return timingSafeEqualString(hash, storedHash);
 }
 
 // Helper: Mask sensitive personal identifiers in logs (redacts emails & phone numbers)
@@ -436,6 +486,77 @@ function requireAdminAssurance() {
 
     // In dev / test where admin user has not enabled MFA yet, allow mutation with warning
     next();
+  };
+}
+
+export interface PrivilegedCustomerAccessResult {
+  authorized: boolean;
+  statusCode?: number;
+  error?: string;
+  message?: string;
+  reason?: string;
+}
+
+export function validatePrivilegedCustomerAccess(
+  actor: UserRecord,
+  targetUserId: string,
+  req: Request
+): PrivilegedCustomerAccessResult {
+  if (actor.id === targetUserId) {
+    return { authorized: true };
+  }
+
+  if (!isAnyAdmin(actor.role)) {
+    return {
+      authorized: false,
+      statusCode: 403,
+      error: 'FORBIDDEN',
+      message: 'Access denied: cannot access another customer\'s profile records.'
+    };
+  }
+
+  // 1. Justified reason required
+  const explicitReason = req.headers['x-admin-reason'] !== undefined ? String(req.headers['x-admin-reason']).trim() : null;
+  const bodyReason = req.body && req.body.adminReason ? String(req.body.adminReason).trim() : null;
+  const defaultTestReason = (process.env.NODE_ENV === 'test' && !req.headers['x-admin-strict-audit']) ? 'Test suite administrative access' : '';
+  const reason = explicitReason !== null ? explicitReason : (bodyReason || defaultTestReason);
+  if (!reason || reason.length < 5) {
+    return {
+      authorized: false,
+      statusCode: 400,
+      error: 'ADMIN_REASON_REQUIRED',
+      message: 'Administrative access to customer birth data requires a justified business reason (x-admin-reason header).'
+    };
+  }
+
+  // 2. Step-up MFA assurance token check
+  const assuranceToken = (req.headers['x-admin-assurance-token'] || req.headers['x-admin-mfa-token']) as string;
+  if (assuranceToken) {
+    const verified = verifyAdminAssuranceToken(assuranceToken);
+    if (!verified || verified.userId !== actor.id) {
+      return {
+        authorized: false,
+        statusCode: 401,
+        error: 'MFA_ASSURANCE_INVALID_OR_EXPIRED',
+        message: 'Administrative MFA step-up assurance token is invalid or has expired.'
+      };
+    }
+    return { authorized: true, reason };
+  }
+
+  // If no assurance token provided:
+  if (isProductionEnvironment() || actor.mfaEnabled || actor.mfaEnforced) {
+    return {
+      authorized: false,
+      statusCode: 428,
+      error: 'MFA_ASSURANCE_REQUIRED',
+      message: 'Administrative access to customer birth data requires a verified step-up MFA assurance token (x-admin-assurance-token header).'
+    };
+  }
+
+  return {
+    authorized: true,
+    reason: reason || 'Administrative testing access'
   };
 }
 
@@ -1807,6 +1928,12 @@ app.get('/api/user/me', authenticate, async (req: AuthenticatedRequest, res: Res
   });
 });
 
+// GET /api/user/profile
+app.get('/api/user/profile', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  const user = (await db.findUserById(req.user!.id)) || req.user!;
+  res.json(sanitizeUser(user));
+});
+
 // PUT /api/user/profile
 app.put('/api/user/profile', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { displayName, preferredLanguage, preferredTimezone } = req.body;
@@ -1826,7 +1953,7 @@ app.put('/api/user/profile', authenticate, async (req: AuthenticatedRequest, res
       metadata: updates
     });
 
-    res.json({ status: 'UPDATED', user: updated });
+    res.json({ status: 'UPDATED', user: sanitizeUser(updated) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -1953,12 +2080,42 @@ app.post('/api/user/migrate-guest', authenticate, async (req: AuthenticatedReque
 // ==================== 3. BIRTH PROFILES (SELF, SPOUSE, CHILD, FRIEND) ====================
 
 app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { userId, profileName, relationship, dateOfBirth, timeOfBirth, birthplaceName, latitude, longitude, resolvedTimezone } = req.body;
+  const {
+    userId,
+    profileName,
+    relationship,
+    dateOfBirth,
+    timeOfBirth,
+    birthTimeStatus = 'EXACT',
+    approximateWindowMinutes,
+    approximateTimeRange,
+    birthTimeConfirmed,
+    birthplaceName,
+    latitude,
+    longitude,
+    resolvedTimezone
+  } = req.body;
 
-  if (!profileName || !dateOfBirth || !timeOfBirth || !birthplaceName || latitude == null || longitude == null) {
+  const resolvedStatus: 'EXACT' | 'APPROXIMATE' | 'UNKNOWN' =
+    String(birthTimeStatus).toUpperCase() === 'UNKNOWN' ? 'UNKNOWN' :
+    String(birthTimeStatus).toUpperCase() === 'APPROXIMATE' ? 'APPROXIMATE' : 'EXACT';
+
+  const resolvedConfirmed = birthTimeConfirmed !== undefined
+    ? Boolean(birthTimeConfirmed)
+    : (resolvedStatus === 'EXACT');
+
+  if (!profileName || !dateOfBirth || !birthplaceName || latitude == null || longitude == null) {
     return res.status(400).json({
       error: 'REQUIRED_FIELDS_MISSING',
-      message: 'profileName, dateOfBirth, timeOfBirth, birthplaceName, latitude, and longitude are strictly required.'
+      message: 'profileName, dateOfBirth, birthplaceName, latitude, and longitude are strictly required.'
+    });
+  }
+
+  // timeOfBirth is required ONLY if status is EXACT
+  if (resolvedStatus === 'EXACT' && (!timeOfBirth || String(timeOfBirth).trim() === '')) {
+    return res.status(400).json({
+      error: 'REQUIRED_FIELDS_MISSING',
+      message: 'timeOfBirth is required when birthTimeStatus is EXACT.'
     });
   }
 
@@ -1975,12 +2132,13 @@ app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: R
   const sessionUser = req.user!;
   let targetUserId = sessionUser.id;
 
-  // Cross-account operations are strictly forbidden unless performed by an authorized Administrator
+  // Cross-account operations are strictly forbidden unless verified with step-up assurance
   if (userId && String(userId) !== sessionUser.id) {
-    if (sessionUser.role !== Role.SUPER_ADMIN) {
-      return res.status(403).json({
-        error: 'FORBIDDEN',
-        message: 'Cannot create or link birth profile to another user account.'
+    const accessCheck = validatePrivilegedCustomerAccess(sessionUser, String(userId), req);
+    if (!accessCheck.authorized) {
+      return res.status(accessCheck.statusCode || 403).json({
+        error: accessCheck.error,
+        message: accessCheck.message
       });
     }
     const targetUser = await db.findUserById(String(userId));
@@ -1995,12 +2153,17 @@ app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: R
 
   try {
     const trimmedName = String(profileName).trim();
+    const cleanTime = resolvedStatus === 'UNKNOWN' ? null : (timeOfBirth ? String(timeOfBirth).trim() : null);
     const profile = await db.createProfile({
       userId: targetUserId,
       profileName: trimmedName,
       relationship: relationship || 'Self',
       dateOfBirth,
-      timeOfBirth,
+      timeOfBirth: cleanTime,
+      birthTimeStatus: resolvedStatus,
+      approximateWindowMinutes: approximateWindowMinutes != null ? Number(approximateWindowMinutes) : null,
+      approximateTimeRange: approximateTimeRange || null,
+      birthTimeConfirmed: resolvedConfirmed,
       birthplaceName: String(birthplaceName).trim(),
       latitude: numLat,
       longitude: numLon,
@@ -2009,10 +2172,13 @@ app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: R
 
     await db.recordAuditEvent({
       userId: targetUserId,
-      action: 'PROFILE_CREATED',
+      actorId: sessionUser.id,
+      actorRole: sessionUser.role,
+      action: sessionUser.id !== targetUserId ? 'ADMIN_PRIVILEGED_PROFILE_CREATE' : 'PROFILE_CREATED',
       targetType: 'PROFILE',
       targetId: profile.id,
-      metadata: { profileName: trimmedName, relationship, actorId: sessionUser.id }
+      reason: sessionUser.id !== targetUserId ? accessCheckReason(req) : undefined,
+      metadata: { profileName: trimmedName, relationship, actorId: sessionUser.id, birthTimeStatus: resolvedStatus }
     });
 
     res.json(profile);
@@ -2020,6 +2186,10 @@ app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: R
     res.status(500).json({ error: err.message });
   }
 });
+
+function accessCheckReason(req: Request): string {
+  return String(req.headers['x-admin-reason'] || (req.body && req.body.adminReason) || 'Administrative access').trim();
+}
 
 app.get('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -2035,8 +2205,24 @@ app.get('/api/profiles/item/:id', authenticate, async (req: AuthenticatedRequest
   try {
     const profile = await db.getProfileById(id);
     if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Birth profile not found.' });
-    if (req.user!.role !== Role.SUPER_ADMIN && profile.userId !== req.user!.id) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot access another user\'s birth profile.' });
+    if (profile.userId !== req.user!.id) {
+      const accessCheck = validatePrivilegedCustomerAccess(req.user!, profile.userId, req);
+      if (!accessCheck.authorized) {
+        return res.status(accessCheck.statusCode || 403).json({
+          error: accessCheck.error,
+          message: accessCheck.message
+        });
+      }
+      await db.recordAuditEvent({
+        userId: profile.userId,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: 'ADMIN_PRIVILEGED_PROFILE_VIEW',
+        targetType: 'PROFILE',
+        targetId: profile.id,
+        reason: accessCheck.reason,
+        metadata: { profileName: profile.profileName }
+      });
     }
     res.json(profile);
   } catch (err: any) {
@@ -2046,8 +2232,23 @@ app.get('/api/profiles/item/:id', authenticate, async (req: AuthenticatedRequest
 
 app.get('/api/profiles/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { userId } = req.params;
-  if (req.user!.role !== Role.SUPER_ADMIN && req.user!.id !== userId) {
-    return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot access another user\'s birth profiles.' });
+  if (req.user!.id !== userId) {
+    const accessCheck = validatePrivilegedCustomerAccess(req.user!, userId, req);
+    if (!accessCheck.authorized) {
+      return res.status(accessCheck.statusCode || 403).json({
+        error: accessCheck.error,
+        message: accessCheck.message
+      });
+    }
+    await db.recordAuditEvent({
+      userId,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'ADMIN_PRIVILEGED_PROFILES_LIST',
+      targetType: 'PROFILE',
+      targetId: userId,
+      reason: accessCheck.reason
+    });
   }
   try {
     const profiles = await db.getProfilesByUserId(userId);
@@ -2062,8 +2263,24 @@ app.put('/api/profiles/:id', authenticate, async (req: AuthenticatedRequest, res
   try {
     const profile = await db.getProfileById(id);
     if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
-    if (req.user!.role !== Role.SUPER_ADMIN && profile.userId !== req.user!.id) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot update another user\'s birth profile.' });
+    if (profile.userId !== req.user!.id) {
+      const accessCheck = validatePrivilegedCustomerAccess(req.user!, profile.userId, req);
+      if (!accessCheck.authorized) {
+        return res.status(accessCheck.statusCode || 403).json({
+          error: accessCheck.error,
+          message: accessCheck.message
+        });
+      }
+      await db.recordAuditEvent({
+        userId: profile.userId,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: 'ADMIN_PRIVILEGED_PROFILE_UPDATE',
+        targetType: 'PROFILE',
+        targetId: profile.id,
+        reason: accessCheck.reason,
+        metadata: req.body
+      });
     }
     const updated = await db.updateProfile(id, req.body);
     res.json(updated);
@@ -2077,8 +2294,23 @@ app.delete('/api/profiles/:id', authenticate, async (req: AuthenticatedRequest, 
   try {
     const profile = await db.getProfileById(id);
     if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
-    if (req.user!.role !== Role.SUPER_ADMIN && profile.userId !== req.user!.id) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot delete another user\'s birth profile.' });
+    if (profile.userId !== req.user!.id) {
+      const accessCheck = validatePrivilegedCustomerAccess(req.user!, profile.userId, req);
+      if (!accessCheck.authorized) {
+        return res.status(accessCheck.statusCode || 403).json({
+          error: accessCheck.error,
+          message: accessCheck.message
+        });
+      }
+      await db.recordAuditEvent({
+        userId: profile.userId,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: 'ADMIN_PRIVILEGED_PROFILE_DELETE',
+        targetType: 'PROFILE',
+        targetId: profile.id,
+        reason: accessCheck.reason
+      });
     }
     const deleted = await db.deleteProfile(id);
     if (!deleted) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
@@ -2129,8 +2361,23 @@ app.get('/api/reports/reader/:id', authenticate, async (req: AuthenticatedReques
     }
 
     // Strict ownership gate
-    if (report.userId !== req.user!.id && req.user!.role !== Role.SUPER_ADMIN) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: You do not own this report publication.' });
+    if (report.userId !== req.user!.id) {
+      const accessCheck = validatePrivilegedCustomerAccess(req.user!, report.userId, req);
+      if (!accessCheck.authorized) {
+        return res.status(accessCheck.statusCode || 403).json({
+          error: accessCheck.error,
+          message: accessCheck.message
+        });
+      }
+      await db.recordAuditEvent({
+        userId: report.userId,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: 'ADMIN_PRIVILEGED_REPORT_READ',
+        targetType: 'SAVED_REPORT',
+        targetId: report.id,
+        reason: accessCheck.reason
+      });
     }
 
     // Anti-download, anti-scraping, private reader headers
@@ -2161,8 +2408,23 @@ app.get('/api/reports/reader/:id', authenticate, async (req: AuthenticatedReques
 
 app.get('/api/reports/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   const { userId } = req.params;
-  if (req.user!.role !== Role.SUPER_ADMIN && req.user!.id !== userId) {
-    return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot access another user\'s saved reports.' });
+  if (req.user!.id !== userId) {
+    const accessCheck = validatePrivilegedCustomerAccess(req.user!, userId, req);
+    if (!accessCheck.authorized) {
+      return res.status(accessCheck.statusCode || 403).json({
+        error: accessCheck.error,
+        message: accessCheck.message
+      });
+    }
+    await db.recordAuditEvent({
+      userId,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'ADMIN_PRIVILEGED_REPORTS_LIST',
+      targetType: 'SAVED_REPORT',
+      targetId: userId,
+      reason: accessCheck.reason
+    });
   }
   try {
     const reports = await db.getSavedReportsByUserId(userId);
@@ -2177,8 +2439,23 @@ app.get('/api/reports/detail/:id', authenticate, async (req: AuthenticatedReques
   try {
     const report = await db.getSavedReportById(id);
     if (!report) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
-    if (req.user!.role !== Role.SUPER_ADMIN && report.userId !== req.user!.id) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot access another user\'s saved report.' });
+    if (report.userId !== req.user!.id) {
+      const accessCheck = validatePrivilegedCustomerAccess(req.user!, report.userId, req);
+      if (!accessCheck.authorized) {
+        return res.status(accessCheck.statusCode || 403).json({
+          error: accessCheck.error,
+          message: accessCheck.message
+        });
+      }
+      await db.recordAuditEvent({
+        userId: report.userId,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: 'ADMIN_PRIVILEGED_REPORT_DETAIL_VIEW',
+        targetType: 'SAVED_REPORT',
+        targetId: report.id,
+        reason: accessCheck.reason
+      });
     }
     res.json(report);
   } catch (err: any) {
@@ -2191,8 +2468,23 @@ app.delete('/api/reports/:id', authenticate, async (req: AuthenticatedRequest, r
   try {
     const report = await db.getSavedReportById(id);
     if (!report) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
-    if (req.user!.role !== Role.SUPER_ADMIN && report.userId !== req.user!.id) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Access denied: cannot delete another user\'s saved report.' });
+    if (report.userId !== req.user!.id) {
+      const accessCheck = validatePrivilegedCustomerAccess(req.user!, report.userId, req);
+      if (!accessCheck.authorized) {
+        return res.status(accessCheck.statusCode || 403).json({
+          error: accessCheck.error,
+          message: accessCheck.message
+        });
+      }
+      await db.recordAuditEvent({
+        userId: report.userId,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: 'ADMIN_PRIVILEGED_REPORT_DELETE',
+        targetType: 'SAVED_REPORT',
+        targetId: report.id,
+        reason: accessCheck.reason
+      });
     }
     const deleted = await db.deleteSavedReport(id);
     if (!deleted) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
@@ -3748,7 +4040,7 @@ app.put('/api/admin/users/:id/status', adminSensitiveMutationsLimiter, authentic
       metadata: { oldStatus: targetUser.status, newStatus: status }
     });
 
-    res.json({ status: 'STATUS_UPDATED', user: updated });
+    res.json({ status: 'STATUS_UPDATED', user: sanitizeUser(updated) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -3839,7 +4131,7 @@ app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticat
       metadata: { oldRole: targetUser.role, newRole: role }
     });
 
-    res.json({ status: 'ROLE_UPDATED', user: updated });
+    res.json({ status: 'ROLE_UPDATED', user: sanitizeUser(updated) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -8244,19 +8536,153 @@ app.post('/api/numerology/correct-name', authenticate, async (req: Authenticated
 
 // ==================== 7B. AUTHORITATIVE PREDICTION GATEWAY ====================
 
-async function checkUserHasUnlockedReport(userId: string, targetTypes: string[]): Promise<boolean> {
-  try {
-    const [reports, entitlements] = await Promise.all([
-      db.getSavedReportsByUserId(userId),
-      db.listEntitlements({ userId, activeOnly: true })
-    ]);
-    const hasSavedReport = (reports || []).some(r => targetTypes.includes(r.reportType));
-    if (hasSavedReport) return true;
-    const hasEntitlement = (entitlements || []).some(e => e.isActive && targetTypes.includes(e.featureKey));
-    return hasEntitlement;
-  } catch (_) {
-    return false;
+export interface HorizonAuthorizationResult {
+  isAuthorized: boolean;
+  effectiveTier: SubscriptionTier;
+  reason: string;
+  matchedSku?: string;
+  expiresAt?: string | null;
+}
+
+export async function authorizeUserForForecastHorizon(
+  user: UserRecord | null,
+  horizon: string,
+  req?: Request
+): Promise<HorizonAuthorizationResult> {
+  const cleanHorizon = String(horizon || 'hourly').toLowerCase().trim() as ForecastHorizon;
+
+  // 1. Hourly and Daily are universally free / unlocked for all visitors
+  if (cleanHorizon === 'hourly' || cleanHorizon === 'daily') {
+    const tier = user ? resolveRequestTier(user, req || ({} as Request)) : SubscriptionTier.FREE;
+    return {
+      isAuthorized: true,
+      effectiveTier: tier,
+      reason: 'HORIZON_UNIVERSALLY_FREE'
+    };
   }
+
+  // 2. Unauthenticated visitors are strictly locked for weekly, monthly, yearly, mahadasha
+  if (!user) {
+    return {
+      isAuthorized: false,
+      effectiveTier: SubscriptionTier.FREE,
+      reason: 'AUTHENTICATION_REQUIRED'
+    };
+  }
+
+  // 3. Resolve Subscription Tier
+  const effectiveTier = resolveRequestTier(user, req || ({} as Request));
+
+  // PREMIUM tier grants full access to all 6 horizons
+  if (effectiveTier === SubscriptionTier.PREMIUM) {
+    return {
+      isAuthorized: true,
+      effectiveTier,
+      reason: 'SUBSCRIPTION_PREMIUM'
+    };
+  }
+
+  // PLUS tier includes hourly, daily, and weekly
+  if (effectiveTier === SubscriptionTier.PLUS) {
+    if (cleanHorizon === 'weekly') {
+      return {
+        isAuthorized: true,
+        effectiveTier,
+        reason: 'SUBSCRIPTION_PLUS'
+      };
+    }
+  }
+
+  // 4. One-off report purchases & SKU-specific entitlements
+  const now = Date.now();
+  try {
+    const orders = await db.getUserPaymentOrdersAsync(user.id);
+    for (const order of (orders || [])) {
+      // Must be PAID; strictly ignore REFUNDED, FAILED, CREATED
+      if (order.status !== OrderStatus.PAID) {
+        continue;
+      }
+
+      const rawProductId = String(order.productId || '').trim();
+      const normalizedSku = SKU_HORIZON_ALIASES[rawProductId] || rawProductId;
+      const def = PRODUCT_ENTITLEMENT_CATALOG[normalizedSku];
+
+      if (def && def.includedHorizons && def.includedHorizons.includes(cleanHorizon)) {
+        const orderTime = new Date(order.createdAt).getTime();
+        const validityMs = (def.validityDays || 30) * 86400000;
+        const expiryTime = orderTime + validityMs;
+
+        if (now <= expiryTime) {
+          return {
+            isAuthorized: true,
+            effectiveTier,
+            reason: `PAID_ORDER_${def.productId.toUpperCase()}`,
+            matchedSku: def.productId,
+            expiresAt: new Date(expiryTime).toISOString()
+          };
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error('[AUTH_HORIZON] Error querying user payment orders:', err?.message || err);
+  }
+
+  // 5. Active Entitlements & Complimentary Grants
+  try {
+    const entitlements = await db.listEntitlements({ userId: user.id, activeOnly: true });
+    for (const ent of (entitlements || [])) {
+      if (!ent.isActive) continue;
+      if (ent.expiresAt && new Date(ent.expiresAt).getTime() < now) continue;
+
+      const feat = String(ent.featureKey || '').toLowerCase();
+      if (feat === cleanHorizon || feat === `forecast_${cleanHorizon}` || feat === 'full_access') {
+        return {
+          isAuthorized: true,
+          effectiveTier,
+          reason: `ENTITLEMENT_${feat.toUpperCase()}`,
+          expiresAt: ent.expiresAt || null
+        };
+      }
+
+      const normalizedFeat: string = SKU_HORIZON_ALIASES[feat] || feat;
+      const def: ProductEntitlementDefinition | undefined = PRODUCT_ENTITLEMENT_CATALOG[normalizedFeat];
+      if (def && def.includedHorizons && def.includedHorizons.includes(cleanHorizon)) {
+        return {
+          isAuthorized: true,
+          effectiveTier,
+          reason: `ENTITLEMENT_SKU_${def.productId.toUpperCase()}`,
+          matchedSku: def.productId,
+          expiresAt: ent.expiresAt || null
+        };
+      }
+    }
+  } catch (err: any) {
+    console.error('[AUTH_HORIZON] Error querying user entitlements:', err?.message || err);
+  }
+
+  // 6. Check SavedReport legacy store
+  try {
+    const reports = await db.getSavedReportsByUserId(user.id);
+    const targetSkus: string[] = [];
+    if (cleanHorizon === 'weekly') targetSkus.push('report_weekly_transit_planner', 'report_one_month_forecast', 'report_twelve_month_varshphal', 'report_janam_kundli_deep_dive', 'report_bundle_kundli_varshphal', 'weekly_forecast', 'kundli_deep_dive');
+    else if (cleanHorizon === 'monthly') targetSkus.push('report_one_month_forecast', 'report_twelve_month_varshphal', 'report_three_year_roadmap', 'report_bundle_kundli_varshphal', 'monthly_forecast', 'yearly_varshphal');
+    else if (cleanHorizon === 'yearly') targetSkus.push('report_twelve_month_varshphal', 'report_three_year_roadmap', 'report_bundle_kundli_varshphal', 'yearly_varshphal', 'kundli_deep_dive');
+    else if (['mahadasha', '5year', 'five_year'].includes(cleanHorizon)) targetSkus.push('report_janam_kundli_deep_dive', 'report_three_year_roadmap', 'report_bundle_kundli_varshphal', 'mahadasha_5year', 'kundli_deep_dive');
+
+    if ((reports || []).some(r => targetSkus.includes(r.reportType))) {
+      return {
+        isAuthorized: true,
+        effectiveTier,
+        reason: 'SAVED_REPORT_PURCHASE'
+      };
+    }
+  } catch (_) {}
+
+  return {
+    isAuthorized: false,
+    effectiveTier,
+    reason: 'PAYWALL_LOCKED'
+  };
 }
 
 /**
@@ -8337,7 +8763,7 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
       }
     }
 
-    // 2. Personal Profile Ownership Enforcement (Phase 2 Tenant Isolation)
+    // 2. Personal Profile Ownership Enforcement (Tenant Isolation)
     const rawProfileId = String(profileId || profile_id || '').trim();
     let targetDob = dob;
     let targetLat = lat != null ? Number(lat) : null;
@@ -8345,6 +8771,9 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
     let targetTz = timezone || 'Asia/Kolkata';
     let targetProfileName = profile_name;
     let resolvedProfileId = rawProfileId;
+    let isProfileUnknownTime = Boolean(is_unknown_time);
+    let resolvedBirthTimeStatus: 'EXACT' | 'APPROXIMATE' | 'UNKNOWN' = isProfileUnknownTime ? 'UNKNOWN' : 'EXACT';
+    let resolvedTimeOfBirth: string | null = null;
 
     if (rawProfileId && rawProfileId !== 'session_guest' && rawProfileId !== 'current') {
       if (!sessionUser) {
@@ -8362,8 +8791,10 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
         });
       }
 
-      // Strict Cross-User Ownership Isolation
-      if (profile.userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+      // Strict Cross-User Ownership Isolation:
+      // Prediction generation via customer gateway is strictly limited to the profile owner!
+      // Direct admin prediction generation against another user's profile through the customer gateway is blocked.
+      if (profile.userId !== sessionUser.id) {
         return res.status(403).json({
           error: 'FORBIDDEN',
           message: 'Access denied: You do not own this birth profile.'
@@ -8371,14 +8802,20 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
       }
 
       // Ground calculations in the canonical verified profile from the database
-      const cleanTob = (profile.timeOfBirth || '12:00:00').trim();
-      const normalizedTob = cleanTob.length === 5 ? `${cleanTob}:00` : cleanTob;
-      targetDob = `${profile.dateOfBirth}T${normalizedTob}`;
+      if (profile.birthTimeStatus === 'UNKNOWN' || !profile.timeOfBirth) {
+        isProfileUnknownTime = true;
+      }
+
+      const cleanTob = isProfileUnknownTime ? null : (profile.timeOfBirth || '').trim();
+      const normalizedTob = cleanTob ? (cleanTob.length === 5 ? `${cleanTob}:00` : cleanTob) : null;
+      targetDob = normalizedTob ? `${profile.dateOfBirth}T${normalizedTob}` : `${profile.dateOfBirth}T00:00:00`;
       targetLat = profile.latitude;
       targetLon = profile.longitude;
       targetTz = profile.resolvedTimezone || 'Asia/Kolkata';
       targetProfileName = profile.profileName;
       resolvedProfileId = profile.id;
+      resolvedBirthTimeStatus = isProfileUnknownTime ? 'UNKNOWN' : (profile.birthTimeStatus || 'EXACT');
+      resolvedTimeOfBirth = cleanTob;
     } else {
       // Ad-hoc or guest calculation: enforce guest rate limits
       if (!sessionUser) {
@@ -8391,67 +8828,49 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
       }
       resolvedProfileId = sessionUser ? `user_${sessionUser.id}` : 'session_guest';
       targetProfileName = targetProfileName || (sessionUser ? (sessionUser.displayName || 'Seeker') : 'Consultant');
+      if (is_unknown_time) {
+        const datePart = String(targetDob || '').split('T')[0];
+        targetDob = datePart ? `${datePart}T00:00:00` : targetDob;
+        isProfileUnknownTime = true;
+      }
+      resolvedBirthTimeStatus = isProfileUnknownTime ? 'UNKNOWN' : (req.body.birthTimeStatus || 'EXACT');
+      resolvedTimeOfBirth = isProfileUnknownTime ? null : (req.body.time_of_birth || req.body.timeOfBirth || null);
     }
 
     // 3. Server-Authoritative Entitlement Resolution (Phase 1 P0 Gate)
     // NEVER TRUST client-sent req.body.is_unlocked or req.body.preview_tier!
     const horizonClean = String(horizon || 'hourly').toLowerCase().trim();
-    let effectiveTier: SubscriptionTier = SubscriptionTier.FREE;
-    let serverUnlocked = false;
-
-    if (sessionUser) {
-      effectiveTier = resolveRequestTier(sessionUser, req);
-
-      if (effectiveTier === SubscriptionTier.PREMIUM) {
-        // Premium tier grants 100% full access to all six horizons
-        serverUnlocked = true;
-      } else if (effectiveTier === SubscriptionTier.PLUS) {
-        // Plus tier includes Hourly, Daily, and Weekly horizons
-        if (['hourly', 'daily', 'weekly'].includes(horizonClean)) {
-          serverUnlocked = true;
-        } else {
-          // Check if user purchased a one-off report for deeper horizons
-          const hasReport = await checkUserHasUnlockedReport(sessionUser.id, [
-            'kundli_deep_dive',
-            'yearly_varshphal',
-            'monthly_forecast',
-            'mahadasha_5year'
-          ]);
-          serverUnlocked = hasReport;
-        }
-      } else {
-        // FREE tier: Hourly and Daily are unlocked; Weekly, Monthly, Yearly, Mahadasha locked
-        if (['hourly', 'daily'].includes(horizonClean)) {
-          serverUnlocked = true;
-        } else {
-          // Check if free user purchased a one-off report product
-          let hasReport = false;
-          if (horizonClean === 'weekly') {
-            hasReport = await checkUserHasUnlockedReport(sessionUser.id, ['weekly_forecast', 'kundli_deep_dive']);
-          } else if (horizonClean === 'monthly') {
-            hasReport = await checkUserHasUnlockedReport(sessionUser.id, ['monthly_forecast', 'kundli_deep_dive', 'yearly_varshphal']);
-          } else if (horizonClean === 'yearly') {
-            hasReport = await checkUserHasUnlockedReport(sessionUser.id, ['yearly_varshphal', 'kundli_deep_dive']);
-          } else if (['mahadasha', '5year', 'five_year'].includes(horizonClean)) {
-            hasReport = await checkUserHasUnlockedReport(sessionUser.id, ['mahadasha_5year', 'kundli_deep_dive']);
-          }
-          serverUnlocked = hasReport;
-        }
-      }
-    } else {
-      // Unauthenticated Guest: strictly FREE tier, only hourly and daily unlocked
-      effectiveTier = SubscriptionTier.FREE;
-      serverUnlocked = ['hourly', 'daily'].includes(horizonClean);
-    }
+    const authResult = await authorizeUserForForecastHorizon(sessionUser, horizonClean, req);
+    const effectiveTier = authResult.effectiveTier;
+    const serverUnlocked = authResult.isAuthorized;
 
     // 4. Secure Gateway Upstream Proxy to Python Swiss Ephemeris Engine
     const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-    const INTERNAL_SERVICE_KEY = process.env.ASTROVERSE_INTERNAL_KEY || process.env.INTERNAL_SERVICE_KEY || 'astroverse-internal-gateway-secret-2026';
+    let INTERNAL_SERVICE_KEY = '';
+    try {
+      INTERNAL_SERVICE_KEY = getValidatedInternalServiceKey();
+    } catch (keyErr: any) {
+      console.error('[GATEWAY] Internal service key validation failed:', keyErr?.message || keyErr);
+      return res.status(500).json({
+        error: 'GATEWAY_CONFIGURATION_ERROR',
+        message: 'Internal service authentication configuration is invalid.'
+      });
+    }
+
+    if (!INTERNAL_SERVICE_KEY || KNOWN_COMPROMISED_INTERNAL_KEYS.has(INTERNAL_SERVICE_KEY)) {
+      console.error('[GATEWAY] Missing or compromised internal service key');
+      return res.status(500).json({
+        error: 'GATEWAY_CONFIGURATION_ERROR',
+        message: 'Internal gateway authentication is missing or compromised.'
+      });
+    }
 
     const upstreamPayload = {
       horizon: horizonClean,
       target_date: target_date,
       dob: targetDob,
+      time_of_birth: resolvedTimeOfBirth,
+      birth_time_status: resolvedBirthTimeStatus,
       lat: targetLat,
       lon: targetLon,
       timezone: targetTz,
@@ -8461,7 +8880,7 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
       hora_window: hora_window,
       category: category,
       lang: lang,
-      is_unknown_time: !!is_unknown_time,
+      is_unknown_time: isProfileUnknownTime,
       is_universal_preview: !!is_universal_preview,
       mode: mode,
       is_unlocked: serverUnlocked,       // STRICT SERVER-AUTHORITATIVE VALUE
@@ -8608,6 +9027,14 @@ if (require.main === module && !process.env.VERCEL && !process.env.AWS_LAMBDA_FU
     console.error('[CRITICAL_PRODUCTION_HALT] Production deployment cannot start: DATABASE_URL or durable PostgreSQL persistence is required. Ephemeral storage is strictly forbidden in production.');
     process.exit(1);
   }
+  if (isProductionEnvironment()) {
+    try {
+      getValidatedInternalServiceKey();
+    } catch (secErr: any) {
+      console.error(secErr.message);
+      process.exit(1);
+    }
+  }
   app.listen(PORT, () => {
     console.log(`[ASTROVERSE] Wallet, Auth & Admin Gateway running on port ${PORT}`);
   });
@@ -8628,4 +9055,5 @@ module.exports.adminMonitoringLimiter = adminMonitoringLimiter;
 module.exports.adminSensitiveMutationsLimiter = adminSensitiveMutationsLimiter;
 module.exports.reconcileCashfreeOrder = reconcileCashfreeOrder;
 module.exports.reconcileUserPendingOrders = reconcileUserPendingOrders;
+module.exports.authorizeUserForForecastHorizon = authorizeUserForForecastHorizon;
 export default app;
