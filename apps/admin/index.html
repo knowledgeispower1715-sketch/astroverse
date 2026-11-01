@@ -573,6 +573,45 @@
           display: block !important;
         }
       }
+
+      /* Enterprise Data Provenance Badges */
+      .admin-provenance-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .provenance-live {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10B981;
+        border: 1px solid rgba(16, 185, 129, 0.35);
+      }
+      .provenance-derived {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3B82F6;
+        border: 1px solid rgba(59, 130, 246, 0.35);
+      }
+      .provenance-synthetic {
+        background: rgba(245, 158, 11, 0.15);
+        color: #F59E0B;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+      }
+      .provenance-demo {
+        background: rgba(168, 85, 247, 0.15);
+        color: #A855F7;
+        border: 1px solid rgba(168, 85, 247, 0.35);
+      }
+      .provenance-unavailable {
+        background: rgba(239, 68, 68, 0.15);
+        color: #EF4444;
+        border: 1px solid rgba(239, 68, 68, 0.35);
+      }
     </style>
 
     <section id="view-admin" class="page-tab-view">
@@ -748,33 +787,163 @@
 
         <!-- MODULE 1: PLATFORM OVERVIEW -->
         <div id="admin-panel-overview" class="admin-module-panel">
-          <div class="category-pills-bar" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #64748B; font-weight: 700; text-transform: uppercase;">Total Registered</div>
-              <div style="font-size: 24px; font-weight: 800; color: #1E293B; margin-top: 4px;" id="metric-total-users">--</div>
+          <!-- Provenance & Ground Truth Banner -->
+          <div style="background: #0F172A; border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="admin-overall-provenance-badge" class="admin-provenance-badge provenance-live"><i class="fa-solid fa-database"></i> LIVE DATA</span>
+              <span style="font-size: 12px; color: #CBD5E1;" id="admin-datasource-label">Authoritative Data Source: <strong>PostgreSQL 16 (Supabase Managed Cloud)</strong></span>
             </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #059669; font-weight: 700; text-transform: uppercase;">Active Accounts</div>
-              <div style="font-size: 24px; font-weight: 800; color: #059669; margin-top: 4px;" id="metric-active-users">--</div>
-            </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #DC2626; font-weight: 700; text-transform: uppercase;">Suspended</div>
-              <div style="font-size: 24px; font-weight: 800; color: #DC2626; margin-top: 4px;" id="metric-suspended-users">--</div>
-            </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #D97706; font-weight: 700; text-transform: uppercase;">Wallet Recharges</div>
-              <div style="font-size: 24px; font-weight: 800; color: #D97706; margin-top: 4px;">₹<span id="metric-total-deposits">0.00</span></div>
-            </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #7C3AED; font-weight: 700; text-transform: uppercase;">Saved Profiles</div>
-              <div style="font-size: 24px; font-weight: 800; color: #7C3AED; margin-top: 4px;" id="metric-total-profiles">--</div>
-            </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #2563EB; font-weight: 700; text-transform: uppercase;">Active Subscriptions</div>
-              <div style="font-size: 24px; font-weight: 800; color: #2563EB; margin-top: 4px;" id="metric-active-subs">--</div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; flex-wrap: wrap;">
+              <span>Provenance:</span>
+              <span class="admin-provenance-badge provenance-live" title="Raw row query directly from PostgreSQL">LIVE</span>
+              <span class="admin-provenance-badge provenance-derived" title="Mathematically computed from live Postgres rows">DERIVED</span>
+              <span class="admin-provenance-badge provenance-synthetic" title="Local test cache fixture">SYNTHETIC</span>
+              <span class="admin-provenance-badge provenance-demo" title="Isolated demo test account">DEMO</span>
+              <span class="admin-provenance-badge provenance-unavailable" title="Database unreachable or query failed">UNAVAILABLE</span>
             </div>
           </div>
 
+          <!-- Ground Truth Key Metrics -->
+          <div class="category-pills-bar" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #64748B; font-weight: 700; text-transform: uppercase;">Total Registered</div>
+                <span id="badge-total-users" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #1E293B; margin-top: 4px;" id="metric-total-users">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">User table rows</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #059669; font-weight: 700; text-transform: uppercase;">Active Accounts</div>
+                <span id="badge-active-users" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #059669; margin-top: 4px;" id="metric-active-users">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Status = ACTIVE</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #DC2626; font-weight: 700; text-transform: uppercase;">Suspended</div>
+                <span id="badge-suspended-users" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #DC2626; margin-top: 4px;" id="metric-suspended-users">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Status = SUSPENDED</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #D97706; font-weight: 700; text-transform: uppercase;">Wallet Recharges</div>
+                <span id="badge-total-deposits" class="admin-provenance-badge provenance-derived">DERIVED</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #D97706; margin-top: 4px;">&#8377;<span id="metric-total-deposits">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Sum of WalletLedger deposits</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #0284C7; font-weight: 700; text-transform: uppercase;">Consultation Debits</div>
+                <span id="badge-consultation-debits" class="admin-provenance-badge provenance-derived">DERIVED</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #0284C7; margin-top: 4px;">&#8377;<span id="metric-consultation-debits">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Sum of consultation debits</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #7C3AED; font-weight: 700; text-transform: uppercase;">Saved Profiles</div>
+                <span id="badge-total-profiles" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #7C3AED; margin-top: 4px;" id="metric-total-profiles">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">BirthProfile rows</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #2563EB; font-weight: 700; text-transform: uppercase;">Active Subscriptions</div>
+                <span id="badge-active-subs" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #2563EB; margin-top: 4px;" id="metric-active-subs">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Plus &amp; Premium subscribers</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #0D9488; font-weight: 700; text-transform: uppercase;">Active Sessions</div>
+                <span id="badge-active-sessions" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #0D9488; margin-top: 4px;" id="metric-active-sessions">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Unexpired UserSession rows</div>
+            </div>
+          </div>
+
+          <!-- OPERATIONAL COMMAND CENTRE: Actionable Administrative Tasks -->
+          <div class="astro-card" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+              <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                <i class="fa-solid fa-gauge-high"></i> Operational Command Centre &bull; Critical Action Summary
+              </h3>
+              <span style="font-size: 11px; color: #64748B;">Real-time queue dispatch &bull; Click card to resolve</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+              <!-- Action 1: Pending Refunds -->
+              <div style="padding: 12px; border: 1px solid #FED7AA; border-radius: 8px; background: #FFFBEB; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('subscriptions')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #9A3412;"><i class="fa-solid fa-rotate-left"></i> PENDING REFUNDS</span>
+                  <span id="action-pending-refunds" style="font-size: 14px; font-weight: 800; color: #C2410C; background: #FFEDD5; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #78350F; margin-top: 6px;">Cashfree refund review queue</div>
+                <div style="font-size: 10.5px; color: #EA580C; margin-top: 4px; font-weight: 700;">Resolve in Subscriptions &rarr;</div>
+              </div>
+
+              <!-- Action 2: Failed Reports -->
+              <div style="padding: 12px; border: 1px solid #FECACA; border-radius: 8px; background: #FEF2F2; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('reports')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #991B1B;"><i class="fa-solid fa-file-circle-exclamation"></i> FAILED REPORTS</span>
+                  <span id="action-failed-reports" style="font-size: 14px; font-weight: 800; color: #DC2626; background: #FEE2E2; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #7F1D1D; margin-top: 6px;">PDF &amp; Ephemeris generation failures</div>
+                <div style="font-size: 10.5px; color: #DC2626; margin-top: 4px; font-weight: 700;">Inspect in Reports &rarr;</div>
+              </div>
+
+              <!-- Action 3: Open Incidents -->
+              <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('incidents')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #334155;"><i class="fa-solid fa-triangle-exclamation"></i> OPEN INCIDENTS</span>
+                  <span id="action-open-incidents" style="font-size: 14px; font-weight: 800; color: #475569; background: #E2E8F0; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #64748B; margin-top: 6px;">Security, gateway, or ephemeris alerts</div>
+                <div style="font-size: 10.5px; color: #2563EB; margin-top: 4px; font-weight: 700;">Manage in Incidents &rarr;</div>
+              </div>
+
+              <!-- Action 4: Pending Privacy Requests -->
+              <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('privacy')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #334155;"><i class="fa-solid fa-user-shield"></i> PRIVACY / GDPR</span>
+                  <span id="action-pending-privacy" style="font-size: 14px; font-weight: 800; color: #475569; background: #E2E8F0; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #64748B; margin-top: 6px;">Customer data deletion &amp; export requests</div>
+                <div style="font-size: 10.5px; color: #2563EB; margin-top: 4px; font-weight: 700;">Process in Privacy &rarr;</div>
+              </div>
+
+              <!-- Action 5: Consultations / Astrologers -->
+              <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('consultations')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #334155;"><i class="fa-solid fa-user-tie"></i> ASTROLOGERS</span>
+                  <span id="action-astrologers-count" style="font-size: 14px; font-weight: 800; color: #475569; background: #E2E8F0; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #64748B; margin-top: 6px;">Live consultation roster</div>
+                <div style="font-size: 10.5px; color: #2563EB; margin-top: 4px; font-weight: 700;">Directory in Consultations &rarr;</div>
+              </div>
+
+              <!-- Action 6: Database Monitor -->
+              <div style="padding: 12px; border: 1px solid #BFDBFE; border-radius: 8px; background: #EFF6FF; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('database')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #1E40AF;"><i class="fa-solid fa-database"></i> POSTGRES HEALTH</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #15803D; background: #DCFCE7; padding: 2px 8px; border-radius: 12px;">ONLINE</span>
+                </div>
+                <div style="font-size: 11px; color: #1E3A8A; margin-top: 6px;">Prisma connection pool &amp; live schemas</div>
+                <div style="font-size: 10.5px; color: #2563EB; margin-top: 4px; font-weight: 700;">Live Monitor in Database &rarr;</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Microservice & Runtime Status -->
           <div class="astro-card">
             <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 12px;">
               <i class="fa-solid fa-server"></i> Microservice Health &amp; Runtime Status
@@ -1584,9 +1753,12 @@
         <div id="admin-panel-analytics" class="admin-module-panel" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <div>
-              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-chart-pie" style="color: #F5C45E;"></i> Executive Business Analytics &amp; Financial KPIs
-              </h3>
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-chart-pie" style="color: #F5C45E;"></i> Executive Business Analytics &amp; Financial KPIs
+                </h3>
+                <span id="admin-analytics-provenance-badge" class="admin-provenance-badge provenance-live"><i class="fa-solid fa-database"></i> LIVE POSTGRESQL</span>
+              </div>
               <p style="font-size: 12px; color: #94A3B8; margin: 4px 0 0;">
                 Authoritative gross collections, wallet liabilities, revenue mix, and live customer financial metrics.
               </p>
@@ -4596,25 +4768,97 @@
         const res = await fetch(`${getAuthBase()}/api/admin/overview`, { headers: getAuthHeaders() });
         if (res.ok) {
           const data = await res.json();
-          const m = data.metrics;
-          document.getElementById('metric-total-users').textContent = m.totalUsers;
-          document.getElementById('metric-active-users').textContent = m.activeUsers;
-          document.getElementById('metric-suspended-users').textContent = m.suspendedUsers;
-          document.getElementById('metric-total-deposits').textContent = Number(m.totalWalletDeposits).toFixed(2);
-          document.getElementById('metric-total-profiles').textContent = m.totalProfiles;
-          if (document.getElementById('metric-active-subs')) {
-            document.getElementById('metric-active-subs').textContent = m.activeSubscriptions || 0;
+          const m = data.metrics || {};
+          const prov = m.provenance || 'LIVE';
+          const dSource = m.dataSource || 'PostgreSQL 16 (Supabase Managed Cloud)';
+
+          // Provenance banner & badges
+          const overallBadge = document.getElementById('admin-overall-provenance-badge');
+          if (overallBadge) {
+            overallBadge.className = `admin-provenance-badge ${prov === 'LIVE' ? 'provenance-live' : (prov === 'SYNTHETIC' ? 'provenance-synthetic' : 'provenance-derived')}`;
+            overallBadge.innerHTML = `<i class="fa-solid fa-database"></i> ${escapeHtml(prov)} DATA`;
           }
+          const dsLabel = document.getElementById('admin-datasource-label');
+          if (dsLabel) {
+            dsLabel.innerHTML = `Authoritative Data Source: <strong>${escapeHtml(dSource)}</strong>`;
+          }
+
+          // Individual metrics helper
+          const setMetric = (valId, badgeId, val, badgeType = 'LIVE') => {
+            const el = document.getElementById(valId);
+            if (el) el.textContent = val;
+            const b = document.getElementById(badgeId);
+            if (b) {
+              b.className = `admin-provenance-badge provenance-${badgeType.toLowerCase()}`;
+              b.textContent = badgeType;
+            }
+          };
+
+          const metricBadge = prov === 'LIVE' ? 'LIVE' : (prov === 'SYNTHETIC' ? 'SYNTHETIC' : 'DERIVED');
+          const derivedBadge = prov === 'LIVE' ? 'DERIVED' : (prov === 'SYNTHETIC' ? 'SYNTHETIC' : 'DERIVED');
+
+          setMetric('metric-total-users', 'badge-total-users', m.totalUsers ?? 0, metricBadge);
+          setMetric('metric-active-users', 'badge-active-users', m.activeUsers ?? 0, metricBadge);
+          setMetric('metric-suspended-users', 'badge-suspended-users', m.suspendedUsers ?? 0, metricBadge);
+          setMetric('metric-total-deposits', 'badge-total-deposits', Number(m.totalWalletDeposits || 0).toFixed(2), derivedBadge);
+          setMetric('metric-consultation-debits', 'badge-consultation-debits', Number(m.totalConsultationSpent || 0).toFixed(2), derivedBadge);
+          setMetric('metric-total-profiles', 'badge-total-profiles', m.totalProfiles ?? 0, metricBadge);
+          setMetric('metric-active-subs', 'badge-active-subs', m.activeSubscriptions ?? 0, metricBadge);
+          setMetric('metric-active-sessions', 'badge-active-sessions', m.activeSessions ?? 0, metricBadge);
+
+          // Operational Action Grid
+          if (document.getElementById('action-pending-refunds')) {
+            document.getElementById('action-pending-refunds').textContent = m.pendingRefundsCount ?? 0;
+          }
+          if (document.getElementById('action-failed-reports')) {
+            document.getElementById('action-failed-reports').textContent = m.failedReportsCount ?? 0;
+          }
+          if (document.getElementById('action-open-incidents')) {
+            document.getElementById('action-open-incidents').textContent = m.openIncidents ?? 0;
+          }
+          if (document.getElementById('action-pending-privacy')) {
+            document.getElementById('action-pending-privacy').textContent = m.pendingPrivacyRequests ?? 0;
+          }
+          if (document.getElementById('action-astrologers-count')) {
+            document.getElementById('action-astrologers-count').textContent = m.astrologerCount ?? 0;
+          }
+
           if (document.getElementById('admin-uptime')) {
             document.getElementById('admin-uptime').textContent = m.uptimeSeconds || 0;
           }
           if (document.getElementById('admin-db-status')) {
-            document.getElementById('admin-db-status').textContent = m.systemHealth?.database || 'Connected';
+            document.getElementById('admin-db-status').textContent = m.systemHealth?.database === 'POSTGRESQL_CONNECTED' ? 'PostgreSQL Connected (Supabase Managed Cloud)' : (m.systemHealth?.database || 'Connected');
           }
+        } else {
+          markOverviewUnavailable('HTTP ' + res.status);
         }
       } catch (err) {
         console.warn("Failed to load admin overview:", err);
+        markOverviewUnavailable(err.message);
       }
+    }
+
+    function markOverviewUnavailable(reason) {
+      const overallBadge = document.getElementById('admin-overall-provenance-badge');
+      if (overallBadge) {
+        overallBadge.className = 'admin-provenance-badge provenance-unavailable';
+        overallBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> UNAVAILABLE';
+      }
+      const dsLabel = document.getElementById('admin-datasource-label');
+      if (dsLabel) {
+        dsLabel.innerHTML = `Data Source Status: <strong style="color: #EF4444;">DISCONNECTED (${escapeHtml(reason || 'Network Error')})</strong>`;
+      }
+      ['metric-total-users', 'metric-active-users', 'metric-suspended-users', 'metric-total-deposits', 'metric-consultation-debits', 'metric-total-profiles', 'metric-active-subs', 'metric-active-sessions'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = 'UNAVAILABLE';
+      });
+      ['badge-total-users', 'badge-active-users', 'badge-suspended-users', 'badge-total-deposits', 'badge-consultation-debits', 'badge-total-profiles', 'badge-active-subs', 'badge-active-sessions'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) {
+          b.className = 'admin-provenance-badge provenance-unavailable';
+          b.textContent = 'UNAVAILABLE';
+        }
+      });
     }
 
     async function loadAdminUsersList() {
@@ -6099,20 +6343,43 @@
 
     // Global Search
     function executeAdminGlobalSearch() {
-      const q = document.getElementById('admin-global-search-input')?.value?.trim();
-      if (!q) return;
-      if (q.startsWith('usr_') || q.includes('@')) {
+      const raw = document.getElementById('admin-global-search-input')?.value?.trim();
+      if (!raw) return;
+      const q = raw.toLowerCase();
+
+      if (q.startsWith('cf_') || q.startsWith('ord_') || q.startsWith('pay_')) {
+        switchAdminModule('payments');
+        const searchInput = document.getElementById('input-recover-order-id');
+        if (searchInput) {
+          searchInput.value = raw;
+        }
+      } else if (q.startsWith('rep_') || q.startsWith('pdf_')) {
+        switchAdminModule('reports');
+        if (typeof loadAdminReportsDiagnostics === 'function') {
+          loadAdminReportsDiagnostics();
+        }
+      } else if (q.startsWith('inc_')) {
+        switchAdminModule('incidents');
+        if (typeof loadAdminIncidents === 'function') {
+          loadAdminIncidents();
+        }
+      } else if (q.startsWith('prv_') || q.startsWith('dsr_')) {
+        switchAdminModule('privacy');
+        if (typeof loadAdminPrivacy === 'function') {
+          loadAdminPrivacy();
+        }
+      } else if (q.startsWith('usr_') || raw.includes('@')) {
         switchAdminModule('customer360');
         const searchInput = document.getElementById('admin-c360-search-id');
         if (searchInput) {
-          searchInput.value = q;
-          loadAdminCustomer360(q);
+          searchInput.value = raw;
+          loadAdminCustomer360(raw);
         }
       } else {
         switchAdminModule('users');
         const userSearch = document.getElementById('admin-user-search');
         if (userSearch) {
-          userSearch.value = q;
+          userSearch.value = raw;
           loadAdminUsersList();
         }
       }
@@ -6217,6 +6484,12 @@
         const res = await fetch(`${getAuthBase()}/api/admin/analytics/overview`, { headers: getAuthHeaders() });
         if (!res.ok) return;
         const data = await res.json();
+        const prov = data.provenance || 'LIVE';
+        const provBadge = document.getElementById('admin-analytics-provenance-badge');
+        if (provBadge) {
+          provBadge.className = `admin-provenance-badge ${prov === 'LIVE' ? 'provenance-live' : (prov === 'SYNTHETIC' ? 'provenance-synthetic' : 'provenance-derived')}`;
+          provBadge.innerHTML = `<i class="fa-solid fa-database"></i> ${escapeHtml(prov)} DATA`;
+        }
         const s = data.summary;
         if (s) {
           const grossEl = document.getElementById('metric-analytics-gross');

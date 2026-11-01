@@ -1645,7 +1645,61 @@ class ResilientDatabase {
     search?: string;
     page?: number;
     limit?: number;
-  }): Promise<{ events: AuditEventRecord[]; total: number }> {
+  }): Promise<{ events: AuditEventRecord[]; total: number; provenance?: string }> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const where: any = {};
+        if (options?.userId) {
+          where.OR = [{ userId: options.userId }];
+        }
+        if (options?.action && options.action !== 'ALL') {
+          where.action = { contains: options.action, mode: 'insensitive' };
+        }
+        if (options?.targetType && options.targetType !== 'ALL') {
+          where.targetType = options.targetType;
+        }
+        if (options?.search) {
+          where.OR = [
+            { action: { contains: options.search, mode: 'insensitive' } },
+            { targetType: { contains: options.search, mode: 'insensitive' } },
+            { targetId: { contains: options.search, mode: 'insensitive' } }
+          ];
+        }
+
+        const total = await this.prisma.auditEvent.count({ where });
+        const page = Math.max(1, options?.page || 1);
+        const limit = Math.max(1, options?.limit || 50);
+        const skip = (page - 1) * limit;
+
+        const rows = await this.prisma.auditEvent.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' }
+        });
+
+        const events: AuditEventRecord[] = rows.map((r: any) => ({
+          id: r.id,
+          userId: r.userId || undefined,
+          actorId: r.userId || undefined,
+          actorRole: (r.metadata as any)?.actorRole || null,
+          action: r.action,
+          targetType: r.targetType || undefined,
+          targetId: r.targetId || undefined,
+          outcome: (r.metadata as any)?.outcome || 'SUCCESS',
+          requestId: (r.metadata as any)?.requestId,
+          reason: (r.metadata as any)?.reason,
+          metadata: r.metadata,
+          ipAddress: r.ipAddress || undefined,
+          createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt)
+        }));
+
+        return { events, total, provenance: 'LIVE' };
+      } catch (err: any) {
+        console.warn('[DB] listAuditEvents Prisma warning, falling back:', err?.message || err);
+      }
+    }
+
     let filtered = [...this.data.auditEvents];
 
     if (options?.userId) {
@@ -1683,6 +1737,28 @@ class ResilientDatabase {
   // ==================== INCIDENTS & ERROR MONITORING ====================
 
   async listIncidents(): Promise<IncidentRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const rows = await this.prisma.platformIncident.findMany({
+          orderBy: { createdAt: 'desc' }
+        });
+        if (rows && rows.length > 0) {
+          return rows.map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            severity: r.severity,
+            status: r.status,
+            summary: r.summary,
+            reportedBy: r.reportedBy,
+            resolvedAt: r.resolvedAt ? (r.resolvedAt instanceof Date ? r.resolvedAt.toISOString() : String(r.resolvedAt)) : null,
+            createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
+            updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt)
+          }));
+        }
+      } catch (err: any) {
+        console.warn('[DB] listIncidents Prisma warning:', err?.message || err);
+      }
+    }
     return [...this.data.incidents];
   }
 
@@ -1692,6 +1768,34 @@ class ResilientDatabase {
     summary: string;
     reportedBy: string;
   }): Promise<IncidentRecord> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const row = await this.prisma.platformIncident.create({
+          data: {
+            title: incident.title,
+            severity: incident.severity,
+            status: 'OPEN',
+            summary: incident.summary,
+            reportedBy: incident.reportedBy
+          }
+        });
+        const mapped: IncidentRecord = {
+          id: row.id,
+          title: row.title,
+          severity: row.severity,
+          status: row.status,
+          summary: row.summary,
+          reportedBy: row.reportedBy,
+          resolvedAt: null,
+          createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+          updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)
+        };
+        this.data.incidents.unshift(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.warn('[DB] createIncident Prisma warning:', err?.message || err);
+      }
+    }
     const record: IncidentRecord = {
       id: 'inc_' + crypto.randomBytes(6).toString('hex'),
       title: incident.title,
@@ -1709,6 +1813,36 @@ class ResilientDatabase {
   }
 
   async updateIncident(id: string, updates: Partial<IncidentRecord>): Promise<IncidentRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const data: any = {};
+        if (updates.status) data.status = updates.status;
+        if (updates.summary) data.summary = updates.summary;
+        if (updates.severity) data.severity = updates.severity;
+        if (updates.status === 'RESOLVED') data.resolvedAt = new Date();
+
+        const row = await this.prisma.platformIncident.update({
+          where: { id },
+          data
+        });
+        const mapped: IncidentRecord = {
+          id: row.id,
+          title: row.title,
+          severity: row.severity,
+          status: row.status,
+          summary: row.summary,
+          reportedBy: row.reportedBy,
+          resolvedAt: row.resolvedAt ? (row.resolvedAt instanceof Date ? row.resolvedAt.toISOString() : String(row.resolvedAt)) : null,
+          createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+          updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt)
+        };
+        const idx = this.data.incidents.findIndex(i => i.id === id);
+        if (idx !== -1) this.data.incidents[idx] = mapped;
+        return mapped;
+      } catch (err: any) {
+        console.warn('[DB] updateIncident Prisma warning:', err?.message || err);
+      }
+    }
     const inc = this.data.incidents.find(i => i.id === id);
     if (!inc) return null;
     if (updates.status) inc.status = updates.status;
@@ -1725,10 +1859,52 @@ class ResilientDatabase {
   // ==================== FEATURE FLAGS & PLATFORM SETTINGS ====================
 
   async listFeatureFlags(): Promise<FeatureFlagRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const rows = await this.prisma.featureFlag.findMany({
+          orderBy: { key: 'asc' }
+        });
+        if (rows && rows.length > 0) {
+          return rows.map((r: any) => ({
+            key: r.key,
+            name: r.name,
+            enabled: r.enabled,
+            description: r.description,
+            updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt),
+            updatedBy: r.updatedBy
+          }));
+        }
+      } catch (err: any) {
+        console.warn('[DB] listFeatureFlags Prisma warning:', err?.message || err);
+      }
+    }
     return [...this.data.featureFlags];
   }
 
   async setFeatureFlag(key: string, enabled: boolean, updatedBy = 'admin'): Promise<FeatureFlagRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const row = await this.prisma.featureFlag.upsert({
+          where: { key },
+          update: { enabled, updatedBy },
+          create: { key, name: key, enabled, description: 'Dynamically configured flag', updatedBy }
+        });
+        const mapped: FeatureFlagRecord = {
+          key: row.key,
+          name: row.name,
+          enabled: row.enabled,
+          description: row.description,
+          updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt),
+          updatedBy: row.updatedBy
+        };
+        const idx = this.data.featureFlags.findIndex(f => f.key === key);
+        if (idx !== -1) this.data.featureFlags[idx] = mapped;
+        else this.data.featureFlags.push(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.warn('[DB] setFeatureFlag Prisma warning:', err?.message || err);
+      }
+    }
     let flag = this.data.featureFlags.find(f => f.key === key);
     if (!flag) {
       flag = {
@@ -1816,6 +1992,29 @@ class ResilientDatabase {
   // ==================== PRIVACY REQUESTS (GDPR / DPDP) ====================
 
   async listPrivacyRequests(userId?: string): Promise<PrivacyRequestRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const where: any = {};
+        if (userId) where.userId = userId;
+        const rows = await this.prisma.privacyRequest.findMany({
+          where,
+          orderBy: { createdAt: 'desc' }
+        });
+        if (rows && rows.length > 0) {
+          return rows.map((r: any) => ({
+            id: r.id,
+            userId: r.userId,
+            type: r.type,
+            status: r.status,
+            notes: r.notes,
+            createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
+            completedAt: r.completedAt ? (r.completedAt instanceof Date ? r.completedAt.toISOString() : String(r.completedAt)) : null
+          }));
+        }
+      } catch (err: any) {
+        console.warn('[DB] listPrivacyRequests Prisma warning:', err?.message || err);
+      }
+    }
     if (userId) {
       return this.data.privacyRequests.filter(r => r.userId === userId);
     }
@@ -1827,6 +2026,31 @@ class ResilientDatabase {
     type: 'DATA_EXPORT' | 'ACCOUNT_DELETION' | 'DATA_CORRECTION';
     notes?: string | null;
   }): Promise<PrivacyRequestRecord> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const row = await this.prisma.privacyRequest.create({
+          data: {
+            userId: req.userId,
+            type: req.type,
+            status: 'PENDING',
+            notes: req.notes || null
+          }
+        });
+        const mapped: PrivacyRequestRecord = {
+          id: row.id,
+          userId: row.userId,
+          type: row.type as any,
+          status: row.status as any,
+          notes: row.notes,
+          createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+          completedAt: null
+        };
+        this.data.privacyRequests.unshift(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.warn('[DB] createPrivacyRequest Prisma warning:', err?.message || err);
+      }
+    }
     const record: PrivacyRequestRecord = {
       id: 'prv_' + crypto.randomBytes(6).toString('hex'),
       userId: req.userId,
@@ -1842,6 +2066,32 @@ class ResilientDatabase {
   }
 
   async updatePrivacyRequest(id: string, status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'REJECTED', notes?: string): Promise<PrivacyRequestRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const data: any = { status };
+        if (notes) data.notes = notes;
+        if (status === 'COMPLETED' || status === 'REJECTED') data.completedAt = new Date();
+
+        const row = await this.prisma.privacyRequest.update({
+          where: { id },
+          data
+        });
+        const mapped: PrivacyRequestRecord = {
+          id: row.id,
+          userId: row.userId,
+          type: row.type as any,
+          status: row.status as any,
+          notes: row.notes,
+          createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+          completedAt: row.completedAt ? (row.completedAt instanceof Date ? row.completedAt.toISOString() : String(row.completedAt)) : null
+        };
+        const idx = this.data.privacyRequests.findIndex(x => x.id === id);
+        if (idx !== -1) this.data.privacyRequests[idx] = mapped;
+        return mapped;
+      } catch (err: any) {
+        console.warn('[DB] updatePrivacyRequest Prisma warning:', err?.message || err);
+      }
+    }
     const r = this.data.privacyRequests.find(x => x.id === id);
     if (!r) return null;
     r.status = status;
@@ -1884,10 +2134,69 @@ class ResilientDatabase {
   // ==================== CONTENT BANNERS ====================
 
   async listContentBanners(): Promise<ContentBannerRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const rows = await this.prisma.contentBanner.findMany({
+          orderBy: { updatedAt: 'desc' }
+        });
+        if (rows && rows.length > 0) {
+          return rows.map((r: any) => ({
+            id: r.id,
+            key: r.key,
+            title: r.title,
+            body: r.body,
+            type: r.type,
+            isActive: r.isActive,
+            updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt),
+            updatedBy: r.updatedBy
+          }));
+        }
+      } catch (err: any) {
+        console.warn('[DB] listContentBanners Prisma warning:', err?.message || err);
+      }
+    }
     return [...this.data.contentBanners];
   }
 
   async updateContentBanner(key: string, updates: Partial<ContentBannerRecord>): Promise<ContentBannerRecord | null> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const row = await this.prisma.contentBanner.upsert({
+          where: { key },
+          update: {
+            title: updates.title,
+            body: updates.body,
+            type: updates.type,
+            isActive: updates.isActive !== undefined ? updates.isActive : undefined,
+            updatedBy: updates.updatedBy || 'admin'
+          },
+          create: {
+            key,
+            title: updates.title || 'Platform Notice',
+            body: updates.body || '',
+            type: updates.type || 'BANNER',
+            isActive: updates.isActive !== undefined ? updates.isActive : true,
+            updatedBy: updates.updatedBy || 'admin'
+          }
+        });
+        const mapped: ContentBannerRecord = {
+          id: row.id,
+          key: row.key,
+          title: row.title,
+          body: row.body,
+          type: row.type,
+          isActive: row.isActive,
+          updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt),
+          updatedBy: row.updatedBy
+        };
+        const idx = this.data.contentBanners.findIndex(x => x.key === key);
+        if (idx !== -1) this.data.contentBanners[idx] = mapped;
+        else this.data.contentBanners.push(mapped);
+        return mapped;
+      } catch (err: any) {
+        console.warn('[DB] updateContentBanner Prisma warning:', err?.message || err);
+      }
+    }
     let b = this.data.contentBanners.find(x => x.key === key);
     if (!b) {
       b = {
@@ -3873,6 +4182,30 @@ class ResilientDatabase {
   }
 
   async listAstrologers(): Promise<AstrologerRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const rows = await this.prisma.astrologer.findMany({
+          orderBy: { name: 'asc' }
+        });
+        if (rows && rows.length > 0) {
+          return rows.map((r: any) => ({
+            id: r.id,
+            name: r.name,
+            specialties: Array.isArray(r.specialties) ? r.specialties : JSON.parse(r.specialties || '[]'),
+            ratePerMinute: r.ratePerMinute,
+            rating: r.rating,
+            isVerified: r.isVerified,
+            isOnline: r.isOnline,
+            languages: Array.isArray(r.languages) ? r.languages : JSON.parse(r.languages || '[]'),
+            avatarUrl: r.avatarUrl,
+            bio: r.bio,
+            yearsExperience: r.yearsExperience
+          }));
+        }
+      } catch (err: any) {
+        console.warn('[DB] listAstrologers Prisma warning:', err?.message || err);
+      }
+    }
     return this.data.astrologers;
   }
 
@@ -4144,6 +4477,83 @@ class ResilientDatabase {
   // ==================== SYSTEM METRICS (FOR ADMIN) ====================
 
   async getPlatformMetrics() {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const [
+          totalUsers,
+          activeUsers,
+          suspendedUsers,
+          totalProfiles,
+          activeSessions,
+          activeSubscriptions,
+          openIncidents,
+          pendingPrivacyRequests,
+          astrologerCount,
+          depositAgg,
+          consultAgg,
+          failedReportsCount,
+          pendingRefundsCount
+        ] = await Promise.all([
+          this.prisma.user.count(),
+          this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+          this.prisma.user.count({ where: { status: 'SUSPENDED' } }),
+          this.prisma.birthProfile.count(),
+          this.prisma.userSession.count({ where: { expiresAt: { gt: new Date() } } }),
+          this.prisma.user.count({
+            where: {
+              OR: [
+                { subscriptionStatus: 'ACTIVE' },
+                { subscriptionTier: { in: ['PLUS', 'PREMIUM'] } }
+              ]
+            }
+          }),
+          this.prisma.platformIncident.count({ where: { status: { not: 'RESOLVED' } } }),
+          this.prisma.privacyRequest.count({ where: { status: 'PENDING' } }),
+          this.prisma.astrologer.count(),
+          this.prisma.walletLedger.aggregate({
+            _sum: { amount: true },
+            where: { entryType: 'WALLET_RECHARGE' }
+          }),
+          this.prisma.walletLedger.aggregate({
+            _sum: { amount: true },
+            where: { entryType: 'CONSULTATION_DEBIT' }
+          }),
+          this.prisma.savedReport.count({ where: { status: 'FAILED' } }),
+          this.prisma.paymentOrder.count({ where: { status: { in: ['REFUND_REQUESTED', 'PARTIALLY_REFUNDED'] } } })
+        ]);
+
+        const totalWalletDeposits = Number(depositAgg?._sum?.amount || 0);
+        const totalConsultationSpent = Math.abs(Number(consultAgg?._sum?.amount || 0));
+
+        return {
+          provenance: 'LIVE',
+          dataSource: 'PostgreSQL 16 (Supabase Managed Cloud)',
+          totalUsers,
+          activeUsers,
+          suspendedUsers,
+          totalWalletDeposits: Math.round(totalWalletDeposits * 100) / 100,
+          totalConsultationSpent: Math.round(totalConsultationSpent * 100) / 100,
+          totalProfiles,
+          activeSessions,
+          astrologerCount,
+          activeSubscriptions,
+          openIncidents,
+          pendingPrivacyRequests,
+          failedReportsCount,
+          pendingRefundsCount,
+          systemHealth: {
+            walletService: 'ONLINE',
+            kundliEngine: 'ONLINE',
+            database: 'POSTGRESQL_CONNECTED'
+          },
+          uptimeSeconds: Math.floor(process.uptime()),
+          lastVerifiedAt: new Date().toISOString()
+        };
+      } catch (err: any) {
+        console.warn('[DB] getPlatformMetrics Prisma query error, falling back to local:', err?.message || err);
+      }
+    }
+
     const totalUsers = this.data.users.length;
     const activeUsers = this.data.users.filter(u => u.status === AccountStatus.ACTIVE).length;
     const suspendedUsers = this.data.users.filter(u => u.status === AccountStatus.SUSPENDED).length;
@@ -4160,6 +4570,8 @@ class ResilientDatabase {
     const pendingPrivacyRequests = this.data.privacyRequests.filter(p => p.status === 'PENDING').length;
 
     return {
+      provenance: 'SYNTHETIC',
+      dataSource: 'Resilient Local Storage (InMemory/JSON)',
       totalUsers,
       activeUsers,
       suspendedUsers,
@@ -4171,12 +4583,15 @@ class ResilientDatabase {
       activeSubscriptions,
       openIncidents,
       pendingPrivacyRequests,
+      failedReportsCount: 0,
+      pendingRefundsCount: 0,
       systemHealth: {
         walletService: 'ONLINE',
         kundliEngine: 'ONLINE',
         database: this.isPostgresAvailable ? 'POSTGRESQL_CONNECTED' : 'RESILIENT_STORAGE_ONLINE'
       },
-      uptimeSeconds: Math.floor(process.uptime())
+      uptimeSeconds: Math.floor(process.uptime()),
+      lastVerifiedAt: new Date().toISOString()
     };
   }
 
@@ -4468,21 +4883,40 @@ class ResilientDatabase {
       updatedAt: user.updatedAt
     };
 
-    const birthProfiles = (this.data.birthProfiles || []).filter(p => p.userId === userId);
-    const savedReports = (this.data.savedReports || []).filter(r => r.userId === userId);
-    const paymentOrders = (this.data.paymentOrders || [])
+    let birthProfiles = (this.data.birthProfiles || []).filter(p => p.userId === userId);
+    let savedReports = (this.data.savedReports || []).filter(r => r.userId === userId);
+    let paymentOrders = (this.data.paymentOrders || [])
       .filter(o => o.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    const ledgerEntries = (this.data.walletLedgers || [])
+    let ledgerEntries = (this.data.walletLedgers || [])
       .filter(l => l.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     const entitlements = (this.data.entitlements || []).filter(e => e.userId === userId);
     const notes = (this.data.customerNotes || [])
       .filter(n => n.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    const consultations = (this.data.consultationSessions || [])
+    let consultations = (this.data.consultationSessions || [])
       .filter(c => c.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const [pgProfiles, pgReports, pgOrders, pgLedgers, pgConsultations] = await Promise.all([
+          this.prisma.birthProfile.findMany({ where: { userId } }),
+          this.prisma.savedReport.findMany({ where: { userId } }),
+          this.prisma.paymentOrder.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+          this.prisma.walletLedger.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+          this.prisma.consultationSession.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
+        ]);
+        if (pgProfiles && pgProfiles.length > 0) birthProfiles = pgProfiles.map((p: any) => this.mapPrismaProfile(p));
+        if (pgReports && pgReports.length > 0) savedReports = pgReports.map((r: any) => this.mapPrismaReport(r));
+        if (pgOrders && pgOrders.length > 0) paymentOrders = pgOrders.map((o: any) => this.mapPrismaPaymentOrder(o));
+        if (pgLedgers && pgLedgers.length > 0) ledgerEntries = pgLedgers;
+        if (pgConsultations && pgConsultations.length > 0) consultations = pgConsultations;
+      } catch (err: any) {
+        console.warn('[DB] getCustomer360 Prisma warning:', err?.message || err);
+      }
+    }
 
     const paidOrders = paymentOrders.filter(o => o.status === OrderStatus.PAID);
     const totalDepositedRupees = paidOrders
@@ -4762,6 +5196,83 @@ class ResilientDatabase {
   }
 
   async getBusinessAnalytics() {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const [paidOrders, allOrdersCount, users, promotionalLedgers] = await Promise.all([
+          this.prisma.paymentOrder.findMany({
+            where: { status: 'PAID' },
+            orderBy: { createdAt: 'desc' }
+          }),
+          this.prisma.paymentOrder.count(),
+          this.prisma.user.findMany({
+            select: { id: true, walletBalance: true, subscriptionTier: true, subscriptionStatus: true }
+          }),
+          this.prisma.walletLedger.findMany({
+            where: { entryType: 'PROMOTIONAL_CREDIT' }
+          })
+        ]);
+
+        const mappedPaidOrders = paidOrders.map((o: any) => this.mapPrismaPaymentOrder(o));
+        const totalGrossCollectionsPaise = mappedPaidOrders.reduce((sum: number, o: any) => sum + (o.amountPaise || Math.round(o.amount * 100)), 0);
+        const totalGrossCollectionsRupees = totalGrossCollectionsPaise / 100;
+
+        let rechargeCollectionsPaise = 0;
+        let subscriptionCollectionsPaise = 0;
+        let reportCollectionsPaise = 0;
+        let otherCollectionsPaise = 0;
+
+        for (const o of mappedPaidOrders) {
+          const p = o.amountPaise || Math.round(o.amount * 100);
+          const type = (o.productType || '').toUpperCase();
+          if (type === 'WALLET_RECHARGE') rechargeCollectionsPaise += p;
+          else if (type === 'SUBSCRIPTION') subscriptionCollectionsPaise += p;
+          else if (type === 'REPORT' || type.startsWith('REPORT_')) reportCollectionsPaise += p;
+          else rechargeCollectionsPaise += p;
+        }
+
+        const totalPromotionalCreditsGivenRupees = promotionalLedgers.reduce((sum: number, l: any) => sum + Number(l.amount || 0), 0);
+        const activeWalletLiabilitiesRupees = users.reduce((sum: number, u: any) => sum + Number(u.walletBalance || 0), 0);
+        const totalRegisteredUsers = users.length;
+        const activeSubscribers = users.filter((u: any) => u.subscriptionTier && u.subscriptionTier !== 'FREE' && u.subscriptionStatus === 'ACTIVE').length;
+
+        const recentPaidOrders = mappedPaidOrders
+          .slice(0, 10)
+          .map((o: any) => ({
+            id: o.id,
+            userId: o.userId,
+            amount: o.amount,
+            currency: o.currency || 'INR',
+            provider: o.provider,
+            providerOrderId: o.providerOrderId,
+            productType: o.productType || 'WALLET_RECHARGE',
+            createdAt: o.createdAt
+          }));
+
+        return {
+          provenance: 'LIVE',
+          dataSource: 'PostgreSQL 16 (Supabase Managed Cloud)',
+          summary: {
+            totalGrossCollectionsPaise,
+            totalGrossCollectionsRupees,
+            rechargeCollectionsRupees: rechargeCollectionsPaise / 100,
+            subscriptionCollectionsRupees: subscriptionCollectionsPaise / 100,
+            reportCollectionsRupees: reportCollectionsPaise / 100,
+            otherCollectionsRupees: otherCollectionsPaise / 100,
+            totalPromotionalCreditsGivenRupees,
+            activeWalletLiabilitiesRupees,
+            totalRegisteredUsers,
+            activeSubscribers,
+            paidOrdersCount: mappedPaidOrders.length,
+            totalOrdersCount: allOrdersCount
+          },
+          recentPaidOrders,
+          timestamp: new Date().toISOString()
+        };
+      } catch (err: any) {
+        console.warn('[DB] getBusinessAnalytics Prisma query warning:', err?.message || err);
+      }
+    }
+
     const paymentOrders = this.data.paymentOrders || [];
     const users = this.data.users || [];
     const ledgers = this.data.walletLedgers || [];
@@ -4806,6 +5317,8 @@ class ResilientDatabase {
       }));
 
     return {
+      provenance: 'SYNTHETIC',
+      dataSource: 'Resilient Local Storage (InMemory/JSON)',
       summary: {
         totalGrossCollectionsPaise,
         totalGrossCollectionsRupees,
@@ -4889,6 +5402,37 @@ class ResilientDatabase {
   }
 
   async listConsultationSessions(limit = 50): Promise<ConsultationSessionRecord[]> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const rows = await this.prisma.consultationSession.findMany({
+          take: limit,
+          orderBy: { createdAt: 'desc' }
+        });
+        if (rows && rows.length > 0) {
+          return rows.map((r: any) => ({
+            id: r.id,
+            userId: r.userId,
+            personaId: r.personaId,
+            astrologerName: r.astrologerName,
+            status: r.status,
+            isFreeMinuteGranted: r.isFreeMinuteGranted,
+            freeAllowanceSeconds: r.freeAllowanceSeconds,
+            startTime: r.startTime instanceof Date ? r.startTime.toISOString() : String(r.startTime),
+            freeDeadline: r.freeDeadline instanceof Date ? r.freeDeadline.toISOString() : String(r.freeDeadline),
+            freeConsumedAt: r.freeConsumedAt ? (r.freeConsumedAt instanceof Date ? r.freeConsumedAt.toISOString() : String(r.freeConsumedAt)) : null,
+            paidStartedAt: r.paidStartedAt ? (r.paidStartedAt instanceof Date ? r.paidStartedAt.toISOString() : String(r.paidStartedAt)) : null,
+            paidMinutesConsumed: r.paidMinutesConsumed,
+            ratePerMinute: r.ratePerMinute,
+            totalDeducted: r.totalDeducted,
+            lastActiveAt: r.lastActiveAt instanceof Date ? r.lastActiveAt.toISOString() : String(r.lastActiveAt),
+            createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
+            updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt)
+          }));
+        }
+      } catch (err: any) {
+        console.warn('[DB] listConsultationSessions Prisma warning:', err?.message || err);
+      }
+    }
     return [...(this.data.consultationSessions || [])]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit);
