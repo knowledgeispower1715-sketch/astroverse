@@ -323,4 +323,29 @@ def test_dasha_and_transits_api_endpoints():
     assert pds_data["count"] == 9
     assert len(pds_data["pratyantardashas"]) == 9
 
+def test_dasha_exact_subsecond_boundary_precision():
+    """Verify that Antardasha and PDS boundaries transition cleanly with exact subsecond timestamps."""
+    dob = datetime(1990, 5, 15, 10, 30, 0)
+    moon_deg = 120.5  # Ketu dasha at birth (Magha)
+
+    base = calculate_vimshottari_dasha(moon_deg, dob)
+    ad0 = base["timeline"][0]["antardashas"][0]
+    ad1 = base["timeline"][0]["antardashas"][1]
+
+    ad0_end_iso = ad0["end_iso"]
+    transition_dt = datetime.fromisoformat(ad0_end_iso)
+
+    # 1 second before transition
+    res_before = calculate_vimshottari_dasha(moon_deg, dob, ref_dt=transition_dt - timedelta(seconds=1))
+    assert res_before["active_now"]["antar_dasha"] == ad0["antar_dasha"]
+
+    # Exactly at transition (half-open [start, end) means it belongs to next period ad1)
+    res_at = calculate_vimshottari_dasha(moon_deg, dob, ref_dt=transition_dt)
+    assert res_at["active_now"]["antar_dasha"] == ad1["antar_dasha"]
+
+    # 1 second after transition
+    res_after = calculate_vimshottari_dasha(moon_deg, dob, ref_dt=transition_dt + timedelta(seconds=1))
+    assert res_after["active_now"]["antar_dasha"] == ad1["antar_dasha"]
+
+
 

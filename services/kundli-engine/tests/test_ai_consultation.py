@@ -648,10 +648,10 @@ def test_six_horizon_canonical_data_contract_and_preview_gating():
             assert all(items[idx]["is_preview_locked"] is True for idx in range(2, 7))
             assert all("teaser" in items[idx] for idx in range(2, 7))
         elif h == "monthly":
-            assert len(items) == 4
-            # Week 1 unlocked, Weeks 2–4 locked
+            assert len(items) in [4, 5]
+            # Week 1 unlocked, Weeks 2+ locked
             assert items[0]["is_preview_locked"] is False
-            assert all(items[idx]["is_preview_locked"] is True for idx in range(1, 4))
+            assert all(items[idx]["is_preview_locked"] is True for idx in range(1, len(items)))
         elif h == "yearly":
             assert len(items) == 12
             assert "quarters" in pred_locked["period_items"]

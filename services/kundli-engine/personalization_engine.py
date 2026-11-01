@@ -330,6 +330,12 @@ def evaluate_dasha_relationship(maha_lord: str, antar_lord: str, kundli: Dict[st
     - 6/8 (Shadashthaka) or 2/12 (Dwidwadasha): Challenging, sudden friction, health or expenditure discipline.
     - Conjunction (1/1): Focused intensity in the house occupied.
     """
+    if isinstance(kundli, dict):
+        if "d1_rashi_chart" in kundli and isinstance(kundli["d1_rashi_chart"], dict):
+            kundli = kundli["d1_rashi_chart"]
+        elif "kundli" in kundli and isinstance(kundli["kundli"], dict):
+            kundli = kundli["kundli"]
+
     planets = kundli.get("planets", {})
     maha_pos = planets.get(maha_lord, {}).get("house")
     antar_pos = planets.get(antar_lord, {}).get("house")
@@ -402,6 +408,12 @@ def analyze_personal_jyotish_evidence(
     5. Sade Sati, Kantaka Shani, and Chandrashtama diagnostics.
     6. Today's transiting Moon Nakshatra & Tara Bala.
     """
+    if isinstance(kundli, dict):
+        if "d1_rashi_chart" in kundli and isinstance(kundli["d1_rashi_chart"], dict):
+            kundli = kundli["d1_rashi_chart"]
+        elif "kundli" in kundli and isinstance(kundli["kundli"], dict):
+            kundli = kundli["kundli"]
+
     planets = kundli.get("planets", {})
     lagna_sign = kundli.get("lagna", {}).get("sign", "Aries")
     lagna_deg = kundli.get("lagna", {}).get("degree", 0.0)
@@ -585,23 +597,23 @@ def generate_hourly_guidance(
         summary = (
             f"आपकी {lagna_hi} लग्न कुंडली ({moon_hi} चंद्र राशि) में, यह सक्रिय {hora_hi} होरा ({hora_window}) आपके {hora_houses_hi} भाव को ऊर्जावान बना रही है। "
             f"वर्तमान {maha_hi} महादशा एवं {antar_hi} अंतर्दशा के संरक्षण में, {impact_hi} "
-            f"इस होरा का मध्यवर्ती समय महत्वपूर्ण कार्य निष्पादन हेतु सर्वोत्तम है। शांति व एकाग्रता हेतु {mantra['mantra']} का स्मरण करें।"
+            f"होरा संधिकाल को छोड़कर, संपूर्ण स्थिर होरा काल महत्वपूर्ण कार्य निष्पादन हेतु प्रभावी है। शांति व एकाग्रता हेतु {mantra['mantra']} का स्मरण करें।"
         )
         outlook = f"{hora_hi} होरा आपके {lagna_hi} लग्न के {hora_houses_hi} भाव के फल को सक्रिय करती है। यह कालखंड {tone_hi} है।"
         supportive = [
             f"आपके {hora_houses_hi} भाव से संबंधित कार्य ({HOUSE_DOMAINS_HI.get(hora_houses[0], {}).get('domains', 'मुख्य कार्य') if hora_houses else 'निजी कार्य'}) में सफलता।",
             f"{'सक्रिय दशा स्वामी होने से विशेष ग्रहीय सामंजस्य' if is_dasha_lord else f'लग्नेश {HINDI_PLANETS.get(lagnesha, lagnesha)} के साथ शास्त्रीय संरेखण'} से मानसिक स्थिरता।",
-            f"होरा के मध्य काल (~20-40 मिनट) में महत्वपूर्ण निर्णयों और वार्तालाप हेतु शुभ वायुमंडल।"
+            f"स्थिर मुख्य होरा काल (संधि सीमाओं के पश्चात) में आधिकारिक संवाद और निर्णय-प्रक्रिया हेतु अनुकूल वायुमंडल।"
         ]
         challenges = [
             f"{'उतावलेपन या प्रतिक्रियात्मक संवाद से बचें' if is_func_malefic else 'अनावश्यक विलंब या एकाग्रता के अभाव से बचें'}।",
-            "होरा संधिकाल (अंतिम 5 मिनट) में नए दीर्घकालिक समझौते करने से परहेज करें।",
+            "होरा संधिकाल (होरा आरंभ व समापन के सीमान्त क्षण) में नए अपरिवर्तनीय समझौते करने से परहेज करें।",
             "संवाद में पारदर्शिता रखें ताकि किसी प्रकार की गलतफहमी उत्पन्न न हो।"
         ]
         windows = [
             f"सक्रिय होरा काल: {hora_window} ({hora_hi} द्वारा शासित)",
-            f"सर्वोच्च एकाग्रता खिड़की: होरा के मध्य 30 मिनट ({tone_hi})",
-            f"सावधानी काल: स्थानीय दैनिक राहुकाल अवधि"
+            f"मुख्य क्रियान्वयन काल: स्थिर होरा काल (होरा संधि से मुक्त, {tone_hi})",
+            f"सावधानी काल: स्थानीय दैनिक राहुकाल अवधि व होरा संधिकाल"
         ]
         why = (
             f"आपकी जन्म लग्न {lagna_hi} है, जिसमें {hora_hi} {hora_houses_hi} भाव के स्वामी हैं। "
@@ -613,23 +625,23 @@ def generate_hourly_guidance(
         summary = (
             f"For your natal {lagna} Lagna (Moon in {moon_sign}), the active {hora_planet} Hora ({hora_window}) directly activates your natal House {hora_houses_str}. "
             f"Under your current {maha} Mahadasha ({antar} Antardasha), {impact_en} "
-            f"The central 30 minutes of this Hora interval offer prime focus for consequential actions. Center your composure with the {hora_planet} Beej Mantra."
+            f"The settled body of this Hora interval (excluding boundary sandhi cusps) provides prime focus for consequential actions. Center your composure with the {hora_planet} Beej Mantra."
         )
         outlook = f"{hora_planet} Hora activates your {lagna} Lagna's House {hora_houses_str} ({tone})."
         supportive = [
             f"Fortified throughput for initiatives governing House {hora_houses_str} ({HOUSE_DOMAINS.get(hora_houses[0], {}).get('domains', 'Core responsibilities') if hora_houses else 'Vocational focus'}).",
             f"{'Amplified cosmic resonance as active Dasha Lord' if is_dasha_lord else f'Alignment with your Lagna Lord {lagnesha}'} supports composed executive discernment.",
-            f"Peak mid-interval window (~20-40 mins) favors formal communication and execution."
+            f"The settled Hora body (outside transition cusps) favors formal communication, discernment, and execution."
         ]
         challenges = [
             f"{'Avoid contentious confrontation or rushed financial commitments' if is_func_malefic else 'Guard against passive distraction or delaying critical duties'}.",
-            "Avoid signing long-term irrevocable agreements during the final 5 minutes (sandhi transition).",
+            "Avoid executing irrevocable agreements during the Hora Sandhi (the opening and closing cusps of the interval).",
             "Maintain disciplined pacing to prevent mental fatigue."
         ]
         windows = [
             f"Active Hora Interval: {hora_window} (Governed by {hora_planet})",
-            f"Peak Action Window: Middle 30 minutes ({tone})",
-            f"Cautionary Period: Maintain heightened care during localized Rahu Kaal intervals"
+            f"Primary Action Window: Settled Hora Body ({tone}, avoiding sandhi cusps)",
+            f"Cautionary Period: Maintain heightened care during localized Rahu Kaal and Hora Sandhi transitions"
         ]
         why = (
             f"Your natal Ascendant is {lagna}, for which {hora_planet} commands House {hora_houses_str}. "
@@ -833,6 +845,7 @@ def generate_weekly_guidance(
 
     lagna_idx = SIGNS.index(lagna) if lagna in SIGNS else 0
     moon_idx = SIGNS.index(moon_sign) if moon_sign in SIGNS else 0
+    moon_idx = SIGNS.index(moon_sign) if moon_sign in SIGNS else 0
     b_nak_idx = NAKSHATRA_NAMES.index(moon_nak) if moon_nak in NAKSHATRA_NAMES else 0
 
     lagna_hi = HINDI_SIGNS.get(lagna, lagna)
@@ -1032,6 +1045,7 @@ def generate_monthly_guidance(
     antar_hi = HINDI_PLANETS.get(antar, antar)
 
     lagna_idx = SIGNS.index(lagna) if lagna in SIGNS else 0
+    moon_idx = SIGNS.index(moon_sign) if moon_sign in SIGNS else 0
 
     year = target_dt.year
     month = target_dt.month
@@ -1055,14 +1069,84 @@ def generate_monthly_guidance(
     h_domain = HOUSE_DOMAINS.get(sun_h_lagna, {})
     h_domain_hi = HOUSE_DOMAINS_HI.get(sun_h_lagna, {})
 
-    # Generate 4 calendar progression weeks covering the complete month (days 1 to num_days)
+    # Calculate outer planet positions at mid-month
+    res_jup, _ = swe.calc_ut(jd_mid, swe.JUPITER, swe.FLG_SIDEREAL)
+    jup_sign_idx = int(res_jup[0] / 30.0) % 12
+    jup_sign = SIGNS[jup_sign_idx]
+    jup_h_lagna = ((jup_sign_idx - lagna_idx + 12) % 12) + 1
+
+    res_sat, _ = swe.calc_ut(jd_mid, swe.SATURN, swe.FLG_SIDEREAL)
+    sat_sign_idx = int(res_sat[0] / 30.0) % 12
+    sat_sign = SIGNS[sat_sign_idx]
+    sat_h_lagna = ((sat_sign_idx - lagna_idx + 12) % 12) + 1
+
+    res_rahu, _ = swe.calc_ut(jd_mid, swe.MEAN_NODE, swe.FLG_SIDEREAL)
+    rahu_sign_idx = int(res_rahu[0] / 30.0) % 12
+    rahu_sign = SIGNS[rahu_sign_idx]
+    rahu_h_lagna = ((rahu_sign_idx - lagna_idx + 12) % 12) + 1
+
+    significant_transits = {
+        "sun_transit": {"sign": sun_sign, "house_from_lagna": sun_h_lagna},
+        "jupiter_transit": {"sign": jup_sign, "house_from_lagna": jup_h_lagna},
+        "saturn_transit": {"sign": sat_sign, "house_from_lagna": sat_h_lagna},
+        "rahu_transit": {"sign": rahu_sign, "house_from_lagna": rahu_h_lagna}
+    }
+
+    # Important dates calculation (favorable lunar days vs cautionary days like Chandrashtama)
+    favorable_dates = []
+    cautionary_dates = []
+    moon_idx = SIGNS.index(moon_sign) if moon_sign in SIGNS else 0
+
+    for d_num in range(1, num_days + 1):
+        cur_d = date(year, month, d_num)
+        jd_d = swe.julday(year, month, d_num, 12.0)
+        res_m, _ = swe.calc_ut(jd_d, swe.MOON, swe.FLG_SIDEREAL)
+        m_s_idx = int(res_m[0] / 30.0) % 12
+        h_from_moon = ((m_s_idx - moon_idx + 12) % 12) + 1
+
+        if h_from_moon == 8:
+            cautionary_dates.append({
+                "date": cur_d.isoformat(),
+                "day": d_num,
+                "reason": "Chandrashtama (Moon in 8th from natal Moon)" if not is_hi else "चंद्राष्टम (जन्म चंद्र से अष्टम चंद्र)"
+            })
+        elif h_from_moon in [1, 5, 9, 10, 11]:
+            if len(favorable_dates) < 5:
+                favorable_dates.append({
+                    "date": cur_d.isoformat(),
+                    "day": d_num,
+                    "reason": f"Chandra Bala active (House {h_from_moon})" if not is_hi else f"शुभ चंद्र बल (भाव {h_from_moon})"
+                })
+
+    important_dates = {
+        "favorable_dates": favorable_dates,
+        "cautionary_dates": cautionary_dates
+    }
+
+    dasha_context = {
+        "active_maha_lord": maha,
+        "active_antar_lord": antar,
+        "governing_houses": evidence.get("dasha", {}).get("maha_houses", [])
+    }
+
+    # Generate calendar progression weeks covering the complete month (4 weeks for 28 days, 5 weeks for 29-31 days)
     weeks = []
-    week_ranges = [
-        (1, 7),
-        (8, 14),
-        (15, 21),
-        (22, num_days)
-    ]
+    if num_days == 28:
+        week_ranges = [
+            (1, 7),
+            (8, 14),
+            (15, 21),
+            (22, 28)
+        ]
+    else:
+        week_ranges = [
+            (1, 7),
+            (8, 14),
+            (15, 21),
+            (22, 28),
+            (29, num_days)
+        ]
+
     for w_idx, (w_start_day, w_end_day) in enumerate(week_ranges, 1):
         w_start_date = date(year, month, w_start_day)
         w_end_date = date(year, month, w_end_day)
@@ -1079,9 +1163,12 @@ def generate_monthly_guidance(
             elif w_idx == 3:
                 w_theme = "पूंजी संचय एवं बजट संतुलन"
                 w_guidance = f"वित्तीय लेखा-जोखा, व्यय नियंत्रण और परिसंपत्ति समीक्षा हेतु अनुकूल कालखंड। अनावश्यक सट्टेबाजी से बचें।"
+            elif w_idx == 4 and num_days > 28:
+                w_theme = "प्रणालीगत समन्वय एवं टीम सामंजस्य"
+                w_guidance = f"संस्थागत कार्यप्रणाली, सहयोगियों के साथ समन्वय और माह के दौरान अर्जित लाभों के सुदृढ़ीकरण पर ध्यान दें।"
             else:
-                w_theme = "समीक्षा, पूर्णता एवं आत्म-मंथन"
-                w_guidance = f"लंबित कार्यों का समापन, पारिवारिक सौहार्द और आगामी माह हेतु आध्यात्मिक पुनर्नवा।"
+                w_theme = "समीक्षा, पूर्णता एवं संधिकाल पुनर्नवा"
+                w_guidance = f"लंबित कार्यों का समापन, पारिवारिक सौहार्द और आगामी माह के सौर चक्र हेतु ऊर्जा संचय।"
         else:
             w_title = f"Week {w_idx} ({month_name_en} {w_start_day}–{w_end_day})"
             if w_idx == 1:
@@ -1093,6 +1180,9 @@ def generate_monthly_guidance(
             elif w_idx == 3:
                 w_theme = "Capital Prudence & Balance Sheet Audit"
                 w_guidance = "Focus on financial consolidation, auditing recurring expenditures, and settling pending contractual terms."
+            elif w_idx == 4 and num_days > 28:
+                w_theme = "Systems Optimization, Team Harmony & Consolidating Wins"
+                w_guidance = "Focus on institutional workflows, team synchronicity, and solidifying gains achieved earlier in the month."
             else:
                 w_theme = "Completion, Review & Restorative Grounding"
                 w_guidance = "Conclude open milestones, nurture domestic harmony, and engage in reflective study before the new solar cycle."
@@ -1175,7 +1265,12 @@ def generate_monthly_guidance(
         "key_time_windows": windows,
         "why_this_applies": why,
         "practical_reflection": reflection,
-        "period_items": {"items": weeks}
+        "period_items": {
+            "items": weeks,
+            "significant_transits": significant_transits,
+            "important_dates": important_dates,
+            "dasha_context": dasha_context
+        }
     }
 
 
@@ -1201,6 +1296,7 @@ def generate_yearly_guidance(
     antar_hi = HINDI_PLANETS.get(antar, antar)
 
     lagna_idx = SIGNS.index(lagna) if lagna in SIGNS else 0
+    moon_idx = SIGNS.index(moon_sign) if moon_sign in SIGNS else 0
 
     month_names_en = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     month_names_hi = ["जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"]
@@ -1216,26 +1312,50 @@ def generate_yearly_guidance(
         m_name = month_names_hi[cal_month - 1] if is_hi else month_names_en[cal_month - 1]
         q_num = (m // 3) + 1
 
-        # Calculate solar position at mid-month
+        # Calculate solar and outer planet positions at mid-month
         jd_m = swe.julday(cal_year, cal_month, 15, 12.0)
         res_s, _ = swe.calc_ut(jd_m, swe.SUN, swe.FLG_SIDEREAL)
         s_sign_idx = int(res_s[0] / 30.0) % 12
         s_sign = SIGNS[s_sign_idx]
         s_sign_disp = HINDI_SIGNS.get(s_sign, s_sign) if is_hi else s_sign
-
         h_sun = ((s_sign_idx - lagna_idx + 12) % 12) + 1
         h_domain = HOUSE_DOMAINS.get(h_sun, {})
         h_domain_hi = HOUSE_DOMAINS_HI.get(h_sun, {})
+
+        # Jupiter transit calculation
+        res_j, _ = swe.calc_ut(jd_m, swe.JUPITER, swe.FLG_SIDEREAL)
+        j_sign_idx = int(res_j[0] / 30.0) % 12
+        j_sign = SIGNS[j_sign_idx]
+        j_sign_disp = HINDI_SIGNS.get(j_sign, j_sign) if is_hi else j_sign
+        h_jup = ((j_sign_idx - lagna_idx + 12) % 12) + 1
+        h_jup_moon = ((j_sign_idx - moon_idx + 12) % 12) + 1
+
+        # Saturn transit calculation
+        res_sat, _ = swe.calc_ut(jd_m, swe.SATURN, swe.FLG_SIDEREAL)
+        sat_sign_idx = int(res_sat[0] / 30.0) % 12
+        sat_sign = SIGNS[sat_sign_idx]
+        sat_sign_disp = HINDI_SIGNS.get(sat_sign, sat_sign) if is_hi else sat_sign
+        h_sat = ((sat_sign_idx - lagna_idx + 12) % 12) + 1
+        h_sat_moon = ((sat_sign_idx - moon_idx + 12) % 12) + 1
+
+        # Rahu/Ketu nodal transit
+        res_r, _ = swe.calc_ut(jd_m, swe.MEAN_NODE, swe.FLG_SIDEREAL)
+        r_sign_idx = int(res_r[0] / 30.0) % 12
+        r_sign = SIGNS[r_sign_idx]
+        r_sign_disp = HINDI_SIGNS.get(r_sign, r_sign) if is_hi else r_sign
+        h_rahu = ((r_sign_idx - lagna_idx + 12) % 12) + 1
 
         is_locked = (not is_unlocked) and (m >= 3)
         if is_hi:
             guidance_m = (
                 f"{m_name} {cal_year} में सूर्य का {s_sign_disp} राशि में गोचर आपके {h_sun}वें भाव ({h_domain_hi.get('domains', '')}) को सक्रिय करेगा। "
+                f"गोचर में गुरु {j_sign_disp} राशि (लग्न से {h_jup}वां भाव) व शनि {sat_sign_disp} राशि (लग्न से {h_sat}वां भाव) में भ्रमणशील हैं। "
                 f"सक्रिय {maha_hi} महादशा के सहयोग से, यह माह {'व्यावसायिक प्रतिष्ठा व नेतृत्व' if h_sun in [1, 10, 11] else ('वित्तीय सुदृढ़ता व संचय' if h_sun in [2, 5, 9] else 'दैनिक अनुशासन व आत्म-सुधार')} हेतु फलदायी रहेगा।"
             )
         else:
             guidance_m = (
                 f"In {m_name} {cal_year}, the Sun traverses sidereal {s_sign}, activating your natal House {h_sun} ({h_domain.get('domains', '')}). "
+                f"Concurrent transits position Jupiter in {j_sign} (House {h_jup} from Lagna) and Saturn in {sat_sign} (House {h_sat} from Lagna). "
                 f"Supported by your {maha} Dasha, focus centers upon {'vocational authority and executive milestones' if h_sun in [1, 10, 11] else ('treasury compounding and strategic intellect' if h_sun in [2, 5, 9] else 'operational efficiency and personal discipline')}."
             )
 
@@ -1245,6 +1365,9 @@ def generate_yearly_guidance(
             "quarter": f"Q{q_num}",
             "solar_sign": s_sign_disp,
             "activated_house": h_sun,
+            "jupiter_transit": {"sign": j_sign_disp, "house_from_lagna": h_jup, "house_from_moon": h_jup_moon},
+            "saturn_transit": {"sign": sat_sign_disp, "house_from_lagna": h_sat, "house_from_moon": h_sat_moon},
+            "rahu_transit": {"sign": r_sign_disp, "house_from_lagna": h_rahu},
             "guidance": guidance_m,
             "is_preview_locked": is_locked,
             "teaser": f"Month {m+1} ({m_name} {cal_year}): Sun transit House {h_sun}. Unlock with ₹49 pass." if is_locked else None
@@ -1326,6 +1449,37 @@ def generate_yearly_guidance(
         )
         reflection = f"Adopt an annual theme centered on consistency, ethical duty (Dharma), and mindful stewardship of time and wealth."
 
+    # Calculate overall major transits snapshot at start of year
+    jd_y0 = swe.julday(start_year, target_dt.month, 15, 12.0)
+    res_j0, _ = swe.calc_ut(jd_y0, swe.JUPITER, swe.FLG_SIDEREAL)
+    j0_sign = SIGNS[int(res_j0[0] / 30.0) % 12]
+    res_s0, _ = swe.calc_ut(jd_y0, swe.SATURN, swe.FLG_SIDEREAL)
+    s0_sign = SIGNS[int(res_s0[0] / 30.0) % 12]
+    res_r0, _ = swe.calc_ut(jd_y0, swe.MEAN_NODE, swe.FLG_SIDEREAL)
+    r0_sign = SIGNS[int(res_r0[0] / 30.0) % 12]
+    k0_sign = SIGNS[(SIGNS.index(r0_sign) + 6) % 12]
+
+    major_transits_overview = {
+        "jupiter": {
+            "sign": HINDI_SIGNS.get(j0_sign, j0_sign) if is_hi else j0_sign,
+            "house_from_lagna": ((SIGNS.index(j0_sign) - lagna_idx + 12) % 12) + 1,
+            "house_from_moon": ((SIGNS.index(j0_sign) - moon_idx + 12) % 12) + 1,
+            "role": "Expansive wisdom and auspicious aspects (5th, 7th, 9th)" if not is_hi else "शुभ दृष्टि (5, 7, 9 भाव) व ज्ञान-समृद्धि"
+        },
+        "saturn": {
+            "sign": HINDI_SIGNS.get(s0_sign, s0_sign) if is_hi else s0_sign,
+            "house_from_lagna": ((SIGNS.index(s0_sign) - lagna_idx + 12) % 12) + 1,
+            "house_from_moon": ((SIGNS.index(s0_sign) - moon_idx + 12) % 12) + 1,
+            "sade_sati_status": t.get("sade_sati", {}).get("phase", "Free")
+        },
+        "rahu_ketu_axis": {
+            "rahu_sign": HINDI_SIGNS.get(r0_sign, r0_sign) if is_hi else r0_sign,
+            "ketu_sign": HINDI_SIGNS.get(k0_sign, k0_sign) if is_hi else k0_sign,
+            "rahu_house_lagna": ((SIGNS.index(r0_sign) - lagna_idx + 12) % 12) + 1,
+            "ketu_house_lagna": ((SIGNS.index(k0_sign) - lagna_idx + 12) % 12) + 1
+        }
+    }
+
     return {
         "report_title": report_title,
         "executive_summary": summary,
@@ -1337,7 +1491,8 @@ def generate_yearly_guidance(
         "practical_reflection": reflection,
         "period_items": {
             "items": months,
-            "quarters": quarters_hi if is_hi else quarters_en
+            "quarters": quarters_hi if is_hi else quarters_en,
+            "major_transits_overview": major_transits_overview
         }
     }
 
@@ -1564,6 +1719,13 @@ def generate_canonical_personalized_prediction(
             is_unlocked=is_unlocked,
             preview_tier=preview_tier
         )
+
+    # Normalize wrapped chart representations
+    if isinstance(kundli, dict):
+        if "d1_rashi_chart" in kundli and isinstance(kundli["d1_rashi_chart"], dict):
+            kundli = kundli["d1_rashi_chart"]
+        elif "kundli" in kundli and isinstance(kundli["kundli"], dict):
+            kundli = kundli["kundli"]
 
     # 1. Layer 1: Astronomical Calculations
     lagna_sign = kundli.get("lagna", {}).get("sign", "Aries")

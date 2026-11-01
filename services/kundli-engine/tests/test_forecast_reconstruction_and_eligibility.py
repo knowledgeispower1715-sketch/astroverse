@@ -143,13 +143,16 @@ def test_personalized_chart_grounded_predictions_all_six_modes():
 
         elif h == "monthly":
             items = res["period_items"]["items"]
-            assert len(items) == 4, "Monthly forecast must have 4 week progression cards"
+            assert len(items) in [4, 5], "Monthly forecast must have 4 or 5 week progression cards"
+            assert "significant_transits" in res["period_items"], "Monthly forecast must include significant transits"
+            assert "important_dates" in res["period_items"], "Monthly forecast must include important dates"
 
         elif h == "yearly":
             items = res["period_items"]["items"]
             assert len(items) == 12, "Yearly forecast must have 12 monthly cards"
             quarters = res["period_items"].get("quarters", [])
             assert len(quarters) == 4, "Yearly forecast must have 4 strategic quarters"
+            assert "major_transits_overview" in res["period_items"], "Yearly forecast must include major transits overview"
 
         elif h == "mahadasha":
             items = res["period_items"]["items"]
@@ -172,13 +175,13 @@ def test_anti_repetition_across_forecast_periods():
     # All 7 daily guidance paragraphs must be unique
     assert len(set(guidances)) == 7, "Each day in the 7-day forecast must have unique guidance without copy-paste repetition"
 
-    # Test Monthly 4 weeks
+    # Test Monthly weeks
     payload["horizon"] = "monthly"
     req_m = PredictionRequest(**payload)
     res_m = generate_prediction_endpoint(req_m)
     m_items = res_m["period_items"]["items"]
     m_guidance = [w["focus_guidance"] for w in m_items]
-    assert len(set(m_guidance)) == 4, "Each week in the 4-week forecast must have distinct strategic guidance"
+    assert len(set(m_guidance)) == len(m_items), "Each week in the monthly forecast must have distinct strategic guidance"
 
     # Test Yearly 12 months
     payload["horizon"] = "yearly"

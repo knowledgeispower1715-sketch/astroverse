@@ -1598,12 +1598,20 @@ def generate_structured_prediction(
         is_unlocked=is_unlocked
     )
 
-    if kundli and isinstance(kundli, dict) and "lagna" in kundli and "planets" in kundli:
+    # Normalize wrapped chart representations
+    chart_data = kundli
+    if isinstance(kundli, dict):
+        if "d1_rashi_chart" in kundli and isinstance(kundli["d1_rashi_chart"], dict):
+            chart_data = kundli["d1_rashi_chart"]
+        elif "kundli" in kundli and isinstance(kundli["kundli"], dict):
+            chart_data = kundli["kundli"]
+
+    if chart_data and isinstance(chart_data, dict) and "lagna" in chart_data and "planets" in chart_data:
         from personalization_engine import generate_canonical_personalized_prediction
         return generate_canonical_personalized_prediction(
             horizon=horizon_lower,
             target_date_str=target_date_str,
-            kundli=kundli,
+            kundli=chart_data,
             dashas=dasha,
             doshas=doshas,
             active_hora_planet=hora_planet,

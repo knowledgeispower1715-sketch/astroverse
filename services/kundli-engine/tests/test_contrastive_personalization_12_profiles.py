@@ -321,3 +321,45 @@ def test_hindi_localization_contrastive_12_profiles():
         assert res["mode"] == "PERSONALIZED_CHART_GROUNDED"
         assert len(res["sections"]["key_time_windows"]) >= 2
         assert len(res["sections"]["supportive_themes"]) >= 2
+
+
+def test_contrastive_same_lagna_different_moon():
+    """Verify that two charts with identical Lagna but different Moon signs receive distinct lunar/Dasha predictions."""
+    p_a = PredictionRequest(horizon="daily", target_date="2026-11-01", dob="1995-06-15T10:30:00", lat=28.6139, lon=77.2090, timezone="Asia/Kolkata")
+    p_b = PredictionRequest(horizon="daily", target_date="2026-11-01", dob="1995-06-30T09:30:00", lat=28.6139, lon=77.2090, timezone="Asia/Kolkata")
+
+    res_a = generate_prediction_endpoint(p_a)
+    res_b = generate_prediction_endpoint(p_b)
+
+    assert res_a["chart_snapshot"]["lagna_sign"] == res_b["chart_snapshot"]["lagna_sign"] == "Leo"
+    assert res_a["chart_snapshot"]["moon_sign"] != res_b["chart_snapshot"]["moon_sign"]
+    assert res_a["chart_snapshot"]["moon_nakshatra"] != res_b["chart_snapshot"]["moon_nakshatra"]
+    assert res_a["sections"]["executive_summary"] != res_b["sections"]["executive_summary"]
+
+
+def test_contrastive_same_moon_different_lagna():
+    """Verify that two charts with identical Moon sign but different Lagnas receive distinct house-activation predictions."""
+    p_a = PredictionRequest(horizon="daily", target_date="2026-11-01", dob="1998-05-15T09:00:00", lat=28.6139, lon=77.2090, timezone="Asia/Kolkata")
+    p_b = PredictionRequest(horizon="daily", target_date="2026-11-01", dob="1998-05-15T21:00:00", lat=28.6139, lon=77.2090, timezone="Asia/Kolkata")
+
+    res_a = generate_prediction_endpoint(p_a)
+    res_b = generate_prediction_endpoint(p_b)
+
+    assert res_a["chart_snapshot"]["moon_sign"] == res_b["chart_snapshot"]["moon_sign"]
+    assert res_a["chart_snapshot"]["lagna_sign"] != res_b["chart_snapshot"]["lagna_sign"]
+    assert res_a["evidence_ledger"]["transits"]["t_moon_house_lagna"] != res_b["evidence_ledger"]["transits"]["t_moon_house_lagna"]
+
+
+def test_contrastive_same_chart_different_dates():
+    """Verify that the same chart evaluated on two distinct dates reflects updated planetary transits."""
+    p_date1 = PredictionRequest(horizon="daily", target_date="2026-11-01", dob="1995-06-15T10:30:00", lat=28.6139, lon=77.2090, timezone="Asia/Kolkata")
+    p_date2 = PredictionRequest(horizon="daily", target_date="2026-11-15", dob="1995-06-15T10:30:00", lat=28.6139, lon=77.2090, timezone="Asia/Kolkata")
+
+    res_1 = generate_prediction_endpoint(p_date1)
+    res_2 = generate_prediction_endpoint(p_date2)
+
+    assert res_1["chart_snapshot"]["lagna_sign"] == res_2["chart_snapshot"]["lagna_sign"]
+    assert res_1["evidence_ledger"]["transits"]["t_moon_sign"] != res_2["evidence_ledger"]["transits"]["t_moon_sign"]
+    assert res_1["evidence_ledger"]["transits"]["t_moon_nakshatra"] != res_2["evidence_ledger"]["transits"]["t_moon_nakshatra"]
+    assert res_1["sections"]["executive_summary"] != res_2["sections"]["executive_summary"]
+

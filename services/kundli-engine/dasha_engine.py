@@ -94,7 +94,7 @@ def calculate_antardashas(
         is_active = False
         if end_dt <= ref_dt:
             status = "PAST"
-        elif curr <= ref_dt <= end_dt:
+        elif (curr <= ref_dt < end_dt) or (i == 8 and curr <= ref_dt <= end_dt):
             status = "CURRENT"
             is_active = True
 
@@ -160,7 +160,7 @@ def calculate_pratyantardashas(
         is_active = False
         if end_dt <= ref_dt:
             status = "PAST"
-        elif curr <= ref_dt <= end_dt:
+        elif (curr <= ref_dt < end_dt) or (i == 8 and curr <= ref_dt <= end_dt):
             status = "CURRENT"
             is_active = True
 
@@ -238,7 +238,7 @@ def calculate_vimshottari_dasha(
     first_is_active = False
     if birth_dasha_end <= ref_dt:
         first_status = "PAST"
-    elif nominal_birth_dasha_start <= ref_dt <= birth_dasha_end:
+    elif nominal_birth_dasha_start <= ref_dt < birth_dasha_end:
         first_status = "CURRENT"
         first_is_active = True
 
@@ -268,7 +268,7 @@ def calculate_vimshottari_dasha(
         is_active = False
         if d_end <= ref_dt:
             status = "PAST"
-        elif current_start <= ref_dt <= d_end:
+        elif (current_start <= ref_dt < d_end) or (i == 8 and current_start <= ref_dt <= d_end):
             status = "CURRENT"
             is_active = True
 
@@ -295,8 +295,8 @@ def calculate_vimshottari_dasha(
     out_of_range_status = None
 
     for m_idx, d in enumerate(dashas):
-        d_start = datetime.fromisoformat(d["start_date"])
-        d_end = datetime.fromisoformat(d["end_date"])
+        d_start = datetime.fromisoformat(d.get("start_iso", d["start_date"]))
+        d_end = datetime.fromisoformat(d.get("end_iso", d["end_date"]))
         is_last_m = (m_idx == len(dashas) - 1)
         # Use half-open interval [start, end) except closed on final boundary of 120-year cycle
         if (d_start <= ref_dt < d_end) or (is_last_m and d_start <= ref_dt <= d_end):
@@ -304,8 +304,8 @@ def calculate_vimshottari_dasha(
             next_maha_lord = dashas[(m_idx + 1) % len(dashas)]["maha_dasha"]
             ads = d.get("antardashas", [])
             for a_idx, ad in enumerate(ads):
-                ad_start = datetime.fromisoformat(ad["start_date"])
-                ad_end = datetime.fromisoformat(ad["end_date"])
+                ad_start = datetime.fromisoformat(ad.get("start_iso", ad["start_date"]))
+                ad_end = datetime.fromisoformat(ad.get("end_iso", ad["end_date"]))
                 is_last_a = (a_idx == len(ads) - 1)
                 if (ad_start <= ref_dt < ad_end) or (is_last_a and ad_start <= ref_dt <= ad_end):
                     active_antar = ad
@@ -319,7 +319,7 @@ def calculate_vimshottari_dasha(
 
     # Out-of-range detection (before birth or past 120-year lifespan)
     if not active_maha:
-        nominal_start_dt = datetime.fromisoformat(dashas[0]["start_date"])
+        nominal_start_dt = datetime.fromisoformat(dashas[0].get("start_iso", dashas[0]["start_date"]))
         if ref_dt < nominal_start_dt:
             out_of_range_status = "PRE_NATAL"
             active_maha = dashas[0]
@@ -334,8 +334,8 @@ def calculate_vimshottari_dasha(
             next_maha_lord = DASHA_LORDS[0]
 
     # Calculate exact progress percentages & day counts
-    m_start = datetime.fromisoformat(active_maha["start_date"])
-    m_end = datetime.fromisoformat(active_maha["end_date"])
+    m_start = datetime.fromisoformat(active_maha.get("start_iso", active_maha["start_date"]))
+    m_end = datetime.fromisoformat(active_maha.get("end_iso", active_maha["end_date"]))
     m_total_sec = max(1.0, (m_end - m_start).total_seconds())
     m_passed_sec = max(0.0, min(m_total_sec, (ref_dt - m_start).total_seconds()))
     maha_progress_pct = round((m_passed_sec / m_total_sec) * 100.0, 1)
@@ -343,8 +343,8 @@ def calculate_vimshottari_dasha(
     maha_days_elapsed = round(m_passed_sec / 86400.0, 1)
     maha_days_remaining = round(max(0.0, (m_end - ref_dt).total_seconds() / 86400.0), 1)
 
-    a_start = datetime.fromisoformat(active_antar["start_date"])
-    a_end = datetime.fromisoformat(active_antar["end_date"])
+    a_start = datetime.fromisoformat(active_antar.get("start_iso", active_antar["start_date"]))
+    a_end = datetime.fromisoformat(active_antar.get("end_iso", active_antar["end_date"]))
     a_total_sec = max(1.0, (a_end - a_start).total_seconds())
     a_passed_sec = max(0.0, min(a_total_sec, (ref_dt - a_start).total_seconds()))
     antar_progress_pct = round((a_passed_sec / a_total_sec) * 100.0, 1)
@@ -359,8 +359,8 @@ def calculate_vimshottari_dasha(
     active_pds = None
     next_pds_lord = None
     for p_idx, p in enumerate(active_pds_list):
-        p_start_dt = datetime.fromisoformat(p["start_date"])
-        p_end_dt = datetime.fromisoformat(p["end_date"])
+        p_start_dt = datetime.fromisoformat(p.get("start_iso", p["start_date"]))
+        p_end_dt = datetime.fromisoformat(p.get("end_iso", p["end_date"]))
         is_last_p = (p_idx == len(active_pds_list) - 1)
         if (p_start_dt <= ref_dt < p_end_dt) or (is_last_p and p_start_dt <= ref_dt <= p_end_dt):
             active_pds = p
@@ -376,8 +376,8 @@ def calculate_vimshottari_dasha(
         active_pds = active_pds_list[0]
         next_pds_lord = active_pds_list[1]["pratyantar_dasha"] if len(active_pds_list) > 1 else None
 
-    pds_start = datetime.fromisoformat(active_pds["start_date"]) if active_pds else a_start
-    pds_end = datetime.fromisoformat(active_pds["end_date"]) if active_pds else a_end
+    pds_start = datetime.fromisoformat(active_pds.get("start_iso", active_pds["start_date"])) if active_pds else a_start
+    pds_end = datetime.fromisoformat(active_pds.get("end_iso", active_pds["end_date"])) if active_pds else a_end
     p_total_sec = max(1.0, (pds_end - pds_start).total_seconds())
     p_passed_sec = max(0.0, min(p_total_sec, (ref_dt - pds_start).total_seconds()))
     pds_progress_pct = round((p_passed_sec / p_total_sec) * 100.0, 1)
