@@ -5214,6 +5214,16 @@ app.get('/api/admin/ai/usage', authenticate, requireAdmin(AdminPermission.VIEW_A
   });
 });
 
+app.get('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.VIEW_AI_USAGE), async (_req: AuthenticatedRequest, res: Response) => {
+  const metrics = DurableAiQuotaManager.getMetrics();
+  res.json({
+    success: true,
+    quotas: metrics.quotas,
+    tierBreakdown: metrics.tierBreakdown,
+    activeUsersToday: metrics.activeUsersToday
+  });
+});
+
 app.put('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.MANAGE_AI_QUOTAS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
   const { freeLimit, plusLimit, premiumLimit } = req.body;
   const updatedQuotas = DurableAiQuotaManager.updateQuotas(
@@ -5236,7 +5246,7 @@ app.put('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.MANAG
 // -----------------------------------------------------------------------------
 // MODULE 8: PAYMENTS & TRANSACTION RECONCILIATION
 // -----------------------------------------------------------------------------
-app.get('/api/admin/payments/transactions', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
+app.get(['/api/admin/payments/transactions', '/api/admin/payments/summary', '/api/admin/payments/orders'], authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const metrics = await db.getPlatformMetrics();
     let recentLedgers: any[] = (db as any).data?.walletLedgers?.slice(0, 50) || [];
@@ -5878,7 +5888,7 @@ app.post('/api/admin/payments/recover-order', adminSensitiveMutationsLimiter, au
 // -----------------------------------------------------------------------------
 // MODULE 10: CONTENT MANAGEMENT & BANNERS
 // -----------------------------------------------------------------------------
-app.get('/api/admin/content', authenticate, requireAdmin(AdminPermission.MANAGE_CONTENT), async (_req: AuthenticatedRequest, res: Response) => {
+app.get(['/api/admin/content', '/api/admin/content/banners'], authenticate, requireAdmin(AdminPermission.MANAGE_CONTENT), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const banners = await db.listContentBanners();
     res.json({ success: true, banners });

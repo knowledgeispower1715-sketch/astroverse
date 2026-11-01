@@ -480,8 +480,11 @@
             <label for="admin-login-mfa" style="display: block; font-size: 12px; font-weight: 700; color: #F5C45E; margin-bottom: 6px;">
               <i class="fa-solid fa-key"></i> Authenticator 6-Digit TOTP Code
             </label>
-            <input type="text" id="admin-login-mfa" maxlength="6" placeholder="123456" style="width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 10px; color: #FFFFFF; font-size: 16px; letter-spacing: 4px; text-align: center; font-family: monospace;">
-            <span style="display: block; font-size: 11px; color: #94A3B8; margin-top: 4px;">Enter the code from your authenticator app or an 8-character recovery code.</span>
+            <input type="text" id="admin-login-mfa" maxlength="16" placeholder="123456" style="width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 10px; color: #FFFFFF; font-size: 16px; letter-spacing: 4px; text-align: center; font-family: monospace;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
+              <span style="font-size: 11px; color: #94A3B8;">Enter 6-digit TOTP or backup recovery code</span>
+              <button type="button" onclick="handlePreviewMfaReset()" style="background: none; border: none; color: #F5C45E; font-size: 11px; text-decoration: underline; cursor: pointer; padding: 0;">Reset MFA (Preview)</button>
+            </div>
           </div>
 
           <button type="submit" id="btn-admin-login-submit" class="btn-gold-primary" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 700; justify-content: center; min-height: 44px; margin-top: 8px;">
@@ -605,7 +608,8 @@
           
           <div id="admin-session-pill" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; background: #0F172A; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px;">
             <i class="fa-solid fa-hourglass-half" style="color: #F5C45E;"></i>
-            <span>Auto-lock: <strong id="admin-session-countdown" style="color: #F8FAFC;">10:00</strong></span>
+            <span>Auto-lock: <strong id="admin-session-countdown" style="color: #F8FAFC;">60:00</strong></span>
+            <span id="admin-session-policy-badge" style="font-size: 9.5px; padding: 1px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-weight: 600;">QA: 60m</span>
             <button onclick="refreshAdminSessionCountdown()" style="background: none; border: none; color: #38BDF8; cursor: pointer; padding: 0 0 0 4px; font-size: 10.5px;" title="Refresh Session"><i class="fa-solid fa-rotate-right"></i></button>
           </div>
 
@@ -967,7 +971,7 @@
               </div>
               <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px;">
                 <div style="font-weight: 700; color: #7C3AED;">Premium Tier Daily Quota</div>
-                <div style="font-size: 20px; font-weight: 800; margin-top: 4px;">50 Queries / Day</div>
+                <div style="font-size: 20px; font-weight: 800; margin-top: 4px;">30 Queries / Day</div>
               </div>
             </div>
           </div>
@@ -2628,6 +2632,12 @@
     if (currentSessionToken) {
       headers['Authorization'] = 'Bearer ' + currentSessionToken;
     }
+    const assurance = (typeof sessionStorage !== 'undefined')
+      ? (sessionStorage.getItem('astro_admin_assurance') || sessionStorage.getItem('admin_mfa_token'))
+      : null;
+    if (assurance) {
+      headers['x-admin-assurance-token'] = assurance;
+    }
     return headers;
   }
 
@@ -2705,6 +2715,10 @@
     }
     if (typeof startAdminSessionCountdown === 'function') {
       startAdminSessionCountdown();
+    }
+    const anyActivePanel = document.querySelector('.admin-module-panel[style*="block"]') || document.querySelector('.admin-tool-panel[style*="block"]');
+    if (!anyActivePanel && typeof switchAdminModule === 'function') {
+      switchAdminModule(currentAdminActiveModule || 'overview', false);
     }
   }
 
@@ -4401,11 +4415,22 @@
             role: u.role,
             status: u.status
           };
+          if (data.sessionPolicy) {
+            adminSessionPolicy = data.sessionPolicy;
+            adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || 3600;
+            adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+          }
+          adminSessionStartTime = Date.now();
+          adminLastBackendRefresh = Date.now();
+
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('astro_admin_session_token', currentSessionToken);
             sessionStorage.setItem('astro_admin_user', JSON.stringify(currentUserSession));
             if (data.assuranceToken) {
               sessionStorage.setItem('astro_admin_assurance', data.assuranceToken);
+            } else {
+              sessionStorage.removeItem('astro_admin_assurance');
+              sessionStorage.removeItem('admin_mfa_token');
             }
           }
           // Remove legacy keys from localStorage to prevent cross-contamination with public customer portal
@@ -4446,6 +4471,63 @@
         }
       }
     }
+
+    async function handlePreviewMfaReset() {
+      const emailInput = document.getElementById('admin-login-email');
+      const pwdInput = document.getElementById('admin-login-password');
+      const email = emailInput?.value?.trim() || '';
+      const password = pwdInput?.value || '';
+      const errBox = document.getElementById('admin-login-error');
+
+      if (!email || !password) {
+        if (errBox) {
+          errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+          errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+          errBox.style.color = '#FCA5A5';
+          errBox.textContent = 'Please enter your administrator email and password above to reset MFA.';
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+
+      if (!confirm(`Reset Multi-Factor Authentication for ${email} in Preview/Development? You will be able to sign in immediately and re-enroll your authenticator app.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/admin-reset-mfa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const mfaContainer = document.getElementById('admin-mfa-container');
+          const mfaInput = document.getElementById('admin-login-mfa');
+          if (mfaContainer) mfaContainer.style.display = 'none';
+          if (mfaInput) mfaInput.value = '';
+          if (errBox) {
+            errBox.style.background = 'rgba(16, 185, 129, 0.15)';
+            errBox.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            errBox.style.color = '#6EE7B7';
+            errBox.textContent = 'MFA has been successfully reset! Click "Sign In to Admin Console" to continue.';
+            errBox.style.display = 'block';
+          }
+          showToast('MFA has been successfully reset. Please sign in.', 'success');
+        } else {
+          if (errBox) {
+            errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+            errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+            errBox.style.color = '#FCA5A5';
+            errBox.textContent = data.message || 'MFA reset failed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        showToast('Failed to reset MFA: ' + (e.message || e), 'error');
+      }
+    }
+    window.handlePreviewMfaReset = handlePreviewMfaReset;
 
     async function closeAdminAndSignOut() {
       const token = currentSessionToken || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_session_token') : null);
@@ -5368,8 +5450,14 @@
           const data = await res.json();
           target.innerHTML = (data.integrations || []).map(i => `
             <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;">
-              <strong>${escapeHtml(i.name)}</strong>
-              <div style="margin-top: 4px; font-weight: 700; color: ${i.status === 'HEALTHY' || i.status === 'CONNECTED' ? '#059669' : '#2563EB'};"><i class="fa-solid fa-circle-dot"></i> ${i.status}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong>${escapeHtml(i.name)}</strong>
+                <span style="font-size: 11px; color: #64748B;">${i.latencyMs !== null && i.latencyMs !== undefined ? `${i.latencyMs}ms` : ''}</span>
+              </div>
+              <div style="margin-top: 4px; font-weight: 700; color: ${['HEALTHY', 'CONNECTED', 'OPERATIONAL', 'PRODUCTION_READY', 'SANDBOX_READY'].includes(i.status) ? '#059669' : (String(i.status).includes('FAIL') || String(i.status).includes('UNAVAILABLE') ? '#DC2626' : '#2563EB')};">
+                <i class="fa-solid fa-circle-dot"></i> ${escapeHtml(i.status)}
+              </div>
+              ${i.details ? `<div style="font-size: 11.5px; color: #64748B; margin-top: 2px;">${escapeHtml(i.details)}</div>` : ''}
             </div>
           `).join('');
         } else {
@@ -6030,18 +6118,65 @@
       }
     }
 
-    // Auto-Lock Session Timer Countdown
-    let adminSessionRemainingSeconds = 600; // 10 minutes
+    // Auto-Lock Session Timer Countdown & Server-Authoritative Policy
+    let adminSessionPolicy = {
+      environment: 'preview',
+      idleTimeoutMinutes: 60,
+      idleTimeoutSeconds: 3600,
+      absoluteCapMinutes: 240,
+      absoluteCapSeconds: 14400,
+      slidingRenewalSupported: true
+    };
+    let adminSessionIdleLimitSeconds = 3600; // Default 60 min for Preview QA
+    let adminSessionRemainingSeconds = 3600;
+    let adminSessionStartTime = Date.now();
     let adminSessionTimerInterval = null;
+    let adminLastBackendRefresh = Date.now();
 
-    function refreshAdminSessionCountdown() {
-      adminSessionRemainingSeconds = 600;
+    async function fetchAdminSessionPolicy() {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/session/policy`);
+        if (res.ok) {
+          const policy = await res.json();
+          adminSessionPolicy = policy;
+          adminSessionIdleLimitSeconds = policy.idleTimeoutSeconds || 3600;
+          adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+          updateAdminSessionTimerDisplay();
+        }
+      } catch (err) {
+        console.warn('Admin session policy lookup failed, using preview defaults:', err);
+      }
+    }
+
+    async function refreshAdminSessionCountdown() {
+      if (currentSessionToken) {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/auth/admin-refresh`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.sessionPolicy) {
+              adminSessionPolicy = data.sessionPolicy;
+              adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || adminSessionIdleLimitSeconds;
+            }
+          }
+        } catch (_) {}
+      }
+      adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+      adminLastActivity = Date.now();
+      adminLastBackendRefresh = Date.now();
       updateAdminSessionTimerDisplay();
-      showToast('Administrative session renewed for 10 minutes.', 'info');
+      showToast(`Administrative session renewed (${Math.round(adminSessionIdleLimitSeconds / 60)} min inactivity window).`, 'info');
     }
 
     function updateAdminSessionTimerDisplay() {
       const el = document.getElementById('admin-session-countdown');
+      const badge = document.getElementById('admin-session-policy-badge');
+      if (badge && adminSessionPolicy) {
+        badge.textContent = adminSessionPolicy.environment === 'production' ? 'PROD: 10m' : `QA: ${Math.round(adminSessionIdleLimitSeconds / 60)}m`;
+      }
       if (!el) return;
       const m = Math.floor(adminSessionRemainingSeconds / 60);
       const s = adminSessionRemainingSeconds % 60;
@@ -6055,7 +6190,16 @@
 
     function startAdminSessionCountdown() {
       if (adminSessionTimerInterval) clearInterval(adminSessionTimerInterval);
+      updateAdminSessionTimerDisplay();
       adminSessionTimerInterval = setInterval(() => {
+        // Enforce absolute session cap
+        if (Date.now() - adminSessionStartTime > (adminSessionPolicy.absoluteCapSeconds || 14400) * 1000) {
+          clearInterval(adminSessionTimerInterval);
+          showToast('Maximum session duration reached. Signing out...', 'warning');
+          closeAdminAndSignOut();
+          return;
+        }
+
         if (adminSessionRemainingSeconds > 0) {
           adminSessionRemainingSeconds--;
           updateAdminSessionTimerDisplay();
@@ -6142,7 +6286,9 @@
           }
         }
 
-        const res = await fetch(`${getAuthBase()}/api/admin/customers/${lookupId}/360`, { headers: getAuthHeaders() });
+        const c360Headers = getAuthHeaders();
+        c360Headers['x-admin-reason'] = 'Administrative Customer 360 Account Review';
+        const res = await fetch(`${getAuthBase()}/api/admin/customers/${lookupId}/360`, { headers: c360Headers });
         if (!res.ok) {
           container.innerHTML = `<div style="padding: 30px; text-align: center; color: #EF4444; background: #0E1626; border-radius: 10px;"><i class="fa-solid fa-circle-exclamation" style="font-size: 28px; margin-bottom: 8px;"></i><div>Customer not found (${escapeHtml(userId)})</div></div>`;
           return;
@@ -6626,16 +6772,31 @@
   let adminLastActivity = Date.now();
   function resetAdminActivity() {
     adminLastActivity = Date.now();
+    adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+    // Debounced silent background session renewal every 5 minutes while user is active
+    if (currentSessionToken && (Date.now() - adminLastBackendRefresh > 5 * 60 * 1000)) {
+      adminLastBackendRefresh = Date.now();
+      fetch(`${getAuthBase()}/api/auth/admin-refresh`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      }).then(r => r.ok ? r.json() : null).then(data => {
+        if (data && data.sessionPolicy) {
+          adminSessionPolicy = data.sessionPolicy;
+          adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || adminSessionIdleLimitSeconds;
+        }
+      }).catch(() => {});
+    }
   }
   function setupAdminInactivityMonitor() {
     ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
       window.addEventListener(evt, resetAdminActivity, { passive: true });
     });
 
-    // 10-minute inactivity check: closes session on idle
+    // Policy-driven inactivity monitor: closes session on genuine user idle
     setInterval(() => {
-      if (currentSessionToken && (Date.now() - adminLastActivity > 10 * 60 * 1000)) {
-        showToast('Admin session timed out due to 10 minutes of inactivity.', 'warning');
+      const idleLimitMs = (adminSessionIdleLimitSeconds || 3600) * 1000;
+      if (currentSessionToken && (Date.now() - adminLastActivity > idleLimitMs)) {
+        showToast(`Admin session timed out after ${Math.round(idleLimitMs / 60000)} minutes of inactivity.`, 'warning');
         closeAdminAndSignOut();
       }
     }, 30000);
@@ -6651,6 +6812,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     checkGatewaySecurityStatus();
+    fetchAdminSessionPolicy();
 
     try {
       // Admin session strictly loaded from sessionStorage (cleared on tab/window close)

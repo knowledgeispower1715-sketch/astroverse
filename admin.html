@@ -2716,6 +2716,10 @@
     if (typeof startAdminSessionCountdown === 'function') {
       startAdminSessionCountdown();
     }
+    const anyActivePanel = document.querySelector('.admin-module-panel[style*="block"]') || document.querySelector('.admin-tool-panel[style*="block"]');
+    if (!anyActivePanel && typeof switchAdminModule === 'function') {
+      switchAdminModule(currentAdminActiveModule || 'overview', false);
+    }
   }
 
   function showAdminLogin() {
@@ -6282,7 +6286,9 @@
           }
         }
 
-        const res = await fetch(`${getAuthBase()}/api/admin/customers/${lookupId}/360`, { headers: getAuthHeaders() });
+        const c360Headers = getAuthHeaders();
+        c360Headers['x-admin-reason'] = 'Administrative Customer 360 Account Review';
+        const res = await fetch(`${getAuthBase()}/api/admin/customers/${lookupId}/360`, { headers: c360Headers });
         if (!res.ok) {
           container.innerHTML = `<div style="padding: 30px; text-align: center; color: #EF4444; background: #0E1626; border-radius: 10px;"><i class="fa-solid fa-circle-exclamation" style="font-size: 28px; margin-bottom: 8px;"></i><div>Customer not found (${escapeHtml(userId)})</div></div>`;
           return;
