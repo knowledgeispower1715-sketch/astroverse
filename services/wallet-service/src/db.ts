@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled } from './security/permissions';
+import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled, normalizeRole } from './security/permissions';
 import { bootstrapPostgresSchema, checkSchemaReadiness, inspectDatabaseRlsCatalog, APPLICATION_TABLES } from './schemaBootstrap';
 import { SubscriptionTier, BillingPeriod } from './monetization/catalog';
-export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled };
+export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled, normalizeRole };
 
 export enum AccountStatus {
   ACTIVE = 'ACTIVE',
@@ -119,7 +119,7 @@ export interface UserRecord {
   subscriptionTier?: 'FREE' | 'PLUS' | 'PREMIUM';
   subscriptionBillingPeriod?: 'MONTHLY' | 'ANNUAL' | null;
   subscriptionExpiresAt?: string | null;
-  subscriptionStatus?: 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'TRIAL' | 'NONE';
+  subscriptionStatus?: 'ACTIVE' | 'CANCELLED' | 'CANCELLED_RENEWAL' | 'EXPIRED' | 'TRIAL' | 'NONE';
   mfaEnabled?: boolean;
   mfaSecret?: string | null;
   mfaRecoveryCodes?: string[] | null;
@@ -1002,8 +1002,12 @@ class ResilientDatabase {
         }
         return null;
       } catch (err: any) {
-        console.error('[DB] findUserById Prisma error, falling back to resilient local store:', err?.message || err);
+        console.error('[DB] findUserById Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: findUserById failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: findUserById - Prisma client not connected');
     }
     return this.data.users.find(u => u.id === id) || null;
   }
@@ -1080,8 +1084,12 @@ class ResilientDatabase {
         }
         return null;
       } catch (err: any) {
-        console.error('[DB] findUserByIdentifier Prisma error, falling back to resilient local store:', err?.message || err);
+        console.error('[DB] findUserByIdentifier Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: findUserByIdentifier failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: findUserByIdentifier - Prisma client not connected');
     }
     const clean = identifier.trim().toLowerCase();
     return this.data.users.find(u => 
@@ -1104,8 +1112,12 @@ class ResilientDatabase {
         }
         return null;
       } catch (err: any) {
-        console.error('[DB] findUserByPhone Prisma error, falling back to resilient local store:', err?.message || err);
+        console.error('[DB] findUserByPhone Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: findUserByPhone failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: findUserByPhone - Prisma client not connected');
     }
     const digits = phone.replace(/[\s\-\(\)\+]/g, '');
     return this.data.users.find(u => u.phone && u.phone.replace(/[\s\-\(\)\+]/g, '') === digits) || null;
@@ -1157,8 +1169,12 @@ class ResilientDatabase {
         }
         return null;
       } catch (err: any) {
-        console.error('[DB] findUserByEmail Prisma error, falling back to resilient local store:', err?.message || err);
+        console.error('[DB] findUserByEmail Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: findUserByEmail failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: findUserByEmail - Prisma client not connected');
     }
     const clean = email.trim().toLowerCase();
     return this.data.users.find(u => u.email && u.email.toLowerCase() === clean) || null;
@@ -1219,8 +1235,12 @@ class ResilientDatabase {
         }
         return mapped;
       } catch (err: any) {
-        console.error('[DB] createUser Prisma error, falling back to resilient local store:', err?.message || err);
+        console.error('[DB] createUser Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: createUser failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: createUser - Prisma client not connected');
     }
 
     const now = new Date().toISOString();
@@ -1329,8 +1349,12 @@ class ResilientDatabase {
         if (idx !== -1) this.data.users[idx] = mapped;
         return mapped;
       } catch (err: any) {
-        console.error('[DB] updateUser Prisma error, falling back to resilient local store:', err?.message || err);
+        console.error('[DB] updateUser Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: updateUser failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: updateUser - Prisma client not connected');
     }
 
     const idx = this.data.users.findIndex(u => u.id === id);
@@ -1359,8 +1383,11 @@ class ResilientDatabase {
         return true;
       } catch (err: any) {
         console.error('[DB] deleteUser Prisma error:', err?.message || err);
-        return false;
+        throw new Error('DATABASE_MUTATION_FAILED: deleteUser failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: deleteUser - Prisma client not connected');
     }
 
     const idx = this.data.users.findIndex(u => u.id === id);
@@ -1431,7 +1458,11 @@ class ResilientDatabase {
         return { users: rows.map((r: any) => this.mapPrismaUser(r)), total, page, limit, totalPages };
       } catch (err: any) {
         console.error('[DB] listUsers Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listUsers failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listUsers - Prisma client not connected');
     }
 
     let result = [...this.data.users];
@@ -1484,13 +1515,29 @@ class ResilientDatabase {
     totalAccounts: number;
     activeAccounts: number;
     suspendedAccounts: number;
+    deactivatedAccounts: number;
+    verifiedAccounts: number;
     unverifiedAccounts: number;
+    mfaEnabledAccounts: number;
     adminCount: number;
+    activeAdminCount: number;
+    historicallyPayingCount: number;
     payingCustomersCount: number;
+    currentlyPaidSubscribersCount: number;
+    paidSubscribersCount: number;
+    complimentarySubscribersCount: number;
     freeCustomersCount: number;
     activeSubscribersCount: number;
     expiredSubscribersCount: number;
     accountsAwaitingReview: number;
+    roleBreakdown: Record<string, {
+      total: number;
+      active: number;
+      suspended: number;
+      deactivated: number;
+      withMfa: number;
+      withoutMfa: number;
+    }>;
   }> {
     if (this.isPostgresAvailable && this.prisma) {
       try {
@@ -1499,18 +1546,28 @@ class ResilientDatabase {
           totalAccounts,
           activeAccounts,
           suspendedAccounts,
+          deactivatedAccounts,
+          verifiedAccounts,
           unverifiedAccounts,
+          mfaEnabledAccounts,
           adminCount,
+          activeAdminCount,
           freeCustomersCount,
           activeSubscribersCount,
           expiredSubscribersCount,
-          paidOrdersUsers
+          paidOrdersUsers,
+          complimentaryEntitlements,
+          allUsersForBreakdown
         ] = await Promise.all([
           this.prisma.user.count(),
           this.prisma.user.count({ where: { status: 'ACTIVE' } }),
           this.prisma.user.count({ where: { status: 'SUSPENDED' } }),
+          this.prisma.user.count({ where: { status: 'DEACTIVATED' } }),
+          this.prisma.user.count({ where: { emailVerified: true } }),
           this.prisma.user.count({ where: { emailVerified: false } }),
+          this.prisma.user.count({ where: { mfaEnabled: true } }),
           this.prisma.user.count({ where: { role: { not: 'USER' } } }),
+          this.prisma.user.count({ where: { role: { not: 'USER' }, status: 'ACTIVE' } }),
           this.prisma.user.count({ where: { OR: [{ subscriptionTier: 'FREE' }, { subscriptionTier: null }] } }),
           this.prisma.user.count({
             where: {
@@ -1529,27 +1586,76 @@ class ResilientDatabase {
             where: { status: 'PAID' },
             select: { userId: true },
             distinct: ['userId']
+          }),
+          this.prisma.entitlement.findMany({
+            where: {
+              featureKey: { in: ['PLUS', 'PREMIUM'] },
+              source: { in: ['ADMIN_GRANT', 'PROMOTIONAL_GRANT', 'SUPPORT_COMPENSATION'] },
+              isActive: true
+            },
+            select: { userId: true },
+            distinct: ['userId']
+          }),
+          this.prisma.user.findMany({
+            select: { role: true, status: true, mfaEnabled: true }
           })
         ]);
 
-        const payingCustomersCount = (paidOrdersUsers || []).length;
+        const complimentaryUserIds = new Set((complimentaryEntitlements || []).map((e: any) => e.userId));
+        const complimentarySubscribersCount = complimentaryUserIds.size;
+        const historicallyPayingCount = (paidOrdersUsers || []).length;
+        const payingCustomersCount = historicallyPayingCount;
+        const currentlyPaidSubscribersCount = Math.max(0, activeSubscribersCount - complimentarySubscribersCount);
+        const paidSubscribersCount = currentlyPaidSubscribersCount;
         const accountsAwaitingReview = suspendedAccounts + unverifiedAccounts;
+
+        const canonicalRoles = ['USER', 'OWNER', 'SECURITY_ADMIN', 'FINANCE_ADMIN', 'SUPPORT_ADMIN', 'CONTENT_EDITOR', 'ASTROLOGY_OPS_ADMIN', 'READONLY_ANALYST'];
+        const roleBreakdown: Record<string, any> = {};
+        for (const r of canonicalRoles) {
+          roleBreakdown[r] = { total: 0, active: 0, suspended: 0, deactivated: 0, withMfa: 0, withoutMfa: 0 };
+        }
+        for (const u of (allUsersForBreakdown || [])) {
+          const norm = normalizeRole(u.role);
+          if (!roleBreakdown[norm]) {
+            roleBreakdown[norm] = { total: 0, active: 0, suspended: 0, deactivated: 0, withMfa: 0, withoutMfa: 0 };
+          }
+          roleBreakdown[norm].total++;
+          if (u.status === 'ACTIVE') roleBreakdown[norm].active++;
+          else if (u.status === 'SUSPENDED') roleBreakdown[norm].suspended++;
+          else if (u.status === 'DEACTIVATED') roleBreakdown[norm].deactivated++;
+          if (u.mfaEnabled) roleBreakdown[norm].withMfa++;
+          else roleBreakdown[norm].withoutMfa++;
+        }
 
         return {
           totalAccounts,
           activeAccounts,
           suspendedAccounts,
+          deactivatedAccounts,
+          verifiedAccounts,
           unverifiedAccounts,
+          mfaEnabledAccounts,
           adminCount,
+          activeAdminCount,
+          historicallyPayingCount,
           payingCustomersCount,
+          currentlyPaidSubscribersCount,
+          paidSubscribersCount,
+          complimentarySubscribersCount,
           freeCustomersCount,
           activeSubscribersCount,
           expiredSubscribersCount,
-          accountsAwaitingReview
+          accountsAwaitingReview,
+          roleBreakdown
         };
       } catch (err: any) {
         console.error('[DB] getUserDirectorySummary Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: getUserDirectorySummary failed - ' + (err?.message || err));
       }
+    }
+
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: getUserDirectorySummary - Prisma client not connected');
     }
 
     const nowMs = Date.now();
@@ -1557,8 +1663,12 @@ class ResilientDatabase {
     const totalAccounts = users.length;
     const activeAccounts = users.filter(u => u.status === 'ACTIVE').length;
     const suspendedAccounts = users.filter(u => u.status === 'SUSPENDED').length;
+    const deactivatedAccounts = users.filter(u => u.status === 'DEACTIVATED').length;
+    const verifiedAccounts = users.filter(u => u.emailVerified).length;
     const unverifiedAccounts = users.filter(u => !u.emailVerified).length;
+    const mfaEnabledAccounts = users.filter(u => u.mfaEnabled).length;
     const adminCount = users.filter(u => u.role !== 'USER').length;
+    const activeAdminCount = users.filter(u => u.role !== 'USER' && u.status === 'ACTIVE').length;
     const freeCustomersCount = users.filter(u => !u.subscriptionTier || u.subscriptionTier === 'FREE').length;
     const activeSubscribersCount = users.filter(u => {
       const isPaidTier = u.subscriptionTier === 'PLUS' || u.subscriptionTier === 'PREMIUM';
@@ -1573,20 +1683,56 @@ class ResilientDatabase {
       return isPaidTier && (isStatusExpired || hasExpiredDate);
     }).length;
     const paidUserIds = new Set((this.data.paymentOrders || []).filter(o => o.status === OrderStatus.PAID).map(o => o.userId));
-    const payingCustomersCount = paidUserIds.size;
+    const historicallyPayingCount = paidUserIds.size;
+    const payingCustomersCount = historicallyPayingCount;
+    const complimentaryEnts = (this.data.entitlements || []).filter(e => 
+      (e.featureKey === 'PLUS' || e.featureKey === 'PREMIUM') && 
+      e.isActive && 
+      ['ADMIN_GRANT', 'PROMOTIONAL_GRANT', 'SUPPORT_COMPENSATION'].includes(e.source)
+    );
+    const complimentarySubscribersCount = new Set(complimentaryEnts.map(e => e.userId)).size;
+    const currentlyPaidSubscribersCount = Math.max(0, activeSubscribersCount - complimentarySubscribersCount);
+    const paidSubscribersCount = currentlyPaidSubscribersCount;
     const accountsAwaitingReview = suspendedAccounts + unverifiedAccounts;
+
+    const canonicalRoles = ['USER', 'OWNER', 'SECURITY_ADMIN', 'FINANCE_ADMIN', 'SUPPORT_ADMIN', 'CONTENT_EDITOR', 'ASTROLOGY_OPS_ADMIN', 'READONLY_ANALYST'];
+    const roleBreakdown: Record<string, any> = {};
+    for (const r of canonicalRoles) {
+      roleBreakdown[r] = { total: 0, active: 0, suspended: 0, deactivated: 0, withMfa: 0, withoutMfa: 0 };
+    }
+    for (const u of users) {
+      const norm = normalizeRole(u.role);
+      if (!roleBreakdown[norm]) {
+        roleBreakdown[norm] = { total: 0, active: 0, suspended: 0, deactivated: 0, withMfa: 0, withoutMfa: 0 };
+      }
+      roleBreakdown[norm].total++;
+      if (u.status === 'ACTIVE') roleBreakdown[norm].active++;
+      else if (u.status === 'SUSPENDED') roleBreakdown[norm].suspended++;
+      else if (u.status === 'DEACTIVATED') roleBreakdown[norm].deactivated++;
+      if (u.mfaEnabled) roleBreakdown[norm].withMfa++;
+      else roleBreakdown[norm].withoutMfa++;
+    }
 
     return {
       totalAccounts,
       activeAccounts,
       suspendedAccounts,
+      deactivatedAccounts,
+      verifiedAccounts,
       unverifiedAccounts,
+      mfaEnabledAccounts,
       adminCount,
+      activeAdminCount,
+      historicallyPayingCount,
       payingCustomersCount,
+      currentlyPaidSubscribersCount,
+      paidSubscribersCount,
+      complimentarySubscribersCount,
       freeCustomersCount,
       activeSubscribersCount,
       expiredSubscribersCount,
-      accountsAwaitingReview
+      accountsAwaitingReview,
+      roleBreakdown
     };
   }
 
@@ -1598,7 +1744,11 @@ class ResilientDatabase {
         });
       } catch (err: any) {
         console.error('[DB] countActiveOwners Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: countActiveOwners failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: countActiveOwners - Prisma client not connected');
     }
     return (this.data.users || []).filter(
       u => (u.role === Role.OWNER || u.role === Role.SUPER_ADMIN) && u.status === AccountStatus.ACTIVE
@@ -1613,7 +1763,11 @@ class ResilientDatabase {
         });
       } catch (err: any) {
         console.error('[DB] countUserSessions Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: countUserSessions failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: countUserSessions - Prisma client not connected');
     }
     const now = Date.now();
     return (this.data.sessions || []).filter(
@@ -1648,8 +1802,12 @@ class ResilientDatabase {
         this.data.sessions.push(mapped);
         return mapped;
       } catch (err: any) {
-        console.error('[DB] createSession Prisma error, falling back to resilient local store:', err?.message || err);
+        console.error('[DB] createSession Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: createSession failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: createSession - Prisma client not connected');
     }
 
     const session: UserSessionRecord = {
@@ -1680,7 +1838,11 @@ class ResilientDatabase {
         return this.mapPrismaSession(s);
       } catch (err: any) {
         console.error('[DB] findSessionByTokenHash Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: findSessionByTokenHash failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: findSessionByTokenHash - Prisma client not connected');
     }
 
     const s = this.data.sessions.find(x => x.tokenHash === tokenHash);
@@ -1701,7 +1863,11 @@ class ResilientDatabase {
         });
       } catch (err: any) {
         console.error('[DB] updateSessionExpiresAt Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: updateSessionExpiresAt failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: updateSessionExpiresAt - Prisma client not connected');
     }
 
     const session = this.data.sessions.find(s => s.tokenHash === tokenHash);
@@ -1719,7 +1885,11 @@ class ResilientDatabase {
         await this.prisma.userSession.deleteMany({ where: { tokenHash } });
       } catch (err: any) {
         console.error('[DB] deleteSession Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: deleteSession failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: deleteSession - Prisma client not connected');
     }
 
     this.data.sessions = this.data.sessions.filter(s => s.tokenHash !== tokenHash);
@@ -1734,7 +1904,11 @@ class ResilientDatabase {
         await this.prisma.userSession.deleteMany({ where: { userId } });
       } catch (err: any) {
         console.error('[DB] deleteUserSessions Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: deleteUserSessions failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: deleteUserSessions - Prisma client not connected');
     }
 
     this.data.sessions = this.data.sessions.filter(s => s.userId !== userId);
@@ -1798,7 +1972,11 @@ class ResilientDatabase {
         return mapped;
       } catch (err: any) {
         console.error('[DB] recordAuditEvent Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: recordAuditEvent failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: recordAuditEvent - Prisma client not connected');
     }
 
     const record: AuditEventRecord = {
@@ -1884,8 +2062,12 @@ class ResilientDatabase {
 
         return { events, total, provenance: 'LIVE' };
       } catch (err: any) {
-        console.warn('[DB] listAuditEvents Prisma warning, falling back:', err?.message || err);
+        console.error('[DB] listAuditEvents Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listAuditEvents failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listAuditEvents - Prisma client not connected');
     }
 
     let filtered = [...this.data.auditEvents];
@@ -1942,8 +2124,12 @@ class ResilientDatabase {
           updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt)
         }));
       } catch (err: any) {
-        console.warn('[DB] listIncidents Prisma warning:', err?.message || err);
+        console.error('[DB] listIncidents Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listIncidents failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listIncidents - Prisma client not connected');
     }
     return [...this.data.incidents];
   }
@@ -1979,8 +2165,12 @@ class ResilientDatabase {
         this.data.incidents.unshift(mapped);
         return mapped;
       } catch (err: any) {
-        console.warn('[DB] createIncident Prisma warning:', err?.message || err);
+        console.error('[DB] createIncident Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: createIncident failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: createIncident - Prisma client not connected');
     }
     const record: IncidentRecord = {
       id: 'inc_' + crypto.randomBytes(6).toString('hex'),
@@ -2026,8 +2216,12 @@ class ResilientDatabase {
         if (idx !== -1) this.data.incidents[idx] = mapped;
         return mapped;
       } catch (err: any) {
-        console.warn('[DB] updateIncident Prisma warning:', err?.message || err);
+        console.error('[DB] updateIncident Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: updateIncident failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: updateIncident - Prisma client not connected');
     }
     const inc = this.data.incidents.find(i => i.id === id);
     if (!inc) return null;
@@ -2059,8 +2253,12 @@ class ResilientDatabase {
           updatedBy: r.updatedBy
         }));
       } catch (err: any) {
-        console.warn('[DB] listFeatureFlags Prisma warning:', err?.message || err);
+        console.error('[DB] listFeatureFlags Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listFeatureFlags failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listFeatureFlags - Prisma client not connected');
     }
     return [...this.data.featureFlags];
   }
@@ -2086,8 +2284,12 @@ class ResilientDatabase {
         else this.data.featureFlags.push(mapped);
         return mapped;
       } catch (err: any) {
-        console.warn('[DB] setFeatureFlag Prisma warning:', err?.message || err);
+        console.error('[DB] setFeatureFlag Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: setFeatureFlag failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: setFeatureFlag - Prisma client not connected');
     }
     let flag = this.data.featureFlags.find(f => f.key === key);
     if (!flag) {
@@ -2230,8 +2432,12 @@ class ResilientDatabase {
         this.data.privacyRequests.unshift(mapped);
         return mapped;
       } catch (err: any) {
-        console.warn('[DB] createPrivacyRequest Prisma warning:', err?.message || err);
+        console.error('[DB] createPrivacyRequest Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: createPrivacyRequest failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: createPrivacyRequest - Prisma client not connected');
     }
     const record: PrivacyRequestRecord = {
       id: 'prv_' + crypto.randomBytes(6).toString('hex'),
@@ -2347,8 +2553,12 @@ class ResilientDatabase {
           updatedBy: r.updatedBy
         }));
       } catch (err: any) {
-        console.warn('[DB] listContentBanners Prisma warning:', err?.message || err);
+        console.error('[DB] listContentBanners Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listContentBanners failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listContentBanners - Prisma client not connected');
     }
     return [...this.data.contentBanners];
   }
@@ -4359,12 +4569,77 @@ class ResilientDatabase {
     return user;
   }
 
-  async cancelSubscription(userId: string): Promise<UserRecord> {
+  async cancelSubscription(
+    userId: string,
+    cancelMode: 'CANCEL_RENEWAL' | 'IMMEDIATE_TERMINATION' = 'CANCEL_RENEWAL',
+    cancelledBy: string = 'system',
+    reason: string = 'Admin subscription cancellation'
+  ): Promise<UserRecord> {
     this.assertDurableStorage();
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
+    const isImmediate = cancelMode === 'IMMEDIATE_TERMINATION';
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const updatedPrismaUser = await this.prisma.$transaction(async (tx: any) => {
+          const u = await tx.user.update({
+            where: { id: userId },
+            data: {
+              subscriptionTier: isImmediate ? 'FREE' : user.subscriptionTier,
+              subscriptionStatus: 'CANCELLED',
+              subscriptionExpiresAt: isImmediate ? null : (user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt) : null),
+              updatedAt: new Date()
+            }
+          });
+
+          if (isImmediate) {
+            await tx.entitlement.updateMany({
+              where: { userId, featureKey: { in: ['PLUS', 'PREMIUM'] }, isActive: true },
+              data: { isActive: false }
+            });
+          }
+
+          await tx.auditEvent.create({
+            data: {
+              userId: cancelledBy,
+              action: isImmediate ? 'SUBSCRIPTION_TERMINATED_IMMEDIATELY' : 'SUBSCRIPTION_RENEWAL_CANCELLED',
+              targetType: 'USER',
+              targetId: userId,
+              metadata: { cancelMode, reason }
+            }
+          });
+
+          return u;
+        });
+
+        const mapped = this.mapPrismaUser(updatedPrismaUser);
+        const idx = this.data.users.findIndex(x => x.id === userId);
+        if (idx !== -1) this.data.users[idx] = mapped;
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] cancelSubscription Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: cancelSubscription failed - ' + (err?.message || err));
+      }
+    }
+
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: cancelSubscription - Prisma client not connected');
+    }
+
+    user.subscriptionTier = isImmediate ? 'FREE' : user.subscriptionTier;
     user.subscriptionStatus = 'CANCELLED';
+    if (isImmediate) {
+      user.subscriptionExpiresAt = null;
+      if (this.data.entitlements) {
+        this.data.entitlements.forEach(e => {
+          if (e.userId === userId && (e.featureKey === 'PLUS' || e.featureKey === 'PREMIUM')) {
+            e.isActive = false;
+          }
+        });
+      }
+    }
     user.updatedAt = new Date().toISOString();
     this.saveToFile();
     return user;
@@ -4397,8 +4672,12 @@ class ResilientDatabase {
         }
         return null;
       } catch (err: any) {
-        console.warn('[DB] findAstrologerById Prisma warning:', err?.message || err);
+        console.error('[DB] findAstrologerById Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: findAstrologerById failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: findAstrologerById - Prisma client not connected');
     }
     return this.data.astrologers.find(a => a.id === id) || null;
   }
@@ -4427,8 +4706,12 @@ class ResilientDatabase {
           updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt || new Date().toISOString())
         }));
       } catch (err: any) {
-        console.warn('[DB] listAstrologers Prisma warning:', err?.message || err);
+        console.error('[DB] listAstrologers Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listAstrologers failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listAstrologers - Prisma client not connected');
     }
     return this.data.astrologers;
   }
@@ -4792,8 +5075,12 @@ class ResilientDatabase {
           lastVerifiedAt: new Date().toISOString()
         };
       } catch (err: any) {
-        console.warn('[DB] getPlatformMetrics Prisma query error, falling back to local:', err?.message || err);
+        console.error('[DB] getPlatformMetrics Prisma query error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: getPlatformMetrics failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: getPlatformMetrics - Prisma client not connected');
     }
 
     const totalUsers = this.data.users.length;
@@ -5202,8 +5489,11 @@ class ResilientDatabase {
           createdAt: n.createdAt instanceof Date ? n.createdAt.toISOString() : String(n.createdAt)
         }));
       } catch (err: any) {
-        console.warn('[DB] getCustomer360 Prisma warning:', err?.message || err);
+        console.error('[DB] getCustomer360 Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: getCustomer360 failed - ' + (err?.message || err));
       }
+    } else if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: getCustomer360 - Prisma client not connected');
     } else {
       birthProfiles = (this.data.birthProfiles || []).filter(p => p.userId === userId);
       savedReports = (this.data.savedReports || []).filter(r => r.userId === userId);
@@ -5292,8 +5582,12 @@ class ResilientDatabase {
           }
         });
       } catch (err: any) {
-        console.warn('[DB] addCustomerNote Prisma error:', err?.message || err);
+        console.error('[DB] addCustomerNote Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: addCustomerNote failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: addCustomerNote - Prisma client not connected');
     }
 
     if (!this.data.customerNotes) this.data.customerNotes = [];
@@ -5329,8 +5623,12 @@ class ResilientDatabase {
           createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt)
         }));
       } catch (err: any) {
-        console.warn('[DB] listCustomerNotes Prisma error:', err?.message || err);
+        console.error('[DB] listCustomerNotes Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listCustomerNotes failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listCustomerNotes - Prisma client not connected');
     }
     return (this.data.customerNotes || [])
       .filter(n => n.userId === userId)
@@ -5344,13 +5642,16 @@ class ResilientDatabase {
     source: 'ADMIN_GRANT' | 'PROMOTIONAL_GRANT' | 'SUPPORT_COMPENSATION' | 'TRIAL_GRANT' | 'PAID_SUBSCRIPTION',
     grantedBy: string,
     reason: string,
-    metadata?: any
+    metadata?: any,
+    exactExpiresAt?: string | null
   ): Promise<EntitlementRecord> {
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
     const grantedAtDate = new Date();
-    const expiresAtDate = durationDays ? new Date(Date.now() + durationDays * 86400000) : null;
+    const expiresAtDate = exactExpiresAt !== undefined
+      ? (exactExpiresAt ? new Date(exactExpiresAt) : null)
+      : (durationDays ? new Date(Date.now() + durationDays * 86400000) : null);
     const grantedAt = grantedAtDate.toISOString();
     const expiresAt = expiresAtDate ? expiresAtDate.toISOString() : null;
 
@@ -5384,8 +5685,12 @@ class ResilientDatabase {
           }
         });
       } catch (err: any) {
-        console.warn('[DB] grantEntitlement Prisma error:', err?.message || err);
+        console.error('[DB] grantEntitlement Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: grantEntitlement failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: grantEntitlement - Prisma client not connected');
     }
 
     if (!this.data.entitlements) this.data.entitlements = [];
@@ -5453,8 +5758,12 @@ class ResilientDatabase {
           };
         }
       } catch (err: any) {
-        console.warn('[DB] revokeEntitlement Prisma error:', err?.message || err);
+        console.error('[DB] revokeEntitlement Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: revokeEntitlement failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: revokeEntitlement - Prisma client not connected');
     }
 
     if (!ent) {
@@ -5529,8 +5838,12 @@ class ResilientDatabase {
           metadata: r.metadata || {}
         }));
       } catch (err: any) {
-        console.warn('[DB] listEntitlements Prisma error:', err?.message || err);
+        console.error('[DB] listEntitlements Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listEntitlements failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listEntitlements - Prisma client not connected');
     }
 
     let result = [...(this.data.entitlements || [])];
@@ -5556,34 +5869,97 @@ class ResilientDatabase {
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
+    const expiresAtDate = (tier !== 'FREE' && durationDays) ? new Date(Date.now() + durationDays * 86400000) : null;
+    const expiresAtIso = expiresAtDate ? expiresAtDate.toISOString() : null;
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const entitlementId = 'ent_' + crypto.randomBytes(8).toString('hex');
+        const updatedPrismaUser = await this.prisma.$transaction(async (tx: any) => {
+          const u = await tx.user.update({
+            where: { id: userId },
+            data: {
+              subscriptionTier: tier,
+              subscriptionBillingPeriod: billingPeriod,
+              subscriptionStatus: tier === 'FREE' ? 'NONE' : 'ACTIVE',
+              subscriptionExpiresAt: expiresAtDate,
+              updatedAt: new Date()
+            }
+          });
+
+          if (tier !== 'FREE') {
+            await tx.entitlement.create({
+              data: {
+                id: entitlementId,
+                userId,
+                featureKey: tier,
+                source: grantSource,
+                grantedBy: assignedBy,
+                grantedAt: new Date(),
+                expiresAt: expiresAtDate,
+                reason,
+                isActive: true,
+                metadata: {}
+              }
+            });
+          } else {
+            await tx.entitlement.updateMany({
+              where: {
+                userId,
+                featureKey: { in: ['PLUS', 'PREMIUM'] },
+                isActive: true
+              },
+              data: { isActive: false }
+            });
+          }
+
+          await tx.auditEvent.create({
+            data: {
+              userId: assignedBy,
+              action: 'SUBSCRIPTION_ASSIGNED',
+              targetType: 'USER',
+              targetId: userId,
+              metadata: {
+                tier,
+                billingPeriod,
+                durationDays,
+                grantSource,
+                reason,
+                expiresAt: expiresAtIso
+              }
+            }
+          });
+
+          return u;
+        });
+
+        const mapped = this.mapPrismaUser(updatedPrismaUser);
+        const idx = this.data.users.findIndex(x => x.id === userId);
+        if (idx !== -1) this.data.users[idx] = mapped;
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] assignSubscriptionTier Prisma transaction error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: assignSubscriptionTier failed - ' + (err?.message || err));
+      }
+    }
+
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: assignSubscriptionTier - Prisma client not connected');
+    }
+
     const updates: Partial<UserRecord> = {
       subscriptionTier: tier,
       subscriptionBillingPeriod: billingPeriod,
       subscriptionStatus: tier === 'FREE' ? 'NONE' : 'ACTIVE',
-      subscriptionExpiresAt: durationDays ? new Date(Date.now() + durationDays * 86400000).toISOString() : null,
+      subscriptionExpiresAt: expiresAtIso,
       updatedAt: new Date().toISOString()
     };
 
     const updatedUser = await this.updateUser(user.id, updates);
 
     if (tier !== 'FREE') {
-      await this.grantEntitlement(userId, tier, durationDays, grantSource, assignedBy, reason);
+      await this.grantEntitlement(userId, tier, durationDays, grantSource, assignedBy, reason, {}, expiresAtIso);
     } else {
-      // Reverting to FREE: deactivate active subscription tier entitlements
-      if (this.isPostgresAvailable && this.prisma) {
-        try {
-          await this.prisma.entitlement.updateMany({
-            where: {
-              userId,
-              featureKey: { in: ['PLUS', 'PREMIUM'] },
-              isActive: true
-            },
-            data: { isActive: false }
-          });
-        } catch (e: any) {
-          console.warn('[DB] Deactivate tier entitlements warning:', e?.message || e);
-        }
-      }
       if (this.data.entitlements) {
         this.data.entitlements.forEach(e => {
           if (e.userId === userId && (e.featureKey === 'PLUS' || e.featureKey === 'PREMIUM')) {
@@ -5609,6 +5985,78 @@ class ResilientDatabase {
     const currentExpiry = user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).getTime() : Date.now();
     const baseTime = Math.max(Date.now(), currentExpiry);
     const newExpiresAt = new Date(baseTime + additionalDays * 86400000).toISOString();
+    const tier = user.subscriptionTier && user.subscriptionTier !== 'FREE' ? user.subscriptionTier : 'PLUS';
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const updatedPrismaUser = await this.prisma.$transaction(async (tx: any) => {
+          const u = await tx.user.update({
+            where: { id: userId },
+            data: {
+              subscriptionExpiresAt: new Date(newExpiresAt),
+              subscriptionStatus: 'ACTIVE',
+              updatedAt: new Date()
+            }
+          });
+
+          // Synchronize all active tier entitlements to use the EXACT same newExpiresAt!
+          const activeTierEnts = await tx.entitlement.findMany({
+            where: { userId, featureKey: tier, isActive: true }
+          });
+
+          if (activeTierEnts.length > 0) {
+            await tx.entitlement.updateMany({
+              where: { userId, featureKey: tier, isActive: true },
+              data: { expiresAt: new Date(newExpiresAt) }
+            });
+          } else {
+            await tx.entitlement.create({
+              data: {
+                id: 'ent_' + crypto.randomBytes(8).toString('hex'),
+                userId,
+                featureKey: tier,
+                source: 'ADMIN_GRANT',
+                grantedBy: extendedBy,
+                grantedAt: new Date(),
+                expiresAt: new Date(newExpiresAt),
+                reason,
+                isActive: true,
+                metadata: {}
+              }
+            });
+          }
+
+          await tx.auditEvent.create({
+            data: {
+              userId: extendedBy,
+              action: 'SUBSCRIPTION_EXTENDED',
+              targetType: 'USER',
+              targetId: userId,
+              metadata: {
+                additionalDays,
+                reason,
+                newExpiresAt,
+                tier
+              }
+            }
+          });
+
+          return u;
+        });
+
+        const mapped = this.mapPrismaUser(updatedPrismaUser);
+        const idx = this.data.users.findIndex(x => x.id === userId);
+        if (idx !== -1) this.data.users[idx] = mapped;
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] extendSubscription Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: extendSubscription failed - ' + (err?.message || err));
+      }
+    }
+
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: extendSubscription - Prisma client not connected');
+    }
 
     const updates: Partial<UserRecord> = {
       subscriptionExpiresAt: newExpiresAt,
@@ -5617,9 +6065,7 @@ class ResilientDatabase {
     };
 
     const updatedUser = await this.updateUser(user.id, updates);
-
-    const tier = user.subscriptionTier && user.subscriptionTier !== 'FREE' ? user.subscriptionTier : 'PLUS';
-    await this.grantEntitlement(userId, tier, additionalDays, 'ADMIN_GRANT', extendedBy, reason);
+    await this.grantEntitlement(userId, tier, additionalDays, 'ADMIN_GRANT', extendedBy, reason, {}, newExpiresAt);
 
     return updatedUser;
   }
@@ -5721,8 +6167,12 @@ class ResilientDatabase {
           timestamp: new Date().toISOString()
         };
       } catch (err: any) {
-        console.warn('[DB] getBusinessAnalytics Prisma query warning:', err?.message || err);
+        console.error('[DB] getBusinessAnalytics Prisma query error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: getBusinessAnalytics failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: getBusinessAnalytics - Prisma client not connected');
     }
 
     const paymentOrders = this.data.paymentOrders || [];
@@ -5814,8 +6264,12 @@ class ResilientDatabase {
           createdBy: r.createdBy
         }));
       } catch (err: any) {
-        console.warn('[DB] listPromotions Prisma error:', err?.message || err);
+        console.error('[DB] listPromotions Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listPromotions failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listPromotions - Prisma client not connected');
     }
     return [...(this.data.promotions || [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
@@ -5882,8 +6336,12 @@ class ResilientDatabase {
         });
       } catch (err: any) {
         if (err.message === 'PROMO_CODE_EXISTS') throw err;
-        console.warn('[DB] createPromotion Prisma error:', err?.message || err);
+        console.error('[DB] createPromotion Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: createPromotion failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: createPromotion - Prisma client not connected');
     }
 
     if (!this.data.promotions) this.data.promotions = [];
@@ -5922,8 +6380,12 @@ class ResilientDatabase {
           };
         }
       } catch (err: any) {
-        console.warn('[DB] togglePromotion Prisma error:', err?.message || err);
+        console.error('[DB] togglePromotion Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: togglePromotion failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: togglePromotion - Prisma client not connected');
     }
 
     if (!this.data.promotions) this.data.promotions = [];
@@ -5970,8 +6432,12 @@ class ResilientDatabase {
           };
         }
       } catch (err: any) {
-        console.warn('[DB] verifyAstrologer Prisma error:', err?.message || err);
+        console.error('[DB] verifyAstrologer Prisma error:', err?.message || err);
+        throw new Error('DATABASE_MUTATION_FAILED: verifyAstrologer failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: verifyAstrologer - Prisma client not connected');
     }
     const astro = this.data.astrologers.find(a => a.id === id);
     if (!astro) throw new Error('ASTROLOGER_NOT_FOUND');
@@ -6008,8 +6474,12 @@ class ResilientDatabase {
           updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt)
         }));
       } catch (err: any) {
-        console.warn('[DB] listConsultationSessions Prisma warning:', err?.message || err);
+        console.error('[DB] listConsultationSessions Prisma error:', err?.message || err);
+        throw new Error('DATABASE_QUERY_FAILED: listConsultationSessions failed - ' + (err?.message || err));
       }
+    }
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: listConsultationSessions - Prisma client not connected');
     }
     return [...(this.data.consultationSessions || [])]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())

@@ -44,6 +44,7 @@ export enum AdminPermission {
   // 2. User Lifecycle & Moderation
   VIEW_USERS = 'VIEW_USERS',
   MANAGE_USER_STATUS = 'MANAGE_USER_STATUS',
+  EXPORT_CUSTOMER_DATA = 'EXPORT_CUSTOMER_DATA',
 
   // 3. Administrative Roles & Permissions
   VIEW_ROLES = 'VIEW_ROLES',

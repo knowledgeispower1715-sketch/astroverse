@@ -985,7 +985,7 @@
                 <button class="btn-outline-secondary" style="font-size: 11px; padding: 5px 12px;" onclick="loadAdminUsersList(1)">
                   <i class="fa-solid fa-arrows-rotate"></i> Refresh
                 </button>
-                <button class="btn-outline-secondary" style="font-size: 11px; padding: 5px 12px; color: #0284C7; border-color: #BAE6FD;" onclick="exportAdminUsersCsv()">
+                <button class="btn-outline-secondary" style="font-size: 11px; padding: 5px 12px; color: #0284C7; border-color: #BAE6FD;" onclick="openAdminExportModal()">
                   <i class="fa-solid fa-file-csv"></i> Export CSV
                 </button>
               </div>
@@ -1017,8 +1017,16 @@
                 <div style="font-size: 18px; font-weight: 800; color: #A16207;" id="user-kpi-paying">-</div>
               </div>
               <div style="padding: 10px 12px; border: 1px solid #BAE6FD; border-radius: 8px; background: #F0F9FF;">
-                <div style="font-size: 11px; font-weight: 700; color: #075985;">Active Subscribers</div>
-                <div style="font-size: 18px; font-weight: 800; color: #0284C7;" id="user-kpi-activesubs">-</div>
+                <div style="font-size: 11px; font-weight: 700; color: #075985;">Paid Subscribers</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0284C7;" id="user-kpi-paidsubs">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #E0E7FF; border-radius: 8px; background: #EEF2FF;">
+                <div style="font-size: 11px; font-weight: 700; color: #3730A3;">Complimentary</div>
+                <div style="font-size: 18px; font-weight: 800; color: #4F46E5;" id="user-kpi-complimentary">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #FBCFE8; border-radius: 8px; background: #FDF2F8;">
+                <div style="font-size: 11px; font-weight: 700; color: #9D174D;">Awaiting Review</div>
+                <div style="font-size: 18px; font-weight: 800; color: #BE185D;" id="user-kpi-review">-</div>
               </div>
               <div style="padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;">
                 <div style="font-size: 11px; font-weight: 700; color: #64748B;">Expired Subs</div>
@@ -5339,8 +5347,10 @@
           if (document.getElementById('user-kpi-suspended')) document.getElementById('user-kpi-suspended').textContent = summary.suspendedAccounts ?? '-';
           if (document.getElementById('user-kpi-unverified')) document.getElementById('user-kpi-unverified').textContent = summary.unverifiedAccounts ?? '-';
           if (document.getElementById('user-kpi-admins')) document.getElementById('user-kpi-admins').textContent = summary.adminCount ?? '-';
-          if (document.getElementById('user-kpi-paying')) document.getElementById('user-kpi-paying').textContent = summary.payingCustomersCount ?? '-';
-          if (document.getElementById('user-kpi-activesubs')) document.getElementById('user-kpi-activesubs').textContent = summary.activeSubscribersCount ?? '-';
+          if (document.getElementById('user-kpi-paying')) document.getElementById('user-kpi-paying').textContent = summary.historicallyPayingCount ?? summary.payingCustomersCount ?? '-';
+          if (document.getElementById('user-kpi-paidsubs')) document.getElementById('user-kpi-paidsubs').textContent = summary.currentlyPaidSubscribersCount ?? summary.paidSubscribersCount ?? summary.activeSubscribersCount ?? '-';
+          if (document.getElementById('user-kpi-complimentary')) document.getElementById('user-kpi-complimentary').textContent = summary.complimentarySubscribersCount ?? 0;
+          if (document.getElementById('user-kpi-review')) document.getElementById('user-kpi-review').textContent = summary.accountsAwaitingReview ?? '-';
           if (document.getElementById('user-kpi-expiredsubs')) document.getElementById('user-kpi-expiredsubs').textContent = summary.expiredSubscribersCount ?? '-';
 
           const quickInfo = document.getElementById('admin-users-quick-info');
@@ -5496,54 +5506,77 @@
       btnContainer.innerHTML = html;
     }
 
-    async function exportAdminUsersCsv() {
-      showToast('Preparing full account export CSV...', 'info');
+    function openAdminExportModal() {
+      const modal = document.getElementById('modal-admin-export-users');
+      if (modal) modal.style.display = 'flex';
+      const reasonInput = document.getElementById('export-reason-input');
+      if (reasonInput) reasonInput.value = '';
+      const mfaInput = document.getElementById('export-mfa-input');
+      if (mfaInput) mfaInput.value = '';
+    }
+
+    function closeAdminExportModal() {
+      const modal = document.getElementById('modal-admin-export-users');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function executeAdminUsersExport() {
+      const profile = document.getElementById('export-profile-select')?.value || 'BASIC_DIRECTORY';
+      const reason = document.getElementById('export-reason-input')?.value.trim() || '';
+      const mfaCode = document.getElementById('export-mfa-input')?.value.trim() || '';
+
+      if (!reason || reason.length < 5) {
+        showToast('Please provide an audit justification of at least 5 characters.', 'error');
+        return;
+      }
+
+      showToast('Generating signed CSV export on server...', 'info');
       try {
         const search = document.getElementById('admin-user-search')?.value.trim() || '';
         const role = document.getElementById('admin-filter-role')?.value || 'ALL';
         const status = document.getElementById('admin-filter-status')?.value || 'ALL';
+        const subscriptionTier = document.getElementById('admin-filter-tier')?.value || 'ALL';
 
-        const url = new URL(`${getAuthBase()}/api/admin/users`);
-        url.searchParams.append('page', '1');
-        url.searchParams.append('limit', '500');
-        if (search) url.searchParams.append('search', search);
-        if (role !== 'ALL') url.searchParams.append('role', role);
-        if (status !== 'ALL') url.searchParams.append('status', status);
+        const headers = getAuthHeaders();
+        if (mfaCode) {
+          headers['x-admin-mfa-code'] = mfaCode;
+        }
 
-        const res = await fetch(url.toString(), { headers: getAuthHeaders() });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const users = data.users || [];
-
-        const headers = ['ID', 'DisplayName', 'Email', 'Phone', 'EmailVerified', 'Role', 'Status', 'SubscriptionTier', 'SubscriptionStatus', 'SubscriptionExpiresAt', 'WalletBalanceINR', 'CreatedAt'];
-        const csvRows = [headers.join(',')];
-
-        users.forEach(u => {
-          const row = [
-            `"${u.id}"`,
-            `"${(u.displayName || '').replace(/"/g, '""')}"`,
-            `"${(u.email || '').replace(/"/g, '""')}"`,
-            `"${(u.phone || '').replace(/"/g, '""')}"`,
-            u.emailVerified ? 'TRUE' : 'FALSE',
-            `"${u.role}"`,
-            `"${u.status}"`,
-            `"${u.subscriptionTier || 'FREE'}"`,
-            `"${u.subscriptionStatus || 'NONE'}"`,
-            `"${u.subscriptionExpiresAt || ''}"`,
-            (u.walletBalance || 0).toFixed(2),
-            `"${u.createdAt}"`
-          ];
-          csvRows.push(row.join(','));
+        const res = await fetch(`${getAuthBase()}/api/admin/users/export`, {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            reason,
+            exportProfile: profile,
+            role,
+            status,
+            subscriptionTier,
+            search
+          })
         });
 
-        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || `HTTP ${res.status}`);
+        }
+
+        const checksum = res.headers.get('x-export-checksum') || 'Verified';
+        const rowCount = res.headers.get('x-export-row-count') || 'All';
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `astroverse_users_export_${Date.now()}.csv`;
+        link.href = url;
+        link.download = `astroverse_users_${profile.toLowerCase()}_${Date.now()}.csv`;
         link.click();
-        showToast(`Exported ${users.length} accounts to CSV`, 'success');
+        URL.revokeObjectURL(url);
+
+        closeAdminExportModal();
+        showToast(`Exported ${rowCount} records. Checksum: ${checksum.slice(0, 8)}...`, 'success');
       } catch (err) {
-        showToast('Failed to export CSV: ' + err.message, 'error');
+        showToast('Export failed: ' + err.message, 'error');
       }
     }
 

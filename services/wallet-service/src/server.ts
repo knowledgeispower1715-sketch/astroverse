@@ -4259,8 +4259,8 @@ app.get('/api/admin/users', authenticate, requireAdmin(AdminPermission.VIEW_USER
         subscriptionStatus: subscriptionStatus ? String(subscriptionStatus) : undefined,
         sortBy: sortBy ? String(sortBy) : undefined,
         sortOrder: (sortOrder === 'asc' ? 'asc' : 'desc') as any,
-        page: page ? Number(page) : 1,
-        limit: limit ? Number(limit) : 25
+        page: Math.max(1, page ? Number(page) : 1),
+        limit: Math.min(100, Math.max(1, limit ? Number(limit) : 25))
       }),
       db.getUserDirectorySummary()
     ]);
@@ -4331,6 +4331,149 @@ app.get('/api/admin/users/:id/details', authenticate, requireAdmin(AdminPermissi
     res.status(500).json({ error: err.message });
   }
 });
+
+app.post(
+  '/api/admin/users/export',
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.EXPORT_CUSTOMER_DATA),
+  requireAdminAssurance('users:export'),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { reason, exportProfile, role, status, subscriptionTier, search } = req.body || {};
+
+      if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+        return res.status(400).json({
+          error: 'REASON_REQUIRED',
+          message: 'A detailed justification reason (minimum 5 characters) is mandatory for customer data export.'
+        });
+      }
+
+      const profile = exportProfile || 'BASIC_DIRECTORY';
+      const validProfiles = ['BASIC_DIRECTORY', 'SUBSCRIPTIONS', 'PAYMENTS', 'WALLET_STATEMENTS', 'AUTHORIZED_FULL'];
+      if (!validProfiles.includes(profile)) {
+        return res.status(400).json({
+          error: 'INVALID_PROFILE',
+          message: `exportProfile must be one of: ${validProfiles.join(', ')}`
+        });
+      }
+
+      // Query users safely
+      const result = await db.listUsers({
+        search: search ? String(search) : undefined,
+        role: role && role !== 'ALL' ? String(role) : undefined,
+        status: status && status !== 'ALL' ? String(status) : undefined,
+        subscriptionTier: subscriptionTier && subscriptionTier !== 'ALL' ? String(subscriptionTier) : undefined,
+        limit: 1000
+      });
+
+      const users = result.users || [];
+
+      // CSV Formula injection sanitization:
+      // Prefix cells starting with =, +, -, @, \t, \r with single quote '
+      const sanitizeCell = (val: any): string => {
+        if (val === null || val === undefined) return '""';
+        let str = String(val).replace(/"/g, '""');
+        if (/^[=\+\-@\t\r]/.test(str)) {
+          str = "'" + str;
+        }
+        return `"${str}"`;
+      };
+
+      let headers: string[] = [];
+      let rowMapper: (u: any) => string[] = () => [];
+
+      if (profile === 'BASIC_DIRECTORY') {
+        headers = ['ID', 'DisplayName', 'Email', 'Phone', 'EmailVerified', 'Role', 'Status', 'CreatedAt'];
+        rowMapper = (u: any) => [
+          sanitizeCell(u.id),
+          sanitizeCell(u.displayName || ''),
+          sanitizeCell(u.email || ''),
+          sanitizeCell(u.phone || ''),
+          sanitizeCell(u.emailVerified ? 'TRUE' : 'FALSE'),
+          sanitizeCell(u.role),
+          sanitizeCell(u.status),
+          sanitizeCell(u.createdAt)
+        ];
+      } else if (profile === 'SUBSCRIPTIONS') {
+        headers = ['ID', 'DisplayName', 'Email', 'SubscriptionTier', 'SubscriptionStatus', 'SubscriptionBillingPeriod', 'SubscriptionExpiresAt'];
+        rowMapper = (u: any) => [
+          sanitizeCell(u.id),
+          sanitizeCell(u.displayName || ''),
+          sanitizeCell(u.email || ''),
+          sanitizeCell(u.subscriptionTier || 'FREE'),
+          sanitizeCell(u.subscriptionStatus || 'NONE'),
+          sanitizeCell(u.subscriptionBillingPeriod || 'N/A'),
+          sanitizeCell(u.subscriptionExpiresAt || '')
+        ];
+      } else if (profile === 'PAYMENTS' || profile === 'WALLET_STATEMENTS') {
+        headers = ['ID', 'DisplayName', 'Email', 'WalletBalanceINR', 'PaidWalletBalanceINR', 'PromotionalWalletBalanceINR', 'CreatedAt'];
+        rowMapper = (u: any) => [
+          sanitizeCell(u.id),
+          sanitizeCell(u.displayName || ''),
+          sanitizeCell(u.email || ''),
+          sanitizeCell((u.walletBalance || 0).toFixed(2)),
+          sanitizeCell((u.paidWalletBalance ?? u.walletBalance ?? 0).toFixed(2)),
+          sanitizeCell((u.promotionalWalletBalance || 0).toFixed(2)),
+          sanitizeCell(u.createdAt)
+        ];
+      } else {
+        // AUTHORIZED_FULL
+        headers = ['ID', 'DisplayName', 'Email', 'Phone', 'EmailVerified', 'Role', 'Status', 'SubscriptionTier', 'SubscriptionStatus', 'SubscriptionExpiresAt', 'WalletBalanceINR', 'CreatedAt'];
+        rowMapper = (u: any) => [
+          sanitizeCell(u.id),
+          sanitizeCell(u.displayName || ''),
+          sanitizeCell(u.email || ''),
+          sanitizeCell(u.phone || ''),
+          sanitizeCell(u.emailVerified ? 'TRUE' : 'FALSE'),
+          sanitizeCell(u.role),
+          sanitizeCell(u.status),
+          sanitizeCell(u.subscriptionTier || 'FREE'),
+          sanitizeCell(u.subscriptionStatus || 'NONE'),
+          sanitizeCell(u.subscriptionExpiresAt || ''),
+          sanitizeCell((u.walletBalance || 0).toFixed(2)),
+          sanitizeCell(u.createdAt)
+        ];
+      }
+
+      const csvLines = [headers.join(',')];
+      for (const u of users) {
+        csvLines.push(rowMapper(u).join(','));
+      }
+      const csvContent = csvLines.join('\r\n');
+      const checksum = crypto.createHash('sha256').update(csvContent).digest('hex');
+
+      // Immutable Audit Log
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: 'EXPORT_CUSTOMER_DATA',
+        targetType: 'SYSTEM',
+        targetId: 'EXPORT_USERS',
+        outcome: 'SUCCESS',
+        reason: reason.trim(),
+        metadata: {
+          exportProfile: profile,
+          rowCount: users.length,
+          checksum,
+          filters: { role, status, subscriptionTier, search }
+        },
+        ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
+      });
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="astroverse_${profile.toLowerCase()}_${Date.now()}.csv"`);
+      res.setHeader('X-Export-Checksum', checksum);
+      res.setHeader('X-Export-Row-Count', String(users.length));
+      return res.status(200).send(csvContent);
+    } catch (err: any) {
+      console.error('[EXPORT] Customer data export error:', err?.message || err);
+      return res.status(500).json({ error: 'EXPORT_FAILED', message: err?.message || 'Failed to export customer data' });
+    }
+  }
+);
+
 
 app.put('/api/admin/users/:id/status', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_USER_STATUS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
@@ -4470,12 +4613,16 @@ app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticat
     const targetUser = await db.findUserById(id);
     if (!targetUser) return res.status(404).json({ error: 'USER_NOT_FOUND' });
 
-    // 3. Resolve business justification
-    const effectiveReason = (reason && typeof reason === 'string' && reason.trim().length >= 5)
-      ? reason.trim()
-      : `Administrative role transitioned from ${targetUser.role} to ${role} by ${req.user!.email || req.user!.id}`;
+    // 3. Resolve business justification - mandatory >= 5 chars, no auto-fill!
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+      return res.status(400).json({
+        error: 'REASON_REQUIRED',
+        message: 'A detailed business reason of at least 5 characters is required for role modification.'
+      });
+    }
+    const effectiveReason = reason.trim();
 
-    // 4. Protect last active Owner from demotion
+    // 4. Protect last active Owner from demotion atomically
     const isTargetOwner = targetUser.role === Role.OWNER || targetUser.role === Role.SUPER_ADMIN;
     if (isTargetOwner && role !== Role.OWNER && role !== Role.SUPER_ADMIN) {
       const activeOwnersCount = await db.countActiveOwners();
@@ -4488,6 +4635,8 @@ app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticat
     }
 
     const updated = await db.updateUser(id, { role });
+    // Invalidate existing sessions for target user so fresh permissions apply immediately
+    await db.deleteUserSessions(id);
 
     await db.recordAuditEvent({
       userId: req.user!.id,
@@ -7712,16 +7861,49 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
       return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
     }
 
-    const validSources = ['ADMIN_COMPLIMENTARY', 'PROMOTIONAL', 'SUPPORT_COMPENSATION', 'VERIFIED_PAID_PURCHASE', 'MANUAL_MIGRATION'];
+    // Reject VERIFIED_PAID_PURCHASE from admin endpoint
+    if (grantSource === 'VERIFIED_PAID_PURCHASE') {
+      return res.status(400).json({
+        error: 'INVALID_GRANT_SOURCE',
+        message: 'VERIFIED_PAID_PURCHASE cannot be granted manually via admin endpoint. It requires verified payment gateway order settlement.'
+      });
+    }
+
+    const validSources = ['ADMIN_COMPLIMENTARY', 'PROMOTIONAL', 'SUPPORT_COMPENSATION', 'MANUAL_MIGRATION'];
     const chosenSource = validSources.includes(grantSource) ? grantSource : 'ADMIN_COMPLIMENTARY';
     const mappedEntitlementSource = chosenSource === 'PROMOTIONAL' 
       ? 'PROMOTIONAL_GRANT' 
       : (chosenSource === 'SUPPORT_COMPENSATION' 
           ? 'SUPPORT_COMPENSATION' 
-          : (chosenSource === 'VERIFIED_PAID_PURCHASE' ? 'PAID_SUBSCRIPTION' : 'ADMIN_GRANT'));
+          : 'ADMIN_GRANT');
 
-    const effectivePeriod = billingPeriod === 'ANNUAL' ? 'ANNUAL' : (tier === 'FREE' ? null : 'MONTHLY');
-    const effectiveDays = durationDays !== undefined && durationDays !== null ? Number(durationDays) : (tier === 'FREE' ? null : (effectivePeriod === 'ANNUAL' ? 365 : 30));
+    // Validate billingPeriod if tier != FREE
+    if (tier !== 'FREE' && billingPeriod && !['MONTHLY', 'ANNUAL'].includes(billingPeriod)) {
+      return res.status(400).json({
+        error: 'INVALID_BILLING_PERIOD',
+        message: 'billingPeriod must be MONTHLY or ANNUAL.'
+      });
+    }
+
+    // Strict duration validation: 15, 30, 60, 90, 180, 365
+    let effectiveDays: number | null = null;
+    if (tier !== 'FREE') {
+      const allowedDurations = [15, 30, 60, 90, 180, 365];
+      if (durationDays !== undefined && durationDays !== null) {
+        const d = Number(durationDays);
+        if (!Number.isInteger(d) || !allowedDurations.includes(d)) {
+          return res.status(400).json({
+            error: 'INVALID_DURATION',
+            message: 'Subscription duration must be one of: 15, 30, 60, 90, 180, or 365 days. 0 days or permanent grants are prohibited.'
+          });
+        }
+        effectiveDays = d;
+      } else {
+        effectiveDays = billingPeriod === 'ANNUAL' ? 365 : 30;
+      }
+    }
+
+    const effectivePeriod = tier === 'FREE' ? null : (billingPeriod === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY');
     const effectiveReason = reason.trim();
 
     const updatedUser = await db.assignSubscriptionTier(
@@ -7775,8 +7957,16 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
 app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:extend'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId, additionalDays, reason } = req.body;
-    if (!userId || !additionalDays || typeof additionalDays !== 'number' || additionalDays <= 0) {
-      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and positive additionalDays are required.' });
+    if (!userId) {
+      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId is required.' });
+    }
+    const allowedExtensions = [15, 30, 60, 90, 180, 365];
+    const d = Number(additionalDays);
+    if (!Number.isInteger(d) || !allowedExtensions.includes(d)) {
+      return res.status(400).json({
+        error: 'INVALID_DURATION',
+        message: 'Extension days must be one of: 15, 30, 60, 90, 180, or 365 days.'
+      });
     }
     if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
       return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
@@ -7826,44 +8016,31 @@ app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, auth
   }
 });
 
-// POST /api/admin/subscriptions/cancel (Cancel Active Subscription and revert to FREE)
+// POST /api/admin/subscriptions/cancel (Cancel Active Subscription - renewal vs immediate termination)
 app.post('/api/admin/subscriptions/cancel', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:cancel'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { userId, reason } = req.body;
+    const { userId, cancelMode, reason } = req.body;
     if (!userId) {
       return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId is required.' });
     }
     if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
       return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
     }
+    const mode = (cancelMode === 'CANCEL_RENEWAL') ? 'CANCEL_RENEWAL' : 'IMMEDIATE_TERMINATION';
     const effectiveReason = reason.trim();
 
-    const updatedUser = await db.assignSubscriptionTier(
+    const updatedUser = await db.cancelSubscription(
       userId,
-      'FREE',
-      null,
-      null,
+      mode,
       req.user!.email || req.user!.id,
-      `Cancellation: ${effectiveReason}`
+      effectiveReason
     );
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'SUBSCRIPTION_CANCELLED',
-      targetType: 'SUBSCRIPTION',
-      targetId: userId,
-      outcome: 'SUCCESS',
-      metadata: {
-        targetUserId: userId,
-        reason: effectiveReason
-      }
-    });
 
     return res.json({
       success: true,
-      message: `Subscription successfully cancelled for user ${userId}.`,
+      message: mode === 'CANCEL_RENEWAL'
+        ? `Subscription renewal cancelled. Paid access preserved until ${updatedUser.subscriptionExpiresAt || 'expiration'}.`
+        : `Subscription immediately terminated and reverted to FREE for user ${userId}.`,
       user: {
         id: updatedUser.id,
         subscriptionTier: updatedUser.subscriptionTier,

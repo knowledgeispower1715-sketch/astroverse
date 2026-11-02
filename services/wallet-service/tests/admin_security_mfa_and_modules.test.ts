@@ -321,7 +321,7 @@ describe('ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING', () => {
     // Attempting role change without assurance token must return 428 MFA_ASSURANCE_REQUIRED
     const blockedRes = await makeRequest(server, 'PUT', `/api/admin/users/${regularUserId}/role`, {
       Authorization: `Bearer ${ownerToken}`
-    }, { role: 'CONTENT_EDITOR' });
+    }, { role: 'CONTENT_EDITOR', reason: 'Role change without step up assurance test' });
     assert.strictEqual(blockedRes.status, 428);
     assert.strictEqual(blockedRes.body.error, 'MFA_ASSURANCE_REQUIRED');
 
@@ -330,7 +330,7 @@ describe('ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING', () => {
     const successRes = await makeRequest(server, 'PUT', `/api/admin/users/${regularUserId}/role`, {
       Authorization: `Bearer ${ownerToken}`,
       'x-admin-assurance-token': validAssurance
-    }, { role: 'CONTENT_EDITOR' });
+    }, { role: 'CONTENT_EDITOR', reason: 'Assignment of content editor role for blog moderation' });
     assert.strictEqual(successRes.status, 200);
     assert.strictEqual(successRes.body.status, 'ROLE_UPDATED');
 
@@ -338,7 +338,7 @@ describe('ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING', () => {
     await makeRequest(server, 'PUT', `/api/admin/users/${regularUserId}/role`, {
       Authorization: `Bearer ${ownerToken}`,
       'x-admin-assurance-token': validAssurance
-    }, { role: 'USER' });
+    }, { role: 'USER', reason: 'Resetting test account back to regular user' });
   });
 
   // ---------------------------------------------------------------------------
@@ -451,6 +451,14 @@ describe('ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING', () => {
   });
 
   it('Module 12: Support & Privacy Requests (GDPR / India DPDP Act User Data Export)', async () => {
+    // Re-create session for regular user since previous sessions were revoked upon role modification security invariant
+    regularUserToken = 'raw_reg_refreshed_' + Date.now();
+    await db.createSession({
+      userId: regularUserId,
+      tokenHash: crypto.createHash('sha256').update(regularUserToken).digest('hex'),
+      expiresAt: new Date(Date.now() + 86400000)
+    });
+
     const res = await makeRequest(server, 'GET', `/api/user/data-export`, {
       Authorization: `Bearer ${regularUserToken}`
     });
