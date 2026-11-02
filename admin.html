@@ -2801,11 +2801,12 @@
 
   function getAuthHeaders() {
     const headers = { 'Content-Type': 'application/json' };
-    if (currentSessionToken) {
-      headers['Authorization'] = 'Bearer ' + currentSessionToken;
+    const token = currentSessionToken || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_session_token') : null);
+    if (token) {
+      headers['Authorization'] = 'Bearer ' + token;
     }
     const assurance = (typeof sessionStorage !== 'undefined')
-      ? (sessionStorage.getItem('astro_admin_assurance') || sessionStorage.getItem('admin_mfa_token'))
+      ? (sessionStorage.getItem('astro_admin_assurance_token') || sessionStorage.getItem('astro_admin_assurance') || sessionStorage.getItem('admin_mfa_token'))
       : null;
     if (assurance) {
       headers['x-admin-assurance-token'] = assurance;
@@ -6363,7 +6364,7 @@
         if (typeof loadAdminIncidents === 'function') {
           loadAdminIncidents();
         }
-      } else if (q.startsWith('prv_') || q.startsWith('dsr_')) {
+      } else if (q.startsWith('prv_') || q.startsWith('priv_') || q.startsWith('dsr_') || q.startsWith('dpdp_')) {
         switchAdminModule('privacy');
         if (typeof loadAdminPrivacy === 'function') {
           loadAdminPrivacy();
@@ -6382,7 +6383,7 @@
         switchAdminModule('payments');
         const refundInput = document.getElementById('input-refund-order-id');
         if (refundInput) refundInput.value = raw;
-      } else if (q.startsWith('prm_')) {
+      } else if (q.startsWith('prm_') || q.startsWith('promo_')) {
         switchAdminModule('promotions');
         if (typeof loadAdminPromotions === 'function') {
           loadAdminPromotions();
@@ -6391,6 +6392,26 @@
         switchAdminModule('consultations');
         if (typeof loadAdminConsultations === 'function') {
           loadAdminConsultations();
+        }
+      } else if (q.startsWith('db_') || q === 'database') {
+        switchAdminModule('database');
+        if (typeof loadAdminDatabaseMonitor === 'function') {
+          loadAdminDatabaseMonitor();
+        }
+      } else if (q.startsWith('kpi_') || q === 'analytics') {
+        switchAdminModule('analytics');
+        if (typeof loadAdminAnalyticsOverview === 'function') {
+          loadAdminAnalyticsOverview();
+        }
+      } else if (q.startsWith('sec_')) {
+        switchAdminModule('security');
+        if (typeof loadAdminSecurityEvents === 'function') {
+          loadAdminSecurityEvents();
+        }
+      } else if (q.startsWith('flag_')) {
+        switchAdminModule('settings');
+        if (typeof loadAdminSettings === 'function') {
+          loadAdminSettings();
         }
       } else if (q.startsWith('usr_') || raw.includes('@')) {
         switchAdminModule('customer360');
