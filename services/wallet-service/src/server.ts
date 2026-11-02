@@ -4236,18 +4236,39 @@ app.get(['/api/admin/metrics', '/api/admin/overview'], authenticate, requireAdmi
 // MODULE 2: USER LIFECYCLE & MODERATION
 // -----------------------------------------------------------------------------
 app.get('/api/admin/users', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
-  const { search, role, status, page, limit } = req.query;
+  const {
+    search,
+    role,
+    status,
+    emailVerified,
+    subscriptionTier,
+    subscriptionStatus,
+    sortBy,
+    sortOrder,
+    page,
+    limit
+  } = req.query;
   try {
-    const result = await db.listUsers({
-      search: search ? String(search) : undefined,
-      role: role ? String(role) : undefined,
-      status: status ? String(status) : undefined,
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 20
-    });
+    const [result, summary] = await Promise.all([
+      db.listUsers({
+        search: search ? String(search) : undefined,
+        role: role ? String(role) : undefined,
+        status: status ? String(status) : undefined,
+        emailVerified: emailVerified !== undefined ? String(emailVerified) : undefined,
+        subscriptionTier: subscriptionTier ? String(subscriptionTier) : undefined,
+        subscriptionStatus: subscriptionStatus ? String(subscriptionStatus) : undefined,
+        sortBy: sortBy ? String(sortBy) : undefined,
+        sortOrder: (sortOrder === 'asc' ? 'asc' : 'desc') as any,
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 25
+      }),
+      db.getUserDirectorySummary()
+    ]);
     res.json({
+      success: true,
       ...result,
-      users: (result.users || []).map(sanitizeUser)
+      users: (result.users || []).map(sanitizeUser),
+      summary
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -4358,6 +4379,24 @@ app.put('/api/admin/users/:id/status', adminSensitiveMutationsLimiter, authentic
 // -----------------------------------------------------------------------------
 // MODULE 3: ADMINISTRATIVE ROLES & PERMISSION MANAGEMENT
 // -----------------------------------------------------------------------------
+app.get('/api/admin/roles', authenticate, requireAdmin(AdminPermission.VIEW_ROLES), (_req: AuthenticatedRequest, res: Response) => {
+  res.json({
+    success: true,
+    roles: [
+      Role.OWNER,
+      Role.SECURITY_ADMIN,
+      Role.SUPPORT_ADMIN,
+      Role.CONTENT_EDITOR,
+      Role.FINANCE_ADMIN,
+      Role.ASTROLOGY_OPS_ADMIN,
+      Role.READONLY_ANALYST,
+      Role.USER
+    ],
+    rolePermissions: ROLE_PERMISSIONS,
+    modules: ADMIN_MODULE_REGISTRY
+  });
+});
+
 app.get('/api/admin/roles/matrix', authenticate, requireAdmin(AdminPermission.VIEW_ROLES), (_req: AuthenticatedRequest, res: Response) => {
   res.json({
     success: true,
@@ -4379,11 +4418,14 @@ app.get('/api/admin/roles/matrix', authenticate, requireAdmin(AdminPermission.VI
 app.get('/api/admin/roles/admins', authenticate, requireAdmin(AdminPermission.VIEW_ROLES), async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const allUsers = await db.listUsers({ limit: 1000 });
-    const admins = allUsers.users.filter(u => isAnyAdmin(u.role)).map(u => {
+    const adminUsers = allUsers.users.filter(u => isAnyAdmin(u.role));
+    const admins = await Promise.all(adminUsers.map(async (u) => {
       let displayName = u.displayName || u.email || 'Administrator';
       if (displayName.toLowerCase().includes('aryan') || displayName.toLowerCase().includes('tiwari')) {
         displayName = u.role === Role.OWNER ? 'Platform Owner' : 'Platform Administrator';
       }
+      const activeSessionsCount = await db.countUserSessions(u.id);
+      const permissions = ROLE_PERMISSIONS[normalizeRole(u.role)] || [];
       return {
         id: u.id,
         displayName,
@@ -4393,10 +4435,12 @@ app.get('/api/admin/roles/admins', authenticate, requireAdmin(AdminPermission.VI
         canonicalRole: normalizeRole(u.role),
         status: u.status,
         mfaEnabled: Boolean(u.mfaEnabled),
+        permissionsCount: permissions.length,
+        activeSessionsCount,
         lastLoginAt: u.lastLoginAt,
         createdAt: u.createdAt
       };
-    });
+    }));
     res.json({ success: true, admins, total: admins.length });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -4411,7 +4455,12 @@ app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticat
     return res.status(400).json({ error: 'INVALID_ROLE', message: 'Invalid role specified. Must be one of the canonical 7 roles or USER.' });
   }
 
-  // Only Owner / Super Admin can assign roles
+  // 1. Self-role modification prevention
+  if (req.user!.id === id) {
+    return res.status(400).json({ error: 'CANNOT_MODIFY_OWN_ROLE', message: 'Administrators cannot alter their own assigned role.' });
+  }
+
+  // 2. Only Owner / Super Admin can assign roles
   const actorCanonical = normalizeRole(req.user!.role);
   if (actorCanonical !== Role.OWNER) {
     return res.status(403).json({ error: 'FORBIDDEN', message: 'Only Platform Owner can modify administrator roles.' });
@@ -4421,9 +4470,21 @@ app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticat
     const targetUser = await db.findUserById(id);
     if (!targetUser) return res.status(404).json({ error: 'USER_NOT_FOUND' });
 
-    // Target cannot be degraded if it's the root super admin
-    if (id === 'usr_super_admin_001' && role !== Role.SUPER_ADMIN && role !== Role.OWNER) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Root platform owner role cannot be downgraded.' });
+    // 3. Resolve business justification
+    const effectiveReason = (reason && typeof reason === 'string' && reason.trim().length >= 5)
+      ? reason.trim()
+      : `Administrative role transitioned from ${targetUser.role} to ${role} by ${req.user!.email || req.user!.id}`;
+
+    // 4. Protect last active Owner from demotion
+    const isTargetOwner = targetUser.role === Role.OWNER || targetUser.role === Role.SUPER_ADMIN;
+    if (isTargetOwner && role !== Role.OWNER && role !== Role.SUPER_ADMIN) {
+      const activeOwnersCount = await db.countActiveOwners();
+      if (activeOwnersCount <= 1) {
+        return res.status(403).json({
+          error: 'LAST_OWNER_PROTECTION',
+          message: 'The only active Platform Owner account cannot be downgraded or removed.'
+        });
+      }
     }
 
     const updated = await db.updateUser(id, { role });
@@ -4436,7 +4497,7 @@ app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticat
       targetType: 'USER',
       targetId: id,
       outcome: 'SUCCESS',
-      reason: reason || `Role transitioned from ${targetUser.role} to ${role}`,
+      reason: effectiveReason,
       metadata: { oldRole: targetUser.role, newRole: role }
     });
 
@@ -5429,7 +5490,8 @@ app.post('/api/admin/wallet/adjust-balance', adminSensitiveMutationsLimiter, aut
 // -----------------------------------------------------------------------------
 // MODULE 9: SUBSCRIPTION & REFUND MANAGEMENT
 // -----------------------------------------------------------------------------
-app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.VIEW_SUBSCRIPTIONS), async (_req: AuthenticatedRequest, res: Response) => {
+app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.VIEW_SUBSCRIPTIONS), async (req: AuthenticatedRequest, res: Response) => {
+  const { search, tier: filterTier, status: filterStatus, page, limit } = req.query;
   try {
     let users: any[] = [];
     if ((db as any).isPostgresAvailable && (db as any).prisma) {
@@ -5445,7 +5507,8 @@ app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.V
             subscriptionBillingPeriod: true,
             subscriptionExpiresAt: true,
             createdAt: true
-          }
+          },
+          orderBy: { createdAt: 'desc' }
         });
       } catch (pgErr: any) {
         console.warn('[ADMIN_SUBSCRIPTIONS] Prisma query fallback:', pgErr?.message);
@@ -5459,14 +5522,23 @@ app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.V
     let freeCount = 0;
     let plusCount = 0;
     let premiumCount = 0;
+    let expiredCount = 0;
+    let cancelledCount = 0;
     const activeSubscribersList: any[] = [];
+    const allSubscribersList: any[] = [];
 
     for (const u of users) {
       const tier = u.subscriptionTier || 'FREE';
       const status = u.subscriptionStatus || 'NONE';
       const expiresAt = u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).getTime() : null;
-      const isExpired = expiresAt !== null && expiresAt < now;
+      const isExpired = expiresAt !== null && expiresAt <= now;
       const isActivePaid = (tier === 'PLUS' || tier === 'PREMIUM') && (status === 'ACTIVE' || status === 'TRIAL') && !isExpired;
+
+      if (status === 'CANCELLED') {
+        cancelledCount++;
+      } else if (isExpired && tier !== 'FREE') {
+        expiredCount++;
+      }
 
       if (!isActivePaid) {
         freeCount++;
@@ -5491,7 +5563,43 @@ app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.V
           expiresAt: u.subscriptionExpiresAt
         });
       }
+
+      allSubscribersList.push({
+        userId: u.id,
+        displayName: u.displayName || 'Unnamed',
+        email: u.email || 'No email',
+        phone: u.phone,
+        tier,
+        status: isExpired && status === 'ACTIVE' ? 'EXPIRED' : status,
+        billingPeriod: u.subscriptionBillingPeriod || (tier === 'FREE' ? null : 'MONTHLY'),
+        expiresAt: u.subscriptionExpiresAt,
+        isExpired,
+        createdAt: u.createdAt
+      });
     }
+
+    // Filter subscribers list
+    let filtered = allSubscribersList;
+    if (filterTier && filterTier !== 'ALL') {
+      filtered = filtered.filter(s => s.tier === filterTier);
+    }
+    if (filterStatus && filterStatus !== 'ALL') {
+      filtered = filtered.filter(s => s.status === filterStatus);
+    }
+    if (search) {
+      const q = String(search).toLowerCase();
+      filtered = filtered.filter(s =>
+        s.userId.toLowerCase().includes(q) ||
+        s.displayName.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q)
+      );
+    }
+
+    const p = Math.max(1, Number(page) || 1);
+    const l = Math.max(1, Number(limit) || 25);
+    const start = (p - 1) * l;
+    const subscribers = filtered.slice(start, start + l);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / l));
 
     res.json({
       success: true,
@@ -5499,9 +5607,16 @@ app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.V
       distribution: {
         FREE: freeCount,
         PLUS: plusCount,
-        PREMIUM: premiumCount
+        PREMIUM: premiumCount,
+        EXPIRED: expiredCount,
+        CANCELLED: cancelledCount
       },
       totalActiveSubscribers: plusCount + premiumCount,
+      totalSubscribers: filtered.length,
+      page: p,
+      limit: l,
+      totalPages,
+      subscribers,
       activeSubscribers: activeSubscribersList.slice(0, 50)
     });
   } catch (err: any) {
@@ -7586,7 +7701,7 @@ app.post('/api/admin/entitlements/revoke', adminSensitiveMutationsLimiter, authe
 // POST /api/admin/subscriptions/assign (Direct Plan Assignment & Override)
 app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:assign'), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { userId, tier, billingPeriod, durationDays, reason } = req.body;
+    const { userId, tier, billingPeriod, durationDays, reason, grantSource } = req.body;
     if (!userId || !tier) {
       return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and tier are required.' });
     }
@@ -7596,6 +7711,15 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
     if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
       return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
     }
+
+    const validSources = ['ADMIN_COMPLIMENTARY', 'PROMOTIONAL', 'SUPPORT_COMPENSATION', 'VERIFIED_PAID_PURCHASE', 'MANUAL_MIGRATION'];
+    const chosenSource = validSources.includes(grantSource) ? grantSource : 'ADMIN_COMPLIMENTARY';
+    const mappedEntitlementSource = chosenSource === 'PROMOTIONAL' 
+      ? 'PROMOTIONAL_GRANT' 
+      : (chosenSource === 'SUPPORT_COMPENSATION' 
+          ? 'SUPPORT_COMPENSATION' 
+          : (chosenSource === 'VERIFIED_PAID_PURCHASE' ? 'PAID_SUBSCRIPTION' : 'ADMIN_GRANT'));
+
     const effectivePeriod = billingPeriod === 'ANNUAL' ? 'ANNUAL' : (tier === 'FREE' ? null : 'MONTHLY');
     const effectiveDays = durationDays !== undefined && durationDays !== null ? Number(durationDays) : (tier === 'FREE' ? null : (effectivePeriod === 'ANNUAL' ? 365 : 30));
     const effectiveReason = reason.trim();
@@ -7606,7 +7730,8 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
       effectivePeriod,
       effectiveDays,
       req.user!.email || req.user!.id,
-      effectiveReason
+      effectiveReason,
+      mappedEntitlementSource
     );
 
     await db.recordAuditEvent({
@@ -7622,13 +7747,14 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
         tier,
         billingPeriod: effectivePeriod,
         durationDays: effectiveDays,
+        grantSource: chosenSource,
         reason: effectiveReason
       }
     });
 
     return res.json({
       success: true,
-      message: `Subscription plan ${tier} successfully assigned to user ${userId}.`,
+      message: `Subscription plan ${tier} (${chosenSource}) successfully assigned to user ${userId}.`,
       user: {
         id: updatedUser.id,
         subscriptionTier: updatedUser.subscriptionTier,

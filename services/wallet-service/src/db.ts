@@ -1378,32 +1378,57 @@ class ResilientDatabase {
     search?: string;
     role?: string;
     status?: string;
+    emailVerified?: boolean | string;
+    subscriptionTier?: string;
+    subscriptionStatus?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
     page?: number;
     limit?: number;
-  }): Promise<{ users: UserRecord[]; total: number; page: number; limit: number }> {
+  }): Promise<{ users: UserRecord[]; total: number; page: number; limit: number; totalPages: number }> {
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.max(1, options?.limit || 25);
+
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const where: any = {};
         if (options?.role && options.role !== 'ALL') where.role = options.role;
         if (options?.status && options.status !== 'ALL') where.status = options.status;
+        if (options?.emailVerified !== undefined && options.emailVerified !== 'ALL') {
+          where.emailVerified = options.emailVerified === 'true' || options.emailVerified === true;
+        }
+        if (options?.subscriptionTier && options.subscriptionTier !== 'ALL') {
+          where.subscriptionTier = options.subscriptionTier;
+        }
+        if (options?.subscriptionStatus && options.subscriptionStatus !== 'ALL') {
+          where.subscriptionStatus = options.subscriptionStatus;
+        }
         if (options?.search) {
+          const s = options.search.trim();
           where.OR = [
-            { displayName: { contains: options.search, mode: 'insensitive' } },
-            { email: { contains: options.search, mode: 'insensitive' } },
-            { phone: { contains: options.search } }
+            { id: { contains: s, mode: 'insensitive' } },
+            { displayName: { contains: s, mode: 'insensitive' } },
+            { email: { contains: s, mode: 'insensitive' } },
+            { phone: { contains: s } }
           ];
         }
         const total = await this.prisma.user.count({ where });
-        const page = Math.max(1, options?.page || 1);
-        const limit = Math.max(1, options?.limit || 20);
         const skip = (page - 1) * limit;
+
+        const sortField = options?.sortBy && ['createdAt', 'lastLoginAt', 'walletBalance', 'displayName', 'email'].includes(options.sortBy)
+          ? options.sortBy
+          : 'createdAt';
+        const sortDir = options?.sortOrder === 'asc' ? 'asc' : 'desc';
+        const orderBy = { [sortField]: sortDir };
+
         const rows = await this.prisma.user.findMany({
           where,
           skip,
           take: limit,
-          orderBy: { createdAt: 'desc' }
+          orderBy
         });
-        return { users: rows.map((r: any) => this.mapPrismaUser(r)), total, page, limit };
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        return { users: rows.map((r: any) => this.mapPrismaUser(r)), total, page, limit, totalPages };
       } catch (err: any) {
         console.error('[DB] listUsers Prisma error:', err?.message || err);
       }
@@ -1416,21 +1441,184 @@ class ResilientDatabase {
     if (options?.status && options.status !== 'ALL') {
       result = result.filter(u => u.status === options.status);
     }
+    if (options?.emailVerified !== undefined && options.emailVerified !== 'ALL') {
+      const isVerified = options.emailVerified === 'true' || options.emailVerified === true;
+      result = result.filter(u => Boolean(u.emailVerified) === isVerified);
+    }
+    if (options?.subscriptionTier && options.subscriptionTier !== 'ALL') {
+      result = result.filter(u => (u.subscriptionTier || 'FREE') === options.subscriptionTier);
+    }
+    if (options?.subscriptionStatus && options.subscriptionStatus !== 'ALL') {
+      result = result.filter(u => (u.subscriptionStatus || 'NONE') === options.subscriptionStatus);
+    }
     if (options?.search) {
       const q = options.search.toLowerCase();
       result = result.filter(u => 
         (u.displayName && u.displayName.toLowerCase().includes(q)) ||
         (u.email && u.email.toLowerCase().includes(q)) ||
         (u.phone && u.phone.includes(q)) ||
-        u.id.includes(q)
+        u.id.toLowerCase().includes(q)
       );
     }
+
+    const sortField = options?.sortBy && ['createdAt', 'lastLoginAt', 'walletBalance', 'displayName', 'email'].includes(options.sortBy)
+      ? options.sortBy
+      : 'createdAt';
+    const sortDir = options?.sortOrder === 'asc' ? 1 : -1;
+    result.sort((a: any, b: any) => {
+      const valA = a[sortField] || '';
+      const valB = b[sortField] || '';
+      if (valA < valB) return -1 * sortDir;
+      if (valA > valB) return 1 * sortDir;
+      return 0;
+    });
+
     const total = result.length;
-    const page = Math.max(1, options?.page || 1);
-    const limit = Math.max(1, options?.limit || 20);
-    const start = (page - 1) * limit;
-    const users = result.slice(start, start + limit);
-    return { users, total, page, limit };
+    const skip = (page - 1) * limit;
+    const users = result.slice(skip, skip + limit);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    return { users, total, page, limit, totalPages };
+  }
+
+  async getUserDirectorySummary(): Promise<{
+    totalAccounts: number;
+    activeAccounts: number;
+    suspendedAccounts: number;
+    unverifiedAccounts: number;
+    adminCount: number;
+    payingCustomersCount: number;
+    freeCustomersCount: number;
+    activeSubscribersCount: number;
+    expiredSubscribersCount: number;
+    accountsAwaitingReview: number;
+  }> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const now = new Date();
+        const [
+          totalAccounts,
+          activeAccounts,
+          suspendedAccounts,
+          unverifiedAccounts,
+          adminCount,
+          freeCustomersCount,
+          activeSubscribersCount,
+          expiredSubscribersCount,
+          paidOrdersUsers
+        ] = await Promise.all([
+          this.prisma.user.count(),
+          this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+          this.prisma.user.count({ where: { status: 'SUSPENDED' } }),
+          this.prisma.user.count({ where: { emailVerified: false } }),
+          this.prisma.user.count({ where: { role: { not: 'USER' } } }),
+          this.prisma.user.count({ where: { OR: [{ subscriptionTier: 'FREE' }, { subscriptionTier: null }] } }),
+          this.prisma.user.count({
+            where: {
+              subscriptionTier: { in: ['PLUS', 'PREMIUM'] },
+              subscriptionStatus: 'ACTIVE',
+              OR: [{ subscriptionExpiresAt: null }, { subscriptionExpiresAt: { gt: now } }]
+            }
+          }),
+          this.prisma.user.count({
+            where: {
+              subscriptionTier: { in: ['PLUS', 'PREMIUM'] },
+              OR: [{ subscriptionStatus: 'EXPIRED' }, { subscriptionExpiresAt: { lte: now } }]
+            }
+          }),
+          this.prisma.paymentOrder.findMany({
+            where: { status: 'PAID' },
+            select: { userId: true },
+            distinct: ['userId']
+          })
+        ]);
+
+        const payingCustomersCount = (paidOrdersUsers || []).length;
+        const accountsAwaitingReview = suspendedAccounts + unverifiedAccounts;
+
+        return {
+          totalAccounts,
+          activeAccounts,
+          suspendedAccounts,
+          unverifiedAccounts,
+          adminCount,
+          payingCustomersCount,
+          freeCustomersCount,
+          activeSubscribersCount,
+          expiredSubscribersCount,
+          accountsAwaitingReview
+        };
+      } catch (err: any) {
+        console.error('[DB] getUserDirectorySummary Prisma error:', err?.message || err);
+      }
+    }
+
+    const nowMs = Date.now();
+    const users = this.data.users || [];
+    const totalAccounts = users.length;
+    const activeAccounts = users.filter(u => u.status === 'ACTIVE').length;
+    const suspendedAccounts = users.filter(u => u.status === 'SUSPENDED').length;
+    const unverifiedAccounts = users.filter(u => !u.emailVerified).length;
+    const adminCount = users.filter(u => u.role !== 'USER').length;
+    const freeCustomersCount = users.filter(u => !u.subscriptionTier || u.subscriptionTier === 'FREE').length;
+    const activeSubscribersCount = users.filter(u => {
+      const isPaidTier = u.subscriptionTier === 'PLUS' || u.subscriptionTier === 'PREMIUM';
+      const isStatusActive = u.subscriptionStatus === 'ACTIVE';
+      const notExpired = !u.subscriptionExpiresAt || new Date(u.subscriptionExpiresAt).getTime() > nowMs;
+      return isPaidTier && isStatusActive && notExpired;
+    }).length;
+    const expiredSubscribersCount = users.filter(u => {
+      const isPaidTier = u.subscriptionTier === 'PLUS' || u.subscriptionTier === 'PREMIUM';
+      const isStatusExpired = u.subscriptionStatus === 'EXPIRED';
+      const hasExpiredDate = u.subscriptionExpiresAt && new Date(u.subscriptionExpiresAt).getTime() <= nowMs;
+      return isPaidTier && (isStatusExpired || hasExpiredDate);
+    }).length;
+    const paidUserIds = new Set((this.data.paymentOrders || []).filter(o => o.status === OrderStatus.PAID).map(o => o.userId));
+    const payingCustomersCount = paidUserIds.size;
+    const accountsAwaitingReview = suspendedAccounts + unverifiedAccounts;
+
+    return {
+      totalAccounts,
+      activeAccounts,
+      suspendedAccounts,
+      unverifiedAccounts,
+      adminCount,
+      payingCustomersCount,
+      freeCustomersCount,
+      activeSubscribersCount,
+      expiredSubscribersCount,
+      accountsAwaitingReview
+    };
+  }
+
+  async countActiveOwners(): Promise<number> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        return await this.prisma.user.count({
+          where: { role: { in: ['OWNER', 'SUPER_ADMIN'] }, status: 'ACTIVE' }
+        });
+      } catch (err: any) {
+        console.error('[DB] countActiveOwners Prisma error:', err?.message || err);
+      }
+    }
+    return (this.data.users || []).filter(
+      u => (u.role === Role.OWNER || u.role === Role.SUPER_ADMIN) && u.status === AccountStatus.ACTIVE
+    ).length;
+  }
+
+  async countUserSessions(userId: string): Promise<number> {
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        return await this.prisma.userSession.count({
+          where: { userId, expiresAt: { gt: new Date() } }
+        });
+      } catch (err: any) {
+        console.error('[DB] countUserSessions Prisma error:', err?.message || err);
+      }
+    }
+    const now = Date.now();
+    return (this.data.sessions || []).filter(
+      s => s.userId === userId && new Date(s.expiresAt).getTime() > now
+    ).length;
   }
 
   // ==================== SESSIONS & TOKEN ====================
@@ -5362,7 +5550,8 @@ class ResilientDatabase {
     billingPeriod: 'MONTHLY' | 'ANNUAL' | null,
     durationDays: number | null,
     assignedBy: string,
-    reason: string
+    reason: string,
+    grantSource: 'ADMIN_GRANT' | 'PROMOTIONAL_GRANT' | 'SUPPORT_COMPENSATION' | 'PAID_SUBSCRIPTION' = 'ADMIN_GRANT'
   ): Promise<UserRecord> {
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
@@ -5378,7 +5567,31 @@ class ResilientDatabase {
     const updatedUser = await this.updateUser(user.id, updates);
 
     if (tier !== 'FREE') {
-      await this.grantEntitlement(userId, tier, durationDays, 'ADMIN_GRANT', assignedBy, reason);
+      await this.grantEntitlement(userId, tier, durationDays, grantSource, assignedBy, reason);
+    } else {
+      // Reverting to FREE: deactivate active subscription tier entitlements
+      if (this.isPostgresAvailable && this.prisma) {
+        try {
+          await this.prisma.entitlement.updateMany({
+            where: {
+              userId,
+              featureKey: { in: ['PLUS', 'PREMIUM'] },
+              isActive: true
+            },
+            data: { isActive: false }
+          });
+        } catch (e: any) {
+          console.warn('[DB] Deactivate tier entitlements warning:', e?.message || e);
+        }
+      }
+      if (this.data.entitlements) {
+        this.data.entitlements.forEach(e => {
+          if (e.userId === userId && (e.featureKey === 'PLUS' || e.featureKey === 'PREMIUM')) {
+            e.isActive = false;
+          }
+        });
+        this.saveToFile();
+      }
     }
 
     return updatedUser;

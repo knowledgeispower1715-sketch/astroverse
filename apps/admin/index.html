@@ -968,20 +968,70 @@
           </div>
         </div>
 
-        <!-- MODULE 2: USER LIFECYCLE -->
+        <!-- MODULE 2: USER LIFECYCLE & ACCOUNT DIRECTORY -->
         <div id="admin-panel-users" class="admin-module-panel" style="display: none;">
-          <div class="astro-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-              <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
-                <i class="fa-solid fa-users-gear"></i> User Lifecycle &amp; Moderation
-              </h3>
-              <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminUsersList()">
-                <i class="fa-solid fa-arrows-rotate"></i> Refresh
-              </button>
+          <!-- Authoritative KPI Banner -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                  <i class="fa-solid fa-users-gear"></i> Account Directory &amp; Owner Governance
+                </h3>
+                <p style="font-size: 11.5px; color: #64748B; margin: 2px 0 0;">
+                  Authoritative PostgreSQL account metrics, identity verification, role governance, and subscription entitlements.
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn-outline-secondary" style="font-size: 11px; padding: 5px 12px;" onclick="loadAdminUsersList(1)">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+                <button class="btn-outline-secondary" style="font-size: 11px; padding: 5px 12px; color: #0284C7; border-color: #BAE6FD;" onclick="exportAdminUsersCsv()">
+                  <i class="fa-solid fa-file-csv"></i> Export CSV
+                </button>
+              </div>
             </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
-              <input type="text" id="admin-user-search" class="form-input-text" placeholder="Search by name, email, phone, or UUID..." style="flex: 2; min-width: 200px;" oninput="debounceAdminSearch()">
-              <select id="admin-filter-role" class="form-input-text" style="flex: 1; min-width: 130px;" onchange="loadAdminUsersList()">
+            <!-- Summary KPI Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;" id="admin-users-summary-grid">
+              <div style="padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;">
+                <div style="font-size: 11px; font-weight: 700; color: #64748B;">Total Registered</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0F172A;" id="user-kpi-total">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #BBF7D0; border-radius: 8px; background: #F0FDF4;">
+                <div style="font-size: 11px; font-weight: 700; color: #166534;">Active Accounts</div>
+                <div style="font-size: 18px; font-weight: 800; color: #15803D;" id="user-kpi-active">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #FECACA; border-radius: 8px; background: #FEF2F2;">
+                <div style="font-size: 11px; font-weight: 700; color: #991B1B;">Suspended</div>
+                <div style="font-size: 18px; font-weight: 800; color: #DC2626;" id="user-kpi-suspended">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #FED7AA; border-radius: 8px; background: #FFF7ED;">
+                <div style="font-size: 11px; font-weight: 700; color: #9A3412;">Unverified Email</div>
+                <div style="font-size: 18px; font-weight: 800; color: #C2410C;" id="user-kpi-unverified">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #DDD6FE; border-radius: 8px; background: #F5F3FF;">
+                <div style="font-size: 11px; font-weight: 700; color: #5B21B6;">Staff &amp; Admins</div>
+                <div style="font-size: 18px; font-weight: 800; color: #6D28D9;" id="user-kpi-admins">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #FEF08A; border-radius: 8px; background: #FEFCE8;">
+                <div style="font-size: 11px; font-weight: 700; color: #854D0E;">Paying Customers</div>
+                <div style="font-size: 18px; font-weight: 800; color: #A16207;" id="user-kpi-paying">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #BAE6FD; border-radius: 8px; background: #F0F9FF;">
+                <div style="font-size: 11px; font-weight: 700; color: #075985;">Active Subscribers</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0284C7;" id="user-kpi-activesubs">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;">
+                <div style="font-size: 11px; font-weight: 700; color: #64748B;">Expired Subs</div>
+                <div style="font-size: 18px; font-weight: 800; color: #475569;" id="user-kpi-expiredsubs">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Controls Card -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+              <input type="text" id="admin-user-search" class="form-input-text" placeholder="Search by name, email, phone, or UUID..." style="flex: 3; min-width: 220px;" oninput="debounceAdminSearch()">
+              <select id="admin-filter-role" class="form-input-text" style="flex: 1; min-width: 130px;" onchange="loadAdminUsersList(1)">
                 <option value="ALL">All Roles</option>
                 <option value="USER">USER</option>
                 <option value="OWNER">OWNER</option>
@@ -992,52 +1042,135 @@
                 <option value="ASTROLOGY_OPS_ADMIN">ASTROLOGY_OPS_ADMIN</option>
                 <option value="READONLY_ANALYST">READONLY_ANALYST</option>
               </select>
-              <select id="admin-filter-status" class="form-input-text" style="flex: 1; min-width: 130px;" onchange="loadAdminUsersList()">
+              <select id="admin-filter-status" class="form-input-text" style="flex: 1; min-width: 120px;" onchange="loadAdminUsersList(1)">
                 <option value="ALL">All Statuses</option>
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="SUSPENDED">SUSPENDED</option>
                 <option value="DEACTIVATED">DEACTIVATED</option>
               </select>
+              <select id="admin-filter-email-verified" class="form-input-text" style="flex: 1; min-width: 130px;" onchange="loadAdminUsersList(1)">
+                <option value="ALL">All Email Verification</option>
+                <option value="VERIFIED">Verified Only</option>
+                <option value="UNVERIFIED">Unverified Only</option>
+              </select>
+              <select id="admin-filter-sub-tier" class="form-input-text" style="flex: 1; min-width: 120px;" onchange="loadAdminUsersList(1)">
+                <option value="ALL">All Tiers</option>
+                <option value="FREE">FREE</option>
+                <option value="PLUS">PLUS</option>
+                <option value="PREMIUM">PREMIUM</option>
+              </select>
             </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <span style="font-size: 11px; font-weight: 700; color: #64748B;">Sort:</span>
+                <select id="admin-user-sort-by" class="form-input-text" style="font-size: 11.5px; padding: 3px 8px;" onchange="loadAdminUsersList(1)">
+                  <option value="createdAt">Date Created</option>
+                  <option value="walletBalance">Wallet Balance</option>
+                  <option value="displayName">Name</option>
+                  <option value="email">Email</option>
+                </select>
+                <select id="admin-user-sort-order" class="form-input-text" style="font-size: 11.5px; padding: 3px 8px;" onchange="loadAdminUsersList(1)">
+                  <option value="desc">Descending</option>
+                  <option value="asc">Ascending</option>
+                </select>
+                <span style="font-size: 11px; font-weight: 700; color: #64748B; margin-left: 8px;">Page Size:</span>
+                <select id="admin-user-page-limit" class="form-input-text" style="font-size: 11.5px; padding: 3px 8px;" onchange="loadAdminUsersList(1)">
+                  <option value="25">25 per page</option>
+                  <option value="50">50 per page</option>
+                  <option value="100">100 per page</option>
+                </select>
+              </div>
+              <div id="admin-users-quick-info" style="font-size: 11.5px; color: #64748B;"></div>
+            </div>
+          </div>
+
+          <!-- User Directory Table Card -->
+          <div class="astro-card">
             <div class="table-responsive-box">
               <table class="table-astro-data">
                 <thead>
                   <tr>
-                    <th>User Details</th>
+                    <th>Customer Details</th>
                     <th>Contact &amp; Identities</th>
-                    <th>Role</th>
+                    <th>Role &amp; Staff</th>
                     <th>Status</th>
-                    <th>Wallet</th>
-                    <th>Actions</th>
+                    <th>Subscription Plan</th>
+                    <th>Wallet Balance</th>
+                    <th>Administrative Actions</th>
                   </tr>
                 </thead>
                 <tbody id="admin-users-tbody">
-                  <tr><td colspan="6" style="text-align: center; color: #64748B;">Loading users...</td></tr>
+                  <tr><td colspan="7" style="text-align: center; color: #64748B; padding: 24px;">Loading accounts directory...</td></tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Authoritative Pagination Controls -->
+            <div id="admin-users-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid #E2E8F0; flex-wrap: wrap; gap: 10px;">
+              <div id="admin-users-page-info" style="font-size: 12px; color: #64748B; font-weight: 600;">Showing 0 - 0 of 0 accounts</div>
+              <div style="display: flex; gap: 4px; align-items: center;" id="admin-users-pagination-buttons">
+                <!-- Dynamic buttons -->
+              </div>
             </div>
           </div>
         </div>
 
         <!-- MODULE 3: ROLES & RBAC -->
         <div id="admin-panel-roles" class="admin-module-panel" style="display: none;">
-          <div class="astro-card">
-            <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 12px;">
-              <i class="fa-solid fa-id-badge"></i> Canonical 7-Role Administrator Directory &amp; RBAC Matrix
-            </h3>
-            <div class="table-responsive-box" style="margin-bottom: 20px;">
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                  <i class="fa-solid fa-id-badge"></i> Active Platform Administrators Directory
+                </h3>
+                <p style="font-size: 11.5px; color: #64748B; margin: 2px 0 0;">
+                  Authoritative list of users with assigned administrative and operational roles, active session counts, and MFA enrollment status.
+                </p>
+              </div>
+              <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminRoles()">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh
+              </button>
+            </div>
+            <div class="table-responsive-box">
               <table class="table-astro-data">
                 <thead>
                   <tr>
-                    <th>Admin Name / Email</th>
+                    <th>Admin Details</th>
                     <th>Assigned Role</th>
                     <th>MFA Status</th>
-                    <th>Account Status</th>
+                    <th>Active Sessions</th>
+                    <th>Permissions</th>
+                    <th>Status</th>
                     <th>Last Active</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="admin-roles-tbody">
-                  <tr><td colspan="5" style="text-align: center; color: #64748B;">Loading administrators...</td></tr>
+                  <tr><td colspan="8" style="text-align: center; color: #64748B; padding: 20px;">Loading administrators...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Canonical 7-Role RBAC Matrix Card -->
+          <div class="astro-card">
+            <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
+              <i class="fa-solid fa-sitemap"></i> Canonical 7-Role Permission &amp; Authority Matrix
+            </h3>
+            <p style="font-size: 12px; color: #64748B; margin-bottom: 14px;">
+              Strictly enforced server-side access control boundaries. Least privilege is applied to each operational tier.
+            </p>
+            <div class="table-responsive-box">
+              <table class="table-astro-data" id="admin-rbac-matrix-table">
+                <thead>
+                  <tr>
+                    <th style="min-width: 140px;">Role</th>
+                    <th style="min-width: 180px;">Role Description</th>
+                    <th>Enforced Permissions Catalog</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-rbac-matrix-tbody">
+                  <tr><td colspan="3" style="text-align: center; color: #64748B;">Loading role matrix...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1306,6 +1439,67 @@
                 <div style="font-size: 14px; font-weight: 700; color: #881337;" id="admin-premium-price-label">₹299 / Month &bull; ₹2,499 / Year</div>
                 <div style="font-size: 11.5px; color: #9F1239; margin-top: 6px;">Active Members: <strong id="tier-count-premium">0</strong></div>
               </div>
+            </div>
+          </div>
+
+          <!-- Authoritative Subscribers Directory & Plan Administration -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                  <i class="fa-solid fa-users-line"></i> Customer Subscribers Directory &amp; Tier Administration
+                </h3>
+                <p style="font-size: 11.5px; color: #64748B; margin: 2px 0 0;">
+                  Authoritative subscriber lifecycle management: Complimentary grants, duration extensions, plan upgrades, and cancellations.
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminSubscriptions(1)">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+              </div>
+            </div>
+
+            <!-- Filters -->
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+              <input type="text" id="admin-subs-search" class="form-input-text" placeholder="Search subscriber by name, email, or UUID..." style="flex: 2; min-width: 180px;" oninput="debounceAdminSubsSearch()">
+              <select id="admin-subs-filter-tier" class="form-input-text" style="flex: 1; min-width: 120px;" onchange="loadAdminSubscriptions(1)">
+                <option value="ALL">All Tiers</option>
+                <option value="FREE">FREE</option>
+                <option value="PLUS">PLUS</option>
+                <option value="PREMIUM">PREMIUM</option>
+              </select>
+              <select id="admin-subs-filter-status" class="form-input-text" style="flex: 1; min-width: 120px;" onchange="loadAdminSubscriptions(1)">
+                <option value="ALL">All Subscription Statuses</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="EXPIRED">EXPIRED</option>
+                <option value="CANCELLED">CANCELLED</option>
+                <option value="NONE">NONE</option>
+              </select>
+            </div>
+
+            <div class="table-responsive-box">
+              <table class="table-astro-data">
+                <thead>
+                  <tr>
+                    <th>Subscriber</th>
+                    <th>Plan / Tier</th>
+                    <th>Billing Cadence</th>
+                    <th>Status</th>
+                    <th>Expiry / Days Left</th>
+                    <th>Lifecycle Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-subscribers-tbody">
+                  <tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;">Loading subscribers...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Subscribers Pagination -->
+            <div id="admin-subs-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid #E2E8F0; flex-wrap: wrap; gap: 8px;">
+              <div id="admin-subs-page-info" style="font-size: 12px; color: #64748B;">Showing 0 of 0 subscribers</div>
+              <div style="display: flex; gap: 4px;" id="admin-subs-pagination-buttons"></div>
             </div>
           </div>
 
@@ -2676,9 +2870,216 @@
       </div>
     </div>
 
+    <!-- Admin Assign Role Modal -->
+    <div id="modal-admin-assign-role" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminAssignRoleModal()"></div>
+      <div class="modal-content-card" style="max-width: 520px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+              <i class="fa-solid fa-user-shield"></i> Manage Staff Administrative Role
+            </h3>
+            <div id="admin-role-target-user-info" style="font-size: 11px; color: #64748B; margin-top: 2px;">User: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminAssignRoleModal()">&times;</button>
+        </div>
 
+        <input type="hidden" id="admin-role-target-user-id">
 
-  </main>
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+          <div><strong>Current Assigned Role:</strong> <span id="admin-role-current-badge" class="badge-role-user">USER</span></div>
+          <div style="font-size: 11px; color: #64748B; margin-top: 4px;">Role modifications grant operational access to platform infrastructure. All role assignments are permanently audited.</div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Target Canonical Role:</label>
+          <select id="admin-role-target-select" class="form-input-text" style="font-size: 12.5px;" onchange="updateRoleModalPermissionPreview()">
+            <option value="USER">USER (Regular Customer)</option>
+            <option value="READONLY_ANALYST">READONLY_ANALYST (Read-Only Metrics &amp; Audit Logs)</option>
+            <option value="ASTROLOGY_OPS_ADMIN">ASTROLOGY_OPS_ADMIN (Engine Calibration &amp; Swiss Ephemeris Ops)</option>
+            <option value="CONTENT_EDITOR">CONTENT_EDITOR (Platform Banners, Notices &amp; Content)</option>
+            <option value="SUPPORT_ADMIN">SUPPORT_ADMIN (Customer Moderation, Notes &amp; Data Privacy)</option>
+            <option value="FINANCE_ADMIN">FINANCE_ADMIN (Reconciliation, Refunds &amp; Pricing Management)</option>
+            <option value="SECURITY_ADMIN">SECURITY_ADMIN (Feature Flags, MFA &amp; Infrastructure Governance)</option>
+            <option value="OWNER">OWNER (Full Enterprise Sovereignty &amp; Role Management)</option>
+          </select>
+        </div>
+
+        <div id="admin-role-permission-preview" style="background: #F1F5F9; border-radius: 6px; padding: 10px; font-size: 11px; color: #334155; margin-bottom: 12px;">
+          Permissions preview...
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Mandatory Audit Reason (min 5 chars):</label>
+          <input type="text" id="admin-role-reason-input" class="form-input-text" placeholder="e.g. Authorized promotion to Astrology Ops team" style="font-size: 12px;">
+        </div>
+
+        <div id="admin-role-mfa-box" style="display: none; margin-bottom: 14px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #991B1B; margin-bottom: 4px;">Step-Up TOTP Code Required:</label>
+          <input type="text" id="admin-role-mfa-code" class="form-input-text" placeholder="6-digit code" maxlength="8" style="font-size: 16px; letter-spacing: 2px; text-align: center;">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminAssignRoleModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: var(--vedic-maroon); color: white;" onclick="submitAdminAssignRole()">
+            <i class="fa-solid fa-check"></i> Confirm Role Mutation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Grant / Upgrade Subscription Modal -->
+    <div id="modal-admin-grant-subscription" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminGrantSubscriptionModal()"></div>
+      <div class="modal-content-card" style="max-width: 520px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+              <i class="fa-solid fa-crown"></i> Grant or Upgrade Subscription
+            </h3>
+            <div id="admin-grant-sub-target-user-info" style="font-size: 11px; color: #64748B; margin-top: 2px;">User: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminGrantSubscriptionModal()">&times;</button>
+        </div>
+
+        <input type="hidden" id="admin-grant-sub-target-user-id">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Plan Tier:</label>
+            <select id="admin-grant-sub-tier" class="form-input-text" style="font-size: 12px;">
+              <option value="PLUS">AstroVerse Plus (Weekly Forecasts)</option>
+              <option value="PREMIUM" selected>AstroVerse Premium (All Reports &amp; AI Quotas)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Billing Cadence:</label>
+            <select id="admin-grant-sub-cadence" class="form-input-text" style="font-size: 12px;">
+              <option value="MONTHLY">MONTHLY</option>
+              <option value="ANNUAL">ANNUAL</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Grant Source / Origin:</label>
+            <select id="admin-grant-sub-source" class="form-input-text" style="font-size: 12px;">
+              <option value="ADMIN_COMPLIMENTARY" selected>ADMIN_COMPLIMENTARY (VIP / Goodwill)</option>
+              <option value="PROMOTIONAL">PROMOTIONAL (Campaign)</option>
+              <option value="SUPPORT_COMPENSATION">SUPPORT_COMPENSATION (Service Resolution)</option>
+              <option value="VERIFIED_PAID_PURCHASE">VERIFIED_PAID_PURCHASE (Direct Payment)</option>
+              <option value="MANUAL_MIGRATION">MANUAL_MIGRATION (Legacy Account)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Duration (Days):</label>
+            <select id="admin-grant-sub-duration" class="form-input-text" style="font-size: 12px;">
+              <option value="30" selected>30 Days (1 Month)</option>
+              <option value="60">60 Days (2 Months)</option>
+              <option value="90">90 Days (Quarterly)</option>
+              <option value="180">180 Days (Half-Year)</option>
+              <option value="365">365 Days (1 Full Year)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Mandatory Audit Reason (min 5 chars):</label>
+          <input type="text" id="admin-grant-sub-reason" class="form-input-text" placeholder="e.g. Complimentary Premium access granted for platform testing" style="font-size: 12px;">
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px; font-size: 11px; color: #64748B; margin-bottom: 14px;">
+          <i class="fa-solid fa-circle-info" style="color: #0284C7;"></i> Complimentary grants do not create fake PaymentOrder records or distort genuine financial ledger collections.
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminGrantSubscriptionModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: var(--vedic-gold); color: #1E293B; font-weight: 700;" onclick="submitAdminGrantSubscription()">
+            <i class="fa-solid fa-gift"></i> Grant Subscription
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Extend Subscription Modal -->
+    <div id="modal-admin-extend-subscription" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminExtendSubscriptionModal()"></div>
+      <div class="modal-content-card" style="max-width: 480px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+              <i class="fa-solid fa-calendar-plus"></i> Extend Subscription Duration
+            </h3>
+            <div id="admin-extend-sub-target-user-info" style="font-size: 11px; color: #64748B; margin-top: 2px;">User: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminExtendSubscriptionModal()">&times;</button>
+        </div>
+
+        <input type="hidden" id="admin-extend-sub-target-user-id">
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 12px;">
+          <div><strong>Current Expiration Date:</strong> <span id="admin-extend-sub-current-expiry" style="font-weight: 700; color: #0284C7;">-</span></div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Additional Days to Add:</label>
+          <select id="admin-extend-sub-days" class="form-input-text" style="font-size: 12px;">
+            <option value="7">+7 Days (1 Week Extension)</option>
+            <option value="15" selected>+15 Days (Half Month Extension)</option>
+            <option value="30">+30 Days (1 Month Extension)</option>
+            <option value="60">+60 Days (2 Months Extension)</option>
+            <option value="90">+90 Days (Quarterly Extension)</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Mandatory Audit Reason (min 5 chars):</label>
+          <input type="text" id="admin-extend-sub-reason" class="form-input-text" placeholder="e.g. Courtesy extension for scheduled maintenance" style="font-size: 12px;">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminExtendSubscriptionModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: #0284C7; color: white;" onclick="submitAdminExtendSubscription()">
+            <i class="fa-solid fa-clock-rotate-left"></i> Apply Extension
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Cancel Subscription Modal -->
+    <div id="modal-admin-cancel-subscription" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminCancelSubscriptionModal()"></div>
+      <div class="modal-content-card" style="max-width: 480px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #FECACA; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: #DC2626; margin: 0;">
+              <i class="fa-solid fa-ban"></i> Cancel Subscription &amp; Revert to Free
+            </h3>
+            <div id="admin-cancel-sub-target-user-info" style="font-size: 11px; color: #64748B; margin-top: 2px;">User: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminCancelSubscriptionModal()">&times;</button>
+        </div>
+
+        <input type="hidden" id="admin-cancel-sub-target-user-id">
+
+        <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 12px; color: #991B1B;">
+          <strong>Warning:</strong> Cancelling this subscription will immediately set the customer's plan to <strong>FREE</strong> and deactivate all active PLUS and PREMIUM entitlements in PostgreSQL.
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Mandatory Audit Reason (min 5 chars):</label>
+          <input type="text" id="admin-cancel-sub-reason" class="form-input-text" placeholder="e.g. Customer requested immediate cancellation and refund" style="font-size: 12px;">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminCancelSubscriptionModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: #DC2626; color: white;" onclick="submitAdminCancelSubscription()">
+            <i class="fa-solid fa-circle-xmark"></i> Revert Account to Free
+          </button>
+        </div>
+      </div>
+    </div>
 
   </main>
 
@@ -4862,24 +5263,60 @@
       });
     }
 
-    async function loadAdminUsersList() {
-      const search = document.getElementById('admin-user-search')?.value || '';
+    // --- OWNER CONTROL CENTRE: ACCOUNT DIRECTORY, ROLES & SUBSCRIPTION STATE ---
+    let adminUsersPaginationState = { page: 1, limit: 25, total: 0, totalPages: 1 };
+    let adminSubsPaginationState = { page: 1, limit: 20, total: 0, totalPages: 1 };
+    let adminRolesMatrixData = null;
+    let adminSubsDebounce = null;
+
+    function debounceAdminSubsSearch() {
+      clearTimeout(adminSubsDebounce);
+      adminSubsDebounce = setTimeout(() => loadAdminSubscriptions(1), 300);
+    }
+
+    function copyAdminText(txt) {
+      if (!txt) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => {
+          showToast(`Copied: ${txt.length > 20 ? txt.slice(0, 18) + '...' : txt}`, 'success');
+        }).catch(() => {
+          prompt('Copy to clipboard:', txt);
+        });
+      } else {
+        prompt('Copy to clipboard:', txt);
+      }
+    }
+
+    async function loadAdminUsersList(targetPage) {
+      const page = targetPage || adminUsersPaginationState.page || 1;
+      const search = document.getElementById('admin-user-search')?.value.trim() || '';
       const role = document.getElementById('admin-filter-role')?.value || 'ALL';
       const status = document.getElementById('admin-filter-status')?.value || 'ALL';
+      const emailVerified = document.getElementById('admin-filter-email-verified')?.value || 'ALL';
+      const subTier = document.getElementById('admin-filter-sub-tier')?.value || 'ALL';
+      const sortBy = document.getElementById('admin-user-sort-by')?.value || 'createdAt';
+      const sortOrder = document.getElementById('admin-user-sort-order')?.value || 'desc';
+      const limit = parseInt(document.getElementById('admin-user-page-limit')?.value || '25', 10);
       const tbody = document.getElementById('admin-users-tbody');
       if (!tbody) return;
 
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B;">Refreshing user list...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #64748B; padding: 24px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading account directory...</td></tr>';
 
       try {
         const url = new URL(`${getAuthBase()}/api/admin/users`);
+        url.searchParams.append('page', String(page));
+        url.searchParams.append('limit', String(limit));
+        url.searchParams.append('sortBy', sortBy);
+        url.searchParams.append('sortOrder', sortOrder);
         if (search) url.searchParams.append('search', search);
         if (role !== 'ALL') url.searchParams.append('role', role);
         if (status !== 'ALL') url.searchParams.append('status', status);
+        if (emailVerified !== 'ALL') url.searchParams.append('emailVerified', emailVerified);
+        if (subTier !== 'ALL') url.searchParams.append('subscriptionTier', subTier);
 
         const res = await fetch(url.toString(), { headers: getAuthHeaders() });
         if (res.status === 401 || res.status === 403) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #F87171; padding: 24px;"><div><i class="fa-solid fa-shield-halved" style="font-size: 24px; margin-bottom: 8px;"></i></div><strong>Session Expired or Unauthorized</strong><p style="font-size: 12px; color: #94A3B8; margin: 4px 0 12px;">Your administrator credentials require re-authentication.</p><button class="btn-gold-primary" onclick="closeAdminAndSignOut()" style="font-size: 11px; padding: 6px 12px;">Sign In Again</button></td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #F87171; padding: 24px;"><div><i class="fa-solid fa-shield-halved" style="font-size: 24px; margin-bottom: 8px;"></i></div><strong>Session Expired or Unauthorized</strong><p style="font-size: 12px; color: #94A3B8; margin: 4px 0 12px;">Your administrator credentials require re-authentication.</p><button class="btn-gold-primary" onclick="closeAdminAndSignOut()" style="font-size: 11px; padding: 6px 12px;">Sign In Again</button></td></tr>';
           showToast('Administrator session expired or unauthorized. Please sign in again.', 'error');
           setTimeout(() => closeAdminAndSignOut(), 2000);
           return;
@@ -4888,56 +5325,225 @@
         if (res.ok) {
           const data = await res.json();
           const users = data.users || [];
+          adminUsersPaginationState = {
+            page: data.page || page,
+            limit: data.limit || limit,
+            total: data.total || 0,
+            totalPages: data.totalPages || 1
+          };
+
+          // Populate Summary KPI Banner
+          const summary = data.summary || {};
+          if (document.getElementById('user-kpi-total')) document.getElementById('user-kpi-total').textContent = summary.totalAccounts ?? data.total ?? users.length;
+          if (document.getElementById('user-kpi-active')) document.getElementById('user-kpi-active').textContent = summary.activeAccounts ?? '-';
+          if (document.getElementById('user-kpi-suspended')) document.getElementById('user-kpi-suspended').textContent = summary.suspendedAccounts ?? '-';
+          if (document.getElementById('user-kpi-unverified')) document.getElementById('user-kpi-unverified').textContent = summary.unverifiedAccounts ?? '-';
+          if (document.getElementById('user-kpi-admins')) document.getElementById('user-kpi-admins').textContent = summary.adminCount ?? '-';
+          if (document.getElementById('user-kpi-paying')) document.getElementById('user-kpi-paying').textContent = summary.payingCustomersCount ?? '-';
+          if (document.getElementById('user-kpi-activesubs')) document.getElementById('user-kpi-activesubs').textContent = summary.activeSubscribersCount ?? '-';
+          if (document.getElementById('user-kpi-expiredsubs')) document.getElementById('user-kpi-expiredsubs').textContent = summary.expiredSubscribersCount ?? '-';
+
+          const quickInfo = document.getElementById('admin-users-quick-info');
+          if (quickInfo) {
+            quickInfo.textContent = `Found ${adminUsersPaginationState.total} matching accounts`;
+          }
+
           if (users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;">No matching users found in the directory.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #64748B; padding: 24px;">No matching accounts found in the directory.</td></tr>';
+            renderAdminUsersPagination();
             return;
           }
 
+          const isOwner = currentUserSession && (currentUserSession.role === 'OWNER' || currentUserSession.role === 'SUPER_ADMIN');
+
           tbody.innerHTML = users.map(u => {
             const statusClass = u.status === 'ACTIVE' ? 'badge-status-active' : (u.status === 'SUSPENDED' ? 'badge-status-suspended' : 'badge-status-deactivated');
-            const roleClass = (u.role === 'OWNER' || u.role === 'SUPER_ADMIN') ? 'badge-role-admin' : 'badge-role-user';
-            const isOwner = currentUserSession && (currentUserSession.role === 'OWNER' || currentUserSession.role === 'SUPER_ADMIN');
+            const roleClass = (u.role === 'OWNER' || u.role === 'SUPER_ADMIN' || u.role === 'SECURITY_ADMIN' || u.role === 'FINANCE_ADMIN') ? 'badge-role-admin' : 'badge-role-user';
+            const tier = u.subscriptionTier || 'FREE';
+            const tierColor = tier === 'PREMIUM' ? '#881337' : (tier === 'PLUS' ? '#B45309' : '#475569');
+            const tierBg = tier === 'PREMIUM' ? '#FFF1F2' : (tier === 'PLUS' ? '#FFFBEB' : '#F8FAFC');
+            const tierBorder = tier === 'PREMIUM' ? '#FDA4AF' : (tier === 'PLUS' ? '#FDE68A' : '#E2E8F0');
+            const expiryStr = u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString() : (tier === 'FREE' ? 'Permanent' : 'Never Expiring');
+            const isSelf = currentUserSession && currentUserSession.userId === u.id;
 
             return `
               <tr>
                 <td>
-                  <strong>${escapeHtml(u.displayName || 'Unnamed')}</strong>
-                  <div style="font-size: 11px; color: #64748B;">ID: ${escapeHtml(u.id)}</div>
+                  <strong>${escapeHtml(u.displayName || 'Unnamed User')}</strong>
+                  <div style="display: flex; align-items: center; gap: 4px; margin-top: 3px;">
+                    <code style="font-size: 10.5px; color: #475569; background: #F1F5F9; padding: 2px 5px; border-radius: 4px;">${escapeHtml(u.id.slice(0, 13))}...</code>
+                    <button type="button" class="btn-outline-secondary" style="padding: 1px 5px; font-size: 9.5px;" onclick="copyAdminText('${escapeHtml(u.id)}')" title="Copy full UUID">
+                      <i class="fa-solid fa-copy"></i>
+                    </button>
+                  </div>
+                  <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">Joined: ${new Date(u.createdAt).toLocaleDateString()}</div>
                 </td>
                 <td>
-                  <div>${u.email ? `<i class="fa-solid fa-envelope" style="color: #64748B; font-size: 11px;"></i> ${escapeHtml(u.email)}` : ''}</div>
-                  <div>${u.phone ? `<i class="fa-solid fa-phone" style="color: #64748B; font-size: 11px;"></i> ${escapeHtml(u.phone)}` : ''}</div>
+                  <div>
+                    ${u.email ? `
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-envelope" style="color: #64748B; font-size: 11px;"></i>
+                        <span style="font-size: 11.5px;">${escapeHtml(u.email)}</span>
+                        ${u.emailVerified ? '<i class=\"fa-solid fa-circle-check\" style=\"color: #10B981; font-size: 10.5px;\" title=\"Email Verified\"></i>' : '<i class=\"fa-solid fa-circle-exclamation\" style=\"color: #F59E0B; font-size: 10.5px;\" title=\"Unverified Email\"></i>'}
+                      </div>
+                    ` : '<span style=\"color: #94A3B8; font-size: 11px;\">No email</span>'}
+                  </div>
+                  <div style="margin-top: 2px;">
+                    ${u.phone ? `
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-phone" style="color: #64748B; font-size: 11px;"></i>
+                        <span style="font-size: 11.5px;">${escapeHtml(u.phone)}</span>
+                        ${u.phoneVerified ? '<i class=\"fa-solid fa-circle-check\" style=\"color: #10B981; font-size: 10.5px;\" title=\"Phone Verified\"></i>' : ''}
+                      </div>
+                    ` : '<span style=\"color: #94A3B8; font-size: 11px;\">No phone</span>'}
+                  </div>
                 </td>
                 <td>
+                  <div><span class="${roleClass}">${escapeHtml(u.role)}</span></div>
                   ${isOwner ? `
-                    <select onchange="changeAdminUserRole('${u.id}', this.value)" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #CBD5E1;">
-                      ${['USER', 'READONLY_ANALYST', 'ASTROLOGY_OPS_ADMIN', 'FINANCE_ADMIN', 'CONTENT_EDITOR', 'SUPPORT_ADMIN', 'SECURITY_ADMIN', 'OWNER'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}
-                    </select>
-                  ` : `<span class="${roleClass}">${u.role}</span>`}
+                    <div style="margin-top: 4px;">
+                      <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="openAssignRoleModal('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}', '${escapeHtml(u.email || '')}', '${u.role}')" ${isSelf ? 'disabled title=\"Cannot alter own role\"' : ''}>
+                        <i class="fa-solid fa-user-gear"></i> Role
+                      </button>
+                    </div>
+                  ` : ''}
                 </td>
-                <td><span class="${statusClass}">${u.status}</span></td>
-                <td><strong>₹${Number(u.walletBalance).toFixed(2)}</strong></td>
                 <td>
-                  <div style="display: flex; gap: 6px;">
-                    <button class="btn-outline-secondary" style="padding: 4px 8px; font-size: 11px; ${u.status === 'ACTIVE' ? 'color: #DC2626;' : 'color: #059669;'}"
-                            onclick="toggleAdminUserStatus('${u.id}', '${u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'}')">
+                  <div><span class="${statusClass}">${escapeHtml(u.status)}</span></div>
+                  <div style="margin-top: 4px;">
+                    <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; ${u.status === 'ACTIVE' ? 'color: #DC2626;' : 'color: #059669;'}"
+                            onclick="toggleAdminUserStatus('${u.id}', '${u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'}')" ${isSelf ? 'disabled title=\"Cannot suspend self\"' : ''}>
                       ${u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
                     </button>
-                    <button class="btn-outline-secondary" style="padding: 4px 8px; font-size: 11px; color: #D97706;"
+                  </div>
+                </td>
+                <td>
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; background: ${tierBg}; color: ${tierColor}; border: 1px solid ${tierBorder};">
+                    ${escapeHtml(tier)}
+                  </span>
+                  <div style="font-size: 10.5px; color: #64748B; margin-top: 3px;">Exp: ${expiryStr}</div>
+                  <div style="display: flex; gap: 4px; margin-top: 4px;">
+                    <button class="btn-outline-secondary" style="padding: 2px 6px; font-size: 10px; color: #B45309;" onclick="openGrantSubscriptionModal('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}', '${escapeHtml(u.email || '')}', '${tier}')" title="Grant or upgrade plan">
+                      <i class="fa-solid fa-crown"></i> Plan
+                    </button>
+                    ${tier !== 'FREE' ? `
+                      <button class="btn-outline-secondary" style="padding: 2px 6px; font-size: 10px; color: #0284C7;" onclick="openExtendSubscriptionModal('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}', '${u.subscriptionExpiresAt || ''}')" title="Extend subscription">
+                        +Days
+                      </button>
+                      <button class="btn-outline-secondary" style="padding: 2px 6px; font-size: 10px; color: #DC2626;" onclick="openCancelSubscriptionModal('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}', '${tier}')" title="Revert to Free">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size: 13.5px; font-weight: 800; color: #1E293B;">₹${Number(u.walletBalance || 0).toFixed(2)}</div>
+                  <div style="margin-top: 4px;">
+                    <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; color: #D97706;"
                             onclick="promptAdminWalletAdjustment('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}')" title="Adjust Balance">
                       <i class="fa-solid fa-wallet"></i> Adjust
+                    </button>
+                  </div>
+                </td>
+                <td>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <button class="btn-gold-primary" style="padding: 3px 8px; font-size: 10px; font-weight: 700; width: 100%;" onclick="openCustomer360('${u.id}')">
+                      <i class="fa-solid fa-eye"></i> View 360
                     </button>
                   </div>
                 </td>
               </tr>
             `;
           }).join('');
+
+          renderAdminUsersPagination();
         } else {
           const errData = await res.json().catch(() => ({}));
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #F87171; padding: 20px;">Failed to load user directory (${res.status}: ${escapeHtml(errData.message || 'Unknown server response')}).<div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList()" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #F87171; padding: 24px;">Failed to load user directory (${res.status}: ${escapeHtml(errData.message || 'Unknown server response')}).<div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList(1)" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>`;
         }
       } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #DC2626; padding: 20px;"><div>Network or communication error loading user directory.</div><div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList()" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #DC2626; padding: 24px;"><div>Network or communication error loading user directory.</div><div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList(1)" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>';
+      }
+    }
+
+    function renderAdminUsersPagination() {
+      const pageInfo = document.getElementById('admin-users-page-info');
+      const btnContainer = document.getElementById('admin-users-pagination-buttons');
+      if (!btnContainer) return;
+
+      const { page, limit, total, totalPages } = adminUsersPaginationState;
+      const start = total === 0 ? 0 : (page - 1) * limit + 1;
+      const end = Math.min(page * limit, total);
+
+      if (pageInfo) {
+        pageInfo.textContent = `Showing ${start} - ${end} of ${total} accounts (Page ${page} of ${totalPages})`;
+      }
+
+      let html = '';
+      html += `<button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAdminUsersList(1)" ${page <= 1 ? 'disabled' : ''} title="First Page">&laquo;</button>`;
+      html += `<button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAdminUsersList(${page - 1})" ${page <= 1 ? 'disabled' : ''} title="Previous Page">&lsaquo;</button>`;
+
+      const startPage = Math.max(1, page - 2);
+      const endPage = Math.min(totalPages, page + 2);
+      for (let p = startPage; p <= endPage; p++) {
+        const isCurrent = p === page;
+        html += `<button class="${isCurrent ? 'btn-primary' : 'btn-outline-secondary'}" style="padding: 3px 8px; font-size: 11px; ${isCurrent ? 'background: var(--vedic-maroon); color: white;' : ''}" onclick="loadAdminUsersList(${p})">${p}</button>`;
+      }
+
+      html += `<button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAdminUsersList(${page + 1})" ${page >= totalPages ? 'disabled' : ''} title="Next Page">&rsaquo;</button>`;
+      html += `<button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAdminUsersList(${totalPages})" ${page >= totalPages ? 'disabled' : ''} title="Last Page">&raquo;</button>`;
+
+      btnContainer.innerHTML = html;
+    }
+
+    async function exportAdminUsersCsv() {
+      showToast('Preparing full account export CSV...', 'info');
+      try {
+        const search = document.getElementById('admin-user-search')?.value.trim() || '';
+        const role = document.getElementById('admin-filter-role')?.value || 'ALL';
+        const status = document.getElementById('admin-filter-status')?.value || 'ALL';
+
+        const url = new URL(`${getAuthBase()}/api/admin/users`);
+        url.searchParams.append('page', '1');
+        url.searchParams.append('limit', '500');
+        if (search) url.searchParams.append('search', search);
+        if (role !== 'ALL') url.searchParams.append('role', role);
+        if (status !== 'ALL') url.searchParams.append('status', status);
+
+        const res = await fetch(url.toString(), { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const users = data.users || [];
+
+        const headers = ['ID', 'DisplayName', 'Email', 'Phone', 'EmailVerified', 'Role', 'Status', 'SubscriptionTier', 'SubscriptionStatus', 'SubscriptionExpiresAt', 'WalletBalanceINR', 'CreatedAt'];
+        const csvRows = [headers.join(',')];
+
+        users.forEach(u => {
+          const row = [
+            `"${u.id}"`,
+            `"${(u.displayName || '').replace(/"/g, '""')}"`,
+            `"${(u.email || '').replace(/"/g, '""')}"`,
+            `"${(u.phone || '').replace(/"/g, '""')}"`,
+            u.emailVerified ? 'TRUE' : 'FALSE',
+            `"${u.role}"`,
+            `"${u.status}"`,
+            `"${u.subscriptionTier || 'FREE'}"`,
+            `"${u.subscriptionStatus || 'NONE'}"`,
+            `"${u.subscriptionExpiresAt || ''}"`,
+            (u.walletBalance || 0).toFixed(2),
+            `"${u.createdAt}"`
+          ];
+          csvRows.push(row.join(','));
+        });
+
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `astroverse_users_export_${Date.now()}.csv`;
+        link.click();
+        showToast(`Exported ${users.length} accounts to CSV`, 'success');
+      } catch (err) {
+        showToast('Failed to export CSV: ' + err.message, 'error');
       }
     }
 
@@ -4988,6 +5594,266 @@
       }
     }
 
+    // --- ROLE MANAGEMENT MODAL HANDLERS ---
+    function openAssignRoleModal(userId, userName, userEmail, currentRole) {
+      document.getElementById('admin-role-target-user-id').value = userId;
+      document.getElementById('admin-role-target-user-info').textContent = `${userName} (${userEmail || userId.slice(0, 8)})`;
+      document.getElementById('admin-role-current-badge').textContent = currentRole;
+      document.getElementById('admin-role-current-badge').className = (currentRole === 'OWNER' || currentRole === 'SUPER_ADMIN') ? 'badge-role-admin' : 'badge-role-user';
+      document.getElementById('admin-role-target-select').value = currentRole;
+      document.getElementById('admin-role-reason-input').value = '';
+      document.getElementById('admin-role-mfa-box').style.display = 'none';
+      document.getElementById('admin-role-mfa-code').value = '';
+      updateRoleModalPermissionPreview();
+      document.getElementById('modal-admin-assign-role').style.display = 'flex';
+    }
+
+    function closeAdminAssignRoleModal() {
+      document.getElementById('modal-admin-assign-role').style.display = 'none';
+    }
+
+    function updateRoleModalPermissionPreview() {
+      const targetRole = document.getElementById('admin-role-target-select')?.value || 'USER';
+      const previewEl = document.getElementById('admin-role-permission-preview');
+      const targetUserId = document.getElementById('admin-role-target-user-id')?.value;
+      const isSelf = currentUserSession && currentUserSession.userId === targetUserId;
+
+      if (!previewEl) return;
+
+      if (isSelf) {
+        previewEl.innerHTML = '<span style="color: #DC2626; font-weight: 700;"><i class="fa-solid fa-triangle-exclamation"></i> Security Invariant: You cannot alter your own administrative role.</span>';
+        return;
+      }
+
+      let perms = [];
+      if (adminRolesMatrixData && adminRolesMatrixData.matrix && adminRolesMatrixData.matrix[targetRole]) {
+        perms = adminRolesMatrixData.matrix[targetRole];
+      } else {
+        const fallbackMatrix = {
+          'OWNER': ['ALL_PRIVILEGES', 'user:manage_roles', 'billing:refund', 'ai:configure_quotas', 'system:feature_flags', 'system:manage_keys'],
+          'SECURITY_ADMIN': ['system:feature_flags', 'system:view_audit', 'system:manage_keys', 'user:moderate'],
+          'FINANCE_ADMIN': ['billing:refund', 'billing:pricing_read', 'billing:pricing_write', 'billing:reconcile'],
+          'SUPPORT_ADMIN': ['user:moderate', 'user:privacy_export', 'support:notes_write'],
+          'CONTENT_EDITOR': ['content:banners_write', 'astrology:content_write'],
+          'ASTROLOGY_OPS_ADMIN': ['astrology:engine_calibrate', 'astrology:telemetry_read'],
+          'READONLY_ANALYST': ['metrics:view_analytics', 'system:view_audit', 'billing:pricing_read'],
+          'USER': ['customer:account_access']
+        };
+        perms = fallbackMatrix[targetRole] || ['customer:account_access'];
+      }
+
+      previewEl.innerHTML = `
+        <div style="font-weight: 700; color: #1E293B; margin-bottom: 4px;">Role Authority Scope (${perms.length} Permissions):</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+          ${perms.map(p => `<span style="background: #E2E8F0; color: #1E293B; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">${escapeHtml(p)}</span>`).join('')}
+        </div>
+      `;
+    }
+
+    async function submitAdminAssignRole() {
+      const userId = document.getElementById('admin-role-target-user-id')?.value;
+      const newRole = document.getElementById('admin-role-target-select')?.value;
+      const reason = document.getElementById('admin-role-reason-input')?.value.trim();
+      const mfaCode = document.getElementById('admin-role-mfa-code')?.value.trim();
+
+      if (!userId || !newRole) {
+        showToast('Missing target user or role.', 'error');
+        return;
+      }
+
+      if (!reason || reason.length < 5) {
+        showToast('A mandatory audit reason of at least 5 characters is required.', 'error');
+        return;
+      }
+
+      if (currentUserSession && currentUserSession.userId === userId) {
+        showToast('Self-role alteration is strictly denied by security policy.', 'error');
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (mfaCode) headers['x-admin-mfa-code'] = mfaCode;
+
+        const res = await fetch(`${getAuthBase()}/api/admin/users/${userId}/role`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ role: newRole, reason })
+        });
+
+        if (res.status === 428) {
+          document.getElementById('admin-role-mfa-box').style.display = 'block';
+          showToast('TOTP verification code required for role assignment.', 'info');
+          return;
+        }
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`Successfully assigned role ${newRole} to user`, 'success');
+          closeAdminAssignRoleModal();
+          loadAdminUsersList();
+          loadAdminRoles();
+        } else {
+          showToast(data.message || 'Failed to assign role.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error assigning role.', 'error');
+      }
+    }
+
+    // --- SUBSCRIPTION GRANT, EXTEND, AND CANCEL MODAL HANDLERS ---
+    function openGrantSubscriptionModal(userId, userName, userEmail, currentTier) {
+      document.getElementById('admin-grant-sub-target-user-id').value = userId;
+      document.getElementById('admin-grant-sub-target-user-info').textContent = `${userName} (${userEmail || userId.slice(0, 8)}) — Current: ${currentTier}`;
+      document.getElementById('admin-grant-sub-tier').value = currentTier === 'PLUS' ? 'PREMIUM' : 'PLUS';
+      document.getElementById('admin-grant-sub-reason').value = '';
+      document.getElementById('modal-admin-grant-subscription').style.display = 'flex';
+    }
+
+    function closeAdminGrantSubscriptionModal() {
+      document.getElementById('modal-admin-grant-subscription').style.display = 'none';
+    }
+
+    async function submitAdminGrantSubscription() {
+      const userId = document.getElementById('admin-grant-sub-target-user-id')?.value;
+      const tier = document.getElementById('admin-grant-sub-tier')?.value;
+      const billingCadence = document.getElementById('admin-grant-sub-cadence')?.value;
+      const grantSource = document.getElementById('admin-grant-sub-source')?.value;
+      const durationDays = parseInt(document.getElementById('admin-grant-sub-duration')?.value || '30', 10);
+      const reason = document.getElementById('admin-grant-sub-reason')?.value.trim();
+
+      if (!userId || !tier) {
+        showToast('Invalid subscription parameters.', 'error');
+        return;
+      }
+
+      if (!reason || reason.length < 5) {
+        showToast('A mandatory audit reason of at least 5 characters is required.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/subscriptions/assign`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            userId,
+            tier,
+            billingPeriod: billingCadence,
+            durationDays,
+            grantSource,
+            reason
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`Successfully granted ${tier} (${grantSource}) for ${durationDays} days`, 'success');
+          closeAdminGrantSubscriptionModal();
+          loadAdminUsersList();
+          loadAdminSubscriptions();
+        } else {
+          showToast(data.message || 'Failed to grant subscription.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error granting subscription.', 'error');
+      }
+    }
+
+    function openExtendSubscriptionModal(userId, userName, currentExpiresAt) {
+      document.getElementById('admin-extend-sub-target-user-id').value = userId;
+      document.getElementById('admin-extend-sub-target-user-info').textContent = `${userName} (${userId.slice(0, 8)})`;
+      document.getElementById('admin-extend-sub-current-expiry').textContent = currentExpiresAt ? new Date(currentExpiresAt).toLocaleString() : 'Active (No Expiry)';
+      document.getElementById('admin-extend-sub-reason').value = '';
+      document.getElementById('modal-admin-extend-subscription').style.display = 'flex';
+    }
+
+    function closeAdminExtendSubscriptionModal() {
+      document.getElementById('modal-admin-extend-subscription').style.display = 'none';
+    }
+
+    async function submitAdminExtendSubscription() {
+      const userId = document.getElementById('admin-extend-sub-target-user-id')?.value;
+      const additionalDays = parseInt(document.getElementById('admin-extend-sub-days')?.value || '15', 10);
+      const reason = document.getElementById('admin-extend-sub-reason')?.value.trim();
+
+      if (!userId) {
+        showToast('Invalid target user.', 'error');
+        return;
+      }
+
+      if (!reason || reason.length < 5) {
+        showToast('A mandatory audit reason of at least 5 characters is required.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/subscriptions/extend`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ userId, additionalDays, reason })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`Subscription extended by ${additionalDays} days. New expiry: ${new Date(data.newExpiresAt).toLocaleDateString()}`, 'success');
+          closeAdminExtendSubscriptionModal();
+          loadAdminUsersList();
+          loadAdminSubscriptions();
+        } else {
+          showToast(data.message || 'Failed to extend subscription.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error extending subscription.', 'error');
+      }
+    }
+
+    function openCancelSubscriptionModal(userId, userName, currentTier) {
+      document.getElementById('admin-cancel-sub-target-user-id').value = userId;
+      document.getElementById('admin-cancel-sub-target-user-info').textContent = `${userName} (${userId.slice(0, 8)}) — Current: ${currentTier}`;
+      document.getElementById('admin-cancel-sub-reason').value = '';
+      document.getElementById('modal-admin-cancel-subscription').style.display = 'flex';
+    }
+
+    function closeAdminCancelSubscriptionModal() {
+      document.getElementById('modal-admin-cancel-subscription').style.display = 'none';
+    }
+
+    async function submitAdminCancelSubscription() {
+      const userId = document.getElementById('admin-cancel-sub-target-user-id')?.value;
+      const reason = document.getElementById('admin-cancel-sub-reason')?.value.trim();
+
+      if (!userId) {
+        showToast('Invalid target user.', 'error');
+        return;
+      }
+
+      if (!reason || reason.length < 5) {
+        showToast('A mandatory audit reason of at least 5 characters is required.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/subscriptions/cancel`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ userId, reason })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('Subscription cancelled and account reverted to FREE plan', 'success');
+          closeAdminCancelSubscriptionModal();
+          loadAdminUsersList();
+          loadAdminSubscriptions();
+        } else {
+          showToast(data.message || 'Failed to cancel subscription.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error cancelling subscription.', 'error');
+      }
+    }
+
     async function promptAdminWalletAdjustment(userId, userName) {
       const type = prompt(`Wallet adjustment for ${userName} (${userId}):\nEnter adjustment type: 'CREDIT' or 'DEBIT'`, 'CREDIT');
       if (!type) return;
@@ -5034,39 +5900,99 @@
       }
     }
 
+    // --- MODULE 3: ADMINISTRATOR DIRECTORY & CANONICAL RBAC MATRIX ---
     async function loadAdminRoles() {
       const tbody = document.getElementById('admin-roles-tbody');
-      if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading administrator directory...</td></tr>';
+      const matrixTbody = document.getElementById('admin-rbac-matrix-tbody');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748B; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading administrator directory...</td></tr>';
+
       try {
-        const res = await fetch(`${getAuthBase()}/api/admin/roles/admins`, { headers: getAuthHeaders() });
-        if (res.ok) {
-          const data = await res.json();
+        const [adminsRes, rolesRes] = await Promise.all([
+          fetch(`${getAuthBase()}/api/admin/roles/admins`, { headers: getAuthHeaders() }),
+          fetch(`${getAuthBase()}/api/admin/roles`, { headers: getAuthHeaders() })
+        ]);
+
+        if (rolesRes.ok) {
+          adminRolesMatrixData = await rolesRes.json();
+          if (matrixTbody && adminRolesMatrixData.matrix) {
+            const roleDescriptions = {
+              'OWNER': 'Platform Founder & Executive Sovereign. Unrestricted governance across all database tables, financial ledger operations, and administrative access.',
+              'SECURITY_ADMIN': 'Chief Information Security Officer & Infrastructure Security. Manages MFA enforcement, feature flag toggles, runtime settings, and audit trails.',
+              'FINANCE_ADMIN': 'Financial Operations & Payments Director. Manages Cashfree gateway reconciliations, customer refund processing, and canonical product pricing.',
+              'SUPPORT_ADMIN': 'Customer Service Operations Lead. Manages account moderation, customer notes, user status adjustments, and GDPR / DPDP privacy requests.',
+              'CONTENT_EDITOR': 'Editorial & Public Communications. Authors platform announcements, daily horoscopic notices, and marketing banners.',
+              'ASTROLOGY_OPS_ADMIN': 'Astrological Engine Director. Supervises Swiss Ephemeris golden calibrations, planetary telemetry, and kundli precision tests.',
+              'READONLY_ANALYST': 'Compliance, BI & Business Analytics Auditor. Read-only access to customer directories, platform KPIs, financial aggregations, and audit logs.',
+              'USER': 'Standard Customer Account. Consumer access to Kundli analysis, astrology queries, and purchased reports.'
+            };
+
+            const matrixRows = Object.keys(adminRolesMatrixData.matrix).map(r => {
+              const perms = adminRolesMatrixData.matrix[r] || [];
+              const desc = roleDescriptions[r] || 'Operational role';
+              const isLead = (r === 'OWNER' || r === 'SECURITY_ADMIN' || r === 'FINANCE_ADMIN');
+              return `
+                <tr>
+                  <td>
+                    <span class="${isLead ? 'badge-role-admin' : 'badge-role-user'}">${escapeHtml(r)}</span>
+                  </td>
+                  <td style="font-size: 11.5px; color: #475569; line-height: 1.4;">${escapeHtml(desc)}</td>
+                  <td>
+                    <div style="display: flex; flex-wrap: wrap; gap: 3px;">
+                      ${perms.map(p => `<span style="background: #F1F5F9; color: #334155; font-size: 9.5px; font-weight: 700; padding: 2px 5px; border-radius: 4px; font-family: monospace;">${escapeHtml(p)}</span>`).join('')}
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+            matrixTbody.innerHTML = matrixRows;
+          }
+        }
+
+        if (adminsRes.ok && tbody) {
+          const data = await adminsRes.json();
           const list = data.admins || [];
           if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 24px;">No administrator records found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748B; padding: 24px;">No administrator records found.</td></tr>';
             return;
           }
-          tbody.innerHTML = list.map(a => `
-            <tr>
-              <td><strong>${escapeHtml(a.displayName || a.email || a.id)}</strong><div style="font-size: 11px; color: #64748B;">${escapeHtml(a.email || '')}</div></td>
-              <td><span class="badge-role-admin">${escapeHtml(a.canonicalRole || a.role)}</span></td>
-              <td><span style="color: ${a.mfaEnabled ? '#059669' : '#D97706'}; font-weight: 700;">${a.mfaEnabled ? '<i class=\"fa-solid fa-shield-check\"></i> ACTIVE (TOTP)' : '<i class=\"fa-solid fa-circle-exclamation\"></i> NOT_ENROLLED'}</span></td>
-              <td><span class="badge-status-active">${escapeHtml(a.status)}</span></td>
-              <td style="font-size: 11px; color: #64748B;">${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : 'Never'}</td>
-            </tr>
-          `).join('');
-        } else {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #DC2626; padding: 20px;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load administrator directory (HTTP ${res.status}).
-            <button class="btn-outline-secondary" style="font-size: 11px; padding: 3px 10px; margin-left: 8px;" onclick="loadAdminRoles()">Retry</button>
-          </td></tr>`;
+
+          tbody.innerHTML = list.map(a => {
+            const role = a.canonicalRole || a.role;
+            const isSelf = currentUserSession && currentUserSession.userId === a.id;
+            return `
+              <tr>
+                <td>
+                  <strong>${escapeHtml(a.displayName || a.email || a.id)}</strong>
+                  <div style="font-size: 11px; color: #64748B;">${escapeHtml(a.email || '')}</div>
+                  <div style="font-size: 10px; color: #94A3B8; font-family: monospace;">ID: ${escapeHtml(a.id.slice(0, 12))}...</div>
+                </td>
+                <td><span class="badge-role-admin">${escapeHtml(role)}</span></td>
+                <td>
+                  <span style="color: ${a.mfaEnabled ? '#059669' : '#D97706'}; font-weight: 700; font-size: 11.5px;">
+                    ${a.mfaEnabled ? '<i class=\"fa-solid fa-shield-check\"></i> ACTIVE (TOTP)' : '<i class=\"fa-solid fa-circle-exclamation\"></i> NOT_ENROLLED'}
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 800; background: #EFF6FF; color: #1D4ED8;">
+                    ${a.activeSessionsCount || 1} active
+                  </span>
+                </td>
+                <td style="font-size: 11.5px; color: #475569;">
+                  <strong>${a.permissionsCount || 0}</strong> granted
+                </td>
+                <td><span class="badge-status-active">${escapeHtml(a.status)}</span></td>
+                <td style="font-size: 11px; color: #64748B;">${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : 'Never'}</td>
+                <td>
+                  <button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 10.5px;" onclick="openAssignRoleModal('${a.id}', '${escapeHtml(a.displayName || a.email || 'Admin')}', '${escapeHtml(a.email || '')}', '${role}')" ${isSelf ? 'disabled title=\"Cannot alter own role\"' : ''}>
+                    <i class="fa-solid fa-user-gear"></i> Manage
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
         }
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #DC2626; padding: 20px;">
-          <i class="fa-solid fa-triangle-exclamation"></i> Network error loading administrators.
-          <button class="btn-outline-secondary" style="font-size: 11px; padding: 3px 10px; margin-left: 8px;" onclick="loadAdminRoles()">Retry</button>
-        </td></tr>`;
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #DC2626; padding: 20px;">Error loading administrators.</td></tr>';
       }
     }
 
@@ -5291,16 +6217,30 @@
       }
     }
 
-    async function loadAdminSubscriptions() {
+    async function loadAdminSubscriptions(targetPage) {
+      const page = targetPage || adminSubsPaginationState.page || 1;
+      const search = document.getElementById('admin-subs-search')?.value.trim() || '';
+      const tier = document.getElementById('admin-subs-filter-tier')?.value || 'ALL';
+      const status = document.getElementById('admin-subs-filter-status')?.value || 'ALL';
       const freeCountEl = document.getElementById('tier-count-free');
       const plusCountEl = document.getElementById('tier-count-plus');
       const premCountEl = document.getElementById('tier-count-premium');
       const plusPriceEl = document.getElementById('admin-plus-price-label');
       const premPriceEl = document.getElementById('admin-premium-price-label');
+      const tbody = document.getElementById('admin-subscribers-tbody');
+
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading subscribers directory...</td></tr>';
 
       try {
+        const url = new URL(`${getAuthBase()}/api/admin/subscriptions`);
+        url.searchParams.append('page', String(page));
+        url.searchParams.append('limit', '20');
+        if (search) url.searchParams.append('search', search);
+        if (tier !== 'ALL') url.searchParams.append('tier', tier);
+        if (status !== 'ALL') url.searchParams.append('status', status);
+
         const [subRes, prodRes] = await Promise.all([
-          fetch(`${getAuthBase()}/api/admin/subscriptions`, { headers: getAuthHeaders() }),
+          fetch(url.toString(), { headers: getAuthHeaders() }),
           fetch(`${getAuthBase()}/api/admin/products`, { headers: getAuthHeaders() })
         ]);
 
@@ -5310,6 +6250,96 @@
           if (freeCountEl) freeCountEl.textContent = dist.FREE ?? 0;
           if (plusCountEl) plusCountEl.textContent = dist.PLUS ?? 0;
           if (premCountEl) premCountEl.textContent = dist.PREMIUM ?? 0;
+
+          const subscribers = data.subscribers || [];
+          adminSubsPaginationState = {
+            page: data.page || page,
+            limit: data.limit || 20,
+            total: data.total || data.totalSubscribers || subscribers.length,
+            totalPages: data.totalPages || 1
+          };
+
+          if (tbody) {
+            if (subscribers.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;">No subscribers match the current filter criteria.</td></tr>';
+            } else {
+              tbody.innerHTML = subscribers.map(s => {
+                const sTier = s.subscriptionTier || 'FREE';
+                const sStatus = s.subscriptionStatus || 'NONE';
+                const tierColor = sTier === 'PREMIUM' ? '#881337' : (sTier === 'PLUS' ? '#B45309' : '#475569');
+                const tierBg = sTier === 'PREMIUM' ? '#FFF1F2' : (sTier === 'PLUS' ? '#FFFBEB' : '#F8FAFC');
+                const tierBorder = sTier === 'PREMIUM' ? '#FDA4AF' : (sTier === 'PLUS' ? '#FDE68A' : '#E2E8F0');
+
+                let daysRemaining = null;
+                if (s.subscriptionExpiresAt) {
+                  const ms = new Date(s.subscriptionExpiresAt).getTime() - Date.now();
+                  daysRemaining = Math.max(0, Math.ceil(ms / 86400000));
+                }
+
+                return `
+                  <tr>
+                    <td>
+                      <strong>${escapeHtml(s.displayName || 'Customer')}</strong>
+                      <div style="font-size: 11px; color: #64748B;">${escapeHtml(s.email || '')}</div>
+                      <code style="font-size: 10px; color: #94A3B8;">${escapeHtml(s.id.slice(0, 12))}...</code>
+                    </td>
+                    <td>
+                      <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; background: ${tierBg}; color: ${tierColor}; border: 1px solid ${tierBorder};">
+                        ${escapeHtml(sTier)}
+                      </span>
+                    </td>
+                    <td>
+                      <span style="font-size: 11.5px; font-weight: 600; color: #475569;">
+                        ${escapeHtml(s.subscriptionBillingPeriod || (sTier === 'FREE' ? 'PERMANENT' : 'COMPLIMENTARY'))}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="${sStatus === 'ACTIVE' ? 'badge-status-active' : 'badge-status-deactivated'}">
+                        ${escapeHtml(sStatus)}
+                      </span>
+                    </td>
+                    <td>
+                      <div style="font-size: 11.5px;">${s.subscriptionExpiresAt ? new Date(s.subscriptionExpiresAt).toLocaleDateString() : 'Permanent'}</div>
+                      ${daysRemaining !== null ? `<div style="font-size: 10.5px; color: ${daysRemaining < 5 ? '#DC2626' : '#059669'}; font-weight: 700;">${daysRemaining} days left</div>` : ''}
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; color: #B45309;" onclick="openGrantSubscriptionModal('${s.id}', '${escapeHtml(s.displayName || s.email || 'User')}', '${escapeHtml(s.email || '')}', '${sTier}')">
+                          <i class="fa-solid fa-crown"></i> Manage
+                        </button>
+                        ${sTier !== 'FREE' ? `
+                          <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; color: #0284C7;" onclick="openExtendSubscriptionModal('${s.id}', '${escapeHtml(s.displayName || s.email || 'User')}', '${s.subscriptionExpiresAt || ''}')">
+                            +Extend
+                          </button>
+                          <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; color: #DC2626;" onclick="openCancelSubscriptionModal('${s.id}', '${escapeHtml(s.displayName || s.email || 'User')}', '${sTier}')">
+                            Cancel
+                          </button>
+                        ` : ''}
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('');
+            }
+
+            // Render Subscriptions Pagination
+            const subPageInfo = document.getElementById('admin-subs-page-info');
+            const subBtnContainer = document.getElementById('admin-subs-pagination-buttons');
+            if (subPageInfo) {
+              subPageInfo.textContent = `Showing page ${adminSubsPaginationState.page} of ${adminSubsPaginationState.totalPages} (${adminSubsPaginationState.total} total subscribers)`;
+            }
+            if (subBtnContainer) {
+              const sp = adminSubsPaginationState.page;
+              const stp = adminSubsPaginationState.totalPages;
+              let sHtml = '';
+              sHtml += `<button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="loadAdminSubscriptions(1)" ${sp <= 1 ? 'disabled' : ''}>&laquo;</button>`;
+              sHtml += `<button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="loadAdminSubscriptions(${sp - 1})" ${sp <= 1 ? 'disabled' : ''}>&lsaquo;</button>`;
+              sHtml += `<span style="font-size: 11px; padding: 2px 6px;">${sp} / ${stp}</span>`;
+              sHtml += `<button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="loadAdminSubscriptions(${sp + 1})" ${sp >= stp ? 'disabled' : ''}>&rsaquo;</button>`;
+              sHtml += `<button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="loadAdminSubscriptions(${stp})" ${sp >= stp ? 'disabled' : ''}>&raquo;</button>`;
+              subBtnContainer.innerHTML = sHtml;
+            }
+          }
         }
 
         if (prodRes.ok) {
