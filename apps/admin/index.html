@@ -5626,8 +5626,9 @@
       }
 
       let perms = [];
-      if (adminRolesMatrixData && adminRolesMatrixData.matrix && adminRolesMatrixData.matrix[targetRole]) {
-        perms = adminRolesMatrixData.matrix[targetRole];
+      const rawMatrix = (adminRolesMatrixData && (adminRolesMatrixData.rolePermissions || adminRolesMatrixData.matrix)) || null;
+      if (rawMatrix && rawMatrix[targetRole]) {
+        perms = rawMatrix[targetRole];
       } else {
         const fallbackMatrix = {
           'OWNER': ['ALL_PRIVILEGES', 'user:manage_roles', 'billing:refund', 'ai:configure_quotas', 'system:feature_flags', 'system:manage_keys'],
@@ -5914,7 +5915,8 @@
 
         if (rolesRes.ok) {
           adminRolesMatrixData = await rolesRes.json();
-          if (matrixTbody && adminRolesMatrixData.matrix) {
+          const matrix = adminRolesMatrixData.rolePermissions || adminRolesMatrixData.matrix || {};
+          if (matrixTbody && Object.keys(matrix).length > 0) {
             const roleDescriptions = {
               'OWNER': 'Platform Founder & Executive Sovereign. Unrestricted governance across all database tables, financial ledger operations, and administrative access.',
               'SECURITY_ADMIN': 'Chief Information Security Officer & Infrastructure Security. Manages MFA enforcement, feature flag toggles, runtime settings, and audit trails.',
@@ -5926,8 +5928,11 @@
               'USER': 'Standard Customer Account. Consumer access to Kundli analysis, astrology queries, and purchased reports.'
             };
 
-            const matrixRows = Object.keys(adminRolesMatrixData.matrix).map(r => {
-              const perms = adminRolesMatrixData.matrix[r] || [];
+            const canonicalRolesList = ['OWNER', 'SECURITY_ADMIN', 'FINANCE_ADMIN', 'SUPPORT_ADMIN', 'CONTENT_EDITOR', 'ASTROLOGY_OPS_ADMIN', 'READONLY_ANALYST', 'USER'];
+            const displayRoles = canonicalRolesList.filter(r => matrix[r]);
+
+            const matrixRows = displayRoles.map(r => {
+              const perms = matrix[r] || [];
               const desc = roleDescriptions[r] || 'Operational role';
               const isLead = (r === 'OWNER' || r === 'SECURITY_ADMIN' || r === 'FINANCE_ADMIN');
               return `
