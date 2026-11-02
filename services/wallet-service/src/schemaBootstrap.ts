@@ -289,6 +289,61 @@ export const DDL_STATEMENTS: string[] = [
     CONSTRAINT "ContentBanner_pkey" PRIMARY KEY ("id")
   );`,
 
+  `CREATE TABLE IF NOT EXISTS "Promotion" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "discountType" TEXT NOT NULL,
+    "discountValue" DECIMAL(10,2) NOT NULL,
+    "applicableTo" TEXT NOT NULL DEFAULT 'ALL',
+    "minOrderAmount" DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    "maxDiscount" DECIMAL(10,2),
+    "maxUses" INTEGER NOT NULL DEFAULT 1000,
+    "usedCount" INTEGER NOT NULL DEFAULT 0,
+    "startsAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT NOT NULL DEFAULT 'admin',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Promotion_pkey" PRIMARY KEY ("id")
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS "CustomerNote" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "adminId" TEXT NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'GENERAL',
+    "reason" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "CustomerNote_pkey" PRIMARY KEY ("id")
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS "Entitlement" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "featureKey" TEXT NOT NULL,
+    "source" TEXT NOT NULL DEFAULT 'ADMIN_GRANT',
+    "grantedBy" TEXT NOT NULL,
+    "grantedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
+    "reason" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Entitlement_pkey" PRIMARY KEY ("id")
+  );`,
+
+  // Alter existing tables for schema alignment
+  `DO $$ BEGIN
+    ALTER TABLE "SavedReport" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'COMPLETED';
+    ALTER TABLE "Astrologer" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN NOT NULL DEFAULT false;
+  EXCEPTION
+    WHEN duplicate_column THEN null;
+  END $$;`,
+
   // Indexes
   `CREATE UNIQUE INDEX IF NOT EXISTS "User_phone_key" ON "User"("phone");`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");`,
@@ -314,6 +369,12 @@ export const DDL_STATEMENTS: string[] = [
   `CREATE INDEX IF NOT EXISTS "PlatformIncident_status_severity_idx" ON "PlatformIncident"("status", "severity");`,
   `CREATE INDEX IF NOT EXISTS "PrivacyRequest_userId_status_idx" ON "PrivacyRequest"("userId", "status");`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "ContentBanner_key_key" ON "ContentBanner"("key");`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Promotion_code_key" ON "Promotion"("code");`,
+  `CREATE INDEX IF NOT EXISTS "Promotion_code_isActive_idx" ON "Promotion"("code", "isActive");`,
+  `CREATE INDEX IF NOT EXISTS "CustomerNote_userId_createdAt_idx" ON "CustomerNote"("userId", "createdAt");`,
+  `CREATE INDEX IF NOT EXISTS "Entitlement_userId_isActive_idx" ON "Entitlement"("userId", "isActive");`,
+  `CREATE INDEX IF NOT EXISTS "Entitlement_featureKey_isActive_idx" ON "Entitlement"("featureKey", "isActive");`,
+  `CREATE INDEX IF NOT EXISTS "SavedReport_userId_status_idx" ON "SavedReport"("userId", "status");`,
 
   // Foreign key constraints
   `DO $$ BEGIN
@@ -386,6 +447,16 @@ export const DDL_STATEMENTS: string[] = [
   EXCEPTION WHEN duplicate_object THEN null;
   END $$;`,
 
+  `DO $$ BEGIN
+    ALTER TABLE "CustomerNote" ADD CONSTRAINT "CustomerNote_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    ALTER TABLE "Entitlement" ADD CONSTRAINT "Entitlement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
   // ===========================================================================
   // ROW LEVEL SECURITY (RLS) POLICIES & PRIVILEGE HARDENING (PHASE 6)
   // ===========================================================================
@@ -410,6 +481,9 @@ export const DDL_STATEMENTS: string[] = [
   `ALTER TABLE "PlatformIncident" ENABLE ROW LEVEL SECURITY;`,
   `ALTER TABLE "ContentBanner" ENABLE ROW LEVEL SECURITY;`,
   `ALTER TABLE "Astrologer" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "Promotion" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "CustomerNote" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "Entitlement" ENABLE ROW LEVEL SECURITY;`,
 
   // User Profile: Users may read/update only their own record; service_role has full access
   `DO $$ BEGIN
@@ -587,6 +661,41 @@ export const DDL_STATEMENTS: string[] = [
   EXCEPTION WHEN duplicate_object THEN null;
   END $$;`,
 
+  // Promotion: Public read, service_role mutate
+  `DO $$ BEGIN
+    CREATE POLICY "promotion_public_read" ON "Promotion" FOR SELECT USING (true);
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "promotion_service_mutate" ON "Promotion" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // CustomerNote: Service role only
+  `DO $$ BEGIN
+    CREATE POLICY "customernote_service_only" ON "CustomerNote" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // Entitlement: User own read, service_role mutate
+  `DO $$ BEGIN
+    CREATE POLICY "entitlement_read_own" ON "Entitlement" FOR SELECT 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "entitlement_service_mutate" ON "Entitlement" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
   // BirthProfile additive columns for unknown and approximate birth times
   `DO $$ BEGIN
     ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "birthTimeStatus" TEXT NOT NULL DEFAULT 'EXACT';
@@ -609,14 +718,14 @@ export const DDL_STATEMENTS: string[] = [
   FROM "User";`,
 
   // SQL Grants Hardening: Principle of least privilege & credential column protection
-  `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession" FROM anon;`,
-  `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession" FROM authenticated;`,
+  `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession", "CustomerNote" FROM anon;`,
+  `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession", "CustomerNote" FROM authenticated;`,
 
   // Column-level SELECT on non-sensitive User fields only (passwordHash, passwordSalt, resetTokenHash, mfaSecret, mfaRecoveryCodes are EXCLUDED)
   `GRANT SELECT ("id", "phone", "email", "phoneVerified", "emailVerified", "displayName", "role", "status", "preferredLanguage", "preferredTimezone", "walletBalance", "mfaEnabled", "mfaEnforced", "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", "lastLoginAt", "createdAt", "updatedAt") ON "User" TO authenticated;`,
 
   `GRANT SELECT ON "CustomerProfileView" TO authenticated;`,
-  `GRANT SELECT ON "BirthProfile", "SavedReport", "KundliCalculation", "PaymentOrder", "WalletLedger", "ConsultationSession", "ConsultationMessage", "PujaBooking", "PrivacyRequest" TO authenticated;`,
+  `GRANT SELECT ON "BirthProfile", "SavedReport", "KundliCalculation", "PaymentOrder", "WalletLedger", "ConsultationSession", "ConsultationMessage", "PujaBooking", "PrivacyRequest", "Promotion", "Entitlement" TO authenticated;`,
   `GRANT INSERT, UPDATE, DELETE ON "BirthProfile", "SavedReport", "KundliCalculation", "PrivacyRequest" TO authenticated;`,
   `GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;`,
   `GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;`
@@ -638,7 +747,10 @@ export const APPLICATION_TABLES = [
   'FeatureFlag',
   'PlatformIncident',
   'PrivacyRequest',
-  'ContentBanner'
+  'ContentBanner',
+  'Promotion',
+  'CustomerNote',
+  'Entitlement'
 ] as const;
 
 export interface SchemaReadinessResult {

@@ -92,6 +92,8 @@ model User {
   sessions          UserSession[]
   auditEvents       AuditEvent[]
   privacyRequests   PrivacyRequest[]
+  customerNotes     CustomerNote[]
+  entitlements      Entitlement[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -138,10 +140,12 @@ model SavedReport {
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   title             String
   reportType        String             // KUNDLI, DOSHA, HORA, MATCHING, AI_INSIGHT
+  status            String             @default("COMPLETED") // COMPLETED, QUEUED, PROCESSING, FAILED
   payload           Json
   createdAt         DateTime           @default(now())
 
   @@index([userId, reportType])
+  @@index([userId, status])
 }
 
 model BirthProfile {
@@ -202,6 +206,7 @@ model Astrologer {
   ratePerMinute      Decimal             @db.Decimal(10, 2)
   isOnline           Boolean             @default(false)
   isBusy             Boolean             @default(false)
+  isVerified         Boolean             @default(false)
   pendingPayout      Decimal             @default(0.00) @db.Decimal(12, 2)
   sessions           ConsultationSession[]
   ledgerEntries      WalletLedger[]
@@ -333,4 +338,57 @@ model ContentBanner {
   isActive  Boolean  @default(true)
   updatedAt DateTime @default(now()) @updatedAt
   updatedBy String   @default("system")
+}
+
+model Promotion {
+  id             String    @id @default(uuid())
+  code           String    @unique
+  description    String
+  discountType   String    // PERCENTAGE, FLAT_DISCOUNT, BONUS_PERCENTAGE, FREE_REPORT
+  discountValue  Decimal   @db.Decimal(10, 2)
+  applicableTo   String    @default("ALL") // WALLET_RECHARGE, SUBSCRIPTION, REPORTS, ALL
+  minOrderAmount Decimal   @default(0.00) @db.Decimal(12, 2)
+  maxDiscount    Decimal?  @db.Decimal(10, 2)
+  maxUses        Int       @default(1000)
+  usedCount      Int       @default(0)
+  startsAt       DateTime  @default(now())
+  expiresAt      DateTime?
+  isActive       Boolean   @default(true)
+  createdBy      String    @default("admin")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([code, isActive])
+}
+
+model CustomerNote {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminId   String
+  category  String   @default("GENERAL") // GENERAL, BILLING, SUPPORT, RETENTION, ESCALATION
+  reason    String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Entitlement {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  featureKey String    // PLUS, PREMIUM, FULL_KUNDLI_REPORT, VARSHAPHAL_2026, COMPATIBILITY, etc.
+  source     String    @default("ADMIN_GRANT") // ADMIN_GRANT, PROMOTIONAL_GRANT, SUPPORT_COMPENSATION, TRIAL_GRANT, PAID_SUBSCRIPTION
+  grantedBy  String
+  grantedAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  reason     String
+  isActive   Boolean   @default(true)
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId, isActive])
+  @@index([featureKey, isActive])
 }
