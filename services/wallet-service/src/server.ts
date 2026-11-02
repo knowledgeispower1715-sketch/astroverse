@@ -4594,64 +4594,30 @@ app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticat
   const { id } = req.params;
   const { role, reason } = req.body;
 
-  if (!role || !Object.values(Role).includes(role)) {
-    return res.status(400).json({ error: 'INVALID_ROLE', message: 'Invalid role specified. Must be one of the canonical 7 roles or USER.' });
-  }
-
-  // 1. Self-role modification prevention
-  if (req.user!.id === id) {
-    return res.status(400).json({ error: 'CANNOT_MODIFY_OWN_ROLE', message: 'Administrators cannot alter their own assigned role.' });
-  }
-
-  // 2. Only Owner / Super Admin can assign roles
-  const actorCanonical = normalizeRole(req.user!.role);
-  if (actorCanonical !== Role.OWNER) {
-    return res.status(403).json({ error: 'FORBIDDEN', message: 'Only Platform Owner can modify administrator roles.' });
-  }
-
   try {
-    const targetUser = await db.findUserById(id);
-    if (!targetUser) return res.status(404).json({ error: 'USER_NOT_FOUND' });
-
-    // 3. Resolve business justification - mandatory >= 5 chars, no auto-fill!
-    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
-      return res.status(400).json({
-        error: 'REASON_REQUIRED',
-        message: 'A detailed business reason of at least 5 characters is required for role modification.'
-      });
-    }
-    const effectiveReason = reason.trim();
-
-    // 4. Protect last active Owner from demotion atomically
-    const isTargetOwner = targetUser.role === Role.OWNER || targetUser.role === Role.SUPER_ADMIN;
-    if (isTargetOwner && role !== Role.OWNER && role !== Role.SUPER_ADMIN) {
-      const activeOwnersCount = await db.countActiveOwners();
-      if (activeOwnersCount <= 1) {
-        return res.status(403).json({
-          error: 'LAST_OWNER_PROTECTION',
-          message: 'The only active Platform Owner account cannot be downgraded or removed.'
-        });
-      }
-    }
-
-    const updated = await db.updateUser(id, { role });
-    // Invalidate existing sessions for target user so fresh permissions apply immediately
-    await db.deleteUserSessions(id);
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
+    const updated = await db.assignUserRoleAtomic({
+      targetUserId: id,
+      newRole: role,
       actorId: req.user!.id,
       actorRole: req.user!.role,
-      action: 'ADMIN_ROLE_CHANGE',
-      targetType: 'USER',
-      targetId: id,
-      outcome: 'SUCCESS',
-      reason: effectiveReason,
-      metadata: { oldRole: targetUser.role, newRole: role }
+      reason,
+      requestId: (req.headers['x-request-id'] as string) || undefined
     });
 
     res.json({ status: 'ROLE_UPDATED', user: sanitizeUser(updated) });
   } catch (err: any) {
+    if (err.code === 'INVALID_ROLE' || err.code === 'REASON_REQUIRED' || err.code === 'CANNOT_MODIFY_OWN_ROLE') {
+      return res.status(400).json({ error: err.code, message: err.message });
+    }
+    if (err.code === 'FORBIDDEN') {
+      return res.status(403).json({ error: 'FORBIDDEN', message: err.message });
+    }
+    if (err.code === 'LAST_OWNER_PROTECTION') {
+      return res.status(403).json({ error: 'LAST_OWNER_PROTECTION', message: err.message });
+    }
+    if (err.code === 'USER_NOT_FOUND') {
+      return res.status(404).json({ error: 'USER_NOT_FOUND', message: err.message });
+    }
     res.status(500).json({ error: err.message });
   }
 });
@@ -7870,12 +7836,18 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
     }
 
     const validSources = ['ADMIN_COMPLIMENTARY', 'PROMOTIONAL', 'SUPPORT_COMPENSATION', 'MANUAL_MIGRATION'];
-    const chosenSource = validSources.includes(grantSource) ? grantSource : 'ADMIN_COMPLIMENTARY';
+    if (grantSource && !validSources.includes(grantSource)) {
+      return res.status(400).json({
+        error: 'INVALID_GRANT_SOURCE',
+        message: `grantSource must be one of: ${validSources.join(', ')}. Unsupported grant sources are rejected.`
+      });
+    }
+    const chosenSource = tier === 'FREE' ? 'ADMIN_COMPLIMENTARY' : (grantSource || 'ADMIN_COMPLIMENTARY');
     const mappedEntitlementSource = chosenSource === 'PROMOTIONAL' 
       ? 'PROMOTIONAL_GRANT' 
       : (chosenSource === 'SUPPORT_COMPENSATION' 
           ? 'SUPPORT_COMPENSATION' 
-          : 'ADMIN_GRANT');
+          : (chosenSource === 'MANUAL_MIGRATION' ? 'MANUAL_MIGRATION' : 'ADMIN_COMPLIMENTARY'));
 
     // Validate billingPeriod if tier != FREE
     if (tier !== 'FREE' && billingPeriod && !['MONTHLY', 'ANNUAL'].includes(billingPeriod)) {
@@ -7911,28 +7883,11 @@ app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, auth
       tier,
       effectivePeriod,
       effectiveDays,
-      req.user!.email || req.user!.id,
+      req.user!.id,
       effectiveReason,
-      mappedEntitlementSource
+      mappedEntitlementSource as any,
+      (req.headers['x-request-id'] as string) || undefined
     );
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'SUBSCRIPTION_ASSIGNED',
-      targetType: 'SUBSCRIPTION',
-      targetId: userId,
-      outcome: 'SUCCESS',
-      metadata: {
-        targetUserId: userId,
-        tier,
-        billingPeriod: effectivePeriod,
-        durationDays: effectiveDays,
-        grantSource: chosenSource,
-        reason: effectiveReason
-      }
-    });
 
     return res.json({
       success: true,
@@ -7976,24 +7931,10 @@ app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, auth
     const updatedUser = await db.extendSubscription(
       userId,
       additionalDays,
-      req.user!.email || req.user!.id,
-      effectiveReason
+      req.user!.id,
+      effectiveReason,
+      (req.headers['x-request-id'] as string) || undefined
     );
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'SUBSCRIPTION_EXTENDED',
-      targetType: 'SUBSCRIPTION',
-      targetId: userId,
-      outcome: 'SUCCESS',
-      metadata: {
-        targetUserId: userId,
-        additionalDays,
-        reason: effectiveReason
-      }
-    });
 
     return res.json({
       success: true,
@@ -8032,7 +7973,7 @@ app.post('/api/admin/subscriptions/cancel', adminSensitiveMutationsLimiter, auth
     const updatedUser = await db.cancelSubscription(
       userId,
       mode,
-      req.user!.email || req.user!.id,
+      req.user!.id,
       effectiveReason
     );
 

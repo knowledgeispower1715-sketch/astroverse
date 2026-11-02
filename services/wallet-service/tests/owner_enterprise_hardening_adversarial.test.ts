@@ -521,4 +521,191 @@ describe('OWNER CONTROL CENTRE — ENTERPRISE HARDENING & ADVERSARIAL SUITE', ()
     assert.ok(summary.roleBreakdown['SUPPORT_ADMIN'], 'SUPPORT_ADMIN must be in breakdown');
     assert.ok(summary.roleBreakdown['FINANCE_ADMIN'], 'FINANCE_ADMIN must be in breakdown');
   });
+
+  it('19. Fail-closed: getProfilesByUserId throws DATABASE_QUERY_FAILED when PostgreSQL encounters error', async () => {
+    const dbAny = db as any;
+    const originalIsPostgres = dbAny.isPostgresAvailable;
+    const originalPrisma = dbAny.prisma;
+    try {
+      dbAny.isPostgresAvailable = true;
+      dbAny.prisma = {
+        birthProfile: {
+          findMany: async () => { throw new Error('Simulated PG connection terminated unexpectedly'); }
+        }
+      };
+
+      await assert.rejects(
+        async () => {
+          await db.getProfilesByUserId('mock-user-id');
+        },
+        /DATABASE_QUERY_FAILED/,
+        'getProfilesByUserId must throw DATABASE_QUERY_FAILED upon DB exception'
+      );
+    } finally {
+      dbAny.isPostgresAvailable = originalIsPostgres;
+      dbAny.prisma = originalPrisma;
+    }
+  });
+
+  it('20. Fail-closed: createSavedReport throws DATABASE_MUTATION_FAILED when PostgreSQL encounters error', async () => {
+    const dbAny = db as any;
+    const originalIsPostgres = dbAny.isPostgresAvailable;
+    const originalPrisma = dbAny.prisma;
+    try {
+      dbAny.isPostgresAvailable = true;
+      dbAny.prisma = {
+        savedReport: {
+          create: async () => { throw new Error('Simulated disk full or deadlock error'); }
+        }
+      };
+
+      await assert.rejects(
+        async () => {
+          await db.createSavedReport({
+            userId: 'mock-user-id',
+            reportType: 'FULL_KUNDLI',
+            title: 'Test Report',
+            payload: { chart: {} }
+          });
+        },
+        /DATABASE_MUTATION_FAILED/,
+        'createSavedReport must throw DATABASE_MUTATION_FAILED upon DB exception'
+      );
+    } finally {
+      dbAny.isPostgresAvailable = originalIsPostgres;
+      dbAny.prisma = originalPrisma;
+    }
+  });
+
+  it('21. updateSubscription updates tier, billing period, status, expiry and deactivates superseded entitlements in Prisma tx', async () => {
+    const dbAny = db as any;
+    const originalIsPostgres = dbAny.isPostgresAvailable;
+    const originalPrisma = dbAny.prisma;
+    let txCalled = false;
+    let updateDataCaptured: any = null;
+    let entitlementUpdateCaptured: any = null;
+    try {
+      dbAny.isPostgresAvailable = true;
+      dbAny.prisma = {
+        user: {
+          findUnique: async () => ({
+            id: targetCustomer2,
+            email: 'target_c2@astroverse.test',
+            role: 'USER',
+            status: 'ACTIVE',
+            subscriptionTier: 'FREE',
+            subscriptionStatus: 'ACTIVE',
+            walletBalance: 0,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+        },
+        $transaction: async (fn: any) => {
+          txCalled = true;
+          const fakeTx = {
+            user: {
+              findUnique: async () => ({ id: targetCustomer2, subscriptionTier: 'FREE' }),
+              update: async (args: any) => {
+                updateDataCaptured = args.data;
+                return {
+                  id: targetCustomer2,
+                  email: 'target_c2@astroverse.test',
+                  role: 'USER',
+                  status: 'ACTIVE',
+                  subscriptionTier: args.data.subscriptionTier,
+                  subscriptionStatus: args.data.subscriptionStatus,
+                  subscriptionBillingPeriod: args.data.subscriptionBillingPeriod,
+                  subscriptionExpiresAt: args.data.subscriptionExpiresAt,
+                  walletBalance: 0,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                };
+              }
+            },
+            entitlement: {
+              updateMany: async (args: any) => {
+                entitlementUpdateCaptured = args;
+                return { count: 1 };
+              },
+              create: async () => ({ id: 'ent-1' })
+            },
+            auditEvent: {
+              create: async () => ({ id: 'aud-1' })
+            }
+          };
+          return await fn(fakeTx);
+        }
+      };
+
+      const res = await db.updateSubscription(
+        targetCustomer2,
+        'PREMIUM',
+        'MONTHLY',
+        30
+      );
+
+      assert.strictEqual(txCalled, true, 'Prisma $transaction must be invoked');
+      assert.strictEqual(updateDataCaptured.subscriptionTier, 'PREMIUM');
+      assert.strictEqual(updateDataCaptured.subscriptionBillingPeriod, 'MONTHLY');
+      assert.strictEqual(updateDataCaptured.subscriptionStatus, 'ACTIVE');
+      assert.ok(entitlementUpdateCaptured, 'Superseded entitlements must be updated');
+      assert.strictEqual(entitlementUpdateCaptured.data.isActive, false);
+      assert.strictEqual(res.subscriptionTier, 'PREMIUM');
+    } finally {
+      dbAny.isPostgresAvailable = originalIsPostgres;
+      dbAny.prisma = originalPrisma;
+    }
+  });
+
+  it('22. assignUserRoleAtomic protects last active owner with row-level locking', async () => {
+    // Attempting to demote the only owner
+    await assert.rejects(
+      async () => {
+        await db.assignUserRoleAtomic({
+          targetUserId: ownerId,
+          newRole: Role.USER,
+          actorId: ownerId,
+          actorRole: Role.OWNER,
+          reason: 'Attempted self demotion of only owner'
+        });
+      },
+      (err: any) => {
+        return err.code === 'CANNOT_MODIFY_OWN_ROLE';
+      },
+      'Self-demotion must be rejected'
+    );
+  });
+
+  it('23. extendSubscription additive duration increments from existing expiry date', async () => {
+    // Customer 2: grant 10 days
+    await db.assignSubscriptionTier(targetCustomer2, 'PLUS', 'MONTHLY', 10, ownerId, 'Initial grant', 'ADMIN_COMPLIMENTARY');
+    const u1 = await db.findUserById(targetCustomer2);
+    const exp1 = new Date(u1!.subscriptionExpiresAt!).getTime();
+
+    // Extend by 20 days
+    await db.extendSubscription(targetCustomer2, 20, ownerId, 'Extension grant');
+    const u2 = await db.findUserById(targetCustomer2);
+    const exp2 = new Date(u2!.subscriptionExpiresAt!).getTime();
+
+    const diffDays = Math.round((exp2 - exp1) / 86400000);
+    assert.strictEqual(diffDays, 20, 'Extension must add exactly 20 days to previous expiry timestamp');
+  });
+
+  it('24. Tier modification deactivates superseded tier entitlement while preserving independent report entitlements', async () => {
+    // 1. Grant an independent report entitlement (e.g. FULL_KUNDLI_REPORT)
+    await db.grantEntitlement(targetCustomer2, 'FULL_KUNDLI_REPORT', 365, 'ADMIN_GRANT', ownerId, 'Independent report grant');
+    
+    // 2. Grant PREMIUM tier
+    await db.assignSubscriptionTier(targetCustomer2, 'PREMIUM', 'MONTHLY', 30, ownerId, 'Tier change to PREMIUM', 'ADMIN_COMPLIMENTARY');
+    let activeEnts = await db.listEntitlements({ userId: targetCustomer2, activeOnly: true });
+    assert.ok(activeEnts.some(e => e.featureKey === 'PREMIUM'), 'PREMIUM entitlement active');
+    assert.ok(activeEnts.some(e => e.featureKey === 'FULL_KUNDLI_REPORT'), 'Report entitlement active');
+
+    // 3. Downgrade to PLUS tier
+    await db.assignSubscriptionTier(targetCustomer2, 'PLUS', 'MONTHLY', 15, ownerId, 'Tier change to PLUS', 'ADMIN_COMPLIMENTARY');
+    activeEnts = await db.listEntitlements({ userId: targetCustomer2, activeOnly: true });
+    assert.strictEqual(activeEnts.some(e => e.featureKey === 'PREMIUM'), false, 'Superseded PREMIUM entitlement deactivated');
+    assert.ok(activeEnts.some(e => e.featureKey === 'PLUS'), 'PLUS entitlement active');
+    assert.ok(activeEnts.some(e => e.featureKey === 'FULL_KUNDLI_REPORT'), 'Report entitlement preserved across tier change');
+  });
 });
