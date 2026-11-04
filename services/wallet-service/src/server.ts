@@ -4271,6 +4271,15 @@ app.get(['/api/admin/metrics', '/api/admin/overview'], authenticate, requireAdmi
       metrics
     });
   } catch (err: any) {
+    if (err?.code === 'DATABASE_UNAVAILABLE' || err?.message?.includes('DATABASE_UNAVAILABLE')) {
+      return res.status(503).json({
+        success: false,
+        error: 'DATABASE_UNAVAILABLE',
+        message: err.message,
+        provenance: 'UNAVAILABLE',
+        timestamp: new Date().toISOString()
+      });
+    }
     res.status(500).json({ error: err.message });
   }
 });

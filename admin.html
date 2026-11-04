@@ -397,6 +397,24 @@
         padding: 4px 8px;
         font-size: 11px;
       }
+      .admin-global-header {
+        padding: 10px !important;
+        gap: 10px !important;
+      }
+      .admin-global-header > div:first-child {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .admin-global-header > div:first-child > div:last-child > div:first-child {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .admin-global-header > div:first-child > div:last-child > div:first-child span:first-child {
+        font-size: 13.5px !important;
+      }
+      #admin-header-email {
+        word-break: break-all;
+      }
     }
   </style>
 
@@ -5450,44 +5468,46 @@
           }
 
           // Individual metrics helper
-          const setMetric = (valId, badgeId, val, badgeType = 'LIVE') => {
+          const setMetric = (valId, badgeId, val, badgeType = 'LIVE', statusKey = null) => {
             const el = document.getElementById(valId);
-            if (el) el.textContent = val;
+            const isUnavail = val === 'UNAVAILABLE' || (statusKey && m.metricStatus && m.metricStatus[statusKey] === 'UNAVAILABLE');
+            if (el) el.textContent = isUnavail ? 'UNAVAILABLE' : val;
             const b = document.getElementById(badgeId);
             if (b) {
-              b.className = `admin-provenance-badge provenance-${badgeType.toLowerCase()}`;
-              b.textContent = badgeType;
+              const effectiveBadge = isUnavail ? 'UNAVAILABLE' : (prov === 'STALE' ? 'STALE' : badgeType);
+              b.className = `admin-provenance-badge provenance-${effectiveBadge.toLowerCase()}`;
+              b.textContent = effectiveBadge;
             }
           };
 
-          const metricBadge = prov === 'LIVE' ? 'LIVE' : (prov === 'SYNTHETIC' ? 'SYNTHETIC' : 'DERIVED');
-          const derivedBadge = prov === 'LIVE' ? 'DERIVED' : (prov === 'SYNTHETIC' ? 'SYNTHETIC' : 'DERIVED');
+          const metricBadge = prov === 'LIVE' ? 'LIVE' : (prov === 'STALE' ? 'STALE' : (prov === 'SYNTHETIC' ? 'SYNTHETIC' : 'DERIVED'));
+          const derivedBadge = prov === 'LIVE' ? 'DERIVED' : (prov === 'STALE' ? 'STALE' : (prov === 'SYNTHETIC' ? 'SYNTHETIC' : 'DERIVED'));
 
-          setMetric('metric-total-users', 'badge-total-users', m.totalUsers ?? 0, metricBadge);
-          setMetric('metric-active-users', 'badge-active-users', m.activeUsers ?? 0, metricBadge);
-          setMetric('metric-suspended-users', 'badge-suspended-users', m.suspendedUsers ?? 0, metricBadge);
-          setMetric('metric-total-deposits', 'badge-total-deposits', Number(m.totalWalletDeposits || 0).toFixed(2), derivedBadge);
-          setMetric('metric-consultation-debits', 'badge-consultation-debits', Number(m.totalConsultationSpent || 0).toFixed(2), derivedBadge);
-          setMetric('metric-total-profiles', 'badge-total-profiles', m.totalProfiles ?? 0, metricBadge);
-          setMetric('metric-active-subs', 'badge-active-subs', m.activeSubscriptions ?? 0, metricBadge);
-          setMetric('metric-active-sessions', 'badge-active-sessions', m.activeSessions ?? 0, metricBadge);
+          setMetric('metric-total-users', 'badge-total-users', m.totalUsers ?? 0, metricBadge, 'totalUsers');
+          setMetric('metric-active-users', 'badge-active-users', m.activeUsers ?? 0, metricBadge, 'activeUsers');
+          setMetric('metric-suspended-users', 'badge-suspended-users', m.suspendedUsers ?? 0, metricBadge, 'suspendedUsers');
+          setMetric('metric-total-deposits', 'badge-total-deposits', typeof m.totalWalletDeposits === 'number' ? Number(m.totalWalletDeposits).toFixed(2) : 'UNAVAILABLE', derivedBadge, 'totalWalletDeposits');
+          setMetric('metric-consultation-debits', 'badge-consultation-debits', typeof m.totalConsultationSpent === 'number' ? Number(m.totalConsultationSpent).toFixed(2) : 'UNAVAILABLE', derivedBadge, 'totalConsultationSpent');
+          setMetric('metric-total-profiles', 'badge-total-profiles', m.totalProfiles ?? 0, metricBadge, 'totalProfiles');
+          setMetric('metric-active-subs', 'badge-active-subs', m.activeSubscriptions ?? 0, metricBadge, 'activeSubscriptions');
+          setMetric('metric-active-sessions', 'badge-active-sessions', m.activeSessions ?? 0, metricBadge, 'activeSessions');
 
           // Operational Action Grid
-          if (document.getElementById('action-pending-refunds')) {
-            document.getElementById('action-pending-refunds').textContent = m.pendingRefundsCount ?? 0;
-          }
-          if (document.getElementById('action-failed-reports')) {
-            document.getElementById('action-failed-reports').textContent = m.failedReportsCount ?? 0;
-          }
-          if (document.getElementById('action-open-incidents')) {
-            document.getElementById('action-open-incidents').textContent = m.openIncidents ?? 0;
-          }
-          if (document.getElementById('action-pending-privacy')) {
-            document.getElementById('action-pending-privacy').textContent = m.pendingPrivacyRequests ?? 0;
-          }
-          if (document.getElementById('action-astrologers-count')) {
-            document.getElementById('action-astrologers-count').textContent = m.astrologerCount ?? 0;
-          }
+          const setActionCount = (id, val, statusKey) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (val === 'UNAVAILABLE' || (m.metricStatus && m.metricStatus[statusKey] === 'UNAVAILABLE')) {
+              el.innerHTML = '<span style="font-size: 11px; color: #EF4444; font-weight: 700;">UNAVAILABLE</span>';
+            } else {
+              el.textContent = val ?? 0;
+            }
+          };
+
+          setActionCount('action-pending-refunds', m.pendingRefundsCount, 'pendingRefundsCount');
+          setActionCount('action-failed-reports', m.failedReportsCount, 'failedReportsCount');
+          setActionCount('action-open-incidents', m.openIncidents, 'openIncidents');
+          setActionCount('action-pending-privacy', m.pendingPrivacyRequests, 'pendingPrivacyRequests');
+          setActionCount('action-astrologers-count', m.astrologerCount, 'astrologerCount');
 
           if (document.getElementById('admin-uptime')) {
             document.getElementById('admin-uptime').textContent = m.uptimeSeconds || 0;

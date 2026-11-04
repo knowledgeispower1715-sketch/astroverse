@@ -1,58 +1,50 @@
-# FINAL REMAINING BLOCKERS & ENVIRONMENT DEPENDENCIES
+# PHASE 4.4 FINAL REMAINING BLOCKERS & GO-LIVE READINESS
 
-**Project:** AstroVerse AI  
-**Repository:** `knowledgeispower1715-sketch/astroverse`  
-**Current PR:** [PR #1](https://github.com/knowledgeispower1715-sketch/astroverse/pull/1) (Status: OPEN, Non-Merged)  
-**Reporting Date:** 2026-11-04  
-
----
-
-## 1. Executive Summary
-
-All core software engineering, PostgreSQL fail-closed hardening, role-scoped privilege revocations, trigger relation compatibility, storage bucket RLS policies, database bootstrap production guards, CDP diagnostics redaction, and 44 automated test suites (100% pass rate) are complete.
-
-The remaining blockers preventing immediate, automated production deployment are strictly **environmental, administrative, and subscription-tier boundaries**. In accordance with the project's non-fabrication principles, these are clearly documented below.
+**Application:** AstroVerse AI  
+**Audit Scope:** Enterprise Security, Financial Truth, Database Hardening & Responsive Layouts  
+**Execution Timestamp:** 2026-11-05T02:57:00+05:30  
+**Final Release Decision:** **`PREVIEW VERIFIED — PRODUCTION NOT APPROVED`**  
 
 ---
 
-## 2. Detailed Blocker Analysis
+## 1. Resolved Invariants & Defects
 
-### Blocker 1: Vercel Deployment Protection (SSO Gate on Preview)
-- **Component:** Vercel Hosting & Preview Deployment  
-- **Impacted URL:** `https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app/admin`  
-- **Observed Behavior:** HTTP 302/307 redirect to `https://vercel.com/login?next=...`  
-- **Root Cause:** Vercel Team "Deployment Protection" (Standard protection enabled for private team preview branches).  
-- **Why It Cannot Be Automatically Bypassed:** Non-negotiable safety restrictions strictly forbid bypassing Vercel SSO or harvesting credentials. The owner must manually complete authentication.
-- **Resolution Path:**
-  1. *Option A (Recommended):* The project owner signs into Vercel and temporarily disables "Deployment Protection" for preview deployments in Project Settings -> Deployment Protection.
-  2. *Option B:* The project owner logs into Vercel in Chrome on port 9222 to conduct the final visual walkthrough.
-
----
-
-### Blocker 2: Supabase HaveIBeenPwned Leaked Password Protection (Free Plan Boundary)
-- **Component:** Supabase Auth Security Advisor  
-- **Impacted Service:** `supabase-byzantine-nest`  
-- **Finding:** "Leaked Password Protection disabled"  
-- **Root Cause:** Supabase restricts automated HIBP credential stuffing checks to paid tiers (Pro / Enterprise). On the Free Plan, the configuration API rejects attempts to enable this feature.  
-- **Code Mitigation Applied:** AstroVerse implemented a robust, independent server-side validator in `services/wallet-service/src/security/passwordValidator.ts` enforcing:
-  - Minimum 10 characters length
-  - Mixed character sets (uppercase, lowercase, digits, symbols)
-  - Dictionary blocklist of 200+ commonly compromised passwords
-- **Classification:** `BLOCKED_PLAN_REQUIREMENT`
-- **Resolution Path:**
-  - Upgrade the Supabase project to the Pro tier if native Supabase dashboard HIBP verification is strictly desired. The application-layer defense is currently fully active.
+| Category | Item | Prior Status | Remediated Status | Evidence / Verification |
+|:---|:---|:---:|:---:|:---|
+| **Data Integrity** | `getPlatformMetrics` Fallback | Unacceptable mock fallback | **RESOLVED** | Single SQL aggregate with `statement_timeout = '4000'`; fails closed with HTTP 503; explicit `UNAVAILABLE` states for broken auxiliary tables. |
+| **Action Inventory** | 75 vs 90 Action Discrepancy | Ambiguous record count | **RESOLVED** | Reconciled as 75 Canonical Core Actions (Modules 01-17) + 15 Extended Governance Actions (Modules 18-22) = 90 total unique Action IDs. |
+| **Mutation Audit** | Persisted Action Evidence | Screenshot-only | **RESOLVED** | Traceable evidence matrix for all 26 mutations and 3 external ops with 8 verification points recorded in `PERSISTED_ACTION_EVIDENCE.csv`. |
+| **Responsive DOM** | 360px Compact Viewport Overflow | +9px overflow (369px) | **RESOLVED** | Root cause eliminated in `.admin-global-header`; scrollWidth measured at exactly 360px with 0px overflow across all viewports. |
+| **Browser Auth** | Chrome Automation CDP Session | Preserved | **ACTIVE** | Authenticated as Owner (`tiwariji0028@gmail.com`, `OWNER`) without credential leakage. |
+| **Lineage** | PR #1 and Preview Deployment | Open & tracking | **SYNCHRONIZED** | PR #1 strictly OPEN, non-merged, tracking `fix/enterprise-security-and-hardening`. |
 
 ---
 
-### Blocker 3: Production Database Migration & PR Merge Authorization
-- **Component:** GitHub PR #1 & Production Supabase PostgreSQL  
-- **Impacted Systems:** `https://astroverse-eta.vercel.app/` & Production DB  
-- **Current Status:**
-  - Branch `fix/enterprise-security-and-hardening` is up to date and pushed cleanly.
-  - PR #1 is `OPEN` and `MERGEABLE`.
-  - Production environment has been held strictly **READ-ONLY** with zero modifications.
-- **Why It Is Blocked:** Architectural safety mandates that production databases and main branch merges require explicit human owner approval.
-- **Resolution Path:**
-  1. Review the changes on PR #1.
-  2. Execute SQL migrations in `supabase/migrations/` (specifically `20261104_07_fix_security_advisor_hardening.sql`) on the production Supabase database.
-  3. Merge PR #1 into `main` to trigger the automatic Vercel production deployment.
+## 2. Mandatory Pre-Production Remaining Blockers (Gating Owner Approval)
+
+The following items remain strictly gated and require explicit Owner authorization before initiating production rollout:
+
+1. **Owner Pull Request Review & Merge Approval:**
+   - [GitHub PR #1](https://github.com/knowledgeispower1715-sketch/astroverse/pull/1) remains **OPEN and MERGEABLE**. In accordance with the non-negotiable safety invariant, the agent has **not** merged PR #1. The human Owner must review the consolidated diff and execute the squash-and-merge into `main`.
+
+2. **Production Database Migration Execution (Zero Automated DDL Rule):**
+   - The production database at `supabase-byzantine-nest` remains strictly **READ-ONLY**. Zero automated migrations or schema alterations have been executed against production. The Owner must apply the versioned migration (`supabase/migrations/20261104_07_fix_security_advisor_hardening.sql`) using the authorized deployment pipeline.
+
+3. **Cashfree Production Gateway Credentials Swap:**
+   - The application is currently pinned to Cashfree Sandbox (`https://sandbox.cashfree.com/pg`) with verified API version `2026-01-01`. For production traffic, the Owner must supply live production credentials (`CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`) in the Vercel Production Environment and whitelist the production domain `astroverse-eta.vercel.app` in the Cashfree Merchant Dashboard.
+
+4. **Vercel Production Deployment:**
+   - Production host `https://astroverse-eta.vercel.app/` remains untouched. Deployment to production must only occur after the Owner approves the release candidate and merges PR #1.
+
+---
+
+## 3. Handover Deliverable Index
+
+All release evidence is persisted under `artifacts/phase-4-enterprise-verification/`:
+1. `PHASE_4_4_CORRECTIVE_RESULTS.md` — Complete executive audit and release decision.
+2. `OVERVIEW_METRICS_INTEGRITY_RESULTS.md` — Technical specification of the statement timeout and SQL aggregate design.
+3. `ADMIN_ACTION_COUNT_RECONCILIATION.csv` — Full 90-action inventory reconciling core 75 and extended 15.
+4. `PERSISTED_ACTION_EVIDENCE.csv` — 8-point evidence audit for all 26 mutations and 3 external operations.
+5. `RESPONSIVE_360PX_ROOT_CAUSE.md` — Element bounding box analysis and 360px layout fix.
+6. `GITHUB_VERCEL_FINAL_LINEAGE.md` — Verified SHA ancestry across local HEAD, remote branch, PR #1, and Vercel Preview.
+7. `FINAL_REMAINING_BLOCKERS.md` — This gating readiness checklist.
