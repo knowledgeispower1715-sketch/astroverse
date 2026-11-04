@@ -38,7 +38,8 @@ test('ASTROVERSE P0 AUTHENTICATION LIFECYCLE & RESILIENCE TEST SUITE', async (t)
     const mockPrisma = {
       $queryRawUnsafe: async (sql: string) => {
         queryCount++;
-        return [{ exists: 1 }]; // User table exists
+        const { APPLICATION_TABLES } = require('../src/schemaBootstrap');
+        return APPLICATION_TABLES.map((t: string) => ({ table_name: t, rls_enabled: true, rls_forced: false }));
       },
       $executeRawUnsafe: async (sql: string) => {
         executeCount++;
@@ -54,9 +55,15 @@ test('ASTROVERSE P0 AUTHENTICATION LIFECYCLE & RESILIENCE TEST SUITE', async (t)
 
   await t.test('3. Schema Bootstrap: Executes all DDL statements when User table is missing', async () => {
     const executed: string[] = [];
+    let queryCallCount = 0;
     const mockPrisma = {
       $queryRawUnsafe: async (sql: string) => {
-        return []; // User table missing
+        queryCallCount++;
+        if (queryCallCount === 1) {
+          return []; // Initially missing tables
+        }
+        const { APPLICATION_TABLES } = require('../src/schemaBootstrap');
+        return APPLICATION_TABLES.map((t: string) => ({ table_name: t, rls_enabled: true, rls_forced: false }));
       },
       $executeRawUnsafe: async (sql: string) => {
         executed.push(sql);

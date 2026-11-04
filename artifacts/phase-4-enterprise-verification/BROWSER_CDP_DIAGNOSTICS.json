@@ -1,0 +1,742 @@
+{
+  "verificationStatus": "AUTHENTICATED_PREVIEW_VERIFIED",
+  "previewOrigin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+  "inspectedAt": "2026-11-04T21:11:00.885Z",
+  "ownerIdentity": {
+    "id": "f152a198-2998-4f2e-811e-bd5f9190b896",
+    "email": "tiwariji0028@gmail.com",
+    "role": "OWNER",
+    "status": "ACTIVE"
+  },
+  "backendVerification": {
+    "release": {
+      "url": "/api/release",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "application": "astroverse-ai",
+        "version": "2.5.0",
+        "gitCommitSha": "f7fd6b6d17ba8ed1fd72d2aeafa2fb93e7d23ed1",
+        "buildTimestamp": "2026-11-04T18:50:00Z",
+        "environmentLabel": "preview",
+        "schemaVersion": "20261104_07"
+      }
+    },
+    "dbStatus": {
+      "url": "/api/admin/database/status",
+      "error": "AbortError: signal is aborted without reason",
+      "ok": false
+    },
+    "policy": {
+      "url": "/api/admin/session/policy",
+      "status": 200,
+      "ok": true,
+      "data": {
+        "environment": "preview",
+        "idleTimeoutMinutes": 60,
+        "idleTimeoutSeconds": 3600,
+        "absoluteCapMinutes": 240,
+        "absoluteCapSeconds": 14400,
+        "slidingRenewalSupported": true,
+        "mfaRequired": false
+      }
+    }
+  },
+  "moduleResultsSummary": {
+    "total": 22,
+    "passed": 22,
+    "failed": 0
+  },
+  "qaWorkbenchesSummary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0
+  },
+  "responsiveResultsSummary": {
+    "totalViewports": 8,
+    "totalZoomScales": 3
+  },
+  "sanitizedNetworkLogsCount": 58,
+  "sanitizedNetworkLogs": [
+    {
+      "requestId": "19840.205",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/release",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 45714
+    },
+    {
+      "requestId": "19840.205",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/release",
+      "mimeType": "application/json",
+      "durationMs": 2053,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45716
+    },
+    {
+      "requestId": "19840.206",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/database/status",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45716
+    },
+    {
+      "requestId": "19840.207",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/session/policy",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45728
+    },
+    {
+      "requestId": "19840.207",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/session/policy",
+      "mimeType": "application/json",
+      "durationMs": 1586,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45729
+    },
+    {
+      "requestId": "19840.208",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/overview",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45729
+    },
+    {
+      "requestId": "19840.209",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/users",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45730
+    },
+    {
+      "requestId": "19840.210",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/roles/admins",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45730
+    },
+    {
+      "requestId": "19840.211",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/roles",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45730
+    },
+    {
+      "requestId": "19840.209",
+      "status": 500,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/users",
+      "mimeType": "application/json",
+      "durationMs": 418,
+      "errorCategory": "SERVER_ERROR",
+      "hasSetCookieHeader": false,
+      "timestamp": 45730
+    },
+    {
+      "requestId": "19840.208",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/overview",
+      "mimeType": "application/json",
+      "durationMs": 962,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45730
+    },
+    {
+      "requestId": "19840.212",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/security/events",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45731
+    },
+    {
+      "requestId": "19840.211",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/roles",
+      "mimeType": "application/json",
+      "durationMs": 502,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45731
+    },
+    {
+      "requestId": "19840.210",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/roles/admins",
+      "mimeType": "application/json",
+      "durationMs": 703,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45731
+    },
+    {
+      "requestId": "19840.213",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/astrology/health",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45731
+    },
+    {
+      "requestId": "19840.214",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/reports/diagnostics",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45732
+    },
+    {
+      "requestId": "19840.215",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/ai/usage",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45732
+    },
+    {
+      "requestId": "19840.216",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/payments/transactions",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45732
+    },
+    {
+      "requestId": "19840.217",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/payment-readiness",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45732
+    },
+    {
+      "requestId": "19840.215",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/ai/usage",
+      "mimeType": "application/json",
+      "durationMs": 562,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45732
+    },
+    {
+      "requestId": "19840.217",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/payment-readiness",
+      "mimeType": "application/json",
+      "durationMs": 290,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.213",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/astrology/health",
+      "mimeType": "application/json",
+      "durationMs": 1583,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.218",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/subscriptions",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.219",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/products",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.216",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/payments/transactions",
+      "mimeType": "application/json",
+      "durationMs": 638,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.219",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/products",
+      "mimeType": "application/json",
+      "durationMs": 330,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.220",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/content",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.218",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/subscriptions",
+      "mimeType": "application/json",
+      "durationMs": 555,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.220",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/content",
+      "mimeType": "application/json",
+      "durationMs": 324,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45733
+    },
+    {
+      "requestId": "19840.221",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/settings/safe",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45734
+    },
+    {
+      "requestId": "19840.222",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/settings/flags",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45734
+    },
+    {
+      "requestId": "19840.222",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/settings/flags",
+      "mimeType": "application/json",
+      "durationMs": 364,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45734
+    },
+    {
+      "requestId": "19840.223",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/privacy/requests",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45734
+    },
+    {
+      "requestId": "19840.221",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/settings/safe",
+      "mimeType": "application/json",
+      "durationMs": 523,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45734
+    },
+    {
+      "requestId": "19840.223",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/privacy/requests",
+      "mimeType": "application/json",
+      "durationMs": 336,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45734
+    },
+    {
+      "requestId": "19840.224",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/audit-logs",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45734
+    },
+    {
+      "requestId": "19840.224",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/audit-logs",
+      "mimeType": "application/json",
+      "durationMs": 392,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45735
+    },
+    {
+      "requestId": "19840.225",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/integrations",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45735
+    },
+    {
+      "requestId": "19840.226",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/monitoring/incidents",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45735
+    },
+    {
+      "requestId": "19840.225",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/integrations",
+      "mimeType": "application/json",
+      "durationMs": 457,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45735
+    },
+    {
+      "requestId": "19840.227",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/preview/status",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45736
+    },
+    {
+      "requestId": "19840.226",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/monitoring/incidents",
+      "mimeType": "application/json",
+      "durationMs": 536,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45736
+    },
+    {
+      "requestId": "19840.227",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/preview/status",
+      "mimeType": "application/json",
+      "durationMs": 309,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45736
+    },
+    {
+      "requestId": "19840.228",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/database/monitor",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45736
+    },
+    {
+      "requestId": "19840.229",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/analytics/overview",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45736
+    },
+    {
+      "requestId": "19840.228",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/database/monitor",
+      "mimeType": "application/json",
+      "durationMs": 470,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45736
+    },
+    {
+      "requestId": "19840.229",
+      "status": 500,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/analytics/overview",
+      "mimeType": "application/json",
+      "durationMs": 328,
+      "errorCategory": "SERVER_ERROR",
+      "hasSetCookieHeader": false,
+      "timestamp": 45737
+    },
+    {
+      "requestId": "19840.230",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/entitlements",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45737
+    },
+    {
+      "requestId": "19840.230",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/entitlements",
+      "mimeType": "application/json",
+      "durationMs": 330,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45738
+    },
+    {
+      "requestId": "19840.231",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/promotions",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45738
+    },
+    {
+      "requestId": "19840.232",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/astrologers",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45738
+    },
+    {
+      "requestId": "19840.231",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/promotions",
+      "mimeType": "application/json",
+      "durationMs": 511,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45738
+    },
+    {
+      "requestId": "19840.232",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/astrologers",
+      "mimeType": "application/json",
+      "durationMs": 509,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45739
+    },
+    {
+      "requestId": "19840.233",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/consultations",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45739
+    },
+    {
+      "requestId": "19840.233",
+      "status": 500,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/consultations",
+      "mimeType": "application/json",
+      "durationMs": 325,
+      "errorCategory": "SERVER_ERROR",
+      "hasSetCookieHeader": false,
+      "timestamp": 45739
+    },
+    {
+      "requestId": "19840.234",
+      "method": "GET",
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/overview",
+      "classification": "API_REQUEST",
+      "hasAuthHeader": true,
+      "hasCookieHeader": false,
+      "timestamp": 45741
+    },
+    {
+      "requestId": "19840.234",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/overview",
+      "mimeType": "application/json",
+      "durationMs": 401,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45741
+    },
+    {
+      "requestId": "19840.212",
+      "status": 200,
+      "origin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+      "pathname": "/api/admin/security/events",
+      "mimeType": "application/json",
+      "durationMs": 20516,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 45751
+    }
+  ],
+  "sanitizedConsoleLogsCount": 12,
+  "sanitizedConsoleLogs": [
+    {
+      "severity": "warning",
+      "category": "APPLICATION_WARNING",
+      "length": 146
+    },
+    {
+      "severity": "warning",
+      "category": "APPLICATION_WARNING",
+      "length": 144
+    },
+    {
+      "severity": "warning",
+      "category": "APPLICATION_WARNING",
+      "length": 62
+    },
+    {
+      "severity": "warning",
+      "category": "APPLICATION_WARNING",
+      "length": 62
+    },
+    {
+      "severity": "warning",
+      "category": "APPLICATION_WARNING",
+      "length": 64
+    },
+    {
+      "severity": "warning",
+      "category": "APPLICATION_WARNING",
+      "length": 64
+    },
+    {
+      "severity": "log",
+      "category": "NETWORK_TELEMETRY",
+      "length": 21
+    },
+    {
+      "severity": "log",
+      "category": "DATABASE_TELEMETRY",
+      "length": 35
+    },
+    {
+      "severity": "log",
+      "category": "AUTHENTICATION_EVENT",
+      "length": 34
+    },
+    {
+      "severity": "log",
+      "category": "NETWORK_TELEMETRY",
+      "length": 28
+    },
+    {
+      "severity": "log",
+      "category": "DATABASE_TELEMETRY",
+      "length": 35
+    },
+    {
+      "severity": "log",
+      "category": "NETWORK_TELEMETRY",
+      "length": 28
+    }
+  ],
+  "redactionGuarantees": [
+    "Zero raw request headers stored",
+    "Zero raw response headers stored",
+    "Zero cookie or Set-Cookie values stored",
+    "Zero authorization tokens stored",
+    "All query strings dropped completely",
+    "Console logs mapped to allowlisted categories",
+    "WebSocket URLs kept strictly in memory only"
+  ]
+}

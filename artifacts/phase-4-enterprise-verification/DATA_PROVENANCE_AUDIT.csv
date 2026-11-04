@@ -1,0 +1,17 @@
+Metric Name,Module,Display Component,Assigned Provenance,Source Table / API,Calculation / Computation,Freshness Policy,Zero-Data Handling,Security Status
+Total Customer Accounts,01. Overview,Platform Metrics Grid,LIVE,public."User",SELECT count(*) FROM "User" WHERE role = 'USER',30 seconds,Displays explicit 0 (Live count),VERIFIED
+Total Active Subscriptions,01. Overview,Platform Metrics Grid,LIVE,public."User",SELECT count(*) FROM "User" WHERE subscriptionStatus = 'ACTIVE',60 seconds,Displays explicit 0 (Live count),VERIFIED
+Total Kundli Calculations,01. Overview,Platform Metrics Grid,LIVE,public."KundliCalculation",SELECT count(*) FROM "KundliCalculation",60 seconds,Displays explicit 0 (Live count),VERIFIED
+Lifetime Platform Revenue,01. Overview,Platform Metrics Grid,DERIVED,public."PaymentOrder",SUM(amountPaise) / 100 WHERE status = 'PAID',30 seconds,Displays ₹0.00 (Derived from ledger),VERIFIED
+Net Wallet Float Liability,01. Overview,Platform Metrics Grid,DERIVED,public."WalletLedger",SUM(credits) - SUM(debits) WHERE entryType IN (...),30 seconds,Displays ₹0.00 (Derived from ledger),VERIFIED
+Average User LTV,01. Overview,Platform Metrics Grid,DERIVED,PaymentOrder + User,Total Paid Revenue / Total Customer Accounts,60 seconds,Displays ₹0.00 (Derived),VERIFIED
+Customer Directory List,02. Users,Customer Table,LIVE,public."User",SELECT id email phone role status ... LIMIT 20,Real-time,Empty table with "No records found",VERIFIED
+Administrator Matrix,03. Roles & RBAC,Admins Table,LIVE,public."User",SELECT id email role FROM "User" WHERE role IN (...),Real-time,Empty table with "No administrators found",VERIFIED
+Audit Trail Events,13. Audit Trail,Audit Logs Table,LIVE,public."AuditEvent",SELECT * FROM "AuditEvent" ORDER BY createdAt DESC,Real-time,Empty log table with zero mock events,VERIFIED
+Failed Reports Queue,06. Reports,Diagnostics Table,LIVE,public."SavedReport",SELECT * FROM "SavedReport" WHERE status = 'FAILED',Real-time,Displays empty queue with "0 FAILED",VERIFIED
+Cashfree Gateway Health,14. Integrations,Health Pill,LIVE,Cashfree API ping,Authoritative HTTP ping to Cashfree endpoint,15 seconds,Displays UNAVAILABLE upon network error,VERIFIED
+Synthetic Kundli Chart,16. QA Console,Kundli Workbench,SYNTHETIC,Mock Ephemeris Fixture,Calculated using deterministic Vedic test coordinates,N/A (Test fixture),Isolated fixture tag,ISOLATED
+Demo Astrologer Consultation,16. QA Console,AI Astrologer,DEMO,Demo Persona Model,Isolated demo sandbox account,N/A (Test fixture),Isolated fixture tag,ISOLATED
+Billing Simulator Charge,16. QA Console,Billing Simulator,DEMO,In-Memory Sandbox,Simulated Cashfree order creation,N/A (Test fixture),Isolated fixture tag,ISOLATED
+Stale Cached Metric,01. Overview,Cached Aggregate,STALE,Cache Store,Preserves original timestamp when query exceeds freshness threshold,Over 300s,Tagged with STALE badge,VERIFIED
+Unreachable Database,17. Database Monitor,DB Health Pill,UNAVAILABLE,pg_stat_activity,Returns UNAVAILABLE when database connection pool errors,Immediate,Tagged with UNAVAILABLE badge,VERIFIED

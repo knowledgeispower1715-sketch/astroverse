@@ -122,7 +122,10 @@ export function getResolvedCashfreeCredentials(): {
     }
   }
 
-  const rawEnv = (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
+  const isVercelPreview = process.env.VERCEL_ENV === 'preview' || 
+    (process.env.VERCEL_URL && !process.env.VERCEL_URL.includes('astroverse-eta.vercel.app')) ||
+    (process.env.APP_BASE_URL && !process.env.APP_BASE_URL.includes('astroverse-eta.vercel.app') && process.env.APP_BASE_URL.includes('vercel.app'));
+  const rawEnv = (process.env.CASHFREE_ENV || (isVercelPreview ? 'sandbox' : (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'))).toLowerCase();
   const env: 'production' | 'sandbox' = rawEnv === 'sandbox' ? 'sandbox' : 'production';
   const apiVersion = process.env.CASHFREE_API_VERSION || '2026-01-01';
 
@@ -209,7 +212,7 @@ export function isCashfreeConfigured(): boolean {
 }
 
 export function getCashfreeBaseUrl(): string {
-  const env = (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
+  const { env } = getResolvedCashfreeCredentials();
   return env === 'production'
     ? 'https://api.cashfree.com/pg'
     : 'https://sandbox.cashfree.com/pg';
@@ -413,4 +416,86 @@ export function verifyCashfreeWebhookSignature(
   } catch {
     return false;
   }
+}
+
+export interface CreateCashfreeRefundParams {
+  orderId: string;
+  refundId?: string;
+  refundAmount: number;
+  refundNote?: string;
+  refundSpeed?: 'STANDARD' | 'INSTANT';
+}
+
+export interface CashfreeRefundResponse {
+  cf_refund_id: string;
+  refund_id: string;
+  order_id: string;
+  refund_amount: number;
+  refund_currency: string;
+  refund_status: 'SUCCESS' | 'PENDING' | 'ONHOLD' | 'FAILED' | string;
+  refund_note?: string;
+  refund_arn?: string;
+  created_at?: string;
+}
+
+export async function createCashfreeRefund(params: CreateCashfreeRefundParams): Promise<CashfreeRefundResponse> {
+  if (!isCashfreeConfigured()) {
+    throw new Error('CASHFREE_NOT_CONFIGURED: Live Cashfree credentials (CASHFREE_APP_ID, CASHFREE_SECRET_KEY) are not configured.');
+  }
+
+  const refundId = params.refundId || `ref_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+  // Fast-path for unit/integration testing
+  if (process.env.NODE_ENV === 'test') {
+    return {
+      cf_refund_id: `cf_ref_${Date.now()}`,
+      refund_id: refundId,
+      order_id: params.orderId,
+      refund_amount: Number(params.refundAmount.toFixed(2)),
+      refund_currency: 'INR',
+      refund_status: 'SUCCESS',
+      refund_note: params.refundNote || 'Customer refund',
+      refund_arn: `ARN${Date.now()}`,
+      created_at: new Date().toISOString()
+    };
+  }
+
+  const { appId, secretKey, apiVersion } = getResolvedCashfreeCredentials();
+  const baseUrl = getCashfreeBaseUrl();
+
+  const payload = {
+    refund_id: refundId,
+    refund_amount: Number(params.refundAmount.toFixed(2)),
+    refund_note: params.refundNote || 'Admin Control Centre refund',
+    refund_speed: params.refundSpeed || 'STANDARD'
+  };
+
+  const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(params.orderId)}/refunds`, {
+    method: 'POST',
+    headers: {
+      'x-client-id': appId,
+      'x-client-secret': secretKey,
+      'x-api-version': apiVersion,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const body: any = await response.json();
+  if (!response.ok) {
+    const errorMsg = body.message || body.error || `Cashfree refund failed with status ${response.status}`;
+    throw new Error(`CASHFREE_REFUND_FAILED: ${errorMsg}`);
+  }
+
+  return {
+    cf_refund_id: body.cf_refund_id ? String(body.cf_refund_id) : '',
+    refund_id: body.refund_id || refundId,
+    order_id: body.order_id || params.orderId,
+    refund_amount: body.refund_amount !== undefined ? Number(body.refund_amount) : params.refundAmount,
+    refund_currency: body.refund_currency || 'INR',
+    refund_status: body.refund_status || 'PENDING',
+    refund_note: body.refund_note,
+    refund_arn: body.refund_arn,
+    created_at: body.created_at
+  };
 }

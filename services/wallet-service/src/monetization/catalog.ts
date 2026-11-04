@@ -50,6 +50,148 @@ export interface ReportProductDefinition {
   disclaimer: string;
 }
 
+export type ForecastHorizon = 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'mahadasha';
+
+export interface ProductEntitlementDefinition {
+  productId: string;
+  category: 'NATAL_BLUEPRINT' | 'FORECAST' | 'MACRO_HORIZON' | 'DOMAIN_REPORT' | 'COMPATIBILITY' | 'NUMEROLOGY' | 'REMEDY' | 'BUNDLE' | 'FREE_PREVIEW';
+  includedHorizons: ForecastHorizon[];
+  includedSections: string[];
+  bundleComponents?: string[];
+  validityDays: number;
+  hasReaderAccess: boolean;
+  canDownloadPdf: boolean;
+}
+
+export const PRODUCT_ENTITLEMENT_CATALOG: Record<string, ProductEntitlementDefinition> = {
+  'report_janam_kundli_deep_dive': {
+    productId: 'report_janam_kundli_deep_dive',
+    category: 'NATAL_BLUEPRINT',
+    includedHorizons: ['hourly', 'daily', 'weekly', 'mahadasha'],
+    includedSections: ['d1_rashi', 'd9_navamsha', 'all_vargas_d1_d60', 'shadbala', 'ashtakavarga', 'vimshottari_mahadasha', 'yogas', 'doshas'],
+    validityDays: 365,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_one_month_forecast': {
+    productId: 'report_one_month_forecast',
+    category: 'FORECAST',
+    includedHorizons: ['hourly', 'daily', 'weekly', 'monthly'],
+    includedSections: ['monthly_transits', 'daily_breakdown', 'tarabala_calendar', 'monthly_remedies'],
+    validityDays: 30,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_twelve_month_varshphal': {
+    productId: 'report_twelve_month_varshphal',
+    category: 'FORECAST',
+    includedHorizons: ['hourly', 'daily', 'weekly', 'yearly'],
+    includedSections: ['annual_varshphal', 'muntha_progressed', 'monthly_overviews', 'major_transits_jupiter_saturn'],
+    validityDays: 365,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_three_year_roadmap': {
+    productId: 'report_three_year_roadmap',
+    category: 'MACRO_HORIZON',
+    includedHorizons: ['hourly', 'daily', 'weekly', 'monthly', 'yearly', 'mahadasha'],
+    includedSections: ['36_month_macro', 'dasha_transitions', 'jupiter_saturn_rahu_cycles', 'career_wealth_turning_points'],
+    validityDays: 1095,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_bundle_kundli_varshphal': {
+    productId: 'report_bundle_kundli_varshphal',
+    category: 'BUNDLE',
+    includedHorizons: ['hourly', 'daily', 'weekly', 'monthly', 'yearly', 'mahadasha'],
+    bundleComponents: ['report_janam_kundli_deep_dive', 'report_twelve_month_varshphal'],
+    includedSections: ['d1_rashi', 'd9_navamsha', 'all_vargas', 'annual_varshphal', '12_months', 'mahadasha'],
+    validityDays: 365,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_career_education': {
+    productId: 'report_career_education',
+    category: 'DOMAIN_REPORT',
+    includedHorizons: ['hourly', 'daily'],
+    includedSections: ['10th_house', 'd10_dashamsha', 'career_yogas', 'promotions_timing'],
+    validityDays: 365,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_relationship_marriage': {
+    productId: 'report_relationship_marriage',
+    category: 'DOMAIN_REPORT',
+    includedHorizons: ['hourly', 'daily'],
+    includedSections: ['7th_house', 'd9_navamsha', 'upapada_lagna', 'marital_harmony'],
+    validityDays: 365,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_kundli_milan': {
+    productId: 'report_kundli_milan',
+    category: 'COMPATIBILITY',
+    includedHorizons: ['hourly', 'daily'],
+    includedSections: ['ashtakoota_36_guna', 'mangal_dosha_cross', 'bhakoot_nadi_exceptions', 'synastry'],
+    validityDays: 365,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_vedic_name_numerology': {
+    productId: 'report_vedic_name_numerology',
+    category: 'NUMEROLOGY',
+    includedHorizons: ['hourly', 'daily'],
+    includedSections: ['moolank', 'bhagyank', 'chaldean_naamank', 'name_corrections', 'signature_analysis'],
+    validityDays: 365,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_remedial_gemstones': {
+    productId: 'report_remedial_gemstones',
+    category: 'REMEDY',
+    includedHorizons: ['hourly', 'daily'],
+    includedSections: ['lagna_safe_gemstones', 'beej_mantras', 'rudraksha_yantra_prescriptions'],
+    validityDays: 365,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  },
+  'report_basic_chart_summary': {
+    productId: 'report_basic_chart_summary',
+    category: 'FREE_PREVIEW',
+    includedHorizons: ['hourly', 'daily'],
+    includedSections: ['basic_d1', 'moon_nakshatra', 'panchang'],
+    validityDays: 30,
+    hasReaderAccess: true,
+    canDownloadPdf: false
+  },
+  'report_weekly_transit_planner': {
+    productId: 'report_weekly_transit_planner',
+    category: 'FORECAST',
+    includedHorizons: ['hourly', 'daily', 'weekly'],
+    includedSections: ['weekly_transits', 'daily_moon_cards', 'tarabala_score', 'muhurta_windows'],
+    validityDays: 14,
+    hasReaderAccess: true,
+    canDownloadPdf: true
+  }
+};
+
+export const SKU_HORIZON_ALIASES: Record<string, string> = {
+  'weekly_forecast': 'report_weekly_transit_planner',
+  'monthly_forecast': 'report_one_month_forecast',
+  'report_monthly_deep_dive': 'report_one_month_forecast',
+  'yearly_varshphal': 'report_twelve_month_varshphal',
+  'varshphal': 'report_twelve_month_varshphal',
+  'kundli_deep_dive': 'report_janam_kundli_deep_dive',
+  'mahadasha_5year': 'report_three_year_roadmap',
+  'three_year_roadmap': 'report_three_year_roadmap',
+  'kundli_varshphal_bundle': 'report_bundle_kundli_varshphal',
+  'bundle_kundli_varshphal': 'report_bundle_kundli_varshphal',
+  'all_reports_bundle': 'report_bundle_kundli_varshphal',
+  'career_report': 'report_career_education',
+  'relationship_report': 'report_relationship_marriage',
+  'compatibility_report': 'report_kundli_milan'
+};
+
 export const SUBSCRIPTION_PLANS: Record<SubscriptionTier, SubscriptionPlanDefinition> = {
   [SubscriptionTier.FREE]: {
     tier: SubscriptionTier.FREE,

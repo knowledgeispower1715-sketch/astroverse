@@ -1,0 +1,91 @@
+Action ID,Module,UI Control,Endpoint,Method,Permission Required,Expected Functional Behavior
+ADMIN.OVERVIEW.VIEW_METRICS,01. Overview,Dashboard Metrics Grid,/api/admin/overview,GET,VIEW_OVERVIEW,Loads authoritative counts and financial sums from PostgreSQL
+ADMIN.OVERVIEW.REFRESH,01. Overview,Refresh Button,/api/admin/overview,GET,VIEW_OVERVIEW,Re-executes platform metrics queries and updates ground truth badges
+ADMIN.OVERVIEW.RESOLVE_REFUNDS,01. Overview,Pending Refunds Card,/admin/modules/subscriptions,UI_NAV,VIEW_SUBSCRIPTIONS,Navigates directly to subscription/refund queue
+ADMIN.OVERVIEW.RESOLVE_REPORTS,01. Overview,Failed Reports Card,/admin/modules/reports,UI_NAV,VIEW_REPORTS,Navigates directly to report failure diagnostics
+ADMIN.OVERVIEW.RESOLVE_INCIDENTS,01. Overview,Open Incidents Card,/admin/modules/incidents,UI_NAV,VIEW_SECURITY,Navigates directly to platform incident manager
+ADMIN.OVERVIEW.RESOLVE_PRIVACY,01. Overview,Pending Privacy Card,/admin/modules/privacy,UI_NAV,VIEW_PRIVACY,Navigates directly to customer privacy requests
+ADMIN.OVERVIEW.RESOLVE_DATABASE,01. Overview,Database Monitor Card,/admin/modules/database,UI_NAV,VIEW_DATABASE,Navigates directly to live database monitoring
+ADMIN.USERS.LIST,02. Users,Customer Table,/api/admin/users,GET,VIEW_USERS,Fetches paginated user accounts with sanitized DTOs
+ADMIN.USERS.SEARCH,02. Users,Search Input Field,/api/admin/users?search=...,GET,VIEW_USERS,Filters customer accounts by ID email name or phone with debounce
+ADMIN.USERS.FILTER_STATUS,02. Users,Status Dropdown Filter,/api/admin/users?status=...,GET,VIEW_USERS,Filters table to ACTIVE SUSPENDED or PENDING users
+ADMIN.USERS.FILTER_ROLE,02. Users,Role Dropdown Filter,/api/admin/users?role=...,GET,VIEW_USERS,Filters table by canonical role (USER OWNER ADMIN etc)
+ADMIN.USERS.PAGINATE,02. Users,Pagination Controls,/api/admin/users?page=...&limit=...,GET,VIEW_USERS,Navigates across user directory pages with bounded limits (1-100)
+ADMIN.USERS.VIEW_DETAILS,02. Users,View Details Button,/api/admin/users/:id/details,GET,VIEW_USERS,Opens modal with profiles reports and wallet ledger (audit logged)
+ADMIN.USERS.SUSPEND,02. Users,Suspend Account Button,/api/admin/users/:id/suspend,POST,MANAGE_USERS,Suspends customer account with mandatory reason and invalidates sessions
+ADMIN.USERS.REINSTATE,02. Users,Reinstate Account Button,/api/admin/users/:id/reinstate,POST,MANAGE_USERS,Reactivates suspended account with mandatory reason
+ADMIN.USERS.REVOKE_SESSIONS,02. Users,Revoke Sessions Button,/api/admin/users/:id/revoke-sessions,POST,MANAGE_USERS,Evicts all active sessions from UserSession table
+ADMIN.USERS.ASSIGN_ROLE_OPEN,02. Users,Manage Role Button,#modal-admin-assign-role,UI_MODAL,MANAGE_ROLES,Opens role assignment modal with permission preview
+ADMIN.USERS.ASSIGN_ROLE_SUBMIT,02. Users,Confirm Role Button,/api/admin/users/:id/role,PUT,MANAGE_ROLES,Atomic role mutation with last-owner protection and step-up MFA
+ADMIN.USERS.GRANT_SUB_OPEN,02. Users,Grant Subscription Button,#modal-admin-grant-subscription,UI_MODAL,MANAGE_SUBSCRIPTIONS,Opens subscription grant and upgrade modal
+ADMIN.USERS.GRANT_SUB_SUBMIT,02. Users,Confirm Grant Button,/api/admin/subscriptions/assign,POST,MANAGE_SUBSCRIPTIONS,Assigns Plus or Premium tier with duration and audit reason
+ADMIN.ROLES.VIEW_MATRIX,03. Roles,RBAC Matrix Grid,/api/admin/roles/matrix,GET,VIEW_ROLES,Renders interactive role-permission capability matrix
+ADMIN.ROLES.LIST_ADMINS,03. Roles,Staff Account Table,/api/admin/roles/staff,GET,VIEW_ROLES,Lists all administrative staff accounts with assigned roles
+ADMIN.ROLES.EXPLAIN_PERMISSION,03. Roles,Permission Info Tooltip,/api/admin/roles/explain,GET,VIEW_ROLES,Displays exact security rationale for role capability
+ADMIN.SECURITY.VIEW_EVENTS,04. Security,Audit Log Table,/api/admin/security/events,GET,VIEW_SECURITY,Renders immutable security log (failed auth step-up login)
+ADMIN.SECURITY.MFA_SETUP_OPEN,04. Security,Setup MFA Button,#modal-admin-mfa-setup,UI_MODAL,VIEW_SECURITY,Fetches TOTP secret and renders QR code
+ADMIN.SECURITY.MFA_SETUP_SUBMIT,04. Security,Activate 2FA Button,/api/auth/admin-mfa-activate,POST,VIEW_SECURITY,Verifies 6-digit TOTP code and returns 8 recovery codes
+ADMIN.SECURITY.VIEW_SESSIONS,04. Security,Active Sessions Grid,/api/admin/security/sessions,GET,VIEW_SECURITY,Lists active staff sessions with IP browser and expiry
+ADMIN.SECURITY.REVOKE_SESSION,04. Security,Revoke Session Button,/api/admin/security/sessions/:id/revoke,DELETE,MANAGE_SECURITY,Revokes specific administrator session
+ADMIN.ASTROLOGY.VIEW_HEALTH,05. Astrology,Engine Health Banner,/api/admin/astrology/health,GET,VIEW_ASTROLOGY,Validates FastAPI ephemeris connection and Swiss Ephemeris 2.10
+ADMIN.ASTROLOGY.RUN_CALIBRATION,05. Astrology,Test Calculation Button,/api/admin/astrology/test-calculation,POST,VIEW_ASTROLOGY,Runs test planetary calculation against Vedic benchmark
+ADMIN.REPORTS.VIEW_CATALOG,06. Reports,Catalogue Pricing Grid,/api/catalog,GET,VIEW_REPORTS,Lists all 10 canonical report SKUs with integer paise pricing
+ADMIN.REPORTS.SAMPLE_READER,06. Reports,Sample Chapters Button,/api/reports/preview/:sku,GET,VIEW_REPORTS,Opens sample report reader modal in client
+ADMIN.REPORTS.DOWNLOAD_PDF,06. Reports,Download PDF Button,/api/reports/download/:id,GET,VIEW_REPORTS,Streams generated report PDF with entitlement verification
+ADMIN.REPORTS.VIEW_FAILURES,06. Reports,Failed Reports Table,/api/admin/reports/failed,GET,VIEW_REPORTS,Displays generation failures with error stack and request ID
+ADMIN.REPORTS.RETRY_GENERATION,06. Reports,Retry Button,/api/admin/reports/retry,POST,MANAGE_REPORTS,Re-queues failed generation job with idempotency key
+ADMIN.AI.VIEW_QUOTAS,07. AI Quotas,Quota Configuration Form,/api/admin/ai/quotas,GET,VIEW_AI,Loads canonical daily limits (Free: 3, Plus: 15, Premium: 30)
+ADMIN.AI.UPDATE_QUOTAS,07. AI Quotas,Save Quotas Button,/api/admin/ai/quotas,PUT,MANAGE_AI,Persists daily quota limits with administrator audit attribution
+ADMIN.AI.VIEW_USAGE,07. AI Quotas,Usage Analytics Card,/api/admin/ai/usage,GET,VIEW_AI,Displays daily queries, tokens, and active user breakdown
+ADMIN.PAYMENTS.LIST_ORDERS,08. Payments,Recent Orders Table,/api/admin/payments/orders,GET,VIEW_FINANCIALS,Lists PaymentOrder records with status integer paise and timestamps
+ADMIN.PAYMENTS.SEARCH_ORDER,08. Payments,Order Lookup Input,/api/admin/payments/orders/:id,GET,VIEW_FINANCIALS,Inspects payment order with Cashfree gateway transaction reference
+ADMIN.PAYMENTS.RECONCILE_ORDER,08. Payments,Reconcile Gateway Button,/api/admin/payments/reconcile,POST,MANAGE_FINANCIALS,Queries Cashfree API synchronously and synchronizes local order status
+ADMIN.PAYMENTS.REQUEST_REFUND,08. Payments,Submit Refund Button,/api/admin/payments/refund,POST,MANAGE_FINANCIALS,Executes partial or full refund with row locking and audit justification
+ADMIN.PAYMENTS.EDIT_PRICE_OPEN,08. Payments,Edit Price Button,#modal-admin-edit-price,UI_MODAL,MANAGE_FINANCIALS,Opens product pricing editor modal
+ADMIN.PAYMENTS.EDIT_PRICE_SUBMIT,08. Payments,Save Price Button,/api/admin/pricing/update,PUT,MANAGE_FINANCIALS,Updates product base price in catalog with audit logging
+ADMIN.SUBSCRIPTIONS.LIST,09. Subscriptions,Subscriptions Table,/api/admin/subscriptions,GET,VIEW_SUBSCRIPTIONS,Lists active customer subscriptions with plan start and expiry
+ADMIN.SUBSCRIPTIONS.EXTEND,09. Subscriptions,Extend Duration Button,/api/admin/subscriptions/extend,POST,MANAGE_SUBSCRIPTIONS,Adds 7-90 days to subscription with row-level lock and requestId
+ADMIN.SUBSCRIPTIONS.CANCEL,09. Subscriptions,Cancel Subscription Button,/api/admin/subscriptions/cancel,POST,MANAGE_SUBSCRIPTIONS,Cancels subscription, reverts user to Free, and logs reason
+ADMIN.CONTENT.LIST_BANNERS,10. Content,Banners List,/api/admin/content/banners,GET,VIEW_CONTENT,Lists promotional banners and announcements
+ADMIN.CONTENT.CREATE_BANNER,10. Content,Create Banner Button,/api/admin/content/banners,POST,MANAGE_CONTENT,Publishes new announcement with target tier filter
+ADMIN.CONTENT.TOGGLE_PUBLISH,10. Content,Toggle Publish Button,/api/admin/content/banners/:id/status,PUT,MANAGE_CONTENT,Toggles banner publication state on Preview website
+ADMIN.SETTINGS.VIEW_FLAGS,11. Settings,Feature Flags Table,/api/admin/settings/flags,GET,VIEW_SETTINGS,Lists runtime feature toggles and sanitized environment configuration
+ADMIN.SETTINGS.TOGGLE_FLAG,11. Settings,Toggle Switch Button,/api/admin/settings/flags/:key,PUT,MANAGE_SETTINGS,Toggles feature flag with audit event and step-up MFA challenge
+ADMIN.PRIVACY.LIST_REQUESTS,12. Privacy,Privacy Requests Table,/api/admin/privacy/requests,GET,VIEW_PRIVACY,Lists customer data export and erasure requests under DPDP Act
+ADMIN.PRIVACY.PROCESS_EXPORT,12. Privacy,Export Data Button,/api/admin/privacy/export/:id,POST,MANAGE_PRIVACY,Generates sanitized customer data export archive
+ADMIN.PRIVACY.EXECUTE_DELETION,12. Privacy,Erase Data Button,/api/admin/privacy/erase/:id,POST,MANAGE_PRIVACY,Executes customer data erasure workflow for synthetic accounts
+ADMIN.AUDIT.LIST_EVENTS,13. Audit,Audit Trail Table,/api/admin/audit/events,GET,VIEW_AUDIT,Renders immutable append-only AuditEvent records with actor and target
+ADMIN.AUDIT.FILTER_ACTOR,13. Audit,Actor Filter Input,/api/admin/audit/events?actor=...,GET,VIEW_AUDIT,Filters audit trail by specific administrator ID or email
+ADMIN.AUDIT.EXPORT_CSV,13. Audit,Export CSV Button,/api/admin/audit/export,GET,VIEW_AUDIT,Downloads audit trail log in CSV format for compliance review
+ADMIN.INTEGRATIONS.VIEW_STATUS,14. Integrations,Provider Cards Grid,/api/admin/integrations/status,GET,VIEW_INTEGRATIONS,Displays connectivity and authentication state for Supabase, Cashfree, and AI
+ADMIN.INTEGRATIONS.TEST_CASHFREE,14. Integrations,Ping Cashfree Button,/api/admin/integrations/test-cashfree,POST,MANAGE_INTEGRATIONS,Executes heartbeat verification against Cashfree Sandbox API
+ADMIN.INCIDENTS.LIST,15. Incidents,Incident List,/api/admin/incidents,GET,VIEW_SECURITY,Lists platform incidents categorized by severity (P1-P4) and status
+ADMIN.INCIDENTS.CREATE,15. Incidents,Create Incident Button,/api/admin/incidents,POST,MANAGE_SECURITY,Logs new production incident with description, severity, and assignee
+ADMIN.INCIDENTS.UPDATE_STATUS,15. Incidents,Update Status Dropdown,/api/admin/incidents/:id/status,PUT,MANAGE_SECURITY,Transitions incident between INVESTIGATING, MITIGATED, and RESOLVED
+ADMIN.QA.VIEW_WORKBENCH,16. QA Console,QA Console Tab,#admin-panel-qa,UI_NAV,VIEW_QA,Opens Tier Simulator and test harness dashboard
+ADMIN.QA.SIMULATE_TIER,16. QA Console,Tier Switcher Pills,Client Memory,UI_ACTION,VIEW_QA,Switches active preview entitlements between FREE, PLUS, and PREMIUM
+ADMIN.QA.OPEN_KUNDLI_HARNESS,16. QA Console,Kundli Harness Button,#admin-tool-kundli,UI_TOOL,VIEW_QA,Opens Kundli D1, D9 Navamsha, D10 Dashamsha, and Upagraha test harness
+ADMIN.QA.OPEN_FORECASTS_HARNESS,16. QA Console,Forecasts Button,#admin-tool-forecasts,UI_TOOL,VIEW_QA,Opens 6-Horizon guidance and Mahadasha test harness
+ADMIN.QA.OPEN_AI_HARNESS,16. QA Console,AI Astrologer Button,#admin-tool-ai-astrologer,UI_TOOL,VIEW_QA,Opens AI persona consultation and quota consumption test harness
+ADMIN.QA.OPEN_NUMEROLOGY_HARNESS,16. QA Console,Numerology Button,#admin-tool-numerology,UI_TOOL,VIEW_QA,Opens deterministic Numerology studio test harness
+ADMIN.QA.OPEN_REPORTS_HARNESS,16. QA Console,Reports Harness Button,#admin-tool-reports,UI_TOOL,VIEW_QA,Opens 10-SKU report catalogue reader and PDF test harness
+ADMIN.QA.OPEN_BILLING_HARNESS,16. QA Console,Billing Simulator Button,#admin-tool-billing,UI_TOOL,VIEW_QA,Opens isolated demo wallet and checkout simulation test harness
+ADMIN.DATABASE.VIEW_MONITOR,17. Database Monitor,Database Monitor Tab,/api/admin/database/status,GET,VIEW_DATABASE,Displays connection pool latency, migration history, and RLS state
+ADMIN.DATABASE.REFRESH_METRICS,17. Database Monitor,Refresh Pool Button,/api/admin/database/pool,GET,VIEW_DATABASE,Refreshes live table row counts and active connection statistics
+ADMIN.DATABASE.TRIGGER_BOOTSTRAP,17. Database Monitor,Run Schema Self-Healing,/api/admin/database/bootstrap,POST,MANAGE_DATABASE,Executes idempotent schema bootstrap and verifies all RLS policies
+ADMIN.ANALYTICS.VIEW_KPIS,18. Analytics,Analytics Overview Grid,/api/admin/analytics/overview,GET,VIEW_ANALYTICS,Renders gross collections, recharges, subscription revenue, and wallet liabilities
+ADMIN.ANALYTICS.VIEW_ORDERS,18. Analytics,Recent Paid Orders Table,/api/admin/analytics/orders,GET,VIEW_ANALYTICS,Renders recent completed payment orders with integer paise pricing
+ADMIN.CUSTOMER360.LOOKUP,19. Customer 360,Customer Search Input,/api/admin/customers/:id/360,GET,VIEW_USERS,Renders comprehensive identity, wallet ledger, active subscriptions, and support notes
+ADMIN.CUSTOMER360.ADD_NOTE,19. Customer 360,Add Note Button,/api/admin/customers/:id/notes,POST,MANAGE_USERS,Appends internal support note with category and admin attribution
+ADMIN.CUSTOMER360.REVOKE_SESSIONS,19. Customer 360,Revoke Sessions Button,/api/admin/users/:id/revoke-sessions,POST,MANAGE_USERS,Revokes all active customer sessions across all devices
+ADMIN.ENTITLEMENTS.LIST,20. Entitlements,Entitlements Table,/api/admin/entitlements,GET,VIEW_ENTITLEMENTS,Lists all granted feature entitlements with source, duration, and status
+ADMIN.ENTITLEMENTS.GRANT_OPEN,20. Entitlements,Grant Feature Button,#admin-entitlement-grant-form-card,UI_ACTION,MANAGE_ENTITLEMENTS,Toggles manual entitlement grant form
+ADMIN.ENTITLEMENTS.GRANT_SUBMIT,20. Entitlements,Confirm Grant Button,/api/admin/entitlements/grant,POST,MANAGE_ENTITLEMENTS,Grants specific feature key for specified duration with audit justification
+ADMIN.ENTITLEMENTS.REVOKE,20. Entitlements,Revoke Feature Button,/api/admin/entitlements/revoke,POST,MANAGE_ENTITLEMENTS,Revokes feature entitlement and logs administrator reason
+ADMIN.PROMOTIONS.LIST,21. Promotions,Promotions Table,/api/admin/promotions,GET,VIEW_PROMOTIONS,Lists promotional coupon codes with discount type, value, and usage limits
+ADMIN.PROMOTIONS.CREATE_OPEN,21. Promotions,New Campaign Button,#admin-promotion-create-form-card,UI_ACTION,MANAGE_PROMOTIONS,Toggles coupon creation form
+ADMIN.PROMOTIONS.CREATE_SUBMIT,21. Promotions,Save Campaign Button,/api/admin/promotions,POST,MANAGE_PROMOTIONS,Creates new promotional discount with percentage or flat deduction
+ADMIN.PROMOTIONS.TOGGLE_STATUS,21. Promotions,Pause/Activate Button,/api/admin/promotions/:id/status,PUT,MANAGE_PROMOTIONS,Activates or deactivates promotional campaign
+ADMIN.CONSULTATIONS.LIST_ASTROLOGERS,22. Consultations,Astrologer Roster Table,/api/admin/astrologers,GET,VIEW_CONSULTATIONS,Lists verified astrologers with ratings, experience, and rate per minute
+ADMIN.CONSULTATIONS.TOGGLE_VERIFY,22. Consultations,Verify Astrologer Button,/api/admin/astrologers/:id/verify,POST,MANAGE_CONSULTATIONS,Toggles astrologer verification badge and marketplace listing
+ADMIN.CONSULTATIONS.LIST_SESSIONS,22. Consultations,Consultation Sessions Table,/api/admin/consultations,GET,VIEW_CONSULTATIONS,Lists live and completed customer-astrologer consultation sessions

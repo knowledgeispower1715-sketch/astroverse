@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { db, Role, AccountStatus } from '../db';
 import { normalizeRole, isAnyAdmin } from '../security/permissions';
+import { validatePasswordComplexity } from '../security/passwordValidator';
 
 export const CANONICAL_ADMIN_ROLES = [
   Role.OWNER,
@@ -18,10 +19,11 @@ export interface ProvisionAdminOptions {
   role?: string;
   displayName?: string;
   password?: string;
+  resetMfa?: boolean;
 }
 
 export async function provisionAdmin(options: ProvisionAdminOptions) {
-  const { email, role = 'OWNER', displayName, password } = options;
+  const { email, role = 'OWNER', displayName, password, resetMfa = false } = options;
 
   if (!email || typeof email !== 'string' || !email.includes('@')) {
     throw new Error('A valid email address is required (e.g. --email owner@example.com).');
@@ -40,8 +42,9 @@ export async function provisionAdmin(options: ProvisionAdminOptions) {
   let passwordHash: string | undefined;
   let passwordSalt: string | undefined;
   if (password && typeof password === 'string') {
-    if (password.length < 8) {
-      throw new Error('Password must be at least 8 characters long.');
+    const validation = validatePasswordComplexity(password, { minLength: 10, isAdmin: true, requireSymbols: true });
+    if (!validation.valid) {
+      throw new Error(`Admin password validation failed: ${validation.reason}`);
     }
     const crypto = await import('crypto');
     passwordSalt = crypto.randomBytes(16).toString('hex');
@@ -75,6 +78,11 @@ export async function provisionAdmin(options: ProvisionAdminOptions) {
     if (passwordHash && passwordSalt) {
       updateData.passwordHash = passwordHash;
       updateData.passwordSalt = passwordSalt;
+    }
+    if (resetMfa) {
+      updateData.mfaEnabled = false;
+      updateData.mfaSecret = null;
+      updateData.mfaRecoveryCodes = [];
     }
     user = await db.updateUser(user.id, updateData);
     action = 'PROMOTED';
@@ -114,6 +122,7 @@ if (require.main === module) {
   let role = 'OWNER';
   let displayName = '';
   let password = '';
+  let resetMfa = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -133,16 +142,18 @@ if (require.main === module) {
       password = args[++i];
     } else if (arg.startsWith('--password=')) {
       password = arg.split('=')[1];
+    } else if (arg === '--reset-mfa') {
+      resetMfa = true;
     }
   }
 
   if (!email) {
     console.error('Error: --email parameter is required.');
-    console.error('Usage: npm run admin:provision -- --email <email> [--password <pwd>] [--role OWNER|SECURITY_ADMIN|...] [--name "Admin Name"]');
+    console.error('Usage: npm run admin:provision -- --email <email> [--password <pwd>] [--role OWNER|...] [--reset-mfa]');
     process.exit(1);
   }
 
-  provisionAdmin({ email, role, displayName, password })
+  provisionAdmin({ email, role, displayName, password, resetMfa })
     .then((result) => {
       console.log(`[AstroVerse Provisioning] Successfully ${result.action.toLowerCase()} administrator:`);
       console.log(`  User ID:      ${result.user.id}`);

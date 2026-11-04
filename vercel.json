@@ -50,7 +50,15 @@
     "wallet-service": {
       "root": "services/wallet-service",
       "framework": "express",
-      "entrypoint": "src/server.ts"
+      "entrypoint": "src/server.ts",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "kundli-engine",
+          "format": "url",
+          "env": "KUNDLI_ENGINE_URL"
+        }
+      ]
     }
   },
   "rewrites": [
@@ -214,6 +222,30 @@
     },
     {
       "source": "/api/ready",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/release",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/predictions/generate",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/predictions/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/predictions",
       "destination": {
         "service": "wallet-service"
       }

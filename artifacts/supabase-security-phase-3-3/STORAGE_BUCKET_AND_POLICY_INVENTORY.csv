@@ -1,0 +1,12 @@
+Bucket ID,Public Flag,File Size Limit,Allowed MIME Types,Policy Name,Command,Target Role,Qual / Check Expression,Isolation Level
+kundli-reports,FALSE,15728640,"application/pdf, application/json",Customers can read own reports in storage,SELECT,authenticated,"bucket_id = 'kundli-reports' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+kundli-reports,FALSE,15728640,"application/pdf, application/json",Customers can upload own reports to storage,INSERT,authenticated,"bucket_id = 'kundli-reports' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+kundli-reports,FALSE,15728640,"application/pdf, application/json",Customers can update own reports in storage,UPDATE,authenticated,"bucket_id = 'kundli-reports' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+kundli-reports,FALSE,15728640,"application/pdf, application/json",Customers can delete own reports in storage,DELETE,authenticated,"bucket_id = 'kundli-reports' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+customer-documents,FALSE,10485760,"application/pdf, image/jpeg, image/png",Customers can read own documents in storage,SELECT,authenticated,"bucket_id = 'customer-documents' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+customer-documents,FALSE,10485760,"application/pdf, image/jpeg, image/png",Customers can upload own documents to storage,INSERT,authenticated,"bucket_id = 'customer-documents' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+customer-documents,FALSE,10485760,"application/pdf, image/jpeg, image/png",Customers can update own documents in storage,UPDATE,authenticated,"bucket_id = 'customer-documents' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+customer-documents,FALSE,10485760,"application/pdf, image/jpeg, image/png",Customers can delete own documents in storage,DELETE,authenticated,"bucket_id = 'customer-documents' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+avatars,TRUE,2097152,"image/jpeg, image/png, image/webp",Public can view avatars in storage,SELECT,PUBLIC,bucket_id = 'avatars',PUBLIC_READ
+avatars,TRUE,2097152,"image/jpeg, image/png, image/webp",Users can manage own avatars in storage,ALL,authenticated,"bucket_id = 'avatars' AND (auth.uid())::text = (storage.foldername(name))[1]",STRICT_USER_FOLDER
+ALL,N/A,N/A,N/A,Service role full storage control,ALL,service_role,true,BACKEND_ADMINISTRATION

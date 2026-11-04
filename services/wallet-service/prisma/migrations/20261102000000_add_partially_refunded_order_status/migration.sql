@@ -1,0 +1,2 @@
+-- AlterEnum: Add PARTIALLY_REFUNDED to OrderStatus enum
+ALTER TYPE "OrderStatus" ADD VALUE IF NOT EXISTS 'PARTIALLY_REFUNDED';

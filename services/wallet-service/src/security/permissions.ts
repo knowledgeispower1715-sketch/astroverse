@@ -37,6 +37,18 @@ export const CANONICAL_ADMIN_ROLES: Role[] = [
   Role.ANALYST
 ];
 
+// Strict allowlist for NEW role assignments (Phase 2.5: rejects legacy aliases for new mutations)
+export const CANONICAL_ASSIGNABLE_ROLES: Role[] = [
+  Role.USER,
+  Role.OWNER,
+  Role.SECURITY_ADMIN,
+  Role.SUPPORT_ADMIN,
+  Role.CONTENT_EDITOR,
+  Role.FINANCE_ADMIN,
+  Role.ASTROLOGY_OPS_ADMIN,
+  Role.READONLY_ANALYST
+];
+
 export enum AdminPermission {
   // 1. Platform Overview & Metrics
   VIEW_OVERVIEW = 'VIEW_OVERVIEW',
@@ -44,6 +56,7 @@ export enum AdminPermission {
   // 2. User Lifecycle & Moderation
   VIEW_USERS = 'VIEW_USERS',
   MANAGE_USER_STATUS = 'MANAGE_USER_STATUS',
+  EXPORT_CUSTOMER_DATA = 'EXPORT_CUSTOMER_DATA',
 
   // 3. Administrative Roles & Permissions
   VIEW_ROLES = 'VIEW_ROLES',
@@ -68,10 +81,14 @@ export enum AdminPermission {
   // 8. Payments & Reconciliation
   VIEW_PAYMENTS = 'VIEW_PAYMENTS',
   RECONCILE_PAYMENTS = 'RECONCILE_PAYMENTS',
+  MANAGE_WALLET = 'MANAGE_WALLET',
 
   // 9. Subscriptions & Refunds
   VIEW_SUBSCRIPTIONS = 'VIEW_SUBSCRIPTIONS',
+  MANAGE_SUBSCRIPTIONS = 'MANAGE_SUBSCRIPTIONS',
   MANAGE_REFUNDS = 'MANAGE_REFUNDS',
+  MANAGE_PRODUCTS = 'MANAGE_PRODUCTS',
+  MANAGE_PRICING = 'MANAGE_PRICING',
 
   // 10. Content Management & Banners
   MANAGE_CONTENT = 'MANAGE_CONTENT',
@@ -92,7 +109,19 @@ export enum AdminPermission {
 
   // 15. Monitoring, Errors & Incidents
   VIEW_INCIDENTS = 'VIEW_INCIDENTS',
-  MANAGE_INCIDENTS = 'MANAGE_INCIDENTS'
+  MANAGE_INCIDENTS = 'MANAGE_INCIDENTS',
+
+  // 16. Customer 360, Entitlements & Promotions
+  VIEW_CUSTOMER_360 = 'VIEW_CUSTOMER_360',
+  MANAGE_CUSTOMER_NOTES = 'MANAGE_CUSTOMER_NOTES',
+  MANAGE_ENTITLEMENTS = 'MANAGE_ENTITLEMENTS',
+  MANAGE_PROMOTIONS = 'MANAGE_PROMOTIONS',
+
+  // 17. Analytics, Database & Consultations
+  VIEW_DATABASE = 'VIEW_DATABASE',
+  VIEW_ANALYTICS = 'VIEW_ANALYTICS',
+  VIEW_CONSULTATIONS = 'VIEW_CONSULTATIONS',
+  MANAGE_CONSULTATIONS = 'MANAGE_CONSULTATIONS'
 }
 
 /**
@@ -140,7 +169,7 @@ export function isAnyAdmin(role: string | undefined | null): boolean {
 export const ROLE_PERMISSIONS: Record<Role, AdminPermission[]> = {
   [Role.USER]: [],
 
-  // 1. OWNER / SUPER_ADMIN: Full Super-Authority across all 15 modules
+  // 1. OWNER / SUPER_ADMIN: Full Super-Authority across all 22 modules
   [Role.OWNER]: Object.values(AdminPermission),
   [Role.SUPER_ADMIN]: Object.values(AdminPermission),
 
@@ -150,6 +179,7 @@ export const ROLE_PERMISSIONS: Record<Role, AdminPermission[]> = {
     AdminPermission.VIEW_USERS,
     AdminPermission.MANAGE_USER_STATUS,
     AdminPermission.VIEW_ROLES,
+    AdminPermission.MANAGE_ROLES,
     AdminPermission.VIEW_SECURITY_EVENTS,
     AdminPermission.MANAGE_SECURITY_MFA,
     AdminPermission.VIEW_PRIVACY_REQUESTS,
@@ -157,41 +187,57 @@ export const ROLE_PERMISSIONS: Record<Role, AdminPermission[]> = {
     AdminPermission.VIEW_AUDIT_LOGS,
     AdminPermission.VIEW_INTEGRATIONS,
     AdminPermission.VIEW_INCIDENTS,
-    AdminPermission.MANAGE_INCIDENTS
+    AdminPermission.MANAGE_INCIDENTS,
+    AdminPermission.VIEW_DATABASE
   ],
 
-  // 3. SUPPORT_ADMIN: User diagnostics, report generation recovery, privacy requests
+  // 3. SUPPORT_ADMIN: User diagnostics, report generation recovery, privacy requests, Customer 360, Entitlements
   [Role.SUPPORT_ADMIN]: [
     AdminPermission.VIEW_OVERVIEW,
     AdminPermission.VIEW_USERS,
+    AdminPermission.VIEW_CUSTOMER_360,
+    AdminPermission.MANAGE_CUSTOMER_NOTES,
+    AdminPermission.MANAGE_ENTITLEMENTS,
     AdminPermission.VIEW_REPORT_DIAGNOSTICS,
     AdminPermission.RETRY_FAILED_REPORTS,
     AdminPermission.VIEW_PRIVACY_REQUESTS,
-    AdminPermission.MANAGE_PRIVACY_REQUESTS
+    AdminPermission.MANAGE_PRIVACY_REQUESTS,
+    AdminPermission.VIEW_CONSULTATIONS
   ],
   [Role.SUPPORT]: [
     AdminPermission.VIEW_OVERVIEW,
     AdminPermission.VIEW_USERS,
+    AdminPermission.VIEW_CUSTOMER_360,
+    AdminPermission.MANAGE_CUSTOMER_NOTES,
+    AdminPermission.MANAGE_ENTITLEMENTS,
     AdminPermission.VIEW_REPORT_DIAGNOSTICS,
     AdminPermission.RETRY_FAILED_REPORTS,
     AdminPermission.VIEW_PRIVACY_REQUESTS,
-    AdminPermission.MANAGE_PRIVACY_REQUESTS
+    AdminPermission.MANAGE_PRIVACY_REQUESTS,
+    AdminPermission.VIEW_CONSULTATIONS
   ],
 
-  // 4. CONTENT_EDITOR: Horoscopic notices, marketing banners, knowledge articles
+  // 4. CONTENT_EDITOR: Horoscopic notices, marketing banners, knowledge articles, promotions
   [Role.CONTENT_EDITOR]: [
     AdminPermission.VIEW_OVERVIEW,
-    AdminPermission.MANAGE_CONTENT
+    AdminPermission.MANAGE_CONTENT,
+    AdminPermission.MANAGE_PROMOTIONS
   ],
 
-  // 5. FINANCE_ADMIN: Payments, reconciliation, subscriptions, refund execution
+  // 5. FINANCE_ADMIN: Payments, reconciliation, subscriptions, refund execution, pricing
   [Role.FINANCE_ADMIN]: [
     AdminPermission.VIEW_OVERVIEW,
     AdminPermission.VIEW_PAYMENTS,
     AdminPermission.RECONCILE_PAYMENTS,
+    AdminPermission.MANAGE_WALLET,
     AdminPermission.VIEW_SUBSCRIPTIONS,
+    AdminPermission.MANAGE_SUBSCRIPTIONS,
     AdminPermission.MANAGE_REFUNDS,
-    AdminPermission.VIEW_AUDIT_LOGS
+    AdminPermission.MANAGE_PRODUCTS,
+    AdminPermission.MANAGE_PRICING,
+    AdminPermission.MANAGE_PROMOTIONS,
+    AdminPermission.VIEW_AUDIT_LOGS,
+    AdminPermission.VIEW_ANALYTICS
   ],
 
   // 6. ASTROLOGY_OPS_ADMIN: Engine health, calculation jobs, ephemeris diagnostics
@@ -201,7 +247,9 @@ export const ROLE_PERMISSIONS: Record<Role, AdminPermission[]> = {
     AdminPermission.MANAGE_ASTROLOGY_JOBS,
     AdminPermission.VIEW_REPORT_DIAGNOSTICS,
     AdminPermission.RETRY_FAILED_REPORTS,
-    AdminPermission.VIEW_INTEGRATIONS
+    AdminPermission.VIEW_INTEGRATIONS,
+    AdminPermission.VIEW_CONSULTATIONS,
+    AdminPermission.MANAGE_CONSULTATIONS
   ],
   [Role.OPERATIONS]: [
     AdminPermission.VIEW_OVERVIEW,
@@ -209,7 +257,9 @@ export const ROLE_PERMISSIONS: Record<Role, AdminPermission[]> = {
     AdminPermission.MANAGE_ASTROLOGY_JOBS,
     AdminPermission.VIEW_REPORT_DIAGNOSTICS,
     AdminPermission.RETRY_FAILED_REPORTS,
-    AdminPermission.VIEW_INTEGRATIONS
+    AdminPermission.VIEW_INTEGRATIONS,
+    AdminPermission.VIEW_CONSULTATIONS,
+    AdminPermission.MANAGE_CONSULTATIONS
   ],
 
   // 7. READONLY_ANALYST: Read-only visibility over aggregate metrics
@@ -219,7 +269,9 @@ export const ROLE_PERMISSIONS: Record<Role, AdminPermission[]> = {
     AdminPermission.VIEW_SUBSCRIPTIONS,
     AdminPermission.VIEW_AI_USAGE,
     AdminPermission.VIEW_REPORT_DIAGNOSTICS,
-    AdminPermission.VIEW_ASTROLOGY_HEALTH
+    AdminPermission.VIEW_ASTROLOGY_HEALTH,
+    AdminPermission.VIEW_ANALYTICS,
+    AdminPermission.VIEW_CONSULTATIONS
   ],
   [Role.ANALYST]: [
     AdminPermission.VIEW_OVERVIEW,
@@ -227,7 +279,9 @@ export const ROLE_PERMISSIONS: Record<Role, AdminPermission[]> = {
     AdminPermission.VIEW_SUBSCRIPTIONS,
     AdminPermission.VIEW_AI_USAGE,
     AdminPermission.VIEW_REPORT_DIAGNOSTICS,
-    AdminPermission.VIEW_ASTROLOGY_HEALTH
+    AdminPermission.VIEW_ASTROLOGY_HEALTH,
+    AdminPermission.VIEW_ANALYTICS,
+    AdminPermission.VIEW_CONSULTATIONS
   ]
 };
 
@@ -242,25 +296,34 @@ export function hasPermission(role: string | undefined | null, permission: Admin
 }
 
 /**
- * Lists the 15 Admin Modules and their required view permissions
+ * Authoritative Canonical 22 Admin Modules Registry
  */
-export const ADMIN_MODULE_REGISTRY = [
-  { id: 'overview', title: 'Platform Overview & Service Health', permission: AdminPermission.VIEW_OVERVIEW },
-  { id: 'users', title: 'User Lifecycle & Moderation', permission: AdminPermission.VIEW_USERS },
-  { id: 'roles', title: 'Administrative Roles & Permissions', permission: AdminPermission.VIEW_ROLES },
-  { id: 'security', title: 'Authentication & Security Events', permission: AdminPermission.VIEW_SECURITY_EVENTS },
-  { id: 'astrology', title: 'Astrology Engine Health & Jobs', permission: AdminPermission.VIEW_ASTROLOGY_HEALTH },
-  { id: 'reports', title: 'Personalised Report Diagnostics', permission: AdminPermission.VIEW_REPORT_DIAGNOSTICS },
-  { id: 'ai', title: 'AI Provider Status & Quotas', permission: AdminPermission.VIEW_AI_USAGE },
-  { id: 'payments', title: 'Payments & Reconciliation', permission: AdminPermission.VIEW_PAYMENTS },
-  { id: 'subscriptions', title: 'Subscription & Refund Management', permission: AdminPermission.VIEW_SUBSCRIPTIONS },
-  { id: 'content', title: 'Content Management & Banners', permission: AdminPermission.MANAGE_CONTENT },
-  { id: 'settings', title: 'Feature Flags & Safe Settings', permission: AdminPermission.VIEW_SETTINGS },
-  { id: 'privacy', title: 'Support & Privacy Requests', permission: AdminPermission.VIEW_PRIVACY_REQUESTS },
-  { id: 'audit', title: 'Security Audit Trail Search', permission: AdminPermission.VIEW_AUDIT_LOGS },
-  { id: 'integrations', title: 'External Integrations Health', permission: AdminPermission.VIEW_INTEGRATIONS },
-  { id: 'incidents', title: 'Monitoring, Errors & Incidents', permission: AdminPermission.VIEW_INCIDENTS }
+export const AUTHORITATIVE_ADMIN_MODULE_REGISTRY = [
+  { id: 'overview', title: 'Platform Overview & Service Health', panelId: 'admin-panel-overview', permission: AdminPermission.VIEW_OVERVIEW },
+  { id: 'users', title: 'User Lifecycle & Moderation', panelId: 'admin-panel-users', permission: AdminPermission.VIEW_USERS },
+  { id: 'roles', title: 'Administrative Roles & Permissions', panelId: 'admin-panel-roles', permission: AdminPermission.VIEW_ROLES },
+  { id: 'security', title: 'Authentication & Security Events', panelId: 'admin-panel-security', permission: AdminPermission.VIEW_SECURITY_EVENTS },
+  { id: 'astrology', title: 'Astrology Engine Health & Jobs', panelId: 'admin-panel-astrology', permission: AdminPermission.VIEW_ASTROLOGY_HEALTH },
+  { id: 'reports', title: 'Personalised Report Diagnostics', panelId: 'admin-panel-reports', permission: AdminPermission.VIEW_REPORT_DIAGNOSTICS },
+  { id: 'ai', title: 'AI Provider Status & Quotas', panelId: 'admin-panel-ai', permission: AdminPermission.VIEW_AI_USAGE },
+  { id: 'payments', title: 'Payments & Reconciliation', panelId: 'admin-panel-payments', permission: AdminPermission.VIEW_PAYMENTS },
+  { id: 'subscriptions', title: 'Subscription & Catalog Management', panelId: 'admin-panel-subscriptions', permission: AdminPermission.VIEW_SUBSCRIPTIONS },
+  { id: 'content', title: 'Content Management & Banners', panelId: 'admin-panel-content', permission: AdminPermission.MANAGE_CONTENT },
+  { id: 'settings', title: 'Feature Flags & Safe Settings', panelId: 'admin-panel-settings', permission: AdminPermission.VIEW_SETTINGS },
+  { id: 'privacy', title: 'Support & Privacy Requests', panelId: 'admin-panel-privacy', permission: AdminPermission.VIEW_PRIVACY_REQUESTS },
+  { id: 'audit', title: 'Security Audit Trail Search', panelId: 'admin-panel-audit', permission: AdminPermission.VIEW_AUDIT_LOGS },
+  { id: 'integrations', title: 'External Integrations Health', panelId: 'admin-panel-integrations', permission: AdminPermission.VIEW_INTEGRATIONS },
+  { id: 'incidents', title: 'Monitoring, Errors & Incidents', panelId: 'admin-panel-incidents', permission: AdminPermission.VIEW_INCIDENTS },
+  { id: 'qa', title: 'Tier Simulator & QA Console', panelId: 'admin-panel-qa', permission: AdminPermission.VIEW_OVERVIEW },
+  { id: 'database', title: 'PostgreSQL & RLS Catalog Monitor', panelId: 'admin-panel-database', permission: AdminPermission.VIEW_DATABASE },
+  { id: 'analytics', title: 'Platform Analytics & Business Intelligence', panelId: 'admin-panel-analytics', permission: AdminPermission.VIEW_ANALYTICS },
+  { id: 'customer360', title: 'Customer 360 & Privileged Records', panelId: 'admin-panel-customer360', permission: AdminPermission.VIEW_CUSTOMER_360 },
+  { id: 'entitlements', title: 'Manual Entitlements & Feature Grants', panelId: 'admin-panel-entitlements', permission: AdminPermission.MANAGE_ENTITLEMENTS },
+  { id: 'promotions', title: 'Promotional Campaigns & Coupon Codes', panelId: 'admin-panel-promotions', permission: AdminPermission.MANAGE_PROMOTIONS },
+  { id: 'consultations', title: 'Astrologer Operations & Consultations', panelId: 'admin-panel-consultations', permission: AdminPermission.VIEW_CONSULTATIONS }
 ];
+
+export const ADMIN_MODULE_REGISTRY = AUTHORITATIVE_ADMIN_MODULE_REGISTRY;
 
 /**
  * Reads and normalizes the server-side administrator email allowlist (ASTROVERSE_ADMIN_EMAILS).

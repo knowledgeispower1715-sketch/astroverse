@@ -1,0 +1,357 @@
+{
+  "timestamp": "2026-11-04T11:39:36.937Z",
+  "browser": "Chrome/156.0.8078.80",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+  "protocol": "1.3",
+  "cdpPort": 9222,
+  "serverPort": 8199,
+  "sessionToken": "mock_admin_token_owner_999",
+  "ownerUserId": "f152a198-2998-4f2e-811e-bd5f9190b896",
+  "ownerEmail": "tiwariji0028@gmail.com",
+  "modulesAudited": [
+    "overview",
+    "users",
+    "roles",
+    "security",
+    "astrology",
+    "reports",
+    "ai",
+    "payments",
+    "subscriptions",
+    "content",
+    "settings",
+    "privacy",
+    "audit",
+    "integrations",
+    "incidents",
+    "qa",
+    "database",
+    "analytics",
+    "customer360",
+    "entitlements",
+    "promotions",
+    "consultations"
+  ],
+  "viewportsTested": [
+    "360x640 (360x640, scale 2, mobile: true)",
+    "390x844 (390x844, scale 3, mobile: true)",
+    "430x932 (430x932, scale 3, mobile: true)",
+    "768x1024 (768x1024, scale 2, mobile: false)",
+    "1024x768 (1024x768, scale 2, mobile: false)",
+    "1366x768 (1366x768, scale 1, mobile: false)",
+    "1440x900 (1440x900, scale 1, mobile: false)",
+    "1920x1080 (1920x1080, scale 1, mobile: false)"
+  ],
+  "networkLogSummary": {
+    "totalRequests": 69,
+    "items": [
+      {
+        "timestamp": "2026-11-04T11:38:51.597Z",
+        "method": "GET",
+        "url": "/admin.html"
+      },
+      {
+        "type": "response",
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+        "status": 200,
+        "mimeType": "text/css",
+        "timestamp": "2026-11-04T11:38:51.729Z"
+      },
+      {
+        "type": "response",
+        "url": "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Fira+Code:wght@400;500&display=swap",
+        "status": 200,
+        "mimeType": "text/css",
+        "timestamp": "2026-11-04T11:38:52.047Z"
+      },
+      {
+        "type": "request",
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:52.066Z"
+      },
+      {
+        "type": "request",
+        "url": "https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt79mT7.woff2",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:52.067Z"
+      },
+      {
+        "type": "request",
+        "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:52.067Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:52.069Z",
+        "method": "GET",
+        "url": "/api/admin/gateway-status"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:52.069Z",
+        "method": "GET",
+        "url": "/api/admin/session/policy"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/gateway-status",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:52.084Z"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/session/policy",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:52.084Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/gateway-status",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:38:52.084Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/session/policy",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:38:52.084Z"
+      },
+      {
+        "type": "response",
+        "url": "https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt79mT7.woff2",
+        "status": 200,
+        "mimeType": "font/woff2",
+        "timestamp": "2026-11-04T11:38:52.111Z"
+      },
+      {
+        "type": "response",
+        "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2",
+        "status": 200,
+        "mimeType": "font/woff2",
+        "timestamp": "2026-11-04T11:38:52.117Z"
+      },
+      {
+        "type": "response",
+        "url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2",
+        "status": 200,
+        "mimeType": "application/octet-stream",
+        "timestamp": "2026-11-04T11:38:52.167Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:52.168Z",
+        "method": "GET",
+        "url": "/favicon.ico"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/favicon.ico",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:52.175Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/favicon.ico",
+        "status": 200,
+        "mimeType": "image/x-icon",
+        "timestamp": "2026-11-04T11:38:52.176Z"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/favicon.svg",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:52.176Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:52.176Z",
+        "method": "GET",
+        "url": "/favicon.svg"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/favicon.svg",
+        "status": 200,
+        "mimeType": "image/svg+xml",
+        "timestamp": "2026-11-04T11:38:52.204Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:53.640Z",
+        "method": "GET",
+        "url": "/api/admin/overview"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/overview",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:53.645Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/overview",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:38:53.645Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:55.372Z",
+        "method": "GET",
+        "url": "/api/admin/users?page=1&limit=25&sortBy=createdAt&sortOrder=desc"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/users?page=1&limit=25&sortBy=createdAt&sortOrder=desc",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:55.373Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/users?page=1&limit=25&sortBy=createdAt&sortOrder=desc",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:38:55.374Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:57.520Z",
+        "method": "GET",
+        "url": "/api/admin/roles/admins"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:57.520Z",
+        "method": "GET",
+        "url": "/api/admin/roles"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/roles/admins",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:57.523Z"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/roles",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:57.523Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/roles/admins",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:38:57.523Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/roles",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:38:57.523Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:59.112Z",
+        "method": "GET",
+        "url": "/api/admin/subscriptions?page=1&limit=20"
+      },
+      {
+        "timestamp": "2026-11-04T11:38:59.112Z",
+        "method": "GET",
+        "url": "/api/admin/products"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/subscriptions?page=1&limit=20",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:59.113Z"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/products",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:38:59.113Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/subscriptions?page=1&limit=20",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:38:59.113Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/products",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:38:59.114Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:39:00.696Z",
+        "method": "GET",
+        "url": "/api/admin/users?page=1&limit=25&sortBy=createdAt&sortOrder=desc"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/users?page=1&limit=25&sortBy=createdAt&sortOrder=desc",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:39:00.698Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/users?page=1&limit=25&sortBy=createdAt&sortOrder=desc",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:39:00.699Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:39:26.456Z",
+        "method": "GET",
+        "url": "/api/admin/security/events?limit=25"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/security/events?limit=25",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:39:26.458Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/security/events?limit=25",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:39:26.459Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:39:27.878Z",
+        "method": "GET",
+        "url": "/api/admin/reports/diagnostics?limit=20"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/reports/diagnostics?limit=20",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:39:27.882Z"
+      },
+      {
+        "type": "response",
+        "url": "http://127.0.0.1:8199/api/admin/reports/diagnostics?limit=20",
+        "status": 200,
+        "mimeType": "application/json",
+        "timestamp": "2026-11-04T11:39:27.883Z"
+      },
+      {
+        "timestamp": "2026-11-04T11:39:29.516Z",
+        "method": "GET",
+        "url": "/api/admin/ai/usage"
+      },
+      {
+        "type": "request",
+        "url": "http://127.0.0.1:8199/api/admin/ai/usage",
+        "method": "GET",
+        "timestamp": "2026-11-04T11:39:29.518Z"
+      }
+    ]
+  },
+  "consoleLogSummary": {
+    "totalConsoleMessages": 0,
+    "items": []
+  }
+}

@@ -1,0 +1,5 @@
+Function Name,Schema,Execution Semantics,search_path Configured,Public Execute Revoked,Granted Roles,Trigger Attachment Table,Security Status
+prevent_unauthorized_profile_mutation,public,SECURITY DEFINER,"pg_catalog, public",YES,"postgres, service_role","User, profiles",HARDENED
+rls_auto_enable,public,SECURITY DEFINER,"pg_catalog, public",YES,"postgres, service_role",None (DDL utility),HARDENED
+handle_new_user,public,SECURITY DEFINER,"pg_catalog, public, auth",YES,"postgres, supabase_auth_admin, service_role",auth.users,HARDENED
+handle_updated_at,public,SECURITY DEFINER,"pg_catalog, public",YES,"postgres, service_role",profiles,HARDENED

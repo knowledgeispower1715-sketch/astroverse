@@ -1,0 +1,1784 @@
+{
+  "targetUrl": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app/admin",
+  "inspectedAt": "2026-11-04T12:49:21.557Z",
+  "domState": {
+    "title": "Login – Vercel",
+    "url": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+    "readyState": "complete",
+    "hasAdminShell": true,
+    "bodyTextSnippet": "Skip to content\n\nSign Up\n\nLog in to Vercel\nContinue with Email\nContinue with Google\nContinue with GitHub\nContinue with ChatGPT\nContinue with SAML SSO\nContinue with Passkey\nShow other options\n\nDon't have an account? Sign Up\n\nTerms\nPrivacy Policy",
+    "provenanceBadges": [],
+    "modulesFound": [],
+    "buttonsCount": 7,
+    "linksCount": 6,
+    "customerTableFound": false,
+    "reportViewerFound": false,
+    "localStorageKeys": [
+      "utmValues",
+      "rudder_beacon_34WAqdmAn7gavRAuxcqT8Ekj8FU.3a9ab653-5434-4e0f-a099-c622c0456114.queue",
+      "rudder_beacon_34WAqdmAn7gavRAuxcqT8Ekj8FU.3a9ab653-5434-4e0f-a099-c622c0456114.batchQueue",
+      "rudder_beacon_34WAqdmAn7gavRAuxcqT8Ekj8FU.3a9ab653-5434-4e0f-a099-c622c0456114.ack",
+      "rudder_beacon_34WAqdmAn7gavRAuxcqT8Ekj8FU.3a9ab653-5434-4e0f-a099-c622c0456114.inProgress"
+    ],
+    "sessionStorageKeys": [
+      "srid",
+      "uval",
+      "lpid",
+      "sid"
+    ]
+  },
+  "consoleLogs": [
+    {
+      "type": "log",
+      "args": [
+        "%c\n▲\n\n _____ _              _                    _   _             __\n|_   _| |__   ___    / \\   __ _  ___ _ __ | |_(_) ___       / /\n  | | | '_ \\ / _ \\  / _ \\ / _` |/ _ \\ '_ \\| __| |/ __|     / /\n  | | | | | |  __/ / ___ \\ (_| |  __/ | | | |_| | (__     /_/\n  |_| |_| |_|\\___|/_/   \\_\\__, |\\___|_| |_|\\__|_|\\___|    (_)\n                           |___/\n ___        __               _                   _                 _\n|_ _|_ __  / _|_ __ __ _ ___| |_ _ __ _   _  ___| |_ _   _ _ __ ___\n | || '_ \\| |_| '__/ _` / __| __| '__| | | |/ __| __| | | | '__/ _ \\\n | || | | |  _| | | (_| \\__ \\ |_| |  | |_| | (__| |_| |_| | | |  __/\n|___|_| |_|_| |_|  \\__,_|___/\\__|_|   \\__,_|\\___|\\__|\\__,_|_|  \\___|\n  \n\nHello!\n\n- Open Source https://vercel.com/oss\n- Careers https://vercel.com/careers\n- Status https://www.vercel-status.com\n\n",
+        "font-family: \"Geist Mono\", monospace; white-space: pre; line-height: 1;"
+      ],
+      "timestamp": 1793796558458
+    },
+    {
+      "type": "warning",
+      "args": [
+        "[GSI_LOGGER]: Your client application uses one of the Google One Tap prompt UI status methods that may stop functioning when FedCM becomes mandatory. Refer to the migration guide to update your code accordingly and opt-in to FedCM to test your changes. Learn more: https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#display_moment and https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#skipped_moment"
+      ],
+      "timestamp": 1793796558668
+    }
+  ],
+  "networkEntriesCount": 249,
+  "networkLogs": [
+    {
+      "type": "request",
+      "requestId": "0654D149F7464D97666C2247C93CD469",
+      "url": "https://vercel.com/sso-api?url=https%3A%2F%2Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%2Fadmin&nonce=d053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+      "method": "GET",
+      "headers": {
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\""
+      },
+      "timestamp": 15648.438345
+    },
+    {
+      "type": "request",
+      "requestId": "0654D149F7464D97666C2247C93CD469",
+      "url": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+      "method": "GET",
+      "headers": {
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\""
+      },
+      "timestamp": 15648.853372
+    },
+    {
+      "type": "response",
+      "requestId": "0654D149F7464D97666C2247C93CD469",
+      "url": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "access-control-allow-origin": "*",
+        "age": "2346",
+        "cache-control": "public, max-age=0, must-revalidate",
+        "content-disposition": "inline",
+        "content-encoding": "br",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'none';worker-src 'self' blob:",
+        "content-type": "text/html; charset=utf-8",
+        "cross-origin-opener-policy": "same-origin-allow-popups",
+        "date": "Wed, 04 Nov 2026 12:49:16 GMT",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "link": "<https://avatars.githubusercontent.com>; rel=preconnect; crossorigin=\"\", <https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com>; rel=preconnect; crossorigin=\"\", <https://images.ctfassets.net>; rel=preconnect; crossorigin=\"\", <https://accounts.google.com>; rel=preconnect; crossorigin=\"\", </_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2>; rel=preload; as=\"font\"; crossorigin=\"\"; type=\"font/woff2\", </_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2>; rel=preload; as=\"font\"; crossorigin=\"\"; type=\"font/woff2\", </_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2>; rel=preload; as=\"font\"; crossorigin=\"\"; type=\"font/woff2\"",
+        "referrer-policy": "origin-when-cross-origin",
+        "server": "Vercel",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+        "x-content-type-options": "nosniff",
+        "x-dns-prefetch-control": "on",
+        "x-download-options": "noopen",
+        "x-frame-options": "DENY",
+        "x-matched-path": "/login",
+        "x-nextjs-prerender": "1",
+        "x-nextjs-stale-time": "300",
+        "x-vercel-cache": "HIT",
+        "x-vercel-id": "bom1::9vwtq-1793796556521-2e14706277e7",
+        "x-xss-protection": "0"
+      },
+      "mimeType": "text/html",
+      "timestamp": 15648.897315
+    },
+    {
+      "type": "request",
+      "requestId": "29812.2",
+      "url": "https://vercel.com/_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2",
+      "method": "GET",
+      "headers": {
+        "Origin": "https://vercel.com",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900245
+    },
+    {
+      "type": "request",
+      "requestId": "29812.3",
+      "url": "https://vercel.com/_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2",
+      "method": "GET",
+      "headers": {
+        "Origin": "https://vercel.com",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900381
+    },
+    {
+      "type": "request",
+      "requestId": "29812.4",
+      "url": "https://vercel.com/_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2",
+      "method": "GET",
+      "headers": {
+        "Origin": "https://vercel.com",
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900406
+    },
+    {
+      "type": "request",
+      "requestId": "29812.5",
+      "url": "https://vercel.com/_next/static/immutable/chunks/15eq68roqlucr.css",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900701
+    },
+    {
+      "type": "request",
+      "requestId": "29812.6",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2oiut2khc2nt2.css",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900732
+    },
+    {
+      "type": "request",
+      "requestId": "29812.7",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1-9yb6i_h9yg1.css",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900746
+    },
+    {
+      "type": "request",
+      "requestId": "29812.8",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0ia8w1n1yr9aa.css",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900764
+    },
+    {
+      "type": "request",
+      "requestId": "29812.9",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3t4_-n2gmo1ic.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900782
+    },
+    {
+      "type": "request",
+      "requestId": "29812.10",
+      "url": "https://vercel.com/_next/static/immutable/chunks/082c9c5lfeghn.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900797
+    },
+    {
+      "type": "request",
+      "requestId": "29812.11",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3r076korij6gu.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900813
+    },
+    {
+      "type": "request",
+      "requestId": "29812.12",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1vh4nsdwj-tnc.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900829
+    },
+    {
+      "type": "request",
+      "requestId": "29812.13",
+      "url": "https://vercel.com/_next/static/immutable/chunks/227bzhl1iddbi.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900846
+    },
+    {
+      "type": "request",
+      "requestId": "29812.14",
+      "url": "https://vercel.com/_next/static/immutable/chunks/342sco7n2gh5f.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.900885
+    },
+    {
+      "type": "request",
+      "requestId": "29812.15",
+      "url": "https://vercel.com/_next/static/immutable/chunks/turbopack-2kua30ffxumth.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901011
+    },
+    {
+      "type": "request",
+      "requestId": "29812.16",
+      "url": "https://vercel.com/_next/static/immutable/chunks/43t01zhciccwx.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901109
+    },
+    {
+      "type": "request",
+      "requestId": "29812.17",
+      "url": "https://vercel.com/_next/static/immutable/chunks/32tylomnt4zhv.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901136
+    },
+    {
+      "type": "request",
+      "requestId": "29812.18",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0jx83u0qhqnai.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901151
+    },
+    {
+      "type": "request",
+      "requestId": "29812.19",
+      "url": "https://vercel.com/_next/static/immutable/chunks/26jxvl3frva_f.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.90117
+    },
+    {
+      "type": "request",
+      "requestId": "29812.20",
+      "url": "https://vercel.com/_next/static/immutable/chunks/028lrdsw7aco9.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901181
+    },
+    {
+      "type": "request",
+      "requestId": "29812.21",
+      "url": "https://vercel.com/_next/static/immutable/chunks/43ahgrk5xz1g4.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901197
+    },
+    {
+      "type": "request",
+      "requestId": "29812.22",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2foqci80tam44.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901211
+    },
+    {
+      "type": "request",
+      "requestId": "29812.23",
+      "url": "https://vercel.com/_next/static/immutable/chunks/00uobwm6aziud.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901226
+    },
+    {
+      "type": "request",
+      "requestId": "29812.24",
+      "url": "https://vercel.com/_next/static/immutable/chunks/34m9n56wioiy_.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901237
+    },
+    {
+      "type": "request",
+      "requestId": "29812.25",
+      "url": "https://vercel.com/_next/static/immutable/chunks/359-tgz6qnhh9.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901251
+    },
+    {
+      "type": "request",
+      "requestId": "29812.26",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3a9qzufofm2x_.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901274
+    },
+    {
+      "type": "request",
+      "requestId": "29812.27",
+      "url": "https://vercel.com/_next/static/immutable/chunks/03mv7ge26u8y6.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901291
+    },
+    {
+      "type": "request",
+      "requestId": "29812.28",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1c050mosy-0q3.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901303
+    },
+    {
+      "type": "request",
+      "requestId": "29812.29",
+      "url": "https://vercel.com/_next/static/immutable/chunks/41_64be0h8adl.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901319
+    },
+    {
+      "type": "request",
+      "requestId": "29812.30",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1ivku85i57o_q.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901335
+    },
+    {
+      "type": "request",
+      "requestId": "29812.31",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0n7-vni359th3.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901351
+    },
+    {
+      "type": "request",
+      "requestId": "29812.32",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1f_r--3wuo-lf.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901365
+    },
+    {
+      "type": "request",
+      "requestId": "29812.33",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2uuhqrt_y1rrb.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901382
+    },
+    {
+      "type": "request",
+      "requestId": "29812.34",
+      "url": "https://vercel.com/_next/static/immutable/chunks/358y4416a28o-.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901398
+    },
+    {
+      "type": "request",
+      "requestId": "29812.35",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0qr7civyc_huk.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901412
+    },
+    {
+      "type": "request",
+      "requestId": "29812.36",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1jenknb519dcd.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901424
+    },
+    {
+      "type": "request",
+      "requestId": "29812.37",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0jb3mg87v1vfx.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.90144
+    },
+    {
+      "type": "request",
+      "requestId": "29812.38",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1epzjhvv-jd4a.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901453
+    },
+    {
+      "type": "request",
+      "requestId": "29812.39",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1i25ytfvk5d_w.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901465
+    },
+    {
+      "type": "request",
+      "requestId": "29812.40",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0e_-s5cq2d_zt.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.90148
+    },
+    {
+      "type": "request",
+      "requestId": "29812.41",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1-9xx-j744k81.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901497
+    },
+    {
+      "type": "request",
+      "requestId": "29812.42",
+      "url": "https://vercel.com/_next/static/immutable/chunks/42rr9s-d-ro60.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901517
+    },
+    {
+      "type": "request",
+      "requestId": "29812.43",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1my7f_qf721o7.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901534
+    },
+    {
+      "type": "request",
+      "requestId": "29812.44",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0xuisum26-zpm.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901551
+    },
+    {
+      "type": "request",
+      "requestId": "29812.45",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1arg3vor-zr44.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.90157
+    },
+    {
+      "type": "request",
+      "requestId": "29812.46",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3_0e-02y9w6-6.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901584
+    },
+    {
+      "type": "request",
+      "requestId": "29812.47",
+      "url": "https://vercel.com/_next/static/immutable/chunks/14hp64yobj_p4.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901596
+    },
+    {
+      "type": "request",
+      "requestId": "29812.48",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3h9hmfdsmdj2o.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901609
+    },
+    {
+      "type": "request",
+      "requestId": "29812.49",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3f37my-x99pjj.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901624
+    },
+    {
+      "type": "request",
+      "requestId": "29812.50",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2dkmqb-txo_ac.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901637
+    },
+    {
+      "type": "request",
+      "requestId": "29812.51",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1mtn-rlzxf88y.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901652
+    },
+    {
+      "type": "request",
+      "requestId": "29812.52",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2vzorf8dlfuwk.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901666
+    },
+    {
+      "type": "request",
+      "requestId": "29812.53",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0hxx4e_b4fhli.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901686
+    },
+    {
+      "type": "request",
+      "requestId": "29812.54",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3hypukl_bmh-v.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901702
+    },
+    {
+      "type": "request",
+      "requestId": "29812.55",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1s0f69kv0lrn2.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901714
+    },
+    {
+      "type": "request",
+      "requestId": "29812.56",
+      "url": "https://vercel.com/_next/static/immutable/chunks/00ena7w0b4pkv.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901729
+    },
+    {
+      "type": "request",
+      "requestId": "29812.57",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3c5cxr1_s8dy8.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901748
+    },
+    {
+      "type": "request",
+      "requestId": "29812.58",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0j2u0y3xql8fe.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901762
+    },
+    {
+      "type": "request",
+      "requestId": "29812.59",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1f8l1r68_y5hd.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.90178
+    },
+    {
+      "type": "request",
+      "requestId": "29812.60",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2ul1mr4ud1tyr.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901793
+    },
+    {
+      "type": "request",
+      "requestId": "29812.61",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2tb0p84tf38kf.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901809
+    },
+    {
+      "type": "request",
+      "requestId": "29812.62",
+      "url": "https://vercel.com/_next/static/immutable/chunks/12j7qis8lwhs3.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901823
+    },
+    {
+      "type": "request",
+      "requestId": "29812.63",
+      "url": "https://vercel.com/_next/static/immutable/chunks/11cyz-b2wtnr9.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901837
+    },
+    {
+      "type": "request",
+      "requestId": "29812.64",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3rq_qjreljbql.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.90185
+    },
+    {
+      "type": "request",
+      "requestId": "29812.65",
+      "url": "https://vercel.com/_next/static/immutable/chunks/200p0jnw1nfrq.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901869
+    },
+    {
+      "type": "request",
+      "requestId": "29812.66",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1h10h-nnty_s8.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.901976
+    },
+    {
+      "type": "request",
+      "requestId": "29812.67",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2mj5bz1w_s050.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902012
+    },
+    {
+      "type": "request",
+      "requestId": "29812.68",
+      "url": "https://vercel.com/_next/static/immutable/chunks/17pyuo3jro6la.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.90203
+    },
+    {
+      "type": "request",
+      "requestId": "29812.69",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0ulye6hysfgn8.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902045
+    },
+    {
+      "type": "request",
+      "requestId": "29812.70",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3m1nk28wr2a-9.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.90206
+    },
+    {
+      "type": "request",
+      "requestId": "29812.71",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3v3y9k0webp5f.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902072
+    },
+    {
+      "type": "request",
+      "requestId": "29812.72",
+      "url": "https://vercel.com/_next/static/immutable/chunks/21wekyjdaq76u.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902087
+    },
+    {
+      "type": "request",
+      "requestId": "29812.73",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1e4dn9zgob3x7.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902103
+    },
+    {
+      "type": "request",
+      "requestId": "29812.74",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1wz2b08unk4nv.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902121
+    },
+    {
+      "type": "request",
+      "requestId": "29812.75",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1g82l_32l-dv2.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902136
+    },
+    {
+      "type": "request",
+      "requestId": "29812.76",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2hxul566rcp_u.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902151
+    },
+    {
+      "type": "request",
+      "requestId": "29812.77",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1t1n559-zuz61.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902165
+    },
+    {
+      "type": "request",
+      "requestId": "29812.78",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3uqwhnsu8czlj.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902179
+    },
+    {
+      "type": "request",
+      "requestId": "29812.79",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1ne6znrcs-f6y.js",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902191
+    },
+    {
+      "type": "request",
+      "requestId": "29812.80",
+      "url": "https://vercel.com/_next/static/immutable/chunks/26lmgjckz06-j.css",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902207
+    },
+    {
+      "type": "request",
+      "requestId": "29812.81",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1-vyfk6cbr430.css",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902231
+    },
+    {
+      "type": "request",
+      "requestId": "29812.82",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3i6t01_46cfd-.css",
+      "method": "GET",
+      "headers": {
+        "sec-ch-ua-platform": "\"Windows\"",
+        "Referer": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3Dd053d1c82f21ee38089fa83bbaedbe9a26dd5bf004aeda01aca51eeec4136574",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "sec-ch-ua": "\"Not:A-Brand\";v=\"8\", \"Chromium\";v=\"156\", \"Google Chrome\";v=\"156\"",
+        "sec-ch-ua-mobile": "?0"
+      },
+      "timestamp": 15648.902248
+    },
+    {
+      "type": "response",
+      "requestId": "29812.5",
+      "url": "https://vercel.com/_next/static/immutable/chunks/15eq68roqlucr.css",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/15eq68roqlucr.css\"",
+        "age": "13154",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/15eq68roqlucr.css",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"15eq68roqlucr.css\"",
+        "content-type": "text/css; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 07:44:14 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::smns9-1793791956660-eb97a9718833"
+      },
+      "mimeType": "text/css",
+      "timestamp": 15648.904178
+    },
+    {
+      "type": "response",
+      "requestId": "29812.7",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1-9yb6i_h9yg1.css",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/1-9yb6i_h9yg1.css\"",
+        "age": "153120",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/1-9yb6i_h9yg1.css",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"1-9yb6i_h9yg1.css\"",
+        "content-type": "text/css; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Mon, 02 Nov 2026 16:53:50 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::gdnd9-1793791956658-ba7dba821ce4"
+      },
+      "mimeType": "text/css",
+      "timestamp": 15648.905198
+    },
+    {
+      "type": "response",
+      "requestId": "29812.8",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0ia8w1n1yr9aa.css",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/0ia8w1n1yr9aa.css\"",
+        "age": "13145",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/0ia8w1n1yr9aa.css",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"0ia8w1n1yr9aa.css\"",
+        "content-type": "text/css; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 07:44:14 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::bspdh-1793791956659-8ed73cb580a1"
+      },
+      "mimeType": "text/css",
+      "timestamp": 15648.905331
+    },
+    {
+      "type": "response",
+      "requestId": "29812.80",
+      "url": "https://vercel.com/_next/static/immutable/chunks/26lmgjckz06-j.css",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/26lmgjckz06-j.css\"",
+        "age": "13231",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/26lmgjckz06-j.css",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"26lmgjckz06-j.css\"",
+        "content-type": "text/css; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 07:44:34 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::9vwtq-1793791956659-1deb4bb5c70e"
+      },
+      "mimeType": "text/css",
+      "timestamp": 15648.905563
+    },
+    {
+      "type": "response",
+      "requestId": "29812.81",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1-vyfk6cbr430.css",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/1-vyfk6cbr430.css\"",
+        "age": "152544",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/1-vyfk6cbr430.css",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"1-vyfk6cbr430.css\"",
+        "content-type": "text/css; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Mon, 02 Nov 2026 16:59:58 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::hdvr4-1793791956669-333a70c55636"
+      },
+      "mimeType": "text/css",
+      "timestamp": 15648.905696
+    },
+    {
+      "type": "response",
+      "requestId": "29812.2",
+      "url": "https://vercel.com/_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "etag": "\"_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2\"",
+        "age": "24518",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2\"",
+        "content-type": "font/woff2",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 04:37:16 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "accept-ranges": "bytes",
+        "access-control-allow-origin": "*",
+        "content-length": "23108",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::k2m7n-1793791956662-7d468c9d7d7d"
+      },
+      "mimeType": "font/woff2",
+      "timestamp": 15648.911782
+    },
+    {
+      "type": "response",
+      "requestId": "29812.3",
+      "url": "https://vercel.com/_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "etag": "\"_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2\"",
+        "age": "152023",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"GeistPixel_Square.p.3i-voztpvqxl2.woff2\"",
+        "content-type": "font/woff2",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Mon, 02 Nov 2026 17:11:17 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "accept-ranges": "bytes",
+        "access-control-allow-origin": "*",
+        "content-length": "28540",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::s5hdv-1793791956658-6f092cc18d27"
+      },
+      "mimeType": "font/woff2",
+      "timestamp": 15648.912584
+    },
+    {
+      "type": "response",
+      "requestId": "29812.4",
+      "url": "https://vercel.com/_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "etag": "\"_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2\"",
+        "age": "15774",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"Geist_Variable-s.p.2wz-lhd5-5z0-.woff2\"",
+        "content-type": "font/woff2",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 07:02:59 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "accept-ranges": "bytes",
+        "access-control-allow-origin": "*",
+        "content-length": "69576",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::smns9-1793791956658-73406ea3fbc0"
+      },
+      "mimeType": "font/woff2",
+      "timestamp": 15648.91627
+    },
+    {
+      "type": "response",
+      "requestId": "29812.6",
+      "url": "https://vercel.com/_next/static/immutable/chunks/2oiut2khc2nt2.css",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/2oiut2khc2nt2.css\"",
+        "age": "89",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/2oiut2khc2nt2.css",
+        "date": "Wed, 04 Nov 2026 12:49:16 GMT",
+        "content-disposition": "inline; filename=\"2oiut2khc2nt2.css\"",
+        "content-type": "text/css; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 12:02:16 GMT",
+        "x-frame-options": "DENY",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::jvkc8-1793796556569-f36c095c4bcd"
+      },
+      "mimeType": "text/css",
+      "timestamp": 15648.933912
+    },
+    {
+      "type": "response",
+      "requestId": "29812.82",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3i6t01_46cfd-.css",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/3i6t01_46cfd-.css\"",
+        "age": "135",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/3i6t01_46cfd-.css",
+        "date": "Wed, 04 Nov 2026 12:49:16 GMT",
+        "content-disposition": "inline; filename=\"3i6t01_46cfd-.css\"",
+        "content-type": "text/css; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 12:02:16 GMT",
+        "x-frame-options": "DENY",
+        "strict-transport-security": "max-age=31536000; includeSubDomains; preload",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::pnbt9-1793796556574-6b6c17cafe63"
+      },
+      "mimeType": "text/css",
+      "timestamp": 15648.988564
+    },
+    {
+      "type": "response",
+      "requestId": "29812.10",
+      "url": "https://vercel.com/_next/static/immutable/chunks/082c9c5lfeghn.js",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/082c9c5lfeghn.js\"",
+        "age": "13835",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/082c9c5lfeghn.js",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"082c9c5lfeghn.js\"",
+        "content-type": "application/javascript; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 07:34:07 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::k2m7n-1793791956770-a551b450e959"
+      },
+      "mimeType": "application/javascript",
+      "timestamp": 15648.992939
+    },
+    {
+      "type": "response",
+      "requestId": "29812.11",
+      "url": "https://vercel.com/_next/static/immutable/chunks/3r076korij6gu.js",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/3r076korij6gu.js\"",
+        "age": "88315",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/3r076korij6gu.js",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"3r076korij6gu.js\"",
+        "content-type": "application/javascript; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Tue, 03 Nov 2026 10:57:35 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::rvmsh-1793791956781-d7f5026a7686"
+      },
+      "mimeType": "application/javascript",
+      "timestamp": 15649.000285
+    },
+    {
+      "type": "response",
+      "requestId": "29812.16",
+      "url": "https://vercel.com/_next/static/immutable/chunks/43t01zhciccwx.js",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/43t01zhciccwx.js\"",
+        "age": "87830",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/43t01zhciccwx.js",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"43t01zhciccwx.js\"",
+        "content-type": "application/javascript; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Tue, 03 Nov 2026 10:57:35 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::smns9-1793791956782-07b17a8da8b0"
+      },
+      "mimeType": "application/javascript",
+      "timestamp": 15649.026868
+    },
+    {
+      "type": "response",
+      "requestId": "29812.32",
+      "url": "https://vercel.com/_next/static/immutable/chunks/1f_r--3wuo-lf.js",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/1f_r--3wuo-lf.js\"",
+        "age": "87839",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/1f_r--3wuo-lf.js",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"1f_r--3wuo-lf.js\"",
+        "content-type": "application/javascript; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Tue, 03 Nov 2026 10:57:35 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::dcn7z-1793791956785-59c2cea6307c"
+      },
+      "mimeType": "application/javascript",
+      "timestamp": 15649.027024
+    },
+    {
+      "type": "response",
+      "requestId": "29812.18",
+      "url": "https://vercel.com/_next/static/immutable/chunks/0jx83u0qhqnai.js",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/0jx83u0qhqnai.js\"",
+        "age": "13593",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/0jx83u0qhqnai.js",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"0jx83u0qhqnai.js\"",
+        "content-type": "application/javascript; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 07:34:08 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::9vwtq-1793791956784-5d295ddfcb9d"
+      },
+      "mimeType": "application/javascript",
+      "timestamp": 15649.027092
+    },
+    {
+      "type": "response",
+      "requestId": "29812.25",
+      "url": "https://vercel.com/_next/static/immutable/chunks/359-tgz6qnhh9.js",
+      "status": 200,
+      "statusText": "",
+      "headers": {
+        "content-encoding": "br",
+        "etag": "W/\"_next/static/immutable/chunks/359-tgz6qnhh9.js\"",
+        "age": "16017",
+        "x-content-type-options": "nosniff",
+        "x-matched-path": "/_next/static/immutable/chunks/359-tgz6qnhh9.js",
+        "date": "Wed, 04 Nov 2026 11:32:36 GMT",
+        "content-disposition": "inline; filename=\"359-tgz6qnhh9.js\"",
+        "content-type": "application/javascript; charset=utf-8",
+        "feature-policy": "fullscreen 'self'; camera 'none'",
+        "last-modified": "Wed, 04 Nov 2026 06:59:21 GMT",
+        "x-frame-options": "DENY",
+        "content-security-policy": "default-src 'self' vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: https://*.stripe.com https://accounts.google.com/gsi/client *.googleapis.com *.fides-cdn.ethyca.com va.vercel-scripts.com si-next.vercel-scripts.com cdp.vercel.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;child-src 'self' https://www.youtube.com https://*.stripe.com https://accounts.google.com/gsi/ *.tmp.now vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style https://fonts.googleapis.com vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;img-src 'self' blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live https://flag.vercel.app https://avatars.githubusercontent.com https://cdn.jsdelivr.net https://*.stripe.com https://prod-uk-services-workspac-workspacefilespublicbuck-vs4gjqpqjkh6.s3.amazonaws.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com https://vercel.com https://api-frameworks.vercel.sh https://api.vercel.com https://github.com https://images.ctfassets.net https://og-image.vercel.app https://cdn.cosmicjs.com https://cdn.raster.app https://img.youtube.com https://raw.githubusercontent.com https://www.datocms-assets.com https://t3.gstatic.com https://dmmcy0pwk6bqi.cloudfront.net https://basehub.earth https://7nyt0uhk7sse4zvn.public.blob.vercel-storage.com https://lishhsx6kmthaacj.public.blob.vercel-storage.com https://myyiyhf3s6nwxrpk.public.blob.vercel-storage.com https://fvqcrhkhgatlyl2m.public.blob.vercel-storage.com https://py8fhxnkzwtsqdo9.public.blob.vercel-storage.com;media-src 'self' videos.ctfassets.net user-images.githubusercontent.com *.public.blob.vercel-storage.com *.private.blob.vercel-storage.com blob: data: vercel.com *.vercel.com *.vercel.sh vercel.live localhost:* chrome-extension://*;connect-src wss://ws-us3.pusher.com data: * cdp.vercel.com;font-src 'self' *.vercel.com vercel.live https://fonts.gstatic.com;frame-ancestors 'self' https://vercel.com https://app.contentful.com https://*.contentful.com https://*.vercel.sh https://*.vercel.com;worker-src 'self' blob:",
+        "cache-control": "public,max-age=31536000,immutable",
+        "x-dns-prefetch-control": "on",
+        "cross-origin-opener-policy": "restrict-properties",
+        "x-vercel-cache": "HIT",
+        "referrer-policy": "origin-when-cross-origin",
+        "x-download-options": "noopen",
+        "access-control-allow-origin": "*",
+        "x-xss-protection": "0",
+        "server": "Vercel",
+        "x-vercel-id": "bom1::zp49c-1793791956784-ad362d144768"
+      },
+      "mimeType": "application/javascript",
+      "timestamp": 15649.027156
+    }
+  ]
+}

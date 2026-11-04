@@ -397,6 +397,24 @@
         padding: 4px 8px;
         font-size: 11px;
       }
+      .admin-global-header {
+        padding: 10px !important;
+        gap: 10px !important;
+      }
+      .admin-global-header > div:first-child {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+      .admin-global-header > div:first-child > div:last-child > div:first-child {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      .admin-global-header > div:first-child > div:last-child > div:first-child span:first-child {
+        font-size: 13.5px !important;
+      }
+      #admin-header-email {
+        word-break: break-all;
+      }
     }
   </style>
 
@@ -480,8 +498,11 @@
             <label for="admin-login-mfa" style="display: block; font-size: 12px; font-weight: 700; color: #F5C45E; margin-bottom: 6px;">
               <i class="fa-solid fa-key"></i> Authenticator 6-Digit TOTP Code
             </label>
-            <input type="text" id="admin-login-mfa" maxlength="6" placeholder="123456" style="width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 10px; color: #FFFFFF; font-size: 16px; letter-spacing: 4px; text-align: center; font-family: monospace;">
-            <span style="display: block; font-size: 11px; color: #94A3B8; margin-top: 4px;">Enter the code from your authenticator app or an 8-character recovery code.</span>
+            <input type="text" id="admin-login-mfa" maxlength="16" placeholder="123456" style="width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 10px; color: #FFFFFF; font-size: 16px; letter-spacing: 4px; text-align: center; font-family: monospace;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 4px;">
+              <span style="font-size: 11px; color: #94A3B8;">Enter 6-digit TOTP or backup recovery code</span>
+              <button type="button" onclick="handlePreviewMfaReset()" style="background: none; border: none; color: #F5C45E; font-size: 11px; text-decoration: underline; cursor: pointer; padding: 0;">Reset MFA (Preview)</button>
+            </div>
           </div>
 
           <button type="submit" id="btn-admin-login-submit" class="btn-gold-primary" style="width: 100%; padding: 12px; font-size: 13px; font-weight: 700; justify-content: center; min-height: 44px; margin-top: 8px;">
@@ -570,6 +591,50 @@
           display: block !important;
         }
       }
+
+      /* Enterprise Data Provenance Badges */
+      .admin-provenance-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .provenance-live {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10B981;
+        border: 1px solid rgba(16, 185, 129, 0.35);
+      }
+      .provenance-derived {
+        background: rgba(59, 130, 246, 0.15);
+        color: #3B82F6;
+        border: 1px solid rgba(59, 130, 246, 0.35);
+      }
+      .provenance-synthetic {
+        background: rgba(245, 158, 11, 0.15);
+        color: #F59E0B;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+      }
+      .provenance-demo {
+        background: rgba(168, 85, 247, 0.15);
+        color: #A855F7;
+        border: 1px solid rgba(168, 85, 247, 0.35);
+      }
+      .provenance-unavailable {
+        background: rgba(239, 68, 68, 0.15);
+        color: #EF4444;
+        border: 1px solid rgba(239, 68, 68, 0.35);
+      }
+      .provenance-stale {
+        background: rgba(148, 163, 184, 0.15);
+        color: #94A3B8;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+      }
     </style>
 
     <section id="view-admin" class="page-tab-view">
@@ -603,11 +668,20 @@
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <span class="badge-role-admin" id="admin-role-badge">OWNER</span>
           
-          <div id="admin-session-pill" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; background: #0F172A; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px;">
+          <div id="admin-session-pill" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; background: #0F172A; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px; cursor: pointer;" onclick="openAdminSessionCentreModal()" title="Click to open Admin Session Centre">
             <i class="fa-solid fa-hourglass-half" style="color: #F5C45E;"></i>
-            <span>Auto-lock: <strong id="admin-session-countdown" style="color: #F8FAFC;">10:00</strong></span>
-            <button onclick="refreshAdminSessionCountdown()" style="background: none; border: none; color: #38BDF8; cursor: pointer; padding: 0 0 0 4px; font-size: 10.5px;" title="Refresh Session"><i class="fa-solid fa-rotate-right"></i></button>
+            <span>Auto-lock: <strong id="admin-session-countdown" style="color: #F8FAFC;">60:00</strong></span>
+            <span id="admin-session-policy-badge" style="font-size: 9.5px; padding: 1px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-weight: 600;">QA: 60m</span>
+            <button onclick="event.stopPropagation(); refreshAdminSessionCountdown();" style="background: none; border: none; color: #38BDF8; cursor: pointer; padding: 0 0 0 4px; font-size: 10.5px;" title="Refresh Session"><i class="fa-solid fa-rotate-right"></i></button>
           </div>
+
+          <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #38BDF8; border-color: rgba(56, 189, 248, 0.4);" onclick="openAdminTaskQueueModal()">
+            <i class="fa-solid fa-list-check"></i> Action Queue
+          </button>
+
+          <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #A78BFA; border-color: rgba(167, 139, 250, 0.4);" onclick="openAdminTroubleshootingDrawer()">
+            <i class="fa-solid fa-stethoscope"></i> Diagnostics
+          </button>
 
           <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569;" onclick="openAdminMfaSetupModal()">
             <i class="fa-solid fa-key"></i> Setup MFA
@@ -622,6 +696,36 @@
           </button>
         </div>
       </header>
+
+      <!-- Enterprise Quick Access / Favorites & Saved Views Bar -->
+      <div id="admin-quick-favorites-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #0E1626; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 14px; margin-bottom: 16px; font-size: 11.5px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-weight: 700; color: #F5C45E; font-size: 11px; text-transform: uppercase;"><i class="fa-solid fa-star"></i> Pinned:</span>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('overview')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-chart-line"></i> Overview</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('users')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-users"></i> Users</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('subscriptions')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-arrows-rotate"></i> Subscriptions</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('payments')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-credit-card"></i> Payments</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('database')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-database"></i> Database</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('reports')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-file-invoice"></i> Reports</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('incidents')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Incidents</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <!-- Saved Views Dropdown -->
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-filter" style="color: #38BDF8; font-size: 11px;"></i>
+            <span style="color: #94A3B8; font-size: 11px;">Saved View:</span>
+            <select id="admin-saved-views-select" onchange="applyAdminSavedView(this.value)" style="background: #0F172A; border: 1px solid #334155; border-radius: 6px; padding: 4px 8px; color: #F8FAFC; font-size: 11px;">
+              <option value="all">Default (All Records)</option>
+              <option value="pending-refunds">Pending Refunds</option>
+              <option value="failed-reports">Failed Reports</option>
+              <option value="expiring-subs">Expiring Subscriptions (7d)</option>
+              <option value="high-incidents">P1/Critical Incidents</option>
+              <option value="failed-payments">Failed Payments</option>
+              <option value="suspended-accounts">Suspended Users</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
       <!-- Access Denied Banner (if non-admin user) -->
       <div id="admin-access-denied" class="empty-state-card" style="display: none; padding: 36px 20px; background: #FEF2F2; border-color: #FECACA;">
@@ -744,33 +848,164 @@
 
         <!-- MODULE 1: PLATFORM OVERVIEW -->
         <div id="admin-panel-overview" class="admin-module-panel">
-          <div class="category-pills-bar" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #64748B; font-weight: 700; text-transform: uppercase;">Total Registered</div>
-              <div style="font-size: 24px; font-weight: 800; color: #1E293B; margin-top: 4px;" id="metric-total-users">--</div>
+          <!-- Provenance & Ground Truth Banner -->
+          <div style="background: #0F172A; border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="admin-overall-provenance-badge" class="admin-provenance-badge provenance-live"><i class="fa-solid fa-database"></i> LIVE DATA</span>
+              <span style="font-size: 12px; color: #CBD5E1;" id="admin-datasource-label">Authoritative Data Source: <strong>PostgreSQL 16 (Supabase Managed Cloud)</strong></span>
             </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #059669; font-weight: 700; text-transform: uppercase;">Active Accounts</div>
-              <div style="font-size: 24px; font-weight: 800; color: #059669; margin-top: 4px;" id="metric-active-users">--</div>
-            </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #DC2626; font-weight: 700; text-transform: uppercase;">Suspended</div>
-              <div style="font-size: 24px; font-weight: 800; color: #DC2626; margin-top: 4px;" id="metric-suspended-users">--</div>
-            </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #D97706; font-weight: 700; text-transform: uppercase;">Wallet Recharges</div>
-              <div style="font-size: 24px; font-weight: 800; color: #D97706; margin-top: 4px;">₹<span id="metric-total-deposits">0.00</span></div>
-            </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #7C3AED; font-weight: 700; text-transform: uppercase;">Saved Profiles</div>
-              <div style="font-size: 24px; font-weight: 800; color: #7C3AED; margin-top: 4px;" id="metric-total-profiles">--</div>
-            </div>
-            <div class="astro-card" style="padding: 14px;">
-              <div style="font-size: 11px; color: #2563EB; font-weight: 700; text-transform: uppercase;">Active Subscriptions</div>
-              <div style="font-size: 24px; font-weight: 800; color: #2563EB; margin-top: 4px;" id="metric-active-subs">--</div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; flex-wrap: wrap;">
+              <span>Provenance:</span>
+              <span class="admin-provenance-badge provenance-live" title="Raw row query directly from PostgreSQL">LIVE</span>
+              <span class="admin-provenance-badge provenance-derived" title="Mathematically computed from live Postgres rows">DERIVED</span>
+              <span class="admin-provenance-badge provenance-synthetic" title="Local test cache fixture">SYNTHETIC</span>
+              <span class="admin-provenance-badge provenance-demo" title="Isolated demo test account">DEMO</span>
+              <span class="admin-provenance-badge provenance-unavailable" title="Database unreachable or query failed">UNAVAILABLE</span>
+              <span class="admin-provenance-badge provenance-stale" title="Retrieved previously but outside permitted freshness window">STALE</span>
             </div>
           </div>
 
+          <!-- Ground Truth Key Metrics -->
+          <div class="category-pills-bar" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #64748B; font-weight: 700; text-transform: uppercase;">Total Registered</div>
+                <span id="badge-total-users" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #1E293B; margin-top: 4px;" id="metric-total-users">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">User table rows</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #059669; font-weight: 700; text-transform: uppercase;">Active Accounts</div>
+                <span id="badge-active-users" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #059669; margin-top: 4px;" id="metric-active-users">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Status = ACTIVE</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #DC2626; font-weight: 700; text-transform: uppercase;">Suspended</div>
+                <span id="badge-suspended-users" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #DC2626; margin-top: 4px;" id="metric-suspended-users">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Status = SUSPENDED</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #D97706; font-weight: 700; text-transform: uppercase;">Wallet Recharges</div>
+                <span id="badge-total-deposits" class="admin-provenance-badge provenance-derived">DERIVED</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #D97706; margin-top: 4px;">&#8377;<span id="metric-total-deposits">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Sum of WalletLedger deposits</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #0284C7; font-weight: 700; text-transform: uppercase;">Consultation Debits</div>
+                <span id="badge-consultation-debits" class="admin-provenance-badge provenance-derived">DERIVED</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #0284C7; margin-top: 4px;">&#8377;<span id="metric-consultation-debits">0.00</span></div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Sum of consultation debits</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #7C3AED; font-weight: 700; text-transform: uppercase;">Saved Profiles</div>
+                <span id="badge-total-profiles" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #7C3AED; margin-top: 4px;" id="metric-total-profiles">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">BirthProfile rows</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #2563EB; font-weight: 700; text-transform: uppercase;">Active Subscriptions</div>
+                <span id="badge-active-subs" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #2563EB; margin-top: 4px;" id="metric-active-subs">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Plus &amp; Premium subscribers</div>
+            </div>
+            <div class="astro-card" style="padding: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 11px; color: #0D9488; font-weight: 700; text-transform: uppercase;">Active Sessions</div>
+                <span id="badge-active-sessions" class="admin-provenance-badge provenance-live">LIVE</span>
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #0D9488; margin-top: 4px;" id="metric-active-sessions">--</div>
+              <div style="font-size: 10px; color: #64748B; margin-top: 2px;">Unexpired UserSession rows</div>
+            </div>
+          </div>
+
+          <!-- OPERATIONAL COMMAND CENTRE: Actionable Administrative Tasks -->
+          <div class="astro-card" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+              <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                <i class="fa-solid fa-gauge-high"></i> Operational Command Centre &bull; Critical Action Summary
+              </h3>
+              <span style="font-size: 11px; color: #64748B;">Real-time queue dispatch &bull; Click card to resolve</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+              <!-- Action 1: Pending Refunds -->
+              <div style="padding: 12px; border: 1px solid #FED7AA; border-radius: 8px; background: #FFFBEB; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('subscriptions')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #9A3412;"><i class="fa-solid fa-rotate-left"></i> PENDING REFUNDS</span>
+                  <span id="action-pending-refunds" style="font-size: 14px; font-weight: 800; color: #C2410C; background: #FFEDD5; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #78350F; margin-top: 6px;">Cashfree refund review queue</div>
+                <div style="font-size: 10.5px; color: #EA580C; margin-top: 4px; font-weight: 700;">Resolve in Subscriptions &rarr;</div>
+              </div>
+
+              <!-- Action 2: Failed Reports -->
+              <div style="padding: 12px; border: 1px solid #FECACA; border-radius: 8px; background: #FEF2F2; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('reports')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #991B1B;"><i class="fa-solid fa-file-circle-exclamation"></i> FAILED REPORTS</span>
+                  <span id="action-failed-reports" style="font-size: 14px; font-weight: 800; color: #DC2626; background: #FEE2E2; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #7F1D1D; margin-top: 6px;">PDF &amp; Ephemeris generation failures</div>
+                <div style="font-size: 10.5px; color: #DC2626; margin-top: 4px; font-weight: 700;">Inspect in Reports &rarr;</div>
+              </div>
+
+              <!-- Action 3: Open Incidents -->
+              <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('incidents')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #334155;"><i class="fa-solid fa-triangle-exclamation"></i> OPEN INCIDENTS</span>
+                  <span id="action-open-incidents" style="font-size: 14px; font-weight: 800; color: #475569; background: #E2E8F0; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #64748B; margin-top: 6px;">Security, gateway, or ephemeris alerts</div>
+                <div style="font-size: 10.5px; color: #2563EB; margin-top: 4px; font-weight: 700;">Manage in Incidents &rarr;</div>
+              </div>
+
+              <!-- Action 4: Pending Privacy Requests -->
+              <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('privacy')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #334155;"><i class="fa-solid fa-user-shield"></i> PRIVACY / GDPR</span>
+                  <span id="action-pending-privacy" style="font-size: 14px; font-weight: 800; color: #475569; background: #E2E8F0; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #64748B; margin-top: 6px;">Customer data deletion &amp; export requests</div>
+                <div style="font-size: 10.5px; color: #2563EB; margin-top: 4px; font-weight: 700;">Process in Privacy &rarr;</div>
+              </div>
+
+              <!-- Action 5: Consultations / Astrologers -->
+              <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('consultations')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #334155;"><i class="fa-solid fa-user-tie"></i> ASTROLOGERS</span>
+                  <span id="action-astrologers-count" style="font-size: 14px; font-weight: 800; color: #475569; background: #E2E8F0; padding: 2px 8px; border-radius: 12px;">0</span>
+                </div>
+                <div style="font-size: 11px; color: #64748B; margin-top: 6px;">Live consultation roster</div>
+                <div style="font-size: 10.5px; color: #2563EB; margin-top: 4px; font-weight: 700;">Directory in Consultations &rarr;</div>
+              </div>
+
+              <!-- Action 6: Database Monitor -->
+              <div style="padding: 12px; border: 1px solid #BFDBFE; border-radius: 8px; background: #EFF6FF; cursor: pointer; transition: all 0.2s;" onclick="switchAdminModule('database')">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 700; color: #1E40AF;"><i class="fa-solid fa-database"></i> POSTGRES HEALTH</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #15803D; background: #DCFCE7; padding: 2px 8px; border-radius: 12px;">ONLINE</span>
+                </div>
+                <div style="font-size: 11px; color: #1E3A8A; margin-top: 6px;">Prisma connection pool &amp; live schemas</div>
+                <div style="font-size: 10.5px; color: #2563EB; margin-top: 4px; font-weight: 700;">Live Monitor in Database &rarr;</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Microservice & Runtime Status -->
           <div class="astro-card">
             <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 12px;">
               <i class="fa-solid fa-server"></i> Microservice Health &amp; Runtime Status
@@ -795,20 +1030,78 @@
           </div>
         </div>
 
-        <!-- MODULE 2: USER LIFECYCLE -->
+        <!-- MODULE 2: USER LIFECYCLE & ACCOUNT DIRECTORY -->
         <div id="admin-panel-users" class="admin-module-panel" style="display: none;">
-          <div class="astro-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-              <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
-                <i class="fa-solid fa-users-gear"></i> User Lifecycle &amp; Moderation
-              </h3>
-              <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminUsersList()">
-                <i class="fa-solid fa-arrows-rotate"></i> Refresh
-              </button>
+          <!-- Authoritative KPI Banner -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                  <i class="fa-solid fa-users-gear"></i> Account Directory &amp; Owner Governance
+                </h3>
+                <p style="font-size: 11.5px; color: #64748B; margin: 2px 0 0;">
+                  Authoritative PostgreSQL account metrics, identity verification, role governance, and subscription entitlements.
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn-outline-secondary" style="font-size: 11px; padding: 5px 12px;" onclick="loadAdminUsersList(1)">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+                <button class="btn-outline-secondary" style="font-size: 11px; padding: 5px 12px; color: #0284C7; border-color: #BAE6FD;" onclick="openAdminExportModal()">
+                  <i class="fa-solid fa-file-csv"></i> Export CSV
+                </button>
+              </div>
             </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
-              <input type="text" id="admin-user-search" class="form-input-text" placeholder="Search by name, email, phone, or UUID..." style="flex: 2; min-width: 200px;" oninput="debounceAdminSearch()">
-              <select id="admin-filter-role" class="form-input-text" style="flex: 1; min-width: 130px;" onchange="loadAdminUsersList()">
+            <!-- Summary KPI Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;" id="admin-users-summary-grid">
+              <div style="padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;">
+                <div style="font-size: 11px; font-weight: 700; color: #64748B;">Total Registered</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0F172A;" id="user-kpi-total">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #BBF7D0; border-radius: 8px; background: #F0FDF4;">
+                <div style="font-size: 11px; font-weight: 700; color: #166534;">Active Accounts</div>
+                <div style="font-size: 18px; font-weight: 800; color: #15803D;" id="user-kpi-active">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #FECACA; border-radius: 8px; background: #FEF2F2;">
+                <div style="font-size: 11px; font-weight: 700; color: #991B1B;">Suspended</div>
+                <div style="font-size: 18px; font-weight: 800; color: #DC2626;" id="user-kpi-suspended">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #FED7AA; border-radius: 8px; background: #FFF7ED;">
+                <div style="font-size: 11px; font-weight: 700; color: #9A3412;">Unverified Email</div>
+                <div style="font-size: 18px; font-weight: 800; color: #C2410C;" id="user-kpi-unverified">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #DDD6FE; border-radius: 8px; background: #F5F3FF;">
+                <div style="font-size: 11px; font-weight: 700; color: #5B21B6;">Staff &amp; Admins</div>
+                <div style="font-size: 18px; font-weight: 800; color: #6D28D9;" id="user-kpi-admins">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #FEF08A; border-radius: 8px; background: #FEFCE8;">
+                <div style="font-size: 11px; font-weight: 700; color: #854D0E;">Paying Customers</div>
+                <div style="font-size: 18px; font-weight: 800; color: #A16207;" id="user-kpi-paying">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #BAE6FD; border-radius: 8px; background: #F0F9FF;">
+                <div style="font-size: 11px; font-weight: 700; color: #075985;">Paid Subscribers</div>
+                <div style="font-size: 18px; font-weight: 800; color: #0284C7;" id="user-kpi-paidsubs">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #E0E7FF; border-radius: 8px; background: #EEF2FF;">
+                <div style="font-size: 11px; font-weight: 700; color: #3730A3;">Complimentary</div>
+                <div style="font-size: 18px; font-weight: 800; color: #4F46E5;" id="user-kpi-complimentary">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #FBCFE8; border-radius: 8px; background: #FDF2F8;">
+                <div style="font-size: 11px; font-weight: 700; color: #9D174D;">Awaiting Review</div>
+                <div style="font-size: 18px; font-weight: 800; color: #BE185D;" id="user-kpi-review">-</div>
+              </div>
+              <div style="padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;">
+                <div style="font-size: 11px; font-weight: 700; color: #64748B;">Expired Subs</div>
+                <div style="font-size: 18px; font-weight: 800; color: #475569;" id="user-kpi-expiredsubs">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Controls Card -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+              <input type="text" id="admin-user-search" class="form-input-text" placeholder="Search by name, email, phone, or UUID..." style="flex: 3; min-width: 220px;" oninput="debounceAdminSearch()">
+              <select id="admin-filter-role" class="form-input-text" style="flex: 1; min-width: 130px;" onchange="loadAdminUsersList(1)">
                 <option value="ALL">All Roles</option>
                 <option value="USER">USER</option>
                 <option value="OWNER">OWNER</option>
@@ -819,52 +1112,135 @@
                 <option value="ASTROLOGY_OPS_ADMIN">ASTROLOGY_OPS_ADMIN</option>
                 <option value="READONLY_ANALYST">READONLY_ANALYST</option>
               </select>
-              <select id="admin-filter-status" class="form-input-text" style="flex: 1; min-width: 130px;" onchange="loadAdminUsersList()">
+              <select id="admin-filter-status" class="form-input-text" style="flex: 1; min-width: 120px;" onchange="loadAdminUsersList(1)">
                 <option value="ALL">All Statuses</option>
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="SUSPENDED">SUSPENDED</option>
                 <option value="DEACTIVATED">DEACTIVATED</option>
               </select>
+              <select id="admin-filter-email-verified" class="form-input-text" style="flex: 1; min-width: 130px;" onchange="loadAdminUsersList(1)">
+                <option value="ALL">All Email Verification</option>
+                <option value="VERIFIED">Verified Only</option>
+                <option value="UNVERIFIED">Unverified Only</option>
+              </select>
+              <select id="admin-filter-sub-tier" class="form-input-text" style="flex: 1; min-width: 120px;" onchange="loadAdminUsersList(1)">
+                <option value="ALL">All Tiers</option>
+                <option value="FREE">FREE</option>
+                <option value="PLUS">PLUS</option>
+                <option value="PREMIUM">PREMIUM</option>
+              </select>
             </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <span style="font-size: 11px; font-weight: 700; color: #64748B;">Sort:</span>
+                <select id="admin-user-sort-by" class="form-input-text" style="font-size: 11.5px; padding: 3px 8px;" onchange="loadAdminUsersList(1)">
+                  <option value="createdAt">Date Created</option>
+                  <option value="walletBalance">Wallet Balance</option>
+                  <option value="displayName">Name</option>
+                  <option value="email">Email</option>
+                </select>
+                <select id="admin-user-sort-order" class="form-input-text" style="font-size: 11.5px; padding: 3px 8px;" onchange="loadAdminUsersList(1)">
+                  <option value="desc">Descending</option>
+                  <option value="asc">Ascending</option>
+                </select>
+                <span style="font-size: 11px; font-weight: 700; color: #64748B; margin-left: 8px;">Page Size:</span>
+                <select id="admin-user-page-limit" class="form-input-text" style="font-size: 11.5px; padding: 3px 8px;" onchange="loadAdminUsersList(1)">
+                  <option value="25">25 per page</option>
+                  <option value="50">50 per page</option>
+                  <option value="100">100 per page</option>
+                </select>
+              </div>
+              <div id="admin-users-quick-info" style="font-size: 11.5px; color: #64748B;"></div>
+            </div>
+          </div>
+
+          <!-- User Directory Table Card -->
+          <div class="astro-card">
             <div class="table-responsive-box">
               <table class="table-astro-data">
                 <thead>
                   <tr>
-                    <th>User Details</th>
+                    <th>Customer Details</th>
                     <th>Contact &amp; Identities</th>
-                    <th>Role</th>
+                    <th>Role &amp; Staff</th>
                     <th>Status</th>
-                    <th>Wallet</th>
-                    <th>Actions</th>
+                    <th>Subscription Plan</th>
+                    <th>Wallet Balance</th>
+                    <th>Administrative Actions</th>
                   </tr>
                 </thead>
                 <tbody id="admin-users-tbody">
-                  <tr><td colspan="6" style="text-align: center; color: #64748B;">Loading users...</td></tr>
+                  <tr><td colspan="7" style="text-align: center; color: #64748B; padding: 24px;">Loading accounts directory...</td></tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Authoritative Pagination Controls -->
+            <div id="admin-users-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid #E2E8F0; flex-wrap: wrap; gap: 10px;">
+              <div id="admin-users-page-info" style="font-size: 12px; color: #64748B; font-weight: 600;">Showing 0 - 0 of 0 accounts</div>
+              <div style="display: flex; gap: 4px; align-items: center;" id="admin-users-pagination-buttons">
+                <!-- Dynamic buttons -->
+              </div>
             </div>
           </div>
         </div>
 
         <!-- MODULE 3: ROLES & RBAC -->
         <div id="admin-panel-roles" class="admin-module-panel" style="display: none;">
-          <div class="astro-card">
-            <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 12px;">
-              <i class="fa-solid fa-id-badge"></i> Canonical 7-Role Administrator Directory &amp; RBAC Matrix
-            </h3>
-            <div class="table-responsive-box" style="margin-bottom: 20px;">
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                  <i class="fa-solid fa-id-badge"></i> Active Platform Administrators Directory
+                </h3>
+                <p style="font-size: 11.5px; color: #64748B; margin: 2px 0 0;">
+                  Authoritative list of users with assigned administrative and operational roles, active session counts, and MFA enrollment status.
+                </p>
+              </div>
+              <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminRoles()">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh
+              </button>
+            </div>
+            <div class="table-responsive-box">
               <table class="table-astro-data">
                 <thead>
                   <tr>
-                    <th>Admin Name / Email</th>
+                    <th>Admin Details</th>
                     <th>Assigned Role</th>
                     <th>MFA Status</th>
-                    <th>Account Status</th>
+                    <th>Active Sessions</th>
+                    <th>Permissions</th>
+                    <th>Status</th>
                     <th>Last Active</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="admin-roles-tbody">
-                  <tr><td colspan="5" style="text-align: center; color: #64748B;">Loading administrators...</td></tr>
+                  <tr><td colspan="8" style="text-align: center; color: #64748B; padding: 20px;">Loading administrators...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Canonical 7-Role RBAC Matrix Card -->
+          <div class="astro-card">
+            <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin-bottom: 6px;">
+              <i class="fa-solid fa-sitemap"></i> Canonical 7-Role Permission &amp; Authority Matrix
+            </h3>
+            <p style="font-size: 12px; color: #64748B; margin-bottom: 14px;">
+              Strictly enforced server-side access control boundaries. Least privilege is applied to each operational tier.
+            </p>
+            <div class="table-responsive-box">
+              <table class="table-astro-data" id="admin-rbac-matrix-table">
+                <thead>
+                  <tr>
+                    <th style="min-width: 140px;">Role</th>
+                    <th style="min-width: 180px;">Role Description</th>
+                    <th>Enforced Permissions Catalog</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-rbac-matrix-tbody">
+                  <tr><td colspan="3" style="text-align: center; color: #64748B;">Loading role matrix...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -967,7 +1343,7 @@
               </div>
               <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px;">
                 <div style="font-weight: 700; color: #7C3AED;">Premium Tier Daily Quota</div>
-                <div style="font-size: 20px; font-weight: 800; margin-top: 4px;">50 Queries / Day</div>
+                <div style="font-size: 20px; font-weight: 800; margin-top: 4px;">30 Queries / Day</div>
               </div>
             </div>
           </div>
@@ -1133,6 +1509,67 @@
                 <div style="font-size: 14px; font-weight: 700; color: #881337;" id="admin-premium-price-label">₹299 / Month &bull; ₹2,499 / Year</div>
                 <div style="font-size: 11.5px; color: #9F1239; margin-top: 6px;">Active Members: <strong id="tier-count-premium">0</strong></div>
               </div>
+            </div>
+          </div>
+
+          <!-- Authoritative Subscribers Directory & Plan Administration -->
+          <div class="astro-card" style="margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <h3 style="font-size: 15px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+                  <i class="fa-solid fa-users-line"></i> Customer Subscribers Directory &amp; Tier Administration
+                </h3>
+                <p style="font-size: 11.5px; color: #64748B; margin: 2px 0 0;">
+                  Authoritative subscriber lifecycle management: Complimentary grants, duration extensions, plan upgrades, and cancellations.
+                </p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn-outline-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadAdminSubscriptions(1)">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                </button>
+              </div>
+            </div>
+
+            <!-- Filters -->
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+              <input type="text" id="admin-subs-search" class="form-input-text" placeholder="Search subscriber by name, email, or UUID..." style="flex: 2; min-width: 180px;" oninput="debounceAdminSubsSearch()">
+              <select id="admin-subs-filter-tier" class="form-input-text" style="flex: 1; min-width: 120px;" onchange="loadAdminSubscriptions(1)">
+                <option value="ALL">All Tiers</option>
+                <option value="FREE">FREE</option>
+                <option value="PLUS">PLUS</option>
+                <option value="PREMIUM">PREMIUM</option>
+              </select>
+              <select id="admin-subs-filter-status" class="form-input-text" style="flex: 1; min-width: 120px;" onchange="loadAdminSubscriptions(1)">
+                <option value="ALL">All Subscription Statuses</option>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="EXPIRED">EXPIRED</option>
+                <option value="CANCELLED">CANCELLED</option>
+                <option value="NONE">NONE</option>
+              </select>
+            </div>
+
+            <div class="table-responsive-box">
+              <table class="table-astro-data">
+                <thead>
+                  <tr>
+                    <th>Subscriber</th>
+                    <th>Plan / Tier</th>
+                    <th>Billing Cadence</th>
+                    <th>Status</th>
+                    <th>Expiry / Days Left</th>
+                    <th>Lifecycle Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-subscribers-tbody">
+                  <tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;">Loading subscribers...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Subscribers Pagination -->
+            <div id="admin-subs-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid #E2E8F0; flex-wrap: wrap; gap: 8px;">
+              <div id="admin-subs-page-info" style="font-size: 12px; color: #64748B;">Showing 0 of 0 subscribers</div>
+              <div style="display: flex; gap: 4px;" id="admin-subs-pagination-buttons"></div>
             </div>
           </div>
 
@@ -1580,9 +2017,12 @@
         <div id="admin-panel-analytics" class="admin-module-panel" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <div>
-              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-chart-pie" style="color: #F5C45E;"></i> Executive Business Analytics &amp; Financial KPIs
-              </h3>
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-chart-pie" style="color: #F5C45E;"></i> Executive Business Analytics &amp; Financial KPIs
+                </h3>
+                <span id="admin-analytics-provenance-badge" class="admin-provenance-badge provenance-live"><i class="fa-solid fa-database"></i> LIVE POSTGRESQL</span>
+              </div>
               <p style="font-size: 12px; color: #94A3B8; margin: 4px 0 0;">
                 Authoritative gross collections, wallet liabilities, revenue mix, and live customer financial metrics.
               </p>
@@ -2500,9 +2940,419 @@
       </div>
     </div>
 
+    <!-- Admin Assign Role Modal -->
+    <div id="modal-admin-assign-role" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminAssignRoleModal()"></div>
+      <div class="modal-content-card" style="max-width: 520px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+              <i class="fa-solid fa-user-shield"></i> Manage Staff Administrative Role
+            </h3>
+            <div id="admin-role-target-user-info" style="font-size: 11px; color: #64748B; margin-top: 2px;">User: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminAssignRoleModal()">&times;</button>
+        </div>
 
+        <input type="hidden" id="admin-role-target-user-id">
 
-  </main>
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+          <div><strong>Current Assigned Role:</strong> <span id="admin-role-current-badge" class="badge-role-user">USER</span></div>
+          <div style="font-size: 11px; color: #64748B; margin-top: 4px;">Role modifications grant operational access to platform infrastructure. All role assignments are permanently audited.</div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Target Canonical Role:</label>
+          <select id="admin-role-target-select" class="form-input-text" style="font-size: 12.5px;" onchange="updateRoleModalPermissionPreview()">
+            <option value="USER">USER (Regular Customer)</option>
+            <option value="READONLY_ANALYST">READONLY_ANALYST (Read-Only Metrics &amp; Audit Logs)</option>
+            <option value="ASTROLOGY_OPS_ADMIN">ASTROLOGY_OPS_ADMIN (Engine Calibration &amp; Swiss Ephemeris Ops)</option>
+            <option value="CONTENT_EDITOR">CONTENT_EDITOR (Platform Banners, Notices &amp; Content)</option>
+            <option value="SUPPORT_ADMIN">SUPPORT_ADMIN (Customer Moderation, Notes &amp; Data Privacy)</option>
+            <option value="FINANCE_ADMIN">FINANCE_ADMIN (Reconciliation, Refunds &amp; Pricing Management)</option>
+            <option value="SECURITY_ADMIN">SECURITY_ADMIN (Feature Flags, MFA &amp; Infrastructure Governance)</option>
+            <option value="OWNER">OWNER (Full Enterprise Sovereignty &amp; Role Management)</option>
+          </select>
+        </div>
+
+        <div id="admin-role-permission-preview" style="background: #F1F5F9; border-radius: 6px; padding: 10px; font-size: 11px; color: #334155; margin-bottom: 12px;">
+          Permissions preview...
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Mandatory Audit Reason (min 5 chars):</label>
+          <input type="text" id="admin-role-reason-input" class="form-input-text" placeholder="e.g. Authorized promotion to Astrology Ops team" style="font-size: 12px;">
+        </div>
+
+        <div id="admin-role-mfa-box" style="display: none; margin-bottom: 14px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #991B1B; margin-bottom: 4px;">Step-Up TOTP Code Required:</label>
+          <input type="text" id="admin-role-mfa-code" class="form-input-text" placeholder="6-digit code" maxlength="8" style="font-size: 16px; letter-spacing: 2px; text-align: center;">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminAssignRoleModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: var(--vedic-maroon); color: white;" onclick="submitAdminAssignRole()">
+            <i class="fa-solid fa-check"></i> Confirm Role Mutation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Grant / Upgrade Subscription Modal -->
+    <div id="modal-admin-grant-subscription" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminGrantSubscriptionModal()"></div>
+      <div class="modal-content-card" style="max-width: 520px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+              <i class="fa-solid fa-crown"></i> Grant or Upgrade Subscription
+            </h3>
+            <div id="admin-grant-sub-target-user-info" style="font-size: 11px; color: #64748B; margin-top: 2px;">User: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminGrantSubscriptionModal()">&times;</button>
+        </div>
+
+        <input type="hidden" id="admin-grant-sub-target-user-id">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Plan Tier:</label>
+            <select id="admin-grant-sub-tier" class="form-input-text" style="font-size: 12px;">
+              <option value="PLUS">AstroVerse Plus (Weekly Forecasts)</option>
+              <option value="PREMIUM" selected>AstroVerse Premium (All Reports &amp; AI Quotas)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Billing Cadence:</label>
+            <select id="admin-grant-sub-cadence" class="form-input-text" style="font-size: 12px;">
+              <option value="MONTHLY">MONTHLY</option>
+              <option value="ANNUAL">ANNUAL</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Grant Source / Origin:</label>
+            <select id="admin-grant-sub-source" class="form-input-text" style="font-size: 12px;">
+              <option value="ADMIN_COMPLIMENTARY" selected>ADMIN_COMPLIMENTARY (VIP / Goodwill)</option>
+              <option value="PROMOTIONAL">PROMOTIONAL (Campaign)</option>
+              <option value="SUPPORT_COMPENSATION">SUPPORT_COMPENSATION (Service Resolution)</option>
+              <option value="VERIFIED_PAID_PURCHASE">VERIFIED_PAID_PURCHASE (Direct Payment)</option>
+              <option value="MANUAL_MIGRATION">MANUAL_MIGRATION (Legacy Account)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Duration (Days):</label>
+            <select id="admin-grant-sub-duration" class="form-input-text" style="font-size: 12px;">
+              <option value="30" selected>30 Days (1 Month)</option>
+              <option value="60">60 Days (2 Months)</option>
+              <option value="90">90 Days (Quarterly)</option>
+              <option value="180">180 Days (Half-Year)</option>
+              <option value="365">365 Days (1 Full Year)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Mandatory Audit Reason (min 5 chars):</label>
+          <input type="text" id="admin-grant-sub-reason" class="form-input-text" placeholder="e.g. Complimentary Premium access granted for platform testing" style="font-size: 12px;">
+        </div>
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px; font-size: 11px; color: #64748B; margin-bottom: 14px;">
+          <i class="fa-solid fa-circle-info" style="color: #0284C7;"></i> Complimentary grants do not create fake PaymentOrder records or distort genuine financial ledger collections.
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminGrantSubscriptionModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: var(--vedic-gold); color: #1E293B; font-weight: 700;" onclick="submitAdminGrantSubscription()">
+            <i class="fa-solid fa-gift"></i> Grant Subscription
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Extend Subscription Modal -->
+    <div id="modal-admin-extend-subscription" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminExtendSubscriptionModal()"></div>
+      <div class="modal-content-card" style="max-width: 480px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--vedic-maroon); margin: 0;">
+              <i class="fa-solid fa-calendar-plus"></i> Extend Subscription Duration
+            </h3>
+            <div id="admin-extend-sub-target-user-info" style="font-size: 11px; color: #64748B; margin-top: 2px;">User: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminExtendSubscriptionModal()">&times;</button>
+        </div>
+
+        <input type="hidden" id="admin-extend-sub-target-user-id">
+
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 12px;">
+          <div><strong>Current Expiration Date:</strong> <span id="admin-extend-sub-current-expiry" style="font-weight: 700; color: #0284C7;">-</span></div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Additional Days to Add:</label>
+          <select id="admin-extend-sub-days" class="form-input-text" style="font-size: 12px;">
+            <option value="7">+7 Days (1 Week Extension)</option>
+            <option value="15" selected>+15 Days (Half Month Extension)</option>
+            <option value="30">+30 Days (1 Month Extension)</option>
+            <option value="60">+60 Days (2 Months Extension)</option>
+            <option value="90">+90 Days (Quarterly Extension)</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Mandatory Audit Reason (min 5 chars):</label>
+          <input type="text" id="admin-extend-sub-reason" class="form-input-text" placeholder="e.g. Courtesy extension for scheduled maintenance" style="font-size: 12px;">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminExtendSubscriptionModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: #0284C7; color: white;" onclick="submitAdminExtendSubscription()">
+            <i class="fa-solid fa-clock-rotate-left"></i> Apply Extension
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Cancel Subscription Modal -->
+    <div id="modal-admin-cancel-subscription" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminCancelSubscriptionModal()"></div>
+      <div class="modal-content-card" style="max-width: 480px; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #FECACA; padding-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: #DC2626; margin: 0;">
+              <i class="fa-solid fa-ban"></i> Cancel Subscription &amp; Revert to Free
+            </h3>
+            <div id="admin-cancel-sub-target-user-info" style="font-size: 11px; color: #64748B; margin-top: 2px;">User: -</div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminCancelSubscriptionModal()">&times;</button>
+        </div>
+
+        <input type="hidden" id="admin-cancel-sub-target-user-id">
+
+        <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 12px; color: #991B1B;">
+          <strong>Warning:</strong> Cancelling this subscription will immediately set the customer's plan to <strong>FREE</strong> and deactivate all active PLUS and PREMIUM entitlements in PostgreSQL.
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px;">Mandatory Audit Reason (min 5 chars):</label>
+          <input type="text" id="admin-cancel-sub-reason" class="form-input-text" placeholder="e.g. Customer requested immediate cancellation and refund" style="font-size: 12px;">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminCancelSubscriptionModal()">Cancel</button>
+          <button type="button" class="btn-primary" style="background: #DC2626; color: white;" onclick="submitAdminCancelSubscription()">
+            <i class="fa-solid fa-circle-xmark"></i> Revert Account to Free
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. Admin Task Queue & Action Center Modal -->
+    <div id="modal-admin-task-queue" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminTaskQueueModal()"></div>
+      <div class="modal-content-card" style="max-width: 640px; padding: 24px; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 14px; color: #F8FAFC;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); display: flex; align-items: center; justify-content: center; color: #38BDF8; font-size: 16px;">
+              <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0;">Administrative Action Center</h3>
+              <div style="font-size: 11px; color: #94A3B8;">Centralized Task Dispatch &bull; Unresolved Operational Items</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminTaskQueueModal()" style="color: #94A3B8; font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 440px; overflow-y: auto; padding-right: 4px;">
+          <!-- Category A: Pending Refunds -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(251, 146, 60, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 12px; font-weight: 800; color: #FB923C;"><i class="fa-solid fa-rotate-left"></i> Pending Payment Refunds</div>
+              <span id="task-queue-refunds-count" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(251, 146, 60, 0.15); color: #FB923C;">0 PENDING</span>
+            </div>
+            <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 8px;">Refund requests awaiting gateway settlement or manual reconciliation.</div>
+            <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal(); switchAdminModule('subscriptions');" style="font-size: 11px; padding: 4px 10px; color: #FB923C; border-color: rgba(251, 146, 60, 0.4);">
+              Go to Refund Queue &rarr;
+            </button>
+          </div>
+
+          <!-- Category B: Failed Reports -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 12px; font-weight: 800; color: #EF4444;"><i class="fa-solid fa-file-circle-exclamation"></i> Failed Report Generations</div>
+              <span id="task-queue-reports-count" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(239, 68, 68, 0.15); color: #EF4444;">0 FAILED</span>
+            </div>
+            <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 8px;">Customer reports that encountered ephemeris or PDF rendering failure.</div>
+            <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal(); switchAdminModule('reports');" style="font-size: 11px; padding: 4px 10px; color: #EF4444; border-color: rgba(239, 68, 68, 0.4);">
+              Inspect Report Diagnostics &rarr;
+            </button>
+          </div>
+
+          <!-- Category C: Open Incidents -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 12px; font-weight: 800; color: #A855F7;"><i class="fa-solid fa-triangle-exclamation"></i> Open Platform Incidents</div>
+              <span id="task-queue-incidents-count" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(168, 85, 247, 0.15); color: #A855F7;">0 ACTIVE</span>
+            </div>
+            <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 8px;">Active P1-P4 incidents logged across infrastructure, auth, or payments.</div>
+            <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal(); switchAdminModule('incidents');" style="font-size: 11px; padding: 4px 10px; color: #A855F7; border-color: rgba(168, 85, 247, 0.4);">
+              Manage Incidents &rarr;
+            </button>
+          </div>
+
+          <!-- Category D: Privacy Requests -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 12px; font-weight: 800; color: #38BDF8;"><i class="fa-solid fa-user-shield"></i> Pending Privacy / DPDP Requests</div>
+              <span id="task-queue-privacy-count" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(56, 189, 248, 0.15); color: #38BDF8;">0 PENDING</span>
+            </div>
+            <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 8px;">Customer data erasure and portability requests awaiting legal fulfillment.</div>
+            <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal(); switchAdminModule('privacy');" style="font-size: 11px; padding: 4px 10px; color: #38BDF8; border-color: rgba(56, 189, 248, 0.4);">
+              Open Privacy Console &rarr;
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+          <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal()" style="font-size: 11px; padding: 6px 14px; color: #CBD5E1; border-color: #475569;">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Admin Session Centre Modal -->
+    <div id="modal-admin-session-centre" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminSessionCentreModal()"></div>
+      <div class="modal-content-card" style="max-width: 500px; padding: 24px; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 14px; color: #F8FAFC;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: #F5C45E; font-size: 16px;">
+              <i class="fa-solid fa-id-badge"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0;">Admin Session Centre</h3>
+              <div style="font-size: 11px; color: #94A3B8;">Identity, Security Tokens &bull; Inactivity Governance</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminSessionCentreModal()" style="color: #94A3B8; font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; font-size: 12px;">
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #94A3B8;">Authenticated Admin:</span>
+              <strong id="session-centre-email" style="color: #F5C45E;">Authorized Staff</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #94A3B8;">Canonical Role:</span>
+              <span id="session-centre-role" class="badge-role-admin" style="font-size: 10px;">OWNER</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #94A3B8;">Multi-Factor Authentication:</span>
+              <span style="color: #34D399; font-weight: 700;"><i class="fa-solid fa-circle-check"></i> TOTP Configured</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94A3B8;">Storage Boundary:</span>
+              <span style="color: #38BDF8; font-family: monospace;">sessionStorage (Memory Isolated)</span>
+            </div>
+          </div>
+
+          <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 800; color: #38BDF8; margin-bottom: 6px;"><i class="fa-solid fa-clock"></i> Active Session Governance Policy</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #CBD5E1;">
+              <div>Inactivity Timeout: <strong id="session-centre-idle-text">60 minutes</strong></div>
+              <div>Absolute Session Cap: <strong>4 hours</strong></div>
+              <div>Sliding Renewal: <strong>Active</strong></div>
+              <div>Origin Binding: <strong>Verified</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+          <button type="button" class="btn-outline-secondary" onclick="refreshAdminSessionCountdown(); closeAdminSessionCentreModal();" style="font-size: 11px; padding: 6px 12px; color: #38BDF8; border-color: rgba(56, 189, 248, 0.4);">
+            <i class="fa-solid fa-rotate-right"></i> Extend Session Window
+          </button>
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminAndSignOut()" style="font-size: 11px; padding: 6px 14px; color: #FCA5A5; border-color: #991B1B; background: rgba(153, 27, 27, 0.15);">
+            <i class="fa-solid fa-power-off"></i> Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Standardized High-Risk Action Confirmation Modal -->
+    <div id="modal-admin-high-risk-action" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeHighRiskActionModal()"></div>
+      <div class="modal-content-card" style="max-width: 500px; padding: 24px; background: #0E1626; border: 1px solid #EF4444; border-radius: 14px; color: #F8FAFC;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; color: #EF4444; font-size: 16px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <h3 id="high-risk-action-title" style="font-size: 15px; font-weight: 800; color: #EF4444; margin: 0;">High-Risk Operation Confirmation</h3>
+              <div style="font-size: 11px; color: #94A3B8;">Mandatory Audit &bull; Security Gated</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" onclick="closeHighRiskActionModal()" style="color: #94A3B8; font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+          <div style="margin-bottom: 6px;"><strong style="color: #F87171;">Target Resource:</strong> <span id="high-risk-action-target" style="font-family: monospace; color: #FFFFFF;">-</span></div>
+          <div><strong style="color: #F87171;">Scope of Impact:</strong> <span id="high-risk-action-scope" style="color: #CBD5E1;">-</span></div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #CBD5E1; margin-bottom: 4px;">Mandatory Business Justification (min 5 chars):</label>
+          <input type="text" id="high-risk-action-reason" class="form-input-text" placeholder="e.g. Authorized customer refund per support ticket #481" style="font-size: 12px; width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; color: #FFFFFF;">
+        </div>
+
+        <div id="high-risk-action-totp-container" style="margin-bottom: 14px; display: none;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #F5C45E; margin-bottom: 4px;">Step-Up MFA TOTP Code (6 digits):</label>
+          <input type="text" id="high-risk-action-totp" maxlength="6" placeholder="000000" style="font-size: 16px; letter-spacing: 4px; text-align: center; width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 8px; color: #FFFFFF; font-family: monospace;">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeHighRiskActionModal()" style="font-size: 11px; padding: 6px 14px;">Cancel</button>
+          <button type="button" id="high-risk-action-confirm-btn" class="btn-primary" style="background: #DC2626; color: white; font-size: 11px; padding: 6px 14px; font-weight: 700;">
+            <i class="fa-solid fa-shield-halved"></i> Execute High-Risk Action
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Health & Troubleshooting Centre / Diagnostic Drawer -->
+    <div id="drawer-admin-troubleshooting" style="display: none; position: fixed; right: 0; top: 0; bottom: 0; width: 440px; max-width: 90vw; background: #0B111E; border-left: 1px solid rgba(212, 175, 55, 0.35); z-index: 10500; box-shadow: -4px 0 24px rgba(0,0,0,0.6); flex-direction: column; color: #F8FAFC;">
+      <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center; background: #0E1626;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(167, 139, 250, 0.15); display: flex; align-items: center; justify-content: center; color: #A78BFA;">
+            <i class="fa-solid fa-stethoscope"></i>
+          </div>
+          <div>
+            <h3 style="font-size: 15px; font-weight: 800; color: #FFFFFF; margin: 0;">Diagnostics &amp; Troubleshooting</h3>
+            <div style="font-size: 11px; color: #94A3B8;">Real-Time Operational Error History</div>
+          </div>
+        </div>
+        <button onclick="closeAdminTroubleshootingDrawer()" style="background: none; border: none; color: #94A3B8; font-size: 22px; cursor: pointer;">&times;</button>
+      </div>
+
+      <div id="admin-troubleshooting-log" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="padding: 30px 10px; text-align: center; color: #64748B; font-size: 12px;">
+          <i class="fa-solid fa-circle-check" style="font-size: 24px; color: #10B981; margin-bottom: 8px; display: block;"></i>
+          No operational errors captured in this session. All administrative endpoints healthy.
+        </div>
+      </div>
+
+      <div style="padding: 12px 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: #0E1626; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 10.5px; color: #64748B;">Zero secret credential leakage enforced</span>
+        <button class="btn-outline-secondary" onclick="clearAdminTroubleshootingLog()" style="font-size: 10.5px; padding: 4px 10px; color: #94A3B8; border-color: #334155;">
+          Clear History
+        </button>
+      </div>
+    </div>
 
   </main>
 
@@ -2625,8 +3475,15 @@
 
   function getAuthHeaders() {
     const headers = { 'Content-Type': 'application/json' };
-    if (currentSessionToken) {
-      headers['Authorization'] = 'Bearer ' + currentSessionToken;
+    const token = currentSessionToken || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_session_token') : null);
+    if (token) {
+      headers['Authorization'] = 'Bearer ' + token;
+    }
+    const assurance = (typeof sessionStorage !== 'undefined')
+      ? (sessionStorage.getItem('astro_admin_assurance_token') || sessionStorage.getItem('astro_admin_assurance') || sessionStorage.getItem('admin_mfa_token'))
+      : null;
+    if (assurance) {
+      headers['x-admin-assurance-token'] = assurance;
     }
     return headers;
   }
@@ -2705,6 +3562,10 @@
     }
     if (typeof startAdminSessionCountdown === 'function') {
       startAdminSessionCountdown();
+    }
+    const anyActivePanel = document.querySelector('.admin-module-panel[style*="block"]') || document.querySelector('.admin-tool-panel[style*="block"]');
+    if (!anyActivePanel && typeof switchAdminModule === 'function') {
+      switchAdminModule(currentAdminActiveModule || 'overview', false);
     }
   }
 
@@ -3250,7 +4111,7 @@
         case 'integrations': loadAdminIntegrations(); break;
         case 'incidents': loadAdminIncidents(); break;
         case 'qa': loadAdminQaModule(); break;
-        case 'database': break;
+        case 'database': loadAdminDatabaseMonitor(); break;
         case 'analytics': loadAdminAnalyticsOverview(); break;
         case 'customer360': loadAdminCustomer360(); break;
         case 'entitlements': loadAdminEntitlements(); break;
@@ -3442,7 +4303,13 @@
       if (d1Display) {
         d1Display.innerHTML = `
           <div style="background: #FFFDF8; border: 1.5px solid #FCD34D; border-radius: 10px; padding: 14px;">
-            <h4 style="font-weight: 800; color: #92400E; margin: 0 0 10px; font-size: 13px;"><i class="fa-solid fa-gem"></i> Primary Natal Lagna Positions</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="font-weight: 800; color: #92400E; margin: 0; font-size: 13px;"><i class="fa-solid fa-gem"></i> Primary Natal Lagna Positions</h4>
+              <span class="admin-provenance-badge provenance-synthetic"><i class="fa-solid fa-flask"></i> SYNTHETIC TEST FIXTURE</span>
+            </div>
+            <div style="font-size: 10.5px; color: #78350F; background: rgba(245, 158, 11, 0.1); border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;">
+              <strong>Benchmark Target:</strong> ${escapeHtml(chart.name)} &bull; ${escapeHtml(chart.dob)} ${escapeHtml(chart.tob)} (${escapeHtml(chart.city)})
+            </div>
             <table style="width: 100%; font-size: 11.5px; border-collapse: collapse;">
               <tr><td style="padding: 4px; color: #64748B;">Ascendant (Lagna):</td><td><strong>Scorpio (Vrishchika 24.17°)</strong></td></tr>
               <tr><td style="padding: 4px; color: #64748B;">Moon (Chandra):</td><td><strong>Aquarius (Kumbha 12.21°)</strong> (H4)</td></tr>
@@ -3455,7 +4322,10 @@
             </table>
           </div>
           <div style="background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 10px; padding: 14px;">
-            <h4 style="font-weight: 800; color: #1E293B; margin: 0 0 10px; font-size: 13px;"><i class="fa-solid fa-shield-halved"></i> Active Yogas &amp; Mitigations</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="font-weight: 800; color: #1E293B; margin: 0; font-size: 13px;"><i class="fa-solid fa-shield-halved"></i> Active Yogas &amp; Mitigations</h4>
+              <span class="admin-provenance-badge provenance-synthetic"><i class="fa-solid fa-flask"></i> SYNTHETIC TEST FIXTURE</span>
+            </div>
             <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; line-height: 1.6; color: #334155;">
               <li><strong>Ruchaka Yoga (Mitigated):</strong> Mars occupies own house (Aries) in Dushtana (6th), providing competitive invincibility.</li>
               <li><strong>Budhaditya Yoga:</strong> Sun in Leo (H10) forming Raja Yoga with Mercury.</li>
@@ -4401,11 +5271,22 @@
             role: u.role,
             status: u.status
           };
+          if (data.sessionPolicy) {
+            adminSessionPolicy = data.sessionPolicy;
+            adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || 3600;
+            adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+          }
+          adminSessionStartTime = Date.now();
+          adminLastBackendRefresh = Date.now();
+
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('astro_admin_session_token', currentSessionToken);
             sessionStorage.setItem('astro_admin_user', JSON.stringify(currentUserSession));
             if (data.assuranceToken) {
               sessionStorage.setItem('astro_admin_assurance', data.assuranceToken);
+            } else {
+              sessionStorage.removeItem('astro_admin_assurance');
+              sessionStorage.removeItem('admin_mfa_token');
             }
           }
           // Remove legacy keys from localStorage to prevent cross-contamination with public customer portal
@@ -4446,6 +5327,63 @@
         }
       }
     }
+
+    async function handlePreviewMfaReset() {
+      const emailInput = document.getElementById('admin-login-email');
+      const pwdInput = document.getElementById('admin-login-password');
+      const email = emailInput?.value?.trim() || '';
+      const password = pwdInput?.value || '';
+      const errBox = document.getElementById('admin-login-error');
+
+      if (!email || !password) {
+        if (errBox) {
+          errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+          errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+          errBox.style.color = '#FCA5A5';
+          errBox.textContent = 'Please enter your administrator email and password above to reset MFA.';
+          errBox.style.display = 'block';
+        }
+        return;
+      }
+
+      if (!confirm(`Reset Multi-Factor Authentication for ${email} in Preview/Development? You will be able to sign in immediately and re-enroll your authenticator app.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/auth/admin-reset-mfa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const mfaContainer = document.getElementById('admin-mfa-container');
+          const mfaInput = document.getElementById('admin-login-mfa');
+          if (mfaContainer) mfaContainer.style.display = 'none';
+          if (mfaInput) mfaInput.value = '';
+          if (errBox) {
+            errBox.style.background = 'rgba(16, 185, 129, 0.15)';
+            errBox.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            errBox.style.color = '#6EE7B7';
+            errBox.textContent = 'MFA has been successfully reset! Click "Sign In to Admin Console" to continue.';
+            errBox.style.display = 'block';
+          }
+          showToast('MFA has been successfully reset. Please sign in.', 'success');
+        } else {
+          if (errBox) {
+            errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+            errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+            errBox.style.color = '#FCA5A5';
+            errBox.textContent = data.message || 'MFA reset failed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        showToast('Failed to reset MFA: ' + (e.message || e), 'error');
+      }
+    }
+    window.handlePreviewMfaReset = handlePreviewMfaReset;
 
     async function closeAdminAndSignOut() {
       const token = currentSessionToken || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('astro_admin_session_token') : null);
@@ -4514,45 +5452,167 @@
         const res = await fetch(`${getAuthBase()}/api/admin/overview`, { headers: getAuthHeaders() });
         if (res.ok) {
           const data = await res.json();
-          const m = data.metrics;
-          document.getElementById('metric-total-users').textContent = m.totalUsers;
-          document.getElementById('metric-active-users').textContent = m.activeUsers;
-          document.getElementById('metric-suspended-users').textContent = m.suspendedUsers;
-          document.getElementById('metric-total-deposits').textContent = Number(m.totalWalletDeposits).toFixed(2);
-          document.getElementById('metric-total-profiles').textContent = m.totalProfiles;
-          if (document.getElementById('metric-active-subs')) {
-            document.getElementById('metric-active-subs').textContent = m.activeSubscriptions || 0;
+          const m = data.metrics || {};
+          const prov = m.provenance || 'LIVE';
+          const dSource = m.dataSource || 'PostgreSQL 16 (Supabase Managed Cloud)';
+
+          // Provenance banner & badges
+          const overallBadge = document.getElementById('admin-overall-provenance-badge');
+          if (overallBadge) {
+            overallBadge.className = `admin-provenance-badge ${prov === 'LIVE' ? 'provenance-live' : (prov === 'SYNTHETIC' ? 'provenance-synthetic' : 'provenance-derived')}`;
+            overallBadge.innerHTML = `<i class="fa-solid fa-database"></i> ${escapeHtml(prov)} DATA`;
           }
+          const dsLabel = document.getElementById('admin-datasource-label');
+          if (dsLabel) {
+            dsLabel.innerHTML = `Authoritative Data Source: <strong>${escapeHtml(dSource)}</strong>`;
+          }
+
+          // Formatting helpers
+          const formatMoney = (v) => {
+            if (v === 'UNAVAILABLE' || v === null || v === undefined) return 'UNAVAILABLE';
+            if (typeof v === 'string') {
+              const n = Number(v);
+              return isNaN(n) ? v : Number(v).toFixed(2);
+            }
+            if (typeof v === 'number') return v.toFixed(2);
+            return String(v);
+          };
+
+          // Individual metrics helper
+          const setMetric = (valId, badgeId, val, badgeType = 'LIVE', statusKey = null) => {
+            const el = document.getElementById(valId);
+            const isUnavail = val === 'UNAVAILABLE' || (statusKey && m.metricStatus && m.metricStatus[statusKey] === 'UNAVAILABLE');
+            if (el) el.textContent = isUnavail ? 'UNAVAILABLE' : val;
+            const b = document.getElementById(badgeId);
+            if (b) {
+              const isStale = prov === 'STALE' || (statusKey && m.metricStatus && m.metricStatus[statusKey] === 'STALE');
+              const effectiveBadge = isUnavail ? 'UNAVAILABLE' : (isStale ? 'STALE' : badgeType);
+              b.className = `admin-provenance-badge provenance-${effectiveBadge.toLowerCase()}`;
+              b.textContent = effectiveBadge;
+            }
+          };
+
+          const metricBadge = prov === 'LIVE' ? 'LIVE' : (prov === 'STALE' ? 'STALE' : (prov === 'SYNTHETIC' ? 'SYNTHETIC' : 'DERIVED'));
+          const derivedBadge = prov === 'LIVE' ? 'DERIVED' : (prov === 'STALE' ? 'STALE' : (prov === 'SYNTHETIC' ? 'SYNTHETIC' : 'DERIVED'));
+
+          setMetric('metric-total-users', 'badge-total-users', m.totalUsers ?? 0, metricBadge, 'totalUsers');
+          setMetric('metric-active-users', 'badge-active-users', m.activeUsers ?? 0, metricBadge, 'activeUsers');
+          setMetric('metric-suspended-users', 'badge-suspended-users', m.suspendedUsers ?? 0, metricBadge, 'suspendedUsers');
+          setMetric('metric-total-deposits', 'badge-total-deposits', formatMoney(m.totalWalletDeposits), derivedBadge, 'totalWalletDeposits');
+          setMetric('metric-consultation-debits', 'badge-consultation-debits', formatMoney(m.totalConsultationSpent), derivedBadge, 'totalConsultationSpent');
+          setMetric('metric-total-profiles', 'badge-total-profiles', m.totalProfiles ?? 0, metricBadge, 'totalProfiles');
+          setMetric('metric-active-subs', 'badge-active-subs', m.activeSubscriptions ?? 0, metricBadge, 'activeSubscriptions');
+          setMetric('metric-active-sessions', 'badge-active-sessions', m.activeSessions ?? 0, metricBadge, 'activeSessions');
+
+          // Operational Action Grid
+          const setActionCount = (id, val, statusKey) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (val === 'UNAVAILABLE' || (m.metricStatus && m.metricStatus[statusKey] === 'UNAVAILABLE')) {
+              el.innerHTML = '<span style="font-size: 11px; color: #EF4444; font-weight: 700;">UNAVAILABLE</span>';
+            } else {
+              el.textContent = val ?? 0;
+            }
+          };
+
+          setActionCount('action-pending-refunds', m.pendingRefundsCount, 'pendingRefundsCount');
+          setActionCount('action-failed-reports', m.failedReportsCount, 'failedReportsCount');
+          setActionCount('action-open-incidents', m.openIncidents, 'openIncidents');
+          setActionCount('action-pending-privacy', m.pendingPrivacyRequests, 'pendingPrivacyRequests');
+          setActionCount('action-astrologers-count', m.astrologerCount, 'astrologerCount');
+
           if (document.getElementById('admin-uptime')) {
             document.getElementById('admin-uptime').textContent = m.uptimeSeconds || 0;
           }
           if (document.getElementById('admin-db-status')) {
-            document.getElementById('admin-db-status').textContent = m.systemHealth?.database || 'Connected';
+            document.getElementById('admin-db-status').textContent = m.systemHealth?.database === 'POSTGRESQL_CONNECTED' ? 'PostgreSQL Connected (Supabase Managed Cloud)' : (m.systemHealth?.database || 'Connected');
           }
+        } else {
+          markOverviewUnavailable('HTTP ' + res.status);
         }
       } catch (err) {
         console.warn("Failed to load admin overview:", err);
+        markOverviewUnavailable(err.message);
       }
     }
 
-    async function loadAdminUsersList() {
-      const search = document.getElementById('admin-user-search')?.value || '';
+    function markOverviewUnavailable(reason) {
+      const overallBadge = document.getElementById('admin-overall-provenance-badge');
+      if (overallBadge) {
+        overallBadge.className = 'admin-provenance-badge provenance-unavailable';
+        overallBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> UNAVAILABLE';
+      }
+      const dsLabel = document.getElementById('admin-datasource-label');
+      if (dsLabel) {
+        dsLabel.innerHTML = `Data Source Status: <strong style="color: #EF4444;">DISCONNECTED (${escapeHtml(reason || 'Network Error')})</strong>`;
+      }
+      ['metric-total-users', 'metric-active-users', 'metric-suspended-users', 'metric-total-deposits', 'metric-consultation-debits', 'metric-total-profiles', 'metric-active-subs', 'metric-active-sessions'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = 'UNAVAILABLE';
+      });
+      ['badge-total-users', 'badge-active-users', 'badge-suspended-users', 'badge-total-deposits', 'badge-consultation-debits', 'badge-total-profiles', 'badge-active-subs', 'badge-active-sessions'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) {
+          b.className = 'admin-provenance-badge provenance-unavailable';
+          b.textContent = 'UNAVAILABLE';
+        }
+      });
+    }
+
+    // --- OWNER CONTROL CENTRE: ACCOUNT DIRECTORY, ROLES & SUBSCRIPTION STATE ---
+    let adminUsersPaginationState = { page: 1, limit: 25, total: 0, totalPages: 1 };
+    let adminSubsPaginationState = { page: 1, limit: 20, total: 0, totalPages: 1 };
+    let adminRolesMatrixData = null;
+    let adminSubsDebounce = null;
+
+    function debounceAdminSubsSearch() {
+      clearTimeout(adminSubsDebounce);
+      adminSubsDebounce = setTimeout(() => loadAdminSubscriptions(1), 300);
+    }
+
+    function copyAdminText(txt) {
+      if (!txt) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(() => {
+          showToast(`Copied: ${txt.length > 20 ? txt.slice(0, 18) + '...' : txt}`, 'success');
+        }).catch(() => {
+          prompt('Copy to clipboard:', txt);
+        });
+      } else {
+        prompt('Copy to clipboard:', txt);
+      }
+    }
+
+    async function loadAdminUsersList(targetPage) {
+      const page = targetPage || adminUsersPaginationState.page || 1;
+      const search = document.getElementById('admin-user-search')?.value.trim() || '';
       const role = document.getElementById('admin-filter-role')?.value || 'ALL';
       const status = document.getElementById('admin-filter-status')?.value || 'ALL';
+      const emailVerified = document.getElementById('admin-filter-email-verified')?.value || 'ALL';
+      const subTier = document.getElementById('admin-filter-sub-tier')?.value || 'ALL';
+      const sortBy = document.getElementById('admin-user-sort-by')?.value || 'createdAt';
+      const sortOrder = document.getElementById('admin-user-sort-order')?.value || 'desc';
+      const limit = parseInt(document.getElementById('admin-user-page-limit')?.value || '25', 10);
       const tbody = document.getElementById('admin-users-tbody');
       if (!tbody) return;
 
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B;">Refreshing user list...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #64748B; padding: 24px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading account directory...</td></tr>';
 
       try {
         const url = new URL(`${getAuthBase()}/api/admin/users`);
+        url.searchParams.append('page', String(page));
+        url.searchParams.append('limit', String(limit));
+        url.searchParams.append('sortBy', sortBy);
+        url.searchParams.append('sortOrder', sortOrder);
         if (search) url.searchParams.append('search', search);
         if (role !== 'ALL') url.searchParams.append('role', role);
         if (status !== 'ALL') url.searchParams.append('status', status);
+        if (emailVerified !== 'ALL') url.searchParams.append('emailVerified', emailVerified);
+        if (subTier !== 'ALL') url.searchParams.append('subscriptionTier', subTier);
 
         const res = await fetch(url.toString(), { headers: getAuthHeaders() });
         if (res.status === 401 || res.status === 403) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #F87171; padding: 24px;"><div><i class="fa-solid fa-shield-halved" style="font-size: 24px; margin-bottom: 8px;"></i></div><strong>Session Expired or Unauthorized</strong><p style="font-size: 12px; color: #94A3B8; margin: 4px 0 12px;">Your administrator credentials require re-authentication.</p><button class="btn-gold-primary" onclick="closeAdminAndSignOut()" style="font-size: 11px; padding: 6px 12px;">Sign In Again</button></td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #F87171; padding: 24px;"><div><i class="fa-solid fa-shield-halved" style="font-size: 24px; margin-bottom: 8px;"></i></div><strong>Session Expired or Unauthorized</strong><p style="font-size: 12px; color: #94A3B8; margin: 4px 0 12px;">Your administrator credentials require re-authentication.</p><button class="btn-gold-primary" onclick="closeAdminAndSignOut()" style="font-size: 11px; padding: 6px 12px;">Sign In Again</button></td></tr>';
           showToast('Administrator session expired or unauthorized. Please sign in again.', 'error');
           setTimeout(() => closeAdminAndSignOut(), 2000);
           return;
@@ -4561,56 +5621,250 @@
         if (res.ok) {
           const data = await res.json();
           const users = data.users || [];
+          adminUsersPaginationState = {
+            page: data.page || page,
+            limit: data.limit || limit,
+            total: data.total || 0,
+            totalPages: data.totalPages || 1
+          };
+
+          // Populate Summary KPI Banner
+          const summary = data.summary || {};
+          if (document.getElementById('user-kpi-total')) document.getElementById('user-kpi-total').textContent = summary.totalAccounts ?? data.total ?? users.length;
+          if (document.getElementById('user-kpi-active')) document.getElementById('user-kpi-active').textContent = summary.activeAccounts ?? '-';
+          if (document.getElementById('user-kpi-suspended')) document.getElementById('user-kpi-suspended').textContent = summary.suspendedAccounts ?? '-';
+          if (document.getElementById('user-kpi-unverified')) document.getElementById('user-kpi-unverified').textContent = summary.unverifiedAccounts ?? '-';
+          if (document.getElementById('user-kpi-admins')) document.getElementById('user-kpi-admins').textContent = summary.adminCount ?? '-';
+          if (document.getElementById('user-kpi-paying')) document.getElementById('user-kpi-paying').textContent = summary.historicallyPayingCount ?? summary.payingCustomersCount ?? '-';
+          if (document.getElementById('user-kpi-paidsubs')) document.getElementById('user-kpi-paidsubs').textContent = summary.currentlyPaidSubscribersCount ?? summary.paidSubscribersCount ?? summary.activeSubscribersCount ?? '-';
+          if (document.getElementById('user-kpi-complimentary')) document.getElementById('user-kpi-complimentary').textContent = summary.complimentarySubscribersCount ?? 0;
+          if (document.getElementById('user-kpi-review')) document.getElementById('user-kpi-review').textContent = summary.accountsAwaitingReview ?? '-';
+          if (document.getElementById('user-kpi-expiredsubs')) document.getElementById('user-kpi-expiredsubs').textContent = summary.expiredSubscribersCount ?? '-';
+
+          const quickInfo = document.getElementById('admin-users-quick-info');
+          if (quickInfo) {
+            quickInfo.textContent = `Found ${adminUsersPaginationState.total} matching accounts`;
+          }
+
           if (users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;">No matching users found in the directory.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #64748B; padding: 24px;">No matching accounts found in the directory.</td></tr>';
+            renderAdminUsersPagination();
             return;
           }
 
+          const isOwner = currentUserSession && (currentUserSession.role === 'OWNER' || currentUserSession.role === 'SUPER_ADMIN');
+
           tbody.innerHTML = users.map(u => {
             const statusClass = u.status === 'ACTIVE' ? 'badge-status-active' : (u.status === 'SUSPENDED' ? 'badge-status-suspended' : 'badge-status-deactivated');
-            const roleClass = (u.role === 'OWNER' || u.role === 'SUPER_ADMIN') ? 'badge-role-admin' : 'badge-role-user';
-            const isOwner = currentUserSession && (currentUserSession.role === 'OWNER' || currentUserSession.role === 'SUPER_ADMIN');
+            const roleClass = (u.role === 'OWNER' || u.role === 'SUPER_ADMIN' || u.role === 'SECURITY_ADMIN' || u.role === 'FINANCE_ADMIN') ? 'badge-role-admin' : 'badge-role-user';
+            const tier = u.subscriptionTier || 'FREE';
+            const tierColor = tier === 'PREMIUM' ? '#881337' : (tier === 'PLUS' ? '#B45309' : '#475569');
+            const tierBg = tier === 'PREMIUM' ? '#FFF1F2' : (tier === 'PLUS' ? '#FFFBEB' : '#F8FAFC');
+            const tierBorder = tier === 'PREMIUM' ? '#FDA4AF' : (tier === 'PLUS' ? '#FDE68A' : '#E2E8F0');
+            const expiryStr = u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).toLocaleDateString() : (tier === 'FREE' ? 'Permanent' : 'Never Expiring');
+            const isSelf = currentUserSession && currentUserSession.userId === u.id;
 
             return `
               <tr>
                 <td>
-                  <strong>${escapeHtml(u.displayName || 'Unnamed')}</strong>
-                  <div style="font-size: 11px; color: #64748B;">ID: ${escapeHtml(u.id)}</div>
+                  <strong>${escapeHtml(u.displayName || 'Unnamed User')}</strong>
+                  <div style="display: flex; align-items: center; gap: 4px; margin-top: 3px;">
+                    <code style="font-size: 10.5px; color: #475569; background: #F1F5F9; padding: 2px 5px; border-radius: 4px;">${escapeHtml(u.id.slice(0, 13))}...</code>
+                    <button type="button" class="btn-outline-secondary" style="padding: 1px 5px; font-size: 9.5px;" onclick="copyAdminText('${escapeHtml(u.id)}')" title="Copy full UUID">
+                      <i class="fa-solid fa-copy"></i>
+                    </button>
+                  </div>
+                  <div style="font-size: 10px; color: #94A3B8; margin-top: 2px;">Joined: ${new Date(u.createdAt).toLocaleDateString()}</div>
                 </td>
                 <td>
-                  <div>${u.email ? `<i class="fa-solid fa-envelope" style="color: #64748B; font-size: 11px;"></i> ${escapeHtml(u.email)}` : ''}</div>
-                  <div>${u.phone ? `<i class="fa-solid fa-phone" style="color: #64748B; font-size: 11px;"></i> ${escapeHtml(u.phone)}` : ''}</div>
+                  <div>
+                    ${u.email ? `
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-envelope" style="color: #64748B; font-size: 11px;"></i>
+                        <span style="font-size: 11.5px;">${escapeHtml(u.email)}</span>
+                        ${u.emailVerified ? '<i class=\"fa-solid fa-circle-check\" style=\"color: #10B981; font-size: 10.5px;\" title=\"Email Verified\"></i>' : '<i class=\"fa-solid fa-circle-exclamation\" style=\"color: #F59E0B; font-size: 10.5px;\" title=\"Unverified Email\"></i>'}
+                      </div>
+                    ` : '<span style=\"color: #94A3B8; font-size: 11px;\">No email</span>'}
+                  </div>
+                  <div style="margin-top: 2px;">
+                    ${u.phone ? `
+                      <div style="display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-phone" style="color: #64748B; font-size: 11px;"></i>
+                        <span style="font-size: 11.5px;">${escapeHtml(u.phone)}</span>
+                        ${u.phoneVerified ? '<i class=\"fa-solid fa-circle-check\" style=\"color: #10B981; font-size: 10.5px;\" title=\"Phone Verified\"></i>' : ''}
+                      </div>
+                    ` : '<span style=\"color: #94A3B8; font-size: 11px;\">No phone</span>'}
+                  </div>
                 </td>
                 <td>
+                  <div><span class="${roleClass}">${escapeHtml(u.role)}</span></div>
                   ${isOwner ? `
-                    <select onchange="changeAdminUserRole('${u.id}', this.value)" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid #CBD5E1;">
-                      ${['USER', 'READONLY_ANALYST', 'ASTROLOGY_OPS_ADMIN', 'FINANCE_ADMIN', 'CONTENT_EDITOR', 'SUPPORT_ADMIN', 'SECURITY_ADMIN', 'OWNER'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`).join('')}
-                    </select>
-                  ` : `<span class="${roleClass}">${u.role}</span>`}
+                    <div style="margin-top: 4px;">
+                      <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="openAssignRoleModal('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}', '${escapeHtml(u.email || '')}', '${u.role}')" ${isSelf ? 'disabled title=\"Cannot alter own role\"' : ''}>
+                        <i class="fa-solid fa-user-gear"></i> Role
+                      </button>
+                    </div>
+                  ` : ''}
                 </td>
-                <td><span class="${statusClass}">${u.status}</span></td>
-                <td><strong>₹${Number(u.walletBalance).toFixed(2)}</strong></td>
                 <td>
-                  <div style="display: flex; gap: 6px;">
-                    <button class="btn-outline-secondary" style="padding: 4px 8px; font-size: 11px; ${u.status === 'ACTIVE' ? 'color: #DC2626;' : 'color: #059669;'}"
-                            onclick="toggleAdminUserStatus('${u.id}', '${u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'}')">
+                  <div><span class="${statusClass}">${escapeHtml(u.status)}</span></div>
+                  <div style="margin-top: 4px;">
+                    <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; ${u.status === 'ACTIVE' ? 'color: #DC2626;' : 'color: #059669;'}"
+                            onclick="toggleAdminUserStatus('${u.id}', '${u.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'}')" ${isSelf ? 'disabled title=\"Cannot suspend self\"' : ''}>
                       ${u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
                     </button>
-                    <button class="btn-outline-secondary" style="padding: 4px 8px; font-size: 11px; color: #D97706;"
+                  </div>
+                </td>
+                <td>
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; background: ${tierBg}; color: ${tierColor}; border: 1px solid ${tierBorder};">
+                    ${escapeHtml(tier)}
+                  </span>
+                  <div style="font-size: 10.5px; color: #64748B; margin-top: 3px;">Exp: ${expiryStr}</div>
+                  <div style="display: flex; gap: 4px; margin-top: 4px;">
+                    <button class="btn-outline-secondary" style="padding: 2px 6px; font-size: 10px; color: #B45309;" onclick="openGrantSubscriptionModal('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}', '${escapeHtml(u.email || '')}', '${tier}')" title="Grant or upgrade plan">
+                      <i class="fa-solid fa-crown"></i> Plan
+                    </button>
+                    ${tier !== 'FREE' ? `
+                      <button class="btn-outline-secondary" style="padding: 2px 6px; font-size: 10px; color: #0284C7;" onclick="openExtendSubscriptionModal('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}', '${u.subscriptionExpiresAt || ''}')" title="Extend subscription">
+                        +Days
+                      </button>
+                      <button class="btn-outline-secondary" style="padding: 2px 6px; font-size: 10px; color: #DC2626;" onclick="openCancelSubscriptionModal('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}', '${tier}')" title="Revert to Free">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+                </td>
+                <td>
+                  <div style="font-size: 13.5px; font-weight: 800; color: #1E293B;">₹${Number(u.walletBalance || 0).toFixed(2)}</div>
+                  <div style="margin-top: 4px;">
+                    <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; color: #D97706;"
                             onclick="promptAdminWalletAdjustment('${u.id}', '${escapeHtml(u.displayName || u.email || 'User')}')" title="Adjust Balance">
                       <i class="fa-solid fa-wallet"></i> Adjust
+                    </button>
+                  </div>
+                </td>
+                <td>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <button class="btn-gold-primary" style="padding: 3px 8px; font-size: 10px; font-weight: 700; width: 100%;" onclick="openCustomer360('${u.id}')">
+                      <i class="fa-solid fa-eye"></i> View 360
                     </button>
                   </div>
                 </td>
               </tr>
             `;
           }).join('');
+
+          renderAdminUsersPagination();
         } else {
           const errData = await res.json().catch(() => ({}));
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #F87171; padding: 20px;">Failed to load user directory (${res.status}: ${escapeHtml(errData.message || 'Unknown server response')}).<div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList()" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #F87171; padding: 24px;">Failed to load user directory (${res.status}: ${escapeHtml(errData.message || 'Unknown server response')}).<div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList(1)" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>`;
         }
       } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #DC2626; padding: 20px;"><div>Network or communication error loading user directory.</div><div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList()" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #DC2626; padding: 24px;"><div>Network or communication error loading user directory.</div><div style="margin-top: 8px;"><button class="btn-outline-secondary" onclick="loadAdminUsersList(1)" style="font-size: 11px; padding: 4px 10px;">Retry</button></div></td></tr>';
+      }
+    }
+
+    function renderAdminUsersPagination() {
+      const pageInfo = document.getElementById('admin-users-page-info');
+      const btnContainer = document.getElementById('admin-users-pagination-buttons');
+      if (!btnContainer) return;
+
+      const { page, limit, total, totalPages } = adminUsersPaginationState;
+      const start = total === 0 ? 0 : (page - 1) * limit + 1;
+      const end = Math.min(page * limit, total);
+
+      if (pageInfo) {
+        pageInfo.textContent = `Showing ${start} - ${end} of ${total} accounts (Page ${page} of ${totalPages})`;
+      }
+
+      let html = '';
+      html += `<button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAdminUsersList(1)" ${page <= 1 ? 'disabled' : ''} title="First Page">&laquo;</button>`;
+      html += `<button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAdminUsersList(${page - 1})" ${page <= 1 ? 'disabled' : ''} title="Previous Page">&lsaquo;</button>`;
+
+      const startPage = Math.max(1, page - 2);
+      const endPage = Math.min(totalPages, page + 2);
+      for (let p = startPage; p <= endPage; p++) {
+        const isCurrent = p === page;
+        html += `<button class="${isCurrent ? 'btn-primary' : 'btn-outline-secondary'}" style="padding: 3px 8px; font-size: 11px; ${isCurrent ? 'background: var(--vedic-maroon); color: white;' : ''}" onclick="loadAdminUsersList(${p})">${p}</button>`;
+      }
+
+      html += `<button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAdminUsersList(${page + 1})" ${page >= totalPages ? 'disabled' : ''} title="Next Page">&rsaquo;</button>`;
+      html += `<button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="loadAdminUsersList(${totalPages})" ${page >= totalPages ? 'disabled' : ''} title="Last Page">&raquo;</button>`;
+
+      btnContainer.innerHTML = html;
+    }
+
+    function openAdminExportModal() {
+      const modal = document.getElementById('modal-admin-export-users');
+      if (modal) modal.style.display = 'flex';
+      const reasonInput = document.getElementById('export-reason-input');
+      if (reasonInput) reasonInput.value = '';
+      const mfaInput = document.getElementById('export-mfa-input');
+      if (mfaInput) mfaInput.value = '';
+    }
+
+    function closeAdminExportModal() {
+      const modal = document.getElementById('modal-admin-export-users');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function executeAdminUsersExport() {
+      const profile = document.getElementById('export-profile-select')?.value || 'BASIC_DIRECTORY';
+      const reason = document.getElementById('export-reason-input')?.value.trim() || '';
+      const mfaCode = document.getElementById('export-mfa-input')?.value.trim() || '';
+
+      if (!reason || reason.length < 5) {
+        showToast('Please provide an audit justification of at least 5 characters.', 'error');
+        return;
+      }
+
+      showToast('Generating signed CSV export on server...', 'info');
+      try {
+        const search = document.getElementById('admin-user-search')?.value.trim() || '';
+        const role = document.getElementById('admin-filter-role')?.value || 'ALL';
+        const status = document.getElementById('admin-filter-status')?.value || 'ALL';
+        const subscriptionTier = document.getElementById('admin-filter-tier')?.value || 'ALL';
+
+        const headers = getAuthHeaders();
+        if (mfaCode) {
+          headers['x-admin-mfa-code'] = mfaCode;
+        }
+
+        const res = await fetch(`${getAuthBase()}/api/admin/users/export`, {
+          method: 'POST',
+          headers: {
+            ...headers,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            reason,
+            exportProfile: profile,
+            role,
+            status,
+            subscriptionTier,
+            search
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || `HTTP ${res.status}`);
+        }
+
+        const checksum = res.headers.get('x-export-checksum') || 'Verified';
+        const rowCount = res.headers.get('x-export-row-count') || 'All';
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `astroverse_users_${profile.toLowerCase()}_${Date.now()}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+
+        closeAdminExportModal();
+        showToast(`Exported ${rowCount} records. Checksum: ${checksum.slice(0, 8)}...`, 'success');
+      } catch (err) {
+        showToast('Export failed: ' + err.message, 'error');
       }
     }
 
@@ -4661,6 +5915,267 @@
       }
     }
 
+    // --- ROLE MANAGEMENT MODAL HANDLERS ---
+    function openAssignRoleModal(userId, userName, userEmail, currentRole) {
+      document.getElementById('admin-role-target-user-id').value = userId;
+      document.getElementById('admin-role-target-user-info').textContent = `${userName} (${userEmail || userId.slice(0, 8)})`;
+      document.getElementById('admin-role-current-badge').textContent = currentRole;
+      document.getElementById('admin-role-current-badge').className = (currentRole === 'OWNER' || currentRole === 'SUPER_ADMIN') ? 'badge-role-admin' : 'badge-role-user';
+      document.getElementById('admin-role-target-select').value = currentRole;
+      document.getElementById('admin-role-reason-input').value = '';
+      document.getElementById('admin-role-mfa-box').style.display = 'none';
+      document.getElementById('admin-role-mfa-code').value = '';
+      updateRoleModalPermissionPreview();
+      document.getElementById('modal-admin-assign-role').style.display = 'flex';
+    }
+
+    function closeAdminAssignRoleModal() {
+      document.getElementById('modal-admin-assign-role').style.display = 'none';
+    }
+
+    function updateRoleModalPermissionPreview() {
+      const targetRole = document.getElementById('admin-role-target-select')?.value || 'USER';
+      const previewEl = document.getElementById('admin-role-permission-preview');
+      const targetUserId = document.getElementById('admin-role-target-user-id')?.value;
+      const isSelf = currentUserSession && currentUserSession.userId === targetUserId;
+
+      if (!previewEl) return;
+
+      if (isSelf) {
+        previewEl.innerHTML = '<span style="color: #DC2626; font-weight: 700;"><i class="fa-solid fa-triangle-exclamation"></i> Security Invariant: You cannot alter your own administrative role.</span>';
+        return;
+      }
+
+      let perms = [];
+      const rawMatrix = (adminRolesMatrixData && (adminRolesMatrixData.rolePermissions || adminRolesMatrixData.matrix)) || null;
+      if (rawMatrix && rawMatrix[targetRole]) {
+        perms = rawMatrix[targetRole];
+      } else {
+        const fallbackMatrix = {
+          'OWNER': ['ALL_PRIVILEGES', 'user:manage_roles', 'billing:refund', 'ai:configure_quotas', 'system:feature_flags', 'system:manage_keys'],
+          'SECURITY_ADMIN': ['system:feature_flags', 'system:view_audit', 'system:manage_keys', 'user:moderate'],
+          'FINANCE_ADMIN': ['billing:refund', 'billing:pricing_read', 'billing:pricing_write', 'billing:reconcile'],
+          'SUPPORT_ADMIN': ['user:moderate', 'user:privacy_export', 'support:notes_write'],
+          'CONTENT_EDITOR': ['content:banners_write', 'astrology:content_write'],
+          'ASTROLOGY_OPS_ADMIN': ['astrology:engine_calibrate', 'astrology:telemetry_read'],
+          'READONLY_ANALYST': ['metrics:view_analytics', 'system:view_audit', 'billing:pricing_read'],
+          'USER': ['customer:account_access']
+        };
+        perms = fallbackMatrix[targetRole] || ['customer:account_access'];
+      }
+
+      previewEl.innerHTML = `
+        <div style="font-weight: 700; color: #1E293B; margin-bottom: 4px;">Role Authority Scope (${perms.length} Permissions):</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+          ${perms.map(p => `<span style="background: #E2E8F0; color: #1E293B; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">${escapeHtml(p)}</span>`).join('')}
+        </div>
+      `;
+    }
+
+    async function submitAdminAssignRole() {
+      const userId = document.getElementById('admin-role-target-user-id')?.value;
+      const newRole = document.getElementById('admin-role-target-select')?.value;
+      const reason = document.getElementById('admin-role-reason-input')?.value.trim();
+      const mfaCode = document.getElementById('admin-role-mfa-code')?.value.trim();
+
+      if (!userId || !newRole) {
+        showToast('Missing target user or role.', 'error');
+        return;
+      }
+
+      if (!reason || reason.length < 5) {
+        showToast('A mandatory audit reason of at least 5 characters is required.', 'error');
+        return;
+      }
+
+      if (currentUserSession && currentUserSession.userId === userId) {
+        showToast('Self-role alteration is strictly denied by security policy.', 'error');
+        return;
+      }
+
+      try {
+        const headers = getAuthHeaders();
+        if (mfaCode) headers['x-admin-mfa-code'] = mfaCode;
+
+        const res = await fetch(`${getAuthBase()}/api/admin/users/${userId}/role`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ role: newRole, reason })
+        });
+
+        if (res.status === 428) {
+          document.getElementById('admin-role-mfa-box').style.display = 'block';
+          showToast('TOTP verification code required for role assignment.', 'info');
+          return;
+        }
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`Successfully assigned role ${newRole} to user`, 'success');
+          closeAdminAssignRoleModal();
+          loadAdminUsersList();
+          loadAdminRoles();
+        } else {
+          showToast(data.message || 'Failed to assign role.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error assigning role.', 'error');
+      }
+    }
+
+    // --- SUBSCRIPTION GRANT, EXTEND, AND CANCEL MODAL HANDLERS ---
+    function openGrantSubscriptionModal(userId, userName, userEmail, currentTier) {
+      document.getElementById('admin-grant-sub-target-user-id').value = userId;
+      document.getElementById('admin-grant-sub-target-user-info').textContent = `${userName} (${userEmail || userId.slice(0, 8)}) — Current: ${currentTier}`;
+      document.getElementById('admin-grant-sub-tier').value = currentTier === 'PLUS' ? 'PREMIUM' : 'PLUS';
+      document.getElementById('admin-grant-sub-reason').value = '';
+      document.getElementById('modal-admin-grant-subscription').style.display = 'flex';
+    }
+
+    function closeAdminGrantSubscriptionModal() {
+      document.getElementById('modal-admin-grant-subscription').style.display = 'none';
+    }
+
+    async function submitAdminGrantSubscription() {
+      const userId = document.getElementById('admin-grant-sub-target-user-id')?.value;
+      const tier = document.getElementById('admin-grant-sub-tier')?.value;
+      const billingCadence = document.getElementById('admin-grant-sub-cadence')?.value;
+      const grantSource = document.getElementById('admin-grant-sub-source')?.value;
+      const durationDays = parseInt(document.getElementById('admin-grant-sub-duration')?.value || '30', 10);
+      const reason = document.getElementById('admin-grant-sub-reason')?.value.trim();
+
+      if (!userId || !tier) {
+        showToast('Invalid subscription parameters.', 'error');
+        return;
+      }
+
+      if (!reason || reason.length < 5) {
+        showToast('A mandatory audit reason of at least 5 characters is required.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/subscriptions/assign`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            userId,
+            tier,
+            billingPeriod: billingCadence,
+            durationDays,
+            grantSource,
+            reason
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`Successfully granted ${tier} (${grantSource}) for ${durationDays} days`, 'success');
+          closeAdminGrantSubscriptionModal();
+          loadAdminUsersList();
+          loadAdminSubscriptions();
+        } else {
+          showToast(data.message || 'Failed to grant subscription.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error granting subscription.', 'error');
+      }
+    }
+
+    function openExtendSubscriptionModal(userId, userName, currentExpiresAt) {
+      document.getElementById('admin-extend-sub-target-user-id').value = userId;
+      document.getElementById('admin-extend-sub-target-user-info').textContent = `${userName} (${userId.slice(0, 8)})`;
+      document.getElementById('admin-extend-sub-current-expiry').textContent = currentExpiresAt ? new Date(currentExpiresAt).toLocaleString() : 'Active (No Expiry)';
+      document.getElementById('admin-extend-sub-reason').value = '';
+      document.getElementById('modal-admin-extend-subscription').style.display = 'flex';
+    }
+
+    function closeAdminExtendSubscriptionModal() {
+      document.getElementById('modal-admin-extend-subscription').style.display = 'none';
+    }
+
+    async function submitAdminExtendSubscription() {
+      const userId = document.getElementById('admin-extend-sub-target-user-id')?.value;
+      const additionalDays = parseInt(document.getElementById('admin-extend-sub-days')?.value || '15', 10);
+      const reason = document.getElementById('admin-extend-sub-reason')?.value.trim();
+
+      if (!userId) {
+        showToast('Invalid target user.', 'error');
+        return;
+      }
+
+      if (!reason || reason.length < 5) {
+        showToast('A mandatory audit reason of at least 5 characters is required.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/subscriptions/extend`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ userId, additionalDays, reason })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast(`Subscription extended by ${additionalDays} days. New expiry: ${new Date(data.newExpiresAt).toLocaleDateString()}`, 'success');
+          closeAdminExtendSubscriptionModal();
+          loadAdminUsersList();
+          loadAdminSubscriptions();
+        } else {
+          showToast(data.message || 'Failed to extend subscription.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error extending subscription.', 'error');
+      }
+    }
+
+    function openCancelSubscriptionModal(userId, userName, currentTier) {
+      document.getElementById('admin-cancel-sub-target-user-id').value = userId;
+      document.getElementById('admin-cancel-sub-target-user-info').textContent = `${userName} (${userId.slice(0, 8)}) — Current: ${currentTier}`;
+      document.getElementById('admin-cancel-sub-reason').value = '';
+      document.getElementById('modal-admin-cancel-subscription').style.display = 'flex';
+    }
+
+    function closeAdminCancelSubscriptionModal() {
+      document.getElementById('modal-admin-cancel-subscription').style.display = 'none';
+    }
+
+    async function submitAdminCancelSubscription() {
+      const userId = document.getElementById('admin-cancel-sub-target-user-id')?.value;
+      const reason = document.getElementById('admin-cancel-sub-reason')?.value.trim();
+
+      if (!userId) {
+        showToast('Invalid target user.', 'error');
+        return;
+      }
+
+      if (!reason || reason.length < 5) {
+        showToast('A mandatory audit reason of at least 5 characters is required.', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/subscriptions/cancel`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ userId, reason })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showToast('Subscription cancelled and account reverted to FREE plan', 'success');
+          closeAdminCancelSubscriptionModal();
+          loadAdminUsersList();
+          loadAdminSubscriptions();
+        } else {
+          showToast(data.message || 'Failed to cancel subscription.', 'error');
+        }
+      } catch (err) {
+        showToast('Network error cancelling subscription.', 'error');
+      }
+    }
+
     async function promptAdminWalletAdjustment(userId, userName) {
       const type = prompt(`Wallet adjustment for ${userName} (${userId}):\nEnter adjustment type: 'CREDIT' or 'DEBIT'`, 'CREDIT');
       if (!type) return;
@@ -4707,39 +6222,103 @@
       }
     }
 
+    // --- MODULE 3: ADMINISTRATOR DIRECTORY & CANONICAL RBAC MATRIX ---
     async function loadAdminRoles() {
       const tbody = document.getElementById('admin-roles-tbody');
-      if (!tbody) return;
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading administrator directory...</td></tr>';
+      const matrixTbody = document.getElementById('admin-rbac-matrix-tbody');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748B; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading administrator directory...</td></tr>';
+
       try {
-        const res = await fetch(`${getAuthBase()}/api/admin/roles/admins`, { headers: getAuthHeaders() });
-        if (res.ok) {
-          const data = await res.json();
+        const [adminsRes, rolesRes] = await Promise.all([
+          fetch(`${getAuthBase()}/api/admin/roles/admins`, { headers: getAuthHeaders() }),
+          fetch(`${getAuthBase()}/api/admin/roles`, { headers: getAuthHeaders() })
+        ]);
+
+        if (rolesRes.ok) {
+          adminRolesMatrixData = await rolesRes.json();
+          const matrix = adminRolesMatrixData.rolePermissions || adminRolesMatrixData.matrix || {};
+          if (matrixTbody && Object.keys(matrix).length > 0) {
+            const roleDescriptions = {
+              'OWNER': 'Platform Founder & Executive Sovereign. Unrestricted governance across all database tables, financial ledger operations, and administrative access.',
+              'SECURITY_ADMIN': 'Chief Information Security Officer & Infrastructure Security. Manages MFA enforcement, feature flag toggles, runtime settings, and audit trails.',
+              'FINANCE_ADMIN': 'Financial Operations & Payments Director. Manages Cashfree gateway reconciliations, customer refund processing, and canonical product pricing.',
+              'SUPPORT_ADMIN': 'Customer Service Operations Lead. Manages account moderation, customer notes, user status adjustments, and GDPR / DPDP privacy requests.',
+              'CONTENT_EDITOR': 'Editorial & Public Communications. Authors platform announcements, daily horoscopic notices, and marketing banners.',
+              'ASTROLOGY_OPS_ADMIN': 'Astrological Engine Director. Supervises Swiss Ephemeris golden calibrations, planetary telemetry, and kundli precision tests.',
+              'READONLY_ANALYST': 'Compliance, BI & Business Analytics Auditor. Read-only access to customer directories, platform KPIs, financial aggregations, and audit logs.',
+              'USER': 'Standard Customer Account. Consumer access to Kundli analysis, astrology queries, and purchased reports.'
+            };
+
+            const canonicalRolesList = ['OWNER', 'SECURITY_ADMIN', 'FINANCE_ADMIN', 'SUPPORT_ADMIN', 'CONTENT_EDITOR', 'ASTROLOGY_OPS_ADMIN', 'READONLY_ANALYST', 'USER'];
+            const displayRoles = canonicalRolesList.filter(r => matrix[r]);
+
+            const matrixRows = displayRoles.map(r => {
+              const perms = matrix[r] || [];
+              const desc = roleDescriptions[r] || 'Operational role';
+              const isLead = (r === 'OWNER' || r === 'SECURITY_ADMIN' || r === 'FINANCE_ADMIN');
+              return `
+                <tr>
+                  <td>
+                    <span class="${isLead ? 'badge-role-admin' : 'badge-role-user'}">${escapeHtml(r)}</span>
+                  </td>
+                  <td style="font-size: 11.5px; color: #475569; line-height: 1.4;">${escapeHtml(desc)}</td>
+                  <td>
+                    <div style="display: flex; flex-wrap: wrap; gap: 3px;">
+                      ${perms.map(p => `<span style="background: #F1F5F9; color: #334155; font-size: 9.5px; font-weight: 700; padding: 2px 5px; border-radius: 4px; font-family: monospace;">${escapeHtml(p)}</span>`).join('')}
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+            matrixTbody.innerHTML = matrixRows;
+          }
+        }
+
+        if (adminsRes.ok && tbody) {
+          const data = await adminsRes.json();
           const list = data.admins || [];
           if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748B; padding: 24px;">No administrator records found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748B; padding: 24px;">No administrator records found.</td></tr>';
             return;
           }
-          tbody.innerHTML = list.map(a => `
-            <tr>
-              <td><strong>${escapeHtml(a.displayName || a.email || a.id)}</strong><div style="font-size: 11px; color: #64748B;">${escapeHtml(a.email || '')}</div></td>
-              <td><span class="badge-role-admin">${escapeHtml(a.canonicalRole || a.role)}</span></td>
-              <td><span style="color: ${a.mfaEnabled ? '#059669' : '#D97706'}; font-weight: 700;">${a.mfaEnabled ? '<i class=\"fa-solid fa-shield-check\"></i> ACTIVE (TOTP)' : '<i class=\"fa-solid fa-circle-exclamation\"></i> NOT_ENROLLED'}</span></td>
-              <td><span class="badge-status-active">${escapeHtml(a.status)}</span></td>
-              <td style="font-size: 11px; color: #64748B;">${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : 'Never'}</td>
-            </tr>
-          `).join('');
-        } else {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #DC2626; padding: 20px;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Failed to load administrator directory (HTTP ${res.status}).
-            <button class="btn-outline-secondary" style="font-size: 11px; padding: 3px 10px; margin-left: 8px;" onclick="loadAdminRoles()">Retry</button>
-          </td></tr>`;
+
+          tbody.innerHTML = list.map(a => {
+            const role = a.canonicalRole || a.role;
+            const isSelf = currentUserSession && currentUserSession.userId === a.id;
+            return `
+              <tr>
+                <td>
+                  <strong>${escapeHtml(a.displayName || a.email || a.id)}</strong>
+                  <div style="font-size: 11px; color: #64748B;">${escapeHtml(a.email || '')}</div>
+                  <div style="font-size: 10px; color: #94A3B8; font-family: monospace;">ID: ${escapeHtml(a.id.slice(0, 12))}...</div>
+                </td>
+                <td><span class="badge-role-admin">${escapeHtml(role)}</span></td>
+                <td>
+                  <span style="color: ${a.mfaEnabled ? '#059669' : '#D97706'}; font-weight: 700; font-size: 11.5px;">
+                    ${a.mfaEnabled ? '<i class=\"fa-solid fa-shield-check\"></i> ACTIVE (TOTP)' : '<i class=\"fa-solid fa-circle-exclamation\"></i> NOT_ENROLLED'}
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 800; background: #EFF6FF; color: #1D4ED8;">
+                    ${a.activeSessionsCount || 1} active
+                  </span>
+                </td>
+                <td style="font-size: 11.5px; color: #475569;">
+                  <strong>${a.permissionsCount || 0}</strong> granted
+                </td>
+                <td><span class="badge-status-active">${escapeHtml(a.status)}</span></td>
+                <td style="font-size: 11px; color: #64748B;">${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : 'Never'}</td>
+                <td>
+                  <button class="btn-outline-secondary" style="padding: 3px 8px; font-size: 10.5px;" onclick="openAssignRoleModal('${a.id}', '${escapeHtml(a.displayName || a.email || 'Admin')}', '${escapeHtml(a.email || '')}', '${role}')" ${isSelf ? 'disabled title=\"Cannot alter own role\"' : ''}>
+                    <i class="fa-solid fa-user-gear"></i> Manage
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
         }
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #DC2626; padding: 20px;">
-          <i class="fa-solid fa-triangle-exclamation"></i> Network error loading administrators.
-          <button class="btn-outline-secondary" style="font-size: 11px; padding: 3px 10px; margin-left: 8px;" onclick="loadAdminRoles()">Retry</button>
-        </td></tr>`;
+        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #DC2626; padding: 20px;">Error loading administrators.</td></tr>';
       }
     }
 
@@ -4964,16 +6543,30 @@
       }
     }
 
-    async function loadAdminSubscriptions() {
+    async function loadAdminSubscriptions(targetPage) {
+      const page = targetPage || adminSubsPaginationState.page || 1;
+      const search = document.getElementById('admin-subs-search')?.value.trim() || '';
+      const tier = document.getElementById('admin-subs-filter-tier')?.value || 'ALL';
+      const status = document.getElementById('admin-subs-filter-status')?.value || 'ALL';
       const freeCountEl = document.getElementById('tier-count-free');
       const plusCountEl = document.getElementById('tier-count-plus');
       const premCountEl = document.getElementById('tier-count-premium');
       const plusPriceEl = document.getElementById('admin-plus-price-label');
       const premPriceEl = document.getElementById('admin-premium-price-label');
+      const tbody = document.getElementById('admin-subscribers-tbody');
+
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading subscribers directory...</td></tr>';
 
       try {
+        const url = new URL(`${getAuthBase()}/api/admin/subscriptions`);
+        url.searchParams.append('page', String(page));
+        url.searchParams.append('limit', '20');
+        if (search) url.searchParams.append('search', search);
+        if (tier !== 'ALL') url.searchParams.append('tier', tier);
+        if (status !== 'ALL') url.searchParams.append('status', status);
+
         const [subRes, prodRes] = await Promise.all([
-          fetch(`${getAuthBase()}/api/admin/subscriptions`, { headers: getAuthHeaders() }),
+          fetch(url.toString(), { headers: getAuthHeaders() }),
           fetch(`${getAuthBase()}/api/admin/products`, { headers: getAuthHeaders() })
         ]);
 
@@ -4983,6 +6576,99 @@
           if (freeCountEl) freeCountEl.textContent = dist.FREE ?? 0;
           if (plusCountEl) plusCountEl.textContent = dist.PLUS ?? 0;
           if (premCountEl) premCountEl.textContent = dist.PREMIUM ?? 0;
+
+          const subscribers = data.subscribers || [];
+          adminSubsPaginationState = {
+            page: data.page || page,
+            limit: data.limit || 20,
+            total: data.total || data.totalSubscribers || subscribers.length,
+            totalPages: data.totalPages || 1
+          };
+
+          if (tbody) {
+            if (subscribers.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748B; padding: 20px;">No subscribers match the current filter criteria.</td></tr>';
+            } else {
+              tbody.innerHTML = subscribers.map(s => {
+                const subUserId = s.userId || s.id || '';
+                const sTier = s.tier || s.subscriptionTier || 'FREE';
+                const sStatus = s.status || s.subscriptionStatus || 'NONE';
+                const sBilling = s.billingPeriod || s.subscriptionBillingPeriod || (sTier === 'FREE' ? 'PERMANENT' : 'COMPLIMENTARY');
+                const sExpiresAt = s.expiresAt || s.subscriptionExpiresAt || null;
+                const tierColor = sTier === 'PREMIUM' ? '#881337' : (sTier === 'PLUS' ? '#B45309' : '#475569');
+                const tierBg = sTier === 'PREMIUM' ? '#FFF1F2' : (sTier === 'PLUS' ? '#FFFBEB' : '#F8FAFC');
+                const tierBorder = sTier === 'PREMIUM' ? '#FDA4AF' : (sTier === 'PLUS' ? '#FDE68A' : '#E2E8F0');
+
+                let daysRemaining = null;
+                if (sExpiresAt) {
+                  const ms = new Date(sExpiresAt).getTime() - Date.now();
+                  daysRemaining = Math.max(0, Math.ceil(ms / 86400000));
+                }
+
+                return `
+                  <tr>
+                    <td>
+                      <strong>${escapeHtml(s.displayName || 'Customer')}</strong>
+                      <div style="font-size: 11px; color: #64748B;">${escapeHtml(s.email || '')}</div>
+                      <code style="font-size: 10px; color: #94A3B8;">${escapeHtml(subUserId.slice(0, 12))}...</code>
+                    </td>
+                    <td>
+                      <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; background: ${tierBg}; color: ${tierColor}; border: 1px solid ${tierBorder};">
+                        ${escapeHtml(sTier)}
+                      </span>
+                    </td>
+                    <td>
+                      <span style="font-size: 11.5px; font-weight: 600; color: #475569;">
+                        ${escapeHtml(sBilling)}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="${sStatus === 'ACTIVE' ? 'badge-status-active' : 'badge-status-deactivated'}">
+                        ${escapeHtml(sStatus)}
+                      </span>
+                    </td>
+                    <td>
+                      <div style="font-size: 11.5px;">${sExpiresAt ? new Date(sExpiresAt).toLocaleDateString() : 'Permanent'}</div>
+                      ${daysRemaining !== null ? `<div style="font-size: 10.5px; color: ${daysRemaining < 5 ? '#DC2626' : '#059669'}; font-weight: 700;">${daysRemaining} days left</div>` : ''}
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; color: #B45309;" onclick="openGrantSubscriptionModal('${subUserId}', '${escapeHtml(s.displayName || s.email || 'User')}', '${escapeHtml(s.email || '')}', '${sTier}')">
+                          <i class="fa-solid fa-crown"></i> Manage
+                        </button>
+                        ${sTier !== 'FREE' ? `
+                          <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; color: #0284C7;" onclick="openExtendSubscriptionModal('${subUserId}', '${escapeHtml(s.displayName || s.email || 'User')}', '${sExpiresAt || ''}')">
+                            +Extend
+                          </button>
+                          <button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px; color: #DC2626;" onclick="openCancelSubscriptionModal('${subUserId}', '${escapeHtml(s.displayName || s.email || 'User')}', '${sTier}')">
+                            Cancel
+                          </button>
+                        ` : ''}
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('');
+            }
+
+            // Render Subscriptions Pagination
+            const subPageInfo = document.getElementById('admin-subs-page-info');
+            const subBtnContainer = document.getElementById('admin-subs-pagination-buttons');
+            if (subPageInfo) {
+              subPageInfo.textContent = `Showing page ${adminSubsPaginationState.page} of ${adminSubsPaginationState.totalPages} (${adminSubsPaginationState.total} total subscribers)`;
+            }
+            if (subBtnContainer) {
+              const sp = adminSubsPaginationState.page;
+              const stp = adminSubsPaginationState.totalPages;
+              let sHtml = '';
+              sHtml += `<button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="loadAdminSubscriptions(1)" ${sp <= 1 ? 'disabled' : ''}>&laquo;</button>`;
+              sHtml += `<button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="loadAdminSubscriptions(${sp - 1})" ${sp <= 1 ? 'disabled' : ''}>&lsaquo;</button>`;
+              sHtml += `<span style="font-size: 11px; padding: 2px 6px;">${sp} / ${stp}</span>`;
+              sHtml += `<button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="loadAdminSubscriptions(${sp + 1})" ${sp >= stp ? 'disabled' : ''}>&rsaquo;</button>`;
+              sHtml += `<button class="btn-outline-secondary" style="padding: 2px 7px; font-size: 10px;" onclick="loadAdminSubscriptions(${stp})" ${sp >= stp ? 'disabled' : ''}>&raquo;</button>`;
+              subBtnContainer.innerHTML = sHtml;
+            }
+          }
         }
 
         if (prodRes.ok) {
@@ -5368,8 +7054,14 @@
           const data = await res.json();
           target.innerHTML = (data.integrations || []).map(i => `
             <div style="padding: 12px; border: 1px solid #E2E8F0; border-radius: 8px; background: #F8FAFC;">
-              <strong>${escapeHtml(i.name)}</strong>
-              <div style="margin-top: 4px; font-weight: 700; color: ${i.status === 'HEALTHY' || i.status === 'CONNECTED' ? '#059669' : '#2563EB'};"><i class="fa-solid fa-circle-dot"></i> ${i.status}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong>${escapeHtml(i.name)}</strong>
+                <span style="font-size: 11px; color: #64748B;">${i.latencyMs !== null && i.latencyMs !== undefined ? `${i.latencyMs}ms` : ''}</span>
+              </div>
+              <div style="margin-top: 4px; font-weight: 700; color: ${['HEALTHY', 'CONNECTED', 'OPERATIONAL', 'PRODUCTION_READY', 'SANDBOX_READY'].includes(i.status) ? '#059669' : (String(i.status).includes('FAIL') || String(i.status).includes('UNAVAILABLE') ? '#DC2626' : '#2563EB')};">
+                <i class="fa-solid fa-circle-dot"></i> ${escapeHtml(i.status)}
+              </div>
+              ${i.details ? `<div style="font-size: 11.5px; color: #64748B; margin-top: 2px;">${escapeHtml(i.details)}</div>` : ''}
             </div>
           `).join('');
         } else {
@@ -5714,8 +7406,8 @@
           <td style="padding: 10px; color: #64748B;">${escapeHtml(t.description || '')}</td>
           <td style="padding: 10px; text-align: right; font-weight: 800; color: #0F172A;">${Number(t.records || 0).toLocaleString()}</td>
           <td style="padding: 10px; text-align: center;">
-            <span style="font-size: 10.5px; font-weight: 800; background: #D1FAE5; color: #065F46; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
-              <i class="fa-solid fa-shield-halved"></i> ${escapeHtml(t.status || 'HEALTHY')}${t.rlsEnabled ? ' (RLS)' : ''}
+            <span style="font-size: 10.5px; font-weight: 800; background: ${t.rlsEnabled ? '#D1FAE5' : '#FEE2E2'}; color: ${t.rlsEnabled ? '#065F46' : '#991B1B'}; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-shield-halved"></i> ${escapeHtml(t.status || 'HEALTHY')}${t.rlsEnabled ? ' (RLS)' : ' (NO RLS)'}
             </span>
           </td>
         </tr>
@@ -5737,10 +7429,10 @@
         <div style="padding: 10px 12px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; display: flex; flex-direction: column; gap: 4px;">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
             <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; color: #1E293B; font-size: 11.5px;">
-              <i class="fa-solid fa-circle-check" style="color: #059669;"></i>
+              <i class="fa-solid ${sg.status === 'PASSED' ? 'fa-circle-check' : 'fa-triangle-exclamation'}" style="color: ${sg.status === 'PASSED' ? '#059669' : '#D97706'};"></i>
               <span>${escapeHtml(sg.name)}</span>
             </div>
-            <span style="font-size: 10px; font-weight: 800; background: #D1FAE5; color: #065F46; padding: 1px 6px; border-radius: 4px;">
+            <span style="font-size: 10px; font-weight: 800; background: ${sg.status === 'PASSED' ? '#D1FAE5' : '#FEF3C7'}; color: ${sg.status === 'PASSED' ? '#065F46' : '#92400E'}; padding: 1px 6px; border-radius: 4px;">
               ${escapeHtml(sg.status || 'PASSED')}
             </span>
           </div>
@@ -6009,39 +7701,342 @@
 
     // ==================== ENTERPRISE OWNER CONTROL CENTRE JAVASCRIPT CONTROLLER ====================
 
+    // 1. Saved Views & Filter Presets
+    function applyAdminSavedView(viewKey) {
+      if (!viewKey || viewKey === 'all') {
+        showToast('Restored default view (All Records).', 'info');
+        switchAdminModule(currentAdminActiveModule || 'overview');
+        return;
+      }
+      switch (viewKey) {
+        case 'pending-refunds':
+          switchAdminModule('subscriptions');
+          showToast('Loaded Saved View: Pending Refunds', 'info');
+          break;
+        case 'failed-reports':
+          switchAdminModule('reports');
+          showToast('Loaded Saved View: Failed Report Generations', 'info');
+          break;
+        case 'expiring-subs':
+          switchAdminModule('subscriptions');
+          showToast('Loaded Saved View: Subscriptions Expiring in 7 Days', 'info');
+          break;
+        case 'high-incidents':
+          switchAdminModule('incidents');
+          showToast('Loaded Saved View: High-Priority P1/Critical Incidents', 'info');
+          break;
+        case 'failed-payments':
+          switchAdminModule('payments');
+          showToast('Loaded Saved View: Failed Payment Orders', 'info');
+          break;
+        case 'suspended-accounts':
+          switchAdminModule('users');
+          const filter = document.getElementById('admin-user-status-filter');
+          if (filter) { filter.value = 'SUSPENDED'; loadAdminUsersList(); }
+          showToast('Loaded Saved View: Suspended Accounts', 'info');
+          break;
+      }
+    }
+    window.applyAdminSavedView = applyAdminSavedView;
+
+    // 2. Action Center / Task Queue
+    function openAdminTaskQueueModal() {
+      const modal = document.getElementById('modal-admin-task-queue');
+      if (modal) modal.style.display = 'flex';
+      const refCount = document.getElementById('action-pending-refunds')?.textContent || '0';
+      const repCount = document.getElementById('action-failed-reports')?.textContent || '0';
+      const incCount = document.getElementById('action-open-incidents')?.textContent || '0';
+      const privCount = document.getElementById('action-pending-privacy')?.textContent || '0';
+      if (document.getElementById('task-queue-refunds-count')) document.getElementById('task-queue-refunds-count').textContent = `${refCount} PENDING`;
+      if (document.getElementById('task-queue-reports-count')) document.getElementById('task-queue-reports-count').textContent = `${repCount} FAILED`;
+      if (document.getElementById('task-queue-incidents-count')) document.getElementById('task-queue-incidents-count').textContent = `${incCount} ACTIVE`;
+      if (document.getElementById('task-queue-privacy-count')) document.getElementById('task-queue-privacy-count').textContent = `${privCount} PENDING`;
+    }
+    window.openAdminTaskQueueModal = openAdminTaskQueueModal;
+
+    function closeAdminTaskQueueModal() {
+      const modal = document.getElementById('modal-admin-task-queue');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeAdminTaskQueueModal = closeAdminTaskQueueModal;
+
+    // 3. Admin Session Centre
+    function openAdminSessionCentreModal() {
+      const modal = document.getElementById('modal-admin-session-centre');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      const emailEl = document.getElementById('session-centre-email');
+      const roleEl = document.getElementById('session-centre-role');
+      const idleEl = document.getElementById('session-centre-idle-text');
+      if (currentUserSession) {
+        if (emailEl) emailEl.textContent = currentUserSession.email || currentUserSession.identifier || 'Authorized Staff';
+        if (roleEl) roleEl.textContent = currentUserSession.role || 'ADMIN';
+      }
+      if (idleEl && adminSessionIdleLimitSeconds) {
+        idleEl.textContent = `${Math.round(adminSessionIdleLimitSeconds / 60)} minutes`;
+      }
+    }
+    window.openAdminSessionCentreModal = openAdminSessionCentreModal;
+
+    function closeAdminSessionCentreModal() {
+      const modal = document.getElementById('modal-admin-session-centre');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeAdminSessionCentreModal = closeAdminSessionCentreModal;
+
+    // 4. Standardized High-Risk Action Confirmation
+    function openHighRiskActionModal({ title, target, scope, onConfirm, requireTotp = false }) {
+      const modal = document.getElementById('modal-admin-high-risk-action');
+      if (!modal) return;
+      document.getElementById('high-risk-action-title').textContent = title || 'High-Risk Operation Confirmation';
+      document.getElementById('high-risk-action-target').textContent = target || 'Resource';
+      document.getElementById('high-risk-action-scope').textContent = scope || 'Action alters persistent state.';
+      const reasonInput = document.getElementById('high-risk-action-reason');
+      if (reasonInput) reasonInput.value = '';
+      const totpBox = document.getElementById('high-risk-action-totp-container');
+      const totpInput = document.getElementById('high-risk-action-totp');
+      if (totpBox) totpBox.style.display = requireTotp ? 'block' : 'none';
+      if (totpInput) totpInput.value = '';
+      
+      const confirmBtn = document.getElementById('high-risk-action-confirm-btn');
+      confirmBtn.onclick = async () => {
+        const reason = reasonInput?.value?.trim();
+        if (!reason || reason.length < 5) {
+          showToast('Mandatory business reason of at least 5 characters is required.', 'error');
+          return;
+        }
+        const totp = totpInput?.value?.trim();
+        if (requireTotp && (!totp || totp.length < 6)) {
+          showToast('Step-up 6-digit TOTP code is required for this operation.', 'error');
+          return;
+        }
+        closeHighRiskActionModal();
+        if (typeof onConfirm === 'function') {
+          await onConfirm({ reason, totp });
+        }
+      };
+      modal.style.display = 'flex';
+    }
+    window.openHighRiskActionModal = openHighRiskActionModal;
+
+    function closeHighRiskActionModal() {
+      const modal = document.getElementById('modal-admin-high-risk-action');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeHighRiskActionModal = closeHighRiskActionModal;
+
+    // 5. Troubleshooting & Diagnostic Drawer
+    let adminTroubleshootingEvents = [];
+    function openAdminTroubleshootingDrawer() {
+      const drawer = document.getElementById('drawer-admin-troubleshooting');
+      if (drawer) drawer.style.display = 'flex';
+      renderAdminTroubleshootingLog();
+    }
+    window.openAdminTroubleshootingDrawer = openAdminTroubleshootingDrawer;
+
+    function closeAdminTroubleshootingDrawer() {
+      const drawer = document.getElementById('drawer-admin-troubleshooting');
+      if (drawer) drawer.style.display = 'none';
+    }
+    window.closeAdminTroubleshootingDrawer = closeAdminTroubleshootingDrawer;
+
+    function recordAdminTroubleshootingEvent(evt) {
+      adminTroubleshootingEvents.unshift({
+        id: 'req_' + Math.random().toString(36).substring(2, 9),
+        timestamp: new Date().toLocaleTimeString(),
+        status: evt.status || 500,
+        module: evt.module || currentAdminActiveModule || 'system',
+        action: evt.action || 'API_CALL',
+        message: escapeHtml(evt.message || 'Operation failed.'),
+        service: evt.service || 'wallet-service',
+        canRetry: evt.canRetry !== false
+      });
+      if (adminTroubleshootingEvents.length > 50) adminTroubleshootingEvents.pop();
+    }
+    window.recordAdminTroubleshootingEvent = recordAdminTroubleshootingEvent;
+
+    function clearAdminTroubleshootingLog() {
+      adminTroubleshootingEvents = [];
+      renderAdminTroubleshootingLog();
+      showToast('Troubleshooting history cleared.', 'info');
+    }
+    window.clearAdminTroubleshootingLog = clearAdminTroubleshootingLog;
+
+    function renderAdminTroubleshootingLog() {
+      const container = document.getElementById('admin-troubleshooting-log');
+      if (!container) return;
+      if (adminTroubleshootingEvents.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 30px 10px; text-align: center; color: #64748B; font-size: 12px;">
+            <i class="fa-solid fa-circle-check" style="font-size: 24px; color: #10B981; margin-bottom: 8px; display: block;"></i>
+            No operational errors captured in this session. All administrative endpoints healthy.
+          </div>
+        `;
+        return;
+      }
+      container.innerHTML = adminTroubleshootingEvents.map(e => `
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px; font-size: 11.5px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-weight: 800; color: #EF4444;">HTTP ${e.status} &bull; ${escapeHtml(e.module.toUpperCase())}</span>
+            <span style="color: #64748B; font-family: monospace; font-size: 10px;">${e.timestamp}</span>
+          </div>
+          <div style="color: #CBD5E1; margin-bottom: 6px;">${e.message}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748B;">
+            <span>Service: <strong style="color: #38BDF8;">${escapeHtml(e.service)}</strong> &bull; ID: <code>${e.id}</code></span>
+            ${e.canRetry ? `<button class="btn-outline-secondary" onclick="switchAdminModule('${e.module}'); closeAdminTroubleshootingDrawer();" style="font-size: 10px; padding: 2px 6px; color: #F5C45E; border-color: #D97706;">Retry &rarr;</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+    window.renderAdminTroubleshootingLog = renderAdminTroubleshootingLog;
+
     // Global Search
     function executeAdminGlobalSearch() {
-      const q = document.getElementById('admin-global-search-input')?.value?.trim();
-      if (!q) return;
-      if (q.startsWith('usr_') || q.includes('@')) {
+      const raw = document.getElementById('admin-global-search-input')?.value?.trim();
+      if (!raw) return;
+      const q = raw.toLowerCase();
+
+      if (q.startsWith('cf_') || q.startsWith('ord_') || q.startsWith('pay_')) {
+        switchAdminModule('payments');
+        const searchInput = document.getElementById('input-recover-order-id');
+        if (searchInput) {
+          searchInput.value = raw;
+        }
+      } else if (q.startsWith('rep_') || q.startsWith('pdf_')) {
+        switchAdminModule('reports');
+        if (typeof loadAdminReportsDiagnostics === 'function') {
+          loadAdminReportsDiagnostics();
+        }
+      } else if (q.startsWith('inc_')) {
+        switchAdminModule('incidents');
+        if (typeof loadAdminIncidents === 'function') {
+          loadAdminIncidents();
+        }
+      } else if (q.startsWith('prv_') || q.startsWith('priv_') || q.startsWith('dsr_') || q.startsWith('dpdp_')) {
+        switchAdminModule('privacy');
+        if (typeof loadAdminPrivacy === 'function') {
+          loadAdminPrivacy();
+        }
+      } else if (q.startsWith('sub_')) {
+        switchAdminModule('subscriptions');
+        if (typeof loadAdminSubscriptions === 'function') {
+          loadAdminSubscriptions();
+        }
+      } else if (q.startsWith('ent_')) {
+        switchAdminModule('entitlements');
+        if (typeof loadAdminEntitlements === 'function') {
+          loadAdminEntitlements();
+        }
+      } else if (q.startsWith('ref_')) {
+        switchAdminModule('payments');
+        const refundInput = document.getElementById('input-refund-order-id');
+        if (refundInput) refundInput.value = raw;
+      } else if (q.startsWith('prm_') || q.startsWith('promo_')) {
+        switchAdminModule('promotions');
+        if (typeof loadAdminPromotions === 'function') {
+          loadAdminPromotions();
+        }
+      } else if (q.startsWith('ast_')) {
+        switchAdminModule('consultations');
+        if (typeof loadAdminConsultations === 'function') {
+          loadAdminConsultations();
+        }
+      } else if (q.startsWith('db_') || q === 'database') {
+        switchAdminModule('database');
+        if (typeof loadAdminDatabaseMonitor === 'function') {
+          loadAdminDatabaseMonitor();
+        }
+      } else if (q.startsWith('kpi_') || q === 'analytics') {
+        switchAdminModule('analytics');
+        if (typeof loadAdminAnalyticsOverview === 'function') {
+          loadAdminAnalyticsOverview();
+        }
+      } else if (q.startsWith('sec_')) {
+        switchAdminModule('security');
+        if (typeof loadAdminSecurityEvents === 'function') {
+          loadAdminSecurityEvents();
+        }
+      } else if (q.startsWith('flag_')) {
+        switchAdminModule('settings');
+        if (typeof loadAdminSettings === 'function') {
+          loadAdminSettings();
+        }
+      } else if (q.startsWith('usr_') || raw.includes('@')) {
         switchAdminModule('customer360');
         const searchInput = document.getElementById('admin-c360-search-id');
         if (searchInput) {
-          searchInput.value = q;
-          loadAdminCustomer360(q);
+          searchInput.value = raw;
+          loadAdminCustomer360(raw);
         }
       } else {
         switchAdminModule('users');
         const userSearch = document.getElementById('admin-user-search');
         if (userSearch) {
-          userSearch.value = q;
+          userSearch.value = raw;
           loadAdminUsersList();
         }
       }
     }
 
-    // Auto-Lock Session Timer Countdown
-    let adminSessionRemainingSeconds = 600; // 10 minutes
+    // Auto-Lock Session Timer Countdown & Server-Authoritative Policy
+    let adminSessionPolicy = {
+      environment: 'preview',
+      idleTimeoutMinutes: 60,
+      idleTimeoutSeconds: 3600,
+      absoluteCapMinutes: 240,
+      absoluteCapSeconds: 14400,
+      slidingRenewalSupported: true
+    };
+    let adminSessionIdleLimitSeconds = 3600; // Default 60 min for Preview QA
+    let adminSessionRemainingSeconds = 3600;
+    let adminSessionStartTime = Date.now();
     let adminSessionTimerInterval = null;
+    let adminLastBackendRefresh = Date.now();
 
-    function refreshAdminSessionCountdown() {
-      adminSessionRemainingSeconds = 600;
+    async function fetchAdminSessionPolicy() {
+      try {
+        const res = await fetch(`${getAuthBase()}/api/admin/session/policy`);
+        if (res.ok) {
+          const policy = await res.json();
+          adminSessionPolicy = policy;
+          adminSessionIdleLimitSeconds = policy.idleTimeoutSeconds || 3600;
+          adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+          updateAdminSessionTimerDisplay();
+        }
+      } catch (err) {
+        console.warn('Admin session policy lookup failed, using preview defaults:', err);
+      }
+    }
+
+    async function refreshAdminSessionCountdown() {
+      if (currentSessionToken) {
+        try {
+          const res = await fetch(`${getAuthBase()}/api/auth/admin-refresh`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.sessionPolicy) {
+              adminSessionPolicy = data.sessionPolicy;
+              adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || adminSessionIdleLimitSeconds;
+            }
+          }
+        } catch (_) {}
+      }
+      adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+      adminLastActivity = Date.now();
+      adminLastBackendRefresh = Date.now();
       updateAdminSessionTimerDisplay();
-      showToast('Administrative session renewed for 10 minutes.', 'info');
+      showToast(`Administrative session renewed (${Math.round(adminSessionIdleLimitSeconds / 60)} min inactivity window).`, 'info');
     }
 
     function updateAdminSessionTimerDisplay() {
       const el = document.getElementById('admin-session-countdown');
+      const badge = document.getElementById('admin-session-policy-badge');
+      if (badge && adminSessionPolicy) {
+        badge.textContent = adminSessionPolicy.environment === 'production' ? 'PROD: 10m' : `QA: ${Math.round(adminSessionIdleLimitSeconds / 60)}m`;
+      }
       if (!el) return;
       const m = Math.floor(adminSessionRemainingSeconds / 60);
       const s = adminSessionRemainingSeconds % 60;
@@ -6055,7 +8050,16 @@
 
     function startAdminSessionCountdown() {
       if (adminSessionTimerInterval) clearInterval(adminSessionTimerInterval);
+      updateAdminSessionTimerDisplay();
       adminSessionTimerInterval = setInterval(() => {
+        // Enforce absolute session cap
+        if (Date.now() - adminSessionStartTime > (adminSessionPolicy.absoluteCapSeconds || 14400) * 1000) {
+          clearInterval(adminSessionTimerInterval);
+          showToast('Maximum session duration reached. Signing out...', 'warning');
+          closeAdminAndSignOut();
+          return;
+        }
+
         if (adminSessionRemainingSeconds > 0) {
           adminSessionRemainingSeconds--;
           updateAdminSessionTimerDisplay();
@@ -6073,6 +8077,12 @@
         const res = await fetch(`${getAuthBase()}/api/admin/analytics/overview`, { headers: getAuthHeaders() });
         if (!res.ok) return;
         const data = await res.json();
+        const prov = data.provenance || 'LIVE';
+        const provBadge = document.getElementById('admin-analytics-provenance-badge');
+        if (provBadge) {
+          provBadge.className = `admin-provenance-badge ${prov === 'LIVE' ? 'provenance-live' : (prov === 'SYNTHETIC' ? 'provenance-synthetic' : 'provenance-derived')}`;
+          provBadge.innerHTML = `<i class="fa-solid fa-database"></i> ${escapeHtml(prov)} DATA`;
+        }
         const s = data.summary;
         if (s) {
           const grossEl = document.getElementById('metric-analytics-gross');
@@ -6142,7 +8152,9 @@
           }
         }
 
-        const res = await fetch(`${getAuthBase()}/api/admin/customers/${lookupId}/360`, { headers: getAuthHeaders() });
+        const c360Headers = getAuthHeaders();
+        c360Headers['x-admin-reason'] = 'Administrative Customer 360 Account Review';
+        const res = await fetch(`${getAuthBase()}/api/admin/customers/${lookupId}/360`, { headers: c360Headers });
         if (!res.ok) {
           container.innerHTML = `<div style="padding: 30px; text-align: center; color: #EF4444; background: #0E1626; border-radius: 10px;"><i class="fa-solid fa-circle-exclamation" style="font-size: 28px; margin-bottom: 8px;"></i><div>Customer not found (${escapeHtml(userId)})</div></div>`;
           return;
@@ -6626,16 +8638,31 @@
   let adminLastActivity = Date.now();
   function resetAdminActivity() {
     adminLastActivity = Date.now();
+    adminSessionRemainingSeconds = adminSessionIdleLimitSeconds;
+    // Debounced silent background session renewal every 5 minutes while user is active
+    if (currentSessionToken && (Date.now() - adminLastBackendRefresh > 5 * 60 * 1000)) {
+      adminLastBackendRefresh = Date.now();
+      fetch(`${getAuthBase()}/api/auth/admin-refresh`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      }).then(r => r.ok ? r.json() : null).then(data => {
+        if (data && data.sessionPolicy) {
+          adminSessionPolicy = data.sessionPolicy;
+          adminSessionIdleLimitSeconds = data.sessionPolicy.idleTimeoutSeconds || adminSessionIdleLimitSeconds;
+        }
+      }).catch(() => {});
+    }
   }
   function setupAdminInactivityMonitor() {
     ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt => {
       window.addEventListener(evt, resetAdminActivity, { passive: true });
     });
 
-    // 10-minute inactivity check: closes session on idle
+    // Policy-driven inactivity monitor: closes session on genuine user idle
     setInterval(() => {
-      if (currentSessionToken && (Date.now() - adminLastActivity > 10 * 60 * 1000)) {
-        showToast('Admin session timed out due to 10 minutes of inactivity.', 'warning');
+      const idleLimitMs = (adminSessionIdleLimitSeconds || 3600) * 1000;
+      if (currentSessionToken && (Date.now() - adminLastActivity > idleLimitMs)) {
+        showToast(`Admin session timed out after ${Math.round(idleLimitMs / 60000)} minutes of inactivity.`, 'warning');
         closeAdminAndSignOut();
       }
     }, 30000);
@@ -6651,6 +8678,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     checkGatewaySecurityStatus();
+    fetchAdminSessionPolicy();
 
     try {
       // Admin session strictly loaded from sessionStorage (cleared on tab/window close)

@@ -25,9 +25,15 @@ export const DDL_STATEMENTS: string[] = [
   END $$;`,
 
   `DO $$ BEGIN
-    CREATE TYPE "OrderStatus" AS ENUM ('CREATED', 'PAID', 'FAILED', 'REFUNDED');
+    CREATE TYPE "OrderStatus" AS ENUM ('CREATED', 'PAID', 'FAILED', 'PARTIALLY_REFUNDED', 'REFUNDED');
   EXCEPTION
     WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    ALTER TYPE "OrderStatus" ADD VALUE IF NOT EXISTS 'PARTIALLY_REFUNDED';
+  EXCEPTION
+    WHEN others THEN null;
   END $$;`,
 
   `DO $$ BEGIN
@@ -191,6 +197,9 @@ export const DDL_STATEMENTS: string[] = [
     "amountPaise" INTEGER,
     "productType" TEXT,
     "productId" TEXT,
+    "billingPeriod" TEXT,
+    "pricingSnapshot" JSONB,
+    "metadata" JSONB,
     "razorpayOrderId" TEXT NOT NULL,
     "razorpayPaymentId" TEXT,
     "status" "OrderStatus" NOT NULL DEFAULT 'CREATED',
@@ -206,9 +215,31 @@ export const DDL_STATEMENTS: string[] = [
     ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "amountPaise" INTEGER;
     ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "productType" TEXT;
     ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "productId" TEXT;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "billingPeriod" TEXT;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "pricingSnapshot" JSONB;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "metadata" JSONB;
   EXCEPTION
     WHEN duplicate_column THEN null;
   END $$;`,
+
+  `CREATE TABLE IF NOT EXISTS "WebhookEvent" (
+    "id" TEXT NOT NULL,
+    "provider" TEXT NOT NULL DEFAULT 'CASHFREE',
+    "providerEventId" TEXT NOT NULL,
+    "providerOrderId" TEXT,
+    "providerPaymentId" TEXT,
+    "eventType" TEXT NOT NULL,
+    "payloadHash" TEXT NOT NULL,
+    "processingStatus" TEXT NOT NULL DEFAULT 'RECEIVED',
+    "receivedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processingStartedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "lastError" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "WebhookEvent_pkey" PRIMARY KEY ("id")
+  );`,
 
   `CREATE TABLE IF NOT EXISTS "WalletLedger" (
     "id" TEXT NOT NULL,
@@ -283,6 +314,61 @@ export const DDL_STATEMENTS: string[] = [
     CONSTRAINT "ContentBanner_pkey" PRIMARY KEY ("id")
   );`,
 
+  `CREATE TABLE IF NOT EXISTS "Promotion" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "discountType" TEXT NOT NULL,
+    "discountValue" DECIMAL(10,2) NOT NULL,
+    "applicableTo" TEXT NOT NULL DEFAULT 'ALL',
+    "minOrderAmount" DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    "maxDiscount" DECIMAL(10,2),
+    "maxUses" INTEGER NOT NULL DEFAULT 1000,
+    "usedCount" INTEGER NOT NULL DEFAULT 0,
+    "startsAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT NOT NULL DEFAULT 'admin',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Promotion_pkey" PRIMARY KEY ("id")
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS "CustomerNote" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "adminId" TEXT NOT NULL,
+    "category" TEXT NOT NULL DEFAULT 'GENERAL',
+    "reason" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "CustomerNote_pkey" PRIMARY KEY ("id")
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS "Entitlement" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "featureKey" TEXT NOT NULL,
+    "source" TEXT NOT NULL DEFAULT 'ADMIN_GRANT',
+    "grantedBy" TEXT NOT NULL,
+    "grantedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
+    "reason" TEXT NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Entitlement_pkey" PRIMARY KEY ("id")
+  );`,
+
+  // Alter existing tables for schema alignment
+  `DO $$ BEGIN
+    ALTER TABLE "SavedReport" ADD COLUMN IF NOT EXISTS "status" TEXT NOT NULL DEFAULT 'COMPLETED';
+    ALTER TABLE "Astrologer" ADD COLUMN IF NOT EXISTS "isVerified" BOOLEAN NOT NULL DEFAULT false;
+  EXCEPTION
+    WHEN duplicate_column THEN null;
+  END $$;`,
+
   // Indexes
   `CREATE UNIQUE INDEX IF NOT EXISTS "User_phone_key" ON "User"("phone");`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");`,
@@ -301,6 +387,10 @@ export const DDL_STATEMENTS: string[] = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "PaymentOrder_razorpayOrderId_key" ON "PaymentOrder"("razorpayOrderId");`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "PaymentOrder_razorpayPaymentId_key" ON "PaymentOrder"("razorpayPaymentId");`,
   `CREATE INDEX IF NOT EXISTS "PaymentOrder_userId_createdAt_idx" ON "PaymentOrder"("userId", "createdAt");`,
+  `CREATE INDEX IF NOT EXISTS "PaymentOrder_providerOrderId_idx" ON "PaymentOrder"("providerOrderId");`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "WebhookEvent_providerEventId_key" ON "WebhookEvent"("providerEventId");`,
+  `CREATE INDEX IF NOT EXISTS "WebhookEvent_providerOrderId_idx" ON "WebhookEvent"("providerOrderId");`,
+  `CREATE INDEX IF NOT EXISTS "WebhookEvent_processingStatus_idx" ON "WebhookEvent"("processingStatus");`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "WalletLedger_idempotencyKey_key" ON "WalletLedger"("idempotencyKey");`,
   `CREATE INDEX IF NOT EXISTS "WalletLedger_userId_createdAt_idx" ON "WalletLedger"("userId", "createdAt");`,
   `CREATE INDEX IF NOT EXISTS "WalletLedger_astrologerId_createdAt_idx" ON "WalletLedger"("astrologerId", "createdAt");`,
@@ -308,6 +398,12 @@ export const DDL_STATEMENTS: string[] = [
   `CREATE INDEX IF NOT EXISTS "PlatformIncident_status_severity_idx" ON "PlatformIncident"("status", "severity");`,
   `CREATE INDEX IF NOT EXISTS "PrivacyRequest_userId_status_idx" ON "PrivacyRequest"("userId", "status");`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "ContentBanner_key_key" ON "ContentBanner"("key");`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "Promotion_code_key" ON "Promotion"("code");`,
+  `CREATE INDEX IF NOT EXISTS "Promotion_code_isActive_idx" ON "Promotion"("code", "isActive");`,
+  `CREATE INDEX IF NOT EXISTS "CustomerNote_userId_createdAt_idx" ON "CustomerNote"("userId", "createdAt");`,
+  `CREATE INDEX IF NOT EXISTS "Entitlement_userId_isActive_idx" ON "Entitlement"("userId", "isActive");`,
+  `CREATE INDEX IF NOT EXISTS "Entitlement_featureKey_isActive_idx" ON "Entitlement"("featureKey", "isActive");`,
+  `CREATE INDEX IF NOT EXISTS "SavedReport_userId_status_idx" ON "SavedReport"("userId", "status");`,
 
   // Foreign key constraints
   `DO $$ BEGIN
@@ -380,6 +476,16 @@ export const DDL_STATEMENTS: string[] = [
   EXCEPTION WHEN duplicate_object THEN null;
   END $$;`,
 
+  `DO $$ BEGIN
+    ALTER TABLE "CustomerNote" ADD CONSTRAINT "CustomerNote_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    ALTER TABLE "Entitlement" ADD CONSTRAINT "Entitlement_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
   // ===========================================================================
   // ROW LEVEL SECURITY (RLS) POLICIES & PRIVILEGE HARDENING (PHASE 6)
   // ===========================================================================
@@ -404,6 +510,9 @@ export const DDL_STATEMENTS: string[] = [
   `ALTER TABLE "PlatformIncident" ENABLE ROW LEVEL SECURITY;`,
   `ALTER TABLE "ContentBanner" ENABLE ROW LEVEL SECURITY;`,
   `ALTER TABLE "Astrologer" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "Promotion" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "CustomerNote" ENABLE ROW LEVEL SECURITY;`,
+  `ALTER TABLE "Entitlement" ENABLE ROW LEVEL SECURITY;`,
 
   // User Profile: Users may read/update only their own record; service_role has full access
   `DO $$ BEGIN
@@ -581,16 +690,260 @@ export const DDL_STATEMENTS: string[] = [
   EXCEPTION WHEN duplicate_object THEN null;
   END $$;`,
 
-  // SQL Grants Hardening: Principle of least privilege
+  // Promotion: Public read, service_role mutate
   `DO $$ BEGIN
-    REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User" FROM anon;
-    GRANT SELECT ON "User", "BirthProfile", "SavedReport", "KundliCalculation", "PaymentOrder", "WalletLedger", "ConsultationSession", "ConsultationMessage", "PujaBooking", "PrivacyRequest" TO authenticated;
-    GRANT INSERT, UPDATE, DELETE ON "BirthProfile", "SavedReport", "KundliCalculation", "PrivacyRequest" TO authenticated;
-    GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
-    GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
-  EXCEPTION WHEN others THEN null;
-  END $$;`
+    CREATE POLICY "promotion_public_read" ON "Promotion" FOR SELECT USING (true);
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "promotion_service_mutate" ON "Promotion" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // CustomerNote: Service role only
+  `DO $$ BEGIN
+    CREATE POLICY "customernote_service_only" ON "CustomerNote" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // Entitlement: User own read, service_role mutate
+  `DO $$ BEGIN
+    CREATE POLICY "entitlement_read_own" ON "Entitlement" FOR SELECT 
+    USING ("userId" = NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '') OR current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  `DO $$ BEGIN
+    CREATE POLICY "entitlement_service_mutate" ON "Entitlement" FOR ALL 
+    USING (current_user IN ('postgres', 'service_role'))
+    WITH CHECK (current_user IN ('postgres', 'service_role'));
+  EXCEPTION WHEN duplicate_object THEN null;
+  END $$;`,
+
+  // BirthProfile additive columns for unknown and approximate birth times
+  `DO $$ BEGIN
+    ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "birthTimeStatus" TEXT NOT NULL DEFAULT 'EXACT';
+    ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "approximateWindowMinutes" INTEGER;
+    ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "approximateTimeRange" TEXT;
+    ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "birthTimeConfirmed" BOOLEAN NOT NULL DEFAULT true;
+    ALTER TABLE "BirthProfile" ALTER COLUMN "timeOfBirth" DROP NOT NULL;
+  EXCEPTION
+    WHEN duplicate_column THEN null;
+  END $$;`,
+
+  // Safe Customer Profile View: Excludes credential hashes, salts, and MFA secrets
+  // Strictly fail-closed: requires PostgreSQL 15+ WITH (security_invoker = true) so RLS is evaluated under caller identity.
+  // Never falls back to a normal view (SECURITY DEFINER execution).
+  `DO $$ 
+  DECLARE
+    pg_ver INTEGER;
+  BEGIN
+    SELECT current_setting('server_version_num')::integer INTO pg_ver;
+    IF pg_ver < 150000 THEN
+      RAISE EXCEPTION 'POSTGRESQL_VERSION_INSUFFICIENT: CustomerProfileView requires PostgreSQL 15+ for security_invoker = true. Current version: %', pg_ver;
+    END IF;
+
+    CREATE OR REPLACE VIEW "CustomerProfileView" WITH (security_invoker = true) AS 
+    SELECT 
+      "id", "phone", "email", "phoneVerified", "emailVerified", 
+      "displayName", "role", "status", "preferredLanguage", "preferredTimezone", 
+      "walletBalance", "mfaEnabled", "mfaEnforced", 
+      "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", 
+      "lastLoginAt", "createdAt", "updatedAt" 
+    FROM "User";
+
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' 
+        AND c.relname = 'CustomerProfileView'
+        AND c.reloptions @> ARRAY['security_invoker=true']
+    ) THEN
+      RAISE EXCEPTION 'SECURITY_INVOKER_VERIFICATION_FAILED: CustomerProfileView was not created with security_invoker=true';
+    END IF;
+  END $$;`,
+
+  // Trigger function to mathematically prevent privilege escalation and wallet tampering on User and profiles
+  `CREATE OR REPLACE FUNCTION public.prevent_unauthorized_profile_mutation()
+  RETURNS TRIGGER AS $$
+  DECLARE
+    current_jwt_role TEXT;
+    is_service_role BOOLEAN;
+    old_data JSONB;
+    new_data JSONB;
+    old_role TEXT;
+    new_role TEXT;
+    old_balance TEXT;
+    new_balance TEXT;
+    old_status TEXT;
+    new_status TEXT;
+  BEGIN
+    current_jwt_role := COALESCE(
+      current_setting('request.jwt.claim.role', true),
+      (current_setting('request.jwt.claims', true)::jsonb ->> 'role')
+    );
+    is_service_role := (current_jwt_role = 'service_role' OR current_user IN ('postgres', 'service_role'));
+
+    IF is_service_role THEN
+      RETURN NEW;
+    END IF;
+
+    old_data := to_jsonb(OLD);
+    new_data := to_jsonb(NEW);
+
+    old_role := COALESCE(old_data->>'role', old_data->>'Role');
+    new_role := COALESCE(new_data->>'role', new_data->>'Role');
+    IF old_role IS DISTINCT FROM new_role THEN
+      RAISE EXCEPTION 'PRIVILEGE_ESCALATION_BLOCKED: Ordinary users cannot modify administrative roles directly.';
+    END IF;
+
+    old_balance := COALESCE(old_data->>'wallet_balance', old_data->>'walletBalance');
+    new_balance := COALESCE(new_data->>'wallet_balance', new_data->>'walletBalance');
+    IF old_balance IS DISTINCT FROM new_balance THEN
+      RAISE EXCEPTION 'DIRECT_BALANCE_MUTATION_BLOCKED: Wallet balances may only be altered via verified server-side ledger operations.';
+    END IF;
+
+    old_status := COALESCE(old_data->>'account_status', old_data->>'status');
+    new_status := COALESCE(new_data->>'account_status', new_data->>'status');
+    IF old_status IS DISTINCT FROM new_status THEN
+      RAISE EXCEPTION 'ACCOUNT_STATUS_MUTATION_BLOCKED: Account status moderation is restricted to platform administrators.';
+    END IF;
+
+    IF TG_TABLE_NAME = 'User' THEN
+      NEW."updatedAt" := NOW();
+    ELSIF TG_TABLE_NAME = 'profiles' THEN
+      NEW.updated_at := NOW();
+    END IF;
+
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public;`,
+
+  `REVOKE ALL ON FUNCTION public.prevent_unauthorized_profile_mutation() FROM PUBLIC;`,
+  `REVOKE EXECUTE ON FUNCTION public.prevent_unauthorized_profile_mutation() FROM anon, authenticated;`,
+  `GRANT EXECUTE ON FUNCTION public.prevent_unauthorized_profile_mutation() TO postgres, service_role;`,
+
+  `DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'User') THEN
+      DROP TRIGGER IF EXISTS trg_prevent_unauthorized_user_mutation ON "User";
+      CREATE TRIGGER trg_prevent_unauthorized_user_mutation
+        BEFORE UPDATE ON "User"
+        FOR EACH ROW
+        EXECUTE FUNCTION public.prevent_unauthorized_profile_mutation();
+    END IF;
+  END $$;`,
+
+  // SQL Grants Hardening: Principle of least privilege & credential column protection
+  `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession", "CustomerNote" FROM anon;`,
+  `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession", "CustomerNote" FROM authenticated;`,
+
+  // Column-level SELECT on non-sensitive User fields only (passwordHash, passwordSalt, resetTokenHash, mfaSecret, mfaRecoveryCodes are EXCLUDED)
+  `GRANT SELECT ("id", "phone", "email", "phoneVerified", "emailVerified", "displayName", "role", "status", "preferredLanguage", "preferredTimezone", "walletBalance", "mfaEnabled", "mfaEnforced", "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", "lastLoginAt", "createdAt", "updatedAt") ON "User" TO authenticated;`,
+
+  // Fail-closed grant: SELECT is granted to authenticated ONLY IF CustomerProfileView has security_invoker=true
+  `DO $$ BEGIN
+    IF EXISTS (
+      SELECT 1 FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' 
+        AND c.relname = 'CustomerProfileView'
+        AND c.reloptions @> ARRAY['security_invoker=true']
+    ) THEN
+      GRANT SELECT ON "CustomerProfileView" TO authenticated;
+    ELSE
+      RAISE EXCEPTION 'GRANT_ABORTED: Refusing to grant SELECT on CustomerProfileView without security_invoker=true';
+    END IF;
+  END $$;`,
+  `GRANT SELECT ON "BirthProfile", "SavedReport", "KundliCalculation", "PaymentOrder", "WalletLedger", "ConsultationSession", "ConsultationMessage", "PujaBooking", "PrivacyRequest", "Promotion", "Entitlement" TO authenticated;`,
+  `GRANT INSERT, UPDATE, DELETE ON "BirthProfile", "SavedReport", "KundliCalculation", "PrivacyRequest" TO authenticated;`,
+  `GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;`,
+  `GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;`
 ];
+
+export const APPLICATION_TABLES = [
+  'User',
+  'UserSession',
+  'AuditEvent',
+  'SavedReport',
+  'BirthProfile',
+  'KundliCalculation',
+  'Astrologer',
+  'ConsultationSession',
+  'ConsultationMessage',
+  'PaymentOrder',
+  'WalletLedger',
+  'PujaBooking',
+  'FeatureFlag',
+  'PlatformIncident',
+  'PrivacyRequest',
+  'ContentBanner',
+  'Promotion',
+  'CustomerNote',
+  'Entitlement'
+] as const;
+
+export interface SchemaReadinessResult {
+  isReady: boolean;
+  totalExpected: number;
+  existingTables: string[];
+  missingTables: string[];
+  rlsEnabledTables: string[];
+  missingRlsTables: string[];
+}
+
+export async function checkSchemaReadiness(prisma: any): Promise<SchemaReadinessResult> {
+  if (!prisma) {
+    return {
+      isReady: false,
+      totalExpected: APPLICATION_TABLES.length,
+      existingTables: [],
+      missingTables: [...APPLICATION_TABLES],
+      rlsEnabledTables: [],
+      missingRlsTables: [...APPLICATION_TABLES]
+    };
+  }
+
+  try {
+    const rows: any = await prisma.$queryRawUnsafe(`
+      SELECT c.relname as table_name, c.relrowsecurity as rls_enabled, c.relforcerowsecurity as rls_forced
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r';
+    `);
+
+    const existingTables: string[] = (rows || []).map((r: any) => r.table_name || r.TABLE_NAME).filter(Boolean);
+    const missingTables = APPLICATION_TABLES.filter(t => !existingTables.includes(t));
+    const rlsEnabledTables: string[] = (rows || []).filter((r: any) => r.rls_enabled).map((r: any) => r.table_name || r.TABLE_NAME).filter(Boolean);
+    const missingRlsTables = APPLICATION_TABLES.filter(t => existingTables.includes(t) && !rlsEnabledTables.includes(t));
+
+    // Both all tables must exist AND all tables must have Row Level Security enabled
+    const isReady = missingTables.length === 0 && missingRlsTables.length === 0;
+
+    return {
+      isReady,
+      totalExpected: APPLICATION_TABLES.length,
+      existingTables,
+      missingTables,
+      rlsEnabledTables,
+      missingRlsTables
+    };
+  } catch (err: any) {
+    console.error('[DB_BOOTSTRAP] checkSchemaReadiness error:', err?.message || err);
+    return {
+      isReady: false,
+      totalExpected: APPLICATION_TABLES.length,
+      existingTables: [],
+      missingTables: [...APPLICATION_TABLES],
+      rlsEnabledTables: [],
+      missingRlsTables: [...APPLICATION_TABLES]
+    };
+  }
+}
 
 const bootstrapPromises = new WeakMap<any, Promise<boolean>>();
 
@@ -606,36 +959,44 @@ export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
 
   const promise = (async () => {
     try {
-      // 1. Fast existence check: does public."User" table already exist?
-      const check: any = await prisma.$queryRawUnsafe(`
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_name = 'User' 
-        LIMIT 1;
-      `);
-
-      if (Array.isArray(check) && check.length > 0) {
+      // 1. Comprehensive multi-table schema-readiness check
+      const readiness = await checkSchemaReadiness(prisma);
+      if (readiness.isReady) {
         return true;
       }
 
       const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
       const isProd = (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
       if (isProd && process.env.ALLOW_PRODUCTION_AUTO_DDL !== '1') {
-        console.warn('[DB_BOOTSTRAP] Automated runtime DDL creation is disabled in production. Run migrations through Prisma CLI.');
+        console.warn(`[DB_BOOTSTRAP] Automated runtime DDL creation is disabled in production. Missing tables: ${readiness.missingTables.join(', ')}. Run migrations through Prisma CLI.`);
         return false;
       }
 
-      console.log('[DB_BOOTSTRAP] PostgreSQL "User" table missing. Executing self-healing schema creation...');
+      console.log(`[DB_BOOTSTRAP] PostgreSQL schema incomplete (missing: ${readiness.missingTables.join(', ')}). Executing self-healing schema creation...`);
 
+      let hasUnexpectedDdlError = false;
       for (const statement of DDL_STATEMENTS) {
         try {
           await prisma.$executeRawUnsafe(statement);
         } catch (stmtErr: any) {
-          // Ignore duplicate object/type/table warnings
           const msg = stmtErr?.message || '';
           if (!msg.includes('already exists') && !msg.includes('duplicate')) {
-            console.warn('[DB_BOOTSTRAP] DDL notice:', msg);
+            console.error('[DB_BOOTSTRAP] Unexpected DDL failure:', msg);
+            hasUnexpectedDdlError = true;
           }
         }
+      }
+
+      if (hasUnexpectedDdlError) {
+        console.error('[DB_BOOTSTRAP] Schema self-healing encountered unexpected DDL errors. Failing closed.');
+        return false;
+      }
+
+      // Independent post-DDL catalog check to prove tables and RLS actually exist
+      const postVerification = await checkSchemaReadiness(prisma);
+      if (!postVerification.isReady) {
+        console.error(`[DB_BOOTSTRAP] Independent catalog check failed post-DDL. Missing tables: ${postVerification.missingTables.join(', ')}, Missing RLS: ${postVerification.missingRlsTables.join(', ')}`);
+        return false;
       }
 
       console.log('[DB_BOOTSTRAP] Schema self-healing successfully completed. Tables and enums active.');
@@ -648,4 +1009,55 @@ export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
 
   bootstrapPromises.set(prisma, promise);
   return promise;
+}
+
+export async function inspectDatabaseRlsCatalog(prisma: any): Promise<{
+  tables: Array<{ name: string; rlsEnabled: boolean; rlsForced: boolean }>;
+  policies: Array<{ table: string; name: string; command: string; roles: string[]; qual: string; withCheck: string }>;
+  isFullyProtected: boolean;
+}> {
+  if (!prisma) {
+    return { tables: [], policies: [], isFullyProtected: false };
+  }
+
+  try {
+    const classRows: any = await prisma.$queryRawUnsafe(`
+      SELECT c.relname as table_name, c.relrowsecurity as rls_enabled, c.relforcerowsecurity as rls_forced
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r';
+    `);
+
+    const policyRows: any = await prisma.$queryRawUnsafe(`
+      SELECT tablename, policyname, cmd, roles, qual, with_check
+      FROM pg_policies
+      WHERE schemaname = 'public';
+    `);
+
+    const tables = (classRows || []).map((r: any) => ({
+      name: r.table_name || r.TABLE_NAME,
+      rlsEnabled: Boolean(r.rls_enabled),
+      rlsForced: Boolean(r.rls_forced)
+    }));
+
+    const policies = (policyRows || []).map((p: any) => ({
+      table: p.tablename,
+      name: p.policyname,
+      command: p.cmd,
+      roles: Array.isArray(p.roles) ? p.roles : [p.roles],
+      qual: p.qual,
+      withCheck: p.with_check
+    }));
+
+    const existingTableNames = tables.map((t: any) => t.name);
+    const missingTables = APPLICATION_TABLES.filter(t => !existingTableNames.includes(t));
+    const unsecureTables = tables.filter((t: any) => APPLICATION_TABLES.includes(t.name) && !t.rlsEnabled);
+
+    const isFullyProtected = missingTables.length === 0 && unsecureTables.length === 0 && policies.length > 0;
+
+    return { tables, policies, isFullyProtected };
+  } catch (err: any) {
+    console.error('[DB_BOOTSTRAP] inspectDatabaseRlsCatalog error:', err?.message || err);
+    return { tables: [], policies: [], isFullyProtected: false };
+  }
 }

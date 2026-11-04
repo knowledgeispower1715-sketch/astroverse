@@ -101,14 +101,19 @@ export function generateTotpCode(secretBase32: string, timestampMs = Date.now(),
 }
 
 /**
- * Verifies a candidate TOTP token allowing clock skew window of +/- 1 time step (30s)
+ * Verifies a candidate TOTP token allowing clock skew window of +/- 2 time steps (60s)
+ * Automatically strips whitespace and hyphens, and uses constant-time comparison
  */
-export function verifyTotpCode(secretBase32: string, candidateToken: string, window = 1): boolean {
-  if (!candidateToken || !/^\d{6}$/.test(candidateToken.trim())) {
+export function verifyTotpCode(secretBase32: string, candidateToken: string, window = 2): boolean {
+  if (!candidateToken) {
     return false;
   }
 
-  const cleanToken = candidateToken.trim();
+  const cleanToken = String(candidateToken).replace(/[\s-]/g, '').trim();
+  if (!/^\d{6}$/.test(cleanToken)) {
+    return false;
+  }
+
   const now = Date.now();
 
   for (let errorWindow = -window; errorWindow <= window; errorWindow++) {
@@ -143,17 +148,41 @@ export function generateMfaRecoveryCodes(count = 8): { plaintextCodes: string[];
 
 /**
  * Verifies and consumes a recovery code
+ * Tolerates codes entered with or without hyphens and spaces
  */
 export function verifyAndConsumeRecoveryCode(hashedCodes: string[], candidateCode: string): { valid: boolean; remainingHashedCodes: string[] } {
-  const candidateHash = crypto.createHash('sha256').update(candidateCode.trim().toUpperCase()).digest('hex');
-  const index = hashedCodes.findIndex(h => h === candidateHash);
+  if (!candidateCode || !Array.isArray(hashedCodes) || hashedCodes.length === 0) {
+    return { valid: false, remainingHashedCodes: hashedCodes || [] };
+  }
 
-  if (index === -1) {
+  const cleanCode = String(candidateCode).replace(/[\s]/g, '').toUpperCase();
+  const candidatesToMatch = [cleanCode];
+
+  // If candidate was entered without a hyphen, test with hyphen inserted in the middle
+  if (!cleanCode.includes('-')) {
+    if (cleanCode.length === 12) {
+      candidatesToMatch.push(`${cleanCode.slice(0, 6)}-${cleanCode.slice(6)}`);
+    } else if (cleanCode.length === 8) {
+      candidatesToMatch.push(`${cleanCode.slice(0, 4)}-${cleanCode.slice(4)}`);
+    }
+  }
+
+  let matchedIndex = -1;
+  for (const c of candidatesToMatch) {
+    const candidateHash = crypto.createHash('sha256').update(c).digest('hex');
+    const idx = hashedCodes.findIndex(h => h === candidateHash);
+    if (idx !== -1) {
+      matchedIndex = idx;
+      break;
+    }
+  }
+
+  if (matchedIndex === -1) {
     return { valid: false, remainingHashedCodes: hashedCodes };
   }
 
   const remaining = [...hashedCodes];
-  remaining.splice(index, 1);
+  remaining.splice(matchedIndex, 1);
   return { valid: true, remainingHashedCodes: remaining };
 }
 
@@ -164,39 +193,129 @@ export function verifyAndConsumeRecoveryCode(hashedCodes: string[], candidateCod
 // assurance token required for high-impact mutations (role changes, refunds, etc.)
 // =============================================================================
 
-const ASSURANCE_SECRET = process.env.JWT_SECRET || process.env.ADMIN_MFA_SECRET || 'astroverse_admin_mfa_fallback_secret_64_bytes_secure_signature';
+export const ALLOWED_ASSURANCE_SCOPES = [
+  'ADMIN_MUTATION',
+  'USER_MANAGEMENT',
+  'FINANCIAL_OPERATIONS',
+  'SECURITY_ADMIN',
+  'SYSTEM_CONFIG',
+  'ALL'
+] as const;
+
+export type AllowedAssuranceScope = typeof ALLOWED_ASSURANCE_SCOPES[number] | string;
+
+let ephemeralSecret: string | null = null;
+
+export function getAssuranceSigningSecret(): string {
+  const secret = process.env.ADMIN_MFA_SECRET || process.env.JWT_SECRET;
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+
+  if (secret && secret.length >= 32) {
+    return secret;
+  }
+
+  if (isProd) {
+    throw new Error('[SECURITY_CRITICAL] ADMIN_MFA_SECRET or JWT_SECRET must be configured with at least 32 characters in production.');
+  }
+
+  if (!ephemeralSecret) {
+    ephemeralSecret = crypto.randomBytes(64).toString('hex');
+  }
+  return ephemeralSecret;
+}
+
 const ASSURANCE_LIFETIME_MS = 15 * 60 * 1000; // 15 minutes
 
 export interface AdminAssurancePayload {
+  jti: string;
   userId: string;
   role: string;
+  scope: string;
   issuedAt: number;
   expiresAt: number;
 }
 
-export function issueAdminAssuranceToken(userId: string, role: string): string {
+const revokedAssuranceTokens = new Set<string>();
+
+export function revokeAdminAssuranceToken(tokenOrJti: string): void {
+  if (tokenOrJti && typeof tokenOrJti === 'string') {
+    revokedAssuranceTokens.add(tokenOrJti.trim());
+  }
+}
+
+export function isAssuranceTokenRevoked(tokenOrJti: string): boolean {
+  if (!tokenOrJti || typeof tokenOrJti !== 'string') return false;
+  return revokedAssuranceTokens.has(tokenOrJti.trim());
+}
+
+export function clearRevokedAssuranceTokens(): void {
+  revokedAssuranceTokens.clear();
+}
+
+export function isScopeSatisfied(payloadScope: string | undefined, requiredScope?: string): boolean {
+  if (!requiredScope || requiredScope === 'ADMIN_MUTATION') {
+    return true;
+  }
+  if (!payloadScope) return false;
+  if (payloadScope === 'ALL' || payloadScope === 'SECURITY_ADMIN') return true;
+  if (payloadScope === requiredScope) return true;
+
+  // Domain-level scope hierarchy
+  if (payloadScope === 'FINANCIAL_OPERATIONS') {
+    return ['wallet:adjust', 'pricing:update', 'gateway:credentials', 'payments:refund'].includes(requiredScope);
+  }
+  if (payloadScope === 'USER_MANAGEMENT') {
+    return ['users:manage', 'entitlements:grant', 'entitlements:revoke', 'subscriptions:assign', 'subscriptions:extend', 'subscriptions:cancel'].includes(requiredScope);
+  }
+  if (payloadScope === 'SYSTEM_CONFIG') {
+    return ['content:manage', 'privacy:manage', 'reports:retry', 'flags:manage'].includes(requiredScope);
+  }
+  return payloadScope === 'ADMIN_MUTATION';
+}
+
+export function issueAdminAssuranceToken(
+  userId: string,
+  role: string,
+  scope: AllowedAssuranceScope = 'ADMIN_MUTATION',
+  customJti?: string
+): string {
   const now = Date.now();
+  const jti = customJti || crypto.randomUUID();
   const payload: AdminAssurancePayload = {
+    jti,
     userId,
     role,
+    scope: scope || 'ADMIN_MUTATION',
     issuedAt: now,
     expiresAt: now + ASSURANCE_LIFETIME_MS
   };
 
   const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = crypto.createHmac('sha256', ASSURANCE_SECRET).update(payloadBase64).digest('base64url');
+  const signature = crypto.createHmac('sha256', getAssuranceSigningSecret()).update(payloadBase64).digest('base64url');
 
   return `${payloadBase64}.${signature}`;
 }
 
-export function verifyAdminAssuranceToken(token: string | undefined): AdminAssurancePayload | null {
+export function verifyAdminAssuranceToken(
+  token: string | undefined,
+  requiredScope?: string
+): AdminAssurancePayload | null {
   if (!token || typeof token !== 'string') return null;
+
+  if (isAssuranceTokenRevoked(token)) {
+    return null;
+  }
 
   const parts = token.split('.');
   if (parts.length !== 2) return null;
 
   const [payloadBase64, signature] = parts;
-  const expectedSig = crypto.createHmac('sha256', ASSURANCE_SECRET).update(payloadBase64).digest('base64url');
+  let expectedSig: string;
+  try {
+    expectedSig = crypto.createHmac('sha256', getAssuranceSigningSecret()).update(payloadBase64).digest('base64url');
+  } catch {
+    return null;
+  }
 
   try {
     const isSigValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig));
@@ -205,6 +324,14 @@ export function verifyAdminAssuranceToken(token: string | undefined): AdminAssur
     const payload: AdminAssurancePayload = JSON.parse(Buffer.from(payloadBase64, 'base64url').toString('utf8'));
     if (Date.now() > payload.expiresAt) {
       return null; // Expired
+    }
+
+    if (payload.jti && isAssuranceTokenRevoked(payload.jti)) {
+      return null; // Revoked by JTI
+    }
+
+    if (requiredScope && !isScopeSatisfied(payload.scope, requiredScope)) {
+      return null; // Insufficient scope
     }
 
     return payload;
