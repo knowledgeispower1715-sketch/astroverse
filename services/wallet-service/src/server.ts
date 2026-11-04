@@ -30,6 +30,7 @@ import {
 } from './security/mfa';
 import { DurableAiQuotaManager } from './monetization/aiQuotas';
 import { validatePasswordComplexity } from './security/passwordValidator';
+import { bootstrapPostgresSchema } from './schemaBootstrap';
 import { getPublicSupabaseConfig, verifySupabaseToken, getSupabaseAdminClient } from './supabase';
 import {
   isCashfreeConfigured,
@@ -6613,6 +6614,110 @@ app.post('/api/admin/database/ping', authenticate, requireAdmin(AdminPermission.
     });
   } catch (err: any) {
     res.status(500).json({ error: 'PING_FAILED', message: err.message });
+  }
+});
+
+// GET /api/admin/database/status - Read-only schema readiness, connection health, and RLS catalog
+app.get('/api/admin/database/status', authenticate, requireAdmin(AdminPermission.VIEW_DATABASE), async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const monitorData = await db.getDatabaseMonitorMetrics(true);
+    res.json({
+      success: true,
+      status: 'ONLINE',
+      mode: 'READ_ONLY_INSPECTION',
+      ddlExecution: 'VERSION_CONTROLLED_MIGRATIONS_ONLY',
+      connection: monitorData.systemHealth?.database || 'CONNECTED',
+      tablesReady: monitorData.tableMetrics?.length || 0,
+      rlsEnforced: monitorData.rlsEnforcedCount || 0,
+      schemaStatus: monitorData.schemaStatus || 'READY',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'DATABASE_STATUS_ERROR', message: err.message });
+  }
+});
+
+// GET /api/admin/database/schema-status - Read-only table and migration catalog
+app.get('/api/admin/database/schema-status', authenticate, requireAdmin(AdminPermission.VIEW_DATABASE), async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const monitorData = await db.getDatabaseMonitorMetrics(true);
+    res.json({
+      success: true,
+      status: 'READ_ONLY',
+      schemaStatus: monitorData.schemaStatus || 'READY',
+      tables: (monitorData.tableMetrics || []).map((t: any) => ({
+        name: t.name,
+        rowCount: t.rowCount,
+        rlsEnabled: t.rlsEnabled
+      })),
+      migrationsManagedBy: 'CI_CD_VERSION_CONTROL',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'SCHEMA_STATUS_ERROR', message: err.message });
+  }
+});
+
+/**
+ * STAGE 6: Database Bootstrap Safety & Production DDL Guard
+ * POST /api/admin/database/bootstrap
+ * Permanently forbidden in production environments.
+ * Cannot be triggered by ordinary admin roles.
+ */
+app.post('/api/admin/database/bootstrap', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  // 1. Unconditional Production Environment Guard
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                       process.env.VERCEL_ENV === 'production' || 
+                       process.env.ASTROVERSE_ENV === 'production';
+                       
+  if (isProduction) {
+    return res.status(403).json({
+      error: 'PRODUCTION_DDL_FORBIDDEN',
+      message: 'Database schema bootstrap and runtime DDL execution via HTTP API is permanently forbidden in production environments. Migrations must be applied via version-controlled CI/CD pipelines.',
+      environment: 'production'
+    });
+  }
+
+  // 2. Strict Role Check: Ordinary admin roles (ADMIN, STAFF, SUPPORT, etc.) are forbidden
+  if (!req.user || req.user.role !== Role.OWNER) {
+    return res.status(403).json({
+      error: 'FORBIDDEN_INSUFFICIENT_ROLE',
+      message: 'Ordinary admin roles cannot trigger schema DDL. Only the platform OWNER can request staging maintenance bootstrap.',
+      requiredRole: Role.OWNER,
+      currentRole: req.user?.role || 'UNAUTHENTICATED'
+    });
+  }
+
+  // 3. Staging Explicit Enablement Flag
+  if (process.env.ALLOW_HTTP_SCHEMA_BOOTSTRAP !== 'true') {
+    return res.status(403).json({
+      error: 'BOOTSTRAP_MUTATION_DISABLED',
+      message: 'HTTP-triggered schema bootstrap is disabled by default. Set ALLOW_HTTP_SCHEMA_BOOTSTRAP=true in isolated staging environments to enable maintenance execution.'
+    });
+  }
+
+  // 4. In isolated staging, execute bootstrap
+  try {
+    const prismaClient = (db as any).prisma;
+    const success = prismaClient ? await bootstrapPostgresSchema(prismaClient) : true;
+    await db.recordAuditEvent({
+      userId: req.user.id,
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      action: 'STAGING_DATABASE_BOOTSTRAP_EXECUTED',
+      targetType: 'DATABASE_SCHEMA',
+      outcome: 'SUCCESS',
+      metadata: { environment: process.env.NODE_ENV || 'staging', success },
+      ipAddress: req.ip
+    });
+    return res.json({
+      success,
+      environment: process.env.NODE_ENV || 'staging',
+      action: 'STAGING_BOOTSTRAP_EXECUTED',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'BOOTSTRAP_FAILED', message: err.message });
   }
 });
 

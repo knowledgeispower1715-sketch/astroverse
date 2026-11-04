@@ -1,0 +1,23 @@
+Module,API Endpoint,HTTP Method,Effective Server Permission,Response Status,Provenance,Actual Database Queried,Browser Result,Error Classification
+01. Overview,/api/admin/overview,GET,VIEW_OVERVIEW,200,LIVE,YES,PASS,NONE
+02. Users,/api/admin/users,GET,VIEW_USERS,200,LIVE,YES,PASS,NONE
+03. Roles and RBAC,/api/admin/roles/admins,GET,MANAGE_ROLES,200,LIVE,YES,PASS,NONE
+04. Security and MFA,/api/admin/security/audit,GET,VIEW_SECURITY_EVENTS,200,LIVE,YES,PASS,NONE
+05. Astrology,/api/admin/astrology/engines,GET,VIEW_ASTROLOGY,200,LIVE,YES,PASS,NONE
+06. Reports,/api/admin/reports/diagnostics,GET,VIEW_REPORT_DIAGNOSTICS,200,LIVE,YES,PASS,NONE
+07. AI Quotas,/api/admin/ai-quotas,GET,MANAGE_AI_QUOTAS,200,LIVE,YES,PASS,NONE
+08. Payments,/api/admin/payments/reconcile,GET,MANAGE_FINANCE,200,LIVE,YES,PASS,NONE
+09. Subscriptions,/api/admin/subscriptions,GET,MANAGE_SUBSCRIPTIONS,200,LIVE,YES,PASS,NONE
+10. Content,/api/admin/content-banners,GET,MANAGE_CONTENT,200,LIVE,YES,PASS,NONE
+11. Settings,/api/admin/feature-flags,GET,MANAGE_SETTINGS,200,LIVE,YES,PASS,NONE
+12. Privacy,/api/admin/privacy-requests,GET,VIEW_PRIVACY_REQUESTS,200,LIVE,YES,PASS,NONE
+13. Audit,/api/admin/audit-trail,GET,VIEW_AUDIT_LOGS,200,LIVE,YES,PASS,NONE
+14. Integrations,/api/admin/integrations/status,GET,VIEW_INTEGRATIONS,200,LIVE,YES,PASS,NONE
+15. Incidents,/api/admin/incidents,GET,MANAGE_INCIDENTS,200,LIVE,YES,PASS,NONE
+16. QA,/api/admin/qa/scenarios,GET,VIEW_QA,200,LIVE,YES,PASS,NONE
+17. Database Monitor,/api/admin/database/status,GET,VIEW_DATABASE,200,LIVE,YES,PASS,NONE
+18. Analytics,/api/admin/analytics/business,GET,VIEW_FINANCE,200,LIVE,YES,PASS,NONE
+19. Customer 360,/api/admin/users/cust_test_01/360,GET,VIEW_USERS,200,LIVE,YES,PASS,NONE
+20. Entitlements,/api/admin/entitlements,GET,MANAGE_ENTITLEMENTS,200,LIVE,YES,PASS,NONE
+21. Promotions,/api/admin/promotions,GET,MANAGE_PROMOTIONS,200,LIVE,YES,PASS,NONE
+22. Consultations,/api/admin/consultations,GET,VIEW_CONSULTATIONS,200,LIVE,YES,PASS,NONE
