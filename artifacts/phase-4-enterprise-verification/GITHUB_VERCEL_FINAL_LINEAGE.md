@@ -13,12 +13,12 @@
 
 | Identifier Key | Commit / OID | Ref / Target | Verified State |
 | :--- | :--- | :--- | :--- |
-| **`LOCAL_HEAD`** | `2d883d301cf895f1c3103349329ad7305c193cd6` | `heads/fix/enterprise-security-and-hardening` | Pushed to origin |
-| **`REMOTE_BRANCH_HEAD`** | `2d883d301cf895f1c3103349329ad7305c193cd6` | `origin/fix/enterprise-security-and-hardening` | Synchronized |
-| **`PR_HEAD`** | `2d883d301cf895f1c3103349329ad7305c193cd6` | Pull Request #1 | `OPEN`, `MERGEABLE` |
+| **`LOCAL_HEAD`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | `heads/fix/enterprise-security-and-hardening` | Pushed to origin |
+| **`REMOTE_BRANCH_HEAD`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | `origin/fix/enterprise-security-and-hardening` | Synchronized |
+| **`PR_HEAD`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | Pull Request #1 | `OPEN`, `MERGEABLE` |
 | **`PR_BASE`** | `2c9227d40e5ee69bb3f0967d4efa394ec2310038` | `origin/main` | Untouched |
-| **`VERCEL_PREVIEW_SOURCE_SHA`** | `2d883d301cf895f1c3103349329ad7305c193cd6` | Preview Deployment | `Ready` / `DEPLOYED` |
-| **`BROWSER_RELEASE_SHA`** | `2d883d301cf895f1c3103349329ad7305c193cd6` | `/api/release` Endpoint | Synchronized |
+| **`VERCEL_PREVIEW_SOURCE_SHA`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | Preview Deployment | `Ready` / `DEPLOYED` |
+| **`BROWSER_RELEASE_SHA`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | `/api/release` Endpoint | Synchronized |
 
 ---
 
@@ -46,7 +46,7 @@
   - `services/wallet-service/src/server.ts`: Added `POST /api/admin/database/bootstrap` with unconditional production guard (`PRODUCTION_DDL_FORBIDDEN`) and OWNER role check; added read-only `GET /api/admin/database/status` and `GET /api/admin/database/schema-status`.
   - `services/wallet-service/tests/database_bootstrap_safety.test.ts`: Dedicated test suite verifying 8/8 assertions.
 
-### D. Current Phase 4.2 Hardening Commit
+### D. Current Phase 4.2 Hardening Commit `0e87df5f26cbb92a159f08c88ceeced9245196c5`
 - **Subject:** `fix(verification): add release endpoint, strict cdp diagnostics redaction and phase 4.2 handover`
 - **Type:** Release Identity & Diagnostic Security
 - **Key Modifications:**
