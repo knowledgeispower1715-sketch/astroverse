@@ -318,6 +318,8 @@ export interface PaymentOrderRecord {
   providerPaymentId: string | null;
   productType?: 'WALLET_RECHARGE' | 'SUBSCRIPTION' | 'REPORT' | string;
   productId?: string | null;
+  billingPeriod?: 'MONTHLY' | 'ANNUAL' | string;
+  pricingSnapshot?: any;
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
@@ -335,6 +337,24 @@ export interface PaymentOrderRecord {
   refundedAmountPaise?: number;
   refunds?: RefundRecord[];
   metadata?: any;
+}
+
+export interface WebhookEventRecord {
+  id: string;
+  provider: string;
+  providerEventId: string;
+  providerOrderId: string | null;
+  providerPaymentId: string | null;
+  eventType: string;
+  payloadHash: string;
+  processingStatus: 'RECEIVED' | 'PROCESSING' | 'PROCESSED' | 'RETRYABLE_FAILURE';
+  receivedAt: string;
+  processingStartedAt: string | null;
+  completedAt: string | null;
+  attemptCount: number;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OtpRecord {
@@ -428,6 +448,7 @@ interface DatabaseSchema {
   adminPreviewSessions: AdminPreviewSessionRecord[];
   otps: OtpRecord[];
   processedWebhooks: ProcessedWebhookRecord[];
+  webhookEvents?: WebhookEventRecord[];
   rateLimits: RateLimitRecord[];
   entitlements: EntitlementRecord[];
   customerNotes: CustomerNoteRecord[];
@@ -737,6 +758,9 @@ class ResilientDatabase {
       status: o.status,
       productType: o.productType,
       productId: o.productId,
+      billingPeriod: o.billingPeriod || o.metadata?.billingPeriod || null,
+      pricingSnapshot: o.pricingSnapshot || null,
+      metadata: o.metadata || null,
       razorpayOrderId: o.razorpayOrderId || providerOrderId,
       razorpayPaymentId: o.razorpayPaymentId || providerPaymentId,
       gateway: (o.gateway || provider) as any,
@@ -773,6 +797,9 @@ class ResilientDatabase {
           status: o.status,
           productType: o.productType,
           productId: o.productId,
+          billingPeriod: o.billingPeriod || o.metadata?.billingPeriod || null,
+          pricingSnapshot: o.pricingSnapshot || null,
+          metadata: o.metadata || null,
           razorpayOrderId: o.razorpayOrderId || providerOrderId,
           razorpayPaymentId: o.razorpayPaymentId || providerPaymentId,
           gateway: o.gateway || provider,
@@ -791,6 +818,7 @@ class ResilientDatabase {
       adminPreviewSessions: Array.isArray(d?.adminPreviewSessions) ? d.adminPreviewSessions : [],
       otps: Array.isArray(d?.otps) ? d.otps : [],
       processedWebhooks: Array.isArray(d?.processedWebhooks) ? d.processedWebhooks : [],
+      webhookEvents: Array.isArray(d?.webhookEvents) ? d.webhookEvents : [],
       rateLimits: Array.isArray(d?.rateLimits) ? d.rateLimits : [],
       entitlements: Array.isArray(d?.entitlements) ? d.entitlements : [],
       customerNotes: Array.isArray(d?.customerNotes) ? d.customerNotes : [],
@@ -3343,6 +3371,9 @@ class ResilientDatabase {
 
   isWebhookEventProcessed(eventId: string): boolean {
     if (!eventId) return false;
+    if (this.data.webhookEvents && this.data.webhookEvents.some(w => w.providerEventId === eventId && w.processingStatus === 'PROCESSED')) {
+      return true;
+    }
     return this.data.processedWebhooks.some(w => w.eventId === eventId);
   }
 
@@ -3358,7 +3389,193 @@ class ResilientDatabase {
     if (this.data.processedWebhooks.length > 2000) {
       this.data.processedWebhooks = this.data.processedWebhooks.slice(-1500);
     }
+    if (this.data.webhookEvents) {
+      const we = this.data.webhookEvents.find(w => w.providerEventId === eventId);
+      if (we) {
+        we.processingStatus = 'PROCESSED';
+        we.completedAt = new Date().toISOString();
+        we.updatedAt = new Date().toISOString();
+      } else {
+        this.data.webhookEvents.push({
+          id: 'whe_' + crypto.randomBytes(8).toString('hex'),
+          provider,
+          providerEventId: eventId,
+          providerOrderId: null,
+          providerPaymentId: null,
+          eventType: 'PAYMENT_EVENT',
+          payloadHash: 'legacy',
+          processingStatus: 'PROCESSED',
+          receivedAt: new Date().toISOString(),
+          processingStartedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          attemptCount: 1,
+          lastError: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+    }
     this.saveToFile();
+  }
+
+  async claimWebhookEvent(params: {
+    eventId: string;
+    provider?: string;
+    orderId?: string | null;
+    paymentId?: string | null;
+    eventType: string;
+    payloadHash: string;
+  }): Promise<{ claimed: boolean; status: string; event?: any }> {
+    const { eventId, provider = 'CASHFREE', orderId = null, paymentId = null, eventType, payloadHash } = params;
+    if (!eventId) return { claimed: false, status: 'INVALID_EVENT_ID' };
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const result = await this.prisma.$transaction(async (tx: any) => {
+          const existing = await tx.webhookEvent.findUnique({
+            where: { providerEventId: eventId }
+          });
+
+          if (existing) {
+            if (existing.processingStatus === 'PROCESSED') {
+              return { claimed: false, status: 'PROCESSED', event: existing };
+            }
+            if (existing.processingStatus === 'PROCESSING') {
+              const leaseAgeMs = existing.processingStartedAt ? Date.now() - new Date(existing.processingStartedAt).getTime() : 0;
+              if (leaseAgeMs < 60000) {
+                return { claimed: false, status: 'PROCESSING', event: existing };
+              }
+            }
+            const updated = await tx.webhookEvent.update({
+              where: { providerEventId: eventId },
+              data: {
+                processingStatus: 'PROCESSING',
+                processingStartedAt: new Date(),
+                attemptCount: { increment: 1 },
+                updatedAt: new Date()
+              }
+            });
+            return { claimed: true, status: 'CLAIMED_FOR_RETRY', event: updated };
+          }
+
+          const newEvent = await tx.webhookEvent.create({
+            data: {
+              id: 'whe_' + crypto.randomBytes(8).toString('hex'),
+              provider,
+              providerEventId: eventId,
+              providerOrderId: orderId,
+              providerPaymentId: paymentId,
+              eventType,
+              payloadHash,
+              processingStatus: 'PROCESSING',
+              receivedAt: new Date(),
+              processingStartedAt: new Date(),
+              attemptCount: 1
+            }
+          });
+          return { claimed: true, status: 'CLAIMED', event: newEvent };
+        });
+
+        return result;
+      } catch (err: any) {
+        console.error('[DB] claimWebhookEvent Postgres error:', err?.message || err);
+        throw new Error(`DATABASE_MUTATION_FAILED: claimWebhookEvent failed - ${err?.message || err}`);
+      }
+    }
+
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: claimWebhookEvent - Prisma client not connected');
+    }
+
+    // Offline JSON mode
+    if (!this.data.webhookEvents) this.data.webhookEvents = [];
+    const existing = this.data.webhookEvents.find(w => w.providerEventId === eventId);
+    if (existing) {
+      if (existing.processingStatus === 'PROCESSED') {
+        return { claimed: false, status: 'PROCESSED', event: existing };
+      }
+      if (existing.processingStatus === 'PROCESSING') {
+        const leaseAgeMs = existing.processingStartedAt ? Date.now() - new Date(existing.processingStartedAt).getTime() : 0;
+        if (leaseAgeMs < 60000) {
+          return { claimed: false, status: 'PROCESSING', event: existing };
+        }
+      }
+      existing.processingStatus = 'PROCESSING';
+      existing.processingStartedAt = new Date().toISOString();
+      existing.attemptCount = (existing.attemptCount || 1) + 1;
+      existing.updatedAt = new Date().toISOString();
+      this.saveToFile();
+      return { claimed: true, status: 'CLAIMED_FOR_RETRY', event: existing };
+    }
+
+    const newRecord: WebhookEventRecord = {
+      id: 'whe_' + crypto.randomBytes(8).toString('hex'),
+      provider,
+      providerEventId: eventId,
+      providerOrderId: orderId,
+      providerPaymentId: paymentId,
+      eventType,
+      payloadHash,
+      processingStatus: 'PROCESSING',
+      receivedAt: new Date().toISOString(),
+      processingStartedAt: new Date().toISOString(),
+      completedAt: null,
+      attemptCount: 1,
+      lastError: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.data.webhookEvents.push(newRecord);
+    this.saveToFile();
+    return { claimed: true, status: 'CLAIMED', event: newRecord };
+  }
+
+  async completeWebhookEvent(eventId: string): Promise<void> {
+    if (!eventId) return;
+    this.markWebhookEventProcessed(eventId);
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.webhookEvent.updateMany({
+          where: { providerEventId: eventId },
+          data: {
+            processingStatus: 'PROCESSED',
+            completedAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+        return;
+      } catch (err: any) {
+        console.error('[DB] completeWebhookEvent error:', err?.message || err);
+      }
+    }
+  }
+
+  async failWebhookEvent(eventId: string, error: string): Promise<void> {
+    if (!eventId) return;
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        await this.prisma.webhookEvent.updateMany({
+          where: { providerEventId: eventId },
+          data: {
+            processingStatus: 'RETRYABLE_FAILURE',
+            lastError: String(error).slice(0, 500),
+            updatedAt: new Date()
+          }
+        });
+        return;
+      } catch (err: any) {
+        console.error('[DB] failWebhookEvent error:', err?.message || err);
+      }
+    }
+    if (this.data.webhookEvents) {
+      const ev = this.data.webhookEvents.find(w => w.providerEventId === eventId);
+      if (ev) {
+        ev.processingStatus = 'RETRYABLE_FAILURE';
+        ev.lastError = String(error).slice(0, 500);
+        ev.updatedAt = new Date().toISOString();
+        this.saveToFile();
+      }
+    }
   }
 
   checkAndIncrementRateLimit(key: string, limit: number, windowMs: number): { allowed: boolean; remaining: number } {
@@ -3909,6 +4126,9 @@ class ResilientDatabase {
     cfPaymentSessionId?: string;
     productType?: 'WALLET_RECHARGE' | 'SUBSCRIPTION' | 'REPORT' | string;
     productId?: string;
+    billingPeriod?: 'MONTHLY' | 'ANNUAL' | string;
+    pricingSnapshot?: any;
+    metadata?: any;
     idempotencyKey?: string;
     baseAmount?: number;
     gstAmount?: number;
@@ -3935,6 +4155,9 @@ class ResilientDatabase {
     );
     if (existing) return existing;
 
+    const resolvedBillingPeriod = data.billingPeriod || data.metadata?.billingPeriod || null;
+    const resolvedMetadata = data.metadata || (resolvedBillingPeriod ? { billingPeriod: resolvedBillingPeriod } : null);
+
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const pgOrder = await this.prisma.paymentOrder.upsert({
@@ -3943,10 +4166,22 @@ class ResilientDatabase {
             userId: data.userId,
             amount: data.amount,
             currency: data.currency || 'INR',
+            provider: resolvedProvider,
+            providerOrderId: resolvedProviderOrderId,
+            amountPaise,
+            productType: data.productType || null,
+            productId: data.productId || null,
+            billingPeriod: resolvedBillingPeriod,
+            pricingSnapshot: data.pricingSnapshot || null,
+            metadata: resolvedMetadata,
             razorpayOrderId: dbOrderId,
             status: OrderStatus.CREATED
           },
-          update: {}
+          update: {
+            billingPeriod: resolvedBillingPeriod || undefined,
+            pricingSnapshot: data.pricingSnapshot || undefined,
+            metadata: resolvedMetadata || undefined
+          }
         });
         const mapped = this.mapPrismaPaymentOrder(pgOrder);
         mapped.provider = resolvedProvider;
@@ -3956,6 +4191,9 @@ class ResilientDatabase {
         mapped.cfPaymentSessionId = data.cfPaymentSessionId || null;
         mapped.productType = data.productType;
         mapped.productId = data.productId;
+        mapped.billingPeriod = resolvedBillingPeriod || undefined;
+        mapped.pricingSnapshot = data.pricingSnapshot || null;
+        mapped.metadata = resolvedMetadata;
         mapped.amountPaise = amountPaise;
         mapped.idempotencyKey = data.idempotencyKey || null;
         mapped.baseAmount = data.baseAmount;
@@ -3991,6 +4229,9 @@ class ResilientDatabase {
       idempotencyKey: data.idempotencyKey || null,
       productType: data.productType,
       productId: data.productId,
+      billingPeriod: resolvedBillingPeriod || undefined,
+      pricingSnapshot: data.pricingSnapshot || null,
+      metadata: resolvedMetadata,
       baseAmount: data.baseAmount,
       gstAmount: data.gstAmount,
       bonusAmount: data.bonusAmount,
@@ -5078,23 +5319,39 @@ class ResilientDatabase {
       try {
         const entitlementId = 'ent_' + crypto.randomBytes(8).toString('hex');
         const updatedPrismaUser = await this.prisma.$transaction(async (tx: any) => {
-          let freshUser: any = null;
-          try {
-            const lockedUsers: any[] = await tx.$queryRaw`
-              SELECT id, role, status, "subscriptionTier", "subscriptionExpiresAt", "subscriptionStatus"
-              FROM "User"
-              WHERE id = ${userId}
-              FOR UPDATE
-            `;
-            if (lockedUsers && lockedUsers.length > 0) {
-              freshUser = lockedUsers[0];
-            }
-          } catch {
-            freshUser = await tx.user.findUnique({ where: { id: userId } });
-          }
-
-          if (!freshUser) {
+          // Row-level lock on User (fail closed - no fallback to un-locked findUnique)
+          const lockedUsers: any[] = await tx.$queryRaw`
+            SELECT id, role, status, "subscriptionTier", "subscriptionExpiresAt", "subscriptionStatus"
+            FROM "User"
+            WHERE id = ${userId}
+            FOR UPDATE
+          `;
+          if (!lockedUsers || lockedUsers.length === 0) {
             throw new Error('USER_NOT_FOUND');
+          }
+          const freshUser = lockedUsers[0];
+
+          // Row-level lock on PaymentOrder
+          const lockedOrders: any[] = await tx.$queryRaw`
+            SELECT id, status, "razorpayPaymentId", "providerPaymentId"
+            FROM "PaymentOrder"
+            WHERE id = ${orderId} OR "razorpayOrderId" = ${orderId} OR "providerOrderId" = ${orderId}
+            FOR UPDATE
+          `;
+          const lockedOrder = lockedOrders && lockedOrders.length > 0 ? lockedOrders[0] : null;
+
+          // Idempotency check: if order is already marked PAID, check existing entitlement
+          if (lockedOrder && lockedOrder.status === OrderStatus.PAID) {
+            const existingEnt = await tx.entitlement.findFirst({
+              where: {
+                userId,
+                isActive: true,
+                reason: { contains: orderId }
+              }
+            });
+            if (existingEnt) {
+              return freshUser;
+            }
           }
 
           const curExp = freshUser.subscriptionExpiresAt ? new Date(freshUser.subscriptionExpiresAt).getTime() : Date.now();
@@ -5102,24 +5359,22 @@ class ResilientDatabase {
           const expiresAtDate = new Date(baseTime + effectiveDays * 86400000);
           const expiresAtIso = expiresAtDate.toISOString();
 
-          // 1. Mark payment order paid if it exists
-          try {
-            await tx.paymentOrder.updateMany({
-              where: {
-                OR: [
-                  { id: orderId },
-                  { providerOrderId: orderId }
-                ]
-              },
-              data: {
-                status: OrderStatus.PAID,
-                paymentId,
-                updatedAt: new Date()
-              }
-            });
-          } catch (poErr) {
-            console.warn('[DB] fulfillPaidSubscriptionOrder paymentOrder update warning:', poErr);
-          }
+          // 1. Mark payment order paid - MUST fail closed if this update fails
+          await tx.paymentOrder.updateMany({
+            where: {
+              OR: [
+                { id: orderId },
+                { razorpayOrderId: orderId },
+                { providerOrderId: orderId }
+              ]
+            },
+            data: {
+              status: OrderStatus.PAID,
+              razorpayPaymentId: paymentId,
+              providerPaymentId: paymentId,
+              updatedAt: new Date()
+            }
+          });
 
           // 2. Update user subscription
           const u = await tx.user.update({
@@ -5226,6 +5481,12 @@ class ResilientDatabase {
     // Mark order paid in memory if present
     const memOrder = this.data.paymentOrders?.find(o => o.id === orderId || o.providerOrderId === orderId);
     if (memOrder) {
+      if (memOrder.status === OrderStatus.PAID) {
+        const existingEnt = this.data.entitlements?.find(e => e.userId === userId && e.isActive && e.reason.includes(orderId));
+        if (existingEnt) {
+          return user;
+        }
+      }
       memOrder.status = OrderStatus.PAID;
       memOrder.providerPaymentId = paymentId;
       memOrder.updatedAt = new Date().toISOString();
@@ -6809,38 +7070,48 @@ class ResilientDatabase {
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const updatedPrismaUser = await this.prisma.$transaction(async (tx: any) => {
+          // Actor verification
+          if (extendedBy && extendedBy !== 'system' && !extendedBy.startsWith('admin') && !extendedBy.startsWith('sys_')) {
+            const actor = await tx.user.findUnique({ where: { id: extendedBy } });
+            if (!actor || actor.status !== 'ACTIVE') {
+              const err: any = new Error('ACTOR_NOT_FOUND: Authenticated actor performing subscription extension was not found or is inactive.');
+              err.code = 'ACTOR_NOT_FOUND';
+              err.statusCode = 403;
+              throw err;
+            }
+          }
+
           // Idempotency check with requestId
           if (requestId) {
             const existingAudit = await tx.auditEvent.findFirst({
               where: { requestId, action: 'SUBSCRIPTION_EXTENDED' }
             });
             if (existingAudit) {
+              const existingMeta = existingAudit.metadata as any;
+              if (existingMeta && (existingMeta.additionalDays !== additionalDays || existingAudit.targetId !== userId)) {
+                const err: any = new Error(`IDEMPOTENCY_CONFLICT: requestId ${requestId} replayed with differing payload.`);
+                err.code = 'IDEMPOTENCY_CONFLICT';
+                err.statusCode = 409;
+                throw err;
+              }
               const curUser = await tx.user.findUnique({ where: { id: userId } });
               return curUser;
             }
           }
 
-          // Row-level lock on user to ensure strict atomic serialization under high concurrency
-          let freshUser: any = null;
-          try {
-            const lockedUsers: any[] = await tx.$queryRaw`
-              SELECT id, role, status, "subscriptionTier", "subscriptionExpiresAt", "subscriptionStatus"
-              FROM "User"
-              WHERE id = ${userId}
-              FOR UPDATE
-            `;
-            if (lockedUsers && lockedUsers.length > 0) {
-              freshUser = lockedUsers[0];
-            }
-          } catch {
-            freshUser = await tx.user.findUnique({ where: { id: userId } });
-          }
-
-          if (!freshUser) {
+          // Row-level lock on user (fail-closed - no fallback to un-locked findUnique)
+          const lockedUsers: any[] = await tx.$queryRaw`
+            SELECT id, role, status, "subscriptionTier", "subscriptionExpiresAt", "subscriptionStatus"
+            FROM "User"
+            WHERE id = ${userId}
+            FOR UPDATE
+          `;
+          if (!lockedUsers || lockedUsers.length === 0) {
             const err: any = new Error('USER_NOT_FOUND');
             err.code = 'USER_NOT_FOUND';
             throw err;
           }
+          const freshUser = lockedUsers[0];
 
           const curExp = freshUser.subscriptionExpiresAt ? new Date(freshUser.subscriptionExpiresAt).getTime() : Date.now();
           const baseTime = Math.max(Date.now(), curExp);
@@ -6914,7 +7185,7 @@ class ResilientDatabase {
         if (idx !== -1) this.data.users[idx] = mapped;
         return mapped;
       } catch (err: any) {
-        if (err.code === 'USER_NOT_FOUND' || err.code === 'REASON_REQUIRED' || err.code === 'INVALID_DURATION') {
+        if (err.code === 'USER_NOT_FOUND' || err.code === 'REASON_REQUIRED' || err.code === 'INVALID_DURATION' || err.code === 'ACTOR_NOT_FOUND' || err.code === 'IDEMPOTENCY_CONFLICT') {
           throw err;
         }
         console.error('[DB] extendSubscription Prisma transaction error:', err?.message || err);
@@ -6926,10 +7197,28 @@ class ResilientDatabase {
       throw new Error('DATABASE_UNAVAILABLE: extendSubscription - Prisma client not connected');
     }
 
+    // Offline JSON mode: Actor check
+    if (extendedBy && extendedBy !== 'system' && !extendedBy.startsWith('admin') && !extendedBy.startsWith('sys_')) {
+      const actor = this.data.users.find(u => u.id === extendedBy);
+      if (!actor || actor.status !== 'ACTIVE') {
+        const err: any = new Error('ACTOR_NOT_FOUND: Authenticated actor performing subscription extension was not found or is inactive.');
+        err.code = 'ACTOR_NOT_FOUND';
+        err.statusCode = 403;
+        throw err;
+      }
+    }
+
     // Offline JSON mode: Idempotency check with requestId
     if (requestId && this.data.auditEvents) {
       const existingAudit = this.data.auditEvents.find(a => a.requestId === requestId && a.action === 'SUBSCRIPTION_EXTENDED');
       if (existingAudit) {
+        const existingMeta = existingAudit.metadata as any;
+        if (existingMeta && (existingMeta.additionalDays !== additionalDays || existingAudit.targetId !== userId)) {
+          const err: any = new Error(`IDEMPOTENCY_CONFLICT: requestId ${requestId} replayed with differing payload.`);
+          err.code = 'IDEMPOTENCY_CONFLICT';
+          err.statusCode = 409;
+          throw err;
+        }
         return user;
       }
     }

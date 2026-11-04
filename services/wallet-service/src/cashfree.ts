@@ -122,7 +122,10 @@ export function getResolvedCashfreeCredentials(): {
     }
   }
 
-  const rawEnv = (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
+  const isVercelPreview = process.env.VERCEL_ENV === 'preview' || 
+    (process.env.VERCEL_URL && !process.env.VERCEL_URL.includes('astroverse-eta.vercel.app')) ||
+    (process.env.APP_BASE_URL && !process.env.APP_BASE_URL.includes('astroverse-eta.vercel.app') && process.env.APP_BASE_URL.includes('vercel.app'));
+  const rawEnv = (process.env.CASHFREE_ENV || (isVercelPreview ? 'sandbox' : (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'))).toLowerCase();
   const env: 'production' | 'sandbox' = rawEnv === 'sandbox' ? 'sandbox' : 'production';
   const apiVersion = process.env.CASHFREE_API_VERSION || '2026-01-01';
 
@@ -209,7 +212,7 @@ export function isCashfreeConfigured(): boolean {
 }
 
 export function getCashfreeBaseUrl(): string {
-  const env = (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
+  const { env } = getResolvedCashfreeCredentials();
   return env === 'production'
     ? 'https://api.cashfree.com/pg'
     : 'https://sandbox.cashfree.com/pg';

@@ -3074,7 +3074,20 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
       baseAmount: pricing.baseAmount,
       gstAmount: pricing.gstAmount,
       bonusAmount: pricing.bonusAmount,
-      creditAmount: pricing.creditAmount
+      creditAmount: pricing.creditAmount,
+      pricingSnapshot: {
+        totalPayableAmount: pricing.totalPayableAmount,
+        totalPayablePaise: pricing.totalPayablePaise,
+        baseAmount: pricing.baseAmount,
+        gstAmount: pricing.gstAmount,
+        bonusAmount: pricing.bonusAmount,
+        creditAmount: pricing.creditAmount,
+        catalogueVersion: '2026.01'
+      },
+      metadata: {
+        productType: 'WALLET_RECHARGE',
+        pricing
+      }
     });
 
     await db.recordAuditEvent({
@@ -3166,8 +3179,26 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
       let bonusAmount = 0;
       let creditAmount = totalAmount;
 
+      let billingPeriod: string | undefined = undefined;
       if (cleanOrderId.startsWith('cf_sub_') || orderNote.includes('Subscription')) {
         productType = 'SUBSCRIPTION';
+        const subMatch = orderNote.match(/Subscription:\s*([A-Z]+)\s*\((MONTHLY|ANNUAL)\)/i);
+        if (subMatch) {
+          productId = subMatch[1].toUpperCase();
+          billingPeriod = subMatch[2].toUpperCase();
+        } else {
+          for (const [tier, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
+            if (Math.round(plan.annualPricePaise / 100) === Math.round(totalAmount)) {
+              productId = tier;
+              billingPeriod = 'ANNUAL';
+              break;
+            } else if (Math.round(plan.monthlyPricePaise / 100) === Math.round(totalAmount)) {
+              productId = tier;
+              billingPeriod = 'MONTHLY';
+              break;
+            }
+          }
+        }
       } else if (cleanOrderId.startsWith('cf_rep_') || orderNote.includes('Report')) {
         productType = 'REPORT';
       } else {
@@ -3200,10 +3231,17 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
         cfPaymentSessionId: cfStatus.payment_session_id || undefined,
         productType,
         productId,
+        billingPeriod,
         baseAmount,
         gstAmount,
         bonusAmount,
-        creditAmount
+        creditAmount,
+        metadata: {
+          productType,
+          productId,
+          billingPeriod,
+          recoveredFromProvider: true
+        }
       });
     }
 
@@ -3213,7 +3251,14 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
         return { success: true, action: 'WALLET_CREDITED', order };
       } else if (order.productType === 'SUBSCRIPTION') {
         const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-        const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+        const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
+        const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
+          ? BillingPeriod.ANNUAL
+          : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
+            ? BillingPeriod.MONTHLY
+            : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
+              ? BillingPeriod.ANNUAL
+              : BillingPeriod.MONTHLY));
         const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
         await db.fulfillPaidSubscriptionOrder({
           userId: customerId,
@@ -3250,22 +3295,6 @@ export async function reconcileUserPendingOrders(userId: string): Promise<number
   try {
     const orders = await db.getUserPaymentOrdersAsync(userId);
     const pendingOrders = orders.filter((o: any) => o.status === OrderStatus.CREATED);
-
-    // Specific ground-truth recovery for Aryan's payment order cf_wal_f1bb9dc4d88c177f
-    if (userId === 'e4fb472b-f452-423d-bf4e-3ba210af7dbf') {
-      const hasAryanOrder = orders.some((o: any) => 
-        (o.providerOrderId === 'cf_wal_f1bb9dc4d88c177f' || o.id === 'cf_wal_f1bb9dc4d88c177f') && 
-        o.status === OrderStatus.PAID
-      );
-      if (!hasAryanOrder) {
-        pendingOrders.push({
-          providerOrderId: 'cf_wal_f1bb9dc4d88c177f',
-          id: 'cf_wal_f1bb9dc4d88c177f',
-          userId,
-          status: OrderStatus.CREATED
-        } as any);
-      }
-    }
 
     for (const ord of pendingOrders) {
       const orderId = ord.providerOrderId || ord.razorpayOrderId || ord.id;
@@ -6071,7 +6100,14 @@ app.post('/api/admin/payments/recover-order', adminSensitiveMutationsLimiter, au
           actionTaken = 'WALLET_CREDITED';
         } else if (order.productType === 'SUBSCRIPTION') {
           const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-          const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+          const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
+          const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
+            ? BillingPeriod.ANNUAL
+            : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
+              ? BillingPeriod.MONTHLY
+              : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
+                ? BillingPeriod.ANNUAL
+                : BillingPeriod.MONTHLY));
           const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
           updatedUser = await db.fulfillPaidSubscriptionOrder({
             userId: customerId,
@@ -6813,7 +6849,21 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
       cfPaymentSessionId: cfOrder.payment_session_id,
       productType: 'SUBSCRIPTION',
       productId: tier,
-      idempotencyKey: idempotencyKey || undefined
+      billingPeriod: period,
+      idempotencyKey: idempotencyKey || undefined,
+      pricingSnapshot: {
+        priceRupees,
+        pricePaise,
+        tier,
+        billingPeriod: period,
+        catalogueVersion: '2026.01'
+      },
+      metadata: {
+        productType: 'SUBSCRIPTION',
+        productId: tier,
+        tier,
+        billingPeriod: period
+      }
     });
 
     res.json({
@@ -7037,13 +7087,8 @@ app.post('/api/webhooks/razorpay', async (_req: Request, res: Response) => {
 // POST /api/cashfree/create-order
 app.post('/api/cashfree/create-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { amount, productType, productId, returnUrl } = req.body;
+    const { amount, productType, productId, billingPeriod, packageId, returnUrl } = req.body;
     const user = req.user!;
-    const numAmount = Number(amount);
-
-    if (!numAmount || isNaN(numAmount) || numAmount <= 0) {
-      return res.status(400).json({ error: 'INVALID_AMOUNT', message: 'A positive order amount is required.' });
-    }
 
     if (!isCashfreeConfigured()) {
       return res.status(503).json({
@@ -7052,11 +7097,82 @@ app.post('/api/cashfree/create-order', authenticate, async (req: AuthenticatedRe
       });
     }
 
+    const normalizedType = String(productType || 'WALLET_RECHARGE').toUpperCase();
+
+    let finalPriceRupees: number;
+    let finalPricePaise: number;
+    let finalTier: SubscriptionTier | undefined = undefined;
+    let finalBillingPeriod: BillingPeriod | undefined = undefined;
+    let baseAmount: number | undefined = undefined;
+    let gstAmount: number | undefined = undefined;
+    let bonusAmount: number | undefined = undefined;
+    let creditAmount: number | undefined = undefined;
+    let resolvedProductId: string | null = null;
+    let orderNote: string;
+
+    if (normalizedType === 'SUBSCRIPTION') {
+      const tierKey = String(productId || '').toUpperCase() as SubscriptionTier;
+      if (!tierKey || !SUBSCRIPTION_PLANS[tierKey]) {
+        return res.status(400).json({
+          error: 'INVALID_SUBSCRIPTION_TIER',
+          message: `Invalid or missing subscription tier: ${productId}. Must be one of: ${Object.keys(SUBSCRIPTION_PLANS).join(', ')}`
+        });
+      }
+      finalTier = tierKey;
+      resolvedProductId = tierKey;
+      finalBillingPeriod = (String(billingPeriod || '').toUpperCase() === 'ANNUAL') ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+      const plan = SUBSCRIPTION_PLANS[finalTier];
+      finalPricePaise = finalBillingPeriod === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
+      finalPriceRupees = Math.round(finalPricePaise / 100);
+      baseAmount = Math.round((finalPriceRupees / 1.18) * 100) / 100;
+      gstAmount = Math.round((finalPriceRupees - baseAmount) * 100) / 100;
+      orderNote = `Subscription: ${finalTier} (${finalBillingPeriod})`;
+    } else if (normalizedType === 'REPORT') {
+      const reportSku = String(productId || '').toLowerCase();
+      const reportDef = REPORT_CATALOGUE[reportSku];
+      if (!reportDef) {
+        return res.status(400).json({
+          error: 'INVALID_REPORT_SKU',
+          message: `Invalid or missing report product: ${productId}.`
+        });
+      }
+      resolvedProductId = reportSku;
+      const userRecord = await db.findUserById(user.id);
+      const userTier = (userRecord?.subscriptionTier || 'FREE') as SubscriptionTier;
+      const pricing = calculateReportPrice(reportSku, userTier);
+      finalPriceRupees = pricing.finalPriceRupees;
+      finalPricePaise = pricing.finalPricePaise;
+      baseAmount = pricing.basePricePaise / 100;
+      gstAmount = Math.round((finalPriceRupees - finalPriceRupees / 1.18) * 100) / 100;
+      orderNote = `Report Purchase: ${reportDef.displayName}`;
+    } else if (normalizedType === 'WALLET_RECHARGE') {
+      const pricing = calculateWalletRechargePricing(amount, packageId);
+      if (!pricing.valid) {
+        return res.status(400).json({
+          error: 'INVALID_AMOUNT',
+          message: pricing.error || 'A valid recharge amount between ₹1.00 and ₹50,000 is required.'
+        });
+      }
+      finalPriceRupees = pricing.totalPayableAmount;
+      finalPricePaise = pricing.totalPayablePaise;
+      baseAmount = pricing.baseAmount;
+      gstAmount = pricing.gstAmount;
+      bonusAmount = pricing.bonusAmount;
+      creditAmount = pricing.creditAmount;
+      resolvedProductId = packageId || null;
+      orderNote = `Wallet Recharge: ₹${pricing.baseAmount.toFixed(2)} (+₹${pricing.gstAmount.toFixed(2)} GST)`;
+    } else {
+      return res.status(400).json({
+        error: 'INVALID_PRODUCT_TYPE',
+        message: `Unsupported productType: ${productType}. Must be WALLET_RECHARGE, SUBSCRIPTION, or REPORT.`
+      });
+    }
+
     const orderId = `cf_ord_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const userRecord = await db.findUserById(user.id);
     const cfOrder = await createCashfreeOrder({
       orderId,
-      orderAmount: numAmount,
+      orderAmount: finalPriceRupees,
       orderCurrency: 'INR',
       customer: {
         customer_id: user.id,
@@ -7065,20 +7181,44 @@ app.post('/api/cashfree/create-order', authenticate, async (req: AuthenticatedRe
         customer_name: userRecord?.displayName || 'AstroVerse Seeker'
       },
       returnUrl,
-      orderNote: productType ? `AstroVerse ${productType}` : 'AstroVerse Recharge'
+      orderNote
     });
+
+    const pricingSnapshot = {
+      finalPriceRupees,
+      finalPricePaise,
+      baseAmount,
+      gstAmount,
+      bonusAmount,
+      creditAmount,
+      billingPeriod: finalBillingPeriod,
+      tier: finalTier,
+      catalogueVersion: '2026.01'
+    };
 
     await db.createPaymentOrder({
       userId: user.id,
-      amount: numAmount,
+      amount: finalPriceRupees,
       currency: 'INR',
       provider: 'CASHFREE',
       providerOrderId: cfOrder.order_id,
       gateway: 'CASHFREE',
       cfOrderId: cfOrder.cf_order_id,
       cfPaymentSessionId: cfOrder.payment_session_id,
-      productType: productType || 'WALLET_RECHARGE',
-      productId: productId || null
+      productType: normalizedType,
+      productId: resolvedProductId || undefined,
+      billingPeriod: finalBillingPeriod,
+      baseAmount,
+      gstAmount,
+      bonusAmount,
+      creditAmount,
+      pricingSnapshot,
+      metadata: {
+        productType: normalizedType,
+        productId: resolvedProductId,
+        billingPeriod: finalBillingPeriod,
+        pricingSnapshot
+      }
     });
 
     await db.recordAuditEvent({
@@ -7086,7 +7226,14 @@ app.post('/api/cashfree/create-order', authenticate, async (req: AuthenticatedRe
       action: 'CASHFREE_ORDER_CREATED',
       targetType: 'PAYMENT_ORDER',
       targetId: cfOrder.order_id,
-      metadata: { amount: numAmount, productType, cfOrderId: cfOrder.cf_order_id }
+      metadata: {
+        amount: finalPriceRupees,
+        amountPaise: finalPricePaise,
+        productType: normalizedType,
+        productId: resolvedProductId,
+        billingPeriod: finalBillingPeriod,
+        cfOrderId: cfOrder.cf_order_id
+      }
     });
 
     res.json({
@@ -7095,7 +7242,10 @@ app.post('/api/cashfree/create-order', authenticate, async (req: AuthenticatedRe
       cfOrderId: cfOrder.cf_order_id,
       paymentSessionId: cfOrder.payment_session_id,
       amount: cfOrder.order_amount,
-      currency: cfOrder.order_currency
+      amountPaise: finalPricePaise,
+      currency: cfOrder.order_currency,
+      productType: normalizedType,
+      billingPeriod: finalBillingPeriod
     });
   } catch (err: any) {
     handleServiceError(res, err, 'Cashfree order creation failed');
@@ -7267,7 +7417,14 @@ app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedReq
       updatedUser = await db.rechargeWallet(user.id, order.amount, verifiedPaymentId, order.providerOrderId, 'CASHFREE');
     } else if (order.productType === 'SUBSCRIPTION') {
       const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-      const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
+      const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
+      const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
+        ? BillingPeriod.ANNUAL
+        : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
+          ? BillingPeriod.MONTHLY
+          : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
+            ? BillingPeriod.ANNUAL
+            : BillingPeriod.MONTHLY));
       const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
       updatedUser = await db.fulfillPaidSubscriptionOrder({
         userId: user.id,
@@ -7358,93 +7515,119 @@ app.post(['/api/webhooks/cashfree', '/api/cashfree/webhook'], async (req: Reques
       (event.data?.order?.order_id ? `${event.type}_${event.data.order.order_id}` : null) ||
       crypto.createHash('sha256').update(timestamp + rawPayload.toString('utf8')).digest('hex');
 
-    if (db.isWebhookEventProcessed(idempotencyKey)) {
+    const payloadHash = crypto.createHash('sha256').update(rawPayload.toString('utf8')).digest('hex');
+    const claim = await db.claimWebhookEvent({
+      eventId: idempotencyKey,
+      provider: 'CASHFREE',
+      orderId: event.data?.order?.order_id || null,
+      paymentId: event.data?.payment?.cf_payment_id ? String(event.data.payment.cf_payment_id) : null,
+      eventType: event.type || 'PAYMENT_EVENT',
+      payloadHash
+    });
+
+    if (!claim.claimed) {
       return res.status(200).json({
         status: 'ok',
         alreadyProcessed: true,
-        message: 'Cashfree webhook event was already processed idempotently.'
+        message: 'Cashfree webhook event was already processed or is actively being processed idempotently.',
+        processingStatus: claim.status
       });
     }
 
-    const eventType = event.type;
-    if (eventType === 'PAYMENT_SUCCESS_WEBHOOK') {
-      const orderData = event.data?.order;
-      const paymentData = event.data?.payment;
-      const orderId = orderData?.order_id;
-      const paymentId = paymentData?.cf_payment_id ? String(paymentData.cf_payment_id) : `cf_wh_${Date.now()}`;
+    try {
+      const eventType = event.type;
+      if (eventType === 'PAYMENT_SUCCESS_WEBHOOK') {
+        const orderData = event.data?.order;
+        const paymentData = event.data?.payment;
+        const orderId = orderData?.order_id;
+        const paymentId = paymentData?.cf_payment_id ? String(paymentData.cf_payment_id) : `cf_wh_${Date.now()}`;
 
-      if (orderId) {
-        let order = await db.findPaymentOrderByIdAsync(orderId);
-        if (!order) {
-          const customerId = orderData?.customer_details?.customer_id;
-          if (customerId) {
-            const totalAmount = Number(orderData.order_amount || paymentData?.payment_amount || 0);
-            const totalPaise = Math.round(totalAmount * 100);
-            const basePaise = Math.round(totalPaise / 1.18);
-            const gstPaise = totalPaise - basePaise;
-            const isSub = orderId.startsWith('cf_sub_') || (orderData.order_tags && orderData.order_tags.type === 'subscription');
-            order = await db.createPaymentOrder({
-              userId: customerId,
-              amount: totalAmount,
-              currency: orderData.order_currency || 'INR',
-              provider: 'CASHFREE',
-              providerOrderId: orderId,
-              gateway: 'CASHFREE',
-              cfOrderId: orderData.cf_order_id ? String(orderData.cf_order_id) : undefined,
-              productType: isSub ? 'SUBSCRIPTION' : 'WALLET_RECHARGE',
-              baseAmount: basePaise / 100,
-              gstAmount: gstPaise / 100,
-              bonusAmount: 0,
-              creditAmount: basePaise / 100
-            });
-            console.log(`[CASHFREE_WEBHOOK] Auto-recovered order ${orderId} for customer ${customerId}`);
-          }
-        }
-        if (order && order.status !== OrderStatus.PAID) {
-          try {
-            if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
-              await db.rechargeWallet(order.userId, order.amount, paymentId, order.providerOrderId, 'CASHFREE');
-            } else if (order.productType === 'SUBSCRIPTION') {
-              const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-              const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
-              const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-              await db.fulfillPaidSubscriptionOrder({
-                userId: order.userId,
-                tier: targetTier as any,
-                billingPeriod: period as any,
-                durationDays,
-                orderId: order.providerOrderId,
-                paymentId: paymentId || `cf_pay_${Date.now()}`,
-                amount: order.amount,
+        if (orderId) {
+          let order = await db.findPaymentOrderByIdAsync(orderId);
+          if (!order) {
+            const customerId = orderData?.customer_details?.customer_id;
+            if (customerId) {
+              const totalAmount = Number(orderData.order_amount || paymentData?.payment_amount || 0);
+              const totalPaise = Math.round(totalAmount * 100);
+              const basePaise = Math.round(totalPaise / 1.18);
+              const gstPaise = totalPaise - basePaise;
+              const isSub = orderId.startsWith('cf_sub_') || (orderData.order_tags && orderData.order_tags.type === 'subscription');
+              order = await db.createPaymentOrder({
+                userId: customerId,
+                amount: totalAmount,
+                currency: orderData.order_currency || 'INR',
                 provider: 'CASHFREE',
-                currency: 'INR'
+                providerOrderId: orderId,
+                gateway: 'CASHFREE',
+                cfOrderId: orderData.cf_order_id ? String(orderData.cf_order_id) : undefined,
+                productType: isSub ? 'SUBSCRIPTION' : 'WALLET_RECHARGE',
+                baseAmount: basePaise / 100,
+                gstAmount: gstPaise / 100,
+                bonusAmount: 0,
+                creditAmount: basePaise / 100
               });
-            } else {
-              await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
+              console.log(`[CASHFREE_WEBHOOK] Auto-recovered order ${orderId} for customer ${customerId}`);
             }
-          } catch (fulfillErr: any) {
-            console.error('[CASHFREE_WEBHOOK] Fulfillment warning:', fulfillErr?.message || fulfillErr);
+          }
+          if (order && order.status !== OrderStatus.PAID) {
+            try {
+              if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
+                await db.rechargeWallet(order.userId, order.amount, paymentId, order.providerOrderId, 'CASHFREE');
+              } else if (order.productType === 'SUBSCRIPTION') {
+                const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+                const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
+                const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
+                  ? BillingPeriod.ANNUAL
+                  : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
+                    ? BillingPeriod.MONTHLY
+                    : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
+                      ? BillingPeriod.ANNUAL
+                      : BillingPeriod.MONTHLY));
+                const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+                await db.fulfillPaidSubscriptionOrder({
+                  userId: order.userId,
+                  tier: targetTier as any,
+                  billingPeriod: period as any,
+                  durationDays,
+                  orderId: order.providerOrderId,
+                  paymentId: paymentId || `cf_pay_${Date.now()}`,
+                  amount: order.amount,
+                  provider: 'CASHFREE',
+                  currency: 'INR'
+                });
+              } else {
+                await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
+              }
+            } catch (fulfillErr: any) {
+              console.error('[CASHFREE_WEBHOOK] Fulfillment warning:', fulfillErr?.message || fulfillErr);
+            }
+          }
+        }
+      } else if (eventType === 'PAYMENT_FAILED_WEBHOOK' || eventType === 'PAYMENT_USER_DROPPED_WEBHOOK') {
+        const orderData = event.data?.order;
+        const orderId = orderData?.order_id;
+        if (orderId) {
+          try {
+            await db.markPaymentOrderFailed(orderId, eventType);
+          } catch (err: any) {
+            console.warn('[CASHFREE_WEBHOOK] Failed to mark order failed:', err?.message || err);
           }
         }
       }
-    } else if (eventType === 'PAYMENT_FAILED_WEBHOOK' || eventType === 'PAYMENT_USER_DROPPED_WEBHOOK') {
-      const orderData = event.data?.order;
-      const orderId = orderData?.order_id;
-      if (orderId) {
-        try {
-          await db.markPaymentOrderFailed(orderId, eventType);
-        } catch (err: any) {
-          console.warn('[CASHFREE_WEBHOOK] Failed to mark order failed:', err?.message || err);
-        }
-      }
-    }
 
-    db.markWebhookEventProcessed(idempotencyKey, 'CASHFREE');
-    return res.status(200).json({
-      status: 'ok',
-      event: eventType,
-      processed: true
-    });
+      await db.completeWebhookEvent(idempotencyKey);
+      return res.status(200).json({
+        status: 'ok',
+        received: true,
+        type: eventType,
+        message: 'Cashfree webhook event processed successfully.',
+        event: eventType,
+        processed: true
+      });
+    } catch (whErr: any) {
+      await db.failWebhookEvent(idempotencyKey, whErr?.message || whErr);
+      throw whErr;
+    }
   } catch (err: any) {
     console.error('[CASHFREE_WEBHOOK] Error processing webhook:', err);
     return res.status(500).json({
@@ -8694,6 +8877,10 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
       idempotencyKey: idempotencyKey || undefined
     });
 
+    const basePriceRupees = pricing.basePricePaise / 100;
+    const gstAmountRupees = Math.round((pricing.finalPriceRupees - pricing.finalPriceRupees / 1.18) * 100) / 100;
+    const discountRupees = pricing.discountPaise / 100;
+
     const order = await db.createPaymentOrder({
       userId: user.id,
       amount: pricing.finalPriceRupees,
@@ -8705,7 +8892,23 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
       cfPaymentSessionId: cfOrder.payment_session_id,
       productType: 'REPORT',
       productId,
-      idempotencyKey: idempotencyKey || undefined
+      idempotencyKey: idempotencyKey || undefined,
+      baseAmount: basePriceRupees,
+      gstAmount: gstAmountRupees,
+      pricingSnapshot: {
+        finalPriceRupees: pricing.finalPriceRupees,
+        finalPricePaise: pricing.finalPricePaise,
+        basePriceRupees,
+        gstAmountRupees,
+        discountPercent: pricing.discountPercent,
+        discountRupees,
+        catalogueVersion: '2026.01'
+      },
+      metadata: {
+        productType: 'REPORT',
+        productId,
+        pricing
+      }
     });
 
     res.json({

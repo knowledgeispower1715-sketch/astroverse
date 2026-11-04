@@ -197,6 +197,9 @@ export const DDL_STATEMENTS: string[] = [
     "amountPaise" INTEGER,
     "productType" TEXT,
     "productId" TEXT,
+    "billingPeriod" TEXT,
+    "pricingSnapshot" JSONB,
+    "metadata" JSONB,
     "razorpayOrderId" TEXT NOT NULL,
     "razorpayPaymentId" TEXT,
     "status" "OrderStatus" NOT NULL DEFAULT 'CREATED',
@@ -212,9 +215,31 @@ export const DDL_STATEMENTS: string[] = [
     ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "amountPaise" INTEGER;
     ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "productType" TEXT;
     ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "productId" TEXT;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "billingPeriod" TEXT;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "pricingSnapshot" JSONB;
+    ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "metadata" JSONB;
   EXCEPTION
     WHEN duplicate_column THEN null;
   END $$;`,
+
+  `CREATE TABLE IF NOT EXISTS "WebhookEvent" (
+    "id" TEXT NOT NULL,
+    "provider" TEXT NOT NULL DEFAULT 'CASHFREE',
+    "providerEventId" TEXT NOT NULL,
+    "providerOrderId" TEXT,
+    "providerPaymentId" TEXT,
+    "eventType" TEXT NOT NULL,
+    "payloadHash" TEXT NOT NULL,
+    "processingStatus" TEXT NOT NULL DEFAULT 'RECEIVED',
+    "receivedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processingStartedAt" TIMESTAMP(3),
+    "completedAt" TIMESTAMP(3),
+    "attemptCount" INTEGER NOT NULL DEFAULT 0,
+    "lastError" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "WebhookEvent_pkey" PRIMARY KEY ("id")
+  );`,
 
   `CREATE TABLE IF NOT EXISTS "WalletLedger" (
     "id" TEXT NOT NULL,
@@ -362,6 +387,10 @@ export const DDL_STATEMENTS: string[] = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "PaymentOrder_razorpayOrderId_key" ON "PaymentOrder"("razorpayOrderId");`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "PaymentOrder_razorpayPaymentId_key" ON "PaymentOrder"("razorpayPaymentId");`,
   `CREATE INDEX IF NOT EXISTS "PaymentOrder_userId_createdAt_idx" ON "PaymentOrder"("userId", "createdAt");`,
+  `CREATE INDEX IF NOT EXISTS "PaymentOrder_providerOrderId_idx" ON "PaymentOrder"("providerOrderId");`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "WebhookEvent_providerEventId_key" ON "WebhookEvent"("providerEventId");`,
+  `CREATE INDEX IF NOT EXISTS "WebhookEvent_providerOrderId_idx" ON "WebhookEvent"("providerOrderId");`,
+  `CREATE INDEX IF NOT EXISTS "WebhookEvent_processingStatus_idx" ON "WebhookEvent"("processingStatus");`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "WalletLedger_idempotencyKey_key" ON "WalletLedger"("idempotencyKey");`,
   `CREATE INDEX IF NOT EXISTS "WalletLedger_userId_createdAt_idx" ON "WalletLedger"("userId", "createdAt");`,
   `CREATE INDEX IF NOT EXISTS "WalletLedger_astrologerId_createdAt_idx" ON "WalletLedger"("astrologerId", "createdAt");`,
