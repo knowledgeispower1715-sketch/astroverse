@@ -737,14 +737,27 @@ export const DDL_STATEMENTS: string[] = [
   END $$;`,
 
   // Safe Customer Profile View: Excludes credential hashes, salts, and MFA secrets
-  `CREATE OR REPLACE VIEW "CustomerProfileView" AS 
-  SELECT 
-    "id", "phone", "email", "phoneVerified", "emailVerified", 
-    "displayName", "role", "status", "preferredLanguage", "preferredTimezone", 
-    "walletBalance", "mfaEnabled", "mfaEnforced", 
-    "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", 
-    "lastLoginAt", "createdAt", "updatedAt" 
-  FROM "User";`,
+  // Hardened with security_invoker = true so PostgreSQL 15+ evaluates RLS under caller identity
+  `DO $$ BEGIN
+    CREATE OR REPLACE VIEW "CustomerProfileView" WITH (security_invoker = true) AS 
+    SELECT 
+      "id", "phone", "email", "phoneVerified", "emailVerified", 
+      "displayName", "role", "status", "preferredLanguage", "preferredTimezone", 
+      "walletBalance", "mfaEnabled", "mfaEnforced", 
+      "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", 
+      "lastLoginAt", "createdAt", "updatedAt" 
+    FROM "User";
+  EXCEPTION WHEN OTHERS THEN
+    CREATE OR REPLACE VIEW "CustomerProfileView" AS 
+    SELECT 
+      "id", "phone", "email", "phoneVerified", "emailVerified", 
+      "displayName", "role", "status", "preferredLanguage", "preferredTimezone", 
+      "walletBalance", "mfaEnabled", "mfaEnforced", 
+      "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", 
+      "lastLoginAt", "createdAt", "updatedAt" 
+    FROM "User";
+    REVOKE ALL ON "CustomerProfileView" FROM anon, authenticated, PUBLIC;
+  END $$;`,
 
   // SQL Grants Hardening: Principle of least privilege & credential column protection
   `REVOKE ALL ON "PaymentOrder", "WalletLedger", "AuditEvent", "PlatformIncident", "User", "UserSession", "CustomerNote" FROM anon;`,
