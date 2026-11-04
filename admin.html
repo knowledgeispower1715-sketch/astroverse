@@ -5467,6 +5467,17 @@
             dsLabel.innerHTML = `Authoritative Data Source: <strong>${escapeHtml(dSource)}</strong>`;
           }
 
+          // Formatting helpers
+          const formatMoney = (v) => {
+            if (v === 'UNAVAILABLE' || v === null || v === undefined) return 'UNAVAILABLE';
+            if (typeof v === 'string') {
+              const n = Number(v);
+              return isNaN(n) ? v : Number(v).toFixed(2);
+            }
+            if (typeof v === 'number') return v.toFixed(2);
+            return String(v);
+          };
+
           // Individual metrics helper
           const setMetric = (valId, badgeId, val, badgeType = 'LIVE', statusKey = null) => {
             const el = document.getElementById(valId);
@@ -5474,7 +5485,8 @@
             if (el) el.textContent = isUnavail ? 'UNAVAILABLE' : val;
             const b = document.getElementById(badgeId);
             if (b) {
-              const effectiveBadge = isUnavail ? 'UNAVAILABLE' : (prov === 'STALE' ? 'STALE' : badgeType);
+              const isStale = prov === 'STALE' || (statusKey && m.metricStatus && m.metricStatus[statusKey] === 'STALE');
+              const effectiveBadge = isUnavail ? 'UNAVAILABLE' : (isStale ? 'STALE' : badgeType);
               b.className = `admin-provenance-badge provenance-${effectiveBadge.toLowerCase()}`;
               b.textContent = effectiveBadge;
             }
@@ -5486,8 +5498,8 @@
           setMetric('metric-total-users', 'badge-total-users', m.totalUsers ?? 0, metricBadge, 'totalUsers');
           setMetric('metric-active-users', 'badge-active-users', m.activeUsers ?? 0, metricBadge, 'activeUsers');
           setMetric('metric-suspended-users', 'badge-suspended-users', m.suspendedUsers ?? 0, metricBadge, 'suspendedUsers');
-          setMetric('metric-total-deposits', 'badge-total-deposits', typeof m.totalWalletDeposits === 'number' ? Number(m.totalWalletDeposits).toFixed(2) : 'UNAVAILABLE', derivedBadge, 'totalWalletDeposits');
-          setMetric('metric-consultation-debits', 'badge-consultation-debits', typeof m.totalConsultationSpent === 'number' ? Number(m.totalConsultationSpent).toFixed(2) : 'UNAVAILABLE', derivedBadge, 'totalConsultationSpent');
+          setMetric('metric-total-deposits', 'badge-total-deposits', formatMoney(m.totalWalletDeposits), derivedBadge, 'totalWalletDeposits');
+          setMetric('metric-consultation-debits', 'badge-consultation-debits', formatMoney(m.totalConsultationSpent), derivedBadge, 'totalConsultationSpent');
           setMetric('metric-total-profiles', 'badge-total-profiles', m.totalProfiles ?? 0, metricBadge, 'totalProfiles');
           setMetric('metric-active-subs', 'badge-active-subs', m.activeSubscriptions ?? 0, metricBadge, 'activeSubscriptions');
           setMetric('metric-active-sessions', 'badge-active-sessions', m.activeSessions ?? 0, metricBadge, 'activeSessions');

@@ -6007,22 +6007,31 @@ class ResilientDatabase {
     // Cache check: serve STALE cache if valid and fresh isn't forced
     if (!forceFresh && this.cachedPlatformMetrics && now < this.cachedPlatformMetrics.expiresAt) {
       const telemetryAgeMs = now - (this.cachedPlatformMetrics.timestamp || (this.cachedPlatformMetrics.expiresAt - 5000));
+      const cachedMetricStatus: Record<string, string> = {};
+      if (this.cachedPlatformMetrics.data.metricStatus) {
+        for (const [k, v] of Object.entries(this.cachedPlatformMetrics.data.metricStatus)) {
+          // If the metric was LIVE or DERIVED, mark as STALE when served from cache.
+          // UNAVAILABLE remains UNAVAILABLE.
+          cachedMetricStatus[k] = v === 'UNAVAILABLE' ? 'UNAVAILABLE' : 'STALE';
+        }
+      }
       return {
         ...this.cachedPlatformMetrics.data,
         cached: true,
         cachedRemainingMs: Math.max(0, this.cachedPlatformMetrics.expiresAt - now),
         telemetryAgeMs,
-        provenance: 'STALE'
+        provenance: 'STALE',
+        metricStatus: cachedMetricStatus
       };
     }
 
     if (this.isPostgresAvailable && this.prisma) {
       try {
-        const result = await this.prisma.$transaction(async (tx: any) => {
-          // Enforce statement_timeout at the PostgreSQL engine level
+        // 1. Core tables aggregate executed in a single bounded transaction with statement_timeout
+        // Monetary aggregates use PostgreSQL to_char to preserve exact NUMERIC(12, 2) decimal precision
+        const core: any = await this.prisma.$transaction(async (tx: any) => {
           await tx.$executeRawUnsafe("SET LOCAL statement_timeout = '4000';");
 
-          // Single aggregate query for core tables in one round-trip
           const coreAggResult: any = await tx.$queryRawUnsafe(`
             SELECT
               (SELECT count(*)::int FROM "User") AS "totalUsers",
@@ -6032,87 +6041,92 @@ class ResilientDatabase {
               (SELECT count(*)::int FROM "BirthProfile") AS "totalProfiles",
               (SELECT count(*)::int FROM "UserSession" WHERE "expiresAt" > NOW()) AS "activeSessions",
               (SELECT count(*)::int FROM "Astrologer") AS "astrologerCount",
-              (SELECT COALESCE(sum("amount"), 0)::float FROM "WalletLedger" WHERE "entryType"::text = 'WALLET_RECHARGE') AS "totalWalletDeposits",
-              (SELECT COALESCE(abs(sum("amount")), 0)::float FROM "WalletLedger" WHERE "entryType"::text = 'CONSULTATION_DEBIT') AS "totalConsultationSpent"
+              (SELECT to_char(COALESCE(sum("amount"), 0), 'FM999999999990.00') FROM "WalletLedger" WHERE "entryType"::text = 'WALLET_RECHARGE') AS "totalWalletDeposits",
+              (SELECT to_char(COALESCE(abs(sum("amount")), 0), 'FM999999999990.00') FROM "WalletLedger" WHERE "entryType"::text = 'CONSULTATION_DEBIT') AS "totalConsultationSpent"
           `);
-
-          const core = coreAggResult?.[0] || {};
-
-          // Subqueries for auxiliary models, returning explicit 'UNAVAILABLE' on failure instead of 0
-          let openIncidents: number | 'UNAVAILABLE' = 'UNAVAILABLE';
-          try {
-            const incRes: any = await tx.$queryRawUnsafe(`SELECT count(*)::int as count FROM "PlatformIncident" WHERE "status" != 'RESOLVED'`);
-            openIncidents = Number(incRes?.[0]?.count ?? 0);
-          } catch (_) {
-            openIncidents = 'UNAVAILABLE';
-          }
-
-          let pendingPrivacyRequests: number | 'UNAVAILABLE' = 'UNAVAILABLE';
-          try {
-            const prRes: any = await tx.$queryRawUnsafe(`SELECT count(*)::int as count FROM "PrivacyRequest" WHERE "status" = 'PENDING'`);
-            pendingPrivacyRequests = Number(prRes?.[0]?.count ?? 0);
-          } catch (_) {
-            pendingPrivacyRequests = 'UNAVAILABLE';
-          }
-
-          let pendingRefundsCount: number | 'UNAVAILABLE' = 'UNAVAILABLE';
-          try {
-            const refRes: any = await tx.$queryRawUnsafe(`SELECT count(*)::int as count FROM "PaymentOrder" WHERE "status"::text IN ('PARTIALLY_REFUNDED', 'REFUND_REQUESTED', 'PENDING_REFUND')`);
-            pendingRefundsCount = Number(refRes?.[0]?.count ?? 0);
-          } catch (_) {
-            pendingRefundsCount = 'UNAVAILABLE';
-          }
-
-          let failedReportsCount: number | 'UNAVAILABLE' = 'UNAVAILABLE';
-          try {
-            const repRes: any = await tx.$queryRawUnsafe(`SELECT count(*)::int as count FROM "SavedReport" WHERE "status" = 'FAILED'`);
-            failedReportsCount = Number(repRes?.[0]?.count ?? 0);
-          } catch (_) {
-            failedReportsCount = 'UNAVAILABLE';
-          }
-
-          const metricStatus = {
-            totalUsers: typeof core.totalUsers === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            activeUsers: typeof core.activeUsers === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            suspendedUsers: typeof core.suspendedUsers === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            activeSubscriptions: typeof core.activeSubscriptions === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            totalProfiles: typeof core.totalProfiles === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            activeSessions: typeof core.activeSessions === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            astrologerCount: typeof core.astrologerCount === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            totalWalletDeposits: typeof core.totalWalletDeposits === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            totalConsultationSpent: typeof core.totalConsultationSpent === 'number' ? 'LIVE' : 'UNAVAILABLE',
-            openIncidents: openIncidents !== 'UNAVAILABLE' ? 'LIVE' : 'UNAVAILABLE',
-            pendingPrivacyRequests: pendingPrivacyRequests !== 'UNAVAILABLE' ? 'LIVE' : 'UNAVAILABLE',
-            pendingRefundsCount: pendingRefundsCount !== 'UNAVAILABLE' ? 'LIVE' : 'UNAVAILABLE',
-            failedReportsCount: failedReportsCount !== 'UNAVAILABLE' ? 'LIVE' : 'UNAVAILABLE'
-          };
-
-          return {
-            provenance: 'LIVE',
-            dataSource: 'PostgreSQL 16 (Supabase Managed Cloud)',
-            totalUsers: core.totalUsers ?? 0,
-            activeUsers: core.activeUsers ?? 0,
-            suspendedUsers: core.suspendedUsers ?? 0,
-            totalWalletDeposits: Math.round((core.totalWalletDeposits || 0) * 100) / 100,
-            totalConsultationSpent: Math.round((core.totalConsultationSpent || 0) * 100) / 100,
-            totalProfiles: core.totalProfiles ?? 0,
-            activeSessions: core.activeSessions ?? 0,
-            astrologerCount: core.astrologerCount ?? 0,
-            activeSubscriptions: core.activeSubscriptions ?? 0,
-            openIncidents,
-            pendingPrivacyRequests,
-            failedReportsCount,
-            pendingRefundsCount,
-            metricStatus,
-            systemHealth: {
-              walletService: 'ONLINE',
-              kundliEngine: 'ONLINE',
-              database: 'POSTGRESQL_CONNECTED'
-            },
-            uptimeSeconds: Math.floor(process.uptime()),
-            lastVerifiedAt: new Date().toISOString()
-          };
+          return coreAggResult?.[0] || {};
         }, { timeout: 4500, maxWait: 2000 });
+
+        // 2. Auxiliary metrics executed in separate bounded transactions/queries with individual timeouts
+        // By using separate bounded transactions, a failure in any auxiliary table
+        // NEVER triggers PostgreSQL error 25P02 (in_failed_sql_transaction) on sibling queries or core metrics.
+        const runBoundedAuxQuery = async (sql: string): Promise<number | 'UNAVAILABLE'> => {
+          try {
+            const res: any = typeof this.prisma.$transaction === 'function' ?
+              await this.prisma.$transaction(async (auxTx: any) => {
+                await auxTx.$executeRawUnsafe("SET LOCAL statement_timeout = '2000';");
+                return await auxTx.$queryRawUnsafe(sql);
+              }, { timeout: 2500, maxWait: 1500 }) :
+              await this.prisma.$queryRawUnsafe(sql);
+
+            const countVal = res?.[0]?.count;
+            return typeof countVal === 'number' || typeof countVal === 'bigint' ? Number(countVal) : (countVal !== undefined ? Number(countVal) : 'UNAVAILABLE');
+          } catch (auxErr: any) {
+            console.warn('[DB] Auxiliary metric query error (fail-safe to UNAVAILABLE):', auxErr?.message || auxErr);
+            return 'UNAVAILABLE';
+          }
+        };
+
+        const openIncidents = await runBoundedAuxQuery(`SELECT count(*)::int as count FROM "PlatformIncident" WHERE "status" != 'RESOLVED'`);
+        const pendingPrivacyRequests = await runBoundedAuxQuery(`SELECT count(*)::int as count FROM "PrivacyRequest" WHERE "status" = 'PENDING'`);
+        const pendingRefundsCount = await runBoundedAuxQuery(`SELECT count(*)::int as count FROM "PaymentOrder" WHERE "status"::text IN ('PARTIALLY_REFUNDED', 'REFUND_REQUESTED', 'PENDING_REFUND')`);
+        const failedReportsCount = await runBoundedAuxQuery(`SELECT count(*)::int as count FROM "SavedReport" WHERE "status" = 'FAILED'`);
+
+        const metricStatus = {
+          totalUsers: typeof core.totalUsers === 'number' ? 'LIVE' : 'UNAVAILABLE',
+          activeUsers: typeof core.activeUsers === 'number' ? 'LIVE' : 'UNAVAILABLE',
+          suspendedUsers: typeof core.suspendedUsers === 'number' ? 'LIVE' : 'UNAVAILABLE',
+          activeSubscriptions: typeof core.activeSubscriptions === 'number' ? 'LIVE' : 'UNAVAILABLE',
+          totalProfiles: typeof core.totalProfiles === 'number' ? 'LIVE' : 'UNAVAILABLE',
+          activeSessions: typeof core.activeSessions === 'number' ? 'LIVE' : 'UNAVAILABLE',
+          astrologerCount: typeof core.astrologerCount === 'number' ? 'LIVE' : 'UNAVAILABLE',
+          totalWalletDeposits: core.totalWalletDeposits !== undefined && core.totalWalletDeposits !== null ? 'LIVE' : 'UNAVAILABLE',
+          totalConsultationSpent: core.totalConsultationSpent !== undefined && core.totalConsultationSpent !== null ? 'LIVE' : 'UNAVAILABLE',
+          openIncidents: openIncidents !== 'UNAVAILABLE' ? 'LIVE' : 'UNAVAILABLE',
+          pendingPrivacyRequests: pendingPrivacyRequests !== 'UNAVAILABLE' ? 'LIVE' : 'UNAVAILABLE',
+          pendingRefundsCount: pendingRefundsCount !== 'UNAVAILABLE' ? 'LIVE' : 'UNAVAILABLE',
+          failedReportsCount: failedReportsCount !== 'UNAVAILABLE' ? 'LIVE' : 'UNAVAILABLE'
+        };
+
+        // 3. Independent system health probes
+        const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+        let kundliHealth: 'ONLINE' | 'DEGRADED' | 'UNAVAILABLE' = 'UNAVAILABLE';
+        try {
+          const probe = await fetch(`${kundliUrl}/api/engine/version`, {
+            signal: AbortSignal.timeout(1200)
+          });
+          kundliHealth = probe.ok ? 'ONLINE' : 'DEGRADED';
+        } catch (_) {
+          kundliHealth = 'UNAVAILABLE';
+        }
+
+        const systemHealth = {
+          walletService: 'ONLINE',
+          kundliEngine: kundliHealth,
+          database: 'POSTGRESQL_CONNECTED'
+        };
+
+        const result = {
+          provenance: 'LIVE',
+          dataSource: 'PostgreSQL 16 (Supabase Managed Cloud)',
+          totalUsers: core.totalUsers ?? 0,
+          activeUsers: core.activeUsers ?? 0,
+          suspendedUsers: core.suspendedUsers ?? 0,
+          totalWalletDeposits: core.totalWalletDeposits !== undefined && core.totalWalletDeposits !== null ? String(core.totalWalletDeposits) : '0.00',
+          totalConsultationSpent: core.totalConsultationSpent !== undefined && core.totalConsultationSpent !== null ? String(core.totalConsultationSpent) : '0.00',
+          totalProfiles: core.totalProfiles ?? 0,
+          activeSessions: core.activeSessions ?? 0,
+          astrologerCount: core.astrologerCount ?? 0,
+          activeSubscriptions: core.activeSubscriptions ?? 0,
+          openIncidents,
+          pendingPrivacyRequests,
+          failedReportsCount,
+          pendingRefundsCount,
+          metricStatus,
+          systemHealth,
+          uptimeSeconds: Math.floor(process.uptime()),
+          lastVerifiedAt: new Date().toISOString()
+        };
 
         this.cachedPlatformMetrics = {
           data: result,
@@ -6135,10 +6149,10 @@ class ResilientDatabase {
     const suspendedUsers = this.data.users.filter(u => u.status === AccountStatus.SUSPENDED).length;
     const totalWalletDeposits = this.data.walletLedgers
       .filter(l => l.entryType === EntryType.WALLET_RECHARGE)
-      .reduce((sum, l) => sum + l.amount, 0);
+      .reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
     const totalConsultationSpent = this.data.walletLedgers
       .filter(l => l.entryType === EntryType.CONSULTATION_DEBIT)
-      .reduce((sum, l) => sum + Math.abs(l.amount), 0);
+      .reduce((sum, l) => sum + Math.abs(Number(l.amount) || 0), 0);
     const totalProfiles = this.data.birthProfiles.length;
     const totalSessions = this.data.sessions.length;
     const activeSubscriptions = this.data.users.filter(u => (u.subscriptionStatus === 'ACTIVE' && (u.subscriptionTier === 'PLUS' || u.subscriptionTier === 'PREMIUM'))).length;
@@ -6167,8 +6181,8 @@ class ResilientDatabase {
       totalUsers,
       activeUsers,
       suspendedUsers,
-      totalWalletDeposits: Math.round(totalWalletDeposits * 100) / 100,
-      totalConsultationSpent: Math.round(totalConsultationSpent * 100) / 100,
+      totalWalletDeposits: totalWalletDeposits.toFixed(2),
+      totalConsultationSpent: totalConsultationSpent.toFixed(2),
       totalProfiles,
       activeSessions: totalSessions,
       astrologerCount: this.data.astrologers.length,
@@ -6180,7 +6194,7 @@ class ResilientDatabase {
       metricStatus,
       systemHealth: {
         walletService: 'ONLINE',
-        kundliEngine: 'ONLINE',
+        kundliEngine: 'SYNTHETIC_LOCAL',
         database: this.isPostgresAvailable ? 'POSTGRESQL_CONNECTED' : 'RESILIENT_STORAGE_ONLINE'
       },
       uptimeSeconds: Math.floor(process.uptime()),

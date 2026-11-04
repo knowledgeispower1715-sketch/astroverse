@@ -4261,26 +4261,37 @@ function maskConfigValue(val: string | undefined): string {
 // MODULE 1: PLATFORM OVERVIEW & SERVICE HEALTH
 // -----------------------------------------------------------------------------
 app.get(['/api/admin/metrics', '/api/admin/overview'], authenticate, requireAdmin(AdminPermission.VIEW_OVERVIEW), async (req: AuthenticatedRequest, res: Response) => {
+  const correlationId = (req.headers['x-correlation-id'] as string) || (req.headers['x-request-id'] as string) || ('cid_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36));
   try {
-    const metrics = await db.getPlatformMetrics();
+    const forceFresh = req.query.fresh === 'true';
+    const metrics = await db.getPlatformMetrics(forceFresh);
     res.json({
       success: true,
       timestamp: new Date().toISOString(),
+      correlationId,
       actor: { id: req.user!.id, role: req.user!.role },
       ...metrics,
       metrics
     });
   } catch (err: any) {
+    console.error(`[ADMIN_OVERVIEW_ERROR] CorrelationId: ${correlationId}`, err?.message || err);
     if (err?.code === 'DATABASE_UNAVAILABLE' || err?.message?.includes('DATABASE_UNAVAILABLE')) {
       return res.status(503).json({
         success: false,
         error: 'DATABASE_UNAVAILABLE',
-        message: err.message,
+        message: 'The administrative data service is temporarily unavailable. Please retry shortly.',
+        correlationId,
         provenance: 'UNAVAILABLE',
         timestamp: new Date().toISOString()
       });
     }
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected internal error occurred while generating platform metrics.',
+      correlationId,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -5474,7 +5485,8 @@ app.put('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.MANAG
 // -----------------------------------------------------------------------------
 // MODULE 8: PAYMENTS & TRANSACTION RECONCILIATION
 // -----------------------------------------------------------------------------
-app.get(['/api/admin/payments/transactions', '/api/admin/payments/summary', '/api/admin/payments/orders'], authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
+app.get(['/api/admin/payments/transactions', '/api/admin/payments/summary', '/api/admin/payments/orders'], authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
+  const correlationId = (req.headers['x-correlation-id'] as string) || (req.headers['x-request-id'] as string) || ('cid_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36));
   try {
     const metrics = await db.getPlatformMetrics();
     let recentLedgers: any[] = (db as any).data?.walletLedgers?.slice(0, 50) || [];
@@ -5509,7 +5521,14 @@ app.get(['/api/admin/payments/transactions', '/api/admin/payments/summary', '/ap
       recentOrders: recentOrders
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error(`[ADMIN_PAYMENTS_ERROR] CorrelationId: ${correlationId}`, err?.message || err);
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred while retrieving payment summaries.',
+      correlationId,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
