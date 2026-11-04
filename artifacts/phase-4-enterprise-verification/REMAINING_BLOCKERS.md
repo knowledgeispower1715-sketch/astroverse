@@ -17,15 +17,20 @@ The remaining blockers preventing immediate, automated production deployment are
 
 ## 2. Detailed Blocker Analysis
 
-### Blocker 1: Vercel Deployment Protection (SSO Gate on Preview)
-- **Component:** Vercel Hosting & Preview Deployment  
+### Item 1: Vercel Deployment Protection (RESOLVED)
+- **Status:** **RESOLVED**  
+- **Action Taken:** Owner toggled off "Deployment Protection" in Vercel Project Settings for preview deployments.
+- **Verification:** Direct HTTP GET and Chrome navigation to `https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app/admin` renders the AstroVerse Admin Control Centre directly without any Vercel SSO challenge.
+
+---
+
+### Blocker 1: In-Browser Administrator Authentication (Current Active Gate)
+- **Component:** AstroVerse Administrative Portal  
 - **Impacted URL:** `https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app/admin`  
-- **Observed Behavior:** HTTP 302/307 redirect to `https://vercel.com/login?next=...`  
-- **Root Cause:** Vercel Team "Deployment Protection" (Standard protection enabled for private team preview branches).  
-- **Why It Cannot Be Automatically Bypassed:** Non-negotiable safety restrictions strictly forbid bypassing Vercel SSO or harvesting credentials. The owner must manually complete authentication.
-- **Resolution Path:**
-  1. *Option A (Recommended):* The project owner signs into Vercel and temporarily disables "Deployment Protection" for preview deployments in Project Settings -> Deployment Protection.
-  2. *Option B:* The project owner logs into Vercel in Chrome on port 9222 to conduct the final visual walkthrough.
+- **Observed Behavior:** The Admin portal is loaded and displaying `view-admin-login` ("AstroVerse Admin Portal — Restricted Administrative Control Centre").
+- **Current Requirement:** The owner submits administrator credentials on the form in Chrome on port 9222 to activate the session (`showAdminDashboard()`).
+- **Classification:** `BLOCKED_AUTHENTICATION`
+- **Resolution Path:** Owner enters administrator credentials on the active Chrome tab on port 9222.
 
 ---
 

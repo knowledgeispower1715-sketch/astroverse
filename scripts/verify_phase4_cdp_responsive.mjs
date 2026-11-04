@@ -4,7 +4,7 @@ import path from 'node:path';
 const CDP_PORT = 9222;
 const PREVIEW_ORIGIN = 'https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app';
 const PREVIEW_ADMIN_URL = `${PREVIEW_ORIGIN}/admin`;
-const EXPECTED_DEPLOYMENT_SHA = '2d883d301cf895f1c3103349329ad7305c193cd6';
+const EXPECTED_DEPLOYMENT_SHA = 'd6bef80ab4e621c763fb6d8963580e787474f7fb';
 const OUTPUT_DIR = path.resolve('artifacts/phase-4-enterprise-verification');
 
 if (!fs.existsSync(OUTPUT_DIR)) {
