@@ -708,4 +708,156 @@ describe('OWNER CONTROL CENTRE — ENTERPRISE HARDENING & ADVERSARIAL SUITE', ()
     assert.ok(activeEnts.some(e => e.featureKey === 'PLUS'), 'PLUS entitlement active');
     assert.ok(activeEnts.some(e => e.featureKey === 'FULL_KUNDLI_REPORT'), 'Report entitlement preserved across tier change');
   });
+
+  it('25. assignUserRoleAtomic rejects non-canonical assignable roles with INVALID_ROLE', async () => {
+    await assert.rejects(
+      async () => {
+        await db.assignUserRoleAtomic({
+          targetUserId: targetCustomer2,
+          newRole: 'SUPER_ADMIN' as any, // Legacy alias not in CANONICAL_ASSIGNABLE_ROLES
+          actorId: ownerId,
+          actorRole: Role.OWNER,
+          reason: 'Attempted promotion with legacy alias'
+        });
+      },
+      (err: any) => err.code === 'INVALID_ROLE',
+      'Non-canonical assignable role must be rejected with INVALID_ROLE'
+    );
+  });
+
+  it('26. assignUserRoleAtomic fails closed when lock query fails during owner demotion', async () => {
+    const dbAny = db as any;
+    const originalIsPostgres = dbAny.isPostgresAvailable;
+    const originalPrisma = dbAny.prisma;
+    try {
+      dbAny.isPostgresAvailable = true;
+      dbAny.prisma = {
+        $transaction: async (fn: any) => {
+          const fakeTx = {
+            user: {
+              findUnique: async ({ where }: any) => {
+                if (where.id === ownerId) return { id: ownerId, role: 'OWNER', status: 'ACTIVE' };
+                return { id: 'other-owner-id', role: 'OWNER', status: 'ACTIVE' };
+              }
+            },
+            $queryRaw: async () => {
+              throw new Error('Lock acquisition timeout on User table');
+            }
+          };
+          return await fn(fakeTx);
+        }
+      };
+
+      await assert.rejects(
+        async () => {
+          await db.assignUserRoleAtomic({
+            targetUserId: 'other-owner-id',
+            newRole: Role.USER,
+            actorId: ownerId,
+            actorRole: Role.OWNER,
+            reason: 'Legitimate demotion attempt with lock failure'
+          });
+        },
+        /DATABASE_MUTATION_FAILED/,
+        'Failed lock query must abort transaction and fail closed'
+      );
+    } finally {
+      dbAny.isPostgresAvailable = originalIsPostgres;
+      dbAny.prisma = originalPrisma;
+    }
+  });
+
+  it('27. extendSubscription rejects duration < 1 or > 365 or non-integer, and reason < 5 chars', async () => {
+    await assert.rejects(
+      async () => {
+        await db.extendSubscription(targetCustomer2, 0, ownerId, 'Extension valid reason');
+      },
+      (err: any) => err.code === 'INVALID_DURATION',
+      'Duration 0 must be rejected'
+    );
+
+    await assert.rejects(
+      async () => {
+        await db.extendSubscription(targetCustomer2, 400, ownerId, 'Extension valid reason');
+      },
+      (err: any) => err.code === 'INVALID_DURATION',
+      'Duration > 365 must be rejected'
+    );
+
+    await assert.rejects(
+      async () => {
+        await db.extendSubscription(targetCustomer2, 30, ownerId, 'hi');
+      },
+      (err: any) => err.code === 'REASON_REQUIRED',
+      'Reason < 5 chars must be rejected'
+    );
+  });
+
+  it('28. extendSubscription enforces idempotency when requestId is provided', async () => {
+    const reqId = 'req_idem_' + Date.now();
+    const u1 = await db.extendSubscription(targetCustomer2, 10, ownerId, 'First extension grant', reqId);
+    const exp1 = u1.subscriptionExpiresAt;
+
+    // Second call with same requestId must return existing state without adding another 10 days
+    const u2 = await db.extendSubscription(targetCustomer2, 10, ownerId, 'First extension grant', reqId);
+    const exp2 = u2.subscriptionExpiresAt;
+
+    assert.strictEqual(exp1, exp2, 'Replay with same requestId must be idempotent and not extend duration twice');
+  });
+
+  it('29. GET /api/admin/settings/flags never leaks CASHFREE_GATEWAY_CONFIG or credentials', async () => {
+    // Save masked config to ensure feature flag exists
+    await db.saveCashfreeGatewayConfig({
+      appId: 'CF_LIVE_APP_9999',
+      env: 'production'
+    });
+
+    const res = await makeRequest(server, 'GET', '/api/admin/settings/flags', {
+      Authorization: `Bearer ${ownerToken}`
+    });
+
+    assert.strictEqual(res.status, 200);
+    const flags = res.body.flags;
+    assert.ok(Array.isArray(flags));
+    assert.strictEqual(
+      flags.some((f: any) => f.key === 'CASHFREE_GATEWAY_CONFIG'),
+      false,
+      'CASHFREE_GATEWAY_CONFIG must never be returned in settings flags'
+    );
+    for (const f of flags) {
+      if (f.description) {
+        assert.strictEqual(f.description.includes('secretKey'), false, 'No flag description may contain secretKey');
+        assert.strictEqual(f.description.includes('cfsk_'), false, 'No flag description may contain cfsk_');
+      }
+    }
+  });
+
+  it('30. fulfillPaidSubscriptionOrder records entitlement with source PAID_PURCHASE and order metadata', async () => {
+    const orderId = 'ord_test_fulfill_' + Date.now();
+    const paymentId = 'cf_pay_test_' + Date.now();
+
+    const updatedUser = await db.fulfillPaidSubscriptionOrder({
+      userId: targetCustomer2,
+      tier: 'PREMIUM',
+      billingPeriod: 'MONTHLY',
+      durationDays: 30,
+      orderId,
+      paymentId,
+      amount: 499,
+      provider: 'CASHFREE',
+      currency: 'INR'
+    });
+
+    assert.strictEqual(updatedUser.subscriptionTier, 'PREMIUM');
+    assert.strictEqual(updatedUser.subscriptionStatus, 'ACTIVE');
+
+    const ents = await db.listEntitlements({ userId: targetCustomer2, activeOnly: true });
+    const paidEnt = ents.find(e => e.featureKey === 'PREMIUM');
+    assert.ok(paidEnt, 'PREMIUM entitlement must exist');
+    assert.strictEqual(paidEnt.source, 'PAID_PURCHASE', 'Entitlement source must be PAID_PURCHASE, not ADMIN_GRANT');
+    assert.strictEqual(paidEnt.grantedBy, 'CASHFREE');
+    assert.strictEqual(paidEnt.metadata.orderId, orderId);
+    assert.strictEqual(paidEnt.metadata.paymentId, paymentId);
+    assert.strictEqual(paidEnt.metadata.amount, 499);
+  });
 });

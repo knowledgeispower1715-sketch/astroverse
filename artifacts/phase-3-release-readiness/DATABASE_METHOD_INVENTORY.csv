@@ -1,0 +1,92 @@
+MethodName,Domain/Table,OperationType,PostgreSqlMode,FallbackMode,FailureModel,RowLevelLocking,AuditCoverage,Notes
+ensurePostgresSchema,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+syncProvisionedAdminsToPostgres,RBAC/Admin,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+findUserById,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+findUserByIdentifier,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+findUserByPhone,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+findUserByEmail,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createUser,User,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+syncSupabaseUser,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+updateUser,User,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+assignUserRoleAtomic,User,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,YES (SELECT ... FOR UPDATE),YES (AuditEvent written),Standard database operation
+deleteUser,User,DELETE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listUsers,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,NO,NO,Standard database operation
+getUserDirectorySummary,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,NO,NO,Standard database operation
+countActiveOwners,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+countUserSessions,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createSession,General,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+findSessionByTokenHash,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+updateSessionExpiresAt,General,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+deleteSession,General,DELETE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+deleteUserSessions,User,DELETE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+recordAuditEvent,AuditEvent,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,YES (AuditEvent written),Standard database operation
+listAuditEvents,AuditEvent,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listIncidents,Incident,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createIncident,Incident,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+updateIncident,Incident,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listFeatureFlags,Config/Flags,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+setFeatureFlag,Config/Flags,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getCashfreeGatewayConfig,Config/Flags,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+saveCashfreeGatewayConfig,Config/Flags,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listPrivacyRequests,PrivacyRequest,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createPrivacyRequest,PrivacyRequest,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+updatePrivacyRequest,PrivacyRequest,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+exportUserData,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listContentBanners,Banner,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+updateContentBanner,Banner,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createProfile,BirthProfile,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getProfilesByUserId,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,NO,NO,Standard database operation
+listBirthProfiles,BirthProfile,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getProfileById,BirthProfile,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+updateProfile,BirthProfile,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+deleteProfile,BirthProfile,DELETE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createSavedReport,SavedReport,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,NO,NO,Standard database operation
+getSavedReportsByUserId,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listSavedReports,SavedReport,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getSavedReportById,SavedReport,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+deleteSavedReport,SavedReport,DELETE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+findPaymentOrderByIdAsync,Payment/Wallet,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+markPaymentOrderPaid,Payment/Wallet,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,NO,NO,Standard database operation
+markPaymentOrderFailed,Payment/Wallet,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getUserPaymentOrdersAsync,User,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getPendingPaymentOrdersAsync,Payment/Wallet,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+rechargeWallet,Payment/Wallet,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,YES (AuditEvent written),Standard database operation
+settleConsultation,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getWalletStatement,Payment/Wallet,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createPaymentOrder,Payment/Wallet,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+unlockReport,SavedReport,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+bookPuja,PujaBooking,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+purchaseReport,SavedReport,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+purchaseSubscription,Subscription,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,YES (AuditEvent written),Standard database operation
+adjustWalletBalance,Payment/Wallet,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,YES (AuditEvent written),Standard database operation
+addDemoCredits,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+purchaseReportWithDemo,SavedReport,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+resetDemoWallet,Payment/Wallet,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+setSimulatedTier,Subscription,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+updateSubscription,Subscription,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,YES (AuditEvent written),Standard database operation
+fulfillPaidSubscriptionOrder,Subscription,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,YES (SELECT ... FOR UPDATE),YES (AuditEvent written),Standard database operation
+cancelSubscription,Subscription,DELETE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,YES (AuditEvent written),Standard database operation
+findAstrologerById,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listAstrologers,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+findConsultationSessionById,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+findActiveConsultationSession,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createOrGetConsultationSession,General,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+checkConsultationSession,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+confirmPaidConsultation,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,NO,NO,Standard database operation
+endConsultationSession,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getPlatformMetrics,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getDatabaseMonitorMetrics,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+getCustomer360,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+addCustomerNote,CustomerNote,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listCustomerNotes,CustomerNote,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+grantEntitlement,Entitlement,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+revokeEntitlement,Entitlement,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listEntitlements,Entitlement,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+assignSubscriptionTier,Subscription,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,NO,YES (AuditEvent written),Standard database operation
+extendSubscription,Subscription,UPDATE,Prisma Client,Offline JSON (data/astroverse_db.json),FAIL_CLOSED,YES (SELECT ... FOR UPDATE),YES (AuditEvent written),Standard database operation
+getBusinessAnalytics,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listPromotions,Promotion,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+createPromotion,Promotion,CREATE,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+togglePromotion,Promotion,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+verifyAstrologer,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation
+listConsultationSessions,General,READ,Prisma Client,Offline JSON (data/astroverse_db.json),RESILIENT,NO,NO,Standard database operation

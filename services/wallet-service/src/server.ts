@@ -3215,8 +3215,17 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
         const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
         const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
         const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-        await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
-        await db.updateSubscription(customerId, targetTier, period, durationDays);
+        await db.fulfillPaidSubscriptionOrder({
+          userId: customerId,
+          tier: targetTier as any,
+          billingPeriod: period as any,
+          durationDays,
+          orderId: order.providerOrderId,
+          paymentId: verifiedPaymentId,
+          amount: order.amount,
+          provider: 'CASHFREE',
+          currency: 'INR'
+        });
         return { success: true, action: 'SUBSCRIPTION_ACTIVATED', order };
       } else {
         await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
@@ -6064,8 +6073,17 @@ app.post('/api/admin/payments/recover-order', adminSensitiveMutationsLimiter, au
           const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
           const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
           const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-          await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
-          updatedUser = await db.updateSubscription(customerId, targetTier, period, durationDays);
+          updatedUser = await db.fulfillPaidSubscriptionOrder({
+            userId: customerId,
+            tier: targetTier as any,
+            billingPeriod: period as any,
+            durationDays,
+            orderId: order.providerOrderId,
+            paymentId: verifiedPaymentId,
+            amount: order.amount,
+            provider: 'CASHFREE',
+            currency: 'INR'
+          });
           actionTaken = 'SUBSCRIPTION_ACTIVATED';
         } else {
           await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
@@ -6186,7 +6204,15 @@ app.get('/api/admin/settings/safe', authenticate, requireAdmin(AdminPermission.V
 
 app.get('/api/admin/settings/flags', authenticate, requireAdmin(AdminPermission.VIEW_SETTINGS), async (_req: AuthenticatedRequest, res: Response) => {
   try {
-    const flags = await db.listFeatureFlags();
+    const rawFlags = await db.listFeatureFlags();
+    const flags = (rawFlags || [])
+      .filter(f => f.key !== 'CASHFREE_GATEWAY_CONFIG')
+      .map(f => {
+        if (f.description && (f.description.includes('secretKey') || f.description.includes('cfsk_') || f.description.includes('appSecret'))) {
+          return { ...f, description: '[REDACTED_CREDENTIALS]' };
+        }
+        return f;
+      });
     res.json({ success: true, flags });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -6935,8 +6961,17 @@ app.post('/api/subscriptions/verify-payment', authenticate, async (req: Authenti
 
     const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
     const settledPaymentId = cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
-    await db.markPaymentOrderPaid(order.providerOrderId, settledPaymentId, 'CASHFREE');
-    const updatedUser = await db.updateSubscription(user.id, targetTier, period, durationDays);
+    const updatedUser = await db.fulfillPaidSubscriptionOrder({
+      userId: user.id,
+      tier: targetTier as any,
+      billingPeriod: period as any,
+      durationDays,
+      orderId: order.providerOrderId || order.cfOrderId || trimmedOrderId,
+      paymentId: settledPaymentId,
+      amount: order.amount,
+      provider: 'CASHFREE',
+      currency: 'INR'
+    });
 
     await db.recordAuditEvent({
       userId: user.id,
@@ -7234,8 +7269,17 @@ app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedReq
       const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
       const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
       const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-      await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
-      updatedUser = await db.updateSubscription(user.id, targetTier, period, durationDays);
+      updatedUser = await db.fulfillPaidSubscriptionOrder({
+        userId: user.id,
+        tier: targetTier as any,
+        billingPeriod: period as any,
+        durationDays,
+        orderId: order.providerOrderId,
+        paymentId: verifiedPaymentId,
+        amount: order.amount,
+        provider: 'CASHFREE',
+        currency: 'INR'
+      });
     } else {
       await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
       updatedUser = await db.findUserById(user.id);
@@ -7364,8 +7408,17 @@ app.post(['/api/webhooks/cashfree', '/api/cashfree/webhook'], async (req: Reques
               const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
               const period = order.amount > 500 ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
               const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-              await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
-              await db.updateSubscription(order.userId, targetTier, period, durationDays);
+              await db.fulfillPaidSubscriptionOrder({
+                userId: order.userId,
+                tier: targetTier as any,
+                billingPeriod: period as any,
+                durationDays,
+                orderId: order.providerOrderId,
+                paymentId: paymentId || `cf_pay_${Date.now()}`,
+                amount: order.amount,
+                provider: 'CASHFREE',
+                currency: 'INR'
+              });
             } else {
               await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
             }
@@ -7558,13 +7611,9 @@ app.put('/api/admin/products/:id', adminSensitiveMutationsLimiter, authenticate,
 export async function syncGatewayCredentialsFromDb(): Promise<void> {
   try {
     if (process.env.CASHFREE_SECRET_KEY === 'FORCE_EMPTY') return;
-    if (!process.env.CASHFREE_SECRET_KEY) {
-      const saved = await db.getCashfreeGatewayConfig();
-      if (saved && saved.secretKey) {
-        setRuntimeCashfreeSecretKey(saved.secretKey);
-        if (saved.appId) process.env.CASHFREE_APP_ID = saved.appId;
-        if (saved.env) process.env.CASHFREE_ENV = saved.env;
-      }
+    const saved = await db.getCashfreeGatewayConfig();
+    if (saved && saved.env) {
+      process.env.CASHFREE_ENV = saved.env;
     }
   } catch (err: any) {
     console.warn('[GATEWAY] syncGatewayCredentialsFromDb warning:', err?.message || err);

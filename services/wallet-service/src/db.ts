@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled, normalizeRole } from './security/permissions';
+import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled, normalizeRole, CANONICAL_ASSIGNABLE_ROLES } from './security/permissions';
 import { bootstrapPostgresSchema, checkSchemaReadiness, inspectDatabaseRlsCatalog, APPLICATION_TABLES } from './schemaBootstrap';
 import { SubscriptionTier, BillingPeriod } from './monetization/catalog';
-export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled, normalizeRole };
+export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled, normalizeRole, CANONICAL_ASSIGNABLE_ROLES };
 
 export enum AccountStatus {
   ACTIVE = 'ACTIVE',
@@ -373,7 +373,7 @@ export interface EntitlementRecord {
   id: string;
   userId: string;
   featureKey: string;
-  source: 'PAID_SUBSCRIPTION' | 'ADMIN_GRANT' | 'PROMOTIONAL_GRANT' | 'SUPPORT_COMPENSATION' | 'TRIAL_GRANT';
+  source: 'PAID_SUBSCRIPTION' | 'ADMIN_GRANT' | 'PROMOTIONAL_GRANT' | 'SUPPORT_COMPENSATION' | 'TRIAL_GRANT' | 'PAID_PURCHASE';
   grantedBy: string;
   grantedAt: string;
   expiresAt: string | null;
@@ -1401,9 +1401,9 @@ class ResilientDatabase {
       throw err;
     }
 
-    // 4. Validate canonical role
-    if (!Object.values(Role).includes(newRole)) {
-      const err: any = new Error('Invalid role specified. Must be one of canonical roles.');
+    // 4. Validate canonical assignable role
+    if (!CANONICAL_ASSIGNABLE_ROLES.includes(newRole)) {
+      const err: any = new Error(`Invalid role specified. Must be one of canonical assignable roles: ${CANONICAL_ASSIGNABLE_ROLES.join(', ')}`);
       err.code = 'INVALID_ROLE';
       throw err;
     }
@@ -1414,6 +1414,24 @@ class ResilientDatabase {
       await this.ensurePostgresSchema();
       try {
         const updatedUser = await this.prisma.$transaction(async (tx: any) => {
+          // Re-verify actor from database inside transaction to prevent token/caller impersonation
+          const actor = await tx.user.findUnique({ where: { id: actorId } });
+          if (!actor) {
+            const err: any = new Error('ACTOR_NOT_FOUND');
+            err.code = 'USER_NOT_FOUND';
+            throw err;
+          }
+          if (actor.status !== AccountStatus.ACTIVE) {
+            const err: any = new Error('Actor account is suspended or inactive.');
+            err.code = 'FORBIDDEN';
+            throw err;
+          }
+          if (normalizeRole(actor.role as Role) !== Role.OWNER) {
+            const err: any = new Error('Only Platform Owner can modify administrator roles.');
+            err.code = 'FORBIDDEN';
+            throw err;
+          }
+
           const target = await tx.user.findUnique({ where: { id: targetUserId } });
           if (!target) {
             const err: any = new Error('USER_NOT_FOUND');
@@ -1424,26 +1442,15 @@ class ResilientDatabase {
           const isTargetOwner = target.role === Role.OWNER || target.role === Role.SUPER_ADMIN;
           const isNewRoleOwner = newRole === Role.OWNER || newRole === Role.SUPER_ADMIN;
 
-          // If demoting an Owner, acquire lock on all active owners and verify count > 1
+          // If demoting an Owner, acquire lock on all active owners and verify count > 1 (fail closed: no catch fallback)
           if (isTargetOwner && !isNewRoleOwner) {
-            let activeOwnersCount = 0;
-            try {
-              const lockedOwners: any[] = await tx.$queryRaw`
-                SELECT id, role, status FROM "User"
-                WHERE role IN ('OWNER', 'SUPER_ADMIN') AND status = 'ACTIVE'
-                FOR UPDATE
-              `;
-              activeOwnersCount = lockedOwners.length;
-            } catch {
-              activeOwnersCount = await tx.user.count({
-                where: {
-                  role: { in: [Role.OWNER, Role.SUPER_ADMIN] },
-                  status: AccountStatus.ACTIVE
-                }
-              });
-            }
-
-            if (activeOwnersCount <= 1) {
+            const lockedOwners: any[] = await tx.$queryRaw`
+              SELECT id, role, status FROM "User"
+              WHERE role IN ('OWNER', 'SUPER_ADMIN') AND status = 'ACTIVE'
+              FOR UPDATE
+            `;
+            const remainingOwners = (lockedOwners || []).filter((o: any) => o.id !== targetUserId);
+            if (remainingOwners.length < 1) {
               const err: any = new Error('The only active Platform Owner account cannot be downgraded or removed.');
               err.code = 'LAST_OWNER_PROTECTION';
               throw err;
@@ -1506,6 +1513,23 @@ class ResilientDatabase {
     }
 
     // Offline JSON mode for test harness
+    const actor = this.data.users.find(u => u.id === actorId);
+    if (!actor) {
+      const err: any = new Error('ACTOR_NOT_FOUND');
+      err.code = 'USER_NOT_FOUND';
+      throw err;
+    }
+    if (actor.status !== AccountStatus.ACTIVE) {
+      const err: any = new Error('Actor account is suspended or inactive.');
+      err.code = 'FORBIDDEN';
+      throw err;
+    }
+    if (normalizeRole(actor.role as Role) !== Role.OWNER) {
+      const err: any = new Error('Only Platform Owner can modify administrator roles.');
+      err.code = 'FORBIDDEN';
+      throw err;
+    }
+
     const target = this.data.users.find(u => u.id === targetUserId);
     if (!target) {
       const err: any = new Error('USER_NOT_FOUND');
@@ -1516,10 +1540,10 @@ class ResilientDatabase {
     const isTargetOwner = target.role === Role.OWNER || target.role === Role.SUPER_ADMIN;
     const isNewRoleOwner = newRole === Role.OWNER || newRole === Role.SUPER_ADMIN;
     if (isTargetOwner && !isNewRoleOwner) {
-      const activeOwners = this.data.users.filter(u =>
-        (u.role === Role.OWNER || u.role === Role.SUPER_ADMIN) && u.status === AccountStatus.ACTIVE
+      const remainingOwners = this.data.users.filter(u =>
+        (u.role === Role.OWNER || u.role === Role.SUPER_ADMIN) && u.status === AccountStatus.ACTIVE && u.id !== targetUserId
       );
-      if (activeOwners.length <= 1) {
+      if (remainingOwners.length < 1) {
         const err: any = new Error('The only active Platform Owner account cannot be downgraded or removed.');
         err.code = 'LAST_OWNER_PROTECTION';
         throw err;
@@ -2425,6 +2449,9 @@ class ResilientDatabase {
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const rows = await this.prisma.featureFlag.findMany({
+          where: {
+            key: { not: 'CASHFREE_GATEWAY_CONFIG' }
+          },
           orderBy: { key: 'asc' }
         });
         return (rows || []).map((r: any) => ({
@@ -2443,7 +2470,9 @@ class ResilientDatabase {
     if (this.isPostgresAvailable) {
       throw new Error('DATABASE_UNAVAILABLE: listFeatureFlags - Prisma client not connected');
     }
-    return [...this.data.featureFlags];
+    return this.data.featureFlags
+      .filter(f => f.key !== 'CASHFREE_GATEWAY_CONFIG')
+      .map(f => ({ ...f }));
   }
 
   async setFeatureFlag(key: string, enabled: boolean, updatedBy = 'admin'): Promise<FeatureFlagRecord | null> {
@@ -2494,14 +2523,23 @@ class ResilientDatabase {
     return flag;
   }
 
-  async getCashfreeGatewayConfig(): Promise<{ secretKey: string; appId: string; env: string } | null> {
+  async getCashfreeGatewayConfig(): Promise<{ isConfigured: boolean; appIdMasked: string; env: string } | null> {
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const flag = await this.prisma.featureFlag.findUnique({
           where: { key: 'CASHFREE_GATEWAY_CONFIG' }
         });
         if (flag && flag.enabled && flag.description) {
-          return JSON.parse(flag.description);
+          try {
+            const parsed = JSON.parse(flag.description);
+            return {
+              isConfigured: Boolean(parsed.isConfigured ?? true),
+              appIdMasked: parsed.appIdMasked || 'CONFIGURED',
+              env: parsed.env || 'production'
+            };
+          } catch {
+            return { isConfigured: true, appIdMasked: 'CONFIGURED', env: 'production' };
+          }
         }
         return null;
       } catch (err: any) {
@@ -2515,21 +2553,37 @@ class ResilientDatabase {
     const mem = this.data.featureFlags?.find(f => f.key === 'CASHFREE_GATEWAY_CONFIG');
     if (mem && mem.enabled && mem.description) {
       try {
-        return JSON.parse(mem.description);
-      } catch {}
+        const parsed = JSON.parse(mem.description);
+        return {
+          isConfigured: Boolean(parsed.isConfigured ?? true),
+          appIdMasked: parsed.appIdMasked || 'CONFIGURED',
+          env: parsed.env || 'production'
+        };
+      } catch {
+        return { isConfigured: true, appIdMasked: 'CONFIGURED', env: 'production' };
+      }
     }
     return null;
   }
 
-  async saveCashfreeGatewayConfig(config: { secretKey: string; appId: string; env: string }): Promise<void> {
-    const payload = JSON.stringify(config);
+  async saveCashfreeGatewayConfig(config: { secretKey?: string; appId?: string; env?: string }): Promise<void> {
+    // SECURITY HARDENING: Never persist raw secretKey in database or feature flags table
+    const safeAppId = config.appId || 'CONFIGURED';
+    const safeMasked = safeAppId.length > 8 ? `${safeAppId.slice(0, 4)}...${safeAppId.slice(-4)}` : '****';
+    const payload = JSON.stringify({
+      isConfigured: true,
+      appIdMasked: safeMasked,
+      env: config.env === 'sandbox' ? 'sandbox' : 'production',
+      updatedAt: new Date().toISOString()
+    });
+
     if (this.isPostgresAvailable && this.prisma) {
       try {
         await this.prisma.featureFlag.upsert({
           where: { key: 'CASHFREE_GATEWAY_CONFIG' },
           create: {
             key: 'CASHFREE_GATEWAY_CONFIG',
-            name: 'Cashfree Payment Gateway Credentials',
+            name: 'Cashfree Payment Gateway Configuration',
             enabled: true,
             description: payload,
             updatedBy: 'admin'
@@ -2554,7 +2608,7 @@ class ResilientDatabase {
     if (!flag) {
       this.data.featureFlags.push({
         key: 'CASHFREE_GATEWAY_CONFIG',
-        name: 'Cashfree Payment Gateway Credentials',
+        name: 'Cashfree Payment Gateway Configuration',
         enabled: true,
         description: payload,
         updatedAt: new Date().toISOString(),
@@ -4372,6 +4426,32 @@ class ResilientDatabase {
             }
           });
 
+          // Deactivate superseded tier entitlements
+          await tx.entitlement.updateMany({
+            where: {
+              userId,
+              featureKey: { in: ['PLUS', 'PREMIUM', 'PRO', 'ELITE'] },
+              isActive: true
+            },
+            data: { isActive: false }
+          });
+
+          // Create new paid entitlement
+          await tx.entitlement.create({
+            data: {
+              id: 'ent_' + crypto.randomBytes(8).toString('hex'),
+              userId,
+              featureKey: tier,
+              source: 'PAID_PURCHASE',
+              grantedBy: 'wallet',
+              grantedAt: new Date(),
+              expiresAt,
+              reason: `Subscription Purchase: AstroVerse ${tier} (${billingPeriod})`,
+              isActive: true,
+              metadata: { amount, billingPeriod, durationDays, transactionId: ledger.id }
+            }
+          });
+
           return {
             success: true,
             newBalance: Number(updatedUser.walletBalance),
@@ -4431,6 +4511,26 @@ class ResilientDatabase {
       description: `Subscription Purchase: AstroVerse ${tier} (${billingPeriod})`,
       createdAt: new Date().toISOString()
     });
+
+    if (this.data.entitlements) {
+      this.data.entitlements.forEach(e => {
+        if (e.userId === userId && ['PLUS', 'PREMIUM', 'PRO', 'ELITE'].includes(e.featureKey) && e.isActive) {
+          e.isActive = false;
+        }
+      });
+      this.data.entitlements.unshift({
+        id: 'ent_' + crypto.randomBytes(8).toString('hex'),
+        userId,
+        featureKey: tier,
+        source: 'PAID_PURCHASE' as any,
+        grantedBy: 'wallet',
+        grantedAt: new Date().toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        reason: `Subscription Purchase: AstroVerse ${tier} (${billingPeriod})`,
+        isActive: true,
+        metadata: { amount, billingPeriod, durationDays, transactionId: ledgerId }
+      });
+    }
     this.saveToFile();
 
     return {
@@ -4951,6 +5051,237 @@ class ResilientDatabase {
         });
       }
     }
+
+    this.saveToFile();
+    return user;
+  }
+
+  async fulfillPaidSubscriptionOrder(params: {
+    userId: string;
+    tier: 'PLUS' | 'PREMIUM' | 'PRO' | 'ELITE';
+    billingPeriod: 'MONTHLY' | 'ANNUAL';
+    durationDays: number;
+    orderId: string;
+    paymentId: string;
+    amount: number;
+    provider?: string;
+    currency?: string;
+  }): Promise<UserRecord> {
+    const { userId, tier, billingPeriod, durationDays, orderId, paymentId, amount, provider = 'CASHFREE', currency = 'INR' } = params;
+    this.assertDurableStorage();
+
+    const effectiveTier = tier || 'PLUS';
+    const effectiveBilling = billingPeriod || 'MONTHLY';
+    const effectiveDays = durationDays || (effectiveBilling === 'ANNUAL' ? 365 : 30);
+
+    if (this.isPostgresAvailable && this.prisma) {
+      try {
+        const entitlementId = 'ent_' + crypto.randomBytes(8).toString('hex');
+        const updatedPrismaUser = await this.prisma.$transaction(async (tx: any) => {
+          let freshUser: any = null;
+          try {
+            const lockedUsers: any[] = await tx.$queryRaw`
+              SELECT id, role, status, "subscriptionTier", "subscriptionExpiresAt", "subscriptionStatus"
+              FROM "User"
+              WHERE id = ${userId}
+              FOR UPDATE
+            `;
+            if (lockedUsers && lockedUsers.length > 0) {
+              freshUser = lockedUsers[0];
+            }
+          } catch {
+            freshUser = await tx.user.findUnique({ where: { id: userId } });
+          }
+
+          if (!freshUser) {
+            throw new Error('USER_NOT_FOUND');
+          }
+
+          const curExp = freshUser.subscriptionExpiresAt ? new Date(freshUser.subscriptionExpiresAt).getTime() : Date.now();
+          const baseTime = Math.max(Date.now(), curExp);
+          const expiresAtDate = new Date(baseTime + effectiveDays * 86400000);
+          const expiresAtIso = expiresAtDate.toISOString();
+
+          // 1. Mark payment order paid if it exists
+          try {
+            await tx.paymentOrder.updateMany({
+              where: {
+                OR: [
+                  { id: orderId },
+                  { providerOrderId: orderId }
+                ]
+              },
+              data: {
+                status: OrderStatus.PAID,
+                paymentId,
+                updatedAt: new Date()
+              }
+            });
+          } catch (poErr) {
+            console.warn('[DB] fulfillPaidSubscriptionOrder paymentOrder update warning:', poErr);
+          }
+
+          // 2. Update user subscription
+          const u = await tx.user.update({
+            where: { id: userId },
+            data: {
+              subscriptionTier: effectiveTier,
+              subscriptionBillingPeriod: effectiveBilling,
+              subscriptionStatus: 'ACTIVE',
+              subscriptionExpiresAt: expiresAtDate,
+              updatedAt: new Date()
+            }
+          });
+
+          // 3. Deactivate superseded tier entitlements
+          await tx.entitlement.updateMany({
+            where: {
+              userId,
+              featureKey: { in: ['PLUS', 'PREMIUM', 'PRO', 'ELITE'] },
+              isActive: true
+            },
+            data: { isActive: false }
+          });
+
+          // 4. Create new entitlement with source PAID_PURCHASE
+          await tx.entitlement.create({
+            data: {
+              id: entitlementId,
+              userId,
+              featureKey: effectiveTier,
+              source: 'PAID_PURCHASE',
+              grantedBy: provider,
+              grantedAt: new Date(),
+              expiresAt: expiresAtDate,
+              reason: `Paid subscription order fulfillment: ${orderId}`,
+              isActive: true,
+              metadata: {
+                orderId,
+                paymentId,
+                amount,
+                currency,
+                billingPeriod: effectiveBilling,
+                durationDays: effectiveDays,
+                provider
+              }
+            }
+          });
+
+          // 5. Authoritative audit event
+          await tx.auditEvent.create({
+            data: {
+              userId,
+              actorId: userId,
+              actorRole: 'CUSTOMER',
+              action: 'SUBSCRIPTION_PAID_FULFILLMENT',
+              targetType: 'SUBSCRIPTION',
+              targetId: orderId,
+              outcome: 'SUCCESS',
+              reason: `Paid order ${orderId} verified and fulfilled`,
+              metadata: {
+                orderId,
+                paymentId,
+                tier: effectiveTier,
+                billingPeriod: effectiveBilling,
+                amount,
+                currency,
+                durationDays: effectiveDays,
+                newExpiresAt: expiresAtIso
+              }
+            }
+          });
+
+          return u;
+        });
+
+        const mapped = this.mapPrismaUser(updatedPrismaUser);
+        const idx = this.data.users.findIndex(x => x.id === userId);
+        if (idx !== -1) this.data.users[idx] = mapped;
+        return mapped;
+      } catch (err: any) {
+        console.error('[DB] fulfillPaidSubscriptionOrder Prisma error:', err?.message || err);
+        throw new Error(`DATABASE_MUTATION_FAILED: fulfillPaidSubscriptionOrder failed - ${err?.message || err}`);
+      }
+    }
+
+    if (this.isPostgresAvailable) {
+      throw new Error('DATABASE_UNAVAILABLE: fulfillPaidSubscriptionOrder - Prisma client not connected');
+    }
+
+    // Offline JSON mode
+    const user = this.data.users.find(u => u.id === userId);
+    if (!user) throw new Error('USER_NOT_FOUND');
+
+    const curExp = user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).getTime() : Date.now();
+    const baseTime = Math.max(Date.now(), curExp);
+    const expiresAtDate = new Date(baseTime + effectiveDays * 86400000);
+    const expiresAtIso = expiresAtDate.toISOString();
+
+    user.subscriptionTier = effectiveTier as any;
+    user.subscriptionBillingPeriod = effectiveBilling;
+    user.subscriptionStatus = 'ACTIVE';
+    user.subscriptionExpiresAt = expiresAtIso;
+    user.updatedAt = new Date().toISOString();
+
+    // Mark order paid in memory if present
+    const memOrder = this.data.paymentOrders?.find(o => o.id === orderId || o.providerOrderId === orderId);
+    if (memOrder) {
+      memOrder.status = OrderStatus.PAID;
+      memOrder.providerPaymentId = paymentId;
+      memOrder.updatedAt = new Date().toISOString();
+    }
+
+    // Deactivate superseded tier entitlements
+    if (this.data.entitlements) {
+      this.data.entitlements.forEach(e => {
+        if (e.userId === userId && ['PLUS', 'PREMIUM', 'PRO', 'ELITE'].includes(e.featureKey) && e.isActive) {
+          e.isActive = false;
+        }
+      });
+      this.data.entitlements.unshift({
+        id: 'ent_' + crypto.randomBytes(8).toString('hex'),
+        userId,
+        featureKey: effectiveTier,
+        source: 'PAID_PURCHASE' as any,
+        grantedBy: provider,
+        grantedAt: new Date().toISOString(),
+        expiresAt: expiresAtIso,
+        reason: `Paid subscription order fulfillment: ${orderId}`,
+        isActive: true,
+        metadata: {
+          orderId,
+          paymentId,
+          amount,
+          currency,
+          billingPeriod: effectiveBilling,
+          durationDays: effectiveDays,
+          provider
+        }
+      });
+    }
+
+    this.data.auditEvents.unshift({
+      id: 'aud_' + crypto.randomBytes(8).toString('hex'),
+      userId,
+      actorId: userId,
+      actorRole: 'CUSTOMER',
+      action: 'SUBSCRIPTION_PAID_FULFILLMENT',
+      targetType: 'SUBSCRIPTION',
+      targetId: orderId,
+      outcome: 'SUCCESS',
+      reason: `Paid order ${orderId} verified and fulfilled`,
+      metadata: {
+        orderId,
+        paymentId,
+        tier: effectiveTier,
+        billingPeriod: effectiveBilling,
+        amount,
+        currency,
+        durationDays: effectiveDays,
+        newExpiresAt: expiresAtIso
+      },
+      createdAt: new Date().toISOString()
+    });
 
     this.saveToFile();
     return user;
@@ -6460,15 +6791,56 @@ class ResilientDatabase {
     reason: string,
     requestId?: string
   ): Promise<UserRecord> {
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+      const err: any = new Error('A detailed business reason of at least 5 characters is required for subscription extension.');
+      err.code = 'REASON_REQUIRED';
+      throw err;
+    }
+
+    if (!Number.isInteger(additionalDays) || additionalDays < 1 || additionalDays > 365) {
+      const err: any = new Error('Extension duration must be an integer between 1 and 365 days.');
+      err.code = 'INVALID_DURATION';
+      throw err;
+    }
+
     const user = await this.findUserById(userId);
     if (!user) throw new Error('USER_NOT_FOUND');
 
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const updatedPrismaUser = await this.prisma.$transaction(async (tx: any) => {
-          // Re-fetch latest user inside transaction to guarantee atomic concurrency
-          const freshUser = await tx.user.findUnique({ where: { id: userId } });
-          if (!freshUser) throw new Error('USER_NOT_FOUND');
+          // Idempotency check with requestId
+          if (requestId) {
+            const existingAudit = await tx.auditEvent.findFirst({
+              where: { requestId, action: 'SUBSCRIPTION_EXTENDED' }
+            });
+            if (existingAudit) {
+              const curUser = await tx.user.findUnique({ where: { id: userId } });
+              return curUser;
+            }
+          }
+
+          // Row-level lock on user to ensure strict atomic serialization under high concurrency
+          let freshUser: any = null;
+          try {
+            const lockedUsers: any[] = await tx.$queryRaw`
+              SELECT id, role, status, "subscriptionTier", "subscriptionExpiresAt", "subscriptionStatus"
+              FROM "User"
+              WHERE id = ${userId}
+              FOR UPDATE
+            `;
+            if (lockedUsers && lockedUsers.length > 0) {
+              freshUser = lockedUsers[0];
+            }
+          } catch {
+            freshUser = await tx.user.findUnique({ where: { id: userId } });
+          }
+
+          if (!freshUser) {
+            const err: any = new Error('USER_NOT_FOUND');
+            err.code = 'USER_NOT_FOUND';
+            throw err;
+          }
 
           const curExp = freshUser.subscriptionExpiresAt ? new Date(freshUser.subscriptionExpiresAt).getTime() : Date.now();
           const baseTime = Math.max(Date.now(), curExp);
@@ -6542,6 +6914,9 @@ class ResilientDatabase {
         if (idx !== -1) this.data.users[idx] = mapped;
         return mapped;
       } catch (err: any) {
+        if (err.code === 'USER_NOT_FOUND' || err.code === 'REASON_REQUIRED' || err.code === 'INVALID_DURATION') {
+          throw err;
+        }
         console.error('[DB] extendSubscription Prisma transaction error:', err?.message || err);
         throw new Error('DATABASE_MUTATION_FAILED: extendSubscription failed - ' + (err?.message || err));
       }
@@ -6551,10 +6926,19 @@ class ResilientDatabase {
       throw new Error('DATABASE_UNAVAILABLE: extendSubscription - Prisma client not connected');
     }
 
-    // Offline JSON mode concurrency
+    // Offline JSON mode: Idempotency check with requestId
+    if (requestId && this.data.auditEvents) {
+      const existingAudit = this.data.auditEvents.find(a => a.requestId === requestId && a.action === 'SUBSCRIPTION_EXTENDED');
+      if (existingAudit) {
+        return user;
+      }
+    }
+
+    const previousExpiry = user.subscriptionExpiresAt ? String(user.subscriptionExpiresAt) : null;
     const currentExpiry = user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).getTime() : Date.now();
     const baseTime = Math.max(Date.now(), currentExpiry);
-    const newExpiresAt = new Date(baseTime + additionalDays * 86400000).toISOString();
+    const calculatedExpiry = new Date(baseTime + additionalDays * 86400000);
+    const newExpiresAt = calculatedExpiry.toISOString();
     const tier = user.subscriptionTier && user.subscriptionTier !== 'FREE' ? user.subscriptionTier : 'PLUS';
 
     user.subscriptionExpiresAt = newExpiresAt;
@@ -6599,13 +6983,14 @@ class ResilientDatabase {
       metadata: {
         targetUserId: userId,
         additionalDays,
-        previousExpiry: user.subscriptionExpiresAt,
+        previousExpiry,
         newExpiry: newExpiresAt,
         tier
       },
       createdAt: new Date().toISOString()
     });
 
+    this.saveToFile();
     return user;
   }
 

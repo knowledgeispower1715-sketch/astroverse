@@ -37,6 +37,18 @@ export const CANONICAL_ADMIN_ROLES: Role[] = [
   Role.ANALYST
 ];
 
+// Strict allowlist for NEW role assignments (Phase 2.5: rejects legacy aliases for new mutations)
+export const CANONICAL_ASSIGNABLE_ROLES: Role[] = [
+  Role.USER,
+  Role.OWNER,
+  Role.SECURITY_ADMIN,
+  Role.SUPPORT_ADMIN,
+  Role.CONTENT_EDITOR,
+  Role.FINANCE_ADMIN,
+  Role.ASTROLOGY_OPS_ADMIN,
+  Role.READONLY_ANALYST
+];
+
 export enum AdminPermission {
   // 1. Platform Overview & Metrics
   VIEW_OVERVIEW = 'VIEW_OVERVIEW',

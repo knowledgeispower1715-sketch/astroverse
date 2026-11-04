@@ -1,0 +1,81 @@
+[
+  {
+    "endpoint": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app/admin",
+    "method": "GET",
+    "statusCode": 307,
+    "statusText": "Temporary Redirect",
+    "targetUrl": "https://vercel.com/sso-api?url=...",
+    "category": "VERCEL_SSO_PROTECTED",
+    "severity": "INFORMATIONAL",
+    "rootCause": "Vercel Preview Deployment requires Vercel Single Sign-On / Team Authentication header or cookie.",
+    "isolationStatus": "UNPROVEN_REMOTE_ISOLATION",
+    "mitigation": "Per Non-Negotiable Rules 4 and 5, automated remote mutation was held in FAIL-CLOSED state to strictly prevent potential cross-talk with production database."
+  },
+  {
+    "endpoint": "https://astroverse-eta.vercel.app/admin",
+    "method": "GET",
+    "statusCode": 200,
+    "statusText": "OK",
+    "targetUrl": "https://astroverse-eta.vercel.app/admin",
+    "category": "PRODUCTION_READ_ONLY_GUARD",
+    "severity": "COMPLIANT",
+    "rootCause": "Production is strictly READ-ONLY. Zero mutations permitted.",
+    "isolationStatus": "ISOLATED_READ_ONLY",
+    "mitigation": "Production environment protected under Non-Negotiable Rule 1."
+  },
+  {
+    "endpoint": "/api/admin/users/:id/role",
+    "method": "PUT",
+    "statusCode": 400,
+    "statusText": "Bad Request",
+    "category": "SECURITY_RBAC_SELF_DEMOTION",
+    "severity": "PROTECTED",
+    "rootCause": "Attempted self-demotion by Platform Owner actorId === targetUserId.",
+    "errorCode": "CANNOT_MODIFY_OWN_ROLE",
+    "mitigation": "Atomic role modification rejects self-alteration fail-closed."
+  },
+  {
+    "endpoint": "/api/admin/users/:id/role",
+    "method": "PUT",
+    "statusCode": 400,
+    "statusText": "Bad Request",
+    "category": "LAST_OWNER_PROTECTION",
+    "severity": "PROTECTED",
+    "rootCause": "Attempted demotion of the last active Platform Owner with 1 or 0 remaining active owners.",
+    "errorCode": "LAST_OWNER_PROTECTION",
+    "mitigation": "Acquires SELECT ... FOR UPDATE on active owners; if remaining count < 1, aborts transaction."
+  },
+  {
+    "endpoint": "/api/admin/users/:id/role",
+    "method": "PUT",
+    "statusCode": 400,
+    "statusText": "Bad Request",
+    "category": "REASON_REQUIRED",
+    "severity": "PROTECTED",
+    "rootCause": "Role modification request lacked required business justification (length < 5).",
+    "errorCode": "REASON_REQUIRED",
+    "mitigation": "Enforced minimum 5 character business reason on privileged mutations."
+  },
+  {
+    "endpoint": "/api/admin/subscriptions/extend",
+    "method": "POST",
+    "statusCode": 400,
+    "statusText": "Bad Request",
+    "category": "INVALID_DURATION",
+    "severity": "PROTECTED",
+    "rootCause": "Extension duration was <= 0, > 365, or non-integer.",
+    "errorCode": "INVALID_DURATION",
+    "mitigation": "Strict integer duration bounds [1, 365] enforced fail-closed."
+  },
+  {
+    "endpoint": "/api/admin/settings/flags",
+    "method": "GET",
+    "statusCode": 200,
+    "statusText": "OK",
+    "category": "CREDENTIAL_LEAK_PREVENTION",
+    "severity": "HARDENED",
+    "rootCause": "CASHFREE_GATEWAY_CONFIG feature flag previously contained raw secretKey.",
+    "errorCode": null,
+    "mitigation": "Endpoint completely strips CASHFREE_GATEWAY_CONFIG and redacts credential tokens."
+  }
+]
