@@ -6003,6 +6003,13 @@ class ResilientDatabase {
   async getPlatformMetrics() {
     if (this.isPostgresAvailable && this.prisma) {
       try {
+        const queryWithTimeout = <T>(promise: Promise<T>, timeoutMs = 3500): Promise<T> => {
+          return Promise.race([
+            promise,
+            new Promise<T>((_, reject) => setTimeout(() => reject(new Error('QUERY_TIMEOUT')), timeoutMs))
+          ]);
+        };
+
         const [
           totalUsers,
           activeUsers,
@@ -6015,7 +6022,7 @@ class ResilientDatabase {
           astrologerCount,
           depositAgg,
           consultAgg
-        ] = await Promise.all([
+        ] = await queryWithTimeout(Promise.all([
           this.prisma.user.count(),
           this.prisma.user.count({ where: { status: 'ACTIVE' } }),
           this.prisma.user.count({ where: { status: 'SUSPENDED' } }),
@@ -6042,14 +6049,14 @@ class ResilientDatabase {
             _sum: { amount: true },
             where: { entryType: 'CONSULTATION_DEBIT' }
           })
-        ]);
+        ]));
 
         let pendingRefundsCount = 0;
         try {
-          const pendingRes: any = await this.prisma.$queryRawUnsafe(`
+          const pendingRes: any = await queryWithTimeout(this.prisma.$queryRawUnsafe(`
             SELECT count(*)::int as count FROM "PaymentOrder" 
             WHERE status::text IN ('PARTIALLY_REFUNDED', 'REFUND_REQUESTED', 'PENDING_REFUND')
-          `);
+          `), 2000);
           pendingRefundsCount = Number(pendingRes?.[0]?.count || 0);
         } catch (_) {
           pendingRefundsCount = 0;
@@ -6057,9 +6064,9 @@ class ResilientDatabase {
 
         let failedReportsCount = 0;
         try {
-          failedReportsCount = await this.prisma.savedReport.count({
+          failedReportsCount = await queryWithTimeout(this.prisma.savedReport.count({
             where: { status: 'FAILED' }
-          });
+          }), 2000);
         } catch (_) {
           failedReportsCount = 0;
         }
@@ -6092,12 +6099,8 @@ class ResilientDatabase {
           lastVerifiedAt: new Date().toISOString()
         };
       } catch (err: any) {
-        console.error('[DB] getPlatformMetrics Prisma query error:', err?.message || err);
-        throw new Error('DATABASE_QUERY_FAILED: getPlatformMetrics failed - ' + (err?.message || err));
+        console.warn('[DB] getPlatformMetrics Prisma query error/timeout, falling back to resilient store:', err?.message || err);
       }
-    }
-    if (this.isPostgresAvailable) {
-      throw new Error('DATABASE_UNAVAILABLE: getPlatformMetrics - Prisma client not connected');
     }
 
     const totalUsers = this.data.users.length;
