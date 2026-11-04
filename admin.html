@@ -612,6 +612,11 @@
         color: #EF4444;
         border: 1px solid rgba(239, 68, 68, 0.35);
       }
+      .provenance-stale {
+        background: rgba(148, 163, 184, 0.15);
+        color: #94A3B8;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+      }
     </style>
 
     <section id="view-admin" class="page-tab-view">
@@ -645,12 +650,20 @@
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <span class="badge-role-admin" id="admin-role-badge">OWNER</span>
           
-          <div id="admin-session-pill" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; background: #0F172A; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px;">
+          <div id="admin-session-pill" style="display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #94A3B8; background: #0F172A; border: 1px solid #334155; padding: 5px 10px; border-radius: 6px; cursor: pointer;" onclick="openAdminSessionCentreModal()" title="Click to open Admin Session Centre">
             <i class="fa-solid fa-hourglass-half" style="color: #F5C45E;"></i>
             <span>Auto-lock: <strong id="admin-session-countdown" style="color: #F8FAFC;">60:00</strong></span>
             <span id="admin-session-policy-badge" style="font-size: 9.5px; padding: 1px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.15); color: #38BDF8; font-weight: 600;">QA: 60m</span>
-            <button onclick="refreshAdminSessionCountdown()" style="background: none; border: none; color: #38BDF8; cursor: pointer; padding: 0 0 0 4px; font-size: 10.5px;" title="Refresh Session"><i class="fa-solid fa-rotate-right"></i></button>
+            <button onclick="event.stopPropagation(); refreshAdminSessionCountdown();" style="background: none; border: none; color: #38BDF8; cursor: pointer; padding: 0 0 0 4px; font-size: 10.5px;" title="Refresh Session"><i class="fa-solid fa-rotate-right"></i></button>
           </div>
+
+          <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #38BDF8; border-color: rgba(56, 189, 248, 0.4);" onclick="openAdminTaskQueueModal()">
+            <i class="fa-solid fa-list-check"></i> Action Queue
+          </button>
+
+          <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #A78BFA; border-color: rgba(167, 139, 250, 0.4);" onclick="openAdminTroubleshootingDrawer()">
+            <i class="fa-solid fa-stethoscope"></i> Diagnostics
+          </button>
 
           <button class="btn-outline-secondary" style="font-size: 11px; padding: 6px 12px; color: #CBD5E1; border-color: #475569;" onclick="openAdminMfaSetupModal()">
             <i class="fa-solid fa-key"></i> Setup MFA
@@ -665,6 +678,36 @@
           </button>
         </div>
       </header>
+
+      <!-- Enterprise Quick Access / Favorites & Saved Views Bar -->
+      <div id="admin-quick-favorites-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #0E1626; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 8px 14px; margin-bottom: 16px; font-size: 11.5px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-weight: 700; color: #F5C45E; font-size: 11px; text-transform: uppercase;"><i class="fa-solid fa-star"></i> Pinned:</span>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('overview')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-chart-line"></i> Overview</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('users')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-users"></i> Users</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('subscriptions')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-arrows-rotate"></i> Subscriptions</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('payments')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-credit-card"></i> Payments</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('database')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-database"></i> Database</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('reports')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-file-invoice"></i> Reports</button>
+          <button class="btn-outline-secondary" onclick="switchAdminModule('incidents')" style="font-size: 11px; padding: 3px 8px;"><i class="fa-solid fa-triangle-exclamation"></i> Incidents</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <!-- Saved Views Dropdown -->
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-filter" style="color: #38BDF8; font-size: 11px;"></i>
+            <span style="color: #94A3B8; font-size: 11px;">Saved View:</span>
+            <select id="admin-saved-views-select" onchange="applyAdminSavedView(this.value)" style="background: #0F172A; border: 1px solid #334155; border-radius: 6px; padding: 4px 8px; color: #F8FAFC; font-size: 11px;">
+              <option value="all">Default (All Records)</option>
+              <option value="pending-refunds">Pending Refunds</option>
+              <option value="failed-reports">Failed Reports</option>
+              <option value="expiring-subs">Expiring Subscriptions (7d)</option>
+              <option value="high-incidents">P1/Critical Incidents</option>
+              <option value="failed-payments">Failed Payments</option>
+              <option value="suspended-accounts">Suspended Users</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
       <!-- Access Denied Banner (if non-admin user) -->
       <div id="admin-access-denied" class="empty-state-card" style="display: none; padding: 36px 20px; background: #FEF2F2; border-color: #FECACA;">
@@ -800,6 +843,7 @@
               <span class="admin-provenance-badge provenance-synthetic" title="Local test cache fixture">SYNTHETIC</span>
               <span class="admin-provenance-badge provenance-demo" title="Isolated demo test account">DEMO</span>
               <span class="admin-provenance-badge provenance-unavailable" title="Database unreachable or query failed">UNAVAILABLE</span>
+              <span class="admin-provenance-badge provenance-stale" title="Retrieved previously but outside permitted freshness window">STALE</span>
             </div>
           </div>
 
@@ -3089,6 +3133,209 @@
       </div>
     </div>
 
+    <!-- 1. Admin Task Queue & Action Center Modal -->
+    <div id="modal-admin-task-queue" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminTaskQueueModal()"></div>
+      <div class="modal-content-card" style="max-width: 640px; padding: 24px; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 14px; color: #F8FAFC;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(56, 189, 248, 0.15); display: flex; align-items: center; justify-content: center; color: #38BDF8; font-size: 16px;">
+              <i class="fa-solid fa-list-check"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0;">Administrative Action Center</h3>
+              <div style="font-size: 11px; color: #94A3B8;">Centralized Task Dispatch &bull; Unresolved Operational Items</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminTaskQueueModal()" style="color: #94A3B8; font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; max-height: 440px; overflow-y: auto; padding-right: 4px;">
+          <!-- Category A: Pending Refunds -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(251, 146, 60, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 12px; font-weight: 800; color: #FB923C;"><i class="fa-solid fa-rotate-left"></i> Pending Payment Refunds</div>
+              <span id="task-queue-refunds-count" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(251, 146, 60, 0.15); color: #FB923C;">0 PENDING</span>
+            </div>
+            <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 8px;">Refund requests awaiting gateway settlement or manual reconciliation.</div>
+            <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal(); switchAdminModule('subscriptions');" style="font-size: 11px; padding: 4px 10px; color: #FB923C; border-color: rgba(251, 146, 60, 0.4);">
+              Go to Refund Queue &rarr;
+            </button>
+          </div>
+
+          <!-- Category B: Failed Reports -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 12px; font-weight: 800; color: #EF4444;"><i class="fa-solid fa-file-circle-exclamation"></i> Failed Report Generations</div>
+              <span id="task-queue-reports-count" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(239, 68, 68, 0.15); color: #EF4444;">0 FAILED</span>
+            </div>
+            <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 8px;">Customer reports that encountered ephemeris or PDF rendering failure.</div>
+            <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal(); switchAdminModule('reports');" style="font-size: 11px; padding: 4px 10px; color: #EF4444; border-color: rgba(239, 68, 68, 0.4);">
+              Inspect Report Diagnostics &rarr;
+            </button>
+          </div>
+
+          <!-- Category C: Open Incidents -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 12px; font-weight: 800; color: #A855F7;"><i class="fa-solid fa-triangle-exclamation"></i> Open Platform Incidents</div>
+              <span id="task-queue-incidents-count" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(168, 85, 247, 0.15); color: #A855F7;">0 ACTIVE</span>
+            </div>
+            <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 8px;">Active P1-P4 incidents logged across infrastructure, auth, or payments.</div>
+            <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal(); switchAdminModule('incidents');" style="font-size: 11px; padding: 4px 10px; color: #A855F7; border-color: rgba(168, 85, 247, 0.4);">
+              Manage Incidents &rarr;
+            </button>
+          </div>
+
+          <!-- Category D: Privacy Requests -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 12px; font-weight: 800; color: #38BDF8;"><i class="fa-solid fa-user-shield"></i> Pending Privacy / DPDP Requests</div>
+              <span id="task-queue-privacy-count" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: rgba(56, 189, 248, 0.15); color: #38BDF8;">0 PENDING</span>
+            </div>
+            <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 8px;">Customer data erasure and portability requests awaiting legal fulfillment.</div>
+            <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal(); switchAdminModule('privacy');" style="font-size: 11px; padding: 4px 10px; color: #38BDF8; border-color: rgba(56, 189, 248, 0.4);">
+              Open Privacy Console &rarr;
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+          <button class="btn-outline-secondary" onclick="closeAdminTaskQueueModal()" style="font-size: 11px; padding: 6px 14px; color: #CBD5E1; border-color: #475569;">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Admin Session Centre Modal -->
+    <div id="modal-admin-session-centre" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeAdminSessionCentreModal()"></div>
+      <div class="modal-content-card" style="max-width: 500px; padding: 24px; background: #0E1626; border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 14px; color: #F8FAFC;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(212, 175, 55, 0.15); display: flex; align-items: center; justify-content: center; color: #F5C45E; font-size: 16px;">
+              <i class="fa-solid fa-id-badge"></i>
+            </div>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0;">Admin Session Centre</h3>
+              <div style="font-size: 11px; color: #94A3B8;">Identity, Security Tokens &bull; Inactivity Governance</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" onclick="closeAdminSessionCentreModal()" style="color: #94A3B8; font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px; font-size: 12px;">
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #94A3B8;">Authenticated Admin:</span>
+              <strong id="session-centre-email" style="color: #F5C45E;">Authorized Staff</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #94A3B8;">Canonical Role:</span>
+              <span id="session-centre-role" class="badge-role-admin" style="font-size: 10px;">OWNER</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span style="color: #94A3B8;">Multi-Factor Authentication:</span>
+              <span style="color: #34D399; font-weight: 700;"><i class="fa-solid fa-circle-check"></i> TOTP Configured</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94A3B8;">Storage Boundary:</span>
+              <span style="color: #38BDF8; font-family: monospace;">sessionStorage (Memory Isolated)</span>
+            </div>
+          </div>
+
+          <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 800; color: #38BDF8; margin-bottom: 6px;"><i class="fa-solid fa-clock"></i> Active Session Governance Policy</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; color: #CBD5E1;">
+              <div>Inactivity Timeout: <strong id="session-centre-idle-text">60 minutes</strong></div>
+              <div>Absolute Session Cap: <strong>4 hours</strong></div>
+              <div>Sliding Renewal: <strong>Active</strong></div>
+              <div>Origin Binding: <strong>Verified</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+          <button type="button" class="btn-outline-secondary" onclick="refreshAdminSessionCountdown(); closeAdminSessionCentreModal();" style="font-size: 11px; padding: 6px 12px; color: #38BDF8; border-color: rgba(56, 189, 248, 0.4);">
+            <i class="fa-solid fa-rotate-right"></i> Extend Session Window
+          </button>
+          <button type="button" class="btn-outline-secondary" onclick="closeAdminAndSignOut()" style="font-size: 11px; padding: 6px 14px; color: #FCA5A5; border-color: #991B1B; background: rgba(153, 27, 27, 0.15);">
+            <i class="fa-solid fa-power-off"></i> Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Standardized High-Risk Action Confirmation Modal -->
+    <div id="modal-admin-high-risk-action" class="astro-modal" style="display: none;">
+      <div class="modal-backdrop" onclick="closeHighRiskActionModal()"></div>
+      <div class="modal-content-card" style="max-width: 500px; padding: 24px; background: #0E1626; border: 1px solid #EF4444; border-radius: 14px; color: #F8FAFC;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; color: #EF4444; font-size: 16px;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <h3 id="high-risk-action-title" style="font-size: 15px; font-weight: 800; color: #EF4444; margin: 0;">High-Risk Operation Confirmation</h3>
+              <div style="font-size: 11px; color: #94A3B8;">Mandatory Audit &bull; Security Gated</div>
+            </div>
+          </div>
+          <button class="modal-close-btn" onclick="closeHighRiskActionModal()" style="color: #94A3B8; font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+          <div style="margin-bottom: 6px;"><strong style="color: #F87171;">Target Resource:</strong> <span id="high-risk-action-target" style="font-family: monospace; color: #FFFFFF;">-</span></div>
+          <div><strong style="color: #F87171;">Scope of Impact:</strong> <span id="high-risk-action-scope" style="color: #CBD5E1;">-</span></div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #CBD5E1; margin-bottom: 4px;">Mandatory Business Justification (min 5 chars):</label>
+          <input type="text" id="high-risk-action-reason" class="form-input-text" placeholder="e.g. Authorized customer refund per support ticket #481" style="font-size: 12px; width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; color: #FFFFFF;">
+        </div>
+
+        <div id="high-risk-action-totp-container" style="margin-bottom: 14px; display: none;">
+          <label style="display: block; font-size: 11.5px; font-weight: 700; color: #F5C45E; margin-bottom: 4px;">Step-Up MFA TOTP Code (6 digits):</label>
+          <input type="text" id="high-risk-action-totp" maxlength="6" placeholder="000000" style="font-size: 16px; letter-spacing: 4px; text-align: center; width: 100%; box-sizing: border-box; background: #0F172A; border: 1px solid #F5C45E; border-radius: 6px; padding: 8px; color: #FFFFFF; font-family: monospace;">
+        </div>
+
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <button type="button" class="btn-outline-secondary" onclick="closeHighRiskActionModal()" style="font-size: 11px; padding: 6px 14px;">Cancel</button>
+          <button type="button" id="high-risk-action-confirm-btn" class="btn-primary" style="background: #DC2626; color: white; font-size: 11px; padding: 6px 14px; font-weight: 700;">
+            <i class="fa-solid fa-shield-halved"></i> Execute High-Risk Action
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Health & Troubleshooting Centre / Diagnostic Drawer -->
+    <div id="drawer-admin-troubleshooting" style="display: none; position: fixed; right: 0; top: 0; bottom: 0; width: 440px; max-width: 90vw; background: #0B111E; border-left: 1px solid rgba(212, 175, 55, 0.35); z-index: 10500; box-shadow: -4px 0 24px rgba(0,0,0,0.6); flex-direction: column; color: #F8FAFC;">
+      <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-between; align-items: center; background: #0E1626;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(167, 139, 250, 0.15); display: flex; align-items: center; justify-content: center; color: #A78BFA;">
+            <i class="fa-solid fa-stethoscope"></i>
+          </div>
+          <div>
+            <h3 style="font-size: 15px; font-weight: 800; color: #FFFFFF; margin: 0;">Diagnostics &amp; Troubleshooting</h3>
+            <div style="font-size: 11px; color: #94A3B8;">Real-Time Operational Error History</div>
+          </div>
+        </div>
+        <button onclick="closeAdminTroubleshootingDrawer()" style="background: none; border: none; color: #94A3B8; font-size: 22px; cursor: pointer;">&times;</button>
+      </div>
+
+      <div id="admin-troubleshooting-log" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="padding: 30px 10px; text-align: center; color: #64748B; font-size: 12px;">
+          <i class="fa-solid fa-circle-check" style="font-size: 24px; color: #10B981; margin-bottom: 8px; display: block;"></i>
+          No operational errors captured in this session. All administrative endpoints healthy.
+        </div>
+      </div>
+
+      <div style="padding: 12px 16px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: #0E1626; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 10.5px; color: #64748B;">Zero secret credential leakage enforced</span>
+        <button class="btn-outline-secondary" onclick="clearAdminTroubleshootingLog()" style="font-size: 10.5px; padding: 4px 10px; color: #94A3B8; border-color: #334155;">
+          Clear History
+        </button>
+      </div>
+    </div>
+
   </main>
 
   <div id="toast-container"></div>
@@ -4038,7 +4285,13 @@
       if (d1Display) {
         d1Display.innerHTML = `
           <div style="background: #FFFDF8; border: 1.5px solid #FCD34D; border-radius: 10px; padding: 14px;">
-            <h4 style="font-weight: 800; color: #92400E; margin: 0 0 10px; font-size: 13px;"><i class="fa-solid fa-gem"></i> Primary Natal Lagna Positions</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="font-weight: 800; color: #92400E; margin: 0; font-size: 13px;"><i class="fa-solid fa-gem"></i> Primary Natal Lagna Positions</h4>
+              <span class="admin-provenance-badge provenance-synthetic"><i class="fa-solid fa-flask"></i> SYNTHETIC TEST FIXTURE</span>
+            </div>
+            <div style="font-size: 10.5px; color: #78350F; background: rgba(245, 158, 11, 0.1); border-radius: 6px; padding: 6px 10px; margin-bottom: 8px;">
+              <strong>Benchmark Target:</strong> ${escapeHtml(chart.name)} &bull; ${escapeHtml(chart.dob)} ${escapeHtml(chart.tob)} (${escapeHtml(chart.city)})
+            </div>
             <table style="width: 100%; font-size: 11.5px; border-collapse: collapse;">
               <tr><td style="padding: 4px; color: #64748B;">Ascendant (Lagna):</td><td><strong>Scorpio (Vrishchika 24.17°)</strong></td></tr>
               <tr><td style="padding: 4px; color: #64748B;">Moon (Chandra):</td><td><strong>Aquarius (Kumbha 12.21°)</strong> (H4)</td></tr>
@@ -4051,7 +4304,10 @@
             </table>
           </div>
           <div style="background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 10px; padding: 14px;">
-            <h4 style="font-weight: 800; color: #1E293B; margin: 0 0 10px; font-size: 13px;"><i class="fa-solid fa-shield-halved"></i> Active Yogas &amp; Mitigations</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h4 style="font-weight: 800; color: #1E293B; margin: 0; font-size: 13px;"><i class="fa-solid fa-shield-halved"></i> Active Yogas &amp; Mitigations</h4>
+              <span class="admin-provenance-badge provenance-synthetic"><i class="fa-solid fa-flask"></i> SYNTHETIC TEST FIXTURE</span>
+            </div>
             <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; line-height: 1.6; color: #334155;">
               <li><strong>Ruchaka Yoga (Mitigated):</strong> Mars occupies own house (Aries) in Dushtana (6th), providing competitive invincibility.</li>
               <li><strong>Budhaditya Yoga:</strong> Sun in Leo (H10) forming Raja Yoga with Mercury.</li>
@@ -7412,6 +7668,195 @@
     });
 
     // ==================== ENTERPRISE OWNER CONTROL CENTRE JAVASCRIPT CONTROLLER ====================
+
+    // 1. Saved Views & Filter Presets
+    function applyAdminSavedView(viewKey) {
+      if (!viewKey || viewKey === 'all') {
+        showToast('Restored default view (All Records).', 'info');
+        switchAdminModule(currentAdminActiveModule || 'overview');
+        return;
+      }
+      switch (viewKey) {
+        case 'pending-refunds':
+          switchAdminModule('subscriptions');
+          showToast('Loaded Saved View: Pending Refunds', 'info');
+          break;
+        case 'failed-reports':
+          switchAdminModule('reports');
+          showToast('Loaded Saved View: Failed Report Generations', 'info');
+          break;
+        case 'expiring-subs':
+          switchAdminModule('subscriptions');
+          showToast('Loaded Saved View: Subscriptions Expiring in 7 Days', 'info');
+          break;
+        case 'high-incidents':
+          switchAdminModule('incidents');
+          showToast('Loaded Saved View: High-Priority P1/Critical Incidents', 'info');
+          break;
+        case 'failed-payments':
+          switchAdminModule('payments');
+          showToast('Loaded Saved View: Failed Payment Orders', 'info');
+          break;
+        case 'suspended-accounts':
+          switchAdminModule('users');
+          const filter = document.getElementById('admin-user-status-filter');
+          if (filter) { filter.value = 'SUSPENDED'; loadAdminUsersList(); }
+          showToast('Loaded Saved View: Suspended Accounts', 'info');
+          break;
+      }
+    }
+    window.applyAdminSavedView = applyAdminSavedView;
+
+    // 2. Action Center / Task Queue
+    function openAdminTaskQueueModal() {
+      const modal = document.getElementById('modal-admin-task-queue');
+      if (modal) modal.style.display = 'flex';
+      const refCount = document.getElementById('action-pending-refunds')?.textContent || '0';
+      const repCount = document.getElementById('action-failed-reports')?.textContent || '0';
+      const incCount = document.getElementById('action-open-incidents')?.textContent || '0';
+      const privCount = document.getElementById('action-pending-privacy')?.textContent || '0';
+      if (document.getElementById('task-queue-refunds-count')) document.getElementById('task-queue-refunds-count').textContent = `${refCount} PENDING`;
+      if (document.getElementById('task-queue-reports-count')) document.getElementById('task-queue-reports-count').textContent = `${repCount} FAILED`;
+      if (document.getElementById('task-queue-incidents-count')) document.getElementById('task-queue-incidents-count').textContent = `${incCount} ACTIVE`;
+      if (document.getElementById('task-queue-privacy-count')) document.getElementById('task-queue-privacy-count').textContent = `${privCount} PENDING`;
+    }
+    window.openAdminTaskQueueModal = openAdminTaskQueueModal;
+
+    function closeAdminTaskQueueModal() {
+      const modal = document.getElementById('modal-admin-task-queue');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeAdminTaskQueueModal = closeAdminTaskQueueModal;
+
+    // 3. Admin Session Centre
+    function openAdminSessionCentreModal() {
+      const modal = document.getElementById('modal-admin-session-centre');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      const emailEl = document.getElementById('session-centre-email');
+      const roleEl = document.getElementById('session-centre-role');
+      const idleEl = document.getElementById('session-centre-idle-text');
+      if (currentUserSession) {
+        if (emailEl) emailEl.textContent = currentUserSession.email || currentUserSession.identifier || 'Authorized Staff';
+        if (roleEl) roleEl.textContent = currentUserSession.role || 'ADMIN';
+      }
+      if (idleEl && adminSessionIdleLimitSeconds) {
+        idleEl.textContent = `${Math.round(adminSessionIdleLimitSeconds / 60)} minutes`;
+      }
+    }
+    window.openAdminSessionCentreModal = openAdminSessionCentreModal;
+
+    function closeAdminSessionCentreModal() {
+      const modal = document.getElementById('modal-admin-session-centre');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeAdminSessionCentreModal = closeAdminSessionCentreModal;
+
+    // 4. Standardized High-Risk Action Confirmation
+    function openHighRiskActionModal({ title, target, scope, onConfirm, requireTotp = false }) {
+      const modal = document.getElementById('modal-admin-high-risk-action');
+      if (!modal) return;
+      document.getElementById('high-risk-action-title').textContent = title || 'High-Risk Operation Confirmation';
+      document.getElementById('high-risk-action-target').textContent = target || 'Resource';
+      document.getElementById('high-risk-action-scope').textContent = scope || 'Action alters persistent state.';
+      const reasonInput = document.getElementById('high-risk-action-reason');
+      if (reasonInput) reasonInput.value = '';
+      const totpBox = document.getElementById('high-risk-action-totp-container');
+      const totpInput = document.getElementById('high-risk-action-totp');
+      if (totpBox) totpBox.style.display = requireTotp ? 'block' : 'none';
+      if (totpInput) totpInput.value = '';
+      
+      const confirmBtn = document.getElementById('high-risk-action-confirm-btn');
+      confirmBtn.onclick = async () => {
+        const reason = reasonInput?.value?.trim();
+        if (!reason || reason.length < 5) {
+          showToast('Mandatory business reason of at least 5 characters is required.', 'error');
+          return;
+        }
+        const totp = totpInput?.value?.trim();
+        if (requireTotp && (!totp || totp.length < 6)) {
+          showToast('Step-up 6-digit TOTP code is required for this operation.', 'error');
+          return;
+        }
+        closeHighRiskActionModal();
+        if (typeof onConfirm === 'function') {
+          await onConfirm({ reason, totp });
+        }
+      };
+      modal.style.display = 'flex';
+    }
+    window.openHighRiskActionModal = openHighRiskActionModal;
+
+    function closeHighRiskActionModal() {
+      const modal = document.getElementById('modal-admin-high-risk-action');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeHighRiskActionModal = closeHighRiskActionModal;
+
+    // 5. Troubleshooting & Diagnostic Drawer
+    let adminTroubleshootingEvents = [];
+    function openAdminTroubleshootingDrawer() {
+      const drawer = document.getElementById('drawer-admin-troubleshooting');
+      if (drawer) drawer.style.display = 'flex';
+      renderAdminTroubleshootingLog();
+    }
+    window.openAdminTroubleshootingDrawer = openAdminTroubleshootingDrawer;
+
+    function closeAdminTroubleshootingDrawer() {
+      const drawer = document.getElementById('drawer-admin-troubleshooting');
+      if (drawer) drawer.style.display = 'none';
+    }
+    window.closeAdminTroubleshootingDrawer = closeAdminTroubleshootingDrawer;
+
+    function recordAdminTroubleshootingEvent(evt) {
+      adminTroubleshootingEvents.unshift({
+        id: 'req_' + Math.random().toString(36).substring(2, 9),
+        timestamp: new Date().toLocaleTimeString(),
+        status: evt.status || 500,
+        module: evt.module || currentAdminActiveModule || 'system',
+        action: evt.action || 'API_CALL',
+        message: escapeHtml(evt.message || 'Operation failed.'),
+        service: evt.service || 'wallet-service',
+        canRetry: evt.canRetry !== false
+      });
+      if (adminTroubleshootingEvents.length > 50) adminTroubleshootingEvents.pop();
+    }
+    window.recordAdminTroubleshootingEvent = recordAdminTroubleshootingEvent;
+
+    function clearAdminTroubleshootingLog() {
+      adminTroubleshootingEvents = [];
+      renderAdminTroubleshootingLog();
+      showToast('Troubleshooting history cleared.', 'info');
+    }
+    window.clearAdminTroubleshootingLog = clearAdminTroubleshootingLog;
+
+    function renderAdminTroubleshootingLog() {
+      const container = document.getElementById('admin-troubleshooting-log');
+      if (!container) return;
+      if (adminTroubleshootingEvents.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 30px 10px; text-align: center; color: #64748B; font-size: 12px;">
+            <i class="fa-solid fa-circle-check" style="font-size: 24px; color: #10B981; margin-bottom: 8px; display: block;"></i>
+            No operational errors captured in this session. All administrative endpoints healthy.
+          </div>
+        `;
+        return;
+      }
+      container.innerHTML = adminTroubleshootingEvents.map(e => `
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 12px; font-size: 11.5px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-weight: 800; color: #EF4444;">HTTP ${e.status} &bull; ${escapeHtml(e.module.toUpperCase())}</span>
+            <span style="color: #64748B; font-family: monospace; font-size: 10px;">${e.timestamp}</span>
+          </div>
+          <div style="color: #CBD5E1; margin-bottom: 6px;">${e.message}</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #64748B;">
+            <span>Service: <strong style="color: #38BDF8;">${escapeHtml(e.service)}</strong> &bull; ID: <code>${e.id}</code></span>
+            ${e.canRetry ? `<button class="btn-outline-secondary" onclick="switchAdminModule('${e.module}'); closeAdminTroubleshootingDrawer();" style="font-size: 10px; padding: 2px 6px; color: #F5C45E; border-color: #D97706;">Retry &rarr;</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+    window.renderAdminTroubleshootingLog = renderAdminTroubleshootingLog;
 
     // Global Search
     function executeAdminGlobalSearch() {

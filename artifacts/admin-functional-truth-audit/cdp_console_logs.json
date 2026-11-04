@@ -1,0 +1,5 @@
+[
+  "[warning] Admin session policy lookup failed, using preview defaults: TypeError: Failed to fetch\n    at fetchAdminSessionPolicy (file:///E:/rea/admin.html:7966:27)\n    at HTMLDocument.<anonymous> (file:///E:/rea/admin.html:8649:5)",
+  "[warning] Failed to load admin overview: TypeError: Failed to fetch\n    at loadAdminOverview (file:///E:/rea/admin.html:5434:27)\n    at switchAdminModule (file:///E:/rea/admin.html:4080:26)\n    at showAdminDashboard (file:///E:/rea/admin.html:3550:7)\n    at handleStandaloneAdminRoute (file:///E:/rea/admin.html:8582:5)\n    at HTMLDocument.<anonymous> (file:///E:/rea/admin.html:8679:5)",
+  "[warning] Failed to load admin overview: TypeError: Failed to fetch\n    at loadAdminOverview (file:///E:/rea/admin.html:5434:27)\n    at switchAdminModule (file:///E:/rea/admin.html:4080:26)\n    at handleStandaloneAdminRoute (file:///E:/rea/admin.html:8585:7)\n    at HTMLDocument.<anonymous> (file:///E:/rea/admin.html:8679:5)"
+]
