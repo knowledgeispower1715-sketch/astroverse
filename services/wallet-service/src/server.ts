@@ -29,6 +29,7 @@ import {
   ALLOWED_ASSURANCE_SCOPES
 } from './security/mfa';
 import { DurableAiQuotaManager } from './monetization/aiQuotas';
+import { validatePasswordComplexity } from './security/passwordValidator';
 import { getPublicSupabaseConfig, verifySupabaseToken, getSupabaseAdminClient } from './supabase';
 import {
   isCashfreeConfigured,
@@ -932,18 +933,6 @@ app.post('/api/auth/register-password', authLimiter, async (req: Request, res: R
     }
   }
 
-  if (typeof password !== 'string' || password.length < 8 || !/\d/.test(password) || !/[a-zA-Z]/.test(password)) {
-    return res.status(400).json({
-      error: 'WEAK_PASSWORD',
-      message: 'Password must be at least 8 characters long and contain both letters and numbers.'
-    });
-  }
-
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  if (!checkIpRateLimit(clientIp)) {
-    return res.status(429).json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests. Please wait 10 minutes.' });
-  }
-
   try {
     let existing: UserRecord | null = null;
     if (cleanEmail) {
@@ -953,14 +942,27 @@ app.post('/api/auth/register-password', authLimiter, async (req: Request, res: R
       existing = await db.findUserByPhone(cleanPhone);
     }
 
-    if (existing) {
-      if (existing.status !== AccountStatus.ACTIVE) {
-        return res.status(403).json({
-          error: 'ACCOUNT_INACTIVE',
-          message: `Account is ${existing.status.toLowerCase()}. Please contact customer support.`
-        });
-      }
+    if (existing && existing.status !== AccountStatus.ACTIVE) {
+      return res.status(403).json({
+        error: 'ACCOUNT_INACTIVE',
+        message: `Account is ${existing.status.toLowerCase()}. Please contact customer support.`
+      });
+    }
 
+    const passwordValidation = validatePasswordComplexity(password, { minLength: 8, requireSymbols: false });
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        error: 'WEAK_PASSWORD',
+        message: passwordValidation.reason || 'Password must be at least 8 characters long and contain both letters and numbers.'
+      });
+    }
+
+    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    if (!checkIpRateLimit(clientIp)) {
+      return res.status(429).json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests. Please wait 10 minutes.' });
+    }
+
+    if (existing) {
       if (existing.passwordHash) {
         const errCode = (cleanEmail && existing.email === cleanEmail) ? 'EMAIL_ALREADY_EXISTS' : 'ACCOUNT_ALREADY_EXISTS';
         return res.status(409).json({
@@ -1672,10 +1674,11 @@ app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Resp
     return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier, reset code, and new password are required.' });
   }
 
-  if (typeof newPassword !== 'string' || newPassword.length < 8 || !/\d/.test(newPassword) || !/[a-zA-Z]/.test(newPassword)) {
+  const resetPasswordValidation = validatePasswordComplexity(newPassword, { minLength: 8, requireSymbols: false });
+  if (!resetPasswordValidation.valid) {
     return res.status(400).json({
       error: 'WEAK_PASSWORD',
-      message: 'New password must be at least 8 characters long and contain both letters and numbers.'
+      message: resetPasswordValidation.reason || 'New password must be at least 8 characters long and contain both letters and numbers.'
     });
   }
 
@@ -3956,10 +3959,11 @@ app.post('/api/admin/bootstrap-first-owner', authLimiter, async (req: Request, r
     });
   }
 
-  if (String(password).length < 10) {
+  const adminPasswordValidation = validatePasswordComplexity(password, { minLength: 10, isAdmin: true, requireSymbols: true });
+  if (!adminPasswordValidation.valid) {
     return res.status(400).json({
       error: 'WEAK_PASSWORD',
-      message: 'Administrator password must be at least 10 characters with uppercase, lowercase, numbers, and symbols.'
+      message: adminPasswordValidation.reason || 'Administrator password must be at least 10 characters with uppercase, lowercase, numbers, and symbols.'
     });
   }
 

@@ -737,8 +737,17 @@ export const DDL_STATEMENTS: string[] = [
   END $$;`,
 
   // Safe Customer Profile View: Excludes credential hashes, salts, and MFA secrets
-  // Hardened with security_invoker = true so PostgreSQL 15+ evaluates RLS under caller identity
-  `DO $$ BEGIN
+  // Strictly fail-closed: requires PostgreSQL 15+ WITH (security_invoker = true) so RLS is evaluated under caller identity.
+  // Never falls back to a normal view (SECURITY DEFINER execution).
+  `DO $$ 
+  DECLARE
+    pg_ver INTEGER;
+  BEGIN
+    SELECT current_setting('server_version_num')::integer INTO pg_ver;
+    IF pg_ver < 150000 THEN
+      RAISE EXCEPTION 'POSTGRESQL_VERSION_INSUFFICIENT: CustomerProfileView requires PostgreSQL 15+ for security_invoker = true. Current version: %', pg_ver;
+    END IF;
+
     CREATE OR REPLACE VIEW "CustomerProfileView" WITH (security_invoker = true) AS 
     SELECT 
       "id", "phone", "email", "phoneVerified", "emailVerified", 
@@ -747,16 +756,86 @@ export const DDL_STATEMENTS: string[] = [
       "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", 
       "lastLoginAt", "createdAt", "updatedAt" 
     FROM "User";
-  EXCEPTION WHEN OTHERS THEN
-    CREATE OR REPLACE VIEW "CustomerProfileView" AS 
-    SELECT 
-      "id", "phone", "email", "phoneVerified", "emailVerified", 
-      "displayName", "role", "status", "preferredLanguage", "preferredTimezone", 
-      "walletBalance", "mfaEnabled", "mfaEnforced", 
-      "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", 
-      "lastLoginAt", "createdAt", "updatedAt" 
-    FROM "User";
-    REVOKE ALL ON "CustomerProfileView" FROM anon, authenticated, PUBLIC;
+
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' 
+        AND c.relname = 'CustomerProfileView'
+        AND c.reloptions @> ARRAY['security_invoker=true']
+    ) THEN
+      RAISE EXCEPTION 'SECURITY_INVOKER_VERIFICATION_FAILED: CustomerProfileView was not created with security_invoker=true';
+    END IF;
+  END $$;`,
+
+  // Trigger function to mathematically prevent privilege escalation and wallet tampering on User and profiles
+  `CREATE OR REPLACE FUNCTION public.prevent_unauthorized_profile_mutation()
+  RETURNS TRIGGER AS $$
+  DECLARE
+    current_jwt_role TEXT;
+    is_service_role BOOLEAN;
+    old_data JSONB;
+    new_data JSONB;
+    old_role TEXT;
+    new_role TEXT;
+    old_balance TEXT;
+    new_balance TEXT;
+    old_status TEXT;
+    new_status TEXT;
+  BEGIN
+    current_jwt_role := COALESCE(
+      current_setting('request.jwt.claim.role', true),
+      (current_setting('request.jwt.claims', true)::jsonb ->> 'role')
+    );
+    is_service_role := (current_jwt_role = 'service_role' OR current_user IN ('postgres', 'service_role'));
+
+    IF is_service_role THEN
+      RETURN NEW;
+    END IF;
+
+    old_data := to_jsonb(OLD);
+    new_data := to_jsonb(NEW);
+
+    old_role := COALESCE(old_data->>'role', old_data->>'Role');
+    new_role := COALESCE(new_data->>'role', new_data->>'Role');
+    IF old_role IS DISTINCT FROM new_role THEN
+      RAISE EXCEPTION 'PRIVILEGE_ESCALATION_BLOCKED: Ordinary users cannot modify administrative roles directly.';
+    END IF;
+
+    old_balance := COALESCE(old_data->>'wallet_balance', old_data->>'walletBalance');
+    new_balance := COALESCE(new_data->>'wallet_balance', new_data->>'walletBalance');
+    IF old_balance IS DISTINCT FROM new_balance THEN
+      RAISE EXCEPTION 'DIRECT_BALANCE_MUTATION_BLOCKED: Wallet balances may only be altered via verified server-side ledger operations.';
+    END IF;
+
+    old_status := COALESCE(old_data->>'account_status', old_data->>'status');
+    new_status := COALESCE(new_data->>'account_status', new_data->>'status');
+    IF old_status IS DISTINCT FROM new_status THEN
+      RAISE EXCEPTION 'ACCOUNT_STATUS_MUTATION_BLOCKED: Account status moderation is restricted to platform administrators.';
+    END IF;
+
+    IF TG_TABLE_NAME = 'User' THEN
+      NEW."updatedAt" := NOW();
+    ELSIF TG_TABLE_NAME = 'profiles' THEN
+      NEW.updated_at := NOW();
+    END IF;
+
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public;`,
+
+  `REVOKE ALL ON FUNCTION public.prevent_unauthorized_profile_mutation() FROM PUBLIC;`,
+  `REVOKE EXECUTE ON FUNCTION public.prevent_unauthorized_profile_mutation() FROM anon, authenticated;`,
+  `GRANT EXECUTE ON FUNCTION public.prevent_unauthorized_profile_mutation() TO postgres, service_role;`,
+
+  `DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'User') THEN
+      DROP TRIGGER IF EXISTS trg_prevent_unauthorized_user_mutation ON "User";
+      CREATE TRIGGER trg_prevent_unauthorized_user_mutation
+        BEFORE UPDATE ON "User"
+        FOR EACH ROW
+        EXECUTE FUNCTION public.prevent_unauthorized_profile_mutation();
+    END IF;
   END $$;`,
 
   // SQL Grants Hardening: Principle of least privilege & credential column protection
@@ -766,7 +845,20 @@ export const DDL_STATEMENTS: string[] = [
   // Column-level SELECT on non-sensitive User fields only (passwordHash, passwordSalt, resetTokenHash, mfaSecret, mfaRecoveryCodes are EXCLUDED)
   `GRANT SELECT ("id", "phone", "email", "phoneVerified", "emailVerified", "displayName", "role", "status", "preferredLanguage", "preferredTimezone", "walletBalance", "mfaEnabled", "mfaEnforced", "subscriptionTier", "subscriptionStatus", "subscriptionBillingPeriod", "subscriptionExpiresAt", "lastLoginAt", "createdAt", "updatedAt") ON "User" TO authenticated;`,
 
-  `GRANT SELECT ON "CustomerProfileView" TO authenticated;`,
+  // Fail-closed grant: SELECT is granted to authenticated ONLY IF CustomerProfileView has security_invoker=true
+  `DO $$ BEGIN
+    IF EXISTS (
+      SELECT 1 FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' 
+        AND c.relname = 'CustomerProfileView'
+        AND c.reloptions @> ARRAY['security_invoker=true']
+    ) THEN
+      GRANT SELECT ON "CustomerProfileView" TO authenticated;
+    ELSE
+      RAISE EXCEPTION 'GRANT_ABORTED: Refusing to grant SELECT on CustomerProfileView without security_invoker=true';
+    END IF;
+  END $$;`,
   `GRANT SELECT ON "BirthProfile", "SavedReport", "KundliCalculation", "PaymentOrder", "WalletLedger", "ConsultationSession", "ConsultationMessage", "PujaBooking", "PrivacyRequest", "Promotion", "Entitlement" TO authenticated;`,
   `GRANT INSERT, UPDATE, DELETE ON "BirthProfile", "SavedReport", "KundliCalculation", "PrivacyRequest" TO authenticated;`,
   `GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;`,
