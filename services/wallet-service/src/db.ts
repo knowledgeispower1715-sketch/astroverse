@@ -6001,6 +6001,34 @@ class ResilientDatabase {
 
   // ==================== SYSTEM METRICS (FOR ADMIN) ====================
 
+  /**
+   * Genuine PostgreSQL Savepoint Recovery Helper:
+   * Executes an auxiliary or optional query within an interactive transaction wrapped in a PostgreSQL SAVEPOINT.
+   * If the query throws (e.g. table not found or syntax error), rolls back to the savepoint so the
+   * transaction does NOT enter the aborted 25P02 state, allowing subsequent queries to succeed.
+   */
+  async runSavepointProtectedQuery<T>(
+    tx: any,
+    savepointName: string,
+    queryFn: () => Promise<T>,
+    fallbackValue: any = 'UNAVAILABLE'
+  ): Promise<T | 'UNAVAILABLE'> {
+    try {
+      await tx.$executeRawUnsafe(`SAVEPOINT ${savepointName};`);
+      const result = await queryFn();
+      await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepointName};`);
+      return result;
+    } catch (err: any) {
+      console.warn(`[DB] Savepoint ${savepointName} query failed, rolling back to savepoint:`, err?.message || err);
+      try {
+        await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepointName};`);
+      } catch (rbErr: any) {
+        console.warn(`[DB] Rollback to savepoint ${savepointName} failed:`, rbErr?.message || rbErr);
+      }
+      return fallbackValue;
+    }
+  }
+
   async getPlatformMetrics(forceFresh: boolean = false) {
     const now = Date.now();
 

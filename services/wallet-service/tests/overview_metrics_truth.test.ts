@@ -282,4 +282,50 @@ describe('OVERVIEW METRICS INTEGRITY & TRANSACTION RECOVERY SUITE (PHASE 4.5)', 
     assert.strictEqual(clientSafeResponse.message, 'The administrative data service is temporarily unavailable. Please retry shortly.');
   });
 
+  it('9. Genuine PostgreSQL Savepoint Recovery: rollback to savepoint rescues aborted transaction', async () => {
+    let savepointActive = false;
+    let txAborted = false;
+
+    const fakeTx = {
+      $executeRawUnsafe: async (sql: string) => {
+        if (sql.startsWith('SAVEPOINT')) {
+          savepointActive = true;
+        } else if (sql.startsWith('RELEASE SAVEPOINT')) {
+          savepointActive = false;
+        } else if (sql.startsWith('ROLLBACK TO SAVEPOINT')) {
+          // Rolling back to savepoint restores transaction to healthy state
+          txAborted = false;
+          savepointActive = false;
+        } else if (txAborted) {
+          throw new Error('ERROR: current transaction is aborted, commands ignored until end of transaction block (25P02)');
+        }
+      },
+      $queryRawUnsafe: async (sql: string) => {
+        if (txAborted) {
+          throw new Error('ERROR: current transaction is aborted, commands ignored until end of transaction block (25P02)');
+        }
+        if (sql.includes('FailingTable')) {
+          txAborted = true;
+          throw new Error('relation "FailingTable" does not exist (42P01)');
+        }
+        return [{ count: 42 }];
+      }
+    };
+
+    // 1. Run query that fails inside a savepoint
+    const failedResult = await (db as any).runSavepointProtectedQuery(
+      fakeTx,
+      'sp_test',
+      async () => fakeTx.$queryRawUnsafe('SELECT * FROM "FailingTable"')
+    );
+    assert.strictEqual(failedResult, 'UNAVAILABLE');
+
+    // 2. Transaction must NOT be aborted because ROLLBACK TO SAVEPOINT was called
+    assert.strictEqual(txAborted, false, 'Transaction must be recovered from aborted state');
+
+    // 3. Subsequent query on the same transaction must succeed without 25P02
+    const subsequentResult = await fakeTx.$queryRawUnsafe('SELECT count(*) FROM "User"');
+    assert.strictEqual(subsequentResult[0].count, 42, 'Subsequent query must succeed without 25P02');
+  });
+
 });
