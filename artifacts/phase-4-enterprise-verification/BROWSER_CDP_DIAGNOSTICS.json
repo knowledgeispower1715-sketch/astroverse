@@ -1,1528 +1,1607 @@
 {
   "verificationStatus": "BLOCKED_VERCEL_SSO",
-  "reason": "Preview host redirected to Vercel Deployment Protection login gate. Automated execution halted to avoid capturing third-party SSO pages or fabricating verification results.",
-  "previewUrl": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app/admin",
-  "inspectedAt": "2026-11-04T16:11:38.394Z",
-  "navState": {
+  "blockingReason": "The target is currently on Vercel SSO login gate. Owner must authenticate interactively.",
+  "previewOrigin": "https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app",
+  "inspectedAt": "2026-11-04T18:34:48.043Z",
+  "targetNav": {
+    "origin": "https://vercel.com",
+    "pathname": "/login",
     "title": "Login – Vercel",
-    "currentUrl": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3D7e6cf69e704464e32a53fe62b15924344ec822e0f1bb6bd9e0a7d1597ba49865",
-    "currentOrigin": "https://vercel.com",
     "readyState": "complete",
-    "isVercelSsoRequired": true,
-    "isAdminMounted": false,
-    "bodySnippet": "Skip to content Sign Up Log in to Vercel Continue with Email Continue with Google Continue with GitHub Continue with ChatGPT Continue with SAML SSO Continue with Passkey Show other options Don't have an account? Sign Up Terms Privacy Policy"
+    "isExactPreviewOrigin": false,
+    "isVercelSso": true,
+    "isAdminMounted": false
   },
-  "sanitizedNetworkLogsCount": 259,
+  "sanitizedNetworkLogsCount": 249,
   "sanitizedNetworkLogs": [
     {
-      "type": "request",
-      "requestId": "12A9D20421E9EF83ED400F25C958F504",
+      "requestId": "2E573389B4D261619A26232729438BE5",
       "method": "GET",
-      "sanitizedUrl": "https://vercel.com/sso-api?url=https%3A%2F%2Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%2Fadmin&nonce=7e6cf69e704464e32a53fe62b15924344ec822e0f1bb6bd9e0a7d1597ba49865",
-      "timestamp": 27786.05836,
+      "origin": "https://vercel.com",
+      "pathname": "/sso-api",
+      "classification": "INTERNAL_NAV",
       "hasAuthHeader": false,
-      "hasCookieHeader": false
+      "hasCookieHeader": false,
+      "timestamp": 36376
     },
     {
-      "type": "request",
-      "requestId": "12A9D20421E9EF83ED400F25C958F504",
+      "requestId": "2E573389B4D261619A26232729438BE5",
       "method": "GET",
-      "sanitizedUrl": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3D7e6cf69e704464e32a53fe62b15924344ec822e0f1bb6bd9e0a7d1597ba49865",
-      "timestamp": 27786.417529,
+      "origin": "https://vercel.com",
+      "pathname": "/login",
+      "classification": "INTERNAL_NAV",
       "hasAuthHeader": false,
-      "hasCookieHeader": false
+      "hasCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "12A9D20421E9EF83ED400F25C958F504",
+      "requestId": "2E573389B4D261619A26232729438BE5",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/login?next=%2Fsso-api%3Furl%3Dhttps%253A%252F%252Fastroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app%252Fadmin%26nonce%3D7e6cf69e704464e32a53fe62b15924344ec822e0f1bb6bd9e0a7d1597ba49865",
+      "origin": "https://vercel.com",
+      "pathname": "/login",
       "mimeType": "text/html",
+      "durationMs": 45,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.2",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.3",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.4",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.5",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/15eq68roqlucr.css",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.6",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0ul3_ijuqqkfp.css",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.7",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1-9yb6i_h9yg1.css",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.8",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0ia8w1n1yr9aa.css",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.9",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1eqaz7-cril39.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.10",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/082c9c5lfeghn.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.11",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3r076korij6gu.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.12",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1vh4nsdwj-tnc.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.13",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/227bzhl1iddbi.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.14",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/342sco7n2gh5f.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.15",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/turbopack-2kua30ffxumth.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.16",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/43t01zhciccwx.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.17",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/32tylomnt4zhv.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.18",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0jx83u0qhqnai.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.19",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/26jxvl3frva_f.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.20",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/24p__-lvi99r3.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.21",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/43ahgrk5xz1g4.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.22",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2foqci80tam44.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.23",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1gct3hqq-pkwm.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.24",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/34m9n56wioiy_.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.25",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/359-tgz6qnhh9.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.26",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3a9qzufofm2x_.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.27",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/03mv7ge26u8y6.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.28",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1c050mosy-0q3.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.29",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/41_64be0h8adl.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.30",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1ivku85i57o_q.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.31",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0n7-vni359th3.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.32",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1f_r--3wuo-lf.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.33",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2uuhqrt_y1rrb.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.34",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/358y4416a28o-.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.35",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0qr7civyc_huk.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.36",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1jenknb519dcd.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.37",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0jb3mg87v1vfx.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.38",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1epzjhvv-jd4a.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.39",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1i25ytfvk5d_w.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.40",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0e_-s5cq2d_zt.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.41",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1-9xx-j744k81.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.42",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/42rr9s-d-ro60.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.43",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1my7f_qf721o7.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.44",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0xuisum26-zpm.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.45",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1arg3vor-zr44.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.46",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3_0e-02y9w6-6.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.47",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/14hp64yobj_p4.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.48",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3h9hmfdsmdj2o.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.49",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3f37my-x99pjj.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.50",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2dkmqb-txo_ac.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.51",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2c3-v_he6ujuv.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.52",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2vzorf8dlfuwk.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.53",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0hxx4e_b4fhli.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.54",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3hypukl_bmh-v.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.55",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1s0f69kv0lrn2.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.56",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/00ena7w0b4pkv.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.57",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3c5cxr1_s8dy8.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.58",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0j2u0y3xql8fe.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.59",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1f8l1r68_y5hd.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.60",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2ul1mr4ud1tyr.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.61",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2tb0p84tf38kf.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.62",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/12j7qis8lwhs3.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.63",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/11cyz-b2wtnr9.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.64",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3rq_qjreljbql.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.65",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/200p0jnw1nfrq.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.66",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1h10h-nnty_s8.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.67",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2mj5bz1w_s050.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.68",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/17pyuo3jro6la.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.69",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0ulye6hysfgn8.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.70",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3m1nk28wr2a-9.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.71",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3v3y9k0webp5f.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.72",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/21wekyjdaq76u.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.73",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1e4dn9zgob3x7.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.74",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1wz2b08unk4nv.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.75",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1g82l_32l-dv2.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.76",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2hxul566rcp_u.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.77",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1t1n559-zuz61.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.78",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3uqwhnsu8czlj.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.79",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1ne6znrcs-f6y.js",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.80",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/26lmgjckz06-j.css",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.81",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1-vyfk6cbr430.css",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.82",
+      "method": "GET",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1rgw6mfqcmske.css",
+      "classification": "STATIC_ASSET",
+      "hasAuthHeader": false,
+      "hasCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.5",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/15eq68roqlucr.css",
+      "mimeType": "text/css",
+      "durationMs": 5,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.6",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0ul3_ijuqqkfp.css",
+      "mimeType": "text/css",
+      "durationMs": 6,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.7",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1-9yb6i_h9yg1.css",
+      "mimeType": "text/css",
+      "durationMs": 14,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.8",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0ia8w1n1yr9aa.css",
+      "mimeType": "text/css",
+      "durationMs": 14,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.80",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/26lmgjckz06-j.css",
+      "mimeType": "text/css",
+      "durationMs": 15,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.81",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1-vyfk6cbr430.css",
+      "mimeType": "text/css",
+      "durationMs": 15,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.82",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1rgw6mfqcmske.css",
+      "mimeType": "text/css",
+      "durationMs": 15,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.2",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2",
+      "mimeType": "font/woff2",
+      "durationMs": 23,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.3",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2",
+      "mimeType": "font/woff2",
+      "durationMs": 24,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.4",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2",
+      "mimeType": "font/woff2",
+      "durationMs": 28,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.9",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1eqaz7-cril39.js",
+      "mimeType": "application/javascript",
+      "durationMs": 34,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.10",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/082c9c5lfeghn.js",
+      "mimeType": "application/javascript",
+      "durationMs": 52,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.11",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3r076korij6gu.js",
+      "mimeType": "application/javascript",
+      "durationMs": 52,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.13",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/227bzhl1iddbi.js",
+      "mimeType": "application/javascript",
+      "durationMs": 52,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.16",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/43t01zhciccwx.js",
+      "mimeType": "application/javascript",
+      "durationMs": 52,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.15",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/turbopack-2kua30ffxumth.js",
+      "mimeType": "application/javascript",
+      "durationMs": 52,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.17",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/32tylomnt4zhv.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.18",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0jx83u0qhqnai.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.19",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/26jxvl3frva_f.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.12",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1vh4nsdwj-tnc.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.14",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/342sco7n2gh5f.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.20",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/24p__-lvi99r3.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.21",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/43ahgrk5xz1g4.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.22",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2foqci80tam44.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.24",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/34m9n56wioiy_.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.25",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/359-tgz6qnhh9.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.26",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3a9qzufofm2x_.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.27",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/03mv7ge26u8y6.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.28",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1c050mosy-0q3.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.29",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/41_64be0h8adl.js",
+      "mimeType": "application/javascript",
+      "durationMs": 53,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.31",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0n7-vni359th3.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.30",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1ivku85i57o_q.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.32",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1f_r--3wuo-lf.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.33",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2uuhqrt_y1rrb.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.34",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/358y4416a28o-.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.35",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0qr7civyc_huk.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.36",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1jenknb519dcd.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.37",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0jb3mg87v1vfx.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.38",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1epzjhvv-jd4a.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.39",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1i25ytfvk5d_w.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.40",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0e_-s5cq2d_zt.js",
+      "mimeType": "application/javascript",
+      "durationMs": 54,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
+    },
+    {
+      "requestId": "4628.41",
+      "status": 200,
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1-9xx-j744k81.js",
+      "mimeType": "application/javascript",
       "durationMs": 55,
-      "timestamp": 27786.472118,
-      "hasSetCookieHeader": false
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "request",
-      "requestId": "32668.2",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2",
-      "timestamp": 27786.474828,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.3",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2",
-      "timestamp": 27786.475102,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.4",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2",
-      "timestamp": 27786.475135,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.5",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/15eq68roqlucr.css",
-      "timestamp": 27786.475786,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.6",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/13g5y8w-tj_cy.css",
-      "timestamp": 27786.475858,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.7",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1-9yb6i_h9yg1.css",
-      "timestamp": 27786.475879,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.8",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0ia8w1n1yr9aa.css",
-      "timestamp": 27786.475901,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.9",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3ndpn7r7b9k0x.js",
-      "timestamp": 27786.475926,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.10",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/082c9c5lfeghn.js",
-      "timestamp": 27786.475945,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.11",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3r076korij6gu.js",
-      "timestamp": 27786.475992,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.12",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1vh4nsdwj-tnc.js",
-      "timestamp": 27786.476029,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.13",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/227bzhl1iddbi.js",
-      "timestamp": 27786.476047,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.14",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/342sco7n2gh5f.js",
-      "timestamp": 27786.476075,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.15",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/turbopack-2kua30ffxumth.js",
-      "timestamp": 27786.476093,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.16",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/43t01zhciccwx.js",
-      "timestamp": 27786.476114,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.17",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/32tylomnt4zhv.js",
-      "timestamp": 27786.476142,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.18",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0jx83u0qhqnai.js",
-      "timestamp": 27786.47616,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.19",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/26jxvl3frva_f.js",
-      "timestamp": 27786.476175,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.20",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/24p__-lvi99r3.js",
-      "timestamp": 27786.476236,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.21",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/43ahgrk5xz1g4.js",
-      "timestamp": 27786.476286,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.22",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2foqci80tam44.js",
-      "timestamp": 27786.476331,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.23",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/00uobwm6aziud.js",
-      "timestamp": 27786.476361,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.24",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/34m9n56wioiy_.js",
-      "timestamp": 27786.476404,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.25",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/359-tgz6qnhh9.js",
-      "timestamp": 27786.476442,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.26",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3a9qzufofm2x_.js",
-      "timestamp": 27786.476459,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.27",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/03mv7ge26u8y6.js",
-      "timestamp": 27786.476476,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.28",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1c050mosy-0q3.js",
-      "timestamp": 27786.476493,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.29",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/41_64be0h8adl.js",
-      "timestamp": 27786.476506,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.30",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1ivku85i57o_q.js",
-      "timestamp": 27786.476527,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.31",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0n7-vni359th3.js",
-      "timestamp": 27786.476538,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.32",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1f_r--3wuo-lf.js",
-      "timestamp": 27786.476553,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.33",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2uuhqrt_y1rrb.js",
-      "timestamp": 27786.476569,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.34",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/358y4416a28o-.js",
-      "timestamp": 27786.47659,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.35",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0qr7civyc_huk.js",
-      "timestamp": 27786.476604,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.36",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1jenknb519dcd.js",
-      "timestamp": 27786.476619,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.37",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0jb3mg87v1vfx.js",
-      "timestamp": 27786.47663,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.38",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1epzjhvv-jd4a.js",
-      "timestamp": 27786.476644,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.39",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1i25ytfvk5d_w.js",
-      "timestamp": 27786.476655,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.40",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0e_-s5cq2d_zt.js",
-      "timestamp": 27786.476667,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.41",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1-9xx-j744k81.js",
-      "timestamp": 27786.476684,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.42",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/42rr9s-d-ro60.js",
-      "timestamp": 27786.476702,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.43",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1my7f_qf721o7.js",
-      "timestamp": 27786.476714,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.44",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0xuisum26-zpm.js",
-      "timestamp": 27786.476737,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.45",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1arg3vor-zr44.js",
-      "timestamp": 27786.476748,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.46",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3_0e-02y9w6-6.js",
-      "timestamp": 27786.476767,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.47",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/14hp64yobj_p4.js",
-      "timestamp": 27786.476779,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.48",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3h9hmfdsmdj2o.js",
-      "timestamp": 27786.476791,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.49",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3f37my-x99pjj.js",
-      "timestamp": 27786.476804,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.50",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2dkmqb-txo_ac.js",
-      "timestamp": 27786.476819,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.51",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2c3-v_he6ujuv.js",
-      "timestamp": 27786.476836,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.52",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2vzorf8dlfuwk.js",
-      "timestamp": 27786.476852,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.53",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0hxx4e_b4fhli.js",
-      "timestamp": 27786.476864,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.54",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3hypukl_bmh-v.js",
-      "timestamp": 27786.476885,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.55",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1s0f69kv0lrn2.js",
-      "timestamp": 27786.476898,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.56",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/00ena7w0b4pkv.js",
-      "timestamp": 27786.476911,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.57",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3c5cxr1_s8dy8.js",
-      "timestamp": 27786.476926,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.58",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0j2u0y3xql8fe.js",
-      "timestamp": 27786.476943,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.59",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1f8l1r68_y5hd.js",
-      "timestamp": 27786.476957,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.60",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2ul1mr4ud1tyr.js",
-      "timestamp": 27786.476971,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.61",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2tb0p84tf38kf.js",
-      "timestamp": 27786.476987,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.62",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/12j7qis8lwhs3.js",
-      "timestamp": 27786.477008,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.63",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/11cyz-b2wtnr9.js",
-      "timestamp": 27786.47702,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.64",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3rq_qjreljbql.js",
-      "timestamp": 27786.477035,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.65",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/200p0jnw1nfrq.js",
-      "timestamp": 27786.477053,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.66",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1h10h-nnty_s8.js",
-      "timestamp": 27786.477088,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.67",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2mj5bz1w_s050.js",
-      "timestamp": 27786.47711,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.68",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/17pyuo3jro6la.js",
-      "timestamp": 27786.477126,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.69",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0ulye6hysfgn8.js",
-      "timestamp": 27786.477138,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.70",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3m1nk28wr2a-9.js",
-      "timestamp": 27786.477159,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.71",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3v3y9k0webp5f.js",
-      "timestamp": 27786.477174,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.72",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/21wekyjdaq76u.js",
-      "timestamp": 27786.477192,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.73",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1e4dn9zgob3x7.js",
-      "timestamp": 27786.477211,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.74",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1wz2b08unk4nv.js",
-      "timestamp": 27786.477227,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.75",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1g82l_32l-dv2.js",
-      "timestamp": 27786.477241,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.76",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2hxul566rcp_u.js",
-      "timestamp": 27786.477255,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.77",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1t1n559-zuz61.js",
-      "timestamp": 27786.477267,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.78",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3uqwhnsu8czlj.js",
-      "timestamp": 27786.477284,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.79",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1ne6znrcs-f6y.js",
-      "timestamp": 27786.477294,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.80",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/26lmgjckz06-j.css",
-      "timestamp": 27786.477309,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.81",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1-vyfk6cbr430.css",
-      "timestamp": 27786.477338,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "request",
-      "requestId": "32668.82",
-      "method": "GET",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0_d48_phzy-n_.css",
-      "timestamp": 27786.477357,
-      "hasAuthHeader": false,
-      "hasCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.5",
+      "requestId": "4628.42",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/15eq68roqlucr.css",
-      "mimeType": "text/css",
-      "durationMs": 4,
-      "timestamp": 27786.480138,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.7",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1-9yb6i_h9yg1.css",
-      "mimeType": "text/css",
-      "durationMs": 6,
-      "timestamp": 27786.481611,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.8",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0ia8w1n1yr9aa.css",
-      "mimeType": "text/css",
-      "durationMs": 6,
-      "timestamp": 27786.481938,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.80",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/26lmgjckz06-j.css",
-      "mimeType": "text/css",
-      "durationMs": 6,
-      "timestamp": 27786.482841,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.81",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1-vyfk6cbr430.css",
-      "mimeType": "text/css",
-      "durationMs": 6,
-      "timestamp": 27786.482949,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.2",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/media/07a39a8a4660cc7c.p.1v5bejj26fx9h.woff2",
-      "mimeType": "font/woff2",
-      "durationMs": 12,
-      "timestamp": 27786.48687,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.3",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/media/GeistPixel_Square.p.3i-voztpvqxl2.woff2",
-      "mimeType": "font/woff2",
-      "durationMs": 13,
-      "timestamp": 27786.488311,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.4",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/media/Geist_Variable-s.p.2wz-lhd5-5z0-.woff2",
-      "mimeType": "font/woff2",
-      "durationMs": 17,
-      "timestamp": 27786.491962,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.6",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/13g5y8w-tj_cy.css",
-      "mimeType": "text/css",
-      "durationMs": 32,
-      "timestamp": 27786.508124,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.82",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0_d48_phzy-n_.css",
-      "mimeType": "text/css",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/42rr9s-d-ro60.js",
+      "mimeType": "application/javascript",
       "durationMs": 55,
-      "timestamp": 27786.532081,
-      "hasSetCookieHeader": false
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.10",
+      "requestId": "4628.45",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/082c9c5lfeghn.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1arg3vor-zr44.js",
       "mimeType": "application/javascript",
-      "durationMs": 112,
-      "timestamp": 27786.587638,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.11",
+      "requestId": "4628.46",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3r076korij6gu.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3_0e-02y9w6-6.js",
       "mimeType": "application/javascript",
-      "durationMs": 114,
-      "timestamp": 27786.589998,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.12",
+      "requestId": "4628.47",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1vh4nsdwj-tnc.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/14hp64yobj_p4.js",
       "mimeType": "application/javascript",
-      "durationMs": 133,
-      "timestamp": 27786.609175,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.13",
+      "requestId": "4628.48",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/227bzhl1iddbi.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3h9hmfdsmdj2o.js",
       "mimeType": "application/javascript",
-      "durationMs": 144,
-      "timestamp": 27786.619917,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.15",
+      "requestId": "4628.43",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/turbopack-2kua30ffxumth.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1my7f_qf721o7.js",
       "mimeType": "application/javascript",
-      "durationMs": 144,
-      "timestamp": 27786.620072,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.16",
+      "requestId": "4628.44",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/43t01zhciccwx.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0xuisum26-zpm.js",
       "mimeType": "application/javascript",
-      "durationMs": 144,
-      "timestamp": 27786.620173,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.17",
+      "requestId": "4628.49",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/32tylomnt4zhv.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3f37my-x99pjj.js",
       "mimeType": "application/javascript",
-      "durationMs": 144,
-      "timestamp": 27786.62035,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.18",
+      "requestId": "4628.52",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0jx83u0qhqnai.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2vzorf8dlfuwk.js",
       "mimeType": "application/javascript",
-      "durationMs": 144,
-      "timestamp": 27786.620441,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.19",
+      "requestId": "4628.51",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/26jxvl3frva_f.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2c3-v_he6ujuv.js",
       "mimeType": "application/javascript",
-      "durationMs": 144,
-      "timestamp": 27786.620613,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.22",
+      "requestId": "4628.53",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2foqci80tam44.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0hxx4e_b4fhli.js",
       "mimeType": "application/javascript",
-      "durationMs": 144,
-      "timestamp": 27786.620772,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.21",
+      "requestId": "4628.54",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/43ahgrk5xz1g4.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3hypukl_bmh-v.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.620869,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.14",
+      "requestId": "4628.55",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/342sco7n2gh5f.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1s0f69kv0lrn2.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.620935,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.23",
+      "requestId": "4628.56",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/00uobwm6aziud.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/00ena7w0b4pkv.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.621514,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.24",
+      "requestId": "4628.58",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/34m9n56wioiy_.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/0j2u0y3xql8fe.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.621594,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.25",
+      "requestId": "4628.59",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/359-tgz6qnhh9.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/1f8l1r68_y5hd.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.621653,
-      "hasSetCookieHeader": false
+      "durationMs": 55,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.26",
+      "requestId": "4628.50",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3a9qzufofm2x_.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2dkmqb-txo_ac.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.621717,
-      "hasSetCookieHeader": false
+      "durationMs": 56,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.27",
+      "requestId": "4628.57",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/03mv7ge26u8y6.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3c5cxr1_s8dy8.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.62177,
-      "hasSetCookieHeader": false
+      "durationMs": 56,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.29",
+      "requestId": "4628.60",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/41_64be0h8adl.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2ul1mr4ud1tyr.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.62182,
-      "hasSetCookieHeader": false
+      "durationMs": 56,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.28",
+      "requestId": "4628.61",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1c050mosy-0q3.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/2tb0p84tf38kf.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.621872,
-      "hasSetCookieHeader": false
+      "durationMs": 56,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.30",
+      "requestId": "4628.62",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1ivku85i57o_q.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/12j7qis8lwhs3.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.621924,
-      "hasSetCookieHeader": false
+      "durationMs": 56,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.31",
+      "requestId": "4628.63",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0n7-vni359th3.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/11cyz-b2wtnr9.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.621977,
-      "hasSetCookieHeader": false
+      "durationMs": 56,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.32",
+      "requestId": "4628.65",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1f_r--3wuo-lf.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/200p0jnw1nfrq.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.622027,
-      "hasSetCookieHeader": false
+      "durationMs": 56,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     },
     {
-      "type": "response",
-      "requestId": "32668.34",
+      "requestId": "4628.64",
       "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/358y4416a28o-.js",
+      "origin": "https://vercel.com",
+      "pathname": "/_next/static/immutable/chunks/3rq_qjreljbql.js",
       "mimeType": "application/javascript",
-      "durationMs": 145,
-      "timestamp": 27786.622082,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.33",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2uuhqrt_y1rrb.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622137,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.36",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1jenknb519dcd.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622189,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.35",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0qr7civyc_huk.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622246,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.37",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0jb3mg87v1vfx.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622299,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.39",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1i25ytfvk5d_w.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622398,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.38",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1epzjhvv-jd4a.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622452,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.41",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1-9xx-j744k81.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622578,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.40",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0e_-s5cq2d_zt.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622666,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.43",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1my7f_qf721o7.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622718,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.42",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/42rr9s-d-ro60.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622773,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.45",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1arg3vor-zr44.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622825,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.44",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0xuisum26-zpm.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622874,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.46",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3_0e-02y9w6-6.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622924,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.48",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3h9hmfdsmdj2o.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.622973,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.49",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3f37my-x99pjj.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.623147,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.50",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2dkmqb-txo_ac.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.623198,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.47",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/14hp64yobj_p4.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.623255,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.52",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2vzorf8dlfuwk.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.623304,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.53",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0hxx4e_b4fhli.js",
-      "mimeType": "application/javascript",
-      "durationMs": 146,
-      "timestamp": 27786.623356,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.54",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3hypukl_bmh-v.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623405,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.55",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1s0f69kv0lrn2.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.62346,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.58",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/0j2u0y3xql8fe.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623509,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.56",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/00ena7w0b4pkv.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623616,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.57",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3c5cxr1_s8dy8.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623668,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.59",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1f8l1r68_y5hd.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623718,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.60",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2ul1mr4ud1tyr.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623771,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.61",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/2tb0p84tf38kf.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623821,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.62",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/12j7qis8lwhs3.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623876,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.63",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/11cyz-b2wtnr9.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623922,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.65",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/200p0jnw1nfrq.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.623974,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.64",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/3rq_qjreljbql.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.624027,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.66",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/1h10h-nnty_s8.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.624076,
-      "hasSetCookieHeader": false
-    },
-    {
-      "type": "response",
-      "requestId": "32668.68",
-      "status": 200,
-      "statusText": "",
-      "sanitizedUrl": "https://vercel.com/_next/static/immutable/chunks/17pyuo3jro6la.js",
-      "mimeType": "application/javascript",
-      "durationMs": 147,
-      "timestamp": 27786.624123,
-      "hasSetCookieHeader": false
+      "durationMs": 56,
+      "errorCategory": "NONE",
+      "hasSetCookieHeader": false,
+      "timestamp": 36377
     }
   ],
-  "sanitizedConsoleLogsCount": 3,
+  "sanitizedConsoleLogsCount": 2,
   "sanitizedConsoleLogs": [
     {
-      "type": "log",
-      "args": [
-        "%c\n▲\n\n _____ _              _                    _   _             __\n|_   _| |__   ___    / \\   __ _  ___ _ __ | |_(_) ___       / /\n  | | | '_ \\ / _ \\  / _ \\ / _` |/ _ \\ '_ \\| __| |/ __|     / /\n  | | | | | |  __/ / ___ \\ (_| |  __/ | | | |_| | (__     /_/\n  |_| |_| |_|\\___|/_/   \\_\\__, |\\___|_| |_|\\__|_|\\___|    (_)\n                           |___/\n ___        __               _                   _                 _\n|_ _|_ __  / _|_ __ __ _ ___| |_ _ __ _   _  ___| |_ _   _ _ __ ___\n | || '_ \\| |_| '__/ _` / __| __| '__| | | |/ __| __| | | | '__/ _ \\\n | || | | |  _| | | (_| \\__ \\ |_| |  | |_| | (__| |_| |_| | | |  __/\n|___|_| |_|_| |_|  \\__,_|___/\\__|_|   \\__,_|\\___|\\__|\\__,_|_|  \\___|\n  \n\nHello!\n\n- Open Source https://vercel.com/oss\n- Careers https://vercel.com/careers\n- Status https://www.vercel-status.com\n\n",
-        "font-family: \"Geist Mono\", monospace; white-space: pre; line-height: 1;"
-      ],
-      "timestamp": 1793808696302
+      "severity": "log",
+      "category": "AUTHENTICATION_EVENT",
+      "length": 805
     },
     {
-      "type": "warning",
-      "args": [
-        "[GSI_LOGGER]: Your client application uses one of the Google One Tap prompt UI status methods that may stop functioning when FedCM becomes mandatory. Refer to the migration guide to update your code accordingly and opt-in to FedCM to test your changes. Learn more: https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#display_moment and https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#skipped_moment"
-      ],
-      "timestamp": 1793808696823
-    },
-    {
-      "type": "error",
-      "args": [
-        "[GSI_LOGGER]: FedCM get() rejects with NetworkError: Error retrieving a token."
-      ],
-      "timestamp": 1793808697669
+      "severity": "warning",
+      "category": "APPLICATION_WARNING",
+      "length": 448
     }
   ],
-  "note": "Zero raw headers, cookies, or authorization tokens were stored."
+  "redactionGuarantees": [
+    "Zero raw request headers stored",
+    "Zero raw response headers stored",
+    "Zero cookie or Set-Cookie values stored",
+    "Zero authorization tokens stored",
+    "All query strings dropped completely",
+    "Console logs mapped to allowlisted categories",
+    "WebSocket URLs kept strictly in memory only"
+  ]
 }

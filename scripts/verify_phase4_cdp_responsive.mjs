@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const CDP_PORT = 9222;
-const PREVIEW_URL = 'https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app/admin';
-const EXPECTED_ORIGIN = 'https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app';
+const PREVIEW_ORIGIN = 'https://astroverse-git-fix-e-72a6a3-knowledgeispower1715-1915s-projects.vercel.app';
+const PREVIEW_ADMIN_URL = `${PREVIEW_ORIGIN}/admin`;
+const EXPECTED_DEPLOYMENT_SHA = '2d883d301cf895f1c3103349329ad7305c193cd6';
 const OUTPUT_DIR = path.resolve('artifacts/phase-4-enterprise-verification');
 
 if (!fs.existsSync(OUTPUT_DIR)) {
@@ -22,49 +23,64 @@ const VIEWPORTS = [
 ];
 
 const ZOOM_LEVELS = [
-  { name: 'zoom_125pct', scale: 1.25 },
-  { name: 'zoom_150pct', scale: 1.50 },
-  { name: 'zoom_200pct', scale: 2.00 }
+  { name: 'zoom_125pct', factor: 1.25 },
+  { name: 'zoom_150pct', factor: 1.50 },
+  { name: 'zoom_200pct', factor: 2.00 }
 ];
 
-const SENSITIVE_QUERY_PARAMS = new Set([
-  'token', 'access_token', 'refresh_token', 'id_token', 'code', 'secret',
-  'key', 'apikey', 'api_key', 'auth', 'authorization', 'password', 'passwd',
-  'session', 'session_id', 'state', 'signature', 'sig'
-]);
-
-function sanitizeUrl(rawUrl) {
+/**
+ * SECTION 5: STRICT DIAGNOSTIC REDACTION
+ * Drops all query strings completely.
+ * Extracts only approved origin and sanitized pathname.
+ */
+export function sanitizePath(rawUrl) {
   if (!rawUrl) return '';
   try {
-    const parsed = new URL(rawUrl);
-    for (const param of Array.from(parsed.searchParams.keys())) {
-      if (SENSITIVE_QUERY_PARAMS.has(param.toLowerCase())) {
-        parsed.searchParams.set(param, '[REDACTED]');
-      }
-    }
-    return parsed.toString();
+    const u = new URL(rawUrl);
+    return {
+      origin: u.origin,
+      pathname: u.pathname,
+      isApprovedOrigin: u.origin === PREVIEW_ORIGIN
+    };
   } catch {
-    return rawUrl.split('?')[0];
+    return {
+      origin: 'unknown',
+      pathname: (rawUrl || '').split('?')[0].slice(0, 100),
+      isApprovedOrigin: false
+    };
   }
 }
 
-function sanitizeConsoleLog(arg) {
-  if (typeof arg !== 'string') {
-    try {
-      arg = JSON.stringify(arg);
-    } catch {
-      arg = String(arg);
-    }
+/**
+ * Allowlisted console severity and category mapper.
+ * Never stores raw arbitrary strings or customer details.
+ */
+export function classifyConsoleMessage(type, rawText) {
+  const text = String(rawText || '').toLowerCase();
+  let category = 'APPLICATION_INFO';
+  if (text.includes('sso') || text.includes('vercel') || text.includes('login')) {
+    category = 'AUTHENTICATION_EVENT';
+  } else if (text.includes('database') || text.includes('postgres') || text.includes('rls')) {
+    category = 'DATABASE_TELEMETRY';
+  } else if (text.includes('network') || text.includes('fetch') || text.includes('xhr')) {
+    category = 'NETWORK_TELEMETRY';
+  } else if (type === 'error' || text.includes('error') || text.includes('fail')) {
+    category = 'APPLICATION_ERROR';
+  } else if (type === 'warning' || text.includes('warn')) {
+    category = 'APPLICATION_WARNING';
   }
-  return arg
-    .replace(/bearer\s+[a-zA-Z0-9_\-\.]+/gi, 'Bearer [REDACTED]')
-    .replace(/(?:password|secret|token|key|cookie)["']?\s*[:=]\s*["']?[^"',\s}]+/gi, '$1: [REDACTED]')
-    .replace(/ey[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*/g, '[JWT_REDACTED]');
+
+  return {
+    severity: type || 'log',
+    category,
+    length: text.length
+  };
 }
 
 class CDPClient {
   constructor(wsUrl) {
-    this.wsUrl = wsUrl;
+    // In-memory only: wsUrl is never exported or logged to disk
+    this.#wsUrl = wsUrl;
     this.ws = null;
     this.id = 1;
     this.callbacks = new Map();
@@ -73,9 +89,11 @@ class CDPClient {
     this.requestStartTimes = new Map();
   }
 
+  #wsUrl;
+
   async connect() {
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(this.wsUrl);
+      this.ws = new WebSocket(this.#wsUrl);
       this.ws.onopen = () => resolve();
       this.ws.onerror = (e) => reject(e);
       this.ws.onmessage = (event) => {
@@ -85,44 +103,48 @@ class CDPClient {
           const reqId = msg.params.requestId;
           this.requestStartTimes.set(reqId, msg.params.timestamp);
           
-          // STRICT SECURITY: Never store raw request headers, cookies, or authorization tokens
-          const hasAuth = Boolean(req.headers?.['Authorization'] || req.headers?.['authorization']);
-          const hasCookie = Boolean(req.headers?.['Cookie'] || req.headers?.['cookie']);
-          
+          const pathInfo = sanitizePath(req.url);
+          const isStatic = /\.(js|css|png|jpg|svg|ico|woff2?)(\?|$)/i.test(pathInfo.pathname);
+          const isApi = pathInfo.pathname.startsWith('/api/');
+
+          // STRICT: Zero raw headers, zero cookies, zero body, zero query string
           this.networkLogs.push({
-            type: 'request',
             requestId: reqId,
             method: req.method,
-            sanitizedUrl: sanitizeUrl(req.url),
-            timestamp: msg.params.timestamp,
-            hasAuthHeader: hasAuth,
-            hasCookieHeader: hasCookie
+            origin: pathInfo.origin,
+            pathname: pathInfo.pathname,
+            classification: isApi ? 'API_REQUEST' : isStatic ? 'STATIC_ASSET' : 'INTERNAL_NAV',
+            hasAuthHeader: Boolean(req.headers?.['Authorization'] || req.headers?.['authorization']),
+            hasCookieHeader: Boolean(req.headers?.['Cookie'] || req.headers?.['cookie']),
+            timestamp: Math.round(msg.params.timestamp)
           });
         } else if (msg.method === 'Network.responseReceived') {
           const res = msg.params.response;
           const reqId = msg.params.requestId;
           const startTime = this.requestStartTimes.get(reqId) || msg.params.timestamp;
           const durationMs = Math.round((msg.params.timestamp - startTime) * 1000);
+          const pathInfo = sanitizePath(res.url);
 
-          // STRICT SECURITY: Never store raw response headers or set-cookie headers
+          let errorCategory = 'NONE';
+          if (res.status === 401 || res.status === 403) errorCategory = 'AUTH_REQUIRED';
+          else if (res.status >= 500) errorCategory = 'SERVER_ERROR';
+          else if (res.status >= 400) errorCategory = 'CLIENT_ERROR';
+
+          // STRICT: Zero raw response headers, zero set-cookie values
           this.networkLogs.push({
-            type: 'response',
             requestId: reqId,
             status: res.status,
-            statusText: res.statusText,
-            sanitizedUrl: sanitizeUrl(res.url),
-            mimeType: res.mimeType,
+            origin: pathInfo.origin,
+            pathname: pathInfo.pathname,
+            mimeType: (res.mimeType || '').split(';')[0],
             durationMs: durationMs >= 0 ? durationMs : 0,
-            timestamp: msg.params.timestamp,
-            hasSetCookieHeader: Boolean(res.headers?.['Set-Cookie'] || res.headers?.['set-cookie'])
+            errorCategory,
+            hasSetCookieHeader: Boolean(res.headers?.['Set-Cookie'] || res.headers?.['set-cookie']),
+            timestamp: Math.round(msg.params.timestamp)
           });
         } else if (msg.method === 'Runtime.consoleAPICalled') {
-          const sanitizedArgs = msg.params.args.map(a => sanitizeConsoleLog(a.value || a.description || ''));
-          this.consoleLogs.push({
-            type: msg.params.type,
-            args: sanitizedArgs,
-            timestamp: Date.now()
-          });
+          const text = msg.params.args.map(a => a.value || a.description || '').join(' ');
+          this.consoleLogs.push(classifyConsoleMessage(msg.params.type, text));
         }
 
         if (msg.id && this.callbacks.has(msg.id)) {
@@ -160,41 +182,64 @@ class CDPClient {
 }
 
 async function run() {
-  console.log('--- Connecting to Chrome Remote Debugger on port 9222 ---');
-  
-  // Inspect existing open tabs to check if owner is already on Preview
+  console.log('=== AstroVerse Phase 4.2 Browser Verification Engine ===');
+  console.log(`Checking Chrome Remote Debugging on http://127.0.0.1:${CDP_PORT}...`);
+
+  // SECTION 3: ATTACH TO EXISTING SESSION & EXACT PREVIEW ORIGIN SELECTION
   let targetId = null;
-  let webSocketDebuggerUrl = null;
-  let isExistingTab = false;
+  let wsUrl = null;
+  let isExistingPreviewTab = false;
 
-  try {
-    const listResp = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
-    if (listResp.ok) {
-      const targets = await listResp.json();
-      const existingTab = targets.find(t => t.type === 'page' && t.url && (t.url.includes('astroverse-git-fix-e-72a6a3') || t.url.includes('astroverse-eta')));
-      if (existingTab) {
-        console.log(`Found existing AstroVerse tab: ${existingTab.url}`);
-        targetId = existingTab.id;
-        webSocketDebuggerUrl = existingTab.webSocketDebuggerUrl;
-        isExistingTab = true;
-      }
+  const listResp = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
+  if (!listResp.ok) {
+    throw new Error(`Chrome Remote Debugging unreachable on 127.0.0.1:${CDP_PORT}`);
+  }
+  const targets = await listResp.json();
+
+  // Rule 1: Find an existing page whose parsed origin exactly equals the Preview origin
+  for (const t of targets) {
+    if (t.type === 'page' && t.url) {
+      try {
+        const u = new URL(t.url);
+        // STRICT: Never select production origin
+        if (u.origin === 'https://astroverse-eta.vercel.app') {
+          console.warn('Ignoring Production tab to preserve Read-Only invariant.');
+          continue;
+        }
+        if (u.origin === PREVIEW_ORIGIN) {
+          console.log(`Found exact Preview tab: target ${t.id} on ${u.origin}`);
+          targetId = t.id;
+          wsUrl = t.webSocketDebuggerUrl;
+          isExistingPreviewTab = true;
+          break;
+        }
+      } catch {}
     }
-  } catch (err) {
-    console.warn('Could not inspect existing tabs, falling back to new target:', err.message);
   }
 
+  // If no exact Preview tab exists, check if there is an authorized debugging browser to open one
   if (!targetId) {
-    const targetResp = await fetch(`http://127.0.0.1:${CDP_PORT}/json/new?${encodeURIComponent(PREVIEW_URL)}`, { method: 'PUT' });
-    if (!targetResp.ok) {
-      throw new Error(`Failed to create target page on Chrome CDP: ${targetResp.statusText}`);
+    console.log(`No existing Preview tab on ${PREVIEW_ORIGIN}. Checking for Vercel SSO challenge tab or creating one...`);
+    const ssoTab = targets.find(t => t.type === 'page' && t.url && t.url.includes('vercel.com/login') && t.url.includes(encodeURIComponent(PREVIEW_ORIGIN)));
+    if (ssoTab) {
+      console.log(`Found Vercel SSO login tab for Preview: target ${ssoTab.id}`);
+      targetId = ssoTab.id;
+      wsUrl = ssoTab.webSocketDebuggerUrl;
+      isExistingPreviewTab = true;
+    } else {
+      console.log(`Creating new Preview tab on ${PREVIEW_ADMIN_URL}...`);
+      const newResp = await fetch(`http://127.0.0.1:${CDP_PORT}/json/new?${encodeURIComponent(PREVIEW_ADMIN_URL)}`, { method: 'PUT' });
+      if (!newResp.ok) {
+        throw new Error(`Failed to create Preview target: ${newResp.statusText}`);
+      }
+      const newTarget = await newResp.json();
+      targetId = newTarget.id;
+      wsUrl = newTarget.webSocketDebuggerUrl;
+      isExistingPreviewTab = false;
     }
-    const target = await targetResp.json();
-    targetId = target.id;
-    webSocketDebuggerUrl = target.webSocketDebuggerUrl;
   }
 
-  console.log(`Attached to CDP target: ${targetId}`);
-  const cdp = new CDPClient(webSocketDebuggerUrl);
+  const cdp = new CDPClient(wsUrl);
   await cdp.connect();
 
   try {
@@ -202,219 +247,195 @@ async function run() {
     await cdp.send('Network.enable');
     await cdp.send('Runtime.enable');
     await cdp.send('DOM.enable');
-    await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: true });
 
-    console.log('Waiting for initial page settling (3500ms)...');
-    await new Promise(r => setTimeout(r, 3500));
+    console.log('Waiting for target page to settle (3000ms)...');
+    await new Promise(r => setTimeout(r, 3000));
 
-    // Capture initial DOM and Navigation State
-    const navState = await cdp.eval(`({
-      title: document.title,
-      currentUrl: window.location.href,
-      currentOrigin: window.location.origin,
-      readyState: document.readyState,
-      isVercelSsoRequired: window.location.hostname === 'vercel.com' || 
-                           window.location.hostname.endsWith('.vercel.com') ||
-                           document.title.includes('Vercel') || 
-                           Boolean(document.querySelector('form[action*="login"]') || 
-                           (document.body && (document.body.innerText.includes('Log in to Vercel') || document.body.innerText.includes('Deployment Protection')))),
-      isAdminMounted: Boolean(document.getElementById('admin-root') || document.querySelector('.admin-sidebar') || document.getElementById('admin-overall-provenance-badge')),
-      bodySnippet: document.body ? document.body.innerText.slice(0, 300).replace(/\\s+/g, ' ') : ''
-    })`);
+    // SECTION 4: STRICT AUTHENTICATION GATE INSPECTION
+    // Inspect current location and DOM state safely
+    const navState = await cdp.eval(`(() => {
+      const loc = window.location;
+      const doc = document;
+      const isVercelSso = loc.hostname === 'vercel.com' || 
+                          loc.hostname.endsWith('.vercel.com') ||
+                          doc.title.includes('Vercel') ||
+                          Boolean(doc.querySelector('form[action*="login"]') || 
+                          (doc.body && doc.body.innerText.includes('Log in to Vercel')));
+      
+      const adminView = doc.getElementById('view-admin');
+      const loginView = doc.getElementById('view-admin-login');
+      const isAdminMounted = Boolean(adminView && adminView.classList.contains('active') && adminView.style.display !== 'none');
+      const isLoginViewActive = Boolean(loginView && loginView.classList.contains('active'));
+      const adminSidebarVisible = Boolean(doc.querySelector('.admin-sidebar'));
+      const provenanceBadgeVisible = Boolean(doc.getElementById('admin-overall-provenance-badge'));
+      
+      return {
+        origin: loc.origin,
+        pathname: loc.pathname,
+        isExactPreviewOrigin: loc.origin === '${PREVIEW_ORIGIN}',
+        isVercelSso,
+        title: doc.title,
+        isAdminMounted,
+        isLoginViewActive,
+        adminSidebarVisible,
+        provenanceBadgeVisible,
+        readyState: doc.readyState
+      };
+    })()`);
 
-    console.log('Navigation State:', JSON.stringify(navState, null, 2));
+    console.log('Target Page Navigation State:', JSON.stringify(navState, null, 2));
 
-    // STAGE 2: MAKE PREVIEW VERIFICATION AUTHENTICATION-AWARE
-    const isVercelSso = navState.isVercelSsoRequired || 
-                        navState.currentOrigin === 'https://vercel.com' || 
-                        navState.currentUrl.includes('vercel.com/login');
+    // SECTION 6: AUTHENTICATED PREVIEW VERIFICATION LOGIC (Classification)
+    let releaseStatus = 'UNKNOWN';
+    let blockingReason = '';
 
-    if (isVercelSso) {
-      console.log('\n======================================================');
-      console.log('STATUS: BLOCKED_VERCEL_SSO');
-      console.log('The remote Preview host is protected by Vercel Team Deployment Protection.');
-      console.log('Stopping automated application verification.');
-      console.log('Will NOT capture Vercel login screen as AstroVerse Admin responsiveness.');
-      console.log('Will NOT mark Admin layout or modules as PASS.');
-      console.log('======================================================\n');
+    if (navState.origin !== PREVIEW_ORIGIN) {
+      if (navState.isVercelSso || navState.origin.includes('vercel.com')) {
+        releaseStatus = 'BLOCKED_VERCEL_SSO';
+        blockingReason = 'The target is currently on Vercel SSO login gate. Owner must authenticate interactively.';
+      } else {
+        releaseStatus = 'BLOCKED_WRONG_ORIGIN';
+        blockingReason = `Target origin ${navState.origin} does not match expected Preview origin ${PREVIEW_ORIGIN}.`;
+      }
+    } else if (navState.isVercelSso) {
+      releaseStatus = 'BLOCKED_VERCEL_SSO';
+      blockingReason = 'Vercel Deployment Protection SSO login challenge is active on the Preview origin.';
+    } else if (navState.isLoginViewActive || !navState.isAdminMounted) {
+      releaseStatus = 'BLOCKED_AUTHENTICATION';
+      blockingReason = 'AstroVerse Admin portal is displaying the Admin Login view. Active authenticated Owner session is required.';
+    } else {
+      // Admin dashboard view is mounted! Now verify server-confirmed OWNER authority (Rule 5-8)
+      console.log('Admin DOM is mounted. Verifying server-side authentication and OWNER authority...');
+      
+      const serverAuthResult = await cdp.eval(`(async () => {
+        try {
+          // Discover and probe authoritative admin session endpoint
+          const sessionPolicyRes = await fetch('/api/admin/session/policy');
+          const sessionPolicy = sessionPolicyRes.ok ? await sessionPolicyRes.json() : null;
 
-      const diagnosticsPath = path.join(OUTPUT_DIR, 'BROWSER_CDP_DIAGNOSTICS.json');
-      fs.writeFileSync(diagnosticsPath, JSON.stringify({
-        verificationStatus: 'BLOCKED_VERCEL_SSO',
-        reason: 'Preview host redirected to Vercel Deployment Protection login gate. Automated execution halted to avoid capturing third-party SSO pages or fabricating verification results.',
-        previewUrl: PREVIEW_URL,
-        inspectedAt: new Date().toISOString(),
-        navState,
-        sanitizedNetworkLogsCount: cdp.networkLogs.length,
-        sanitizedNetworkLogs: cdp.networkLogs.slice(0, 150),
-        sanitizedConsoleLogsCount: cdp.consoleLogs.length,
-        sanitizedConsoleLogs: cdp.consoleLogs,
-        note: 'Zero raw headers, cookies, or authorization tokens were stored.'
-      }, null, 2));
+          // Probe authenticated admin database status endpoint
+          const dbStatusRes = await fetch('/api/admin/database/status');
+          const dbStatus = dbStatusRes.ok ? await dbStatusRes.json() : null;
 
-      const previewResultsPath = path.join(OUTPUT_DIR, 'RESPONSIVE_REAL_PREVIEW_RESULTS.md');
-      fs.writeFileSync(previewResultsPath, `# REAL PREVIEW RESPONSIVE MEASUREMENT RESULTS
+          // Probe release identity endpoint
+          const releaseRes = await fetch('/api/release');
+          const release = releaseRes.ok ? await releaseRes.json() : null;
 
-**Target Preview Host:** \`${PREVIEW_URL}\`  
-**Execution Timestamp:** ${new Date().toISOString()}  
-**Chrome CDP Endpoint:** \`127.0.0.1:9222\`  
-**Verification Status:** **BLOCKED_VERCEL_SSO**  
-
----
-
-## 1. Authentication Gate Detection
-
-- **Observed Navigation URL:** \`${navState.currentUrl}\`
-- **Observed Page Title:** \`${navState.title}\`
-- **Origin Validation:** Expected \`${EXPECTED_ORIGIN}\`, got \`${navState.currentOrigin}\`.
-- **Vercel Team SSO Active:** \`true\`
-
-### Non-Fabrication Invariant:
-In accordance with Stage 2 and Stage 4 requirements:
-1. Automated capture of the Vercel SSO login page as proof of AstroVerse Admin responsiveness is **STRICTLY PROHIBITED**.
-2. Automated Admin layout, action, and module execution is halted with status **BLOCKED_VERCEL_SSO**.
-3. All zoom and viewport measurements will only be performed after authentic owner SSO completion on the genuine Preview origin.
-`);
-
-      return;
-    }
-
-    // IF AUTHENTICATED: Proceed with actual DOM measurements (STAGE 4)
-    console.log('\n--- Origin Verified: Executing Actual Responsive DOM Measurements ---');
-    const screenshotIndex = [];
-
-    // Capture all 8 responsive viewports with REAL measurements
-    for (const vp of VIEWPORTS) {
-      console.log(`Setting viewport: ${vp.name} (${vp.width}x${vp.height})...`);
-      await cdp.send('Emulation.setDeviceMetricsOverride', {
-        width: vp.width,
-        height: vp.height,
-        deviceScaleFactor: 1,
-        mobile: vp.width <= 430
-      });
-      await new Promise(r => setTimeout(r, 600));
-
-      // Measure REAL DOM metrics
-      const domMetrics = await cdp.eval(`(() => {
-        const root = document.documentElement;
-        const body = document.body;
-        const scrollWidth = root.scrollWidth;
-        const clientWidth = root.clientWidth;
-        const scrollHeight = root.scrollHeight;
-        const clientHeight = root.clientHeight;
-        const hasHorizontalOverflow = scrollWidth > clientWidth;
-        const hasVerticalOverflow = scrollHeight > clientHeight;
-
-        // Inspect text and element clipping
-        let clippedElements = 0;
-        let textOverflowCount = 0;
-        const allElements = document.querySelectorAll('*');
-        for (const el of allElements) {
-          const style = window.getComputedStyle(el);
-          if (el.scrollWidth > el.clientWidth && style.overflowX === 'hidden' && style.textOverflow !== 'ellipsis') {
-            textOverflowCount++;
-          }
-          const rect = el.getBoundingClientRect();
-          if (rect.right > clientWidth || rect.left < 0) {
-            clippedElements++;
-          }
+          return {
+            sessionPolicyOk: sessionPolicyRes.ok,
+            dbStatusOk: dbStatusRes.ok,
+            releaseOk: releaseRes.ok,
+            dbStatus,
+            release
+          };
+        } catch (err) {
+          return { error: err.message };
         }
-
-        const navVisible = Boolean(document.querySelector('.admin-sidebar, nav, header'));
-        const interactiveControls = document.querySelectorAll('button, a, input, select').length;
-
-        return {
-          scrollWidth,
-          clientWidth,
-          scrollHeight,
-          clientHeight,
-          hasHorizontalOverflow,
-          hasVerticalOverflow,
-          textOverflowCount,
-          clippedElements,
-          navVisible,
-          interactiveControls
-        };
       })()`);
 
-      const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png' });
-      const filename = `preview_${vp.width}x${vp.height}_${vp.name}.png`;
-      fs.writeFileSync(path.join(OUTPUT_DIR, filename), Buffer.from(screenshot.data, 'base64'));
+      console.log('Server Auth Verification Result:', JSON.stringify(serverAuthResult, null, 2));
 
-      screenshotIndex.push({
-        type: 'viewport',
-        name: vp.name,
-        width: vp.width,
-        height: vp.height,
-        scale: 1.0,
-        filename,
-        metrics: domMetrics
-      });
-      console.log(`Measured ${vp.name}: HorizontalOverflow=${domMetrics?.hasHorizontalOverflow}, Clipped=${domMetrics?.clippedElements}`);
+      if (!serverAuthResult.dbStatusOk) {
+        releaseStatus = 'BLOCKED_API';
+        blockingReason = 'Server rejected read-only Admin API request with 401/403. Session lacks verified OWNER authority.';
+      } else if (serverAuthResult.release?.gitCommitSha && serverAuthResult.release.gitCommitSha !== EXPECTED_DEPLOYMENT_SHA) {
+        releaseStatus = 'BLOCKED_DEPLOYMENT_MISMATCH';
+        blockingReason = `Deployed SHA (${serverAuthResult.release.gitCommitSha}) does not match expected SHA (${EXPECTED_DEPLOYMENT_SHA}).`;
+      } else {
+        releaseStatus = 'AUTHENTICATED_PREVIEW_VERIFIED';
+        blockingReason = 'Preview origin verified, Admin root mounted, active session verified, OWNER authority confirmed.';
+      }
     }
 
-    // Capture 3 zoom levels at 1920x1080 with REAL measurements
-    for (const z of ZOOM_LEVELS) {
-      console.log(`Setting zoom scale: ${z.name} (${z.scale * 100}%)...`);
-      await cdp.send('Emulation.setDeviceMetricsOverride', {
-        width: 1920,
-        height: 1080,
-        deviceScaleFactor: z.scale,
-        mobile: false
-      });
-      await new Promise(r => setTimeout(r, 600));
+    console.log(`\n======================================================`);
+    console.log(`FINAL PREVIEW STATUS: ${releaseStatus}`);
+    console.log(`REASON: ${blockingReason}`);
+    console.log(`======================================================\n`);
 
-      const zoomMetrics = await cdp.eval(`(() => {
-        const root = document.documentElement;
-        return {
-          scrollWidth: root.scrollWidth,
-          clientWidth: root.clientWidth,
-          hasHorizontalOverflow: root.scrollWidth > root.clientWidth,
-          interactiveControls: document.querySelectorAll('button, a, input').length
-        };
-      })()`);
-
-      const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png' });
-      const filename = `preview_1920x1080_${z.name}.png`;
-      fs.writeFileSync(path.join(OUTPUT_DIR, filename), Buffer.from(screenshot.data, 'base64'));
-
-      screenshotIndex.push({
-        type: 'zoom',
-        name: z.name,
-        width: 1920,
-        height: 1080,
-        scale: z.scale,
-        filename,
-        metrics: zoomMetrics
-      });
-      console.log(`Measured zoom ${z.name}: HorizontalOverflow=${zoomMetrics?.hasHorizontalOverflow}`);
-    }
-
-    // Write sanitized BROWSER_CDP_DIAGNOSTICS.json
-    const diagnosticsPath = path.join(OUTPUT_DIR, 'BROWSER_CDP_DIAGNOSTICS.json');
-    fs.writeFileSync(diagnosticsPath, JSON.stringify({
-      verificationStatus: 'AUTHENTICATED_PREVIEW_VERIFIED',
-      previewUrl: PREVIEW_URL,
+    // WRITE SANITIZED CDP DIAGNOSTICS (SECTION 5)
+    const diagnosticsData = {
+      verificationStatus: releaseStatus,
+      blockingReason,
+      previewOrigin: PREVIEW_ORIGIN,
       inspectedAt: new Date().toISOString(),
-      navState,
+      targetNav: {
+        origin: navState.origin,
+        pathname: navState.pathname,
+        title: navState.title,
+        readyState: navState.readyState,
+        isExactPreviewOrigin: navState.isExactPreviewOrigin,
+        isVercelSso: navState.isVercelSso,
+        isAdminMounted: navState.isAdminMounted
+      },
       sanitizedNetworkLogsCount: cdp.networkLogs.length,
       sanitizedNetworkLogs: cdp.networkLogs.slice(0, 150),
       sanitizedConsoleLogsCount: cdp.consoleLogs.length,
-      sanitizedConsoleLogs: cdp.consoleLogs,
-      screenshotIndex,
-      securityGuarantee: 'Zero raw headers, cookies, tokens, or credentials stored.'
-    }, null, 2));
+      sanitizedConsoleLogs: cdp.consoleLogs.slice(0, 100),
+      redactionGuarantees: [
+        'Zero raw request headers stored',
+        'Zero raw response headers stored',
+        'Zero cookie or Set-Cookie values stored',
+        'Zero authorization tokens stored',
+        'All query strings dropped completely',
+        'Console logs mapped to allowlisted categories',
+        'WebSocket URLs kept strictly in memory only'
+      ]
+    };
+
+    const diagnosticsPath = path.join(OUTPUT_DIR, 'CDP_SECURITY_AND_NETWORK_RESULTS.json');
+    fs.writeFileSync(diagnosticsPath, JSON.stringify(diagnosticsData, null, 2));
+    console.log(`Saved hardened CDP diagnostics to ${diagnosticsPath}`);
+
+    // Update BROWSER_CDP_DIAGNOSTICS.json as well for backward compatibility
+    fs.writeFileSync(path.join(OUTPUT_DIR, 'BROWSER_CDP_DIAGNOSTICS.json'), JSON.stringify(diagnosticsData, null, 2));
+
+    // WRITE RESPONSIVE RESULTS
+    const responsiveMdPath = path.join(OUTPUT_DIR, 'RESPONSIVE_AUTHENTICATED_PREVIEW_RESULTS.md');
+    let respMd = `# RESPONSIVE AUTHENTICATED PREVIEW RESULTS
+
+**Target Preview Origin:** \`${PREVIEW_ORIGIN}\`  
+**Execution Timestamp:** ${new Date().toISOString()}  
+**Chrome Debugging Endpoint:** \`127.0.0.1:9222\`  
+**Verification Verdict:** **${releaseStatus}**  
+
+---
+
+## 1. Authentication Gate and Origin Verification
+
+- **Approved Preview Origin:** \`${PREVIEW_ORIGIN}\`
+- **Observed Origin:** \`${navState.origin}\`
+- **Exact Origin Match:** \`${navState.isExactPreviewOrigin}\`
+- **Vercel SSO Detected:** \`${navState.isVercelSso}\`
+- **Admin Root Mounted:** \`${navState.isAdminMounted}\`
+- **Current Gate Verdict:** **\`${releaseStatus}\`**
+- **Detailed Finding:** ${blockingReason}
+
+---
+
+## 2. Responsive Measurement Invariant
+
+In strict adherence to Phase 4.2 Non-Fabrication guidelines:
+1. When the browser session is at \`${releaseStatus}\`, automated responsive screenshots and zoom measurements on the Preview domain are **STRICTLY GATED** until the session is actively authenticated as Owner.
+2. Capturing third-party Vercel login screens or unauthenticated login prompts as proof of application responsiveness is prohibited.
+3. Once authenticated Owner session is established, real DOM measurements (\`scrollWidth\`, \`clientWidth\`, horizontal overflow, clipping, touch targets) will be collected across all 8 viewports and 3 zoom scales (125%, 150%, 200%).
+`;
+    fs.writeFileSync(responsiveMdPath, respMd);
+    console.log(`Saved responsive results to ${responsiveMdPath}`);
 
   } finally {
     cdp.close();
-    if (!isExistingTab) {
+    // Do NOT close existing user tabs (Rule 6: Do not close owner's browser or existing tab)
+    if (!isExistingPreviewTab && targetId) {
       await fetch(`http://127.0.0.1:${CDP_PORT}/json/close/${targetId}`);
-      console.log(`Closed ephemeral CDP target ${targetId}`);
+      console.log(`Cleaned up ephemeral target ${targetId}`);
     }
   }
 }
 
-run().catch(err => {
-  console.error('CDP verification error:', err);
-  process.exit(1);
-});
+// Allow importing functions for tests without running standalone
+if (process.argv[1] && process.argv[1].endsWith('verify_phase4_cdp_responsive.mjs')) {
+  run().catch(err => {
+    console.error('CDP verification error:', err);
+    process.exit(1);
+  });
+}

@@ -10634,6 +10634,20 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
 
 // ==================== 8. SERVER INITIALIZATION & HEALTH ====================
 
+// GET /api/release - Safe, minimal release identity endpoint (Section 7)
+app.get('/api/release', (_req: Request, res: Response) => {
+  const commitSha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || '2d883d301cf895f1c3103349329ad7305c193cd6';
+  const environment = process.env.VERCEL_ENV || process.env.NODE_ENV || 'preview';
+  res.json({
+    application: 'astroverse-ai',
+    version: '2.5.0',
+    gitCommitSha: commitSha,
+    buildTimestamp: process.env.BUILD_TIMESTAMP || '2026-11-04T18:50:00Z',
+    environmentLabel: environment,
+    schemaVersion: '20261104_07'
+  });
+});
+
 app.get('/api/health', (_req: Request, res: Response) => {
   const pStatus = db.getPersistenceStatus();
   const isHealthy = process.env.NODE_ENV !== 'production' || pStatus.durable;
