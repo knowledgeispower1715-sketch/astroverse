@@ -13,12 +13,12 @@
 
 | Identifier Key | Commit / OID | Ref / Target | Verified State |
 | :--- | :--- | :--- | :--- |
-| **`LOCAL_HEAD`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | `heads/fix/enterprise-security-and-hardening` | Pushed to origin |
-| **`REMOTE_BRANCH_HEAD`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | `origin/fix/enterprise-security-and-hardening` | Synchronized |
-| **`PR_HEAD`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | Pull Request #1 | `OPEN`, `MERGEABLE` |
+| **`LOCAL_HEAD`** | `50c55896e5ed70395ac6b1600c76bae5ac9efb6c` | `heads/fix/enterprise-security-and-hardening` | Pushed to origin |
+| **`REMOTE_BRANCH_HEAD`** | `50c55896e5ed70395ac6b1600c76bae5ac9efb6c` | `origin/fix/enterprise-security-and-hardening` | Synchronized |
+| **`PR_HEAD`** | `50c55896e5ed70395ac6b1600c76bae5ac9efb6c` | Pull Request #1 | `OPEN`, `MERGEABLE` |
 | **`PR_BASE`** | `2c9227d40e5ee69bb3f0967d4efa394ec2310038` | `origin/main` | Untouched |
-| **`VERCEL_PREVIEW_SOURCE_SHA`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | Preview Deployment | `Ready` / `DEPLOYED` |
-| **`BROWSER_RELEASE_SHA`** | `0e87df5f26cbb92a159f08c88ceeced9245196c5` | `/api/release` Endpoint | Synchronized |
+| **`VERCEL_PREVIEW_SOURCE_SHA`** | `50c55896e5ed70395ac6b1600c76bae5ac9efb6c` | Preview Deployment | `Ready` / `DEPLOYED` |
+| **`BROWSER_RELEASE_SHA`** | `50c55896e5ed70395ac6b1600c76bae5ac9efb6c` | `/api/release` Endpoint | Synchronized |
 
 ---
 
@@ -64,7 +64,7 @@
    - Non-negotiable invariant: PR #1 was **not** merged.
 
 2. **Vercel Preview Deployment Health:**
-   - Inspector URL: `https://vercel.com/knowledgeispower1715-1915s-projects/astroverse/2Jnscc9p1RSXCoxJGzLsTsvaNbZo`
+   - Inspector URL: `https://vercel.com/knowledgeispower1715-1915s-projects/astroverse/DavHvbiGJmDS3QSgGJxF5VsbuyWd`
    - Status: `DEPLOYED` / `Ready`
    - Gate Status: Active Vercel Team Deployment Protection (redirects unauthenticated sessions to `https://vercel.com/login`).
 
