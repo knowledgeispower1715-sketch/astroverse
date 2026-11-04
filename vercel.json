@@ -227,6 +227,12 @@
       }
     },
     {
+      "source": "/api/release",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/predictions/generate",
       "destination": {
         "service": "wallet-service"
