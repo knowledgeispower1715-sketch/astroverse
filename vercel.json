@@ -1,8 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "echo 'Astroverse root build complete'",
-  "installCommand": "echo 'Astroverse root install complete'",
-  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in release-please*) exit 0 ;; *) exit 1 ;; esac",
   "headers": [
     {
       "source": "/(.*)",
@@ -36,8 +33,6 @@
       "root": "services/consultation-service",
       "runtime": "node",
       "entrypoint": "server.ts",
-      "installCommand": "npm install",
-      "buildCommand": "echo 'Consultation service ready'",
       "bindings": [
         {
           "type": "service",
@@ -56,8 +51,6 @@
       "root": "services/wallet-service",
       "framework": "express",
       "entrypoint": "src/server.ts",
-      "installCommand": "npm install",
-      "buildCommand": "npx prisma generate",
       "bindings": [
         {
           "type": "service",
