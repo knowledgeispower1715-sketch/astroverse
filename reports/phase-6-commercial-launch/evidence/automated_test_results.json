@@ -1,0 +1,419 @@
+{
+  "timestamp": "2026-11-05T07:53:49Z",
+  "typescript": [
+    {
+      "suite": "admin_access_recovery.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.739,
+      "stdoutSummary": "l & Data Isolation -> Demo wallet credit & reset never touch real customer balance (9.9154ms)\n  \u00e2\u0153\u201d Actor 14: Allowlist Revocation -> removed admin from allowlist fails closed with 403 Forbidden (0.8035ms)\n\u00e2\u0153\u201d ASTROVERSE ADMIN ACCESS RECOVERY & SECURITY SPECIFICATION MATRIX (83.581ms)\n\u00e2\u201e\u00b9 tests 14\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 14\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 86.2474\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "admin_control_centre.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 5.702,
+      "stdoutSummary": ". GET /api/admin/session/policy returns server-authoritative session configuration (0.6085ms)\n  \u00e2\u0153\u201d 22. POST /api/auth/admin-refresh renews session sliding window and respects absolute cap (33.4738ms)\n\u00e2\u0153\u201d ASTROVERSE ADMINISTRATIVE CONTROL CENTRE & DEDICATED LOGIN SUITE (2045.9573ms)\n\u00e2\u201e\u00b9 tests 22\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 22\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 2048.9579\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "admin_data_layer_reconstruction.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 5.015,
+      "stdoutSummary": "p metadata (0.7177ms)\n  \u00e2\u0153\u201d 10. getCustomer360 strictly sanitizes credential fields from response (0.3958ms)\n  \u00e2\u0153\u201d 11. extendSubscription successfully extends expiration and updates entitlement (4.0137ms)\n\u00e2\u0153\u201d ADMIN DATA LAYER RECONSTRUCTION & POSTGRESQL INTEGRITY SUITE (1358.4664ms)\n\u00e2\u201e\u00b9 tests 11\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 11\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 1361.2231\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "admin_functional_truth_and_owner_experience.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 2.123,
+      "stdoutSummary": "0.335ms)\n  \u00e2\u0153\u201d 13. Global Search supports prefixed entity resolution across all core models (0.6283ms)\n  \u00e2\u0153\u201d 14. Absolute Safety Rule: Zero destructive production database executions permitted (0.2489ms)\n\u00e2\u0153\u201d ASTROVERSE ADMIN FUNCTIONAL TRUTH & OWNER EXPERIENCE SPECIFICATION (4.7572ms)\n\u00e2\u201e\u00b9 tests 14\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 14\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 27.4159\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "admin_security_mfa_and_modules.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 4.178,
+      "stdoutSummary": "ail Search with structured query filters (1.1627ms)\n  \u00e2\u0153\u201d Module 14: External Integrations Health Status (2.2352ms)\n  \u00e2\u0153\u201d Module 15: Incident Management & Declaration (4.3774ms)\n  \u00e2\u0153\u201d Cleans up server (0.4553ms)\n\u00e2\u0153\u201d ASTROVERSE PRODUCTION LAUNCH SECURITY & ADMIN HARDENING (525.3284ms)\n\u00e2\u201e\u00b9 tests 23\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 23\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 527.9228\n",
+      "stderrSummary": " Failed to reconcile Cashfree order cf_test_cross_1793433985195: CASHFREE_LOOKUP_FAILED: Order Reference Id does not exist\n[RECONCILIATION] Failed to reconcile Cashfree order cf_test_cross_1793433564831: CASHFREE_LOOKUP_FAILED: Order Reference Id does not exist\n[RECONCILIATION] Failed to reconcile Cashfree order cf_ord_other_1793433450347: CASHFREE_LOOKUP_FAILED: Order Reference Id does not exist\n"
+    },
+    {
+      "suite": "admin_tier_preview_and_security.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 5.791,
+      "stdoutSummary": "xit Preview Mode: Terminating preview restores genuine customer entitlements (4.26ms)\n  \u00e2\u0153\u201d 13. Audit trail records preview activation and termination events (0.2433ms)\n  \u00e2\u0153\u201d 14. Teardown test server (0.4887ms)\n\u00e2\u0153\u201d ASTROVERSE ADMIN TIER PREVIEW & SECURITY ISOLATION SUITE (289.6467ms)\n\u00e2\u201e\u00b9 tests 14\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 14\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 292.2971\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "ai_astrologer_conversation_quality.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 16.101,
+      "stdoutSummary": "egrity: Scorpio Lagna prescribes Red Coral / Yellow Sapphire and excludes Emerald (2.3026ms)\n  \u00e2\u0153\u201d Repetition Guard on Consecutive Greetings: Turn 2+ greeting returns concise assistance prompt (2.0683ms)\n\u00e2\u0153\u201d ASTROVERSE AI ASTROLOGER 6-TURN GOLDEN CONVERSATION QUALITY SUITE (64.0071ms)\n\u00e2\u201e\u00b9 tests 11\n\u00e2\u201e\u00b9 suites 0\n\u00e2\u201e\u00b9 pass 11\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 69.2648\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "auth.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 6.177,
+      "stdoutSummary": " authorization code and creates session\n[PASS] POST /api/auth/google rejects invalid authorization code\n[PASS] GET /api/auth/google/config never exposes client secret\n[PASS] Preview mode allows ephemeral storage when VERCEL_ENV=preview\n\n===============================================================\nTEST SUMMARY: 108 PASSED, 0 FAILED\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "auth_lifecycle.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.908,
+      "stdoutSummary": "ist: Registering allowlisted admin email automatically assigns Role.OWNER (2.8135ms)\n  \u00e2\u0153\u201d 12. GET /api/ready returns operational readiness without 500 error (2.5446ms)\n  \u00e2\u0153\u201d Cleanup test server (0.612ms)\n\u00e2\u0153\u201d ASTROVERSE P0 AUTHENTICATION LIFECYCLE & RESILIENCE TEST SUITE (133.9991ms)\n\u00e2\u201e\u00b9 tests 15\n\u00e2\u201e\u00b9 suites 0\n\u00e2\u201e\u00b9 pass 15\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 138.3213\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "authenticated_cross_user_isolation.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.734,
+      "stdoutSummary": "jected (HTTP 400)\n[PASS] 11. Admin access to User A's profile with valid reason succeeds and logs immutable AuditEvent\n[PASS] 12. User authentication responses strictly exclude all password and secret credentials\n\n===============================================================\nCROSS-USER ISOLATION TESTS COMPLETE: 12 passed, 0 failed\n===============================================================\n\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "cashfree_and_serverless_state.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.722,
+      "stdoutSummary": "empotently (11.6259ms)\n    \u00e2\u0153\u201d POST /api/cashfree/verify-order rejects missing order and cross-user order (4.8086ms)\n  \u00e2\u0153\u201d AV-SEC-03: Cashfree Gateway Configuration, Verification & Webhooks (25.0205ms)\n\u00e2\u0153\u201d AV-SEC-04 DURABLE SERVERLESS STATE & AV-SEC-03 CASHFREE INTEGRATION (77.8041ms)\n\u00e2\u201e\u00b9 tests 11\n\u00e2\u201e\u00b9 suites 3\n\u00e2\u201e\u00b9 pass 11\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 80.7496\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "cashfree_forensic_and_safety.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.866,
+      "stdoutSummary": "g in production (0.1367ms)\n    \u00e2\u0153\u201d D3: GET /api/config exports public gateway environment without leaking secret key (0.741ms)\n  \u00e2\u0153\u201d SECTION D: Cashfree Protocol Compliance & 2026-01-01 Standards (1.0668ms)\n\u00e2\u0153\u201d ASTROVERSE CASHFREE FORENSIC REPAIR & FINANCIAL SAFETY SUITE (242.2826ms)\n\u00e2\u201e\u00b9 tests 21\n\u00e2\u201e\u00b9 suites 5\n\u00e2\u201e\u00b9 pass 21\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 249.0665\n",
+      "stderrSummary": "[CASHFREE_VERIFY] Gateway lookup failed for cf_nonexistent_123: CASHFREE_LOOKUP_FAILED: Order  not found\n"
+    },
+    {
+      "suite": "cashfree_order_recovery_p0.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.808,
+      "stdoutSummary": "   \u00e2\u0153\u201d 4.4 Authoritatively recovers real customer order cf_wal_f1bb9dc4d88c177f from Cashfree (12.4845ms)\n  \u00e2\u0153\u201d 4. Admin Manual Order Recovery (POST /api/admin/payments/recover-order) (16.1228ms)\n\u00e2\u0153\u201d P0 INCIDENT RECOVERY: CASHFREE ORDER LOOKUP & FINANCIAL INTEGRITY SUITE (111.9452ms)\n\u00e2\u201e\u00b9 tests 11\n\u00e2\u201e\u00b9 suites 5\n\u00e2\u201e\u00b9 pass 11\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 114.7262\n",
+      "stderrSummary": "[CASHFREE_VERIFY] Gateway lookup failed for cf_wal_nonexistent_1793865296892: CASHFREE_LOOKUP_FAILED: Order  not found\n"
+    },
+    {
+      "suite": "cdp_diagnostics_redaction.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.544,
+      "stdoutSummary": "(0.0794ms)\n  \u00e2\u0153\u201d 3. classifyConsoleMessage maps to allowlisted categories and strips raw messages (0.1118ms)\n  \u00e2\u0153\u201d 4. Diagnostics file guarantees zero raw headers, cookies, or authorization tokens (0.0587ms)\n\u00e2\u0153\u201d SECTION 5: CDP DIAGNOSTICS SECURITY & REDACTION REGRESSION SUITE (1.1003ms)\n\u00e2\u201e\u00b9 tests 4\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 4\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 20.2318\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "chat_frontend_logic.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.61,
+      "stdoutSummary": "routes all 6 multi-horizon queries with interactive navigation links (0.2547ms)\n\u00e2\u0153\u201d Client-side astrological intent logic routes \"Why do you say that?\" to 4-pillar Vedic deduction (0.2581ms)\n\u00e2\u0153\u201d Bilingual summary contract contains non-empty English and Hindi representations (0.0596ms)\n\u00e2\u201e\u00b9 tests 23\n\u00e2\u201e\u00b9 suites 0\n\u00e2\u201e\u00b9 pass 23\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 55.3371\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "custom_wallet_recharge.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.801,
+      "stdoutSummary": "\u00b91.00 and 18% GST (1.2213ms)\n    \u00e2\u0153\u201d 5.2 POST /api/wallet/quote dynamically calculates authoritative quote for custom amount (0.8084ms)\n  \u00e2\u0153\u201d SECTION 5: Centralized Configuration & Quote Endpoints (2.1493ms)\n\u00e2\u0153\u201d ASTROVERSE CUSTOM WALLET RECHARGE & FINANCIAL INTEGRITY SUITE (75.5619ms)\n\u00e2\u201e\u00b9 tests 21\n\u00e2\u201e\u00b9 suites 6\n\u00e2\u201e\u00b9 pass 21\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 79.0446\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "dasha_yoga_upagraha_intelligence.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.726,
+      "stdoutSummary": " sec_ch5_dasha\n[PASS] Report document generator must define Chapter 6: sec_ch6_yogas_doshas\n[PASS] PDF template must read dynamic calculated Upagrahas from chart data\n\n==============================================================================\nALL DASHA, YOGA & UPAGRAHA INTELLIGENCE TESTS PASSED SUCCESSFULLY (100%)\n==============================================================================\n\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "database_bootstrap_safety.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.602,
+      "stdoutSummary": "POST /api/admin/database/bootstrap unconditionally rejects in PRODUCTION even for OWNER (0.9886ms)\n  \u00e2\u0153\u201d 8. POST /api/admin/database/bootstrap succeeds in staging when OWNER and explicitly enabled (2.6817ms)\n\u00e2\u0153\u201d STAGE 6: ADMIN DATABASE BOOTSTRAP SAFETY & PRODUCTION DDL GUARDS (34.6237ms)\n\u00e2\u201e\u00b9 tests 8\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 8\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 37.191\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "database_reliability_and_monitor.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.581,
+      "stdoutSummary": " logic (25.9282ms)\n    \u00e2\u0153\u201d 4.2 Gateway badge clarifies direct origin routing when Cloudflare tunnel is in standby (0.8234ms)\n  \u00e2\u0153\u201d SECTION 4: Frontend Contract & In-Flight Resilience Verification (26.8896ms)\n\u00e2\u0153\u201d ASTROVERSE ENTERPRISE DATABASE RELIABILITY & MONITORING SUITE (59.6412ms)\n\u00e2\u201e\u00b9 tests 13\n\u00e2\u201e\u00b9 suites 5\n\u00e2\u201e\u00b9 pass 13\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 62.4293\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "differentiation.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.795,
+      "stdoutSummary": "ve, and Basic\n[PASS] Substantive content is genuinely product-specific; no copy-paste contamination\n\n--- 5. DEMO WATERMARKING ---\n[PASS] Demo purchase correctly stamps watermark and DEMO- verification hash\n\n===============================================================\nALL DIFFERENTIATION & INTEGRITY TESTS PASSED SUCCESSFULLY (100%)\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "dosha_yoga_parity.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.721,
+      "stdoutSummary": "t\n\n--- 5. RELATIONSHIP & MARRIAGE REPORT CHAPTER 4 ---\n[PASS] Relationship report Chapter 4 must exist\n[PASS] Relationship Ch4 must include multi-reference audit\n[PASS] Relationship Ch4 must document mitigation\n\n===============================================================\nCLASSICAL VEDIC YOGA & DOSHA PARITY TEST SUITE: ALL PASSED!\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "enterprise_backend_hardening_and_resilience.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.541,
+      "stdoutSummary": "on Power)\n    \u00e2\u0153\u201d 5.1 Deliberate permissive bypass mutation: test suite detects cross-tenant isolation breach (0.0834ms)\n  \u00e2\u0153\u201d SECTION 5: Mutation Testing (Verification of Test Suite Detection Power) (0.1338ms)\n\u00e2\u0153\u201d ASTROVERSE ENTERPRISE BACKEND HARDENING & RESILIENCE SUITE (26.5512ms)\n\u00e2\u201e\u00b9 tests 11\n\u00e2\u201e\u00b9 suites 6\n\u00e2\u201e\u00b9 pass 11\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 29.3662\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "enterprise_security_hardening.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.627,
+      "stdoutSummary": "irect-Origin Bypass Protection: Fails closed when Cloudflare Access is enforced (1.3563ms)\n  \u00e2\u0153\u201d 10. Cloudflare Access Gateway: Grants transit with valid assertion to application-layer auth (1.65ms)\n\u00e2\u0153\u201d ASTROVERSE ENTERPRISE SECURITY HARDENING & CLOUDFLARE ACCESS ISOLATION (61.1703ms)\n\u00e2\u201e\u00b9 tests 10\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 10\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 81.0556\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "entitlement_security_and_profile_isolation.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.679,
+      "stdoutSummary": "HTTP 200)\n[PASS] User A retrieves only own profiles via GET /api/profiles\n\n--- SECTION 3: ONE-OFF REPORT UNLOCK INTEGRITY ---\n[PASS] Free user who purchased Kundli Deep Dive report gets Yearly forecast unlocked\n\n===============================================================\nENTITLEMENT & ISOLATION SUITE COMPLETE: 18 PASSED, 0 FAILED\n===============================================================\n",
+      "stderrSummary": "[GATEWAY] Missing or compromised internal service key\n"
+    },
+    {
+      "suite": "geocoding_and_location.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 5.171,
+      "stdoutSummary": "l payload with negligible latency\n[PASS] resolveGeocodeQuery resolves Bengaluru with Asia/Kolkata timezone via gazetteer fallback\n[PASS] index.html verified: DOM elements, multi-tier search, keyboard navigation, and zero silent fallbacks\n===============================================================\nTEST SUMMARY: 10 PASSED, 0 FAILED\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "kundli_analysis_and_ashtakavarga.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.484,
+      "stdoutSummary": "ndex.html must contain #tbody-upagrahas-workspace\n[PASS] PDF template must not hardcode static 31, 34 bindus\n[PASS] PDF template must read dynamic calculated SAV map\n\n==============================================================================\nALL KUNDLI ANALYSIS ENGINE & ASHTAKAVARGA TESTS PASSED SUCCESSFULLY (100%)\n==============================================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "monetization.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.911,
+      "stdoutSummary": " identical clientKey is idempotent\n[PASS] POST /api/demo/reset sets demo balance to 0 and records DEMO_REVERSAL\n[PASS] Production fail-closed guard: demo operations are blocked when simulated production environment is set\n\n===============================================================\nMONETIZATION SUITE COMPLETE: 46 PASSED, 0 FAILED\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "multi_user_isolation_and_security.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.637,
+      "stdoutSummary": "eters without leaking secret keys (1.3795ms)\n    \u00e2\u0153\u201d 3.2 Diagnostic endpoints fail-closed when unauthenticated (0.6866ms)\n  \u00e2\u0153\u201d SECTION 3: Credential Isolation & Environment Protection (2.2217ms)\n\u00e2\u0153\u201d ASTROVERSE MULTI-USER ISOLATION, RLS, WALLET SECURITY & CONCURRENCY SUITE (62.4262ms)\n\u00e2\u201e\u00b9 tests 17\n\u00e2\u201e\u00b9 suites 4\n\u00e2\u201e\u00b9 pass 17\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 65.4123\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "numerology.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.585,
+      "stdoutSummary": "its founderSynergy\n[PASS] POST /api/numerology/analyze handles business_name with valid founder DOB and computes founderSynergy\n[PASS] POST /api/numerology/analyze rejects business_name with future founder DOB with 400\n\n===============================================================\nNUMEROLOGY TEST SUITE FINISHED: 18 PASSED, 0 FAILED\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "overview_metrics_truth.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.957,
+      "stdoutSummary": "ror Protection & Sanitization: returns generic client-safe message and correlationId (0.1293ms)\n  \u00e2\u0153\u201d 9. Genuine PostgreSQL Savepoint Recovery: rollback to savepoint rescues aborted transaction (0.2073ms)\n\u00e2\u0153\u201d OVERVIEW METRICS INTEGRITY & TRANSACTION RECOVERY SUITE (PHASE 4.5) (29.755ms)\n\u00e2\u201e\u00b9 tests 9\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 9\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 31.7729\n",
+      "stderrSummary": "BLE): relation \"PlatformIncident\" does not exist (42P01)\n[DB] PostgreSQL getPlatformMetrics error: canceling statement due to statement timeout\n[DB] PostgreSQL getPlatformMetrics error: PrismaClientInitializationError: Can't reach database server at `aws-0-ap-south-1.pooler.supabase.com`\n[DB] Savepoint sp_test query failed, rolling back to savepoint: relation \"FailingTable\" does not exist (42P01)\n"
+    },
+    {
+      "suite": "owner_control_centre_and_business_management.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.711,
+      "stdoutSummary": ")\n\u00e2\u0153\u201d 8. GET /api/admin/analytics/overview returns accurate business KPIs and collections breakdown (1.7501ms)\n\u00e2\u0153\u201d 9. Promotions Management: List, create, and toggle status (14.6723ms)\n\u00e2\u0153\u201d 10. Astrologers & Consultations APIs return valid data and allow verification toggle (7.1947ms)\n\u00e2\u201e\u00b9 tests 10\n\u00e2\u201e\u00b9 suites 0\n\u00e2\u201e\u00b9 pass 10\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 118.2219\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "owner_control_centre_full_platform.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.634,
+      "stdoutSummary": "  \u00e2\u0153\u201d 11. POST /api/admin/subscriptions/extend extends active subscription duration (4.57ms)\n  \u00e2\u0153\u201d 12. POST /api/admin/subscriptions/cancel cancels subscription and deactivates tier entitlements (2.5809ms)\n\u00e2\u0153\u201d OWNER CONTROL CENTRE \u00e2\u20ac\u201d COMPREHENSIVE PLATFORM OPERATION SUITE (58.5457ms)\n\u00e2\u201e\u00b9 tests 12\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 12\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 61.2732\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "owner_enterprise_hardening_adversarial.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.698,
+      "stdoutSummary": "api/admin/settings/flags never leaks CASHFREE_GATEWAY_CONFIG or credentials (3.3137ms)\n  \u00e2\u0153\u201d 30. fulfillPaidSubscriptionOrder records entitlement with source PAID_PURCHASE and order metadata (2.1927ms)\n\u00e2\u0153\u201d OWNER CONTROL CENTRE \u00e2\u20ac\u201d ENTERPRISE HARDENING & ADVERSARIAL SUITE (107.7541ms)\n\u00e2\u201e\u00b9 tests 30\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 30\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 110.6149\n",
+      "stderrSummary": "STRAP] Unexpected DDL failure: prisma.$executeRawUnsafe is not a function\n[DB_BOOTSTRAP] Schema self-healing encountered unexpected DDL errors. Failing closed.\n[DB] PostgreSQL schema bootstrap returned false. Queries will use resilient fallback.\n[DB] createSavedReport Prisma error: Simulated disk full or deadlock error\n[DB] assignUserRoleAtomic Prisma error: Lock acquisition timeout on User table\n"
+    },
+    {
+      "suite": "payment_activation_and_catalog_sync.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.815,
+      "stdoutSummary": " Specific Diagnostic State (27.2885ms)\n  \u00e2\u0153\u201d 6. Webhook Endpoint Reachability & Probe Handler (GET /api/webhooks/cashfree) (4.8236ms)\n  \u00e2\u0153\u201d 7. Admin Runtime Gateway Credentials Activation (57.432ms)\n\u00e2\u0153\u201d ASTROVERSE CASHFREE PAYMENT ACTIVATION & PRICING SYNCHRONIZATION SUITE (190.4328ms)\n\u00e2\u201e\u00b9 tests 8\n\u00e2\u201e\u00b9 suites 0\n\u00e2\u201e\u00b9 pass 8\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 193.3731\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "pdf_fixtures.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.779,
+      "stdoutSummary": "nd DEMO- prefix verification hash\n[PASS] Fixture 9: Devanagari Unicode glyphs are properly supported and uncorrupted\n[PASS] Fixture 10: Missing optional coordinates and timezone fall back to safe defaults without throwing\n===============================================================\nPDF FIXTURES SUITE COMPLETE: 10 PASSED, 0 FAILED\n===============================================================\n\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "pdf_quality_regression.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.836,
+      "stdoutSummary": "indi) Report Summary\n[PASS] Requirement 11: Plan comparison table accurately communicates PDF entitlements and tier rules\n[PASS] Requirement 3 & 10: All 9 report products retain their substantive content and correct chapters\n\n===============================================================\nREGRESSION SUITE FINISHED: 7 PASSED, 0 FAILED\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "phase_3_1_enterprise_adversarial.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 4.044,
+      "stdoutSummary": "eger Paise Integrity\n    \u00e2\u0153\u201d 8.1 All wallet recharge packages calculate exact integer paise with zero floating-point leakage (0.1763ms)\n  \u00e2\u0153\u201d 8. Payment Reconciliation & Integer Paise Integrity (0.2199ms)\n\u00e2\u0153\u201d PHASE 3.1 ENTERPRISE ADVERSARIAL & INTEGRITY VERIFICATION SUITE (379.8983ms)\n\u00e2\u201e\u00b9 tests 20\n\u00e2\u201e\u00b9 suites 9\n\u00e2\u201e\u00b9 pass 20\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 383.167\n",
+      "stderrSummary": "ecuteRawUnsafe is not a function\n[DB_BOOTSTRAP] Schema self-healing encountered unexpected DDL errors. Failing closed.\n[DB] PostgreSQL schema bootstrap returned false. Queries will use resilient fallback.\n[DB] extendSubscription Prisma transaction error: Lock acquisition timeout on User table: deadlock detected\n[DB] fulfillPaidSubscriptionOrder Prisma error: Deadlock detected during User row lock\n"
+    },
+    {
+      "suite": "privacy_and_form_state.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.785,
+      "stdoutSummary": "rofile selection and separates numerology subject from natal chart (0.6693ms)\n\u00e2\u0153\u201d 10. ReportDocumentGenerator generates numerology report with 15 chapters without requiring coordinates (5.6753ms)\n\u00e2\u0153\u201d 11. Numerology calculation correctness remains intact without data leakage (0.1971ms)\n\u00e2\u201e\u00b9 tests 11\n\u00e2\u201e\u00b9 suites 0\n\u00e2\u201e\u00b9 pass 11\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 16.2859\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "promotions_and_free_minute.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.687,
+      "stdoutSummary": "d with 403 (3.3136ms)\n  \u00e2\u0153\u201d 10. Second session abuse prevention: Consumed free minute cannot be recycled (4.6614ms)\n  \u00e2\u0153\u201d 11. POST /api/consultation/end-session marks session as COMPLETED (4.5866ms)\n\u00e2\u0153\u201d ASTROVERSE PROMOTIONS, FREE MINUTE & CONSULTATION BILLING TEST SUITE (104.8994ms)\n\u00e2\u201e\u00b9 tests 12\n\u00e2\u201e\u00b9 suites 0\n\u00e2\u201e\u00b9 pass 12\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 111.1659\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "razorpay_compliance.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.764,
+      "stdoutSummary": "TALOG POSITIONING INTEGRITY ---\n[PASS] Kundli Milan catalog item is classified as Astrological Synastry with explicit disclaimer\n[PASS] All 10 catalog products have explicit INR pricing and valid chapter structures\n\n===============================================================\nRAZORPAY COMPLIANCE SUITE COMPLETE: 19 PASSED, 0 FAILED\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "real_postgres_security_hardening.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.761,
+      "stdoutSummary": " \u00e2\u0153\u201d 6. Password Validation Real Invariant: High entropy required & documented Free Plan restriction (0.1976ms)\n  \u00e2\u0153\u201d 7. Disposable PostgreSQL Execution: Executes if ISOLATED_TEST_DATABASE_URL is provided (0.3952ms)\n\u00e2\u0153\u201d Real PostgreSQL RLS & Schema Hardening Integration Suite (2.6837ms)\n\u00e2\u201e\u00b9 tests 7\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 7\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 13.6728\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "security_and_ratelimit.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 2.608,
+      "stdoutSummary": " bucket and passes\n[PASS] Different IP has full quota remaining (2)\n\n--- 2. SLIDING WINDOW EXPIRY ---\n[PASS] After windowMs elapsed, original IP is unblocked and passes\n[PASS] Quota resets after window elapsed\n\n===============================================================\nSECURITY & RATE LIMITING SUITE FINISHED: 15 PASSED, 0 FAILED\n===============================================================\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "sku_specific_entitlements.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.636,
+      "stdoutSummary": "ed orders (status: REFUNDED) strictly deny access\n[PASS] 11. Expired orders past SKU validity period strictly deny access\n[PASS] 12. Cancelled subscription retains access until paid-through expiry, then lapses to FREE\n\n===============================================================\nSKU ENTITLEMENT TESTS COMPLETE: 12 passed, 0 failed\n===============================================================\n\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "supabase_auth.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 4.195,
+      "stdoutSummary": "tion defines prediction_reports table\n[PASS] RLS enabled on profiles\n[PASS] RLS enabled on birth_profiles\n[PASS] RLS policies enforce auth.uid() = user_id\n[PASS] Automatic profile trigger attached to auth.users\n\n===============================================================\nALL SUPABASE AUTHENTICATION & DATABASE TESTS PASSED (100%)\n===============================================================\n\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "supabase_security_hardening.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.575,
+      "stdoutSummary": "pplication Password Complexity Validator handles entropy requirements and BLOCKED_PLAN_REQUIREMENT (0.5352ms)\n  \u00e2\u0153\u201d 4.1 Absolute Safety Restriction: Zero direct production execution allowed (0.1009ms)\n\u00e2\u0153\u201d Supabase Security Advisor & Database Integrity Validation (Phase 3.3) (21.955ms)\n\u00e2\u201e\u00b9 tests 13\n\u00e2\u201e\u00b9 suites 1\n\u00e2\u201e\u00b9 pass 13\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 25.8656\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "test_cross_engine_parity.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.667,
+      "stdoutSummary": "",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "unified_financial_infrastructure.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 4.06,
+      "stdoutSummary": "it trail (4.4297ms)\n    \u00e2\u0153\u201d 3.4 POST /api/admin/payments/reconcile runs proactive sweep and reports status (363.0263ms)\n  \u00e2\u0153\u201d 3. Administrative Wallet Adjustments & Reconciliation Suite (378.3577ms)\n\u00e2\u0153\u201d ASTROVERSE UNIFIED FINANCIAL INFRASTRUCTURE & UNIVERSAL WALLET SUITE (428.1064ms)\n\u00e2\u201e\u00b9 tests 12\n\u00e2\u201e\u00b9 suites 4\n\u00e2\u201e\u00b9 pass 12\n\u00e2\u201e\u00b9 fail 0\n\u00e2\u201e\u00b9 cancelled 0\n\u00e2\u201e\u00b9 skipped 0\n\u00e2\u201e\u00b9 todo 0\n\u00e2\u201e\u00b9 duration_ms 431.0546\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "unknown_birth_time_integrity.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 3.699,
+      "stdoutSummary": "d confirmed flag\n[PASS] 5. Prediction generation against UNKNOWN profile passes birth_time_status UNKNOWN upstream\n[PASS] 6. PUT /api/profiles/:id allows updating from UNKNOWN to confirmed EXACT birth time\n\n===============================================================\nUNKNOWN BIRTH-TIME INTEGRITY TESTS COMPLETE: 6 passed, 0 failed\n===============================================================\n\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "upagraha_kalavela_accuracy.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.627,
+      "stdoutSummary": ".ts Chapter 7 must verify Maandi\n[PASS] index.html client PDF template must render all 11 Upagrahas\n[PASS] index.html client PDF template must state the Parashari invariant\n\n==============================================================================\nALL UPAGRAHA & KALAVELA ACCURACY AND INTEGRITY TESTS PASSED (100%)\n==============================================================================\n\n",
+      "stderrSummary": ""
+    },
+    {
+      "suite": "yoga_dosha_quality_and_context.test.ts",
+      "status": "PASSED",
+      "exitCode": 0,
+      "durationSeconds": 1.548,
+      "stdoutSummary": "6 must audit absent classical combinations\n[PASS] reportGenerator.ts Chapter 6 must detail Kuja Dosha status\n[PASS] index.html client PDF generator must define sec_ch6_yogas_doshas\n\n==============================================================================\nALL YOGA/DOSHA QUALITY & CONTEXT PARITY TESTS PASSED (100%)\n==============================================================================\n",
+      "stderrSummary": ""
+    }
+  ],
+  "python": {
+    "status": "PASSED",
+    "exitCode": 0,
+    "durationSeconds": 10.315,
+    "stdout": "729_pds_hierarchy_and_zero_drift PASSED [ 98%]\nservices/kundli-engine/tests/test_vimshottari_dasha_intelligence.py::test_live_transits_calculation_and_classical_diagnostics PASSED [ 98%]\nservices/kundli-engine/tests/test_vimshottari_dasha_intelligence.py::test_dasha_and_transits_api_endpoints PASSED [ 99%]\nservices/kundli-engine/tests/test_vimshottari_dasha_intelligence.py::test_dasha_exact_subsecond_boundary_precision PASSED [100%]\n\n============================== warnings summary ===============================\nservices\\kundli-engine\\main.py:193\n  E:\\rea\\services\\kundli-engine\\main.py:193: DeprecationWarning: \n          on_event is deprecated, use lifespan event handlers instead.\n  \n          Read more about it in the\n          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).\n          \n    @app.on_event(\"startup\")\n\nC:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\fastapi\\applications.py:4495\n  C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\fastapi\\applications.py:4495: DeprecationWarning: \n          on_event is deprecated, use lifespan event handlers instead.\n  \n          Read more about it in the\n          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).\n          \n    return self.router.on_event(event_type)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n================= 172 passed, 2 skipped, 2 warnings in 9.61s ==================\n",
+    "stderr": ""
+  },
+  "summary": {
+    "totalTsSuites": 50,
+    "passedTsSuites": 50,
+    "failedTsSuites": 0,
+    "pythonStatus": "PASSED",
+    "totalElapsedSeconds": 186.28
+  }
+}

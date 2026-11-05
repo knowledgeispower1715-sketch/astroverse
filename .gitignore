@@ -26,6 +26,8 @@ env/
 .codex/
 .devin/
 .factory/
+.claude/
+agent/
 codedb.snapshot
 .backups/
 
@@ -96,3 +98,5 @@ docs/screenshots/
 
 
 .agent/skills/cashfree-skills/
+services/wallet-service/data/ai_quota_config.json
+services/wallet-service/data/ai_usage_events.json

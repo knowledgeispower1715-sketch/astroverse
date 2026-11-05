@@ -295,9 +295,7 @@ BEGIN
             file_size_limit = EXCLUDED.file_size_limit,
             allowed_mime_types = EXCLUDED.allowed_mime_types;
 
-        -- Ensure RLS is active on storage.objects
-        ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
+        -- storage.objects is owned by supabase_storage_admin and already has RLS enabled by default.
         -- Clean up existing permissive or obsolete policies
         DROP POLICY IF EXISTS "Customers can read own reports in storage" ON storage.objects;
         DROP POLICY IF EXISTS "Customers can upload own reports to storage" ON storage.objects;
@@ -460,9 +458,9 @@ BEGIN
     WHERE n.nspname = 'public'
       AND p.proname IN ('rls_auto_enable', 'prevent_unauthorized_profile_mutation', 'handle_new_user', 'handle_updated_at')
       AND (
-        has_function_privilege('anon', p.oid, 'EXECUTE') OR 
-        has_function_privilege('authenticated', p.oid, 'EXECUTE') OR
-        has_function_privilege('PUBLIC', p.oid, 'EXECUTE')
+        (EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') AND has_function_privilege('anon', p.oid, 'EXECUTE')) OR 
+        (EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') AND has_function_privilege('authenticated', p.oid, 'EXECUTE')) OR
+        has_function_privilege('public', p.oid, 'EXECUTE')
       );
 
     IF insecure_functions_count > 0 THEN

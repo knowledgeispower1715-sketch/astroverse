@@ -21,12 +21,14 @@ export function getSupabaseConfig(): SupabaseConfig {
   const supabaseAnonKey = (
     process.env.SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
     ''
   ).trim();
 
   const supabaseServiceKey = (
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
     ''
   ).trim();
 
@@ -86,24 +88,25 @@ export async function verifySupabaseToken(token: string): Promise<{ user: any | 
     return { user: null, error: 'TOKEN_REQUIRED' };
   }
 
+  // If running in synthetic test mode with mock test tokens
+  if (process.env.NODE_ENV === 'test' && token.startsWith('test_supabase_token_')) {
+    const parts = token.split('_');
+    const email = parts[4] || 'supabase.user@example.com';
+    const uid = parts[5] || '12345678-0000-0000-0000-000000000001';
+    return {
+      user: {
+        id: 'supa-usr-' + uid,
+        email,
+        user_metadata: {
+          displayName: 'Supabase Verified User'
+        }
+      },
+      error: null
+    };
+  }
+
   const client = getSupabaseAdminClient();
   if (!client) {
-    // If running in synthetic test mode without live Supabase cloud
-    if (process.env.NODE_ENV === 'test' && token.startsWith('test_supabase_token_')) {
-      const parts = token.split('_');
-      const email = parts[4] || 'supabase.user@example.com';
-      const uid = parts[5] || '12345678-0000-0000-0000-000000000001';
-      return {
-        user: {
-          id: 'supa-usr-' + uid,
-          email,
-          user_metadata: {
-            displayName: 'Supabase Verified User'
-          }
-        },
-        error: null
-      };
-    }
     return { user: null, error: 'SUPABASE_NOT_CONFIGURED' };
   }
 
