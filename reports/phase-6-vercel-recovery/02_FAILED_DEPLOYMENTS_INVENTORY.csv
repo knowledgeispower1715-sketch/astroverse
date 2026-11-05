@@ -1,0 +1,12 @@
+deployment_id,commit_sha,branch,timestamp_utc,duration_seconds,status,failure_phase,root_cause_category
+dpl_9pUrS6jC35U6SdABjU8YN2idmu22,75b9a9c8c,fix/enterprise-security-and-hardening,2026-11-05T18:36:36Z,600,FAILURE,RUNTIME_INITIALIZATION,TDZ Hoisting Violation in server.ts
+dpl_2agApTFvcbXDo71czFeLM3RgPUfX,b2c03a84b,fix/enterprise-security-and-hardening,2026-11-05T18:37:16Z,600,FAILURE,RUNTIME_INITIALIZATION,TDZ Hoisting Violation in server.ts
+dpl_7Eap5g4YJ72LAXbKdTwqbhiTurZd,b2c03a84b,fix/enterprise-security-and-hardening,2026-11-05T18:37:16Z,600,FAILURE,RUNTIME_INITIALIZATION,TDZ Hoisting Violation in server.ts
+dpl_C359oLYjWf1eMT4K3Czc35Lbkmbq,b2c03a84b,fix/enterprise-security-and-hardening,2026-11-05T18:37:16Z,600,FAILURE,RUNTIME_INITIALIZATION,TDZ Hoisting Violation in server.ts
+dpl_6eG3LFW848Uu1cjaJCUxFzFMDXBw,c0d64dc,release-please--branches--main,2026-11-05T18:41:08Z,180,FAILURE,BUILD_PACKAGING,Release Please Branch Automated Noise
+dpl_GL1xe6vp2pjdPKe3fVh6gZiibDrm,67aae7c,release-please--branches--main,2026-11-05T18:41:08Z,180,FAILURE,BUILD_PACKAGING,Release Please Branch Automated Noise
+dpl_HU8nCH1x7gcN7KKXsqNmVkfQFWvr,44285d708,fix/enterprise-security-and-hardening,2026-11-05T18:56:10Z,191,FAILURE,BUILD_DEPENDENCY,TypeScript Tooling Missing in NODE_ENV=production
+dpl_JBArfzp1Ktb1PXTfiR4aVgQkAERP,44285d708,fix/enterprise-security-and-hardening,2026-11-05T18:56:37Z,224,FAILURE,BUILD_DEPENDENCY,TypeScript Tooling Missing in NODE_ENV=production
+dpl_9qnuMu2ErCm3H3yGZ5VZdGE27RSk,44285d708,fix/enterprise-security-and-hardening,2026-11-05T18:59:21Z,223,FAILURE,BUILD_DEPENDENCY,TypeScript Tooling Missing in NODE_ENV=production
+dpl_CAgMkfXwfZZQzq62Hp2DnJ4rUjtU,70ef757,release-please--branches--main,2026-11-05T18:55:36Z,180,FAILURE,BUILD_PACKAGING,Release Please Branch Automated Noise
+dpl_AsgGPWtuQTMW3uYggUh26jAg62ax,2283bd2a4,fix/enterprise-security-and-hardening,2026-11-05T19:26:52Z,11,FAILURE,CONFIG_SCHEMA,Top-Level Build/Install Directives Conflict with Services Schema
