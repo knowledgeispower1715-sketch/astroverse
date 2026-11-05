@@ -152,10 +152,27 @@ export const adminSensitiveMutationsLimiter = createRateLimiter({
 app.use('/api', globalApiLimiter);
 
 app.use(express.json({
+  limit: '512kb',
   verify: (req: any, _res: any, buf: Buffer) => {
     req.rawBody = buf;
   }
 }));
+
+app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+    return res.status(413).json({
+      error: 'PAYLOAD_TOO_LARGE',
+      message: 'Request payload exceeds maximum allowed size of 512 KB.'
+    });
+  }
+  if (err && (err instanceof SyntaxError && (err as any).status === 400 && 'body' in err)) {
+    return res.status(400).json({
+      error: 'MALFORMED_JSON',
+      message: 'Malformed JSON payload.'
+    });
+  }
+  next(err);
+});
 
 const ALLOWED_ORIGINS = [
   'https://astroverse-eta.vercel.app',
@@ -168,6 +185,8 @@ const ALLOWED_ORIGINS = [
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
 ];
 
+// Cashfree Webhook Endpoints (referencing CASHFREE_WEBHOOK_PATHS declared above)
+
 // Enable CORS with origin verification and preflight support
 app.use((req, res, next) => {
   const origin = req.headers.origin;
@@ -179,10 +198,16 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header(
     'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cf-Access-Jwt-Assertion, X-Admin-Assurance-Token, X-Admin-Mfa-Token'
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cf-Access-Jwt-Assertion, X-Admin-Assurance-Token, X-Admin-Mfa-Token, x-webhook-signature, x-webhook-timestamp, x-idempotency-key'
   );
   res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  if (req.method === 'OPTIONS') {
+    if (CASHFREE_WEBHOOK_PATHS.includes(req.path)) {
+      res.header('Allow', 'POST, GET, HEAD, OPTIONS');
+      return res.status(204).end();
+    }
+    return res.sendStatus(200);
+  }
   next();
 });
 
@@ -2778,6 +2803,307 @@ export const MIN_RECHARGE_AMOUNT = 1.00;
 export const MAX_RECHARGE_AMOUNT = 50000;
 export const RECHARGE_GST_RATE = 0.18;
 
+// Cashfree Webhook Endpoints (Canonical & Aliases)
+export const CASHFREE_WEBHOOK_PATHS = [
+  '/api/wallet/webhook',
+  '/api/webhooks/cashfree',
+  '/api/cashfree/webhook'
+];
+
+/**
+ * Safe, read-only reachability handler for browser GET requests.
+ * Conforms to Cashfree Webhook Specification:
+ * - /api/wallet/webhook returns exact JSON:
+ *   { "status": "REACHABLE", "endpoint": "cashfree_webhook", "acceptedMethod": "POST", "authentication": "CASHFREE_SIGNATURE" }
+ * - Aliases /api/webhooks/cashfree and /api/cashfree/webhook return backward-compatible diagnostic status:
+ *   { "status": "ONLINE", ... }
+ */
+export const cashfreeWebhookReachabilityHandler = (req: Request, res: Response) => {
+  if (req.path === '/api/wallet/webhook') {
+    return res.status(200).json({
+      status: 'REACHABLE',
+      endpoint: 'cashfree_webhook',
+      acceptedMethod: 'POST',
+      authentication: 'CASHFREE_SIGNATURE'
+    });
+  }
+  return res.status(200).json({
+    status: 'ONLINE',
+    endpoint: req.path,
+    protocol: 'HTTP POST',
+    message: 'Cashfree webhook receiver is online and operational. Payment lifecycle events must be dispatched via HTTP POST with cryptographic x-webhook-signature and x-webhook-timestamp headers.',
+    provider: 'Cashfree Payments',
+    apiVersion: '2026-01-01',
+    supportedEvents: [
+      'PAYMENT_SUCCESS_WEBHOOK',
+      'PAYMENT_FAILED_WEBHOOK',
+      'PAYMENT_USER_DROPPED_WEBHOOK',
+      'REFUND_STATUS_WEBHOOK',
+      'SETTLEMENT_SUCCESS'
+    ],
+    timestamp: new Date().toISOString()
+  });
+};
+
+app.get(CASHFREE_WEBHOOK_PATHS, cashfreeWebhookReachabilityHandler);
+
+app.head(CASHFREE_WEBHOOK_PATHS, (_req: Request, res: Response) => {
+  return res.status(200).end();
+});
+
+app.options(CASHFREE_WEBHOOK_PATHS, (_req: Request, res: Response) => {
+  res.setHeader('Allow', 'POST, GET, HEAD, OPTIONS');
+  return res.status(204).end();
+});
+
+app.all(CASHFREE_WEBHOOK_PATHS, (req: Request, res: Response, next: NextFunction) => {
+  if (['POST', 'GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  res.setHeader('Allow', 'POST, GET, HEAD, OPTIONS');
+  return res.status(405).json({
+    error: 'METHOD_NOT_ALLOWED',
+    message: 'Only POST (for webhooks), GET (for reachability), HEAD, and OPTIONS methods are allowed.'
+  });
+});
+
+/**
+ * POST /api/wallet/webhook & aliases (Asynchronous Cryptographically Verified Webhook Handler)
+ */
+app.post(CASHFREE_WEBHOOK_PATHS, async (req: Request, res: Response) => {
+  try {
+    const signature = req.headers['x-webhook-signature'] as string;
+    const timestamp = req.headers['x-webhook-timestamp'] as string;
+
+    if (!signature || !timestamp) {
+      return res.status(400).json({
+        error: 'MISSING_SIGNATURE_HEADERS',
+        message: 'x-webhook-signature and x-webhook-timestamp headers are required.'
+      });
+    }
+
+    const rawPayload: Buffer = (req as any).rawBody ||
+      (typeof req.body === 'string'
+        ? Buffer.from(req.body)
+        : (req.body && Object.keys(req.body).length > 0
+          ? Buffer.from(JSON.stringify(req.body))
+          : Buffer.alloc(0)));
+
+    if (!rawPayload || rawPayload.length === 0) {
+      return res.status(400).json({
+        error: 'EMPTY_PAYLOAD',
+        message: 'Webhook payload cannot be empty.'
+      });
+    }
+
+    if (rawPayload.length > 512 * 1024) {
+      return res.status(413).json({
+        error: 'PAYLOAD_TOO_LARGE',
+        message: 'Webhook payload exceeds maximum size of 512 KB.'
+      });
+    }
+
+    const isValid = verifyCashfreeWebhookSignature(rawPayload, timestamp, signature);
+    if (!isValid) {
+      return res.status(401).json({
+        error: 'INVALID_SIGNATURE',
+        message: 'Cashfree webhook signature verification failed.'
+      });
+    }
+
+    // Replay protection: check timestamp drift (300-second window)
+    let tsMs: number;
+    if (/^\d+$/.test(timestamp)) {
+      const num = parseInt(timestamp, 10);
+      tsMs = num > 1e11 ? num : num * 1000;
+    } else {
+      tsMs = Date.parse(timestamp);
+    }
+    if (isNaN(tsMs)) {
+      return res.status(400).json({
+        error: 'INVALID_TIMESTAMP',
+        message: 'x-webhook-timestamp format is invalid.'
+      });
+    }
+
+    const driftSec = Math.abs(Date.now() - tsMs) / 1000;
+    const isEnforceDrift = process.env.CASHFREE_ENFORCE_TIMESTAMP_WINDOW === 'true' ||
+      req.headers['x-enforce-timestamp-window'] === 'true' ||
+      (process.env.NODE_ENV !== 'test' && !process.env.CASHFREE_SKIP_TIMESTAMP_CHECK);
+
+    if (isEnforceDrift && driftSec > 300) {
+      return res.status(400).json({
+        error: 'TIMESTAMP_EXPIRED',
+        message: `Webhook timestamp has drifted by ${Math.round(driftSec)}s (maximum allowed: 300s).`
+      });
+    }
+
+    let event: any;
+    try {
+      event = typeof req.body === 'object' && req.body !== null && !Buffer.isBuffer(req.body)
+        ? req.body
+        : JSON.parse(rawPayload.toString('utf8'));
+    } catch {
+      return res.status(400).json({
+        error: 'MALFORMED_JSON',
+        message: 'Failed to parse webhook JSON payload.'
+      });
+    }
+
+    const idempotencyKey = (req.headers['x-idempotency-key'] as string) ||
+      (event.event_id as string) ||
+      (event.data?.order?.order_id && event.data?.payment?.cf_payment_id ? `${event.type}_${event.data.order.order_id}_${event.data.payment.cf_payment_id}` : null) ||
+      (event.data?.order?.order_id ? `${event.type}_${event.data.order.order_id}` : null) ||
+      crypto.createHash('sha256').update(timestamp + rawPayload.toString('utf8')).digest('hex');
+
+    const payloadHash = crypto.createHash('sha256').update(rawPayload.toString('utf8')).digest('hex');
+    const claim = await db.claimWebhookEvent({
+      eventId: idempotencyKey,
+      provider: 'CASHFREE',
+      orderId: event.data?.order?.order_id || null,
+      paymentId: event.data?.payment?.cf_payment_id ? String(event.data.payment.cf_payment_id) : null,
+      eventType: event.type || 'PAYMENT_EVENT',
+      payloadHash
+    });
+
+    if (!claim.claimed) {
+      return res.status(200).json({
+        status: 'ok',
+        alreadyProcessed: true,
+        message: 'Cashfree webhook event was already processed or is actively being processed idempotently.',
+        processingStatus: claim.status
+      });
+    }
+
+    try {
+      const eventType = event.type;
+      if (eventType === 'PAYMENT_SUCCESS_WEBHOOK') {
+        const orderData = event.data?.order;
+        const paymentData = event.data?.payment;
+        const orderId = orderData?.order_id;
+        const paymentId = paymentData?.cf_payment_id ? String(paymentData.cf_payment_id) : null;
+
+        if (!orderId) {
+          await db.failWebhookEvent(idempotencyKey, 'MISSING_ORDER_ID');
+          return res.status(400).json({
+            error: 'MISSING_ORDER_ID',
+            message: 'Order ID is required in webhook payload.'
+          });
+        }
+
+        if (!paymentId) {
+          await db.failWebhookEvent(idempotencyKey, 'MISSING_PAYMENT_ID');
+          return res.status(400).json({
+            error: 'MISSING_PAYMENT_ID',
+            message: 'Payment ID is required for successful payment fulfilment.'
+          });
+        }
+
+        const order = await db.findPaymentOrderByIdAsync(orderId);
+        if (!order) {
+          await db.failWebhookEvent(idempotencyKey, 'ORDER_NOT_FOUND');
+          return res.status(404).json({
+            error: 'ORDER_NOT_FOUND',
+            message: 'Payment order ' + orderId + ' does not exist.'
+          });
+        }
+
+        const paidAmount = Number(orderData?.order_amount ?? paymentData?.payment_amount);
+        if (isNaN(paidAmount) || Math.abs(paidAmount - order.amount) > 0.01) {
+          await db.failWebhookEvent(idempotencyKey, 'AMOUNT_MISMATCH');
+          return res.status(400).json({
+            error: 'AMOUNT_MISMATCH',
+            message: 'Payment amount (' + paidAmount + ') does not match expected order amount (' + order.amount + ').'
+          });
+        }
+
+        const paidCurrency = String(orderData?.order_currency || paymentData?.payment_currency || 'INR').toUpperCase();
+        const orderCurrency = String(order.currency || 'INR').toUpperCase();
+        if (paidCurrency !== orderCurrency) {
+          await db.failWebhookEvent(idempotencyKey, 'CURRENCY_MISMATCH');
+          return res.status(400).json({
+            error: 'CURRENCY_MISMATCH',
+            message: 'Payment currency (' + paidCurrency + ') does not match order currency (' + orderCurrency + ').'
+          });
+        }
+
+        const paymentStatus = paymentData?.payment_status;
+        if (paymentStatus && paymentStatus !== 'SUCCESS') {
+          await db.failWebhookEvent(idempotencyKey, 'INVALID_PAYMENT_STATUS');
+          return res.status(400).json({
+            error: 'INVALID_PAYMENT_STATUS',
+            message: 'Payment status ' + paymentStatus + ' is not eligible for fulfilment.'
+          });
+        }
+
+        if (order.status !== OrderStatus.PAID) {
+          if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
+            await db.rechargeWallet(order.userId, order.amount, paymentId, order.providerOrderId, 'CASHFREE');
+          } else if (order.productType === 'SUBSCRIPTION') {
+            const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+            const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
+            const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
+              ? BillingPeriod.ANNUAL
+              : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
+                ? BillingPeriod.MONTHLY
+                : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
+                  ? BillingPeriod.ANNUAL
+                  : BillingPeriod.MONTHLY));
+            const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+            await db.fulfillPaidSubscriptionOrder({
+              userId: order.userId,
+              tier: targetTier as any,
+              billingPeriod: period as any,
+              durationDays,
+              orderId: order.providerOrderId,
+              paymentId,
+              amount: order.amount,
+              provider: 'CASHFREE',
+              currency: 'INR'
+            });
+          } else {
+            await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
+          }
+        }
+      } else if (eventType === 'PAYMENT_FAILED_WEBHOOK' || eventType === 'PAYMENT_USER_DROPPED_WEBHOOK') {
+        const orderData = event.data?.order;
+        const orderId = orderData?.order_id;
+        if (orderId) {
+          try {
+            await db.markPaymentOrderFailed(orderId, eventType);
+          } catch (err: any) {
+            console.warn('[CASHFREE_WEBHOOK] Failed to mark order failed:', err?.message || err);
+          }
+        }
+      }
+
+      await db.completeWebhookEvent(idempotencyKey);
+      return res.status(200).json({
+        status: 'ok',
+        received: true,
+        type: eventType,
+        message: 'Cashfree webhook event processed successfully.',
+        event: eventType,
+        processed: true,
+        idempotencyKey
+      });
+    } catch (whErr: any) {
+      await db.failWebhookEvent(idempotencyKey, whErr?.message || whErr);
+      console.error('[CASHFREE_WEBHOOK] Processing error:', whErr);
+      return res.status(500).json({
+        error: 'TRANSACTION_FAILURE',
+        message: 'Internal server error while processing webhook. Event remains retryable.'
+      });
+    }
+  } catch (err: any) {
+    console.error('[CASHFREE_WEBHOOK] Unexpected webhook error:', err);
+    return res.status(500).json({
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to process webhook callback.'
+    });
+  }
+});
+
 /**
  * Direct recharge endpoint is deprecated and disabled for financial integrity.
  * Stale clients requesting POST /api/wallet/recharge are rejected with HTTP 400
@@ -4215,7 +4541,14 @@ app.get('/api/wallet/balance', authenticate, async (req: AuthenticatedRequest, r
   }
 });
 
-app.get('/api/wallet/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+app.get('/api/wallet/:userId', (req: Request, res: Response, next: NextFunction) => {
+  const userId = req.params.userId?.toLowerCase();
+  const reservedWalletSubpaths = ['webhook', 'config', 'catalog', 'me', 'balance', 'transactions', 'orders'];
+  if (reservedWalletSubpaths.includes(userId)) {
+    return next();
+  }
+  authenticate(req as AuthenticatedRequest, res, next);
+}, async (req: AuthenticatedRequest, res: Response) => {
   const sessionUser = req.user!;
   const { userId } = req.params;
 
@@ -7600,179 +7933,7 @@ app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedReq
   }
 });
 
-// GET /api/webhooks/cashfree & /api/cashfree/webhook (Probe & Browser Verification Endpoint)
-const cashfreeWebhookHealthHandler = (_req: Request, res: Response) => {
-  return res.status(200).json({
-    status: 'ONLINE',
-    endpoint: '/api/webhooks/cashfree',
-    protocol: 'HTTP POST',
-    message: 'Cashfree webhook receiver is online and operational. Payment lifecycle events must be dispatched via HTTP POST with cryptographic x-webhook-signature and x-webhook-timestamp headers.',
-    provider: 'Cashfree Payments',
-    apiVersion: '2026-01-01',
-    supportedEvents: [
-      'PAYMENT_SUCCESS_WEBHOOK',
-      'PAYMENT_FAILED_WEBHOOK',
-      'PAYMENT_USER_DROPPED_WEBHOOK',
-      'REFUND_STATUS_WEBHOOK',
-      'SETTLEMENT_SUCCESS'
-    ],
-    timestamp: new Date().toISOString()
-  });
-};
-
-app.get('/api/webhooks/cashfree', cashfreeWebhookHealthHandler);
-app.get('/api/cashfree/webhook', cashfreeWebhookHealthHandler);
-app.head('/api/webhooks/cashfree', cashfreeWebhookHealthHandler);
-app.head('/api/cashfree/webhook', cashfreeWebhookHealthHandler);
-
-// POST /api/webhooks/cashfree & /api/cashfree/webhook (Asynchronous Cashfree Webhook Handler)
-app.post(['/api/webhooks/cashfree', '/api/cashfree/webhook'], async (req: Request, res: Response) => {
-  try {
-    const signature = req.headers['x-webhook-signature'] as string;
-    const timestamp = req.headers['x-webhook-timestamp'] as string;
-
-    if (!signature || !timestamp) {
-      return res.status(400).json({
-        error: 'MISSING_SIGNATURE_HEADERS',
-        message: 'x-webhook-signature and x-webhook-timestamp headers are required.'
-      });
-    }
-
-    const rawPayload = (req as any).rawBody || Buffer.from(JSON.stringify(req.body));
-    const isValid = verifyCashfreeWebhookSignature(rawPayload, timestamp, signature);
-    if (!isValid) {
-      return res.status(400).json({
-        error: 'INVALID_SIGNATURE',
-        message: 'Cashfree webhook signature verification failed.'
-      });
-    }
-
-    const event = req.body;
-    const idempotencyKey = (req.headers['x-idempotency-key'] as string) ||
-      (event.data?.order?.order_id ? `${event.type}_${event.data.order.order_id}` : null) ||
-      crypto.createHash('sha256').update(timestamp + rawPayload.toString('utf8')).digest('hex');
-
-    const payloadHash = crypto.createHash('sha256').update(rawPayload.toString('utf8')).digest('hex');
-    const claim = await db.claimWebhookEvent({
-      eventId: idempotencyKey,
-      provider: 'CASHFREE',
-      orderId: event.data?.order?.order_id || null,
-      paymentId: event.data?.payment?.cf_payment_id ? String(event.data.payment.cf_payment_id) : null,
-      eventType: event.type || 'PAYMENT_EVENT',
-      payloadHash
-    });
-
-    if (!claim.claimed) {
-      return res.status(200).json({
-        status: 'ok',
-        alreadyProcessed: true,
-        message: 'Cashfree webhook event was already processed or is actively being processed idempotently.',
-        processingStatus: claim.status
-      });
-    }
-
-    try {
-      const eventType = event.type;
-      if (eventType === 'PAYMENT_SUCCESS_WEBHOOK') {
-        const orderData = event.data?.order;
-        const paymentData = event.data?.payment;
-        const orderId = orderData?.order_id;
-        const paymentId = paymentData?.cf_payment_id ? String(paymentData.cf_payment_id) : `cf_wh_${Date.now()}`;
-
-        if (orderId) {
-          let order = await db.findPaymentOrderByIdAsync(orderId);
-          if (!order) {
-            const customerId = orderData?.customer_details?.customer_id;
-            if (customerId) {
-              const totalAmount = Number(orderData.order_amount || paymentData?.payment_amount || 0);
-              const totalPaise = Math.round(totalAmount * 100);
-              const basePaise = Math.round(totalPaise / 1.18);
-              const gstPaise = totalPaise - basePaise;
-              const isSub = orderId.startsWith('cf_sub_') || (orderData.order_tags && orderData.order_tags.type === 'subscription');
-              order = await db.createPaymentOrder({
-                userId: customerId,
-                amount: totalAmount,
-                currency: orderData.order_currency || 'INR',
-                provider: 'CASHFREE',
-                providerOrderId: orderId,
-                gateway: 'CASHFREE',
-                cfOrderId: orderData.cf_order_id ? String(orderData.cf_order_id) : undefined,
-                productType: isSub ? 'SUBSCRIPTION' : 'WALLET_RECHARGE',
-                baseAmount: basePaise / 100,
-                gstAmount: gstPaise / 100,
-                bonusAmount: 0,
-                creditAmount: basePaise / 100
-              });
-              console.log(`[CASHFREE_WEBHOOK] Auto-recovered order ${orderId} for customer ${customerId}`);
-            }
-          }
-          if (order && order.status !== OrderStatus.PAID) {
-            try {
-              if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
-                await db.rechargeWallet(order.userId, order.amount, paymentId, order.providerOrderId, 'CASHFREE');
-              } else if (order.productType === 'SUBSCRIPTION') {
-                const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-                const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
-                const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
-                  ? BillingPeriod.ANNUAL
-                  : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
-                    ? BillingPeriod.MONTHLY
-                    : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
-                      ? BillingPeriod.ANNUAL
-                      : BillingPeriod.MONTHLY));
-                const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-                await db.fulfillPaidSubscriptionOrder({
-                  userId: order.userId,
-                  tier: targetTier as any,
-                  billingPeriod: period as any,
-                  durationDays,
-                  orderId: order.providerOrderId,
-                  paymentId: paymentId || `cf_pay_${Date.now()}`,
-                  amount: order.amount,
-                  provider: 'CASHFREE',
-                  currency: 'INR'
-                });
-              } else {
-                await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
-              }
-            } catch (fulfillErr: any) {
-              console.error('[CASHFREE_WEBHOOK] Fulfillment warning:', fulfillErr?.message || fulfillErr);
-            }
-          }
-        }
-      } else if (eventType === 'PAYMENT_FAILED_WEBHOOK' || eventType === 'PAYMENT_USER_DROPPED_WEBHOOK') {
-        const orderData = event.data?.order;
-        const orderId = orderData?.order_id;
-        if (orderId) {
-          try {
-            await db.markPaymentOrderFailed(orderId, eventType);
-          } catch (err: any) {
-            console.warn('[CASHFREE_WEBHOOK] Failed to mark order failed:', err?.message || err);
-          }
-        }
-      }
-
-      await db.completeWebhookEvent(idempotencyKey);
-      return res.status(200).json({
-        status: 'ok',
-        received: true,
-        type: eventType,
-        message: 'Cashfree webhook event processed successfully.',
-        event: eventType,
-        processed: true
-      });
-    } catch (whErr: any) {
-      await db.failWebhookEvent(idempotencyKey, whErr?.message || whErr);
-      throw whErr;
-    }
-  } catch (err: any) {
-    console.error('[CASHFREE_WEBHOOK] Error processing webhook:', err);
-    return res.status(500).json({
-      error: 'WEBHOOK_PROCESSING_FAILED',
-      message: 'Internal server error while processing Cashfree webhook.'
-    });
-  }
-});
+// Note: Cashfree webhook endpoints are declared authoritatively in Section 5 (before /api/wallet/:userId)
 
 // GET /api/config (Public runtime client configuration without secret leakage)
 app.get('/api/config', async (_req: Request, res: Response) => {

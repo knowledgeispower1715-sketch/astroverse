@@ -320,7 +320,7 @@ describe('P0 INCIDENT RECOVERY: CASHFREE ORDER LOOKUP & FINANCIAL INTEGRITY SUIT
           id: aryanId,
           email: 'menex544@gmail.com',
           displayName: 'Aryan',
-          role: Role.SEEKER
+          role: Role.USER
         });
       }
       const initialBalance = aryan.walletBalance;

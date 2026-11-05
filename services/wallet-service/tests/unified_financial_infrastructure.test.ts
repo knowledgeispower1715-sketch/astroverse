@@ -105,6 +105,17 @@ describe('ASTROVERSE UNIFIED FINANCIAL INFRASTRUCTURE & UNIVERSAL WALLET SUITE',
       (l: any) => l.referenceId !== aryanPaymentId && l.idempotencyKey !== `RECHARGE_${aryanPaymentId}`
     );
 
+    // Create the pending payment order for Aryan to simulate pre-settlement state
+    await db.createPaymentOrder({
+      userId: aryanId,
+      amount: 1.18,
+      baseAmount: 1.00,
+      gstAmount: 0.18,
+      currency: 'INR',
+      provider: 'CASHFREE',
+      providerOrderId: aryanOrderId
+    });
+
     // Setup Subscriber user
     subscriberId = 'sub-test-user-' + Date.now();
     await db.createUser({
@@ -267,7 +278,7 @@ describe('ASTROVERSE UNIFIED FINANCIAL INFRASTRUCTURE & UNIVERSAL WALLET SUITE',
         birthplaceName: 'Delhi',
         latitude: 28.6139,
         longitude: 77.2090,
-        timezone: 'Asia/Kolkata'
+        resolvedTimezone: 'Asia/Kolkata'
       });
 
       const res = await makeRequest(server, 'POST', '/api/reports/order', {
