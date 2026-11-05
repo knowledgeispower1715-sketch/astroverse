@@ -185,7 +185,12 @@ const ALLOWED_ORIGINS = [
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
 ];
 
-// Cashfree Webhook Endpoints (referencing CASHFREE_WEBHOOK_PATHS declared above)
+// Cashfree Webhook Endpoints (Canonical & Aliases)
+export const CASHFREE_WEBHOOK_PATHS = [
+  '/api/wallet/webhook',
+  '/api/webhooks/cashfree',
+  '/api/cashfree/webhook'
+];
 
 // Enable CORS with origin verification and preflight support
 app.use((req, res, next) => {
@@ -2803,12 +2808,7 @@ export const MIN_RECHARGE_AMOUNT = 1.00;
 export const MAX_RECHARGE_AMOUNT = 50000;
 export const RECHARGE_GST_RATE = 0.18;
 
-// Cashfree Webhook Endpoints (Canonical & Aliases)
-export const CASHFREE_WEBHOOK_PATHS = [
-  '/api/wallet/webhook',
-  '/api/webhooks/cashfree',
-  '/api/cashfree/webhook'
-];
+// Cashfree Webhook Endpoints are declared above in Section 2 (before CORS & route definitions)
 
 /**
  * Safe, read-only reachability handler for browser GET requests.
