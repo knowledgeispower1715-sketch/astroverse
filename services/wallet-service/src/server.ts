@@ -185,12 +185,21 @@ const ALLOWED_ORIGINS = [
   ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
 ];
 
-// Cashfree Webhook Endpoints (Canonical & Aliases)
+// Cashfree Webhook Endpoints (Canonical & Aliases, including trailing slashes)
 export const CASHFREE_WEBHOOK_PATHS = [
   '/api/wallet/webhook',
+  '/api/wallet/webhook/',
   '/api/webhooks/cashfree',
-  '/api/cashfree/webhook'
+  '/api/webhooks/cashfree/',
+  '/api/cashfree/webhook',
+  '/api/cashfree/webhook/'
 ];
+
+// Helper: check if request path matches any cashfree webhook path
+export function isCashfreeWebhookPath(path: string): boolean {
+  const norm = (path || '').replace(/\/+$/, '') || '/';
+  return norm === '/api/wallet/webhook' || norm === '/api/webhooks/cashfree' || norm === '/api/cashfree/webhook';
+}
 
 // Enable CORS with origin verification and preflight support
 app.use((req, res, next) => {
@@ -207,7 +216,7 @@ app.use((req, res, next) => {
   );
   res.header('Access-Control-Allow-Credentials', 'true');
   if (req.method === 'OPTIONS') {
-    if (CASHFREE_WEBHOOK_PATHS.includes(req.path)) {
+    if (isCashfreeWebhookPath(req.path)) {
       res.header('Allow', 'POST, GET, HEAD, OPTIONS');
       return res.status(204).end();
     }
@@ -2819,7 +2828,8 @@ export const RECHARGE_GST_RATE = 0.18;
  *   { "status": "ONLINE", ... }
  */
 export const cashfreeWebhookReachabilityHandler = (req: Request, res: Response) => {
-  if (req.path === '/api/wallet/webhook') {
+  const normPath = (req.path || '').replace(/\/+$/, '') || '/';
+  if (normPath === '/api/wallet/webhook') {
     return res.status(200).json({
       status: 'REACHABLE',
       endpoint: 'cashfree_webhook',
