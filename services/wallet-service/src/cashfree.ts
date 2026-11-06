@@ -465,50 +465,49 @@ export function getCashfreeApiVersion(): string {
 
 
 export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Promise<CashfreeOrderResponse> {
+  if (typeof params.orderAmount !== 'number' || isNaN(params.orderAmount) || params.orderAmount < 1.00 || params.orderAmount > 50000.00) {
+    throw new Error('INVALID_ORDER_AMOUNT: Order amount must be a number between ₹1.00 and ₹50,000.00.');
+  }
+  if (Number(params.orderAmount.toFixed(2)) !== params.orderAmount) {
+    throw new Error('INVALID_AMOUNT_PRECISION: Order amount cannot have more than 2 decimal places.');
+  }
 
   if (!isCashfreeConfigured()) {
-
     throw new Error('CASHFREE_NOT_CONFIGURED: Live Cashfree credentials (CASHFREE_APP_ID, CASHFREE_SECRET_KEY) are not configured.');
-
   }
-
-
 
   // Fast-path for unit/integration testing without external sandbox connectivity
-
   if (process.env.NODE_ENV === 'test') {
-
     return {
-
       cf_order_id: `cf_order_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-
       order_id: params.orderId,
-
       order_status: 'ACTIVE',
-
       order_amount: Number(params.orderAmount.toFixed(2)),
-
       order_currency: params.orderCurrency || 'INR',
-
       payment_session_id: `session_${params.orderId}_${Date.now()}`,
-
       created_at: new Date().toISOString(),
-
       customer_details: params.customer,
-
       order_note: params.orderNote
-
     };
-
   }
 
-
-
-  const { appId, secretKey, apiVersion } = getResolvedCashfreeCredentials();
-
+  const { appId, secretKey, apiVersion, env } = getResolvedCashfreeCredentials();
   const baseUrl = getCashfreeBaseUrl();
 
-
+  const customerPhoneClean = (() => {
+    let cleanPhone = (params.customer.customer_phone || '').replace(/\D/g, '');
+    if (cleanPhone.length > 10 && cleanPhone.startsWith('91')) {
+      cleanPhone = cleanPhone.slice(2);
+    }
+    if (cleanPhone.length !== 10) {
+      if (env === 'production') {
+        throw new Error('INVALID_CUSTOMER_PHONE: A valid 10-digit Indian mobile number is required for Cashfree production orders.');
+      } else {
+        cleanPhone = '9999999999';
+      }
+    }
+    return cleanPhone;
+  })();
 
   const payload: any = {
 
@@ -518,23 +517,12 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
 
     order_currency: params.orderCurrency || 'INR',
 
-    customer_details: (() => {
-      let cleanPhone = (params.customer.customer_phone || '').replace(/\D/g, '');
-      if (cleanPhone.length > 10 && cleanPhone.startsWith('91')) {
-        cleanPhone = cleanPhone.slice(2);
-      }
-      if (cleanPhone.length !== 10) {
-        cleanPhone = '9999999999';
-      }
-      return {
-        customer_id: params.customer.customer_id,
-        customer_phone: cleanPhone,
-
+    customer_details: {
+      customer_id: params.customer.customer_id,
+      customer_phone: customerPhoneClean,
       customer_email: params.customer.customer_email || 'seeker@astroverse.ai',
-
       customer_name: params.customer.customer_name || 'AstroVerse Seeker'
-      };
-    })(),
+    },
 
     order_meta: {
 
@@ -548,7 +536,7 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
 
   };
 
-
+  const correlationId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 
   const headers: Record<string, string> = {
 
@@ -557,6 +545,8 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
     'x-client-secret': secretKey,
 
     'x-api-version': apiVersion,
+
+    'x-request-id': correlationId,
 
     'Content-Type': 'application/json'
 
@@ -568,27 +558,29 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
 
   }
 
+  let response: any;
+  try {
+    response = await fetch(`${baseUrl}/orders`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000)
+    });
+  } catch (netErr: any) {
+    if (netErr.name === 'TimeoutError' || netErr.message?.includes('timeout')) {
+      throw new Error(`CASHFREE_UPSTREAM_TIMEOUT: Cashfree order creation timed out after 10000ms (correlationId: ${correlationId})`);
+    }
+    throw new Error(`CASHFREE_NETWORK_ERROR: ${netErr.message || netErr} (correlationId: ${correlationId})`);
+  }
 
-
-  const response = await fetch(`${baseUrl}/orders`, {
-
-    method: 'POST',
-
-    headers,
-
-    body: JSON.stringify(payload)
-
-  });
-
-
-
-  const body: any = await response.json();
+  const body: any = await response.json().catch(() => ({}));
 
   if (!response.ok) {
 
     const errorMsg = body.message || body.error || `Cashfree order creation failed with status ${response.status}`;
+    const errCode = body.code || body.type || `HTTP_${response.status}`;
 
-    throw new Error(`CASHFREE_ORDER_FAILED: ${errorMsg}`);
+    throw new Error(`CASHFREE_ORDER_FAILED [${errCode}]: ${errorMsg} (correlationId: ${correlationId})`);
 
   }
 
@@ -712,33 +704,34 @@ export async function getCashfreeOrderStatus(orderId: string): Promise<CashfreeO
 
 
 
-  const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, {
-
-    method: 'GET',
-
-    headers: {
-
-      'x-client-id': appId,
-
-      'x-client-secret': secretKey,
-
-      'x-api-version': apiVersion,
-
-      'Content-Type': 'application/json'
-
+  const correlationId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  let response: any;
+  try {
+    response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, {
+      method: 'GET',
+      headers: {
+        'x-client-id': appId,
+        'x-client-secret': secretKey,
+        'x-api-version': apiVersion,
+        'x-request-id': correlationId,
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+  } catch (netErr: any) {
+    if (netErr.name === 'TimeoutError' || netErr.message?.includes('timeout')) {
+      throw new Error(`CASHFREE_UPSTREAM_TIMEOUT: Cashfree order status lookup timed out after 10000ms (correlationId: ${correlationId})`);
     }
+    throw new Error(`CASHFREE_NETWORK_ERROR: ${netErr.message || netErr} (correlationId: ${correlationId})`);
+  }
 
-  });
-
-
-
-  const body: any = await response.json();
+  const body: any = await response.json().catch(() => ({}));
 
   if (!response.ok) {
 
     const errorMsg = body.message || body.error || `Cashfree status lookup failed with status ${response.status}`;
 
-    throw new Error(`CASHFREE_LOOKUP_FAILED: ${errorMsg}`);
+    throw new Error(`CASHFREE_LOOKUP_FAILED: ${errorMsg} (correlationId: ${correlationId})`);
 
   }
 
@@ -814,33 +807,34 @@ export async function getPaymentsForCashfreeOrder(orderId: string): Promise<Cash
 
 
 
-  const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}/payments`, {
-
-    method: 'GET',
-
-    headers: {
-
-      'x-client-id': appId,
-
-      'x-client-secret': secretKey,
-
-      'x-api-version': apiVersion,
-
-      'Content-Type': 'application/json'
-
+  const correlationId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  let response: any;
+  try {
+    response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}/payments`, {
+      method: 'GET',
+      headers: {
+        'x-client-id': appId,
+        'x-client-secret': secretKey,
+        'x-api-version': apiVersion,
+        'x-request-id': correlationId,
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+  } catch (netErr: any) {
+    if (netErr.name === 'TimeoutError' || netErr.message?.includes('timeout')) {
+      throw new Error(`CASHFREE_UPSTREAM_TIMEOUT: Cashfree payments lookup timed out after 10000ms (correlationId: ${correlationId})`);
     }
+    throw new Error(`CASHFREE_NETWORK_ERROR: ${netErr.message || netErr} (correlationId: ${correlationId})`);
+  }
 
-  });
-
-
-
-  const body: any = await response.json();
+  const body: any = await response.json().catch(() => ({}));
 
   if (!response.ok) {
 
     const errorMsg = body.message || body.error || `Cashfree payments lookup failed with status ${response.status}`;
 
-    throw new Error(`CASHFREE_PAYMENTS_LOOKUP_FAILED: ${errorMsg}`);
+    throw new Error(`CASHFREE_PAYMENTS_LOOKUP_FAILED: ${errorMsg} (correlationId: ${correlationId})`);
 
   }
 

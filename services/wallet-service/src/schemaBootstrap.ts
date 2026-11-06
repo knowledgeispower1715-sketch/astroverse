@@ -996,7 +996,6 @@ export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
       // 1. Comprehensive multi-table schema-readiness check
       const readiness = await checkSchemaReadiness(prisma);
       if (readiness.isReady) {
-        await ensureAdditiveColumns(prisma);
         return true;
       }
 

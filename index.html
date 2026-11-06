@@ -16975,7 +16975,14 @@
           paymentSessionId: orderData.paymentSessionId
         });
 
-        await loadCashfreeSDK();
+        try {
+          await loadCashfreeSDK(8000);
+        } catch (sdkLoadErr) {
+          console.warn("Cashfree JS SDK loading failed or timed out, executing hosted fallback:", sdkLoadErr);
+          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+          submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          return;
+        }
 
         if (typeof window.Cashfree !== 'function') {
           const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
@@ -22577,24 +22584,93 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       };
     }
 
-    function loadCashfreeSDK() {
-      return new Promise((resolve, reject) => {
+    let cashfreeSdkPromise = null;
+    let cashfreeSdkLoadFailed = false;
+
+    function loadCashfreeSDK(timeoutMs = 8000) {
+      if (typeof window.Cashfree === 'function') {
+        return Promise.resolve(window.Cashfree);
+      }
+      if (cashfreeSdkPromise && !cashfreeSdkLoadFailed) {
+        return cashfreeSdkPromise;
+      }
+
+      cashfreeSdkPromise = new Promise((resolve, reject) => {
+        let timer = null;
+        let settled = false;
+
+        const onSettled = (fn, arg) => {
+          if (settled) return;
+          settled = true;
+          if (timer) {
+            clearTimeout(timer);
+            timer = null;
+          }
+          fn(arg);
+        };
+
+        timer = setTimeout(() => {
+          cashfreeSdkLoadFailed = true;
+          cashfreeSdkPromise = null;
+          onSettled(reject, new Error(`Cashfree SDK loading timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        // Check again in case SDK was initialized while entering
         if (typeof window.Cashfree === 'function') {
-          return resolve(window.Cashfree);
+          return onSettled(resolve, window.Cashfree);
         }
-        const existingScript = document.querySelector('script[src*="cashfree.js"]');
-        if (existingScript) {
-          existingScript.addEventListener('load', () => resolve(window.Cashfree));
-          existingScript.addEventListener('error', () => reject(new Error('Failed to load Cashfree checkout SDK')));
-          if (typeof window.Cashfree === 'function') return resolve(window.Cashfree);
-          return;
+
+        // Look for existing script element
+        let script = document.querySelector('script[src*="cashfree.js"]');
+        if (script) {
+          if (script.getAttribute('data-failed') === 'true') {
+            script.remove();
+            script = null;
+          } else {
+            script.addEventListener('load', () => {
+              if (typeof window.Cashfree === 'function') {
+                cashfreeSdkLoadFailed = false;
+                onSettled(resolve, window.Cashfree);
+              } else {
+                cashfreeSdkLoadFailed = true;
+                cashfreeSdkPromise = null;
+                onSettled(reject, new Error('Cashfree SDK script loaded but window.Cashfree is not defined'));
+              }
+            });
+            script.addEventListener('error', () => {
+              cashfreeSdkLoadFailed = true;
+              cashfreeSdkPromise = null;
+              if (script) script.setAttribute('data-failed', 'true');
+              onSettled(reject, new Error('Failed to load Cashfree checkout SDK from CDN'));
+            });
+            return;
+          }
         }
-        const script = document.createElement('script');
+
+        // Create new script tag
+        script = document.createElement('script');
         script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-        script.onload = () => resolve(window.Cashfree);
-        script.onerror = () => reject(new Error('Failed to load Cashfree checkout SDK from CDN'));
+        script.async = true;
+        script.onload = () => {
+          if (typeof window.Cashfree === 'function') {
+            cashfreeSdkLoadFailed = false;
+            onSettled(resolve, window.Cashfree);
+          } else {
+            cashfreeSdkLoadFailed = true;
+            cashfreeSdkPromise = null;
+            onSettled(reject, new Error('Cashfree SDK script loaded but window.Cashfree is not defined'));
+          }
+        };
+        script.onerror = () => {
+          cashfreeSdkLoadFailed = true;
+          cashfreeSdkPromise = null;
+          script.setAttribute('data-failed', 'true');
+          onSettled(reject, new Error('Failed to load Cashfree checkout SDK from CDN'));
+        };
         document.head.appendChild(script);
       });
+
+      return cashfreeSdkPromise;
     }
 
     function clearPaymentTimeout() {
@@ -23096,7 +23172,14 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         });
 
         // Ensure Cashfree SDK is loaded from CDN
-        await loadCashfreeSDK();
+        try {
+          await loadCashfreeSDK(8000);
+        } catch (sdkLoadErr) {
+          console.warn("Cashfree JS SDK loading failed or timed out, executing hosted fallback:", sdkLoadErr);
+          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+          submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          return;
+        }
 
         if (typeof window.Cashfree !== 'function') {
           // If SDK script failed to load, execute immediate direct hosted redirect fallback
