@@ -16882,6 +16882,9 @@
 
     async function executeSelectedRecharge() {
       if (!currentSessionToken) {
+        currentSessionToken = localStorage.getItem('astro_session_token') || localStorage.getItem('astroverse_session_token') || '';
+      }
+      if (!currentSessionToken) {
         showToast("Please sign in to recharge your wallet.", "error");
         openAuthModal();
         return;
@@ -16948,7 +16951,7 @@
           setPaymentState(PAYMENT_STATES.FAILED, {
             error: errData.error,
             readinessState: errData.readinessState,
-            message: errData.message || "Failed to create payment order. Gateway unavailable.",
+            message: errData.message || errData.error || "Failed to create payment order. Gateway unavailable.",
             retryFn: () => executeSelectedRecharge()
           });
           return;
@@ -23067,7 +23070,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           setPaymentState(PAYMENT_STATES.FAILED, {
             error: errData.error,
             readinessState: errData.readinessState,
-            message: errData.message || "Failed to initiate subscription order. Gateway unavailable.",
+            message: errData.message || errData.error || "Failed to initiate subscription order. Gateway unavailable.",
             retryFn: () => executeSubscriptionCheckout(tier)
           });
           return;

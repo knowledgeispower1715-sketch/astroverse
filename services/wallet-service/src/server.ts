@@ -410,7 +410,8 @@ function handleServiceError(res: Response, err: any, defaultMsg = 'Internal Serv
       message: 'Production deployment requires a connected PostgreSQL database (DATABASE_URL). Ephemeral storage fallback is strictly disabled.'
     });
   }
-  return res.status(500).json({ error: err?.message || defaultMsg });
+  const msg = err?.message || defaultMsg;
+  return res.status(500).json({ error: msg, message: msg });
 }
 
 // ==================== AUTHENTICATION MIDDLEWARE ====================
