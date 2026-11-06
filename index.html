@@ -16941,6 +16941,8 @@
             return;
           }
           setPaymentState(PAYMENT_STATES.FAILED, {
+            error: errData.error,
+            readinessState: errData.readinessState,
             message: errData.message || "Failed to create payment order. Gateway unavailable.",
             retryFn: () => executeSelectedRecharge()
           });
@@ -22762,7 +22764,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             iconWrap.style.color = '#DC2626';
           }
           if (icon) icon.className = 'fa-solid fa-triangle-exclamation';
-          const isConfigIssue = (payload.readinessState && payload.readinessState !== 'READY') || (payload.error && payload.error.includes('CONFIGURED'));
+          const isConfigIssue = (payload.readinessState && payload.readinessState !== 'READY') || (payload.error && (payload.error.includes('CONFIGURED') || payload.error.includes('MISMATCH'))) || (payload.message && payload.message.toLowerCase().includes('mismatch'));
           if (title) title.textContent = isConfigIssue ? 'Payment Temporarily Unavailable' : 'Payment Unsuccessful';
           if (desc) desc.textContent = payload.message || 'Payment could not be completed or was declined. No funds were debited.';
           if (btnPrimary) {

@@ -246,15 +246,33 @@ export function getResolvedCashfreeCredentials(): {
 
 
 
-  const isVercelPreview = process.env.VERCEL_ENV === 'preview' || 
+  const isVercelProduction = process.env.VERCEL_ENV === 'production' ||
+    (process.env.APP_BASE_URL && process.env.APP_BASE_URL.includes('astroverse-eta.vercel.app')) ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_PROJECT_PRODUCTION_URL.includes('astroverse-eta.vercel.app'));
 
-    (process.env.VERCEL_URL && !process.env.VERCEL_URL.includes('astroverse-eta.vercel.app')) ||
+  const isVercelPreview = process.env.VERCEL_ENV === 'preview' ||
+    (!isVercelProduction && Boolean(process.env.VERCEL_URL && !process.env.VERCEL_URL.includes('astroverse-eta.vercel.app')));
 
-    (process.env.APP_BASE_URL && !process.env.APP_BASE_URL.includes('astroverse-eta.vercel.app') && process.env.APP_BASE_URL.includes('vercel.app'));
+  const isProdKey = secretKey.startsWith('cfsk_ma_prod_');
+  const isTestKey = secretKey.startsWith('cfsk_ma_test_') || appId.startsWith('TEST');
 
-  const rawEnv = (process.env.CASHFREE_ENV || (isVercelPreview ? 'sandbox' : (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'))).toLowerCase();
-
-  const env: 'production' | 'sandbox' = rawEnv === 'sandbox' ? 'sandbox' : 'production';
+  let env: 'production' | 'sandbox';
+  if (process.env.CASHFREE_ENV) {
+    const rawEnv = process.env.CASHFREE_ENV.toLowerCase().trim();
+    env = rawEnv === 'sandbox' ? 'sandbox' : 'production';
+    if (env === 'sandbox' && isProdKey && (isVercelProduction || process.env.NODE_ENV === 'production')) {
+      console.warn('[CASHFREE] Auto-aligning CASHFREE_ENV from "sandbox" to "production" because live production key (cfsk_ma_prod_) is configured on production host.');
+      env = 'production';
+    }
+  } else {
+    if (isProdKey) {
+      env = 'production';
+    } else if (isTestKey) {
+      env = 'sandbox';
+    } else {
+      env = (isVercelProduction || process.env.NODE_ENV === 'production') ? 'production' : 'sandbox';
+    }
+  }
 
   const apiVersion = process.env.CASHFREE_API_VERSION || '2026-01-01';
 

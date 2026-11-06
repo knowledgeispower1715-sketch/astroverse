@@ -44,7 +44,8 @@ import {
   PaymentReadinessReport,
   getPaymentReadinessStatus,
   setRuntimeCashfreeSecretKey,
-  CANONICAL_CASHFREE_APP_ID
+  CANONICAL_CASHFREE_APP_ID,
+  getResolvedCashfreeCredentials
 } from './cashfree';
 import {
   SUBSCRIPTION_PLANS,
@@ -8104,7 +8105,11 @@ export async function syncGatewayCredentialsFromDb(): Promise<void> {
     if (process.env.CASHFREE_SECRET_KEY === 'FORCE_EMPTY') return;
     const saved = await db.getCashfreeGatewayConfig();
     if (saved && saved.env) {
-      process.env.CASHFREE_ENV = saved.env;
+      const { secretKey } = getResolvedCashfreeCredentials();
+      const isProdKey = secretKey.startsWith('cfsk_ma_prod_');
+      if (!(isProdKey && saved.env === 'sandbox')) {
+        process.env.CASHFREE_ENV = saved.env;
+      }
     }
   } catch (err: any) {
     console.warn('[GATEWAY] syncGatewayCredentialsFromDb warning:', err?.message || err);
