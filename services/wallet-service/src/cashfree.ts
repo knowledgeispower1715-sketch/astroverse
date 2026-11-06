@@ -518,17 +518,23 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
 
     order_currency: params.orderCurrency || 'INR',
 
-    customer_details: {
-
-      customer_id: params.customer.customer_id,
-
-      customer_phone: params.customer.customer_phone || '9999999999',
+    customer_details: (() => {
+      let cleanPhone = (params.customer.customer_phone || '').replace(/\D/g, '');
+      if (cleanPhone.length > 10 && cleanPhone.startsWith('91')) {
+        cleanPhone = cleanPhone.slice(2);
+      }
+      if (cleanPhone.length !== 10) {
+        cleanPhone = '9999999999';
+      }
+      return {
+        customer_id: params.customer.customer_id,
+        customer_phone: cleanPhone,
 
       customer_email: params.customer.customer_email || 'seeker@astroverse.ai',
 
       customer_name: params.customer.customer_name || 'AstroVerse Seeker'
-
-    },
+      };
+    })(),
 
     order_meta: {
 
