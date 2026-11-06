@@ -1,0 +1,21 @@
+JourneyID,WorkflowName,UserRoleOrMode,TargetURLOrSelector,ExpectedBehavior,ObservedResult,Status
+CUST-01,Guest Landing Page,Anonymous,https://astroverse-eta.vercel.app/,Hero loads with dynamic promo banner and CTA,Rendered cleanly without auth blocking,VERIFIED
+CUST-02,Guest Free Minute Chat,Anonymous,#promo-banner-cta,Opens AI consultation drawer with guest token,Trial session initialized with 60s countdown,VERIFIED
+CUST-03,User Registration (Email/Pass),New Customer,/api/auth/register-password,Creates user record and returns JWT session,User inserted and JWT token issued,VERIFIED
+CUST-04,User Authentication (Login),Existing Customer,/api/auth/login,Validates bcrypt hash and returns JWT session,Authenticated session active,VERIFIED
+CUST-05,Profile Management (CRUD),Authenticated Customer,/api/profiles,Allows adding and deleting birth charts,Prisma model stores charts with RLS,VERIFIED
+CUST-06,Janam Kundli Calculation,Public / Authenticated,#kundli-form,Generates D1/D9 Vedic chart SVG and ascendant,Precise Lagna & Navamsha charts rendered,VERIFIED
+CUST-07,Ephemeris Planetary Positions,Public / Authenticated,/api/astrology/planets,Returns longitude dignity combustion retrograde,Calculated from planetary motion algorithms,VERIFIED
+CUST-08,Vimshottari Dasha Engine,Public / Authenticated,/api/astrology/dasha,Calculates 120-year cycle to Pratyantardasha,3-level nested timeline rendered,VERIFIED
+CUST-09,Solar Horas & Choghadiya,Public / Authenticated,/api/astrology/horas,Real-time daytime and nighttime planetary hours,Dynamic hora highlighted by local time,VERIFIED
+CUST-10,Vedic Panchang Calculation,Public / Authenticated,/api/astrology/panchang,Tithi Nakshatra Yoga Karana computation,Accurate astronomical tithi calculated,VERIFIED
+CUST-11,Ashtakoota Matchmaking,Public / Authenticated,#matchmaking-form,36-point Guna Milan & Mangal Dosha cross-check,Score out of 36 with detailed koota breakdown,VERIFIED
+CUST-12,AI Astrologer Live Chat,Authenticated Customer,#ai-chat-drawer,Real-time streaming responses with Vedic context,Acharya & Shastri personas stream responses,VERIFIED
+CUST-13,Wallet Balance Auto-Decrement,Authenticated Customer,/api/ai/consultation-stream,Deducts ₹5/min during active chat consultation,Transactional debit per 60s bucket,VERIFIED
+CUST-14,Vedic Numerology Studio,Public / Authenticated,#tools-section,Chaldean & Pythagorean name analysis,Calculates Life Path Destiny & Soul Urge,VERIFIED
+CUST-15,Personalized Reports Store,Authenticated Customer,/api/reports/catalogue,Displays 9 available reports with pricing,Full catalog rendered with dynamic purchase,VERIFIED
+CUST-16,Report PDF Compilation,Authenticated Customer,/api/reports/generate,Compiles personalized report into downloadable PDF,PDF generated with charts and interpretations,VERIFIED
+CUST-17,Wallet Top-up Modal (₹1.00),Authenticated Customer,#modal-wallet,Presents recharge options with statutory 18% GST,Calculates ₹1.00 credit = ₹1.18 payable,VERIFIED
+CUST-18,Cashfree Checkout Session,Authenticated Customer,/api/wallet/create-order,Generates valid Cashfree payment session,Order created and payment session returned,VERIFIED
+CUST-19,Language Switcher (EN/HI),All Users,#global-lang-btn,Toggles all UI labels between English and Hindi,Instant i18n DOM string replacement,VERIFIED
+CUST-20,Responsive Layout,All Users,Viewport resize,Adapts cleanly across mobile tablet desktop,Flexbox/grid layout maintains 100% fidelity,VERIFIED

@@ -1,0 +1,50 @@
+{
+  "target": {
+    "description": "",
+    "devtoolsFrontendUrl": "https://chrome-devtools-frontend.appspot.com/serve_rev/@fb096c0011f9d50f0a264a9376420cdea9c421e3/inspector.html?ws=127.0.0.1:9222/devtools/page/E8F0C8CD5A9D708BC7345C37D452DD94",
+    "faviconUrl": "https://astroverse-eta.vercel.app/favicon.ico",
+    "id": "E8F0C8CD5A9D708BC7345C37D452DD94",
+    "title": "AstroVerse AI — Vedic Astrology Software &amp; Astrological Calculations Platform",
+    "type": "page",
+    "url": "https://astroverse-eta.vercel.app/",
+    "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/E8F0C8CD5A9D708BC7345C37D452DD94"
+  },
+  "diagnostics": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "windowInner": {
+      "width": 1249,
+      "height": 861
+    },
+    "screen": {
+      "width": 2560,
+      "height": 1080,
+      "pixelRatio": 1
+    },
+    "location": {
+      "href": "https://astroverse-eta.vercel.app/",
+      "protocol": "https:",
+      "host": "astroverse-eta.vercel.app",
+      "pathname": "/"
+    },
+    "cookies": "present",
+    "localStorageKeys": [
+      "astro_guest_trial_id"
+    ],
+    "sessionStorageKeys": [],
+    "astroConfig": {
+      "appId": "14962482c27cb93db2c6bc6e4af8426941",
+      "env": "production",
+      "configured": true,
+      "readiness": "READY"
+    },
+    "domMetrics": {
+      "totalElements": 3338,
+      "scripts": 9,
+      "styles": 5,
+      "buttons": 308,
+      "inputs": 53,
+      "modals": 34
+    }
+  },
+  "timestamp": "2026-11-06T10:41:46.718Z"
+}
