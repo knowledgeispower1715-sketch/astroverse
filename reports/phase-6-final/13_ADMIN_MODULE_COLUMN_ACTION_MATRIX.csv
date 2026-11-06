@@ -1,0 +1,85 @@
+ModuleID,ModuleName,TableName,ColumnHeading,PropertyName,APIEndpoint,DBField,DataType,Formatting,Searchable,Sortable,Filterable,PIIStatus,ActionID,ActionName,ActionRole,ConfirmationRequired
+ADM-MOD-01,Platform Overview,N/A,Metric Name,metricKey,GET /api/admin/overview,N/A,string,Text,NO,NO,NO,NO,ACT-01,Refresh Overview Metrics,VIEW_OVERVIEW,NO
+ADM-MOD-01,Platform Overview,N/A,Metric Value,metricValue,GET /api/admin/overview,N/A,number,Locale Number / Currency,NO,NO,NO,NO,ACT-02,Export Platform Summary,VIEW_OVERVIEW,NO
+ADM-MOD-02,Customer Directory,users,Customer ID,id,GET /api/admin/users,users.id,string,Monospace ID,YES,YES,NO,NO,ACT-03,Search Customers,VIEW_USERS,NO
+ADM-MOD-02,Customer Directory,users,Name / Display,displayName,GET /api/admin/users,users.displayName,string,Text,YES,YES,NO,YES,ACT-04,Filter Customer Status,VIEW_USERS,NO
+ADM-MOD-02,Customer Directory,users,Phone Number,phone,GET /api/admin/users,users.phone,string,Redacted E.164,YES,NO,NO,YES,ACT-05,Suspend Customer,Role.ADMIN,YES
+ADM-MOD-02,Customer Directory,users,Email Address,email,GET /api/admin/users,users.email,string,Email,YES,YES,NO,YES,ACT-06,Reactivate Customer,Role.ADMIN,YES
+ADM-MOD-02,Customer Directory,users,Role,role,GET /api/admin/users,users.role,enum,Badge,NO,YES,YES,NO,ACT-07,Reset Customer Password,Role.ADMIN,YES
+ADM-MOD-02,Customer Directory,users,Status,status,GET /api/admin/users,users.status,enum,Color Badge,NO,YES,YES,NO,ACT-08,View Customer 360,VIEW_CUSTOMER_360,NO
+ADM-MOD-02,Customer Directory,users,Wallet Balance,walletBalance,GET /api/admin/users,users.walletBalance,number,Currency (INR),NO,YES,NO,NO,ACT-09,Manual Balance Adjustment,Role.FINANCE_ADMIN,YES
+ADM-MOD-02,Customer Directory,users,Created Date,createdAt,GET /api/admin/users,users.createdAt,timestamp,ISO-8601 Date,NO,YES,YES,NO,ACT-10,Export Customer Directory,VIEW_USERS,NO
+ADM-MOD-03,Customer 360,profiles,Profile ID,id,GET /api/admin/customers/:id/360,profiles.id,string,Monospace ID,NO,NO,NO,NO,ACT-11,Add Customer Internal Note,MANAGE_CUSTOMER_NOTES,NO
+ADM-MOD-03,Customer 360,profiles,Full Name,name,GET /api/admin/customers/:id/360,profiles.name,string,Text,NO,NO,NO,YES,ACT-12,Delete Internal Note,MANAGE_CUSTOMER_NOTES,YES
+ADM-MOD-03,Customer 360,profiles,Date of Birth,dateOfBirth,GET /api/admin/customers/:id/360,profiles.dateOfBirth,string,YYYY-MM-DD,NO,NO,NO,YES,ACT-13,View Linked Profiles,VIEW_CUSTOMER_360,NO
+ADM-MOD-03,Customer 360,profiles,Birthplace,birthplace,GET /api/admin/customers/:id/360,profiles.birthplace,string,City Country,NO,NO,NO,YES,ACT-14,View Saved Chart Data,VIEW_CUSTOMER_360,NO
+ADM-MOD-04,Wallet & Payments,payment_orders,Order ID,id,GET /api/admin/payments,payment_orders.id,string,Monospace ID,YES,YES,NO,NO,ACT-15,Filter Payment Status,VIEW_PAYMENTS,NO
+ADM-MOD-04,Wallet & Payments,payment_orders,Customer ID,userId,GET /api/admin/payments,payment_orders.userId,string,Monospace ID,YES,NO,NO,NO,ACT-16,Initiate Order Refund,Role.FINANCE_ADMIN,YES
+ADM-MOD-04,Wallet & Payments,payment_orders,Pack / Product,packId,GET /api/admin/payments,payment_orders.packId,string,Badge,NO,NO,YES,NO,ACT-17,Approve Refund Request,Role.FINANCE_ADMIN,YES
+ADM-MOD-04,Wallet & Payments,payment_orders,Total Amount,amount,GET /api/admin/payments,payment_orders.amount,number,Currency (INR),NO,YES,NO,NO,ACT-18,Reject Refund Request,Role.FINANCE_ADMIN,YES
+ADM-MOD-04,Wallet & Payments,payment_orders,Status,status,GET /api/admin/payments,payment_orders.status,enum,Badge,NO,YES,YES,NO,ACT-19,Export Payment Orders,VIEW_PAYMENTS,NO
+ADM-MOD-04,Wallet & Payments,payment_orders,Provider ID,providerOrderId,GET /api/admin/payments,payment_orders.providerOrderId,string,External Ref,YES,NO,NO,NO,ACT-20,Query Provider Status,VIEW_PAYMENTS,NO
+ADM-MOD-05,Financial Reconcile,reconciliations,Reconcile ID,id,GET /api/admin/reconciliation/summary,reconciliations.id,string,Monospace ID,NO,NO,NO,NO,ACT-21,Trigger Gateway Sync,Role.FINANCE_ADMIN,YES
+ADM-MOD-05,Financial Reconcile,reconciliations,Period,period,GET /api/admin/reconciliation/summary,reconciliations.period,string,Month Year,NO,YES,YES,NO,ACT-22,Download Reconcile Report,VIEW_RECONCILIATION,NO
+ADM-MOD-05,Financial Reconcile,reconciliations,Gateway Total,gatewayTotal,GET /api/admin/reconciliation/summary,reconciliations.gatewayTotal,number,Currency (INR),NO,NO,NO,NO,ACT-23,Flag Discrepancy,Role.FINANCE_ADMIN,NO
+ADM-MOD-05,Financial Reconcile,reconciliations,Ledger Total,ledgerTotal,GET /api/admin/reconciliation/summary,reconciliations.ledgerTotal,number,Currency (INR),NO,NO,NO,NO,ACT-24,Resolve Discrepancy,Role.FINANCE_ADMIN,YES
+ADM-MOD-05,Financial Reconcile,reconciliations,Variance,variance,GET /api/admin/reconciliation/summary,reconciliations.variance,number,Currency (INR),NO,YES,NO,NO,ACT-25,Lock Reconcile Period,Role.OWNER,YES
+ADM-MOD-06,Gateway Credentials,configs,Provider,provider,GET /api/admin/gateway-credentials,configs.provider,string,Text,NO,NO,NO,NO,ACT-26,Update App ID,Role.OWNER,YES
+ADM-MOD-06,Gateway Credentials,configs,Environment,env,GET /api/admin/gateway-credentials,configs.env,enum,Badge,NO,NO,NO,NO,ACT-27,Rotate Secret Key,Role.OWNER,YES
+ADM-MOD-06,Gateway Credentials,configs,Webhook Secret,webhookSecretSet,GET /api/admin/gateway-credentials,configs.webhookSecret,boolean,Masked,NO,NO,NO,NO,ACT-28,Test Gateway Connection,Role.OWNER,NO
+ADM-MOD-07,Subscriptions,subscriptions,Subscription ID,id,GET /api/admin/subscriptions,subscriptions.id,string,Monospace ID,YES,YES,NO,NO,ACT-29,Assign Customer Tier,MANAGE_SUBSCRIPTIONS,YES
+ADM-MOD-07,Subscriptions,subscriptions,User ID,userId,GET /api/admin/subscriptions,subscriptions.userId,string,Monospace ID,YES,NO,NO,NO,ACT-30,Extend Expiration,MANAGE_SUBSCRIPTIONS,YES
+ADM-MOD-07,Subscriptions,subscriptions,Tier,tier,GET /api/admin/subscriptions,subscriptions.tier,enum,Gold Badge,NO,YES,YES,NO,ACT-31,Cancel Subscription,MANAGE_SUBSCRIPTIONS,YES
+ADM-MOD-07,Subscriptions,subscriptions,Status,status,GET /api/admin/subscriptions,subscriptions.status,enum,Badge,NO,YES,YES,NO,ACT-32,Grant Complimentary Sub,Role.OWNER,YES
+ADM-MOD-07,Subscriptions,subscriptions,Expires At,expiresAt,GET /api/admin/subscriptions,subscriptions.expiresAt,timestamp,ISO-8601 Date,NO,YES,YES,NO,ACT-33,Export Subscriptions,MANAGE_SUBSCRIPTIONS,NO
+ADM-MOD-08,Entitlements,entitlements,Entitlement ID,id,GET /api/admin/entitlements,entitlements.id,string,Monospace ID,YES,YES,NO,NO,ACT-34,Grant Manual Entitlement,MANAGE_ENTITLEMENTS,YES
+ADM-MOD-08,Entitlements,entitlements,User ID,userId,GET /api/admin/entitlements,entitlements.userId,string,Monospace ID,YES,NO,NO,NO,ACT-35,Revoke Entitlement,MANAGE_ENTITLEMENTS,YES
+ADM-MOD-08,Entitlements,entitlements,SKU Code,sku,GET /api/admin/entitlements,entitlements.sku,string,Code,YES,YES,YES,NO,ACT-36,Audit User Entitlements,VIEW_USERS,NO
+ADM-MOD-09,Promotions,promotions,Promo ID,id,GET /api/admin/promotions,promotions.id,string,Monospace ID,YES,NO,NO,NO,ACT-37,Create Promo Campaign,MANAGE_PROMOTIONS,YES
+ADM-MOD-09,Promotions,promotions,Campaign Name,name,GET /api/admin/promotions,promotions.name,string,Text,YES,YES,NO,NO,ACT-38,Deactivate Promo,MANAGE_PROMOTIONS,YES
+ADM-MOD-09,Promotions,promotions,Discount Type,discountType,GET /api/admin/promotions,promotions.discountType,enum,Badge,NO,NO,YES,NO,ACT-39,Update Bonus Multiplier,MANAGE_PROMOTIONS,YES
+ADM-MOD-09,Promotions,promotions,Status,status,GET /api/admin/promotions,promotions.status,enum,Badge,NO,YES,YES,NO,ACT-40,View Campaign ROI,VIEW_PAYMENTS,NO
+ADM-MOD-10,Astrologer Directory,astrologers,Astrologer ID,id,GET /api/admin/astrologers,astrologers.id,string,Monospace ID,YES,YES,NO,NO,ACT-41,Verify Astrologer Profile,MANAGE_CONSULTATIONS,YES
+ADM-MOD-10,Astrologer Directory,astrologers,Name,name,GET /api/admin/astrologers,astrologers.name,string,Text,YES,YES,NO,YES,ACT-42,Suspend Astrologer,MANAGE_CONSULTATIONS,YES
+ADM-MOD-10,Astrologer Directory,astrologers,Speciality,speciality,GET /api/admin/astrologers,astrologers.speciality,string,Comma List,NO,NO,YES,NO,ACT-43,Update Rate Per Minute,MANAGE_CONSULTATIONS,YES
+ADM-MOD-10,Astrologer Directory,astrologers,Rate / Min,ratePerMinute,GET /api/admin/astrologers,astrologers.ratePerMinute,number,Currency (INR),NO,YES,NO,NO,ACT-44,Configure Free Minute,MANAGE_CONSULTATIONS,YES
+ADM-MOD-11,Consultation Sessions,consultations,Session ID,id,GET /api/admin/consultations,consultations.id,string,Monospace ID,YES,YES,NO,NO,ACT-45,Filter Session Status,VIEW_CONSULTATIONS,NO
+ADM-MOD-11,Consultation Sessions,consultations,Customer ID,userId,GET /api/admin/consultations,consultations.userId,string,Monospace ID,YES,NO,NO,NO,ACT-46,Inspect Chat Transcript,VIEW_CONSULTATIONS,NO
+ADM-MOD-11,Consultation Sessions,consultations,Astrologer,personaId,GET /api/admin/consultations,consultations.personaId,string,Slug,NO,YES,YES,NO,ACT-47,Force Terminate Session,MANAGE_CONSULTATIONS,YES
+ADM-MOD-11,Consultation Sessions,consultations,Duration (Min),paidMinutes,GET /api/admin/consultations,consultations.paidMinutes,number,Integer Minutes,NO,YES,NO,NO,ACT-48,Issue Session Credit,Role.FINANCE_ADMIN,YES
+ADM-MOD-11,Consultation Sessions,consultations,Total Deducted,totalDeducted,GET /api/admin/consultations,consultations.totalDeducted,number,Currency (INR),NO,YES,NO,NO,ACT-49,Export Consultation Log,VIEW_CONSULTATIONS,NO
+ADM-MOD-12,Astrology Health,N/A,Calculation Metric,metricName,GET /api/admin/astrology-health,N/A,string,Text,NO,NO,NO,NO,ACT-50,Run Ephemeris Self-Test,VIEW_ASTROLOGY_HEALTH,NO
+ADM-MOD-12,Astrology Health,N/A,Average Latency,avgLatencyMs,GET /api/admin/astrology-health,N/A,number,Milliseconds,NO,YES,NO,NO,ACT-51,Purge Ephemeris Cache,Role.SUPER_ADMIN,YES
+ADM-MOD-12,Astrology Health,N/A,Error Rate (%),errorRate,GET /api/admin/astrology-health,N/A,number,Percentage,NO,YES,NO,NO,ACT-52,Toggle Fallback Mode,Role.SUPER_ADMIN,YES
+ADM-MOD-13,Saved Reports,saved_reports,Report ID,id,GET /api/admin/reports,saved_reports.id,string,Monospace ID,YES,YES,NO,NO,ACT-53,Filter Report SKU,MANAGE_REPORTS,NO
+ADM-MOD-13,Saved Reports,saved_reports,Customer ID,userId,GET /api/admin/reports,saved_reports.userId,string,Monospace ID,YES,NO,NO,NO,ACT-54,Regenerate Report PDF,MANAGE_REPORTS,YES
+ADM-MOD-13,Saved Reports,saved_reports,Report SKU,reportSku,GET /api/admin/reports,saved_reports.reportSku,string,SKU Code,YES,YES,YES,NO,ACT-55,Delete Stale Report,MANAGE_REPORTS,YES
+ADM-MOD-13,Saved Reports,saved_reports,Storage Path,storagePath,GET /api/admin/reports,saved_reports.storagePath,string,Masked Path,NO,NO,NO,NO,ACT-56,Audit Storage Ownership,Role.SECURITY_ADMIN,NO
+ADM-MOD-14,Audit Logs,audit_logs,Event ID,id,GET /api/admin/audit-logs,audit_logs.id,string,Monospace ID,YES,YES,NO,NO,ACT-57,Filter by Actor,VIEW_AUDIT_LOGS,NO
+ADM-MOD-14,Audit Logs,audit_logs,Actor ID,actorId,GET /api/admin/audit-logs,audit_logs.actorId,string,Monospace ID,YES,NO,NO,NO,ACT-58,Filter by Action Type,VIEW_AUDIT_LOGS,NO
+ADM-MOD-14,Audit Logs,audit_logs,Action,action,GET /api/admin/audit-logs,audit_logs.action,string,Action Tag,YES,YES,YES,NO,ACT-59,Export Tamper-Proof Log,Role.OWNER,NO
+ADM-MOD-14,Audit Logs,audit_logs,IP Address,ipAddress,GET /api/admin/audit-logs,audit_logs.ipAddress,string,Anonymized IP,NO,NO,NO,YES,ACT-60,Inspect Event Payload,VIEW_AUDIT_LOGS,NO
+ADM-MOD-15,Admin Team,users,Admin ID,id,GET /api/admin/team,users.id,string,Monospace ID,YES,YES,NO,NO,ACT-61,Invite Admin User,Role.OWNER,YES
+ADM-MOD-15,Admin Team,users,Email,email,GET /api/admin/team,users.email,string,Email,YES,YES,NO,YES,ACT-62,Change Admin Role,Role.OWNER,YES
+ADM-MOD-15,Admin Team,users,Admin Role,role,GET /api/admin/team,users.role,enum,Role Badge,NO,YES,YES,NO,ACT-63,Revoke Admin Access,Role.OWNER,YES
+ADM-MOD-15,Admin Team,users,MFA Status,mfaEnabled,GET /api/admin/team,users.mfaEnabled,boolean,Checkmark,NO,YES,YES,NO,ACT-64,Reset Admin MFA,Role.OWNER,YES
+ADM-MOD-16,System Health,N/A,Service Name,service,GET /api/health,N/A,string,Badge,NO,NO,NO,NO,ACT-65,Ping Services,VIEW_SYSTEM_HEALTH,NO
+ADM-MOD-16,System Health,N/A,Status,status,GET /api/health,N/A,enum,Healthy / Down,NO,NO,NO,NO,ACT-66,Inspect Memory Usage,VIEW_SYSTEM_HEALTH,NO
+ADM-MOD-17,QA Kundli Workbench,N/A,Test Case,caseName,POST /api/kundli/calculate,N/A,string,Text,NO,NO,NO,NO,ACT-67,Calculate Synthetic Kundli,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-17,QA Kundli Workbench,N/A,Input Coordinates,coords,POST /api/kundli/calculate,N/A,string,Lat Long,NO,NO,NO,NO,ACT-68,Verify Ephemeris Angles,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-17,QA Kundli Workbench,N/A,Output Lagna,lagna,POST /api/kundli/calculate,N/A,string,Rashi Degree,NO,NO,NO,NO,ACT-69,Export Synthetic Chart,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-18,QA Chat Workbench,N/A,Simulator ID,simId,POST /api/admin/qa/chat-simulate,N/A,string,Text,NO,NO,NO,NO,ACT-70,Inject Synthetic Message,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-18,QA Chat Workbench,N/A,Prompt,prompt,POST /api/admin/qa/chat-simulate,N/A,string,Text,NO,NO,NO,NO,ACT-71,Measure Chat Latency,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-18,QA Chat Workbench,N/A,AI Response,response,POST /api/admin/qa/chat-simulate,N/A,string,Text,NO,NO,NO,NO,ACT-72,Evaluate Quality Metric,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-19,QA Billing Workbench,N/A,Scenario,scenario,POST /api/admin/qa/billing-simulate,N/A,string,Text,NO,NO,NO,NO,ACT-73,Simulate Free Minute,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-19,QA Billing Workbench,N/A,Initial Balance,initBal,POST /api/admin/qa/billing-simulate,N/A,number,Currency (INR),NO,NO,NO,NO,ACT-74,Simulate Minute Deduction,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-19,QA Billing Workbench,N/A,Final Balance,finalBal,POST /api/admin/qa/billing-simulate,N/A,number,Currency (INR),NO,NO,NO,NO,ACT-75,Simulate Zero Auto-Cutoff,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-20,QA Webhook Workbench,N/A,Event Template,eventTemplate,POST /api/admin/qa/webhook-dispatch,N/A,enum,Dropdown,NO,NO,NO,NO,ACT-76,Dispatch Mock Signed POST,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-20,QA Webhook Workbench,N/A,HMAC Signature,signature,POST /api/admin/qa/webhook-dispatch,N/A,string,Base64 String,NO,NO,NO,NO,ACT-77,Dispatch Tampered Body,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-20,QA Webhook Workbench,N/A,Result Code,statusCode,POST /api/admin/qa/webhook-dispatch,N/A,number,HTTP Code,NO,NO,NO,NO,ACT-78,Dispatch Replay Attack,QA_WORKBENCH_ACCESS,NO
+ADM-MOD-21,QA Security Workbench,N/A,Target Role,role,POST /api/admin/qa/security-probe,N/A,enum,Role Select,NO,NO,NO,NO,ACT-79,Probe Last Owner Demote,Role.SECURITY_ADMIN,NO
+ADM-MOD-21,QA Security Workbench,N/A,Endpoint Probed,path,POST /api/admin/qa/security-probe,N/A,string,Path,NO,NO,NO,NO,ACT-80,Probe Cross-Tenant Access,Role.SECURITY_ADMIN,NO
+ADM-MOD-21,QA Security Workbench,N/A,Access Status,allowed,POST /api/admin/qa/security-probe,N/A,boolean,Allowed / Denied,NO,NO,NO,NO,ACT-81,Probe Expired MFA Token,Role.SECURITY_ADMIN,NO
+ADM-MOD-22,QA Diagnostics Workbench,N/A,System Probe,probeName,GET /api/admin/qa/diagnostics,N/A,string,Text,NO,NO,NO,NO,ACT-82,Verify DB Pool Health,Role.SUPER_ADMIN,NO
+ADM-MOD-22,QA Diagnostics Workbench,N/A,Probe Status,status,GET /api/admin/qa/diagnostics,N/A,enum,OK / Degraded,NO,NO,NO,NO,ACT-83,Check Memory Leaks,Role.SUPER_ADMIN,NO
+ADM-MOD-22,QA Diagnostics Workbench,N/A,Execution Duration,durationMs,GET /api/admin/qa/diagnostics,N/A,number,Milliseconds,NO,NO,NO,NO,ACT-84,Download Diagnostic Dump,Role.SUPER_ADMIN,NO
