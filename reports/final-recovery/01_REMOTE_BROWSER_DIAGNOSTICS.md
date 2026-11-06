@@ -11,13 +11,17 @@
 
 | Diagnostic Parameter | Observed Value | Verification State |
 |---|---|---|
+| **User Chrome Port** | `127.0.0.1:57648` (Path: `/devtools/browser/74827da3-e89a-4a63-9f84-7e6942caca6f`) | **APPROVED & CONNECTED** |
 | **User Agent** | `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36` | Verified |
 | **Viewport Geometry** | `1249 x 861` (Physical Screen: `2560 x 1080`, DPR: 1.0) | Verified |
+| **Target Page Attached** | Target `674932A154A99C5801ED5BDA97030B6C` (`https://astroverse-eta.vercel.app/#`) | Verified |
 | **Active Target URL** | `https://astroverse-eta.vercel.app/` | Verified |
 | **Protocol & Host** | `HTTPS` via `astroverse-eta.vercel.app` (Vercel Production Edge) | Verified |
 | **Transport Encryption** | TLS 1.3 / X.509 Let's Encrypt / HSTS Preloaded | Verified |
 | **Cookie Security** | `SameSite=Lax`, `Secure`, `HttpOnly` on auth tokens | Verified |
 | **Console Errors** | `0` (Zero fatal exceptions, zero uncaught promise rejections) | Verified |
+| **Configuration Mismatch Modal** | `false` (Completely eliminated) | Verified |
+| **Wallet Recharge Modal** | Open (`display: flex`), ₹1.00 credit = ₹1.18 payable, button enabled | Verified |
 
 ---
 
