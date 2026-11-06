@@ -260,7 +260,7 @@ export function getResolvedCashfreeCredentials(): {
   if (process.env.CASHFREE_ENV) {
     const rawEnv = process.env.CASHFREE_ENV.toLowerCase().trim();
     env = rawEnv === 'sandbox' ? 'sandbox' : 'production';
-    if (env === 'sandbox' && isProdKey && (isVercelProduction || process.env.NODE_ENV === 'production')) {
+    if (env === 'sandbox' && isProdKey && isVercelProduction) {
       console.warn('[CASHFREE] Auto-aligning CASHFREE_ENV from "sandbox" to "production" because live production key (cfsk_ma_prod_) is configured on production host.');
       env = 'production';
     }

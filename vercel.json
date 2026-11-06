@@ -251,6 +251,24 @@
       }
     },
     {
+      "source": "/api/matchmaking(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/complete-kundli(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/kundli/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/(.*)",
       "destination": {
         "service": "kundli-engine"

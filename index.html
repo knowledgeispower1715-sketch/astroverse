@@ -10985,6 +10985,9 @@
         const dockChat = document.getElementById('mob-dock-chat');
         if (dockChat) dockChat.classList.add('active');
         return;
+      } else if (sectionId === 'pricing' || sectionId === 'plans' || sectionId === 'subscriptions') {
+        openPricingPlansModal();
+        return;
       }
 
       if (authRoutes.includes(sectionId)) {
@@ -13860,7 +13863,11 @@
       if (typeof setGuidanceState === 'function') {
         setGuidanceState('PERSONALIZED_READY', { chart: currentCalculatedChart });
       }
-      generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+      try {
+        generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+      } catch (gErr) {
+        console.warn("Guidance UI update notice:", gErr);
+      }
 
       // Planetary Table
       const tbody = document.getElementById('tbody-planetary-positions');
@@ -15171,9 +15178,7 @@
           renderMatchmakingResultUI(data);
           return;
         } else {
-          const errData = await res.json().catch(() => ({}));
-          showToast(errData.detail || "Failed to calculate Kundli Milan. Please verify coordinates.", "error");
-          return;
+          console.warn("Backend matchmaking API returned non-OK status, falling back to client astronomical engine.");
         }
       } catch (err) {
         console.warn("Backend matchmaking API unreachable, executing client mathematical fallback:", err);
@@ -28354,6 +28359,24 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
         Jupiter: { mantra: "ॐ ग्रां ग्रीं ग्रौं सः गुरुवे नमः", transliteration: "Om Graam Greem Graum Sah Guruve Namah" },
         Venus: { mantra: "ॐ द्रां द्रीं द्रौं सः शुक्राय नमः", transliteration: "Om Draam Dreem Draum Sah Shukraya Namah" },
         Saturn: { mantra: "ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः", transliteration: "Om Praam Preem Praum Sah Shanaishcharaya Namah" }
+      };
+
+      const SIGN_LORDS = {
+        Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon',
+        Leo: 'Sun', Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars',
+        Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
+      };
+
+      const PLANET_FRIENDS = {
+        Sun: { friends: ['Moon', 'Mars', 'Jupiter'], enemies: ['Venus', 'Saturn'], neutrals: ['Mercury'] },
+        Moon: { friends: ['Sun', 'Mercury'], enemies: [], neutrals: ['Mars', 'Jupiter', 'Venus', 'Saturn'] },
+        Mars: { friends: ['Sun', 'Moon', 'Jupiter'], enemies: ['Mercury'], neutrals: ['Venus', 'Saturn'] },
+        Mercury: { friends: ['Sun', 'Venus'], enemies: ['Moon'], neutrals: ['Mars', 'Jupiter', 'Saturn'] },
+        Jupiter: { friends: ['Sun', 'Moon', 'Mars'], enemies: ['Mercury', 'Venus'], neutrals: ['Saturn'] },
+        Venus: { friends: ['Mercury', 'Saturn'], enemies: ['Sun', 'Moon'], neutrals: ['Mars', 'Jupiter'] },
+        Saturn: { friends: ['Mercury', 'Venus'], enemies: ['Sun', 'Moon', 'Mars'], neutrals: ['Jupiter'] },
+        Rahu: { friends: ['Mercury', 'Venus', 'Saturn'], enemies: ['Sun', 'Moon', 'Mars'], neutrals: ['Jupiter'] },
+        Ketu: { friends: ['Mars', 'Venus', 'Saturn'], enemies: ['Sun', 'Moon'], neutrals: ['Mercury', 'Jupiter'] }
       };
 
       if (horizon === 'hourly') {

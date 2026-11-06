@@ -558,13 +558,16 @@ describe('PHASE 3.1 ENTERPRISE ADVERSARIAL & INTEGRITY VERIFICATION SUITE', () =
       const origEnv = process.env.CASHFREE_ENV;
       const origNodeEnv = process.env.NODE_ENV;
       const origVercelEnv = process.env.VERCEL_ENV;
+      const origSecret = process.env.CASHFREE_SECRET_KEY;
 
       try {
         process.env.CASHFREE_ENV = 'production';
         process.env.NODE_ENV = 'production';
+        process.env.CASHFREE_SECRET_KEY = 'cfsk_ma_prod_testkey';
         assert.strictEqual(getCashfreeBaseUrl(), 'https://api.cashfree.com/pg');
 
         process.env.CASHFREE_ENV = 'sandbox';
+        process.env.CASHFREE_SECRET_KEY = 'cfsk_ma_test_testkey';
         assert.strictEqual(getCashfreeBaseUrl(), 'https://sandbox.cashfree.com/pg');
 
         delete process.env.CASHFREE_ENV;
@@ -574,6 +577,7 @@ describe('PHASE 3.1 ENTERPRISE ADVERSARIAL & INTEGRITY VERIFICATION SUITE', () =
         process.env.CASHFREE_ENV = origEnv;
         process.env.NODE_ENV = origNodeEnv;
         process.env.VERCEL_ENV = origVercelEnv;
+        process.env.CASHFREE_SECRET_KEY = origSecret;
       }
     });
 

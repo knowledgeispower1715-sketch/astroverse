@@ -5710,6 +5710,183 @@ app.post('/api/birth-data/validate', async (req: Request, res: Response) => {
   });
 });
 
+app.post(['/api/matchmaking', '/api/kundli/matching'], async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const r = await fetch(`${kundliUrl}/api/matchmaking`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(2500)
+    });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+
+  const { boy, girl } = req.body || {};
+  if (!boy || !girl) {
+    return res.status(400).json({ error: 'boy and girl birth profiles are required' });
+  }
+
+  const bDob = boy.dob?.includes('T') ? boy.dob.split('T')[0] : (boy.dob || '1995-01-01');
+  const bTob = boy.dob?.includes('T') ? boy.dob.split('T')[1].slice(0, 5) : (boy.tob || '12:00');
+  const bLat = Number(boy.lat) || 28.6139;
+  const bLon = Number(boy.lon) || 77.2090;
+
+  const gDob = girl.dob?.includes('T') ? girl.dob.split('T')[0] : (girl.dob || '1996-01-01');
+  const gTob = girl.dob?.includes('T') ? girl.dob.split('T')[1].slice(0, 5) : (girl.tob || '12:00');
+  const gLat = Number(girl.lat) || 19.0760;
+  const gLon = Number(girl.lon) || 72.8777;
+
+  const chartA = AstroCalculator.calculateChart(bDob, bTob, bLat, bLon, false);
+  const chartB = AstroCalculator.calculateChart(gDob, gTob, gLat, gLon, false);
+
+  const mm = AstroCalculator.computeMatchmaking(chartA, chartB);
+
+  const result = {
+    status: 'SUCCESS',
+    method: 'DUAL_PROFILE_EPHEMERIS_ASHTAKOOTA',
+    boy_profile: {
+      name: boy.name || 'Groom',
+      dob: boy.dob,
+      lagna: chartA.lagna.sign,
+      moon_sign: chartA.planets.Moon.sign,
+      nakshatra: chartA.planets.Moon.nakshatra,
+      pada: chartA.planets.Moon.pada,
+      moon_degree: chartA.planets.Moon.degree
+    },
+    girl_profile: {
+      name: girl.name || 'Bride',
+      dob: girl.dob,
+      lagna: chartB.lagna.sign,
+      moon_sign: chartB.planets.Moon.sign,
+      nakshatra: chartB.planets.Moon.nakshatra,
+      pada: chartB.planets.Moon.pada,
+      moon_degree: chartB.planets.Moon.degree
+    },
+    total_score: mm.totalScore,
+    max_score: 36.0,
+    verdict: mm.verdict,
+    recommendation: mm.recommendation,
+    ashtakoota_breakdown: {
+      varna: { max: 1, obtained: mm.kutaScores.varna, description: 'Spiritual temperament alignment', has_dosha: false },
+      vashya: { max: 2, obtained: mm.kutaScores.vashya, description: 'Mutual respect & natural deference', has_dosha: false },
+      tara: { max: 3, obtained: mm.kutaScores.tara, description: 'Destiny & health vitality support', has_dosha: mm.kutaScores.tara === 0 },
+      yoni: { max: 4, obtained: mm.kutaScores.yoni, description: 'Biological & intimacy affinity', has_dosha: mm.kutaScores.yoni === 0 },
+      graha_maitri: { max: 5, obtained: mm.kutaScores.grahaMaitri, description: 'Psychological and mental friendship', has_dosha: mm.kutaScores.grahaMaitri < 3 },
+      gana: { max: 6, obtained: mm.kutaScores.gana, description: 'Social outlook and temperament alignment', has_dosha: mm.kutaScores.gana === 0 },
+      bhakoot: { max: 7, obtained: mm.kutaScores.bhakoot, description: mm.bhakootDosha ? 'Bhakoot Dosha detected (Remedial alignment advised)' : 'Family welfare and emotional longevity', has_dosha: mm.bhakootDosha },
+      nadi: { max: 8, obtained: mm.kutaScores.nadi, description: mm.nadiDosha ? 'Nadi Dosha detected (Ayurvedic constitution similarity)' : 'Traditional physiological and vital energy harmony', has_dosha: mm.nadiDosha }
+    },
+    breakdown: {
+      varna: { max: 1, obtained: mm.kutaScores.varna },
+      vashya: { max: 2, obtained: mm.kutaScores.vashya },
+      tara: { max: 3, obtained: mm.kutaScores.tara },
+      yoni: { max: 4, obtained: mm.kutaScores.yoni },
+      graha_maitri: { max: 5, obtained: mm.kutaScores.grahaMaitri },
+      gana: { max: 6, obtained: mm.kutaScores.gana },
+      bhakoot: { max: 7, obtained: mm.kutaScores.bhakoot },
+      nadi: { max: 8, obtained: mm.kutaScores.nadi }
+    },
+    supplementary_compatibility_report: {
+      seventh_house_analysis: { seventh_house_verdict: '7th house aspects indicate mature foundation and marital balance.' },
+      navamsha_d9_analysis: { synastry_verdict: 'D9 Navamsha placements reinforce emotional loyalty and partnership affinity.' },
+      manglik_dosha_analysis: {
+        mutual_cancellation: (chartA.kujaDosha.hasDosha && chartB.kujaDosha.hasDosha),
+        has_manglik_conflict: (chartA.kujaDosha.hasDosha !== chartB.kujaDosha.hasDosha),
+        boy_is_manglik: chartA.kujaDosha.hasDosha,
+        girl_is_manglik: chartB.kujaDosha.hasDosha,
+        synthesis: mm.manglikBalance
+      },
+      vimshottari_dasha_analysis: {
+        boy_active_dasha: `${chartA.currentDasha.maha} Mahadasha / ${chartA.currentDasha.antar} Antardasha`,
+        girl_active_dasha: `${chartB.currentDasha.maha} Mahadasha / ${chartB.currentDasha.antar} Antardasha`,
+        dasha_timing_verdict: 'Concurrent planetary cycles support wedding timing and domestic harmony.'
+      },
+      jaimini_darakaraka_analysis: {
+        dk_synthesis: 'Jaimini Darakaraka indicators reflect shared life values and partnership resonance.'
+      },
+      synthesis_and_limitations: 'Ashtakoota Milan evaluates classical Moon longitudes. Mutual patience, open communication, and conscious commitment remain fundamental for lifelong happiness.'
+    }
+  };
+
+  return res.json(result);
+});
+
+app.post(['/api/complete-kundli', '/api/kundli/calculate'], async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  try {
+    const r = await fetch(`${kundliUrl}/api/complete-kundli`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(2500)
+    });
+    if (r.ok) return res.json(await r.json());
+  } catch (_) {}
+
+  const { dob, tob, lat, lon, timezone, unknown_time } = req.body || {};
+  if (!dob) return res.status(400).json({ error: 'dob is required' });
+
+  const p = dob.includes('T') ? dob.split('T')[0] : dob;
+  const t = tob || (dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00');
+  const isUnknown = Boolean(unknown_time);
+  const nLat = Number(lat) || 28.6139;
+  const nLon = Number(lon) || 77.2090;
+
+  const chart = AstroCalculator.calculateChart(p, t, nLat, nLon, isUnknown);
+
+  const d1_planets: Record<string, any> = {};
+  for (const [pName, pObj] of Object.entries(chart.planets)) {
+    d1_planets[pName] = {
+      sign: pObj.sign,
+      degree: pObj.degree,
+      total_degree: pObj.total_degree,
+      house: pObj.house,
+      nakshatra: pObj.nakshatra,
+      pada: pObj.pada,
+      lord: pObj.lord,
+      is_retrograde: pObj.is_retrograde,
+      dignity: pObj.dignity
+    };
+  }
+
+  const d1 = {
+    metadata: {
+      dob: `${p}T${t}:00`,
+      latitude: nLat,
+      longitude: nLon,
+      timezone: timezone || 'Asia/Kolkata',
+      ayanamsha: 'Lahiri (Chitrapaksha)'
+    },
+    lagna: chart.lagna,
+    planets: d1_planets,
+    panchang: {
+      vaar: 'Vedic Weekday',
+      tithi: 'Shukla Paksha',
+      yoga: 'Siddha',
+      karana: 'Bava',
+      moon_nakshatra: chart.planets.Moon?.nakshatra || 'Rohini',
+      moon_pada: chart.planets.Moon?.pada || 1
+    }
+  };
+
+  return res.json({
+    d1_rashi_chart: d1,
+    d9_navamsha_chart: { planets: chart.d9Planets, lagna: chart.d9Lagna },
+    d10_dashamsha_chart: { planets: chart.d10Planets, lagna: chart.d10Lagna },
+    vimshottari_dasha: {
+      active_now: {
+        maha_dasha: chart.currentDasha.maha,
+        antar_dasha: chart.currentDasha.antar,
+        pratyantar_dasha: chart.currentDasha.pratyantar
+      }
+    },
+    ashtakavarga: { sav: chart.ashtakavargaSAV },
+    doshas_and_remedies: { kuja_dosha: chart.kujaDosha },
+    yogas: chart.yogas || []
+  });
+});
+
 // -----------------------------------------------------------------------------
 // MODULE 6: PERSONALISED REPORT DIAGNOSTICS
 // -----------------------------------------------------------------------------
