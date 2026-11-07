@@ -22523,21 +22523,33 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
     function submitCashfreeHostedFallback(paymentSessionId, env) {
       if (!paymentSessionId) return;
-      const baseUrl = (env === 'production' || window.CASHFREE_ENV === 'production')
-        ? 'https://api.cashfree.com'
-        : 'https://sandbox.cashfree.com';
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = `${baseUrl}/pg/view/sessions/checkout`;
-      form.target = '_self';
-      form.style.display = 'none';
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'payment_session_id';
-      input.value = paymentSessionId;
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
+      const sdkMode = (env === 'production' || window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+      if (typeof window.Cashfree === 'function') {
+        try {
+          const cashfree = window.Cashfree({ mode: sdkMode });
+          cashfree.checkout({ paymentSessionId: paymentSessionId, redirectTarget: '_self' });
+          return;
+        } catch (e) {
+          console.warn('[Cashfree] SDK hosted redirect attempt error:', e);
+        }
+      }
+      // If Cashfree JS constructor is unavailable, perform direct hosted form submit to pg/view/sessions/checkout
+      const baseUrl = sdkMode === 'production' ? 'https://api.cashfree.com' : 'https://sandbox.cashfree.com';
+      try {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `${baseUrl}/pg/view/sessions/checkout`;
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'payment_session_id';
+        input.value = paymentSessionId;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      } catch (err) {
+        window.location.href = `${baseUrl}/checkout/?payment_session_id=${encodeURIComponent(paymentSessionId)}`;
+      }
     }
 
     function monitorCashfreeModalIframe(paymentSessionId, sdkMode, timeoutMs = 3500) {

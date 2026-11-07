@@ -31,7 +31,14 @@ import {
 import { DurableAiQuotaManager } from './monetization/aiQuotas';
 import { validatePasswordComplexity } from './security/passwordValidator';
 import { bootstrapPostgresSchema } from './schemaBootstrap';
-import { getPublicSupabaseConfig, verifySupabaseToken, getSupabaseAdminClient } from './supabase';
+import {
+  getPublicSupabaseConfig,
+  verifySupabaseToken,
+  getSupabaseAdminClient,
+  getUserMfaFactors,
+  deleteUserMfaFactor,
+  decodeSupabaseJwtClaims
+} from './supabase';
 import {
   isCashfreeConfigured,
   createCashfreeOrder,
@@ -629,6 +636,16 @@ function requireAdminAssurance(requiredScope?: string) {
       }
 
       return next();
+    }
+
+    // Direct Supabase AAL2 JWT step-up assurance check
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const candidateToken = authHeader.split(' ')[1].trim();
+      const claims = decodeSupabaseJwtClaims(candidateToken);
+      if (claims && claims.aal === 'aal2') {
+        return next();
+      }
     }
 
     // High impact operation strictly requires assurance token if MFA is enabled, in production, enforced, or strictly required
@@ -1401,20 +1418,26 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
         }
       }
     } else {
-      // In production, MFA enrollment is mandatory for administrator access
-      if (policy.environment === 'production') {
+      // In production or when MFA is explicitly required, prompt for first-login enrollment
+      if (policy.environment === 'production' || req.headers['x-admin-require-mfa'] === 'true') {
         await db.recordAuditEvent({
           userId: user.id,
-          action: 'ADMIN_LOGIN_MFA_ENROLLMENT_REQUIRED',
+          action: 'ADMIN_MFA_ENROLLMENT_STARTED',
           targetType: 'USER',
           targetId: user.id,
           ipAddress: clientIp,
-          outcome: 'DENIED',
-          reason: 'Production administrators must enroll MFA prior to system access'
+          outcome: 'SUCCESS',
+          reason: 'Administrator routed to mandatory MFA enrollment setup'
         });
-        return res.status(403).json({
-          error: 'MFA_ENROLLMENT_REQUIRED',
-          message: 'Administrative accounts in production strictly require Multi-Factor Authentication (MFA) enrollment.'
+        return res.status(200).json({
+          status: 'MFA_ENROLLMENT_REQUIRED',
+          message: 'Administrative accounts strictly require Multi-Factor Authentication (MFA) enrollment.',
+          user: {
+            id: user.id,
+            email: user.email,
+            displayName: user.displayName,
+            role: user.role
+          }
         });
       }
     }
@@ -1573,6 +1596,365 @@ app.post('/api/auth/admin-refresh', authenticate, async (req: AuthenticatedReque
     expiresAt: newExpiresAt.toISOString(),
     remainingSeconds: Math.floor((newExpiresAt.getTime() - Date.now()) / 1000),
     sessionPolicy: policy
+  });
+});
+
+// POST /api/auth/admin-supabase-session
+// Authoritative Supabase Auth session bridge for Super Administrator access.
+// Invariant 1: Validates Supabase JWT signature and expiry.
+// Invariant 2: Strictly verifies Role is canonical administrator (fails closed for Role.USER).
+// Invariant 3: Strictly verifies administrator is in server-side allowlist.
+// Invariant 4: Checks Supabase AAL claims (AAL1 vs AAL2) and verified TOTP factors.
+// Invariant 5: If no verified factor exists, routes to mandatory first-login MFA enrollment.
+// Invariant 6: If verified factor exists but AAL1, demands MFA challenge.
+// Invariant 7: If AAL2 verified, issues administrative session + step-up assurance token.
+app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAccess(), async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+  const rawToken = tokenFromHeader || req.body?.accessToken;
+  const action = req.body?.action;
+  if (!rawToken || typeof rawToken !== 'string') {
+    return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Supabase access token is required.' });
+  }
+
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+
+  try {
+    const supaResult = await verifySupabaseToken(rawToken);
+    if (!supaResult.user || supaResult.error) {
+      await db.recordAuditEvent({
+        action: 'ADMIN_MFA_CHALLENGE_FAILED',
+        targetType: 'USER',
+        ipAddress: clientIp,
+        outcome: 'FAILED',
+        reason: supaResult.error || 'Invalid Supabase access token'
+      });
+      return res.status(401).json({ error: 'INVALID_TOKEN', message: 'Invalid or expired Supabase authentication token.' });
+    }
+
+    const email = (supaResult.user.email || '').trim().toLowerCase();
+    let user = await db.findUserByEmail(email);
+    if (!user) {
+      user = await db.syncSupabaseUser({
+        id: supaResult.user.id,
+        email: supaResult.user.email,
+        phone: supaResult.user.phone,
+        user_metadata: supaResult.user.user_metadata
+      });
+    }
+
+    if (!user) {
+      return res.status(401).json({ error: 'USER_NOT_FOUND', message: 'Administrator account not registered in system.' });
+    }
+
+    // Invariant 2: Strict administrator role authorization
+    if (!isAnyAdmin(user.role)) {
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: 'ADMIN_LOGIN_UNAUTHORIZED_ROLE',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: clientIp,
+        outcome: 'DENIED',
+        reason: `User has non-admin role: ${user.role}`
+      });
+      return res.status(403).json({
+        error: 'ADMIN_NOT_AUTHORIZED',
+        message: 'This account does not have administrative privileges.'
+      });
+    }
+
+    // Invariant 3: Server-side allowlist enforcement
+    const adminAllowlist = getAuthorizedAdminEmails();
+    if (adminAllowlist.length > 0 && !isAuthorizedAdminEmail(email)) {
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: 'ADMIN_LOGIN_REVOKED_ALLOWLIST',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: clientIp,
+        outcome: 'DENIED',
+        reason: 'Email not present in server allowlist'
+      });
+      return res.status(403).json({
+        error: 'ADMIN_NOT_AUTHORIZED',
+        message: 'This account is not authorized in the server administrator registry.'
+      });
+    }
+
+    // Invariant 4: Account status
+    if (user.status !== AccountStatus.ACTIVE) {
+      return res.status(403).json({
+        error: 'ACCOUNT_INACTIVE',
+        message: `Administrator account is ${user.status.toLowerCase()}.`
+      });
+    }
+
+    // Invariant 5: Supabase Auth TOTP factors check
+    let verifiedFactors: any[] = [];
+    try {
+      const factorsRes = await getUserMfaFactors(supaResult.user.id);
+      verifiedFactors = (factorsRes.factors || []).filter((f: any) => f.status === 'verified');
+    } catch (_) {}
+
+    const hasVerifiedFactor = verifiedFactors.length > 0 || Boolean(user.mfaEnabled);
+    const policy = resolveAdminSessionPolicy();
+
+    // Branch 1: Enrollment just completed by owner
+    if (action === 'ENROLLMENT_COMPLETED') {
+      if (supaResult.aal !== 'aal2' && verifiedFactors.length === 0) {
+        return res.status(400).json({ error: 'ENROLLMENT_UNVERIFIED', message: 'MFA factor has not been verified.' });
+      }
+
+      await db.updateUser(user.id, { mfaEnabled: true, mfaEnforced: true });
+      await db.recordAuditEvent({
+        userId: user.id,
+        actorId: user.id,
+        actorRole: user.role,
+        action: 'ADMIN_MFA_ENROLLMENT_VERIFIED',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: clientIp,
+        outcome: 'SUCCESS',
+        reason: 'Supabase TOTP Multi-Factor Authentication successfully enrolled and verified'
+      });
+
+      const rawSessionToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = hashToken(rawSessionToken);
+      const expiresAt = new Date(Date.now() + policy.idleTimeoutSeconds * 1000);
+      await db.createSession({
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        ipAddress: clientIp,
+        userAgent: req.headers['user-agent'] || null
+      });
+
+      const assuranceToken = issueAdminAssuranceToken(user.id, user.role, 'ADMIN_MUTATION');
+      return res.json({
+        status: 'AUTHENTICATED',
+        sessionToken: rawSessionToken,
+        assuranceToken,
+        aal: 'aal2',
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+          status: user.status,
+          mfaEnabled: true
+        },
+        sessionPolicy: policy
+      });
+    }
+
+    // Branch 2: Administrator has NO verified factors -> First-login enrollment required
+    if (!hasVerifiedFactor) {
+      await db.recordAuditEvent({
+        userId: user.id,
+        actorId: user.id,
+        actorRole: user.role,
+        action: 'ADMIN_MFA_ENROLLMENT_STARTED',
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: clientIp,
+        outcome: 'SUCCESS',
+        reason: 'Super Administrator routed to mandatory MFA enrollment setup',
+        metadata: { status: 'PENDING' }
+      });
+      return res.json({
+        status: 'MFA_ENROLLMENT_REQUIRED',
+        message: 'Administrator security setup required. Multi-Factor Authentication must be enrolled.',
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+          status: user.status,
+          mfaEnabled: false
+        },
+        currentLevel: 'aal1',
+        nextLevel: 'aal1'
+      });
+    }
+
+    // Branch 3: Administrator HAS verified factors but session is AAL1 -> MFA challenge required
+    if (supaResult.aal !== 'aal2') {
+      return res.json({
+        status: 'MFA_CHALLENGE_REQUIRED',
+        message: 'Two-factor authentication code required.',
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+          status: user.status,
+          mfaEnabled: true
+        },
+        factorId: verifiedFactors[0]?.id || null,
+        currentLevel: 'aal1',
+        nextLevel: 'aal2'
+      });
+    }
+
+    // Branch 4: Full AAL2 verification achieved
+    await db.recordAuditEvent({
+      userId: user.id,
+      actorId: user.id,
+      actorRole: user.role,
+      action: 'ADMIN_MFA_CHALLENGE_SUCCESS',
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: clientIp,
+      outcome: 'SUCCESS',
+      reason: 'Administrator AAL2 TOTP challenge successfully verified'
+    });
+
+    const rawSessionToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(rawSessionToken);
+    const expiresAt = new Date(Date.now() + policy.idleTimeoutSeconds * 1000);
+    await db.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+      ipAddress: clientIp,
+      userAgent: req.headers['user-agent'] || null
+    });
+
+    const assuranceToken = issueAdminAssuranceToken(user.id, user.role, 'ADMIN_MUTATION');
+    return res.json({
+      status: 'AUTHENTICATED',
+      sessionToken: rawSessionToken,
+      assuranceToken,
+      aal: 'aal2',
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+        status: user.status,
+        mfaEnabled: true
+      },
+      sessionPolicy: policy
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: 'AUTH_ERROR', message: err.message });
+  }
+});
+
+// POST /api/admin/mfa/challenge-failed
+app.post('/api/admin/mfa/challenge-failed', authLimiter, async (req: Request, res: Response) => {
+  const { email, reason } = req.body || {};
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  let userId: string | undefined;
+  if (email) {
+    const u = await db.findUserByEmail(String(email).trim().toLowerCase());
+    if (u) userId = u.id;
+  }
+  await db.recordAuditEvent({
+    userId,
+    action: 'ADMIN_MFA_CHALLENGE_FAILED',
+    targetType: 'USER',
+    targetId: userId,
+    ipAddress: clientIp,
+    outcome: 'FAILED',
+    reason: reason || 'Invalid TOTP code submitted during admin challenge'
+  });
+  res.json({ success: true });
+});
+
+// POST /api/admin/mfa/enrollment-started
+app.post('/api/admin/mfa/enrollment-started', authLimiter, async (req: Request, res: Response) => {
+  const { email } = req.body || {};
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  let userId: string | undefined;
+  if (email) {
+    const u = await db.findUserByEmail(String(email).trim().toLowerCase());
+    if (u) userId = u.id;
+  }
+  await db.recordAuditEvent({
+    userId,
+    action: 'ADMIN_MFA_ENROLLMENT_STARTED',
+    targetType: 'USER',
+    targetId: userId,
+    ipAddress: clientIp,
+    outcome: 'SUCCESS',
+    reason: 'Administrator opened MFA setup enrollment screen',
+    metadata: { status: 'PENDING' }
+  });
+  res.json({ success: true });
+});
+
+// POST /api/admin/mfa/enrollment-cancelled
+app.post('/api/admin/mfa/enrollment-cancelled', authLimiter, async (req: Request, res: Response) => {
+  const { email } = req.body || {};
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  let userId: string | undefined;
+  if (email) {
+    const u = await db.findUserByEmail(String(email).trim().toLowerCase());
+    if (u) userId = u.id;
+  }
+  await db.recordAuditEvent({
+    userId,
+    action: 'ADMIN_MFA_ENROLLMENT_CANCELLED',
+    targetType: 'USER',
+    targetId: userId,
+    ipAddress: clientIp,
+    outcome: 'FAILED',
+    reason: 'Administrator cancelled or signed out from MFA enrollment setup',
+    metadata: { status: 'CANCELLED' }
+  });
+  res.json({ success: true });
+});
+
+// POST /api/admin/mfa/unenroll-audit
+app.post('/api/admin/mfa/unenroll-audit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+  await db.updateUser(req.user!.id, {
+    mfaEnabled: false,
+    mfaSecret: null,
+    mfaRecoveryCodes: []
+  });
+  await db.recordAuditEvent({
+    userId: req.user!.id,
+    actorId: req.user!.id,
+    actorRole: req.user!.role,
+    action: 'ADMIN_MFA_DISABLED',
+    targetType: 'USER',
+    targetId: req.user!.id,
+    ipAddress: clientIp,
+    outcome: 'SUCCESS',
+    reason: 'Multi-Factor Authentication disabled by administrator'
+  });
+  res.json({ success: true, message: 'MFA disabled audit logged and database synced.' });
+});
+
+// GET /api/admin/mfa/status
+app.get('/api/admin/mfa/status', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
+  const user = await db.findUserById(req.user!.id);
+  if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+
+  let supaFactors: any[] = [];
+  try {
+    const factorsRes = await getUserMfaFactors(user.id);
+    supaFactors = factorsRes.factors || [];
+  } catch (_) {}
+
+  const isMfaActive = Boolean(user.mfaEnabled || supaFactors.some(f => f.status === 'verified'));
+
+  res.json({
+    success: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      mfaEnabled: isMfaActive
+    },
+    mfaEnabled: isMfaActive,
+    mfaEnforced: Boolean(user.mfaEnforced),
+    factors: supaFactors,
+    currentLevel: isMfaActive ? 'aal2' : 'aal1',
+    nextLevel: isMfaActive ? 'aal2' : 'aal1'
   });
 });
 

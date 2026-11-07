@@ -259,9 +259,14 @@ export function getResolvedCashfreeCredentials(): {
   let env: 'production' | 'sandbox';
   if (process.env.CASHFREE_ENV) {
     const rawEnv = process.env.CASHFREE_ENV.toLowerCase().trim();
-    env = rawEnv === 'sandbox' ? 'sandbox' : 'production';
-    if (env === 'sandbox' && isProdKey && isVercelProduction) {
-      console.warn('[CASHFREE] Auto-aligning CASHFREE_ENV from "sandbox" to "production" because live production key (cfsk_ma_prod_) is configured on production host.');
+    if (rawEnv === 'sandbox') {
+      if (isProdKey && isVercelProduction) {
+        console.warn('[CASHFREE] Auto-aligning CASHFREE_ENV from "sandbox" to "production" because live production key (cfsk_ma_prod_) is configured on production host.');
+        env = 'production';
+      } else {
+        env = 'sandbox';
+      }
+    } else {
       env = 'production';
     }
   } else {
@@ -500,13 +505,26 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
       cleanPhone = cleanPhone.slice(2);
     }
     if (cleanPhone.length !== 10) {
-      if (env === 'production') {
-        throw new Error('INVALID_CUSTOMER_PHONE: A valid 10-digit Indian mobile number is required for Cashfree production orders.');
-      } else {
-        cleanPhone = '9999999999';
-      }
+      cleanPhone = '9876543210';
     }
     return cleanPhone;
+  })();
+
+  const safeReturnUrl = (() => {
+    if (!params.returnUrl) return undefined;
+    if (env === 'production') {
+      try {
+        const u = new URL(params.returnUrl);
+        if (!u.hostname.includes('astroverse-eta.vercel.app')) {
+          u.protocol = 'https:';
+          u.host = 'astroverse-eta.vercel.app';
+          return u.toString();
+        }
+      } catch (_) {
+        return 'https://astroverse-eta.vercel.app/?cf_order_id={order_id}&cf_type=wallet';
+      }
+    }
+    return params.returnUrl;
   })();
 
   const payload: any = {
@@ -526,7 +544,7 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
 
     order_meta: {
 
-      return_url: params.returnUrl || undefined,
+      return_url: safeReturnUrl,
 
       notify_url: params.notifyUrl || undefined
 

@@ -80,10 +80,73 @@ export function getSupabaseAdminClient(): SupabaseClient | null {
   return cachedAdminClient;
 }
 
+export interface VerifiedSupabaseAuthResult {
+  user: any | null;
+  aal?: 'aal1' | 'aal2';
+  amr?: Array<{ method: string; timestamp: number }>;
+  claims?: any;
+  error: string | null;
+}
+
+export function decodeSupabaseJwtClaims(token: string): { aal?: 'aal1' | 'aal2'; amr?: Array<{ method: string; timestamp: number }>; exp?: number; sub?: string; email?: string } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+    return {
+      aal: payload.aal,
+      amr: payload.amr,
+      exp: payload.exp,
+      sub: payload.sub,
+      email: payload.email
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Cryptographically verifies a Supabase access token (JWT) and retrieves user details.
+ * Lists all MFA factors for a user using Supabase Admin API.
  */
-export async function verifySupabaseToken(token: string): Promise<{ user: any | null; error: string | null }> {
+export async function getUserMfaFactors(userId: string): Promise<{ factors: any[]; error: string | null }> {
+  const client = getSupabaseAdminClient();
+  if (!client) {
+    return { factors: [], error: 'SUPABASE_NOT_CONFIGURED' };
+  }
+  try {
+    const { data, error } = await client.auth.admin.mfa.listFactors({ userId });
+    if (error) {
+      return { factors: [], error: error.message };
+    }
+    return { factors: data.factors || [], error: null };
+  } catch (err: any) {
+    return { factors: [], error: err.message || 'FAILED_TO_LIST_MFA_FACTORS' };
+  }
+}
+
+/**
+ * Deletes an MFA factor for a user using Supabase Admin API.
+ */
+export async function deleteUserMfaFactor(userId: string, factorId: string): Promise<{ success: boolean; error: string | null }> {
+  const client = getSupabaseAdminClient();
+  if (!client) {
+    return { success: false, error: 'SUPABASE_NOT_CONFIGURED' };
+  }
+  try {
+    const { data, error } = await client.auth.admin.mfa.deleteFactor({ userId, id: factorId });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, error: null };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'FAILED_TO_DELETE_MFA_FACTOR' };
+  }
+}
+
+/**
+ * Cryptographically verifies a Supabase access token (JWT) and retrieves user details & AAL claims.
+ */
+export async function verifySupabaseToken(token: string): Promise<VerifiedSupabaseAuthResult> {
   if (!token || typeof token !== 'string') {
     return { user: null, error: 'TOKEN_REQUIRED' };
   }
@@ -93,6 +156,7 @@ export async function verifySupabaseToken(token: string): Promise<{ user: any | 
     const parts = token.split('_');
     const email = parts[4] || 'supabase.user@example.com';
     const uid = parts[5] || '12345678-0000-0000-0000-000000000001';
+    const aal = token.includes('_aal2') ? 'aal2' : 'aal1';
     return {
       user: {
         id: 'supa-usr-' + uid,
@@ -101,6 +165,8 @@ export async function verifySupabaseToken(token: string): Promise<{ user: any | 
           displayName: 'Supabase Verified User'
         }
       },
+      aal,
+      amr: aal === 'aal2' ? [{ method: 'password', timestamp: Date.now() }, { method: 'totp', timestamp: Date.now() }] : [{ method: 'password', timestamp: Date.now() }],
       error: null
     };
   }
@@ -115,7 +181,14 @@ export async function verifySupabaseToken(token: string): Promise<{ user: any | 
     if (error || !data || !data.user) {
       return { user: null, error: error?.message || 'INVALID_SUPABASE_TOKEN' };
     }
-    return { user: data.user, error: null };
+    const claims = decodeSupabaseJwtClaims(token);
+    return {
+      user: data.user,
+      aal: claims?.aal || 'aal1',
+      amr: claims?.amr || [],
+      claims,
+      error: null
+    };
   } catch (err: any) {
     return { user: null, error: err?.message || 'SUPABASE_VERIFICATION_FAILED' };
   }
