@@ -324,4 +324,72 @@ describe('PHASE 8 — ADMIN SUPABASE MFA & AAL2 ASSURANCE REGRESSION TEST SUITE'
     assert.ok(res.body.user);
     assert.strictEqual(res.body.user.email, 'tiwariji0028@gmail.com');
   });
+
+  it('19. Customer account isolation: customer cannot access /api/admin/mfa/status (HTTP 403)', async () => {
+    const res = await makeRequest('GET', '/api/admin/mfa/status', null, {
+      Authorization: `Bearer ${consumerSessionToken}`
+    });
+    assert.strictEqual(res.status, 403);
+    assert.strictEqual(res.body.error, 'FORBIDDEN');
+  });
+
+  it('20. Other administrator isolation: non-owner admin does not receive forced owner MFA requirement', async () => {
+    // Create secondary admin without MFA enabled
+    let secondaryAdmin = await db.findUserByEmail('staff.admin@astroverse.ai');
+    if (!secondaryAdmin) {
+      secondaryAdmin = await db.createUser({
+        email: 'staff.admin@astroverse.ai',
+        role: Role.SUPPORT_ADMIN,
+        status: AccountStatus.ACTIVE,
+        displayName: 'Staff Admin'
+      });
+    }
+    const rawStaffSession = crypto.randomBytes(32).toString('hex');
+    await db.createSession({
+      userId: secondaryAdmin.id,
+      tokenHash: hashToken(rawStaffSession),
+      expiresAt: new Date(Date.now() + 3600 * 1000)
+    });
+
+    const res = await makeRequest('GET', '/api/admin/mfa/status', null, {
+      Authorization: `Bearer ${rawStaffSession}`
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.user.email, 'staff.admin@astroverse.ai');
+    assert.strictEqual(res.body.mfaEnabled, false);
+  });
+
+  it('21. Designated owner AAL1 rejection: sensitive mutations reject without assurance token (HTTP 428)', async () => {
+    const res = await makeRequest('POST', '/api/admin/gateway-credentials', {
+      secretKey: 'cfsk_ma_prod_validproductiontestkey12345678',
+      appId: '14962482c27cb93db2c6bc6e4af8426941'
+    }, {
+      Authorization: `Bearer ${adminSessionToken}`
+    });
+    assert.strictEqual(res.status, 428);
+    assert.strictEqual(res.body.error, 'MFA_ASSURANCE_REQUIRED');
+  });
+
+  it('22. Designated owner AAL2 acceptance: sensitive mutations succeed with valid assurance token (HTTP 200)', async () => {
+    const validAssurance = issueAdminAssuranceToken(adminUser.id, Role.OWNER, 'gateway:credentials');
+    const res = await makeRequest('POST', '/api/admin/gateway-credentials', {
+      secretKey: 'cfsk_ma_prod_validproductiontestkey12345678',
+      appId: '14962482c27cb93db2c6bc6e4af8426941'
+    }, {
+      Authorization: `Bearer ${adminSessionToken}`,
+      'x-admin-assurance-token': validAssurance
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.success, true);
+  });
+
+  it('23. Session refresh retains policy bounds and returns new expiry timestamp', async () => {
+    const res = await makeRequest('POST', '/api/auth/admin-refresh', null, {
+      Authorization: `Bearer ${adminSessionToken}`
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.status, 'RENEWED');
+    assert.ok(res.body.expiresAt);
+    assert.ok(res.body.remainingSeconds > 0);
+  });
 });

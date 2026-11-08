@@ -530,6 +530,8 @@ async function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, n
   next();
 }
 
+export const ADMIN_OWNER_USER_ID = (process.env.ADMIN_OWNER_USER_ID || 'b204eff9-1a9b-4805-8c07-c35d3a9de3ee').trim();
+
 function requireAdmin(permissionOrRoles?: AdminPermission | AdminPermission[] | Role[]) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
@@ -648,8 +650,9 @@ function requireAdminAssurance(requiredScope?: string) {
       }
     }
 
-    // High impact operation strictly requires assurance token if MFA is enabled, in production, enforced, or strictly required
-    if (isProductionEnvironment() || req.user.mfaEnabled || req.user.mfaEnforced || req.headers['x-admin-require-mfa'] === 'true') {
+    // High impact operation strictly requires assurance token if user is designated owner, MFA is enabled, in production, enforced, or strictly required
+    const isOwner = req.user.id === ADMIN_OWNER_USER_ID;
+    if (isOwner || isProductionEnvironment() || req.user.mfaEnabled || req.user.mfaEnforced || req.headers['x-admin-require-mfa'] === 'true') {
       return res.status(428).json({
         error: 'MFA_ASSURANCE_REQUIRED',
         message: 'This sensitive administrative action requires verified multi-factor authentication (MFA) step-up token.'
@@ -1418,8 +1421,9 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
         }
       }
     } else {
+      const isDesignatedOwner = (user.id === ADMIN_OWNER_USER_ID) || (cleanEmail === 'tiwariji0028@gmail.com');
       // In production or when MFA is explicitly required, prompt for first-login enrollment
-      if (policy.environment === 'production' || req.headers['x-admin-require-mfa'] === 'true') {
+      if (isDesignatedOwner || policy.environment === 'production' || req.headers['x-admin-require-mfa'] === 'true') {
         await db.recordAuditEvent({
           userId: user.id,
           action: 'ADMIN_MFA_ENROLLMENT_STARTED',
@@ -1432,6 +1436,7 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
         return res.status(200).json({
           status: 'MFA_ENROLLMENT_REQUIRED',
           message: 'Administrative accounts strictly require Multi-Factor Authentication (MFA) enrollment.',
+          ownerMfaRequired: isDesignatedOwner,
           user: {
             id: user.id,
             email: user.email,
@@ -1698,6 +1703,7 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
     } catch (_) {}
 
     const hasVerifiedFactor = verifiedFactors.length > 0 || Boolean(user.mfaEnabled);
+    const isDesignatedOwner = (supaResult.user.id === ADMIN_OWNER_USER_ID) || (user.id === ADMIN_OWNER_USER_ID) || (email === 'tiwariji0028@gmail.com');
     const policy = resolveAdminSessionPolicy();
 
     // Branch 1: Enrollment just completed by owner
@@ -1748,8 +1754,8 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
       });
     }
 
-    // Branch 2: Administrator has NO verified factors -> First-login enrollment required
-    if (!hasVerifiedFactor) {
+    // Branch 2: Designated Owner (or admin with MFA required) has NO verified factors -> First-login enrollment required
+    if ((isDesignatedOwner || user.mfaEnforced) && !hasVerifiedFactor) {
       await db.recordAuditEvent({
         userId: user.id,
         actorId: user.id,
@@ -1779,7 +1785,7 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
     }
 
     // Branch 3: Administrator HAS verified factors but session is AAL1 -> MFA challenge required
-    if (supaResult.aal !== 'aal2') {
+    if (hasVerifiedFactor && supaResult.aal !== 'aal2') {
       return res.json({
         status: 'MFA_CHALLENGE_REQUIRED',
         message: 'Two-factor authentication code required.',

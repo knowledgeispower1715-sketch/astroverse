@@ -5427,7 +5427,90 @@
       }
 
       try {
-        // Attempt backend admin-login first
+        const ADMIN_OWNER_EMAIL = 'tiwariji0028@gmail.com';
+        const isOwnerAccount = (email.toLowerCase() === ADMIN_OWNER_EMAIL);
+
+        // For designated owner, route authentication directly via Supabase Auth native TOTP workflow
+        const supa = await initAdminSupabaseClient();
+        if (isOwnerAccount && supa) {
+          const { data: supaAuth, error: supaErr } = await supa.auth.signInWithPassword({ email, password });
+          if (supaErr) {
+            if (errBox) {
+              errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+              errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+              errBox.style.color = '#FCA5A5';
+              errBox.textContent = supaErr.message || 'Invalid administrator email or password.';
+              errBox.style.display = 'block';
+            }
+            showToast(supaErr.message || 'Authentication failed', 'error');
+            return;
+          }
+
+          if (supaAuth?.session) {
+            const { data: aalData } = await supa.auth.mfa.getAuthenticatorAssuranceLevel();
+            const { data: factorsData } = await supa.auth.mfa.listFactors();
+            const verifiedFactors = (factorsData?.all || factorsData?.totp || []).filter(f => f.status === 'verified');
+
+            // 1. If NO verified factors exist -> Clean stale unverified and enroll fresh TOTP
+            if (verifiedFactors.length === 0) {
+              const unverifiedFactors = (factorsData?.all || []).filter(f => f.status === 'unverified');
+              for (const uf of unverifiedFactors) {
+                try { await supa.auth.mfa.unenroll({ factorId: uf.id }); } catch (_) {}
+              }
+
+              const enrollRes = await supa.auth.mfa.enroll({
+                factorType: 'totp',
+                friendlyName: 'AstroVerse Owner Authenticator',
+                issuer: 'AstroVerse AI'
+              });
+              if (enrollRes.error) throw enrollRes.error;
+
+              fetch(`${getAuthBase()}/api/admin/mfa/enrollment-started`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+              }).catch(() => {});
+
+              showAdminMfaEnrollment({
+                email,
+                password,
+                role: 'SUPER_ADMIN',
+                factorId: enrollRes.data.id,
+                secret: enrollRes.data.totp.secret,
+                qrCodeSvg: enrollRes.data.totp.qr_code
+              });
+              return;
+            }
+
+            // 2. Verified factor exists, but session is at AAL1 -> Show challenge screen
+            if (aalData?.currentLevel !== 'aal2') {
+              showAdminMfaChallenge({
+                email,
+                password,
+                role: 'SUPER_ADMIN',
+                factorId: verifiedFactors[0].id
+              });
+              return;
+            }
+
+            // 3. Verified factor exists AND already at AAL2 -> Synchronize administrative session
+            const syncRes = await fetch(`${getAuthBase()}/api/auth/admin-supabase-session`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supaAuth.session.access_token}`
+              },
+              body: JSON.stringify({ action: 'CHALLENGE_COMPLETED' })
+            });
+            const syncData = await syncRes.json();
+            if (syncRes.ok && syncData.status === 'AUTHENTICATED') {
+              completeAdminLogin(syncData);
+              return;
+            }
+          }
+        }
+
+        // Standard flow for other administrator accounts
         const res = await fetch(`${getAuthBase()}/api/auth/admin-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -5671,9 +5754,9 @@
       const code = document.getElementById('mfa-enroll-code')?.value?.trim();
       const errBox = document.getElementById('mfa-enroll-error');
       const verifyBtn = document.getElementById('btn-mfa-enroll-verify');
-      if (!code || code.length !== 6) {
+      if (!code || !/^\d{6}$/.test(code)) {
         if (errBox) {
-          errBox.textContent = 'Please enter a valid 6-digit verification code.';
+          errBox.textContent = 'Please enter a valid 6-digit numeric verification code (preserving leading zeros).';
           errBox.style.display = 'block';
         }
         return;
@@ -5683,6 +5766,9 @@
         verifyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying Code...';
       }
       try {
+        if (!adminSupabaseClient) {
+          await initAdminSupabaseClient();
+        }
         if (activeEnrollmentState?.factorId && adminSupabaseClient) {
           const challengeRes = await adminSupabaseClient.auth.mfa.challenge({ factorId: activeEnrollmentState.factorId });
           if (challengeRes.error) throw challengeRes.error;
@@ -5691,7 +5777,21 @@
             challengeId: challengeRes.data.id,
             code
           });
-          if (verifyRes.error) throw verifyRes.error;
+          if (verifyRes.error) {
+            fetch(`${getAuthBase()}/api/admin/mfa/challenge-failed`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: activeEnrollmentState?.email, reason: verifyRes.error.message })
+            }).catch(() => {});
+            throw verifyRes.error;
+          }
+
+          // Verify Supabase factor status is marked as verified
+          const { data: factorsCheck } = await adminSupabaseClient.auth.mfa.listFactors();
+          const verified = (factorsCheck?.all || factorsCheck?.totp || []).filter(f => f.status === 'verified');
+          if (verified.length === 0) {
+            throw new Error('Supabase factor verification was not confirmed as VERIFIED.');
+          }
 
           const supaSession = (await adminSupabaseClient.auth.getSession())?.data?.session;
           const syncRes = await fetch(`${getAuthBase()}/api/auth/admin-supabase-session`, {
@@ -5706,6 +5806,7 @@
           if (!syncRes.ok || syncData.status !== 'AUTHENTICATED') {
             throw new Error(syncData.message || 'Server session synchronization failed.');
           }
+          showToast('Multi-Factor Authentication verified & enrolled successfully!', 'success');
           completeAdminLogin(syncData);
           return;
         }
@@ -5743,9 +5844,9 @@
       const code = document.getElementById('mfa-challenge-code')?.value?.trim();
       const errBox = document.getElementById('mfa-challenge-error');
       const verifyBtn = document.getElementById('btn-mfa-challenge-verify');
-      if (!code || code.length !== 6) {
+      if (!code || !/^\d{6}$/.test(code)) {
         if (errBox) {
-          errBox.textContent = 'Please enter a valid 6-digit verification code.';
+          errBox.textContent = 'Please enter a valid 6-digit numeric verification code (preserving leading zeros).';
           errBox.style.display = 'block';
         }
         return;
@@ -5755,6 +5856,9 @@
         verifyBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
       }
       try {
+        if (!adminSupabaseClient) {
+          await initAdminSupabaseClient();
+        }
         if (activeChallengeState?.factorId && adminSupabaseClient) {
           const challengeRes = await adminSupabaseClient.auth.mfa.challenge({ factorId: activeChallengeState.factorId });
           if (challengeRes.error) throw challengeRes.error;
@@ -5785,6 +5889,38 @@
           if (!syncRes.ok || syncData.status !== 'AUTHENTICATED') {
             throw new Error(syncData.message || 'Server session synchronization failed.');
           }
+          showToast('Two-Factor Authentication verified successfully!', 'success');
+          completeAdminLogin(syncData);
+          return;
+        }
+
+        const res = await fetch(`${getAuthBase()}/api/auth/admin-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: activeChallengeState?.email,
+            password: activeChallengeState?.password,
+            mfaCode: code
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'AUTHENTICATED') {
+          completeAdminLogin(data);
+        } else {
+          throw new Error(data.message || 'Invalid verification code.');
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = err.message || 'Verification failed. Please check the 6-digit code and try again.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (verifyBtn) {
+          verifyBtn.disabled = false;
+          verifyBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Verify & Continue to Admin Console';
+        }
+      }
+    }
           completeAdminLogin(syncData);
           return;
         }
