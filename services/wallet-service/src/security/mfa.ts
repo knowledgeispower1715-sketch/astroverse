@@ -207,7 +207,11 @@ export type AllowedAssuranceScope = typeof ALLOWED_ASSURANCE_SCOPES[number] | st
 let ephemeralSecret: string | null = null;
 
 export function getAssuranceSigningSecret(): string {
-  const secret = process.env.ADMIN_MFA_SECRET || process.env.JWT_SECRET;
+  const secret = process.env.ADMIN_MFA_SECRET ||
+    process.env.JWT_SECRET ||
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.CASHFREE_SECRET_KEY;
   const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 
   if (secret && secret.length >= 32) {
@@ -215,7 +219,7 @@ export function getAssuranceSigningSecret(): string {
   }
 
   if (isProd) {
-    throw new Error('[SECURITY_CRITICAL] ADMIN_MFA_SECRET or JWT_SECRET must be configured with at least 32 characters in production.');
+    throw new Error('[SECURITY_CRITICAL] ADMIN_MFA_SECRET, JWT_SECRET, or SUPABASE_SECRET_KEY must be configured with at least 32 characters in production.');
   }
 
   if (!ephemeralSecret) {
