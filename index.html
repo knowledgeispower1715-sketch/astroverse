@@ -17003,7 +17003,7 @@
         try {
           const checkoutResult = await cashfree.checkout({
             paymentSessionId: orderData.paymentSessionId,
-            redirectTarget: '_modal'
+            redirectTarget: '_self'
           });
           if (checkoutResult && checkoutResult.error) {
             console.warn("Cashfree Drop-in closed or returned notice:", checkoutResult.error);
