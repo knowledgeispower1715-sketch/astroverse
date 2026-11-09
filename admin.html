@@ -5543,62 +5543,6 @@
           return;
         }
 
-        // If backend returned 401/403, check Supabase Auth client directly
-        const supa = await initAdminSupabaseClient();
-        if (supa) {
-          const { data: supaAuth, error: supaErr } = await supa.auth.signInWithPassword({ email, password });
-          if (!supaErr && supaAuth?.session) {
-            const { data: aalData } = await supa.auth.mfa.getAuthenticatorAssuranceLevel();
-            const { data: factorsData } = await supa.auth.mfa.listFactors();
-            const verifiedFactors = (factorsData?.totp || []).filter(f => f.status === 'verified');
-
-            if (verifiedFactors.length === 0) {
-              const enrollRes = await supa.auth.mfa.enroll({ factorType: 'totp', issuer: 'AstroVerse AI' });
-              if (enrollRes.error) throw enrollRes.error;
-
-              fetch(`${getAuthBase()}/api/admin/mfa/enrollment-started`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-              }).catch(() => {});
-
-              showAdminMfaEnrollment({
-                email,
-                password,
-                role: 'SUPER_ADMIN',
-                factorId: enrollRes.data.id,
-                secret: enrollRes.data.totp.secret,
-                qrCodeSvg: enrollRes.data.totp.qr_code
-              });
-              return;
-            }
-
-            if (aalData?.currentLevel !== 'aal2') {
-              showAdminMfaChallenge({
-                email,
-                password,
-                role: 'SUPER_ADMIN',
-                factorId: verifiedFactors[0].id
-              });
-              return;
-            }
-
-            const syncRes = await fetch(`${getAuthBase()}/api/auth/admin-supabase-session`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supaAuth.session.access_token}`
-              },
-              body: JSON.stringify({ action: 'CHALLENGE_COMPLETED' })
-            });
-            const syncData = await syncRes.json();
-            if (syncRes.ok && syncData.status === 'AUTHENTICATED') {
-              completeAdminLogin(syncData);
-              return;
-            }
-          }
-        }
-
         if (errBox) {
           errBox.style.background = 'rgba(220, 38, 38, 0.15)';
           errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
@@ -5890,37 +5834,6 @@
             throw new Error(syncData.message || 'Server session synchronization failed.');
           }
           showToast('Two-Factor Authentication verified successfully!', 'success');
-          completeAdminLogin(syncData);
-          return;
-        }
-
-        const res = await fetch(`${getAuthBase()}/api/auth/admin-login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: activeChallengeState?.email,
-            password: activeChallengeState?.password,
-            mfaCode: code
-          })
-        });
-        const data = await res.json();
-        if (res.ok && data.status === 'AUTHENTICATED') {
-          completeAdminLogin(data);
-        } else {
-          throw new Error(data.message || 'Invalid verification code.');
-        }
-      } catch (err) {
-        if (errBox) {
-          errBox.textContent = err.message || 'Verification failed. Please check the 6-digit code and try again.';
-          errBox.style.display = 'block';
-        }
-      } finally {
-        if (verifyBtn) {
-          verifyBtn.disabled = false;
-          verifyBtn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Verify & Continue to Admin Console';
-        }
-      }
-    }
           completeAdminLogin(syncData);
           return;
         }

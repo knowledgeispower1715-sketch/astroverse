@@ -16975,39 +16975,51 @@
           paymentSessionId: orderData.paymentSessionId
         });
 
+        const sdkMode = (orderData.environment === 'production' || window.CASHFREE_ENV === 'production' || (orderData.checkoutUrl && orderData.checkoutUrl.includes('api.cashfree.com'))) ? 'production' : 'sandbox';
+        window.CASHFREE_ENV = sdkMode;
+
         try {
           await loadCashfreeSDK(8000);
         } catch (sdkLoadErr) {
           console.warn("Cashfree JS SDK loading failed or timed out, executing hosted fallback:", sdkLoadErr);
-          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
           submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
           return;
         }
 
         if (typeof window.Cashfree !== 'function') {
-          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
           submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
           return;
         }
 
-        const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
         const cashfree = window.Cashfree({ mode: sdkMode });
 
         setPaymentState(PAYMENT_STATES.CHECKOUT_OPEN, {
           orderId: orderData.orderId
         });
 
-        // Close recharge modal cleanly before navigation
+        // Close recharge modal cleanly before opening Cashfree Drop-in
         closeWalletModal();
 
         try {
           const checkoutResult = await cashfree.checkout({
             paymentSessionId: orderData.paymentSessionId,
-            redirectTarget: '_self'
+            redirectTarget: '_modal'
           });
           if (checkoutResult && checkoutResult.error) {
-            console.warn("Cashfree wallet checkout returned error, executing hosted fallback:", checkoutResult.error);
+            console.warn("Cashfree Drop-in closed or returned notice:", checkoutResult.error);
+            if (checkoutResult.error.code === 'user_cancelled') {
+              showToast("Payment cancelled. You can retry anytime.", "info");
+              setPaymentState(PAYMENT_STATES.IDLE);
+              return;
+            }
             submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          } else if (checkoutResult && checkoutResult.paymentDetails) {
+            // Payment attempt completed in modal -> verify on backend
+            setPaymentState(PAYMENT_STATES.PROCESSING, {
+              orderId: orderData.orderId,
+              message: "Verifying payment with bank..."
+            });
+            await verifyAndCreditWallet(orderData.orderId, '', '');
           }
         } catch (sdkErr) {
           console.warn("Cashfree wallet checkout threw, executing hosted fallback:", sdkErr);

@@ -3657,6 +3657,7 @@ export function calculateWalletRechargePricing(amount: any, packageId?: string):
 }
 
 app.get('/api/wallet/config', async (_req: Request, res: Response) => {
+  await syncGatewayCredentialsFromDb();
   const readiness = getPaymentReadinessStatus();
   return res.json({
     success: true,
@@ -3848,6 +3849,7 @@ app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: Aut
       currency: order.currency,
       provider: 'CASHFREE',
       gateway: 'CASHFREE',
+      environment: readiness.environment,
       paymentSessionId: cfOrder.payment_session_id,
       cfOrderId: cfOrder.cf_order_id,
       checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
@@ -7924,6 +7926,7 @@ app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (r
       paymentSessionId: cfOrder.payment_session_id,
       cfOrderId: cfOrder.cf_order_id,
       gateway: 'CASHFREE',
+      environment: readiness.environment,
       checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
     });
   } catch (err: any) {
@@ -9800,6 +9803,7 @@ app.post('/api/reports/order', orderLimiter, authenticate, async (req: Authentic
       paymentSessionId: cfOrder.payment_session_id,
       cfOrderId: cfOrder.cf_order_id,
       gateway: 'CASHFREE',
+      environment: readiness.environment,
       checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
     });
   } catch (err: any) {
