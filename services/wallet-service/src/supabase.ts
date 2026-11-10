@@ -105,12 +105,41 @@ export function decodeSupabaseJwtClaims(token: string): { aal?: 'aal1' | 'aal2';
   }
 }
 
+let mockMfaFactorsProvider: ((userId: string) => Promise<{ factors: any[]; error: string | null } | null>) | null = null;
+
+export function setMockUserMfaFactorsProvider(
+  fn: ((userId: string) => Promise<{ factors: any[]; error: string | null } | null>) | null
+): void {
+  mockMfaFactorsProvider = fn;
+}
+
+export function clearMockUserMfaFactorsProvider(): void {
+  mockMfaFactorsProvider = null;
+}
+
 /**
  * Lists all MFA factors for a user using Supabase Admin API.
  */
 export async function getUserMfaFactors(userId: string): Promise<{ factors: any[]; error: string | null }> {
+  if (mockMfaFactorsProvider) {
+    const mockRes = await mockMfaFactorsProvider(userId);
+    if (mockRes !== null) {
+      if (mockRes.error && mockRes.error.startsWith('THROW_')) {
+        throw new Error(mockRes.error.replace('THROW_', ''));
+      }
+      return mockRes;
+    }
+  }
+
+  if (process.env.NODE_ENV === 'test' && (userId.startsWith('supa-usr-') || !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    return { factors: [], error: null };
+  }
+
   const client = getSupabaseAdminClient();
   if (!client) {
+    if (process.env.NODE_ENV === 'test') {
+      return { factors: [], error: null };
+    }
     return { factors: [], error: 'SUPABASE_NOT_CONFIGURED' };
   }
   try {

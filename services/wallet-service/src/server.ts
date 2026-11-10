@@ -1709,7 +1709,11 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
     let factorLookupFailed = false;
     try {
       const factorsRes = await getUserMfaFactors(supaResult.user.id);
-      verifiedFactors = (factorsRes.factors || []).filter((f: any) => f.status === 'verified');
+      if (factorsRes.error) {
+        factorLookupFailed = true;
+      } else {
+        verifiedFactors = (factorsRes.factors || []).filter((f: any) => f.status === 'verified');
+      }
     } catch (_) {
       factorLookupFailed = true;
     }
@@ -1723,7 +1727,11 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
       });
     }
 
-    const hasVerifiedFactor = verifiedFactors.length > 0 || Boolean(user.mfaEnabled);
+    // Owner Factor Authority: For designated owner, only verified factors from Supabase Auth count.
+    // Local database mfaEnabled flag is never authoritative for owner.
+    const hasVerifiedFactor = isDesignatedOwner
+      ? verifiedFactors.length > 0
+      : (verifiedFactors.length > 0 || Boolean(user.mfaEnabled));
     const policy = resolveAdminSessionPolicy();
 
     // Branch 1: Enrollment just completed by owner
@@ -1973,7 +1981,10 @@ app.get('/api/admin/mfa/status', authenticate, requireAdmin(), async (req: Authe
     supaFactors = factorsRes.factors || [];
   } catch (_) {}
 
-  const isMfaActive = Boolean(user.mfaEnabled || supaFactors.some(f => f.status === 'verified'));
+  const isOwner = (user.id === ADMIN_OWNER_USER_ID) || (user.email === 'tiwariji0028@gmail.com');
+  const isMfaActive = isOwner
+    ? supaFactors.some(f => f.status === 'verified')
+    : Boolean(user.mfaEnabled || supaFactors.some(f => f.status === 'verified'));
 
   res.json({
     success: true,

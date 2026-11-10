@@ -16948,10 +16948,16 @@
             handleAuthExpired({ type: 'recharge', pack: selectedRechargePack });
             return;
           }
-          const isNetworkDown = !navigator.onLine;
-          const displayMsg = isNetworkDown
-            ? "Network connection offline. Please check your internet connection."
-            : (errData.message || errData.error || "Failed to create payment order. Gateway unavailable.");
+          let displayMsg = errData.message || errData.error;
+          if (orderRes.status === 403) {
+            displayMsg = errData.message || "Payment authorization denied. Your account may be restricted or inactive.";
+          } else if (orderRes.status === 503) {
+            displayMsg = errData.customerMessage || errData.message || "Online payment gateway is temporarily unavailable or undergoing maintenance. Please try again shortly.";
+          } else if (orderRes.status >= 500) {
+            displayMsg = errData.message || "Payment service is currently unavailable. Please try again in a few moments.";
+          } else if (!displayMsg) {
+            displayMsg = "Failed to create payment order. Gateway unavailable.";
+          }
           setPaymentState(PAYMENT_STATES.FAILED, {
             error: errData.error,
             readinessState: errData.readinessState,
@@ -17036,10 +17042,10 @@
           targetBtn.innerHTML = originalBtnHtml;
         }
         console.error("Wallet checkout error:", err);
-        const isNetworkErr = !navigator.onLine || err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError');
+        const isNetworkErr = !navigator.onLine || (err instanceof TypeError) || err?.name === 'TypeError' || err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError');
         const netMsg = isNetworkErr
-          ? "Unable to connect to server. Please verify your internet connection and try again."
-          : (err.message || "Network error while connecting to payment gateway.");
+          ? "Network connection offline or unreachable. Please verify your internet connection and retry."
+          : (err?.message || "Failed to initiate payment. Please try again.");
         setPaymentState(PAYMENT_STATES.FAILED, {
           message: netMsg,
           retryFn: () => executeSelectedRecharge()

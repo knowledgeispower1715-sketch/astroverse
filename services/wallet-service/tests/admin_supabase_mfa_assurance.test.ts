@@ -1,4 +1,4 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
 import crypto from 'crypto';
@@ -13,6 +13,10 @@ import {
   ROLE_PERMISSIONS,
   isAnyAdmin
 } from '../src/security/permissions';
+import {
+  setMockUserMfaFactorsProvider,
+  clearMockUserMfaFactorsProvider
+} from '../src/supabase';
 
 function hashToken(t: string): string {
   return crypto.createHash('sha256').update(t).digest('hex');
@@ -165,7 +169,11 @@ describe('PHASE 8 — ADMIN SUPABASE MFA & AAL2 ASSURANCE REGRESSION TEST SUITE'
   });
 
   it('7. POST /api/auth/admin-supabase-session with enrolled admin at AAL1 returns MFA_CHALLENGE_REQUIRED', async () => {
-    // When admin user has mfaEnabled = true in DB or factors
+    // When admin user has verified factors
+    setMockUserMfaFactorsProvider(async () => ({
+      factors: [{ id: 'test_totp_factor_id', status: 'verified', factor_type: 'totp' }],
+      error: null
+    }));
     await db.updateUser(adminUser.id, { mfaEnabled: true });
     const res = await makeRequest('POST', '/api/auth/admin-supabase-session', {}, {
       Authorization: 'Bearer test_supabase_token_user_tiwariji0028@gmail.com_a001'
@@ -173,6 +181,7 @@ describe('PHASE 8 — ADMIN SUPABASE MFA & AAL2 ASSURANCE REGRESSION TEST SUITE'
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.body.status, 'MFA_CHALLENGE_REQUIRED');
     assert.strictEqual(res.body.nextLevel, 'aal2');
+    clearMockUserMfaFactorsProvider();
   });
 
   it('8. POST /api/auth/admin-supabase-session with verified AAL2 JWT returns AUTHENTICATED with assuranceToken', async () => {
@@ -391,5 +400,88 @@ describe('PHASE 8 — ADMIN SUPABASE MFA & AAL2 ASSURANCE REGRESSION TEST SUITE'
     assert.strictEqual(res.body.status, 'RENEWED');
     assert.ok(res.body.expiresAt);
     assert.ok(res.body.remainingSeconds > 0);
+  });
+
+  it('24. Owner factor authority: Supabase factor VERIFIED -> MFA_CHALLENGE_REQUIRED', async () => {
+    setMockUserMfaFactorsProvider(async () => ({
+      factors: [{ id: 'test_totp_factor_id', status: 'verified', factor_type: 'totp' }],
+      error: null
+    }));
+    await db.updateUser(adminUser.id, { mfaEnabled: false });
+    const res = await makeRequest('POST', '/api/auth/admin-supabase-session', {}, {
+      Authorization: 'Bearer test_supabase_token_user_tiwariji0028@gmail.com_a001'
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.status, 'MFA_CHALLENGE_REQUIRED');
+    clearMockUserMfaFactorsProvider();
+  });
+
+  it('25. Owner factor authority: Supabase factor UNVERIFIED -> MFA_ENROLLMENT_REQUIRED', async () => {
+    setMockUserMfaFactorsProvider(async () => ({
+      factors: [{ id: 'test_unverified_factor', status: 'unverified', factor_type: 'totp' }],
+      error: null
+    }));
+    await db.updateUser(adminUser.id, { mfaEnabled: false });
+    const res = await makeRequest('POST', '/api/auth/admin-supabase-session', {}, {
+      Authorization: 'Bearer test_supabase_token_user_tiwariji0028@gmail.com_a001'
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.status, 'MFA_ENROLLMENT_REQUIRED');
+    clearMockUserMfaFactorsProvider();
+  });
+
+  it('26. Owner factor authority: No Supabase factor -> MFA_ENROLLMENT_REQUIRED', async () => {
+    setMockUserMfaFactorsProvider(async () => ({
+      factors: [],
+      error: null
+    }));
+    await db.updateUser(adminUser.id, { mfaEnabled: false });
+    const res = await makeRequest('POST', '/api/auth/admin-supabase-session', {}, {
+      Authorization: 'Bearer test_supabase_token_user_tiwariji0028@gmail.com_a001'
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.status, 'MFA_ENROLLMENT_REQUIRED');
+    clearMockUserMfaFactorsProvider();
+  });
+
+  it('27. Owner factor authority: Supabase factor lookup failure -> HTTP 503 MFA_PROVIDER_UNAVAILABLE', async () => {
+    setMockUserMfaFactorsProvider(async () => ({
+      factors: [],
+      error: 'THROW_SUPABASE_LOOKUP_FAILED'
+    }));
+    const res = await makeRequest('POST', '/api/auth/admin-supabase-session', {}, {
+      Authorization: 'Bearer test_supabase_token_user_tiwariji0028@gmail.com_a001'
+    });
+    assert.strictEqual(res.status, 503);
+    assert.strictEqual(res.body.error, 'MFA_PROVIDER_UNAVAILABLE');
+    clearMockUserMfaFactorsProvider();
+  });
+
+  it('28. Owner factor authority: Local mfaEnabled: true with no verified Supabase factor -> MFA_ENROLLMENT_REQUIRED', async () => {
+    setMockUserMfaFactorsProvider(async () => ({
+      factors: [],
+      error: null
+    }));
+    await db.updateUser(adminUser.id, { mfaEnabled: true });
+    const res = await makeRequest('POST', '/api/auth/admin-supabase-session', {}, {
+      Authorization: 'Bearer test_supabase_token_user_tiwariji0028@gmail.com_a001'
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.status, 'MFA_ENROLLMENT_REQUIRED');
+    clearMockUserMfaFactorsProvider();
+  });
+
+  it('29. Owner factor authority: Local mfaEnabled: false with verified Supabase factor -> MFA_CHALLENGE_REQUIRED', async () => {
+    setMockUserMfaFactorsProvider(async () => ({
+      factors: [{ id: 'test_totp_factor_id', status: 'verified', factor_type: 'totp' }],
+      error: null
+    }));
+    await db.updateUser(adminUser.id, { mfaEnabled: false });
+    const res = await makeRequest('POST', '/api/auth/admin-supabase-session', {}, {
+      Authorization: 'Bearer test_supabase_token_user_tiwariji0028@gmail.com_a001'
+    });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.body.status, 'MFA_CHALLENGE_REQUIRED');
+    clearMockUserMfaFactorsProvider();
   });
 });
