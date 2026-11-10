@@ -3722,7 +3722,8 @@
 
   function showAdminMfaEnrollment(data) {
     document.body.classList.add('admin-mode');
-    activeEnrollmentState = data || {};
+    const { password, ...safeState } = data || {};
+    activeEnrollmentState = safeState;
     const loginView = document.getElementById('view-admin-login');
     const adminView = document.getElementById('view-admin');
     const challengeView = document.getElementById('view-admin-mfa-challenge');
@@ -3763,7 +3764,8 @@
 
   function showAdminMfaChallenge(data) {
     document.body.classList.add('admin-mode');
-    activeChallengeState = data || {};
+    const { password, ...safeState } = data || {};
+    activeChallengeState = safeState;
     const loginView = document.getElementById('view-admin-login');
     const adminView = document.getElementById('view-admin');
     const enrollView = document.getElementById('view-admin-mfa-enrollment');
@@ -5432,7 +5434,19 @@
 
         // For designated owner, route authentication directly via Supabase Auth native TOTP workflow
         const supa = await initAdminSupabaseClient();
-        if (isOwnerAccount && supa) {
+        if (isOwnerAccount) {
+          if (!supa) {
+            if (errBox) {
+              errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+              errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+              errBox.style.color = '#FCA5A5';
+              errBox.textContent = 'Native authentication client is currently unavailable. Please verify network connection.';
+              errBox.style.display = 'block';
+            }
+            showToast('Authentication client unavailable', 'error');
+            return;
+          }
+
           const { data: supaAuth, error: supaErr } = await supa.auth.signInWithPassword({ email, password });
           if (supaErr) {
             if (errBox) {
@@ -5473,11 +5487,11 @@
 
               showAdminMfaEnrollment({
                 email,
-                password,
                 role: 'SUPER_ADMIN',
                 factorId: enrollRes.data.id,
                 secret: enrollRes.data.totp.secret,
-                qrCodeSvg: enrollRes.data.totp.qr_code
+                qrCodeSvg: enrollRes.data.totp.qr_code,
+                isSupabaseMfa: true
               });
               return;
             }
@@ -5486,9 +5500,9 @@
             if (aalData?.currentLevel !== 'aal2') {
               showAdminMfaChallenge({
                 email,
-                password,
                 role: 'SUPER_ADMIN',
-                factorId: verifiedFactors[0].id
+                factorId: verifiedFactors[0].id,
+                isSupabaseMfa: true
               });
               return;
             }
@@ -5506,8 +5520,19 @@
             if (syncRes.ok && syncData.status === 'AUTHENTICATED') {
               completeAdminLogin(syncData);
               return;
+            } else {
+              if (errBox) {
+                errBox.style.background = 'rgba(220, 38, 38, 0.15)';
+                errBox.style.borderColor = 'rgba(220, 38, 38, 0.4)';
+                errBox.style.color = '#FCA5A5';
+                errBox.textContent = syncData.message || 'Server session synchronization failed.';
+                errBox.style.display = 'block';
+              }
+              showToast(syncData.message || 'Session sync failed', 'error');
+              return;
             }
           }
+          return;
         }
 
         // Standard flow for other administrator accounts
@@ -5755,6 +5780,11 @@
           return;
         }
 
+        const isOwnerEnroll = activeEnrollmentState?.isSupabaseMfa || (activeEnrollmentState?.email?.toLowerCase() === 'tiwariji0028@gmail.com');
+        if (isOwnerEnroll) {
+          throw new Error('Super Administrator must authenticate via native Supabase MFA. Legacy login fallback is forbidden.');
+        }
+
         const res = await fetch(`${getAuthBase()}/api/auth/admin-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -5836,6 +5866,42 @@
           showToast('Two-Factor Authentication verified successfully!', 'success');
           completeAdminLogin(syncData);
           return;
+        }
+
+        const isOwnerChallenge = activeChallengeState?.isSupabaseMfa || (activeChallengeState?.email?.toLowerCase() === 'tiwariji0028@gmail.com');
+        if (isOwnerChallenge) {
+          if (!activeChallengeState?.factorId && adminSupabaseClient) {
+            const { data: factorsCheck } = await adminSupabaseClient.auth.mfa.listFactors();
+            const verified = (factorsCheck?.all || factorsCheck?.totp || []).filter(f => f.status === 'verified');
+            if (verified.length > 0) {
+              activeChallengeState.factorId = verified[0].id;
+              const challengeRes = await adminSupabaseClient.auth.mfa.challenge({ factorId: verified[0].id });
+              if (challengeRes.error) throw challengeRes.error;
+              const verifyRes = await adminSupabaseClient.auth.mfa.verify({
+                factorId: verified[0].id,
+                challengeId: challengeRes.data.id,
+                code
+              });
+              if (verifyRes.error) throw verifyRes.error;
+              const supaSession = (await adminSupabaseClient.auth.getSession())?.data?.session;
+              const syncRes = await fetch(`${getAuthBase()}/api/auth/admin-supabase-session`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supaSession?.access_token}`
+                },
+                body: JSON.stringify({ action: 'CHALLENGE_COMPLETED' })
+              });
+              const syncData = await syncRes.json();
+              if (!syncRes.ok || syncData.status !== 'AUTHENTICATED') {
+                throw new Error(syncData.message || 'Server session synchronization failed.');
+              }
+              showToast('Two-Factor Authentication verified successfully!', 'success');
+              completeAdminLogin(syncData);
+              return;
+            }
+          }
+          throw new Error('Super Administrator must authenticate via native Supabase MFA. Legacy login fallback is forbidden.');
         }
 
         const res = await fetch(`${getAuthBase()}/api/auth/admin-login`, {

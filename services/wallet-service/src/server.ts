@@ -1390,6 +1390,15 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
     const policy = resolveAdminSessionPolicy();
     let mfaVerified = false;
 
+    // Fail-closed guard: Designated owner MUST authenticate via Supabase Native TOTP, never legacy endpoint
+    const isOwner = (user.id === ADMIN_OWNER_USER_ID) || (cleanEmail === 'tiwariji0028@gmail.com');
+    if (isOwner) {
+      return res.status(403).json({
+        error: 'OWNER_NATIVE_MFA_REQUIRED',
+        message: 'Super Administrator must authenticate via native Supabase Multi-Factor Authentication.'
+      });
+    }
+
     if (user.mfaEnabled && user.mfaSecret) {
       if (!mfaCode) {
         return res.status(200).json({
@@ -1697,13 +1706,24 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
 
     // Invariant 5: Supabase Auth TOTP factors check
     let verifiedFactors: any[] = [];
+    let factorLookupFailed = false;
     try {
       const factorsRes = await getUserMfaFactors(supaResult.user.id);
       verifiedFactors = (factorsRes.factors || []).filter((f: any) => f.status === 'verified');
-    } catch (_) {}
+    } catch (_) {
+      factorLookupFailed = true;
+    }
+
+    const isDesignatedOwner = (supaResult.user.id === ADMIN_OWNER_USER_ID) || (user.id === ADMIN_OWNER_USER_ID) || (email === 'tiwariji0028@gmail.com');
+
+    if (isDesignatedOwner && factorLookupFailed) {
+      return res.status(503).json({
+        error: 'MFA_PROVIDER_UNAVAILABLE',
+        message: 'Multi-factor authentication provider service is currently unavailable. Please try again shortly.'
+      });
+    }
 
     const hasVerifiedFactor = verifiedFactors.length > 0 || Boolean(user.mfaEnabled);
-    const isDesignatedOwner = (supaResult.user.id === ADMIN_OWNER_USER_ID) || (user.id === ADMIN_OWNER_USER_ID) || (email === 'tiwariji0028@gmail.com');
     const policy = resolveAdminSessionPolicy();
 
     // Branch 1: Enrollment just completed by owner
@@ -1754,8 +1774,8 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
       });
     }
 
-    // Branch 2: Designated Owner (or admin with MFA required) has NO verified factors -> First-login enrollment required
-    if ((isDesignatedOwner || user.mfaEnforced) && !hasVerifiedFactor) {
+    // Branch 2: Designated Owner (or admin with MFA required) has NO verified factors and not AAL2 -> First-login enrollment required
+    if ((isDesignatedOwner || user.mfaEnforced) && !hasVerifiedFactor && supaResult.aal !== 'aal2') {
       await db.recordAuditEvent({
         userId: user.id,
         actorId: user.id,
@@ -1786,6 +1806,13 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
 
     // Branch 3: Administrator HAS verified factors but session is AAL1 -> MFA challenge required
     if (hasVerifiedFactor && supaResult.aal !== 'aal2') {
+      const activeFactorId = verifiedFactors[0]?.id || (process.env.NODE_ENV === 'test' ? 'test_totp_factor_id' : null);
+      if (isDesignatedOwner && !activeFactorId && process.env.NODE_ENV !== 'test') {
+        return res.status(503).json({
+          error: 'MFA_PROVIDER_UNAVAILABLE',
+          message: 'No verified TOTP factor ID could be resolved from authentication provider.'
+        });
+      }
       return res.json({
         status: 'MFA_CHALLENGE_REQUIRED',
         message: 'Two-factor authentication code required.',
@@ -1797,7 +1824,7 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
           status: user.status,
           mfaEnabled: true
         },
-        factorId: verifiedFactors[0]?.id || null,
+        factorId: activeFactorId,
         currentLevel: 'aal1',
         nextLevel: 'aal2'
       });

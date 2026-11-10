@@ -16948,10 +16948,14 @@
             handleAuthExpired({ type: 'recharge', pack: selectedRechargePack });
             return;
           }
+          const isNetworkDown = !navigator.onLine;
+          const displayMsg = isNetworkDown
+            ? "Network connection offline. Please check your internet connection."
+            : (errData.message || errData.error || "Failed to create payment order. Gateway unavailable.");
           setPaymentState(PAYMENT_STATES.FAILED, {
             error: errData.error,
             readinessState: errData.readinessState,
-            message: errData.message || errData.error || "Failed to create payment order. Gateway unavailable.",
+            message: displayMsg,
             retryFn: () => executeSelectedRecharge()
           });
           return;
@@ -17032,8 +17036,12 @@
           targetBtn.innerHTML = originalBtnHtml;
         }
         console.error("Wallet checkout error:", err);
+        const isNetworkErr = !navigator.onLine || err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError');
+        const netMsg = isNetworkErr
+          ? "Unable to connect to server. Please verify your internet connection and try again."
+          : (err.message || "Network error while connecting to payment gateway.");
         setPaymentState(PAYMENT_STATES.FAILED, {
-          message: err.message || "Network error while connecting to payment gateway.",
+          message: netMsg,
           retryFn: () => executeSelectedRecharge()
         });
       }
