@@ -1,0 +1,8 @@
+Role,Role Description,Read Permission,Create Permission,Update Permission,Delete Permission,Export Permission,Approval Permission,Financial Permission,Security Permission,Required AAL Level,Verification Result
+OWNER,Platform Owner (Highest Authority),YES,YES,YES,YES,YES,YES,YES,YES,aal2,VERIFIED
+SUPER_ADMIN,Enterprise Super Administrator,YES,YES,YES,YES,YES,YES,YES,YES,aal2,VERIFIED
+FINANCE_ADMIN,Financial Controller & Ledger Auditor,YES,NO,YES (Refunds),NO,YES,YES,YES,NO,aal1,VERIFIED
+SUPPORT_ADMIN,Customer Support Specialist,YES (Limited PII),NO,YES (Status/Ticket),NO,NO,NO,NO,NO,aal1,VERIFIED
+ASTRO_ADMIN,Astrology Engine & Content Editor,YES (Platform/Catalogue),YES (Banners/Content),YES (Content),NO,NO,NO,NO,NO,aal1,VERIFIED
+SECURITY_ADMIN,Security & Compliance Auditor,YES (Audit/Security/DPDP),NO,NO,YES (DPDP Erasure),YES,YES,NO,YES,aal2,VERIFIED
+USER,Customer (Consumer Portal Only),NO (Admin Denied),NO,NO,NO,NO,NO,NO,NO,None,VERIFIED

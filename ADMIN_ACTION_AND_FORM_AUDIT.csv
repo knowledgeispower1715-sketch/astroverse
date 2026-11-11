@@ -1,0 +1,31 @@
+Module ID,Module Name,Element Type,Element Label / Identifier,Event Handler,Target Function,HTTP Method,API Endpoint,Permission Requirement,Loading State Handled,Disabled State Handled,Success Response Behavior,Error Response Behavior,Step-up MFA Required,Destructive Operation,Test Result
+users,User Management,button,Refresh,onclick,loadAdminUsersList,GET,/api/admin/users,VIEW_CUSTOMERS,YES,YES,Renders refreshed table,Shows toast error,NO,NO,PASS
+users,User Management,button,Export CSV,onclick,exportUsersCsv,GET,/api/admin/users/export,EXPORT_DATA,YES,YES,Triggers browser CSV download,Shows toast error,YES,NO,PASS
+users,User Management,button,View Customer 360,onclick,openCustomer360Drawer,GET,/api/admin/customer360,VIEW_CUSTOMERS,YES,YES,Opens side drawer with complete profile,Shows toast error,NO,NO,PASS
+users,User Management,button,Suspend / Unsuspend,onclick,toggleCustomerStatus,POST,/api/admin/users/:id/status,SUSPEND_ACCOUNTS,YES,YES,Updates status badge & toasts,Shows toast error,YES,YES,PASS
+users,User Management,button,Adjust Balance,onclick,openBalanceAdjustModal,POST,/api/admin/wallet/adjust,MANAGE_BALANCES,YES,YES,Updates balance & adds ledger entry,Shows toast error,YES,YES,PASS
+users,User Management,form,User Search & Filter,oninput/change,debounceAdminSearch,GET,/api/admin/users,VIEW_CUSTOMERS,NO,NO,Filters user table dynamically,Renders empty state,NO,NO,PASS
+roles,Team & Roles,button,Refresh,onclick,loadAdminRoles,GET,/api/admin/roles,MANAGE_ROLES,YES,YES,Renders refreshed staff table,Shows toast error,NO,NO,PASS
+roles,Team & Roles,button,Assign Role,onclick,assignAdminRole,POST,/api/admin/roles/assign,ASSIGN_ROLES,YES,YES,Updates staff role badge,Shows toast error,YES,YES,PASS
+security,Security & MFA,button,Re-configure Authenticator,onclick,reconfigureTotpMfa,POST,/api/admin/mfa/enroll,MANAGE_MFA,YES,YES,Opens QR setup modal,Shows toast error,YES,NO,PASS
+security,Security & MFA,button,Disable MFA,onclick,disableTotpMfa,POST,/api/admin/mfa/unenroll-audit,MANAGE_MFA,YES,YES,Disables MFA & logs audit event,Shows toast error,YES,YES,PASS
+astrology,Astrology Engine,button,Run Reference Calibration,onclick,runAstrologyCalibration,GET,/api/admin/astrology/calibrate,VIEW_PLATFORM,YES,YES,Calculates Sun/Moon positions against Swiss Ephemeris,Shows failure diagnostics,NO,NO,PASS
+reports,User Reports,button,Download PDF,onclick,downloadCustomerReportPdf,GET,/api/admin/reports/:id/pdf,VIEW_REPORTS,YES,YES,Opens PDF stream in new tab,Shows toast error,NO,NO,PASS
+payments,Payments & Gateway,button,Reconcile Payment Orders,onclick,reconcileCashfreeOrders,POST,/api/admin/payments/reconcile,MANAGE_FINANCIALS,YES,YES,Cross-references Cashfree with local DB,Shows discrepancy register,YES,NO,PASS
+payments,Payments & Gateway,button,Query Gateway & Recover,onclick,recoverCashfreeOrder,POST,/api/admin/payments/recover,MANAGE_FINANCIALS,YES,YES,Fulfills missing webhook payment,Shows toast error,YES,YES,PASS
+subscriptions,Subscriptions,button,Refresh,onclick,loadAdminSubscriptions,GET,/api/admin/subscriptions,VIEW_SUBSCRIPTIONS,YES,YES,Renders refreshed subscriber table,Shows toast error,NO,NO,PASS
+subscriptions,Subscriptions,button,Issue Refund,onclick,issueAdminRefund,POST,/api/admin/payments/refund,REFUND_PAYMENTS,YES,YES,Submits Cashfree refund & adjusts ledger,Shows toast error,YES,YES,PASS
+subscriptions,Subscriptions,form,Refund Form,onsubmit,issueAdminRefund,POST,/api/admin/payments/refund,REFUND_PAYMENTS,YES,YES,Triggers gateway refund execution,Shows validation error,YES,YES,PASS
+content,Content & Banners,button,Publish Banner,onclick,createContentBanner,POST,/api/admin/content/banners,MANAGE_CONTENT,YES,YES,Adds live promotional banner,Shows toast error,NO,NO,PASS
+settings,Feature Flags,button,Toggle Feature Flag,onclick,toggleFeatureFlag,POST,/api/admin/settings/flags/:key,MANAGE_SETTINGS,YES,YES,Toggles runtime platform capability,Shows toast error,YES,YES,PASS
+privacy,Privacy & DPDP,button,Process Deletion,onclick,processDataErasure,POST,/api/admin/privacy/requests/:id/process,MANAGE_PRIVACY,YES,YES,Anonymizes customer records,Shows toast error,YES,YES,PASS
+audit,Audit Trail,button,Refresh Logs,onclick,loadAdminAuditLogs,GET,/api/admin/audit/logs,VIEW_AUDIT,YES,YES,Renders latest 50 audit records,Shows toast error,NO,NO,PASS
+incidents,Incidents & P1s,button,Declare Incident,onclick,declarePlatformIncident,POST,/api/admin/incidents,DECLARE_INCIDENT,YES,YES,Opens alert banner & creates P1 ticket,Shows toast error,YES,YES,PASS
+database,Database Monitor,button,Ping & Refresh,onclick,loadAdminDatabaseMonitor,GET,/api/admin/database/monitor,VIEW_DATABASE,YES,YES,Updates table counts & pool health,Shows toast error,NO,NO,PASS
+analytics,Analytics & KPIs,button,Refresh Analytics,onclick,loadAdminAnalyticsOverview,GET,/api/admin/analytics/overview,VIEW_ANALYTICS,YES,YES,Refreshes GMV, volume & churn metrics,Shows toast error,NO,NO,PASS
+entitlements,Feature Entitlements,button,Confirm & Grant Entitlement,onclick,grantUserEntitlement,POST,/api/admin/entitlements,MANAGE_ENTITLEMENTS,YES,YES,Provisions immediate module access,Shows toast error,YES,NO,PASS
+promotions,Promotions & Discounts,button,Create Promotion,onclick,createPromoCampaign,POST,/api/admin/promotions,MANAGE_PROMOTIONS,YES,YES,Adds active coupon code to catalogue,Shows validation error,NO,NO,PASS
+consultations,Consultations,button,Verify Astrologer,onclick,verifyAstrologerCredentials,POST,/api/admin/consultations/astrologers/:id/verify,MANAGE_CONSULTATIONS,YES,YES,Marks verified badge on astrologer,Shows toast error,NO,NO,PASS
+qa,Tier Simulator & QA,button,Exit Preview Mode,onclick,exitAdminPreviewMode,POST,/api/admin/preview/exit,QA_TESTING,YES,YES,Restores normal administrator view,Shows toast info,NO,NO,PASS
+qa,Tier Simulator & QA,button,Demo Wallet Credit,onclick,creditDemoWallet,POST,/api/admin/preview/demo-wallet,QA_TESTING,YES,YES,Adds demo funds without touching real DB,Shows toast success,NO,NO,PASS
+qa,Tier Simulator & QA,button,Reset Demo Wallet,onclick,resetDemoWallet,POST,/api/admin/preview/demo-wallet/reset,QA_TESTING,YES,YES,Zeros out isolated demo balance,Shows toast success,NO,NO,PASS

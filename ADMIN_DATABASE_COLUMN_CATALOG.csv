@@ -1,0 +1,118 @@
+Schema,Table,Column,Data Type,Nullable,Default,Primary Key,Foreign Key Reference,Unique Constraint,Index Participation,Sensitive Data Classification,RLS / Table Access Context,Frontend Usage,Backend Usage,Migration Provenance,Verification Result
+public,User,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / RLS owner,User UUID link,Primary identifier,20261029000000_init,VERIFIED
+public,User,phone,String,YES,NULL,NO,NONE,YES,phone_unique,RESTRICTED_PII,Service Role / RLS owner,Contact phone pill,SMS auth / OTP,20261029000000_init,VERIFIED
+public,User,email,String,YES,NULL,NO,NONE,YES,email_unique,RESTRICTED_PII,Service Role / Allowlist,Customer details,Auth & notification,20261029000000_init,VERIFIED
+public,User,phoneVerified,Boolean,NO,false,NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Phone verified badge,Phone verification check,20261029000000_init,VERIFIED
+public,User,emailVerified,Boolean,NO,false,NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Email verified badge,Email verification check,20261029000000_init,VERIFIED
+public,User,displayName,String,YES,NULL,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,Customer name,Profile presentation,20261029000000_init,VERIFIED
+public,User,role,Role (Enum),NO,USER,NO,NONE,NO,role_status_idx,INTERNAL,Service Role / RBAC,Role & Staff badge,Authorization enforcement,20261029000000_init,VERIFIED
+public,User,status,AccountStatus,NO,ACTIVE,NO,NONE,NO,role_status_idx,INTERNAL,Service Role / RBAC,Account status pill,Access suspension check,20261029000000_init,VERIFIED
+public,User,preferredLanguage,String,NO,en,NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Language preference,Localization resolution,20261029000000_init,VERIFIED
+public,User,preferredTimezone,String,NO,Asia/Kolkata,NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Timezone display,Ephemeris calculations,20261029000000_init,VERIFIED
+public,User,walletBalance,Decimal(12;2),NO,0.00,NO,NONE,NO,NONE,FINANCIAL,Service Role / Financial,Wallet balance (₹),Balance credit & debit,20261029000000_init,VERIFIED
+public,User,passwordHash,String,YES,NULL,NO,NONE,NO,NONE,SECRET_HASH,Service Role only,Never exposed,Credential verification,20261029000000_init,VERIFIED
+public,User,passwordSalt,String,YES,NULL,NO,NONE,NO,NONE,SECRET_SALT,Service Role only,Never exposed,Cryptographic salt,20261029000000_init,VERIFIED
+public,User,resetTokenHash,String,YES,NULL,NO,NONE,NO,NONE,SECRET_TOKEN,Service Role only,Never exposed,Password recovery token,20261029000000_init,VERIFIED
+public,User,resetTokenExpiresAt,DateTime,YES,NULL,NO,NONE,NO,NONE,SECURITY_AUDIT,Service Role only,Never exposed,Reset token timeout,20261029000000_init,VERIFIED
+public,User,mfaEnabled,Boolean,NO,false,NO,NONE,NO,NONE,SECURITY_CRITICAL,Service Role / MFA,MFA status indicator,MFA enforcement check,20261029000000_init,VERIFIED
+public,User,mfaSecret,String,YES,NULL,NO,NONE,NO,NONE,SECRET_SEED,Service Role only,Never exposed (Legacy),Legacy custom TOTP verify,20261029000000_init,VERIFIED
+public,User,mfaRecoveryCodes,String[],NO,[],NO,NONE,NO,NONE,SECRET_HASH,Service Role only,Never exposed,Backup emergency recovery,20261029000000_init,VERIFIED
+public,User,mfaEnforced,Boolean,NO,false,NO,NONE,NO,NONE,SECURITY_CRITICAL,Service Role / MFA,Mandatory MFA badge,Policy enforcement,20261029000000_init,VERIFIED
+public,User,subscriptionTier,String,NO,FREE,NO,NONE,NO,NONE,INTERNAL,Service Role / Entitlement,Subscription tier badge,Entitlement provisioning,20261029000000_init,VERIFIED
+public,User,subscriptionStatus,String,NO,NONE,NO,NONE,NO,NONE,INTERNAL,Service Role / Entitlement,Subscription status,Billing active state,20261029000000_init,VERIFIED
+public,User,subscriptionBillingPeriod,String,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Billing,Monthly/Annual badge,Renewal scheduling,20261029000000_init,VERIFIED
+public,User,subscriptionExpiresAt,DateTime,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Billing,Expiry date countdown,Subscription expiration,20261029000000_init,VERIFIED
+public,User,lastLoginAt,DateTime,YES,NULL,NO,NONE,NO,NONE,SECURITY_AUDIT,Service Role / Admin,Last active timestamp,Session lifecycle,20261029000000_init,VERIFIED
+public,User,createdAt,DateTime,NO,now(),NO,NONE,NO,NONE,INTERNAL,Service Role / Admin,Registration date,User provenance,20261029000000_init,VERIFIED
+public,User,updatedAt,DateTime,NO,updatedAt,NO,NONE,NO,NONE,INTERNAL,Service Role / Admin,Last modified date,Audit tracking,20261029000000_init,VERIFIED
+public,UserSession,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Session,Session ID,Session record,20261029000000_init,VERIFIED
+public,UserSession,userId,String,NO,NONE,NO,User(id),NO,user_session_idx,CONFIDENTIAL,Service Role / Session,Associated customer,Customer lookup,20261029000000_init,VERIFIED
+public,UserSession,tokenHash,String,NO,NONE,NO,NONE,YES,token_hash_unique,SECRET_HASH,Service Role only,Never exposed,Session token verification,20261029000000_init,VERIFIED
+public,UserSession,expiresAt,DateTime,NO,NONE,NO,NONE,NO,session_expiry_idx,INTERNAL,Service Role / Session,Session expiry time,Auto-lock & termination,20261029000000_init,VERIFIED
+public,UserSession,ipAddress,String,YES,NULL,NO,NONE,NO,NONE,RESTRICTED_PII,Service Role / Audit,Client IP,Geographic audit,20261029000000_init,VERIFIED
+public,UserSession,userAgent,String,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Audit,Browser / OS string,Device tracking,20261029000000_init,VERIFIED
+public,UserSession,createdAt,DateTime,NO,now(),NO,NONE,NO,NONE,INTERNAL,Service Role / Session,Session start time,Session duration,20261029000000_init,VERIFIED
+public,AuditEvent,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Audit,Event ID,Audit log record,20261029000000_init,VERIFIED
+public,AuditEvent,userId,String,YES,NULL,NO,User(id),NO,audit_user_idx,CONFIDENTIAL,Service Role / Audit,Target customer ID,Audit aggregation,20261029000000_init,VERIFIED
+public,AuditEvent,actorId,String,YES,NULL,NO,NONE,NO,audit_actor_idx,CONFIDENTIAL,Service Role / Audit,Actor Administrator ID,Forensic accountability,20261029000000_init,VERIFIED
+public,AuditEvent,actorRole,String,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Audit,Actor Role at event,Privilege verification,20261029000000_init,VERIFIED
+public,AuditEvent,action,String,NO,NONE,NO,NONE,NO,audit_action_idx,INTERNAL,Service Role / Audit,Event Action code,Activity classification,20261029000000_init,VERIFIED
+public,AuditEvent,targetType,String,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Audit,Target entity type,Entity resolution,20261029000000_init,VERIFIED
+public,AuditEvent,targetId,String,YES,NULL,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / Audit,Target identifier,Target entity link,20261029000000_init,VERIFIED
+public,AuditEvent,outcome,Enum,NO,SUCCESS,NO,NONE,NO,audit_outcome_idx,INTERNAL,Service Role / Audit,SUCCESS/FAILED pill,Security alert routing,20261029000000_init,VERIFIED
+public,AuditEvent,reason,String,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Audit,Audit narrative,Forensic diagnosis,20261029000000_init,VERIFIED
+public,AuditEvent,ipAddress,String,YES,NULL,NO,NONE,NO,NONE,RESTRICTED_PII,Service Role / Audit,Client IP address,Network origin tracing,20261029000000_init,VERIFIED
+public,AuditEvent,metadata,Json,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Audit,Event metadata viewer,Operational context,20261029000000_init,VERIFIED
+public,AuditEvent,createdAt,DateTime,NO,now(),NO,NONE,NO,audit_created_idx,INTERNAL,Service Role / Audit,Audit timestamp,Timeline sequencing,20261029000000_init,VERIFIED
+public,SavedReport,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / RLS owner,Report ID,Report storage,20261029000000_init,VERIFIED
+public,SavedReport,userId,String,NO,NONE,NO,User(id),NO,report_user_idx,CONFIDENTIAL,Service Role / RLS owner,Customer ID,Customer report access,20261029000000_init,VERIFIED
+public,SavedReport,title,String,NO,NONE,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,Report Title,Display presentation,20261029000000_init,VERIFIED
+public,SavedReport,reportType,String,NO,NONE,NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Report Type badge,Catalogue categorization,20261029000000_init,VERIFIED
+public,SavedReport,status,Enum,NO,READY,NO,NONE,NO,report_status_idx,INTERNAL,Service Role / RLS owner,READY/FAILED pill,Generation state,20261029000000_init,VERIFIED
+public,SavedReport,storageUrl,String,YES,NULL,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,PDF download link,Supabase Storage URL,20261029000000_init,VERIFIED
+public,SavedReport,createdAt,DateTime,NO,now(),NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Created date,Historical archiving,20261029000000_init,VERIFIED
+public,SavedReport,updatedAt,DateTime,NO,updatedAt,NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Modified date,Audit tracking,20261029000000_init,VERIFIED
+public,BirthProfile,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / RLS owner,Profile ID,Chart calculation link,20261029000000_init,VERIFIED
+public,BirthProfile,userId,String,NO,NONE,NO,User(id),NO,profile_user_idx,CONFIDENTIAL,Service Role / RLS owner,Customer ID,Customer profile owner,20261029000000_init,VERIFIED
+public,BirthProfile,name,String,NO,NONE,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,Full name on chart,Kundli header,20261029000000_init,VERIFIED
+public,BirthProfile,gender,String,NO,NONE,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,Gender display,Kundli calculation,20261029000000_init,VERIFIED
+public,BirthProfile,dateOfBirth,String,NO,NONE,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,Birth date,Ephemeris date input,20261029000000_init,VERIFIED
+public,BirthProfile,timeOfBirth,String,NO,NONE,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,Birth time,Ephemeris time input,20261029000000_init,VERIFIED
+public,BirthProfile,placeOfBirth,String,NO,NONE,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,City / Location,Geocoding reference,20261029000000_init,VERIFIED
+public,BirthProfile,latitude,Decimal(10;7),NO,NONE,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,Latitude coordinate,Topocentric calculation,20261029000000_init,VERIFIED
+public,BirthProfile,longitude,Decimal(10;7),NO,NONE,NO,NONE,NO,NONE,CONFIDENTIAL,Service Role / RLS owner,Longitude coordinate,Topocentric calculation,20261029000000_init,VERIFIED
+public,BirthProfile,timezone,String,NO,Asia/Kolkata,NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Timezone string,UTC ephemeris offset,20261029000000_init,VERIFIED
+public,BirthProfile,isDefault,Boolean,NO,false,NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Default profile badge,Primary chart selector,20261029000000_init,VERIFIED
+public,BirthProfile,createdAt,DateTime,NO,now(),NO,NONE,NO,NONE,INTERNAL,Service Role / RLS owner,Creation timestamp,Profile audit,20261029000000_init,VERIFIED
+public,PaymentOrder,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Gateway,Order ID (cf_order_...),Cashfree gateway key,20261029000000_init,VERIFIED
+public,PaymentOrder,userId,String,NO,NONE,NO,User(id),NO,order_user_idx,CONFIDENTIAL,Service Role / Gateway,Customer ID,Wallet fulfillment target,20261029000000_init,VERIFIED
+public,PaymentOrder,amount,Decimal(12;2),NO,NONE,NO,NONE,NO,NONE,FINANCIAL,Service Role / Gateway,Order Amount (₹),Authoritative payment sum,20261029000000_init,VERIFIED
+public,PaymentOrder,currency,String,NO,INR,NO,NONE,NO,NONE,FINANCIAL,Service Role / Gateway,Currency code (INR),Currency validation,20261029000000_init,VERIFIED
+public,PaymentOrder,status,OrderStatus,NO,CREATED,NO,NONE,NO,order_status_idx,INTERNAL,Service Role / Gateway,Payment Status pill,Fulfillment state machine,20261029000000_init,VERIFIED
+public,PaymentOrder,orderType,OrderType,NO,WALLET_RECHARGE,NO,NONE,NO,order_type_idx,INTERNAL,Service Role / Gateway,Order Type badge,Fulfillment routing,20261029000000_init,VERIFIED
+public,PaymentOrder,gatewayOrderId,String,YES,NULL,NO,NONE,YES,gateway_order_unique,INTERNAL,Service Role / Gateway,Cashfree gateway ref,Cashfree sync & lookup,20261029000000_init,VERIFIED
+public,PaymentOrder,paymentSessionId,String,YES,NULL,NO,NONE,NO,NONE,SECRET_TOKEN,Service Role only,Never exposed,Hosted checkout launch,20261029000000_init,VERIFIED
+public,PaymentOrder,idempotencyKey,String,YES,NULL,NO,NONE,YES,idempotency_unique,INTERNAL,Service Role / Gateway,Idempotency header,Replay attack prevention,20261029000000_init,VERIFIED
+public,PaymentOrder,createdAt,DateTime,NO,now(),NO,NONE,NO,order_created_idx,INTERNAL,Service Role / Gateway,Order timestamp,Financial reporting,20261029000000_init,VERIFIED
+public,PaymentOrder,updatedAt,DateTime,NO,updatedAt,NO,NONE,NO,NONE,INTERNAL,Service Role / Gateway,Payment update time,Reconciliation audit,20261029000000_init,VERIFIED
+public,WalletLedger,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Financial,Ledger Entry ID,Financial ledger record,20261029000000_init,VERIFIED
+public,WalletLedger,userId,String,NO,NONE,NO,User(id),NO,ledger_user_idx,CONFIDENTIAL,Service Role / Financial,Customer ID,Wallet balance credit/debit,20261029000000_init,VERIFIED
+public,WalletLedger,amount,Decimal(12;2),NO,NONE,NO,NONE,NO,NONE,FINANCIAL,Service Role / Financial,Amount (₹),Authoritative entry amount,20261029000000_init,VERIFIED
+public,WalletLedger,balanceAfter,Decimal(12;2),NO,NONE,NO,NONE,NO,NONE,FINANCIAL,Service Role / Financial,Balance snapshot (₹),Audit trail balance check,20261029000000_init,VERIFIED
+public,WalletLedger,entryType,EntryType,NO,WALLET_RECHARGE,NO,NONE,NO,ledger_entry_type_idx,INTERNAL,Service Role / Financial,Entry Type badge,Transaction taxonomy,20261029000000_init,VERIFIED
+public,WalletLedger,referenceId,String,YES,NULL,NO,NONE,NO,ledger_ref_idx,INTERNAL,Service Role / Financial,Order / Payment Ref,Reconciliation cross-link,20261029000000_init,VERIFIED
+public,WalletLedger,description,String,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Financial,Human description,Passbook line item,20261029000000_init,VERIFIED
+public,WalletLedger,createdAt,DateTime,NO,now(),NO,NONE,NO,ledger_created_idx,INTERNAL,Service Role / Financial,Transaction date,Financial accounting,20261029000000_init,VERIFIED
+public,WebhookEvent,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Gateway,Webhook Event ID,Webhook idempotency log,20261029000000_init,VERIFIED
+public,WebhookEvent,provider,String,NO,CASHFREE,NO,NONE,NO,webhook_provider_idx,INTERNAL,Service Role / Gateway,Provider badge,Gateway origin routing,20261029000000_init,VERIFIED
+public,WebhookEvent,providerEventId,String,NO,NONE,NO,NONE,YES,provider_event_unique,INTERNAL,Service Role / Gateway,Gateway Event ID,Replay deduplication,20261029000000_init,VERIFIED
+public,WebhookEvent,eventType,String,NO,NONE,NO,NONE,NO,NONE,INTERNAL,Service Role / Gateway,Event Type string,Handler dispatch,20261029000000_init,VERIFIED
+public,WebhookEvent,payloadHash,String,NO,NONE,NO,NONE,NO,NONE,SECRET_HASH,Service Role / Gateway,HMAC payload hash,Tamper detection,20261029000000_init,VERIFIED
+public,WebhookEvent,processingStatus,String,NO,PROCESSED,NO,NONE,NO,webhook_status_idx,INTERNAL,Service Role / Gateway,PROCESSED / FAILED,Processing state,20261029000000_init,VERIFIED
+public,WebhookEvent,receivedAt,DateTime,NO,now(),NO,NONE,NO,NONE,INTERNAL,Service Role / Gateway,Received timestamp,Ingress sequencing,20261029000000_init,VERIFIED
+public,Entitlement,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Entitlement,Entitlement ID,Granular entitlement,20261029000000_init,VERIFIED
+public,Entitlement,userId,String,NO,NONE,NO,User(id),NO,entitlement_user_idx,CONFIDENTIAL,Service Role / Entitlement,Customer ID,Customer feature gate,20261029000000_init,VERIFIED
+public,Entitlement,featureKey,String,NO,NONE,NO,NONE,NO,entitlement_feature_idx,INTERNAL,Service Role / Entitlement,Feature Key (PLUS/PREMIUM),Module gating check,20261029000000_init,VERIFIED
+public,Entitlement,source,Enum,NO,PAID,NO,NONE,NO,NONE,INTERNAL,Service Role / Entitlement,PAID / MANUAL_GRANT,Grant audit origin,20261029000000_init,VERIFIED
+public,Entitlement,grantedBy,String,NO,SYSTEM,NO,NONE,NO,NONE,INTERNAL,Service Role / Entitlement,Granting authority,Administrative provenance,20261029000000_init,VERIFIED
+public,Entitlement,grantedAt,DateTime,NO,now(),NO,NONE,NO,NONE,INTERNAL,Service Role / Entitlement,Grant timestamp,Validity period start,20261029000000_init,VERIFIED
+public,Entitlement,expiresAt,DateTime,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Entitlement,Expiration date,Auto-revocation check,20261029000000_init,VERIFIED
+public,Entitlement,isActive,Boolean,NO,true,NO,NONE,NO,entitlement_active_idx,INTERNAL,Service Role / Entitlement,Active toggle / pill,Enforcement state,20261029000000_init,VERIFIED
+public,Promotion,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Marketing,Promo ID,Coupon campaign record,20261029000000_init,VERIFIED
+public,Promotion,code,String,NO,NONE,NO,NONE,YES,promo_code_unique,INTERNAL,Service Role / Marketing,Coupon Code (DIWALI50),Checkout coupon validation,20261029000000_init,VERIFIED
+public,Promotion,description,String,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Marketing,Campaign description,Marketing presentation,20261029000000_init,VERIFIED
+public,Promotion,type,Enum,NO,PERCENTAGE,NO,NONE,NO,NONE,INTERNAL,Service Role / Marketing,PERCENTAGE / FIXED,Discount calculation rule,20261029000000_init,VERIFIED
+public,Promotion,value,Decimal(10;2),NO,NONE,NO,NONE,NO,NONE,FINANCIAL,Service Role / Marketing,Discount value (% or ₹),Discount amount deduction,20261029000000_init,VERIFIED
+public,Promotion,timesUsed,Integer,NO,0,NO,NONE,NO,NONE,INTERNAL,Service Role / Marketing,Redemption counter,Usage cap enforcement,20261029000000_init,VERIFIED
+public,Promotion,maxUses,Integer,YES,NULL,NO,NONE,NO,NONE,INTERNAL,Service Role / Marketing,Maximum allowed uses,Campaign budget cap,20261029000000_init,VERIFIED
+public,Promotion,status,Enum,NO,ACTIVE,NO,NONE,NO,promo_status_idx,INTERNAL,Service Role / Marketing,ACTIVE / EXPIRED pill,Campaign active state,20261029000000_init,VERIFIED
+public,PlatformIncident,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Incidents,Incident ID,Production alert record,20261029000000_init,VERIFIED
+public,PlatformIncident,title,String,NO,NONE,NO,NONE,NO,NONE,INTERNAL,Service Role / Incidents,Incident Title,Triage summary,20261029000000_init,VERIFIED
+public,PlatformIncident,severity,Enum,NO,P3,NO,NONE,NO,incident_severity_idx,SECURITY_CRITICAL,Service Role / Incidents,P0/P1/P2/P3 badge,Escalation level,20261029000000_init,VERIFIED
+public,PlatformIncident,status,Enum,NO,OPEN,NO,NONE,NO,incident_status_idx,INTERNAL,Service Role / Incidents,OPEN / RESOLVED pill,Incident lifecycle,20261029000000_init,VERIFIED
+public,PlatformIncident,createdAt,DateTime,NO,now(),NO,NONE,NO,NONE,INTERNAL,Service Role / Incidents,Declaration time,Incident timeline,20261029000000_init,VERIFIED
+public,PrivacyRequest,id,String,NO,uuid(),YES,NONE,YES,PRIMARY,INTERNAL,Service Role / Privacy,Request ID,DPDP request record,20261029000000_init,VERIFIED
+public,PrivacyRequest,userId,String,NO,NONE,NO,User(id),NO,privacy_user_idx,CONFIDENTIAL,Service Role / Privacy,Customer ID,Data subject reference,20261029000000_init,VERIFIED
+public,PrivacyRequest,requestType,Enum,NO,DATA_EXPORT,NO,NONE,NO,NONE,INTERNAL,Service Role / Privacy,EXPORT / DELETION badge,Compliance category,20261029000000_init,VERIFIED
+public,PrivacyRequest,status,Enum,NO,PENDING,NO,NONE,NO,privacy_status_idx,INTERNAL,Service Role / Privacy,PENDING / PROCESSED,Compliance resolution,20261029000000_init,VERIFIED
+public,PrivacyRequest,createdAt,DateTime,NO,now(),NO,NONE,NO,NONE,INTERNAL,Service Role / Privacy,Submission time,Statutory SLA timer,20261029000000_init,VERIFIED
