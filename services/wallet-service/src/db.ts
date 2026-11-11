@@ -1807,7 +1807,7 @@ class ResilientDatabase {
           this.prisma.user.count({ where: { mfaEnabled: true } }),
           this.prisma.user.count({ where: { role: { not: 'USER' } } }),
           this.prisma.user.count({ where: { role: { not: 'USER' }, status: 'ACTIVE' } }),
-          this.prisma.user.count({ where: { OR: [{ subscriptionTier: 'FREE' }, { subscriptionTier: null }] } }),
+          this.prisma.user.count({ where: { subscriptionTier: { notIn: ['PLUS', 'PREMIUM'] } } }),
           this.prisma.user.count({
             where: {
               subscriptionTier: { in: ['PLUS', 'PREMIUM'] },
