@@ -5763,11 +5763,12 @@
           }
 
           const supaSession = (await adminSupabaseClient.auth.getSession())?.data?.session;
+          const accessToken = verifyRes?.data?.access_token || supaSession?.access_token;
           const syncRes = await fetch(`${getAuthBase()}/api/auth/admin-supabase-session`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supaSession?.access_token}`
+              'Authorization': `Bearer ${accessToken}`
             },
             body: JSON.stringify({ action: 'ENROLLMENT_COMPLETED' })
           });
@@ -5851,11 +5852,12 @@
           }
 
           const supaSession = (await adminSupabaseClient.auth.getSession())?.data?.session;
+          const accessToken = verifyRes?.data?.access_token || supaSession?.access_token;
           const syncRes = await fetch(`${getAuthBase()}/api/auth/admin-supabase-session`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supaSession?.access_token}`
+              'Authorization': `Bearer ${accessToken}`
             },
             body: JSON.stringify({ action: 'CHALLENGE_COMPLETED' })
           });
@@ -5884,11 +5886,12 @@
               });
               if (verifyRes.error) throw verifyRes.error;
               const supaSession = (await adminSupabaseClient.auth.getSession())?.data?.session;
+              const accessToken = verifyRes?.data?.access_token || supaSession?.access_token;
               const syncRes = await fetch(`${getAuthBase()}/api/auth/admin-supabase-session`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${supaSession?.access_token}`
+                  'Authorization': `Bearer ${accessToken}`
                 },
                 body: JSON.stringify({ action: 'CHALLENGE_COMPLETED' })
               });
