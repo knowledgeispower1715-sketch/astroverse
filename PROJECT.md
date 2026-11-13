@@ -30,7 +30,7 @@
 |---|------|-------|-------------|--------|
 | M0 | Survey & Forensic Reproduction | Complete forensic sweep of repo, cloud logs, routing, dependencies | none | DONE |
 | M1 | Configuration Hardening & Local Verification | Implement `.vercelignore`, `vercel.json`, `turbo.json`, `package.json` & verify via `tsc`, contract suite, and unit/integration tests | M0 | DONE |
-| M2 | Git Push & Vercel Preview Deployment | Commit to branch `fix/enterprise-security-and-hardening`, push, and achieve status READY on Vercel Preview | M1 | IN_PROGRESS |
+| M2 | Git Push & Vercel Preview Deployment | Commit to branch `fix/enterprise-security-and-hardening`, push, and achieve status READY on Vercel Preview | M1 | DONE |
 | M3 | Live Preview Smoke Testing | Smoke test live endpoints on preview URL, verify MFA & Supabase connectivity with zero customer impact | M2 | PLANNED |
 | M4 | Root Cause & Recovery Report | Publish comprehensive 16-section `VERCEL_DEPLOYMENT_FAILURE_ROOT_CAUSE_AND_RECOVERY.md` report | M3 | PLANNED |
 
