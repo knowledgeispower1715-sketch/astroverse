@@ -1,0 +1,29 @@
+Module_ID,Module_Name,Route_Hash,API_Endpoint,HTTP_Method,Required_Role,Data_Rendering,Search_Filter,Mutation_Form,Operational_Status
+MOD-01,Executive Overview,#admin/modules/overview,/api/admin/overview,GET,OWNER; SUPER_ADMIN; READONLY_ADMIN,PASS,PASS,N/A,PASS
+MOD-02,User Directory,#admin/modules/users,/api/admin/users,GET; PUT,OWNER; SUPER_ADMIN,PASS,PASS,PASS,PASS
+MOD-03,Customer 360,#admin/modules/customer-360,/api/admin/users/:id/360,GET,OWNER; SUPER_ADMIN,PASS,PASS,N/A,PASS
+MOD-04,Transaction Ledger,#admin/modules/transactions,/api/admin/transactions,GET,OWNER; SUPER_ADMIN; FINANCIAL_AUDITOR,PASS,PASS,N/A,PASS
+MOD-05,Wallet Operations,#admin/modules/wallet,/api/admin/wallets,GET; POST,OWNER; SUPER_ADMIN; FINANCIAL_AUDITOR,PASS,PASS,PASS,PASS
+MOD-06,Cashfree Gateway Control,#admin/modules/cashfree,/api/admin/cashfree/config,GET; POST,OWNER; FINANCIAL_AUDITOR,PASS,PASS,PASS,PASS
+MOD-07,Financial Reconciliation,#admin/modules/reconciliation,/api/admin/reconciliation/run,GET; POST,OWNER; FINANCIAL_AUDITOR,PASS,PASS,PASS,PASS
+MOD-08,Subscription Plans,#admin/modules/subscriptions,/api/admin/subscriptions,GET; POST,OWNER; SUPER_ADMIN,PASS,PASS,PASS,PASS
+MOD-09,Products & Pricing Matrix,#admin/modules/products,/api/admin/pricing,GET; PUT,OWNER; SUPER_ADMIN,PASS,PASS,PASS,PASS
+MOD-10,Vedic Astrology Engine,#admin/modules/astrology,/api/admin/astrology/status,GET; POST,OWNER; SUPER_ADMIN,PASS,PASS,PASS,PASS
+MOD-11,AI Consultation Monitor,#admin/modules/ai-consultation,/api/admin/ai/metrics,GET,OWNER; SUPER_ADMIN,PASS,PASS,N/A,PASS
+MOD-12,Security & MFA Audit,#admin/modules/security,/api/admin/security/summary,GET; POST,OWNER; SECURITY_ADMIN,PASS,PASS,PASS,PASS
+MOD-13,Audit Trail & Governance,#admin/modules/audit,/api/admin/audit-logs,GET,OWNER; SECURITY_ADMIN; COMPLIANCE_OFFICER,PASS,PASS,N/A,PASS
+MOD-14,Promo Codes & Discounts,#admin/modules/promos,/api/admin/promotions,GET; POST; DELETE,OWNER; SUPER_ADMIN,PASS,PASS,PASS,PASS
+MOD-15,API Rate Limiting & Throttling,#admin/modules/ratelimits,/api/admin/ratelimits,GET; PUT,OWNER; SECURITY_ADMIN,PASS,PASS,PASS,PASS
+MOD-16,Database Reliability & Health,#admin/modules/database,/api/admin/database/health,GET; POST,OWNER; SECURITY_ADMIN,PASS,PASS,PASS,PASS
+MOD-17,Cloudflare Zero Trust Gateway,#admin/modules/cloudflare,/api/admin/cloudflare/status,GET; PUT,OWNER; SECURITY_ADMIN,PASS,PASS,PASS,PASS
+MOD-18,Analytics & Conversion Funnels,#admin/modules/analytics,/api/admin/analytics,GET,OWNER; SUPER_ADMIN,PASS,PASS,N/A,PASS
+MOD-19,Support Tickets & Inquiries,#admin/modules/support,/api/admin/support,GET; PUT,OWNER; SUPER_ADMIN; SUPPORT_AGENT,PASS,PASS,PASS,PASS
+MOD-20,System Configuration & Flags,#admin/modules/settings,/api/admin/settings,GET; PUT,OWNER; SUPER_ADMIN,PASS,PASS,PASS,PASS
+MOD-21,Geocoding & Regional Ephemeris,#admin/modules/geocoding,/api/admin/ephemeris/status,GET,OWNER; SUPER_ADMIN,PASS,PASS,N/A,PASS
+MOD-22,Platform Release & Versioning,#admin/modules/versioning,/api/release,GET,OWNER; SUPER_ADMIN,PASS,PASS,N/A,PASS
+HARN-01,Cashfree Order Simulator,#admin/tools/cashfree-simulator,/api/wallet/create-order,POST,OWNER; FINANCIAL_AUDITOR,PASS,N/A,PASS,PASS
+HARN-02,Tier Preview Harness,#admin/tools/tier-preview,/api/admin/preview-tier,POST,OWNER; SUPER_ADMIN,PASS,N/A,PASS,PASS
+HARN-03,Kundli Accuracy Inspector,#admin/tools/kundli-inspector,/api/kundli/calculate,POST,OWNER; SUPER_ADMIN,PASS,N/A,PASS,PASS
+HARN-04,PDF Chapter Quality Rig,#admin/tools/pdf-rig,/api/reports/preview,POST,OWNER; SUPER_ADMIN,PASS,N/A,PASS,PASS
+HARN-05,Security Boundary Explorer,#admin/tools/security-explorer,/api/admin/security/probe,POST,OWNER; SECURITY_ADMIN,PASS,N/A,PASS,PASS
+HARN-06,Offline Resilience Sandbox,#admin/tools/offline-sandbox,/api/health,GET,OWNER; SUPER_ADMIN,PASS,N/A,PASS,PASS

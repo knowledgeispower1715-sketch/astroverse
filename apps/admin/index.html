@@ -3690,10 +3690,19 @@
     document.body.classList.add('admin-mode');
     const loginView = document.getElementById('view-admin-login');
     const adminView = document.getElementById('view-admin');
+    const enrollView = document.getElementById('view-admin-mfa-enrollment');
+    const challengeView = document.getElementById('view-admin-mfa-challenge');
     const navUser = document.getElementById('admin-nav-user');
+    const mfaContainer = document.getElementById('admin-mfa-container');
+    const errBox = document.getElementById('admin-login-error');
+
     if (adminView) { adminView.classList.remove('active'); adminView.style.display = 'none'; }
+    if (enrollView) { enrollView.classList.remove('active'); enrollView.style.display = 'none'; }
+    if (challengeView) { challengeView.classList.remove('active'); challengeView.style.display = 'none'; }
     if (loginView) { loginView.classList.add('active'); loginView.style.display = 'flex'; }
     if (navUser) navUser.style.display = 'none';
+    if (mfaContainer) mfaContainer.style.display = 'none';
+    if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
   }
 
   // Simulation Helpers for Test Harnesses
@@ -5718,6 +5727,32 @@
       switchNavSection('admin');
     }
 
+    function formatMfaErrorMessage(err) {
+      if (!err) return 'Verification failed. Please check the 6-digit code and try again.';
+      const msg = err.message || '';
+      const code = (err.code || err.name || '').toLowerCase();
+      const combined = `${code} ${msg}`.toLowerCase();
+      if (combined.includes('expired')) {
+        return 'The verification challenge has expired. A fresh challenge will be generated on your next attempt.';
+      }
+      if (combined.includes('factor_not_found') || combined.includes('factor not found')) {
+        return 'The enrolled authenticator factor could not be found. Please contact administration.';
+      }
+      if (combined.includes('rate_limit') || combined.includes('over_request') || combined.includes('too many')) {
+        return 'Too many verification attempts. Please wait a moment before trying again.';
+      }
+      if (combined.includes('invalid') || combined.includes('verification_failed') || combined.includes('verification code')) {
+        return 'Invalid two-factor authentication code. Verify device clock sync or enter a fresh code.';
+      }
+      if (combined.includes('ip_address') || combined.includes('ip mismatch')) {
+        return 'Network IP address change detected during verification. Please try again.';
+      }
+      if (combined.includes('insufficient_aal') || combined.includes('aal')) {
+        return 'Session assurance level is insufficient. Please re-authenticate.';
+      }
+      return msg || 'Verification failed. Please check the 6-digit code and try again.';
+    }
+
     async function handleVerifyMfaEnrollment(e) {
       if (e) e.preventDefault();
       const code = document.getElementById('mfa-enroll-code')?.value?.trim();
@@ -5803,7 +5838,7 @@
         }
       } catch (err) {
         if (errBox) {
-          errBox.textContent = err.message || 'Verification failed. Please check the 6-digit code and try again.';
+          errBox.textContent = formatMfaErrorMessage(err);
           errBox.style.display = 'block';
         }
       } finally {
@@ -5924,7 +5959,7 @@
         }
       } catch (err) {
         if (errBox) {
-          errBox.textContent = err.message || 'Verification failed. Please check the 6-digit code and try again.';
+          errBox.textContent = formatMfaErrorMessage(err);
           errBox.style.display = 'block';
         }
       } finally {
