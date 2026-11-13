@@ -34,6 +34,8 @@
       "root": "services/consultation-service",
       "runtime": "node",
       "entrypoint": "server.ts",
+      "installCommand": "npm ci",
+      "buildCommand": "npm run build",
       "bindings": [
         {
           "type": "service",
@@ -53,6 +55,7 @@
       "framework": "express",
       "entrypoint": "src/server.ts",
       "installCommand": "npm ci",
+      "buildCommand": "npm run build",
       "bindings": [
         {
           "type": "service",

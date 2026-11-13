@@ -1,6 +1,7 @@
 {
   "name": "consultation-service",
   "version": "1.0.0",
+  "packageManager": "npm@11.16.0",
   "scripts": {
     "dev": "ts-node server.ts",
     "build": "echo 'Consultation service ready'"
