@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
   "headers": [
     {
       "source": "/(.*)",
@@ -51,6 +52,7 @@
       "root": "services/wallet-service",
       "framework": "express",
       "entrypoint": "src/server.ts",
+      "installCommand": "npm ci",
       "bindings": [
         {
           "type": "service",
