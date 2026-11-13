@@ -1,0 +1,23 @@
+ModuleID,ModuleName,Category,PrimaryEndpointOrRoute,AuthRequirement,FunctionalStatus,VerificationMethod
+MOD-01,Daily Horoscope,Astrology Core,/api/horoscope/daily,Public,VERIFIED,Automated test & DOM inspection
+MOD-02,Janam Kundli Generator,Astrology Core,/api/astrology/kundli,Optional (Saved: Auth),VERIFIED,Swiss Ephemeris math & SVG Chart Render
+MOD-03,Planetary Dignities & Ephemeris,Astrology Core,/api/astrology/planets,Public,VERIFIED,Mathematical calculation against astronomical tables
+MOD-04,Vimshottari Dasha Engine,Astrology Core,/api/astrology/dasha,Optional,VERIFIED,Nested 3-tier timeline calculation
+MOD-05,Solar Horas & Muhurat,Timing & Horas,/api/astrology/horas,Public,VERIFIED,Solar sunrise/sunset algorithm & real-time clock
+MOD-06,Vedic Panchang,Timing & Horas,/api/astrology/panchang,Public,VERIFIED,Geographic latitude/longitude solar-lunar offset
+MOD-07,Ashtakoota Matchmaking,Compatibility,/api/astrology/matchmaking,Public,VERIFIED,36 Guna scoring engine & Mangal Dosha cross-check
+MOD-08,AI Astrologer Consultation,AI Consultation,/api/ai/consultation,Bearer Token (Active Balance),VERIFIED,SSE stream & credit per-minute decrement
+MOD-09,Vedic Numerology Studio,Numerology Tools,/api/tools/numerology,Public,VERIFIED,Chaldean & Pythagorean name harmonic matrix
+MOD-10,Personalized Reports Store,Reports & Publishing,/api/reports/catalogue,Bearer Token,VERIFIED,9 report catalog with dynamic PDF generation
+MOD-11,Wallet Recharge & Invoicing,Payments & Billing,/api/wallet/create-order,Bearer Token,VERIFIED,Cashfree v6 Order API + 18% GST invoice calculation
+MOD-12,Payment Verification Flow,Payments & Billing,/api/wallet/verify-payment,Bearer Token,VERIFIED,Cashfree v6 Payment Status query & double-entry credit
+MOD-13,Cashfree Webhook Handler,Payments & Billing,/api/wallet/webhook,HMAC-SHA256 Signature,VERIFIED,24 regression security tests passing (100%)
+MOD-14,User Profile Manager,Account Management,/api/profiles,Bearer Token,VERIFIED,Prisma PostgreSQL CRUD with RLS tenant isolation
+MOD-15,Admin KPI Dashboard,Administration,/api/admin/overview,Super Admin JWT,VERIFIED,Aggregated SQL queries & real-time analytics
+MOD-16,Admin User Directory,Administration,/api/admin/users,Super Admin JWT,VERIFIED,Paginated query with balance adjustment controls
+MOD-17,Admin Financial Ledger,Administration,/api/admin/transactions,Super Admin JWT,VERIFIED,Immutable transaction ledger & payment status logs
+MOD-18,Admin Security & Audit Trail,Administration,/api/admin/audit-logs,Super Admin JWT,VERIFIED,Security event logging & rate-limit violation capture
+MOD-19,Admin Gateway Config,Administration,/api/admin/gateway-config,Super Admin JWT,VERIFIED,PostgreSQL FeatureFlag sync & dynamic credential reload
+MOD-20,Bilingual Hindi/English,Localization,Client-side i18n,Public,VERIFIED,Language toggle switch across all 22 modules
+MOD-21,Responsive Cross-Device,UX & Design,Client-side Viewport,Public,VERIFIED,8 distinct device viewports (360px to 1920px)
+MOD-22,Accessibility Controls,Compliance & A11y,Client-side ARIA,Public,VERIFIED,WCAG 2.2 Level AA keyboard navigation & screen-reader tags

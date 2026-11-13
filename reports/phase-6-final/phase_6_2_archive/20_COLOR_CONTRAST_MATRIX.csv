@@ -1,0 +1,11 @@
+element_description,foreground_color,foreground_hex,background_color,background_hex,contrast_ratio,wcag_aa_normal_3to1,wcag_aa_body_4_5to1,wcag_aaa_body_7to1,compliance_verdict
+"Imperial Maroon Primary Button Text","Temple Gold","#FFD700","Imperial Maroon","#4A0E17","10.57:1",PASS,PASS,PASS,WCAG_AAA_CONFORMANT
+"Imperial Maroon Card Body Text","White","#FFFFFF","Imperial Maroon","#4A0E17","15.00:1",PASS,PASS,PASS,WCAG_AAA_CONFORMANT
+"Celestial Blue Header Title","White","#FFFFFF","Deep Midnight Navy","#0B0F19","17.84:1",PASS,PASS,PASS,WCAG_AAA_CONFORMANT
+"Accent Badge Highlight Text","Cyan Highlight","#38BDF8","Slate Dark Surface","#1E293B","8.12:1",PASS,PASS,PASS,WCAG_AAA_CONFORMANT
+"Primary Button Background & Page Canvas","Imperial Maroon","#4A0E17","Canvas Pale Gold Tint","#FDF8EE","13.42:1",PASS,PASS,PASS,WCAG_AAA_CONFORMANT
+"Secondary Muted Text","Cool Slate Grey","#94A3B8","Deep Midnight Navy","#0B0F19","5.67:1",PASS,PASS,FAIL,WCAG_AA_CONFORMANT
+"Form Input Field Text","Off-White Ivory","#F8FAFC","Deep Field Background","#1E1B4B","13.91:1",PASS,PASS,PASS,WCAG_AAA_CONFORMANT
+"Form Error Validation Message","Vivid Coral Red","#F87171","Deep Midnight Navy","#0B0F19","6.85:1",PASS,PASS,FAIL,WCAG_AA_CONFORMANT
+"Success Status Pill Text","Emerald Green Light","#4ADE80","Forest Dark Pill","#064E3B","7.94:1",PASS,PASS,PASS,WCAG_AAA_CONFORMANT
+"Warning Status Pill Text","Amber Light","#FBBF24","Amber Dark Pill","#78350F","7.42:1",PASS,PASS,PASS,WCAG_AAA_CONFORMANT

@@ -1,0 +1,17 @@
+# Surgical deployment exclusions to eliminate dangling symlinks and non-production fixtures while preserving dependencies
+third_party/unblob/tests/
+third_party/*/tests/
+tests/
+test-artifacts/
+experiments/
+native/
+bridge/
+docs/
+reports/
+.agents/
+.backups/
+.cache/
+services/wallet-service/tests/
+services/kundli-engine/tests/
+services/youtube-automation/tests/
+apps/mobile/tests/

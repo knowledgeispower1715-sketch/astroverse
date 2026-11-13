@@ -5,6 +5,20 @@
   "globalDependencies": [".nvmrc", ".npmrc"],
   "globalPassThroughEnv": ["GOMAXPROCS", "GOMEMLIMIT", "UV_THREADPOOL_SIZE"],
   "tasks": {
+    "build": {
+      "dependsOn": ["compile", "artifacts:skills"],
+      "inputs": [
+        "package.json",
+        "package-lock.json",
+        "src/**/*.{cts,mts,ts,tsx}",
+        "src/**/package.json",
+        "!src/**/*.test.ts",
+        "!src/**/*.fixture.ts",
+        "tsconfig.json",
+        "tsconfig.build.json"
+      ],
+      "outputs": ["dist/**", "skills/**"]
+    },
     "compile": {
       "dependsOn": ["metadata:check"],
       "inputs": [

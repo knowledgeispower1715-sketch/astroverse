@@ -1,15 +1,19 @@
 {
   "name": "consultation-service",
   "version": "1.0.0",
+  "packageManager": "npm@11.16.0",
   "scripts": {
     "dev": "ts-node server.ts",
     "build": "echo 'Consultation service ready'"
   },
   "dependencies": {
+    "@types/node": "^20.11.30",
     "axios": "^1.6.8",
     "dotenv": "^16.4.5",
     "ioredis": "^5.3.2",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

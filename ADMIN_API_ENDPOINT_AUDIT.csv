@@ -1,0 +1,59 @@
+Endpoint ID,Method,Path,Auth Requirement,Rate Limiting,Input Validation,Audit Log Action,Expected Success,Expected Failure
+API-001,GET,/api/admin/session/policy,Public (Informational),Standard,None,None,200 OK,None
+API-002,GET,/api/admin/mfa/status,"Bearer JWT + requireAdmin()",Standard,None,None,200 OK,401 / 403
+API-003,POST,/api/auth/admin-supabase-session,Bearer Supabase JWT,authLimiter (5/min),Valid token + AAL claim,ADMIN_LOGIN / ADMIN_MFA_ENROLLMENT_STARTED,200 OK,401 / 403 / 503
+API-004,POST,/api/auth/admin-login,"Email + Password (+ TOTP)",authLimiter (5/min),Valid email + pass (Rejects Owner with 403),ADMIN_LOGIN,200 OK / 403,401 / 403
+API-005,POST,/api/auth/admin-logout,Bearer Session or Body token,Standard,Token string,ADMIN_LOGOUT,200 OK,None
+API-006,POST,/api/auth/admin-refresh,Bearer Session + requireAdmin(),Standard,Valid session,None,200 OK,401 / 403
+API-007,GET,/api/admin/overview,"Bearer + requireAdmin(VIEW_OVERVIEW)",Standard,Date query params,None,200 OK,401 / 403
+API-008,GET,/api/admin/users,"Bearer + requireAdmin(VIEW_USERS)",Standard,Page / limit / search / role / status,None,200 OK,401 / 403
+API-009,GET,/api/admin/users/:id/details,"Bearer + requireAdmin(VIEW_USERS)",Standard,UUID path param,None,200 OK,401 / 403 / 404
+API-010,PUT,/api/admin/users/:id/status,"Bearer + requireAdmin(MANAGE_USER_STATUS) + requireAdminAssurance()",adminSensitiveMutationsLimiter,Valid AccountStatus enum,USER_STATUS_UPDATED,200 OK,400 / 401 / 403 / 428
+API-011,GET,/api/admin/roles/matrix,"Bearer + requireAdmin(VIEW_ROLES)",Standard,None,None,200 OK,401 / 403
+API-012,GET,/api/admin/roles/admins,"Bearer + requireAdmin(VIEW_ROLES)",Standard,None,None,200 OK,401 / 403
+API-013,PUT,/api/admin/users/:id/role,"Bearer + requireAdmin(MANAGE_ROLES) + requireAdminAssurance()",adminSensitiveMutationsLimiter,Valid Role enum,USER_ROLE_UPDATED,200 OK,400 / 401 / 403 / 428
+API-014,GET,/api/admin/security/events,"Bearer + requireAdmin(VIEW_SECURITY_EVENTS)",Standard,Limit / offset / action filter,None,200 OK,401 / 403
+API-015,POST,/api/admin/users/:id/revoke-sessions,"Bearer + requireAdmin(MANAGE_SECURITY_MFA) + requireAdminAssurance()",adminSensitiveMutationsLimiter,UUID param,ADMIN_REVOKE_SESSIONS,200 OK,401 / 403 / 428
+API-016,GET,/api/admin/astrology/health,"Bearer + requireAdmin(VIEW_ASTROLOGY_HEALTH)",Standard,None,None,200 OK,401 / 403
+API-017,POST,/api/admin/astrology/test-calculation,"Bearer + requireAdmin(VIEW_ASTROLOGY_HEALTH)",Standard,Date / time / lat / lon coords,None,200 OK,400 / 401 / 403
+API-018,GET,/api/admin/reports/diagnostics,"Bearer + requireAdmin(VIEW_REPORT_DIAGNOSTICS)",Standard,Status / type query params,None,200 OK,401 / 403
+API-019,POST,/api/admin/reports/:id/retry,"Bearer + requireAdmin(RETRY_FAILED_REPORTS) + requireAdminAssurance('reports:retry')",Standard,Report ID param,REPORT_RETRY_INITIATED,200 OK,401 / 403 / 404 / 428
+API-020,GET,/api/admin/ai/usage,"Bearer + requireAdmin(VIEW_AI_USAGE)",Standard,Date range query,None,200 OK,401 / 403
+API-021,PUT,/api/admin/ai/quotas,"Bearer + requireAdmin(MANAGE_AI_QUOTAS) + requireAdminAssurance()",Standard,Quota payload per persona,AI_QUOTA_UPDATED,200 OK,400 / 401 / 403 / 428
+API-022,GET,/api/admin/payment-readiness,"Bearer + requireAdmin(VIEW_PAYMENTS)",Standard,None,None,200 OK,401 / 403
+API-023,POST,/api/admin/payments/reconcile,"Bearer + requireAdmin(RECONCILE_PAYMENTS)",adminSensitiveMutationsLimiter,None,PAYMENT_RECONCILIATION_RUN,200 OK,401 / 403
+API-024,POST,/api/admin/payments/recover-order,"Bearer + requireAdmin(RECONCILE_PAYMENTS)",adminSensitiveMutationsLimiter,Order ID param,PAYMENT_ORDER_RECOVERED,200 OK,401 / 403 / 404
+API-025,POST,/api/admin/payments/refund,"Bearer + requireAdmin(MANAGE_REFUNDS) + requireAdminAssurance()",adminSensitiveMutationsLimiter,Payment ID + amount + reason,PAYMENT_REFUND_ISSUED,200 OK,400 / 401 / 403 / 428
+API-026,POST,/api/admin/wallet/adjust-balance,"Bearer + requireAdmin(MANAGE_WALLET) + requireAdminAssurance('wallet:adjust')",adminSensitiveMutationsLimiter,User ID + amount + reason,ADMIN_WALLET_ADJUSTED,200 OK,400 / 401 / 403 / 428
+API-027,POST,/api/admin/gateway-credentials,"Bearer + requireAdmin(OWNER) + requireAdminAssurance('gateway:credentials')",adminSensitiveMutationsLimiter,App ID + Secret Key,GATEWAY_CREDENTIALS_UPDATED,200 OK,400 / 401 / 403 / 428
+API-028,GET,/api/admin/subscriptions,"Bearer + requireAdmin(VIEW_SUBSCRIPTIONS)",Standard,Status / tier filter,None,200 OK,401 / 403
+API-029,POST,/api/admin/subscriptions/assign,"Bearer + requireAdmin(MANAGE_SUBSCRIPTIONS) + requireAdminAssurance('subscriptions:assign')",adminSensitiveMutationsLimiter,User ID + tier + duration,SUBSCRIPTION_ASSIGNED,200 OK,400 / 401 / 403 / 428
+API-030,POST,/api/admin/subscriptions/extend,"Bearer + requireAdmin(MANAGE_SUBSCRIPTIONS) + requireAdminAssurance('subscriptions:extend')",adminSensitiveMutationsLimiter,Subscription ID + days,SUBSCRIPTION_EXTENDED,200 OK,400 / 401 / 403 / 428
+API-031,POST,/api/admin/subscriptions/cancel,"Bearer + requireAdmin(MANAGE_SUBSCRIPTIONS) + requireAdminAssurance('subscriptions:cancel')",adminSensitiveMutationsLimiter,Subscription ID,SUBSCRIPTION_CANCELLED,200 OK,400 / 401 / 403 / 428
+API-032,GET,/api/admin/content,"Bearer + requireAdmin(VIEW_CONTENT)",Standard,Key param,None,200 OK,401 / 403
+API-033,PUT,/api/admin/content/:key,"Bearer + requireAdmin(MANAGE_CONTENT) + requireAdminAssurance('content:manage')",Standard,Content text / schedule object,CONTENT_UPDATED,200 OK,400 / 401 / 403 / 428
+API-034,GET,/api/admin/settings/safe,"Bearer + requireAdmin(VIEW_SETTINGS)",Standard,None (Redacted secrets),None,200 OK,401 / 403
+API-035,GET,/api/admin/settings/flags,"Bearer + requireAdmin(VIEW_SETTINGS)",Standard,None,None,200 OK,401 / 403
+API-036,PUT,/api/admin/settings/flags/:key,"Bearer + requireAdmin(MANAGE_FEATURE_FLAGS) + requireAdminAssurance()",Standard,Boolean enabled flag,FEATURE_FLAG_TOGGLED,200 OK,400 / 401 / 403 / 428
+API-037,GET,/api/admin/privacy/requests,"Bearer + requireAdmin(VIEW_PRIVACY_REQUESTS)",Standard,Status query,None,200 OK,401 / 403
+API-038,PUT,/api/admin/privacy/requests/:id,"Bearer + requireAdmin(MANAGE_PRIVACY_REQUESTS) + requireAdminAssurance('privacy:manage')",Standard,Action + resolution notes,PRIVACY_REQUEST_RESOLVED,200 OK,400 / 401 / 403 / 428
+API-039,GET,/api/admin/audit-logs,"Bearer + requireAdmin(VIEW_AUDIT_LOGS)",Standard,Actor / action / date filter,None,200 OK,401 / 403
+API-040,GET,/api/admin/integrations,"Bearer + requireAdmin(VIEW_INTEGRATIONS)",Standard,None,None,200 OK,401 / 403
+API-041,GET,/api/admin/monitoring/incidents,"Bearer + requireAdmin(VIEW_INCIDENTS)",Standard,Open / closed filter,None,200 OK,401 / 403
+API-042,POST,/api/admin/monitoring/incidents,"Bearer + requireAdmin(MANAGE_INCIDENTS) + requireAdminAssurance()",Standard,Title + severity + description,INCIDENT_CREATED,200 OK,400 / 401 / 403 / 428
+API-043,PUT,/api/admin/monitoring/incidents/:id,"Bearer + requireAdmin(MANAGE_INCIDENTS)",Standard,Status update payload,INCIDENT_UPDATED,200 OK,400 / 401 / 403
+API-044,GET,/api/admin/database/monitor,"Bearer + requireAdmin(VIEW_DATABASE)",Standard,None,None,200 OK,401 / 403
+API-045,GET,/api/admin/database/schema-status,"Bearer + requireAdmin(VIEW_DATABASE)",Standard,None,None,200 OK,401 / 403
+API-046,POST,/api/admin/database/ping,"Bearer + requireAdmin(VIEW_DATABASE)",Standard,None,None,200 OK,401 / 403
+API-047,GET,/api/admin/analytics/overview,"Bearer + requireAdmin(VIEW_ANALYTICS)",Standard,Date window,None,200 OK,401 / 403
+API-048,GET,/api/admin/customers/:id/360,"Bearer + requireAdmin(VIEW_CUSTOMER_360)",Standard,Customer UUID,None,200 OK,401 / 403 / 404
+API-049,POST,/api/admin/customers/:id/notes,"Bearer + requireAdmin(MANAGE_CUSTOMER_NOTES)",Standard,Text string note,CUSTOMER_NOTE_ATTACHED,200 OK,400 / 401 / 403 / 404
+API-050,GET,/api/admin/entitlements,"Bearer + requireAdmin(MANAGE_ENTITLEMENTS)",Standard,User ID filter,None,200 OK,401 / 403
+API-051,POST,/api/admin/entitlements/grant,"Bearer + requireAdmin(MANAGE_ENTITLEMENTS) + requireAdminAssurance('entitlements:grant')",adminSensitiveMutationsLimiter,User ID + SKU + expiresAt,ENTITLEMENT_GRANTED,200 OK,400 / 401 / 403 / 428
+API-052,POST,/api/admin/entitlements/revoke,"Bearer + requireAdmin(MANAGE_ENTITLEMENTS) + requireAdminAssurance('entitlements:revoke')",adminSensitiveMutationsLimiter,Entitlement ID + reason,ENTITLEMENT_REVOKED,200 OK,400 / 401 / 403 / 428
+API-053,GET,/api/admin/promotions,"Bearer + requireAdmin(MANAGE_PROMOTIONS)",Standard,None,None,200 OK,401 / 403
+API-054,POST,/api/admin/promotions,"Bearer + requireAdmin(MANAGE_PROMOTIONS) + requireAdminAssurance('promotions:create')",adminSensitiveMutationsLimiter,Coupon code + discount + limits,PROMOTION_CREATED,200 OK,400 / 401 / 403 / 428
+API-055,PUT,/api/admin/promotions/:id/status,"Bearer + requireAdmin(MANAGE_PROMOTIONS) + requireAdminAssurance('promotions:status')",adminSensitiveMutationsLimiter,Boolean active state,PROMOTION_STATUS_UPDATED,200 OK,400 / 401 / 403 / 428
+API-056,GET,/api/admin/consultations,"Bearer + requireAdmin(VIEW_CONSULTATIONS)",Standard,Date range / astrologer filter,None,200 OK,401 / 403
+API-057,GET,/api/admin/astrologers,"Bearer + requireAdmin(VIEW_CONSULTATIONS)",Standard,None,None,200 OK,401 / 403
+API-058,POST,/api/admin/astrologers/:id/verify,"Bearer + requireAdmin(MANAGE_CONSULTATIONS) + requireAdminAssurance('astrologer:verify')",Standard,Astrologer ID + verification notes,ASTROLOGER_VERIFIED,200 OK,400 / 401 / 403 / 428

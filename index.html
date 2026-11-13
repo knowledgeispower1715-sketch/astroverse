@@ -10985,6 +10985,9 @@
         const dockChat = document.getElementById('mob-dock-chat');
         if (dockChat) dockChat.classList.add('active');
         return;
+      } else if (sectionId === 'pricing' || sectionId === 'plans' || sectionId === 'subscriptions') {
+        openPricingPlansModal();
+        return;
       }
 
       if (authRoutes.includes(sectionId)) {
@@ -13860,7 +13863,11 @@
       if (typeof setGuidanceState === 'function') {
         setGuidanceState('PERSONALIZED_READY', { chart: currentCalculatedChart });
       }
-      generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+      try {
+        generatePersonalizedGuidance(currentGuidanceHorizon || 'hourly');
+      } catch (gErr) {
+        console.warn("Guidance UI update notice:", gErr);
+      }
 
       // Planetary Table
       const tbody = document.getElementById('tbody-planetary-positions');
@@ -15171,9 +15178,7 @@
           renderMatchmakingResultUI(data);
           return;
         } else {
-          const errData = await res.json().catch(() => ({}));
-          showToast(errData.detail || "Failed to calculate Kundli Milan. Please verify coordinates.", "error");
-          return;
+          console.warn("Backend matchmaking API returned non-OK status, falling back to client astronomical engine.");
         }
       } catch (err) {
         console.warn("Backend matchmaking API unreachable, executing client mathematical fallback:", err);
@@ -16877,6 +16882,9 @@
 
     async function executeSelectedRecharge() {
       if (!currentSessionToken) {
+        currentSessionToken = localStorage.getItem('astro_session_token') || localStorage.getItem('astroverse_session_token') || '';
+      }
+      if (!currentSessionToken) {
         showToast("Please sign in to recharge your wallet.", "error");
         openAuthModal();
         return;
@@ -16940,8 +16948,20 @@
             handleAuthExpired({ type: 'recharge', pack: selectedRechargePack });
             return;
           }
+          let displayMsg = errData.message || errData.error;
+          if (orderRes.status === 403) {
+            displayMsg = errData.message || "Payment authorization denied. Your account may be restricted or inactive.";
+          } else if (orderRes.status === 503) {
+            displayMsg = errData.customerMessage || errData.message || "Online payment gateway is temporarily unavailable or undergoing maintenance. Please try again shortly.";
+          } else if (orderRes.status >= 500) {
+            displayMsg = errData.message || "Payment service is currently unavailable. Please try again in a few moments.";
+          } else if (!displayMsg) {
+            displayMsg = "Failed to create payment order. Gateway unavailable.";
+          }
           setPaymentState(PAYMENT_STATES.FAILED, {
-            message: errData.message || "Failed to create payment order. Gateway unavailable.",
+            error: errData.error,
+            readinessState: errData.readinessState,
+            message: displayMsg,
             retryFn: () => executeSelectedRecharge()
           });
           return;
@@ -16965,22 +16985,29 @@
           paymentSessionId: orderData.paymentSessionId
         });
 
-        await loadCashfreeSDK();
+        const sdkMode = (orderData.environment === 'production' || window.CASHFREE_ENV === 'production' || (orderData.checkoutUrl && orderData.checkoutUrl.includes('api.cashfree.com'))) ? 'production' : 'sandbox';
+        window.CASHFREE_ENV = sdkMode;
 
-        if (typeof window.Cashfree !== 'function') {
-          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+        try {
+          await loadCashfreeSDK(8000);
+        } catch (sdkLoadErr) {
+          console.warn("Cashfree JS SDK loading failed or timed out, executing hosted fallback:", sdkLoadErr);
           submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
           return;
         }
 
-        const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+        if (typeof window.Cashfree !== 'function') {
+          submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          return;
+        }
+
         const cashfree = window.Cashfree({ mode: sdkMode });
 
         setPaymentState(PAYMENT_STATES.CHECKOUT_OPEN, {
           orderId: orderData.orderId
         });
 
-        // Close recharge modal cleanly before navigation
+        // Close recharge modal cleanly before opening Cashfree Drop-in
         closeWalletModal();
 
         try {
@@ -16989,8 +17016,20 @@
             redirectTarget: '_self'
           });
           if (checkoutResult && checkoutResult.error) {
-            console.warn("Cashfree wallet checkout returned error, executing hosted fallback:", checkoutResult.error);
+            console.warn("Cashfree Drop-in closed or returned notice:", checkoutResult.error);
+            if (checkoutResult.error.code === 'user_cancelled') {
+              showToast("Payment cancelled. You can retry anytime.", "info");
+              setPaymentState(PAYMENT_STATES.IDLE);
+              return;
+            }
             submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          } else if (checkoutResult && checkoutResult.paymentDetails) {
+            // Payment attempt completed in modal -> verify on backend
+            setPaymentState(PAYMENT_STATES.PROCESSING, {
+              orderId: orderData.orderId,
+              message: "Verifying payment with bank..."
+            });
+            await verifyAndCreditWallet(orderData.orderId, '', '');
           }
         } catch (sdkErr) {
           console.warn("Cashfree wallet checkout threw, executing hosted fallback:", sdkErr);
@@ -17003,8 +17042,12 @@
           targetBtn.innerHTML = originalBtnHtml;
         }
         console.error("Wallet checkout error:", err);
+        const isNetworkErr = !navigator.onLine || (err instanceof TypeError) || err?.name === 'TypeError' || err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError');
+        const netMsg = isNetworkErr
+          ? "Network connection offline or unreachable. Please verify your internet connection and retry."
+          : (err?.message || "Failed to initiate payment. Please try again.");
         setPaymentState(PAYMENT_STATES.FAILED, {
-          message: err.message || "Network error while connecting to payment gateway.",
+          message: netMsg,
           retryFn: () => executeSelectedRecharge()
         });
       }
@@ -22506,21 +22549,33 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
     function submitCashfreeHostedFallback(paymentSessionId, env) {
       if (!paymentSessionId) return;
-      const baseUrl = (env === 'production' || window.CASHFREE_ENV === 'production')
-        ? 'https://api.cashfree.com'
-        : 'https://sandbox.cashfree.com';
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = `${baseUrl}/pg/view/sessions/checkout`;
-      form.target = '_self';
-      form.style.display = 'none';
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'payment_session_id';
-      input.value = paymentSessionId;
-      form.appendChild(input);
-      document.body.appendChild(form);
-      form.submit();
+      const sdkMode = (env === 'production' || window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+      if (typeof window.Cashfree === 'function') {
+        try {
+          const cashfree = window.Cashfree({ mode: sdkMode });
+          cashfree.checkout({ paymentSessionId: paymentSessionId, redirectTarget: '_self' });
+          return;
+        } catch (e) {
+          console.warn('[Cashfree] SDK hosted redirect attempt error:', e);
+        }
+      }
+      // If Cashfree JS constructor is unavailable, perform direct hosted form submit to pg/view/sessions/checkout
+      const baseUrl = sdkMode === 'production' ? 'https://api.cashfree.com' : 'https://sandbox.cashfree.com';
+      try {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `${baseUrl}/pg/view/sessions/checkout`;
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'payment_session_id';
+        input.value = paymentSessionId;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+        return;
+      } catch (err) {
+        window.location.href = `${baseUrl}/checkout/?payment_session_id=${encodeURIComponent(paymentSessionId)}`;
+      }
     }
 
     function monitorCashfreeModalIframe(paymentSessionId, sdkMode, timeoutMs = 3500) {
@@ -22567,24 +22622,93 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       };
     }
 
-    function loadCashfreeSDK() {
-      return new Promise((resolve, reject) => {
+    let cashfreeSdkPromise = null;
+    let cashfreeSdkLoadFailed = false;
+
+    function loadCashfreeSDK(timeoutMs = 8000) {
+      if (typeof window.Cashfree === 'function') {
+        return Promise.resolve(window.Cashfree);
+      }
+      if (cashfreeSdkPromise && !cashfreeSdkLoadFailed) {
+        return cashfreeSdkPromise;
+      }
+
+      cashfreeSdkPromise = new Promise((resolve, reject) => {
+        let timer = null;
+        let settled = false;
+
+        const onSettled = (fn, arg) => {
+          if (settled) return;
+          settled = true;
+          if (timer) {
+            clearTimeout(timer);
+            timer = null;
+          }
+          fn(arg);
+        };
+
+        timer = setTimeout(() => {
+          cashfreeSdkLoadFailed = true;
+          cashfreeSdkPromise = null;
+          onSettled(reject, new Error(`Cashfree SDK loading timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        // Check again in case SDK was initialized while entering
         if (typeof window.Cashfree === 'function') {
-          return resolve(window.Cashfree);
+          return onSettled(resolve, window.Cashfree);
         }
-        const existingScript = document.querySelector('script[src*="cashfree.js"]');
-        if (existingScript) {
-          existingScript.addEventListener('load', () => resolve(window.Cashfree));
-          existingScript.addEventListener('error', () => reject(new Error('Failed to load Cashfree checkout SDK')));
-          if (typeof window.Cashfree === 'function') return resolve(window.Cashfree);
-          return;
+
+        // Look for existing script element
+        let script = document.querySelector('script[src*="cashfree.js"]');
+        if (script) {
+          if (script.getAttribute('data-failed') === 'true') {
+            script.remove();
+            script = null;
+          } else {
+            script.addEventListener('load', () => {
+              if (typeof window.Cashfree === 'function') {
+                cashfreeSdkLoadFailed = false;
+                onSettled(resolve, window.Cashfree);
+              } else {
+                cashfreeSdkLoadFailed = true;
+                cashfreeSdkPromise = null;
+                onSettled(reject, new Error('Cashfree SDK script loaded but window.Cashfree is not defined'));
+              }
+            });
+            script.addEventListener('error', () => {
+              cashfreeSdkLoadFailed = true;
+              cashfreeSdkPromise = null;
+              if (script) script.setAttribute('data-failed', 'true');
+              onSettled(reject, new Error('Failed to load Cashfree checkout SDK from CDN'));
+            });
+            return;
+          }
         }
-        const script = document.createElement('script');
+
+        // Create new script tag
+        script = document.createElement('script');
         script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
-        script.onload = () => resolve(window.Cashfree);
-        script.onerror = () => reject(new Error('Failed to load Cashfree checkout SDK from CDN'));
+        script.async = true;
+        script.onload = () => {
+          if (typeof window.Cashfree === 'function') {
+            cashfreeSdkLoadFailed = false;
+            onSettled(resolve, window.Cashfree);
+          } else {
+            cashfreeSdkLoadFailed = true;
+            cashfreeSdkPromise = null;
+            onSettled(reject, new Error('Cashfree SDK script loaded but window.Cashfree is not defined'));
+          }
+        };
+        script.onerror = () => {
+          cashfreeSdkLoadFailed = true;
+          cashfreeSdkPromise = null;
+          script.setAttribute('data-failed', 'true');
+          onSettled(reject, new Error('Failed to load Cashfree checkout SDK from CDN'));
+        };
         document.head.appendChild(script);
       });
+
+      return cashfreeSdkPromise;
     }
 
     function clearPaymentTimeout() {
@@ -22762,7 +22886,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             iconWrap.style.color = '#DC2626';
           }
           if (icon) icon.className = 'fa-solid fa-triangle-exclamation';
-          const isConfigIssue = (payload.readinessState && payload.readinessState !== 'READY') || (payload.error && payload.error.includes('CONFIGURED'));
+          const isConfigIssue = (payload.readinessState && payload.readinessState !== 'READY') || (payload.error && (payload.error.includes('CONFIGURED') || payload.error.includes('MISMATCH'))) || (payload.message && payload.message.toLowerCase().includes('mismatch'));
           if (title) title.textContent = isConfigIssue ? 'Payment Temporarily Unavailable' : 'Payment Unsuccessful';
           if (desc) desc.textContent = payload.message || 'Payment could not be completed or was declined. No funds were debited.';
           if (btnPrimary) {
@@ -23060,7 +23184,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           setPaymentState(PAYMENT_STATES.FAILED, {
             error: errData.error,
             readinessState: errData.readinessState,
-            message: errData.message || "Failed to initiate subscription order. Gateway unavailable.",
+            message: errData.message || errData.error || "Failed to initiate subscription order. Gateway unavailable.",
             retryFn: () => executeSubscriptionCheckout(tier)
           });
           return;
@@ -23086,7 +23210,14 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
         });
 
         // Ensure Cashfree SDK is loaded from CDN
-        await loadCashfreeSDK();
+        try {
+          await loadCashfreeSDK(8000);
+        } catch (sdkLoadErr) {
+          console.warn("Cashfree JS SDK loading failed or timed out, executing hosted fallback:", sdkLoadErr);
+          const sdkMode = (window.CASHFREE_ENV === 'production') ? 'production' : 'sandbox';
+          submitCashfreeHostedFallback(orderData.paymentSessionId, sdkMode);
+          return;
+        }
 
         if (typeof window.Cashfree !== 'function') {
           // If SDK script failed to load, execute immediate direct hosted redirect fallback
@@ -28352,6 +28483,24 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
         Jupiter: { mantra: "ॐ ग्रां ग्रीं ग्रौं सः गुरुवे नमः", transliteration: "Om Graam Greem Graum Sah Guruve Namah" },
         Venus: { mantra: "ॐ द्रां द्रीं द्रौं सः शुक्राय नमः", transliteration: "Om Draam Dreem Draum Sah Shukraya Namah" },
         Saturn: { mantra: "ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः", transliteration: "Om Praam Preem Praum Sah Shanaishcharaya Namah" }
+      };
+
+      const SIGN_LORDS = {
+        Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon',
+        Leo: 'Sun', Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars',
+        Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
+      };
+
+      const PLANET_FRIENDS = {
+        Sun: { friends: ['Moon', 'Mars', 'Jupiter'], enemies: ['Venus', 'Saturn'], neutrals: ['Mercury'] },
+        Moon: { friends: ['Sun', 'Mercury'], enemies: [], neutrals: ['Mars', 'Jupiter', 'Venus', 'Saturn'] },
+        Mars: { friends: ['Sun', 'Moon', 'Jupiter'], enemies: ['Mercury'], neutrals: ['Venus', 'Saturn'] },
+        Mercury: { friends: ['Sun', 'Venus'], enemies: ['Moon'], neutrals: ['Mars', 'Jupiter', 'Saturn'] },
+        Jupiter: { friends: ['Sun', 'Moon', 'Mars'], enemies: ['Mercury', 'Venus'], neutrals: ['Saturn'] },
+        Venus: { friends: ['Mercury', 'Saturn'], enemies: ['Sun', 'Moon'], neutrals: ['Mars', 'Jupiter'] },
+        Saturn: { friends: ['Mercury', 'Venus'], enemies: ['Sun', 'Moon', 'Mars'], neutrals: ['Jupiter'] },
+        Rahu: { friends: ['Mercury', 'Venus', 'Saturn'], enemies: ['Sun', 'Moon', 'Mars'], neutrals: ['Jupiter'] },
+        Ketu: { friends: ['Mars', 'Venus', 'Saturn'], enemies: ['Sun', 'Moon'], neutrals: ['Mercury', 'Jupiter'] }
       };
 
       if (horizon === 'hourly') {

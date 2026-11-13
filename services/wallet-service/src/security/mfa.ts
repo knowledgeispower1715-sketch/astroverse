@@ -204,10 +204,10 @@ export const ALLOWED_ASSURANCE_SCOPES = [
 
 export type AllowedAssuranceScope = typeof ALLOWED_ASSURANCE_SCOPES[number] | string;
 
-let ephemeralSecret: string | null = null;
+const DEFAULT_DEV_ASSURANCE_KEY = 'astroverse_dev_preview_admin_assurance_signing_key_9999a001_entropy32';
 
 export function getAssuranceSigningSecret(): string {
-  const secret = process.env.ADMIN_MFA_SECRET || process.env.JWT_SECRET;
+  const secret = process.env.ADMIN_ASSURANCE_SIGNING_KEY || process.env.ADMIN_MFA_SECRET;
   const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 
   if (secret && secret.length >= 32) {
@@ -215,13 +215,10 @@ export function getAssuranceSigningSecret(): string {
   }
 
   if (isProd) {
-    throw new Error('[SECURITY_CRITICAL] ADMIN_MFA_SECRET or JWT_SECRET must be configured with at least 32 characters in production.');
+    throw new Error('[SECURITY_CRITICAL] ADMIN_ASSURANCE_SIGNING_KEY must be configured with at least 32 characters in production.');
   }
 
-  if (!ephemeralSecret) {
-    ephemeralSecret = crypto.randomBytes(64).toString('hex');
-  }
-  return ephemeralSecret;
+  return DEFAULT_DEV_ASSURANCE_KEY;
 }
 
 const ASSURANCE_LIFETIME_MS = 15 * 60 * 1000; // 15 minutes

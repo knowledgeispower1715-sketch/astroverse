@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled, normalizeRole, CANONICAL_ASSIGNABLE_ROLES } from './security/permissions';
-import { bootstrapPostgresSchema, checkSchemaReadiness, inspectDatabaseRlsCatalog, APPLICATION_TABLES } from './schemaBootstrap';
+import { bootstrapPostgresSchema, checkSchemaReadiness, inspectDatabaseRlsCatalog, APPLICATION_TABLES, ensureAdditiveColumns } from './schemaBootstrap';
 import { SubscriptionTier, BillingPeriod } from './monetization/catalog';
 export { Role, isAuthorizedAdminEmail, isAnyAdmin, getAuthorizedAdminEmails, isAdminPreviewEnabled, normalizeRole, CANONICAL_ASSIGNABLE_ROLES };
 
@@ -554,6 +554,9 @@ class ResilientDatabase {
 
     this.schemaBootstrapPromise = bootstrapPostgresSchema(this.prisma)
       .then(async (ok) => {
+        try {
+          await ensureAdditiveColumns(this.prisma);
+        } catch (_) {}
         if (!ok) {
           console.warn('[DB] PostgreSQL schema bootstrap returned false. Queries will use resilient fallback.');
         } else {
@@ -1804,7 +1807,7 @@ class ResilientDatabase {
           this.prisma.user.count({ where: { mfaEnabled: true } }),
           this.prisma.user.count({ where: { role: { not: 'USER' } } }),
           this.prisma.user.count({ where: { role: { not: 'USER' }, status: 'ACTIVE' } }),
-          this.prisma.user.count({ where: { OR: [{ subscriptionTier: 'FREE' }, { subscriptionTier: null }] } }),
+          this.prisma.user.count({ where: { subscriptionTier: { notIn: ['PLUS', 'PREMIUM'] } } }),
           this.prisma.user.count({
             where: {
               subscriptionTier: { in: ['PLUS', 'PREMIUM'] },
@@ -4160,6 +4163,7 @@ class ResilientDatabase {
     const resolvedMetadata = data.metadata || (resolvedBillingPeriod ? { billingPeriod: resolvedBillingPeriod } : null);
 
     if (this.isPostgresAvailable && this.prisma) {
+      await this.ensurePostgresSchema();
       try {
         const pgOrder = await this.prisma.paymentOrder.upsert({
           where: { razorpayOrderId: dbOrderId },
@@ -4170,11 +4174,11 @@ class ResilientDatabase {
             provider: resolvedProvider,
             providerOrderId: resolvedProviderOrderId,
             amountPaise,
-            productType: data.productType || null,
-            productId: data.productId || null,
-            billingPeriod: resolvedBillingPeriod,
-            pricingSnapshot: data.pricingSnapshot || null,
-            metadata: resolvedMetadata,
+            productType: data.productType || undefined,
+            productId: data.productId || undefined,
+            billingPeriod: resolvedBillingPeriod || undefined,
+            pricingSnapshot: data.pricingSnapshot || undefined,
+            metadata: resolvedMetadata || undefined,
             razorpayOrderId: dbOrderId,
             status: OrderStatus.CREATED
           },
@@ -4204,6 +4208,57 @@ class ResilientDatabase {
         this.data.paymentOrders.unshift(mapped);
         return mapped;
       } catch (err: any) {
+        const errMsg = String(err?.message || err);
+        if (errMsg.includes('does not exist') || errMsg.includes('column') || errMsg.includes('billingPeriod')) {
+          console.warn('[DB] Detected missing column in PaymentOrder. Applying additive columns and retrying...');
+          try {
+            await ensureAdditiveColumns(this.prisma);
+            const retryPgOrder = await this.prisma.paymentOrder.upsert({
+              where: { razorpayOrderId: dbOrderId },
+              create: {
+                userId: data.userId,
+                amount: data.amount,
+                currency: data.currency || 'INR',
+                provider: resolvedProvider,
+                providerOrderId: resolvedProviderOrderId,
+                amountPaise,
+                productType: data.productType || undefined,
+                productId: data.productId || undefined,
+                billingPeriod: resolvedBillingPeriod || undefined,
+                pricingSnapshot: data.pricingSnapshot || undefined,
+                metadata: resolvedMetadata || undefined,
+                razorpayOrderId: dbOrderId,
+                status: OrderStatus.CREATED
+              },
+              update: {
+                billingPeriod: resolvedBillingPeriod || undefined,
+                pricingSnapshot: data.pricingSnapshot || undefined,
+                metadata: resolvedMetadata || undefined
+              }
+            });
+            const mapped = this.mapPrismaPaymentOrder(retryPgOrder);
+            mapped.provider = resolvedProvider;
+            mapped.providerOrderId = resolvedProviderOrderId;
+            mapped.gateway = (data.gateway || resolvedProvider) as any;
+            mapped.cfOrderId = data.cfOrderId || (resolvedProvider === 'CASHFREE' ? resolvedProviderOrderId : null);
+            mapped.cfPaymentSessionId = data.cfPaymentSessionId || null;
+            mapped.productType = data.productType;
+            mapped.productId = data.productId;
+            mapped.billingPeriod = resolvedBillingPeriod || undefined;
+            mapped.pricingSnapshot = data.pricingSnapshot || null;
+            mapped.metadata = resolvedMetadata;
+            mapped.amountPaise = amountPaise;
+            mapped.idempotencyKey = data.idempotencyKey || null;
+            mapped.baseAmount = data.baseAmount;
+            mapped.gstAmount = data.gstAmount;
+            mapped.bonusAmount = data.bonusAmount;
+            mapped.creditAmount = data.creditAmount;
+            this.data.paymentOrders.unshift(mapped);
+            return mapped;
+          } catch (retryErr: any) {
+            console.error('[DB] Retry after adding missing columns failed:', retryErr?.message || retryErr);
+          }
+        }
         console.error('[DB] Failed to create payment order in Postgres:', err?.message || err);
         throw new Error(`DATABASE_MUTATION_FAILED: createPaymentOrder failed - ${err?.message || err}`);
       }

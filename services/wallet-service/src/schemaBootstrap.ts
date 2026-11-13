@@ -951,6 +951,40 @@ export function resetBootstrapCache(): void {
   // Provided for test harness resets if needed
 }
 
+export const ADDITIVE_COLUMN_STATEMENTS: string[] = [
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "provider" TEXT NOT NULL DEFAULT 'CASHFREE';`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "providerOrderId" TEXT;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "providerPaymentId" TEXT;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "amountPaise" INTEGER;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "productType" TEXT;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "productId" TEXT;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "billingPeriod" TEXT;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "pricingSnapshot" JSONB;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "metadata" JSONB;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "cfOrderId" TEXT;`,
+  `ALTER TABLE "PaymentOrder" ADD COLUMN IF NOT EXISTS "cfPaymentSessionId" TEXT;`,
+  `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionBillingPeriod" TEXT;`,
+  `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionTier" TEXT NOT NULL DEFAULT 'FREE';`,
+  `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionStatus" TEXT NOT NULL DEFAULT 'NONE';`,
+  `ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "subscriptionExpiresAt" TIMESTAMP(3);`,
+  `ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "birthTimeKnown" BOOLEAN NOT NULL DEFAULT true;`,
+  `ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "birthTimeStatus" TEXT NOT NULL DEFAULT 'EXACT';`,
+  `ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "approximateWindowMinutes" INTEGER;`,
+  `ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "approximateTimeRange" TEXT;`,
+  `ALTER TABLE "BirthProfile" ADD COLUMN IF NOT EXISTS "birthTimeConfirmed" BOOLEAN NOT NULL DEFAULT true;`
+];
+
+export async function ensureAdditiveColumns(prisma: any): Promise<void> {
+  if (!prisma) return;
+  for (const statement of ADDITIVE_COLUMN_STATEMENTS) {
+    try {
+      await prisma.$executeRawUnsafe(statement);
+    } catch (_err) {
+      // Non-blocking: table might not exist yet or column already present
+    }
+  }
+}
+
 export async function bootstrapPostgresSchema(prisma: any): Promise<boolean> {
   if (!prisma) return false;
   if (bootstrapPromises.has(prisma)) {

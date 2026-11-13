@@ -1,0 +1,45 @@
+HTTP Method,Route,Purpose,Auth Required,Permission Required,Request Schema / Params,Response Key,Rate Limiting,Database Interaction,Transaction Boundary,Audit Logging,Execution Result
+GET,/api/admin/overview,Platform executive overview & system health,YES,VIEW_OVERVIEW,fresh: boolean,metrics,authLimiter,User; BirthProfile; WalletLedger,Single Read-Only Tx,NO,PASS
+GET,/api/admin/users,Paginated customer directory with search & filters,YES,VIEW_CUSTOMERS,page; limit; search; role; status; tier,users; total; page,authLimiter,User,None,NO,PASS
+POST,/api/admin/users/:id/status,Suspend or activate user account,YES,SUSPEND_ACCOUNTS,status: ACTIVE|SUSPENDED; reason,user; success,authLimiter,User; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/roles,Administrative staff accounts & RBAC matrix,YES,MANAGE_ROLES,None,admins; rolePermissions; modules,authLimiter,User; RolePermissions,None,NO,PASS
+POST,/api/admin/roles/assign,Assign administrative role to user,YES,ASSIGN_ROLES,targetUserId; role; reason,user; success,authLimiter,User; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/security/events,Security event audit trail,YES,VIEW_AUDIT,limit; offset; outcome,events; total,authLimiter,AuditEvent,None,NO,PASS
+GET,/api/admin/mfa/status,Get current admin MFA configuration,YES,VIEW_SECURITY,None,mfaEnabled; factors,authLimiter,User; Supabase Auth,None,NO,PASS
+POST,/api/admin/mfa/unenroll-audit,Audit-logged TOTP deactivation,YES,MANAGE_MFA,code: string,success: boolean,authLimiter,User; AuditEvent,Atomic Tx,YES,PASS
+POST,/api/auth/admin-supabase-session,Authoritative Supabase Auth session bridge,YES,IS_ADMIN,accessToken: string; action: string,status; sessionToken; assuranceToken,authLimiter,User; UserSession; AuditEvent,Atomic Tx,YES,PASS
+POST,/api/auth/admin-login,Legacy password login (strictly non-owner),NO,None,email; password; mfaCode,status; sessionToken; assuranceToken,authLimiter,User; UserSession; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/astrology/health,Kundli Ephemeris engine microservice status,YES,VIEW_PLATFORM,None,engineUrl; status; latencyMs,authLimiter,None (Microservice fetch),None,NO,PASS
+GET,/api/admin/astrology/calibrate,Ephemeris planetary position accuracy check,YES,VIEW_PLATFORM,None,success; calibrationMetrics,authLimiter,KundliCalculation,None,NO,PASS
+GET,/api/admin/reports,Generated customer astrology & PDF reports,YES,VIEW_REPORTS,limit; offset; status,reports; total,authLimiter,SavedReport,None,NO,PASS
+GET,/api/admin/ai/usage,AI Astrologer persona usage & token quotas,YES,VIEW_PLATFORM,None,personas; tokensUsed; dailyQuota,authLimiter,ConsultationMessage,None,NO,PASS
+GET,/api/admin/payments/ledger,Cashfree & internal wallet transactions,YES,VIEW_FINANCIALS,limit; offset; entryType,ledger; total,authLimiter,WalletLedger,None,NO,PASS
+POST,/api/admin/payments/reconcile,Reconcile Cashfree orders against ledger,YES,MANAGE_FINANCIALS,None,reconciliationReport; discrepancies,authLimiter,PaymentOrder; WalletLedger,Read-Only Tx,YES,PASS
+POST,/api/admin/payments/recover,Recover missed webhook payment,YES,MANAGE_FINANCIALS,orderId: string,success; order; ledger,authLimiter,PaymentOrder; WalletLedger,Atomic Tx,YES,PASS
+POST,/api/admin/payments/refund,Issue full or partial payment refund,YES,REFUND_PAYMENTS,orderId; amount; reason,refundResult; success,authLimiter,PaymentOrder; WalletLedger; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/subscriptions,Customer subscriptions list & status,YES,VIEW_SUBSCRIPTIONS,limit; offset; tier; status,subscriptions; total,authLimiter,User,None,NO,PASS
+GET,/api/admin/products,Product catalogue SKUs & prices,YES,VIEW_PRODUCTS,category: string,products: Array,authLimiter,ProductCatalog,None,NO,PASS
+POST,/api/admin/products/:sku/price,Update product catalogue price,YES,MANAGE_PRICING,priceInRupees; annualPrice,product; success,authLimiter,ProductCatalog; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/content/banners,Active promotional banners,YES,VIEW_CONTENT,None,banners: Array,authLimiter,ContentBanner,None,NO,PASS
+POST,/api/admin/content/banners,Create new promotional banner,YES,MANAGE_CONTENT,title; imageUrl; linkUrl; active,banner; success,authLimiter,ContentBanner; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/settings/flags,System runtime feature flags,YES,VIEW_SETTINGS,None,flags: Array,authLimiter,FeatureFlag,None,NO,PASS
+POST,/api/admin/settings/flags/:key,Toggle feature flag status,YES,MANAGE_SETTINGS,enabled: boolean,flag; success,authLimiter,FeatureFlag; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/privacy/requests,Customer DPDP / GDPR data requests,YES,MANAGE_PRIVACY,status: PENDING|PROCESSED,requests: Array,authLimiter,PrivacyRequest,None,NO,PASS
+POST,/api/admin/privacy/requests/:id/process,Execute customer data deletion/export,YES,MANAGE_PRIVACY,action: PROCESS|REJECT,request; success,authLimiter,User; BirthProfile; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/audit/logs,Privileged administrative operation logs,YES,VIEW_AUDIT,limit; offset; action,logs; total,authLimiter,AuditEvent,None,NO,PASS
+GET,/api/admin/integrations/status,Health status of external microservices,YES,VIEW_PLATFORM,None,integrations: Array,authLimiter,None (Network Ping),None,NO,PASS
+GET,/api/admin/incidents,Open & resolved production incidents,YES,VIEW_INCIDENTS,status: OPEN|RESOLVED,incidents: Array,authLimiter,PlatformIncident,None,NO,PASS
+POST,/api/admin/incidents,Declare new production incident,YES,DECLARE_INCIDENT,title; severity; description,incident; success,authLimiter,PlatformIncident; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/database/monitor,Prisma connection pool & table health,YES,VIEW_DATABASE,None,tables; poolHealth; latency,authLimiter,InformationSchema,None,NO,PASS
+GET,/api/admin/analytics/overview,Business analytics, GMV & revenue metrics,YES,VIEW_ANALYTICS,range: 7d|30d|90d,kpis; recentOrders,authLimiter,PaymentOrder; WalletLedger,Read-Only Tx,NO,PASS
+GET,/api/admin/customer360,Unified customer profile, charts & orders,YES,VIEW_CUSTOMERS,userId: string,customer; charts; orders; wallet,authLimiter,User; BirthProfile; PaymentOrder,Read-Only Tx,NO,PASS
+GET,/api/admin/entitlements,Customer feature entitlements list,YES,MANAGE_ENTITLEMENTS,userId: string,entitlements: Array,authLimiter,Entitlement,None,NO,PASS
+POST,/api/admin/entitlements,Grant feature entitlement to customer,YES,MANAGE_ENTITLEMENTS,userId; featureKey; durationDays; reason,entitlement; success,authLimiter,Entitlement; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/promotions,Active coupon codes & campaigns,YES,MANAGE_PROMOTIONS,None,promotions: Array,authLimiter,Promotion,None,NO,PASS
+POST,/api/admin/promotions,Create new promotional campaign,YES,MANAGE_PROMOTIONS,code; type; value; minOrder,promotion; success,authLimiter,Promotion; AuditEvent,Atomic Tx,YES,PASS
+GET,/api/admin/consultations/roster,Astrologer roster & performance ratings,YES,MANAGE_CONSULTATIONS,None,roster: Array,authLimiter,Astrologer,None,NO,PASS
+GET,/api/admin/consultations/sessions,Live & completed consultation sessions,YES,VIEW_CONSULTATIONS,limit: number,sessions: Array,authLimiter,ConsultationSession,None,NO,PASS
+POST,/api/admin/preview/activate,Activate isolated tier preview session,YES,QA_TESTING,tier: FREE|PLUS|PREMIUM,session; simulatedTier,authLimiter,UserSession,None,YES,PASS
+POST,/api/admin/preview/exit,Terminate preview session & restore admin,YES,QA_TESTING,None,success: boolean,authLimiter,UserSession,None,YES,PASS
+POST,/api/admin/preview/demo-wallet,Credit isolated demo wallet funds,YES,QA_TESTING,amount: number,demoBalance; success,authLimiter,InMemory Demo Wallet,None,NO,PASS
+POST,/api/admin/preview/demo-wallet/reset,Reset demo wallet balance to 0,YES,QA_TESTING,None,demoBalance: 0,authLimiter,InMemory Demo Wallet,None,NO,PASS

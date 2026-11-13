@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
   "headers": [
     {
       "source": "/(.*)",
@@ -33,6 +34,8 @@
       "root": "services/consultation-service",
       "runtime": "node",
       "entrypoint": "server.ts",
+      "installCommand": "npm ci",
+      "buildCommand": "npm run build",
       "bindings": [
         {
           "type": "service",
@@ -51,6 +54,8 @@
       "root": "services/wallet-service",
       "framework": "express",
       "entrypoint": "src/server.ts",
+      "installCommand": "npm ci",
+      "buildCommand": "npm run build",
       "bindings": [
         {
           "type": "service",
@@ -246,6 +251,24 @@
     },
     {
       "source": "/api/predictions",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/matchmaking(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/complete-kundli(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/kundli/(.*)",
       "destination": {
         "service": "wallet-service"
       }

@@ -1,0 +1,13 @@
+variable_name,target_environments,sensitive_classification,service_consumer,storage_location,rotation_policy,audit_verification_status
+CASHFREE_APP_ID,"Production, Preview, Development",RESTRICTED_IDENTIFIER,wallet-service,Vercel Project Env Vars / Local .env,Quarterly / On Compromise,VERIFIED_PRESENT
+CASHFREE_SECRET_KEY,"Production, Preview, Development",HIGH_RISK_SECRET,wallet-service,Vercel Project Encrypted Env / Local .env,Quarterly / On Compromise,VERIFIED_PRESENT_REDACTED
+CASHFREE_WEBHOOK_SECRET,"Production, Preview, Development",HIGH_RISK_SECRET,wallet-service,Vercel Project Encrypted Env / Local .env,Quarterly / On Compromise,VERIFIED_PRESENT_REDACTED
+CASHFREE_ENV,"Production, Preview, Development",PUBLIC_CONFIGURATION,wallet-service,Vercel Project Env Vars,On Release,VERIFIED_SANDBOX_PREVIEW
+DATABASE_URL,"Production, Preview, Development",HIGH_RISK_SECRET,wallet-service,Vercel Project Encrypted Env / Supabase,Bi-annual / On Compromise,VERIFIED_PRESENT_REDACTED
+SUPABASE_URL,"Production, Preview, Development",PUBLIC_CONFIGURATION,wallet-service / kundli / frontend,Vercel Project Env Vars,Immutable,VERIFIED_PRESENT
+SUPABASE_PUBLISHABLE_KEY,"Production, Preview, Development",CLIENT_PUBLIC_KEY,frontend / wallet-service,Vercel Project Env Vars,Annual,VERIFIED_PRESENT
+SUPABASE_SECRET_KEY,"Production, Preview, Development",HIGH_RISK_SECRET,wallet-service,Vercel Project Encrypted Env / Local .env,Bi-annual / On Compromise,VERIFIED_PRESENT_REDACTED
+SUPABASE_JWKS_URL,"Production, Preview, Development",PUBLIC_CONFIGURATION,wallet-service,Vercel Project Env Vars,Immutable,VERIFIED_PRESENT
+JWT_SECRET,"Production, Preview, Development",HIGH_RISK_SECRET,wallet-service,Vercel Project Encrypted Env / Local .env,Quarterly,VERIFIED_PRESENT_REDACTED
+ADMIN_PANEL_KEY,"Production, Preview, Development",HIGH_RISK_SECRET,wallet-service,Vercel Project Encrypted Env / Local .env,Quarterly,VERIFIED_PRESENT_REDACTED
+NODE_ENV,"Production, Preview, Development",SYSTEM_CONFIGURATION,all-services,Vercel System Environment,Per Environment,VERIFIED_PRODUCTION_BUILD

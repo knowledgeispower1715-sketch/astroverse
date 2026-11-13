@@ -170,6 +170,10 @@ export function getResolvedCashfreeCredentials(): {
 
   apiVersion: string;
 
+  isVercelPreview?: boolean;
+
+  isProdKey?: boolean;
+
 } {
 
   let appId = (process.env.CASHFREE_APP_ID || '').trim();
@@ -246,37 +250,69 @@ export function getResolvedCashfreeCredentials(): {
 
 
 
-  const isVercelPreview = process.env.VERCEL_ENV === 'preview' || 
+  const isVercelProduction = process.env.VERCEL_ENV === 'production' ||
+    (process.env.APP_BASE_URL && process.env.APP_BASE_URL.includes('astroverse-eta.vercel.app')) ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL && process.env.VERCEL_PROJECT_PRODUCTION_URL.includes('astroverse-eta.vercel.app'));
 
-    (process.env.VERCEL_URL && !process.env.VERCEL_URL.includes('astroverse-eta.vercel.app')) ||
+  const isVercelPreview = process.env.VERCEL_ENV === 'preview' ||
+    (!isVercelProduction && Boolean(process.env.VERCEL_URL && !process.env.VERCEL_URL.includes('astroverse-eta.vercel.app')));
 
-    (process.env.APP_BASE_URL && !process.env.APP_BASE_URL.includes('astroverse-eta.vercel.app') && process.env.APP_BASE_URL.includes('vercel.app'));
+  const isProdKey = secretKey.startsWith('cfsk_ma_prod_');
+  const isTestKey = secretKey.startsWith('cfsk_ma_test_') || appId.startsWith('TEST');
 
-  const rawEnv = (process.env.CASHFREE_ENV || (isVercelPreview ? 'sandbox' : (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'))).toLowerCase();
-
-  const env: 'production' | 'sandbox' = rawEnv === 'sandbox' ? 'sandbox' : 'production';
+  let env: 'production' | 'sandbox';
+  if (process.env.CASHFREE_ENV) {
+    const rawEnv = process.env.CASHFREE_ENV.toLowerCase().trim();
+    if (rawEnv === 'sandbox') {
+      if (isProdKey && isVercelProduction) {
+        console.warn('[CASHFREE] Auto-aligning CASHFREE_ENV from "sandbox" to "production" because live production key (cfsk_ma_prod_) is configured on production host.');
+        env = 'production';
+      } else {
+        env = 'sandbox';
+      }
+    } else {
+      env = 'production';
+    }
+  } else {
+    if (isProdKey) {
+      env = 'production';
+    } else if (isTestKey) {
+      env = 'sandbox';
+    } else {
+      env = (isVercelProduction || process.env.NODE_ENV === 'production') ? 'production' : 'sandbox';
+    }
+  }
 
   const apiVersion = process.env.CASHFREE_API_VERSION || '2026-01-01';
 
-
-
-  return { appId, secretKey, env, apiVersion };
-
+  return {
+    appId,
+    secretKey,
+    env,
+    apiVersion,
+    isVercelPreview: Boolean(isVercelPreview),
+    isProdKey: Boolean(isProdKey)
+  };
 }
 
-
-
 export function getPaymentReadinessStatus(options?: { featureFlagEnabled?: boolean }): PaymentReadinessReport {
-
-  const { appId, secretKey, env } = getResolvedCashfreeCredentials();
-
-
+  const { appId, secretKey, env, isVercelPreview, isProdKey } = getResolvedCashfreeCredentials();
 
   const appIdMasked = appId.length > 8
-
     ? `${appId.slice(0, 4)}...${appId.slice(-4)}`
-
     : (appId ? '***' : 'NOT_CONFIGURED');
+
+  if (isVercelPreview && isProdKey) {
+    return {
+      state: PaymentReadinessState.DISABLED_BY_MERCHANT_CONFIGURATION,
+      configured: false,
+      environment: 'sandbox',
+      gateway: 'CASHFREE',
+      appIdMasked,
+      adminExplanation: 'Live payment initiation is disabled in Preview environment to protect production balances.',
+      customerMessage: 'Payments are disabled in the Preview test environment.'
+    };
+  }
 
 
 
@@ -333,13 +369,8 @@ export function getPaymentReadinessStatus(options?: { featureFlagEnabled?: boole
 
 
   // Detect credential/environment mismatch:
-
   // Production secret keys have format cfsk_ma_prod_...
-
   // Sandbox secret keys have format cfsk_ma_test_... and appId TEST...
-
-  const isProdKey = secretKey.startsWith('cfsk_ma_prod_');
-
   const isTestKey = secretKey.startsWith('cfsk_ma_test_') || appId.startsWith('TEST');
 
 
@@ -447,50 +478,62 @@ export function getCashfreeApiVersion(): string {
 
 
 export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Promise<CashfreeOrderResponse> {
+  if (typeof params.orderAmount !== 'number' || isNaN(params.orderAmount) || params.orderAmount < 1.00 || params.orderAmount > 50000.00) {
+    throw new Error('INVALID_ORDER_AMOUNT: Order amount must be a number between ₹1.00 and ₹50,000.00.');
+  }
+  if (Number(params.orderAmount.toFixed(2)) !== params.orderAmount) {
+    throw new Error('INVALID_AMOUNT_PRECISION: Order amount cannot have more than 2 decimal places.');
+  }
 
   if (!isCashfreeConfigured()) {
-
     throw new Error('CASHFREE_NOT_CONFIGURED: Live Cashfree credentials (CASHFREE_APP_ID, CASHFREE_SECRET_KEY) are not configured.');
-
   }
-
-
 
   // Fast-path for unit/integration testing without external sandbox connectivity
-
   if (process.env.NODE_ENV === 'test') {
-
     return {
-
       cf_order_id: `cf_order_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-
       order_id: params.orderId,
-
       order_status: 'ACTIVE',
-
       order_amount: Number(params.orderAmount.toFixed(2)),
-
       order_currency: params.orderCurrency || 'INR',
-
       payment_session_id: `session_${params.orderId}_${Date.now()}`,
-
       created_at: new Date().toISOString(),
-
       customer_details: params.customer,
-
       order_note: params.orderNote
-
     };
-
   }
 
-
-
-  const { appId, secretKey, apiVersion } = getResolvedCashfreeCredentials();
-
+  const { appId, secretKey, apiVersion, env } = getResolvedCashfreeCredentials();
   const baseUrl = getCashfreeBaseUrl();
 
+  const customerPhoneClean = (() => {
+    let cleanPhone = (params.customer.customer_phone || '').replace(/\D/g, '');
+    if (cleanPhone.length > 10 && cleanPhone.startsWith('91')) {
+      cleanPhone = cleanPhone.slice(2);
+    }
+    if (cleanPhone.length !== 10) {
+      cleanPhone = '9876543210';
+    }
+    return cleanPhone;
+  })();
 
+  const safeReturnUrl = (() => {
+    if (!params.returnUrl) return undefined;
+    if (env === 'production') {
+      try {
+        const u = new URL(params.returnUrl);
+        if (!u.hostname.includes('astroverse-eta.vercel.app')) {
+          u.protocol = 'https:';
+          u.host = 'astroverse-eta.vercel.app';
+          return u.toString();
+        }
+      } catch (_) {
+        return 'https://astroverse-eta.vercel.app/?cf_order_id={order_id}&cf_type=wallet';
+      }
+    }
+    return params.returnUrl;
+  })();
 
   const payload: any = {
 
@@ -501,20 +544,15 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
     order_currency: params.orderCurrency || 'INR',
 
     customer_details: {
-
       customer_id: params.customer.customer_id,
-
-      customer_phone: params.customer.customer_phone || '9999999999',
-
+      customer_phone: customerPhoneClean,
       customer_email: params.customer.customer_email || 'seeker@astroverse.ai',
-
       customer_name: params.customer.customer_name || 'AstroVerse Seeker'
-
     },
 
     order_meta: {
 
-      return_url: params.returnUrl || undefined,
+      return_url: safeReturnUrl,
 
       notify_url: params.notifyUrl || undefined
 
@@ -524,7 +562,7 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
 
   };
 
-
+  const correlationId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 
   const headers: Record<string, string> = {
 
@@ -533,6 +571,8 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
     'x-client-secret': secretKey,
 
     'x-api-version': apiVersion,
+
+    'x-request-id': correlationId,
 
     'Content-Type': 'application/json'
 
@@ -544,27 +584,29 @@ export async function createCashfreeOrder(params: CreateCashfreeOrderParams): Pr
 
   }
 
+  let response: any;
+  try {
+    response = await fetch(`${baseUrl}/orders`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000)
+    });
+  } catch (netErr: any) {
+    if (netErr.name === 'TimeoutError' || netErr.message?.includes('timeout')) {
+      throw new Error(`CASHFREE_UPSTREAM_TIMEOUT: Cashfree order creation timed out after 10000ms (correlationId: ${correlationId})`);
+    }
+    throw new Error(`CASHFREE_NETWORK_ERROR: ${netErr.message || netErr} (correlationId: ${correlationId})`);
+  }
 
-
-  const response = await fetch(`${baseUrl}/orders`, {
-
-    method: 'POST',
-
-    headers,
-
-    body: JSON.stringify(payload)
-
-  });
-
-
-
-  const body: any = await response.json();
+  const body: any = await response.json().catch(() => ({}));
 
   if (!response.ok) {
 
     const errorMsg = body.message || body.error || `Cashfree order creation failed with status ${response.status}`;
+    const errCode = body.code || body.type || `HTTP_${response.status}`;
 
-    throw new Error(`CASHFREE_ORDER_FAILED: ${errorMsg}`);
+    throw new Error(`CASHFREE_ORDER_FAILED [${errCode}]: ${errorMsg} (correlationId: ${correlationId})`);
 
   }
 
@@ -688,33 +730,34 @@ export async function getCashfreeOrderStatus(orderId: string): Promise<CashfreeO
 
 
 
-  const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, {
-
-    method: 'GET',
-
-    headers: {
-
-      'x-client-id': appId,
-
-      'x-client-secret': secretKey,
-
-      'x-api-version': apiVersion,
-
-      'Content-Type': 'application/json'
-
+  const correlationId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  let response: any;
+  try {
+    response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}`, {
+      method: 'GET',
+      headers: {
+        'x-client-id': appId,
+        'x-client-secret': secretKey,
+        'x-api-version': apiVersion,
+        'x-request-id': correlationId,
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+  } catch (netErr: any) {
+    if (netErr.name === 'TimeoutError' || netErr.message?.includes('timeout')) {
+      throw new Error(`CASHFREE_UPSTREAM_TIMEOUT: Cashfree order status lookup timed out after 10000ms (correlationId: ${correlationId})`);
     }
+    throw new Error(`CASHFREE_NETWORK_ERROR: ${netErr.message || netErr} (correlationId: ${correlationId})`);
+  }
 
-  });
-
-
-
-  const body: any = await response.json();
+  const body: any = await response.json().catch(() => ({}));
 
   if (!response.ok) {
 
     const errorMsg = body.message || body.error || `Cashfree status lookup failed with status ${response.status}`;
 
-    throw new Error(`CASHFREE_LOOKUP_FAILED: ${errorMsg}`);
+    throw new Error(`CASHFREE_LOOKUP_FAILED: ${errorMsg} (correlationId: ${correlationId})`);
 
   }
 
@@ -790,33 +833,34 @@ export async function getPaymentsForCashfreeOrder(orderId: string): Promise<Cash
 
 
 
-  const response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}/payments`, {
-
-    method: 'GET',
-
-    headers: {
-
-      'x-client-id': appId,
-
-      'x-client-secret': secretKey,
-
-      'x-api-version': apiVersion,
-
-      'Content-Type': 'application/json'
-
+  const correlationId = `req_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  let response: any;
+  try {
+    response = await fetch(`${baseUrl}/orders/${encodeURIComponent(orderId)}/payments`, {
+      method: 'GET',
+      headers: {
+        'x-client-id': appId,
+        'x-client-secret': secretKey,
+        'x-api-version': apiVersion,
+        'x-request-id': correlationId,
+        'Content-Type': 'application/json'
+      },
+      signal: AbortSignal.timeout(10000)
+    });
+  } catch (netErr: any) {
+    if (netErr.name === 'TimeoutError' || netErr.message?.includes('timeout')) {
+      throw new Error(`CASHFREE_UPSTREAM_TIMEOUT: Cashfree payments lookup timed out after 10000ms (correlationId: ${correlationId})`);
     }
+    throw new Error(`CASHFREE_NETWORK_ERROR: ${netErr.message || netErr} (correlationId: ${correlationId})`);
+  }
 
-  });
-
-
-
-  const body: any = await response.json();
+  const body: any = await response.json().catch(() => ({}));
 
   if (!response.ok) {
 
     const errorMsg = body.message || body.error || `Cashfree payments lookup failed with status ${response.status}`;
 
-    throw new Error(`CASHFREE_PAYMENTS_LOOKUP_FAILED: ${errorMsg}`);
+    throw new Error(`CASHFREE_PAYMENTS_LOOKUP_FAILED: ${errorMsg} (correlationId: ${correlationId})`);
 
   }
 
