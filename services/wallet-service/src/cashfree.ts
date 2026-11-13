@@ -170,6 +170,10 @@ export function getResolvedCashfreeCredentials(): {
 
   apiVersion: string;
 
+  isVercelPreview?: boolean;
+
+  isProdKey?: boolean;
+
 } {
 
   let appId = (process.env.CASHFREE_APP_ID || '').trim();
@@ -281,25 +285,34 @@ export function getResolvedCashfreeCredentials(): {
 
   const apiVersion = process.env.CASHFREE_API_VERSION || '2026-01-01';
 
-
-
-  return { appId, secretKey, env, apiVersion };
-
+  return {
+    appId,
+    secretKey,
+    env,
+    apiVersion,
+    isVercelPreview: Boolean(isVercelPreview),
+    isProdKey: Boolean(isProdKey)
+  };
 }
 
-
-
 export function getPaymentReadinessStatus(options?: { featureFlagEnabled?: boolean }): PaymentReadinessReport {
-
-  const { appId, secretKey, env } = getResolvedCashfreeCredentials();
-
-
+  const { appId, secretKey, env, isVercelPreview, isProdKey } = getResolvedCashfreeCredentials();
 
   const appIdMasked = appId.length > 8
-
     ? `${appId.slice(0, 4)}...${appId.slice(-4)}`
-
     : (appId ? '***' : 'NOT_CONFIGURED');
+
+  if (isVercelPreview && isProdKey) {
+    return {
+      state: PaymentReadinessState.DISABLED_BY_MERCHANT_CONFIGURATION,
+      configured: false,
+      environment: 'sandbox',
+      gateway: 'CASHFREE',
+      appIdMasked,
+      adminExplanation: 'Live payment initiation is disabled in Preview environment to protect production balances.',
+      customerMessage: 'Payments are disabled in the Preview test environment.'
+    };
+  }
 
 
 
@@ -356,13 +369,8 @@ export function getPaymentReadinessStatus(options?: { featureFlagEnabled?: boole
 
 
   // Detect credential/environment mismatch:
-
   // Production secret keys have format cfsk_ma_prod_...
-
   // Sandbox secret keys have format cfsk_ma_test_... and appId TEST...
-
-  const isProdKey = secretKey.startsWith('cfsk_ma_prod_');
-
   const isTestKey = secretKey.startsWith('cfsk_ma_test_') || appId.startsWith('TEST');
 
 
