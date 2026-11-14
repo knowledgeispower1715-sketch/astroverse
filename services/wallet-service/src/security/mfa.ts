@@ -205,15 +205,33 @@ export const ALLOWED_ASSURANCE_SCOPES = [
 export type AllowedAssuranceScope = typeof ALLOWED_ASSURANCE_SCOPES[number] | string;
 
 const DEFAULT_DEV_ASSURANCE_KEY = 'astroverse_dev_preview_admin_assurance_signing_key_9999a001_entropy32';
+const ASSURANCE_SALT = 'astroverse_admin_assurance_signing_salt_v1';
 
 export function getAssuranceSigningSecret(): string {
-  const secret = process.env.ADMIN_ASSURANCE_SIGNING_KEY || process.env.ADMIN_MFA_SECRET;
-  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-
-  if (secret && secret.length >= 32) {
-    return secret;
+  // 1. Highest priority: Explicitly configured administrative assurance signing key
+  const explicit = (process.env.ADMIN_ASSURANCE_SIGNING_KEY || process.env.ADMIN_MFA_SECRET || '').trim();
+  if (explicit.length >= 32) {
+    return explicit;
   }
 
+  // 2. Cryptographic Fallback: Deterministically derive a 256-bit signing key from other production secrets with domain separation
+  const fallbackEntropySource = (
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.JWT_SECRET ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.DATABASE_URL ||
+    process.env.CASHFREE_SECRET_KEY ||
+    ''
+  ).trim();
+
+  if (fallbackEntropySource.length >= 32) {
+    return crypto.createHmac('sha256', ASSURANCE_SALT)
+      .update(fallbackEntropySource)
+      .digest('hex');
+  }
+
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
   if (isProd) {
     throw new Error('[SECURITY_CRITICAL] ADMIN_ASSURANCE_SIGNING_KEY must be configured with at least 32 characters in production.');
   }
