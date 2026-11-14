@@ -3660,9 +3660,13 @@
     }
     document.body.classList.add('admin-mode');
     const loginView = document.getElementById('view-admin-login');
+    const challengeView = document.getElementById('view-admin-mfa-challenge');
+    const enrollView = document.getElementById('view-admin-mfa-enrollment');
     const adminView = document.getElementById('view-admin');
     const navUser = document.getElementById('admin-nav-user');
     if (loginView) { loginView.classList.remove('active'); loginView.style.display = 'none'; }
+    if (challengeView) { challengeView.classList.remove('active'); challengeView.style.display = 'none'; }
+    if (enrollView) { enrollView.classList.remove('active'); enrollView.style.display = 'none'; }
     if (adminView) { adminView.classList.add('active'); adminView.style.display = 'block'; }
 
     const emailEl = document.getElementById('admin-header-email');
@@ -6068,7 +6072,13 @@
       currentUserSession = null;
 
       if (typeof sessionStorage !== 'undefined') {
-        const adminSessionKeys = ['astro_admin_session_token', 'astro_admin_user', 'astro_admin_assurance'];
+        const adminSessionKeys = [
+          'astro_admin_session_token',
+          'astro_admin_user',
+          'astro_admin_assurance',
+          'astro_admin_assurance_token',
+          'admin_mfa_token'
+        ];
         adminSessionKeys.forEach(k => {
           try { sessionStorage.removeItem(k); } catch (_) {}
         });
