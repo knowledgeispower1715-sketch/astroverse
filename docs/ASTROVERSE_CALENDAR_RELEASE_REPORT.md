@@ -5,10 +5,11 @@
 **Target Branch**: `feature/astroverse-vedic-3d-calendar`  
 **Base Commit / Branch**: `e0dfdfdade85a0f0355e47b67965cd217e3e277b` (`remediation/admin-control-centre-forensic-audit` / PR #4 HEAD)  
 **Main Baseline SHA**: `9a17d704806033a1982648e1dfddee661932f25e`  
-**Vercel Preview Deployment ID**: `3GbdD96Tzk1sBHuu5rndEtz94hCt`  
-**Vercel Preview URLs**:  
-- `https://astroverse-git-remed-41651b-knowledgeispower1715-1915s-projects.vercel.app/`  
-- `https://astroverse-2ktan3lbl-knowledgeispower1715-1915s-projects.vercel.app/`  
+**Feature Commit SHA**: `6f9585ccd`  
+**Vercel Preview Deployment**:  
+- `https://astroverse-6t4b5pkzl-knowledgeispower1715-1915s-projects.vercel.app/` (Active Feature Preview)  
+- `https://astroverse-6t4b5pkzl-knowledgeispower1715-1915s-projects.vercel.app/#/calendar` (3D Vedic Calendar Direct Route)  
+- `https://astroverse-git-remed-41651b-knowledgeispower1715-1915s-projects.vercel.app/` (Underlying PR #4 Base Preview)  
 **Author**: Security & Release Engineering Team (`worker_m5_docs`)  
 **Status**: READY FOR HUMAN REVIEW (NO PRODUCTION DEPLOYMENT WITHOUT SIGN-OFF)  
 
