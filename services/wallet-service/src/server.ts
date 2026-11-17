@@ -5935,6 +5935,441 @@ app.post('/api/transits/live', async (req: Request, res: Response) => {
   });
 });
 
+// =============================================================================
+// VEDIC CALENDAR, PANCHANG, TRANSITS & RASHIFAL GATEWAY PROXIES WITH IN-MEMORY CACHE
+// =============================================================================
+
+export interface PanchangCacheEntry {
+  data: any;
+  cachedAt: number;
+  expiresAt: number;
+}
+
+export const PANCHANG_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
+export const panchangCache = new Map<string, PanchangCacheEntry>();
+
+export function getPanchangCacheKey(
+  engineVersion: string,
+  ayanamsha: string,
+  convention: string,
+  dateStr: string,
+  lat: number,
+  lon: number,
+  tz: string
+): string {
+  const roundLat = (Math.round(lat * 100) / 100).toFixed(2);
+  const roundLon = (Math.round(lon * 100) / 100).toFixed(2);
+  return `panchang:${engineVersion}:${ayanamsha}:${convention}:${dateStr}:${roundLat}:${roundLon}:${tz}`;
+}
+
+export function getCachedPanchang(key: string): any | null {
+  const entry = panchangCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    panchangCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+export function setCachedPanchang(key: string, data: any, ttlMs: number = PANCHANG_CACHE_TTL_MS): void {
+  panchangCache.set(key, {
+    data,
+    cachedAt: Date.now(),
+    expiresAt: Date.now() + ttlMs,
+  });
+}
+
+// 1. /api/calendar/month
+app.get('/api/calendar/month', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  const now = new Date();
+  const year = req.query.year ? Number(req.query.year) : now.getUTCFullYear();
+  const month = req.query.month ? Number(req.query.month) : (now.getUTCMonth() + 1);
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : 28.6139;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : 77.2090;
+  const tz = String(req.query.timezone || req.query.tz || 'Asia/Kolkata');
+  const convention = String(req.query.convention || 'amanta');
+  const region = String(req.query.region || 'ALL');
+  const dateStr = `${year}-${String(month).padStart(2, '0')}`;
+  
+  const cacheKey = `${getPanchangCacheKey('2.1.0', 'lahiri', convention, dateStr, lat, lon, tz)}:${region}`;
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    res.setHeader('X-Cache-Key', cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  try {
+    const r = await fetch(`${kundliUrl}/api/calendar/month${queryStr}`, {
+      signal: AbortSignal.timeout(4000)
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('X-Cache-Key', cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Resilient fallback for calendar month
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const fallbackDays = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const curDate = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dayHols = [];
+    if (month === 11 && d === 8) {
+      dayHols.push({ id: `diwali-${year}`, nameEn: 'Diwali (Deepavali / Lakshmi Puja)', category: 'gazetted' });
+    }
+    fallbackDays.push({
+      date: curDate,
+      day: d,
+      tithi_name: 'Shukla Pratipada',
+      tithi_index: 0,
+      nakshatra_name: 'Ashwini',
+      moon_rashi: 'Aries',
+      holidays: dayHols,
+      is_bank_holiday: false
+    });
+  }
+  const fallback = {
+    year,
+    month,
+    convention,
+    region,
+    total_days: daysInMonth,
+    days: fallbackDays,
+    is_fallback: true
+  };
+  setCachedPanchang(cacheKey, fallback);
+  res.setHeader('X-Cache', 'MISS');
+  res.setHeader('X-Cache-Key', cacheKey);
+  return res.json(fallback);
+});
+
+// 2. /api/panchang/daily & /api/panchang/calculate
+const handlePanchangDaily = async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  const now = new Date();
+  const dateStr = String(req.query.date || now.toISOString().slice(0, 10));
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : 28.6139;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : 77.2090;
+  const tz = String(req.query.timezone || req.query.tz || 'Asia/Kolkata');
+  const convention = String(req.query.convention || 'amanta');
+
+  const cacheKey = getPanchangCacheKey('2.1.0', 'lahiri', convention, dateStr, lat, lon, tz);
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    res.setHeader('X-Cache-Key', cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  const endpoint = req.path.includes('/calculate') ? '/api/panchang/calculate' : '/api/panchang/daily';
+  try {
+    const r = await fetch(`${kundliUrl}${endpoint}${queryStr}`, {
+      signal: AbortSignal.timeout(4000)
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('X-Cache-Key', cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Fallback Panchang response using AstroCalculator
+  const chart = AstroCalculator.calculateChart(dateStr, '12:00', lat, lon, false);
+  const fallback = {
+    date: dateStr,
+    panchang: {
+      tithi: { name_en: 'Shukla Navami', paksha: 'Shukla', index: 8 },
+      nakshatra: { name_en: chart.planets.Moon?.nakshatra || 'Rohini', lord: chart.planets.Moon?.lord || 'Moon' },
+      yoga: { name_en: 'Siddha', index: 20 },
+      karana: { name_en: 'Bava', index: 0 },
+      vaar: { name_en: 'Tuesday', lord: 'Mars' }
+    },
+    tithi: { name_en: 'Shukla Navami', paksha: 'Shukla', index: 8 },
+    nakshatra: { name_en: chart.planets.Moon?.nakshatra || 'Rohini', lord: chart.planets.Moon?.lord || 'Moon' },
+    moon_rashi: { rashi_en: chart.planets.Moon?.sign || 'Taurus' },
+    is_fallback: true
+  };
+  setCachedPanchang(cacheKey, fallback);
+  res.setHeader('X-Cache', 'MISS');
+  res.setHeader('X-Cache-Key', cacheKey);
+  return res.json(fallback);
+};
+
+app.get('/api/panchang/daily', handlePanchangDaily);
+app.get('/api/panchang/calculate', handlePanchangDaily);
+
+// 3. /api/rashifal/daily
+app.get('/api/rashifal/daily', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  const now = new Date();
+  const dateStr = String(req.query.date || now.toISOString().slice(0, 10));
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : 28.6139;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : 77.2090;
+  const tz = String(req.query.timezone || req.query.tz || 'Asia/Kolkata');
+
+  const cacheKey = `${getPanchangCacheKey('2.1.0', 'lahiri', 'amanta', dateStr, lat, lon, tz)}:rashifal`;
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    res.setHeader('X-Cache-Key', cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  try {
+    const r = await fetch(`${kundliUrl}/api/rashifal/daily${queryStr}`, {
+      signal: AbortSignal.timeout(4000)
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('X-Cache-Key', cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Fallback 12 signs Rashifal
+  const SIGNS_EN = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+  const SIGNS_HI_MAP: Record<string, string> = {
+    Aries: 'मेष', Taurus: 'वृषभ', Gemini: 'मिथुन', Cancer: 'कर्क', Leo: 'सिंह', Virgo: 'कन्या',
+    Libra: 'तुला', Scorpio: 'वृश्चिक', Sagittarius: 'धनु', Capricorn: 'मकर', Aquarius: 'कुंभ', Pisces: 'मीन'
+  };
+  const signs = SIGNS_EN.map((name, idx) => ({
+    signIndex: idx,
+    signNameEn: name,
+    signNameHi: SIGNS_HI_MAP[name] || name,
+    rashiLord: 'Benefic Planet',
+    moonRashiPresent: idx === 0,
+    outlook: `Favorable day for ${name} natives with steady planetary support and constructive opportunities.`,
+    career: `Progress in professional deliverables. Maintain steady momentum in communications.`,
+    finance: `Prudent financial management brings peace of mind. Avoid speculative volatility.`,
+    relationships: `Warm camaraderie with peers and family. Clear and sincere words build mutual trust.`,
+    wellness: `Balanced vitality and physical stamina. Maintain regular hydration and deep rest.`,
+    helpfulFocus: `Focus on priorities with clarity and confidence.`,
+    luckyNumber: ((idx + 3) % 9) + 1,
+    luckyColor: 'Golden Yellow',
+    auspiciousPeriod: 'Abhijit Muhurta (11:45 AM – 12:35 PM)'
+  }));
+
+  const fallback = {
+    date: dateStr,
+    weekday: 'Today',
+    moon_transit: { rashi_en: 'Aries', sign_index: 0 },
+    signs,
+    is_fallback: true
+  };
+  setCachedPanchang(cacheKey, fallback);
+  res.setHeader('X-Cache', 'MISS');
+  res.setHeader('X-Cache-Key', cacheKey);
+  return res.json(fallback);
+});
+
+// 4. /api/holidays & /api/holidays/list
+const handleHolidays = async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  const now = new Date();
+  const year = req.query.year ? Number(req.query.year) : now.getUTCFullYear();
+  const month = req.query.month ? Number(req.query.month) : 'all';
+  const category = String(req.query.category || 'all');
+  const region = String(req.query.region || 'ALL');
+
+  const cacheKey = `panchang:2.1.0:lahiri:amanta:${year}-${month}:${category}:${region}:holidays`;
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    res.setHeader('X-Cache-Key', cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  try {
+    const r = await fetch(`${kundliUrl}/api/holidays/list${queryStr}`, {
+      signal: AbortSignal.timeout(4000)
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('X-Cache-Key', cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Fallback holidays with comprehensive dataset
+  const allFallbackHolidays = [
+    {
+      id: `republic-day-${year}`,
+      nameEn: 'Republic Day',
+      nameHi: 'गणतंत्र दिवस',
+      date: `${year}-01-26`,
+      category: 'national',
+      regions: ['ALL'],
+      isOfficial: true,
+      descriptionEn: 'Celebrates the enactment of the Constitution of India in 1950.'
+    },
+    {
+      id: `maha-shivratri-${year}`,
+      nameEn: 'Maha Shivratri',
+      nameHi: 'महाशिवरात्रि',
+      date: `${year}-02-15`,
+      category: 'gazetted',
+      regions: ['ALL'],
+      isOfficial: true,
+      descriptionEn: 'Sacred worship of Lord Shiva on Krishna Chaturdashi.'
+    },
+    {
+      id: `holi-${year}`,
+      nameEn: 'Holi (Dhulandi)',
+      nameHi: 'होली',
+      date: `${year}-03-04`,
+      category: 'gazetted',
+      regions: ['ALL'],
+      isOfficial: true,
+      descriptionEn: 'Grand festival of colors celebrated on Chaitra Krishna Pratipada.'
+    },
+    {
+      id: `eid-ul-fitr-${year}`,
+      nameEn: 'Id-ul-Fitr',
+      nameHi: 'ईद-उल-फ़ितर',
+      date: `${year}-03-20`,
+      category: 'gazetted',
+      regions: ['ALL'],
+      isOfficial: true,
+      descriptionEn: 'Islamic celebration marking the conclusion of Ramadan.'
+    },
+    {
+      id: `maharashtra-day-${year}`,
+      nameEn: 'Maharashtra Day',
+      nameHi: 'महाराष्ट्र दिवस',
+      date: `${year}-05-01`,
+      category: 'state',
+      regions: ['MH'],
+      isOfficial: true,
+      descriptionEn: 'Commemorates the formation of Maharashtra.'
+    },
+    {
+      id: `independence-day-${year}`,
+      nameEn: 'Independence Day',
+      nameHi: 'स्वतंत्रता दिवस',
+      date: `${year}-08-15`,
+      category: 'national',
+      regions: ['ALL'],
+      isOfficial: true,
+      descriptionEn: 'Celebrates the national independence of India in 1947.'
+    },
+    {
+      id: `gandhi-jayanti-${year}`,
+      nameEn: "Mahatma Gandhi's Birthday",
+      nameHi: 'महात्मा गांधी जयन्ती',
+      date: `${year}-10-02`,
+      category: 'national',
+      regions: ['ALL'],
+      isOfficial: true,
+      descriptionEn: 'Celebrates the birthday of Mahatma Gandhi.'
+    },
+    {
+      id: `diwali-${year}`,
+      nameEn: 'Diwali (Deepavali / Lakshmi Puja)',
+      nameHi: 'दीपावली (लक्ष्मी पूजन)',
+      date: `${year}-11-08`,
+      category: 'gazetted',
+      regions: ['ALL'],
+      isOfficial: true,
+      descriptionEn: 'Grand festival of lights on Kartika Amavasya during Pradosha.'
+    },
+    {
+      id: `christmas-${year}`,
+      nameEn: 'Christmas Day',
+      nameHi: 'क्रिसमस दिवस',
+      date: `${year}-12-25`,
+      category: 'gazetted',
+      regions: ['ALL'],
+      isOfficial: true,
+      descriptionEn: 'Celebration of the nativity of Jesus Christ.'
+    }
+  ];
+
+  let filtered = allFallbackHolidays;
+  if (month !== 'all') {
+    filtered = filtered.filter(h => Number(h.date.split('-')[1]) === Number(month));
+  }
+  if (category !== 'all') {
+    filtered = filtered.filter(h => h.category === category);
+  }
+  if (region !== 'ALL') {
+    filtered = filtered.filter(h => h.regions.includes('ALL') || h.regions.includes(region));
+  }
+
+  setCachedPanchang(cacheKey, filtered);
+  res.setHeader('X-Cache', 'MISS');
+  res.setHeader('X-Cache-Key', cacheKey);
+  return res.json(filtered);
+};
+
+app.get('/api/holidays', handleHolidays);
+app.get('/api/holidays/list', handleHolidays);
+
+// 5. /api/transits/monthly
+app.get('/api/transits/monthly', async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+  const now = new Date();
+  const year = req.query.year ? Number(req.query.year) : now.getUTCFullYear();
+  const month = req.query.month ? Number(req.query.month) : (now.getUTCMonth() + 1);
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : 28.6139;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : 77.2090;
+  const tz = String(req.query.timezone || req.query.tz || 'Asia/Kolkata');
+  const dateStr = `${year}-${String(month).padStart(2, '0')}`;
+
+  const cacheKey = `${getPanchangCacheKey('2.1.0', 'lahiri', 'amanta', dateStr, lat, lon, tz)}:transits`;
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    res.setHeader('X-Cache-Key', cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+  try {
+    const r = await fetch(`${kundliUrl}/api/transits/monthly${queryStr}`, {
+      signal: AbortSignal.timeout(4000)
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader('X-Cache', 'MISS');
+      res.setHeader('X-Cache-Key', cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Fallback monthly transits
+  const fallback = {
+    year,
+    month,
+    planets: {},
+    ingresses: [],
+    stations: [],
+    lunar_phases: [],
+    conjunctions: [],
+    is_fallback: true
+  };
+  setCachedPanchang(cacheKey, fallback);
+  res.setHeader('X-Cache', 'MISS');
+  res.setHeader('X-Cache-Key', cacheKey);
+  return res.json(fallback);
+});
+
 app.post('/api/dasha/current', async (req: Request, res: Response) => {
   const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
   try {
@@ -11577,4 +12012,6 @@ module.exports.adminSensitiveMutationsLimiter = adminSensitiveMutationsLimiter;
 module.exports.reconcileCashfreeOrder = reconcileCashfreeOrder;
 module.exports.reconcileUserPendingOrders = reconcileUserPendingOrders;
 module.exports.authorizeUserForForecastHorizon = authorizeUserForForecastHorizon;
+module.exports.panchangCache = panchangCache;
+module.exports.getPanchangCacheKey = getPanchangCacheKey;
 export default app;

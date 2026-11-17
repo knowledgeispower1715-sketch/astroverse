@@ -42,7 +42,14 @@ from ai_astrologer import generate_astrological_reading, generate_structured_pre
 from jaimini_engine import analyze_jaimini_system
 from kp_engine import calculate_kp_chart
 from tajika_engine import calculate_varshaphal
-from panchang_engine import calculate_full_panchang
+from panchang_engine import (
+    calculate_full_panchang,
+    calculate_daily_panchang,
+    calculate_advanced_panchang,
+)
+from transits_engine import calculate_monthly_transits, calculate_live_grahas
+from rashifal_engine import calculate_12sign_daily_rashifal
+from festival_engine import get_holidays_and_festivals, calculate_calendar_month
 from shadbala_and_yogas import (
     detect_classical_yogas,
     calculate_shadbala,
@@ -1388,6 +1395,152 @@ def get_panchang_calculation(
     """
     target = date_str or date.today().isoformat()
     return calculate_full_panchang(target, lat, lon, timezone)
+
+@app.get("/api/panchang/daily")
+def get_daily_panchang_endpoint(
+    date_str: Optional[str] = Query(None, alias="date", description="Target date YYYY-MM-DD"),
+    lat: float = Query(28.6139, ge=-90.0, le=90.0),
+    lon: float = Query(77.2090, ge=-180.0, le=180.0),
+    tz_str: str = Query("Asia/Kolkata", alias="timezone"),
+    convention: str = Query("amanta", description="amanta or purnimanta")
+):
+    """
+    Computes high-precision daily Vedic Panchang with exact transition start/end timestamps:
+    - 5 Angas: Tithi, Nakshatra, Yoga, Karana, Vaar
+    - Proportional 15-fold and 8-fold Muhurtas (Brahma, Abhijit, Rahu Kaal, etc.)
+    - Celestial timings with topocentric and elevation corrections
+    - Amanta and Purnimanta month definitions and Samvat eras
+    """
+    if date_str:
+        try:
+            target_dt = date.fromisoformat(date_str)
+        except ValueError:
+            target_dt = date.today()
+    else:
+        target_dt = date.today()
+    target_str = target_dt.isoformat()
+    result = calculate_full_panchang(
+        target_str, lat, lon, tz_str=tz_str, altitude_m=0.0, month_convention=convention
+    )
+    # Ensure both top-level limbs and nested limbs are accessible
+    p_limbs = result.get("panchang", {})
+    if "tithi" in p_limbs and "tithi" not in result:
+        result["tithi"] = p_limbs["tithi"]
+    if "nakshatra" in p_limbs and "nakshatra" not in result:
+        result["nakshatra"] = p_limbs["nakshatra"]
+    if "yoga" in p_limbs and "yoga" not in result:
+        result["yoga"] = p_limbs["yoga"]
+    if "karana" in p_limbs and "karana" not in result:
+        result["karana"] = p_limbs["karana"]
+    if "vara" in p_limbs and "vaar" not in result:
+        result["vaar"] = p_limbs["vara"]
+    if "celestial_timings" in result and "celestial" not in result:
+        result["celestial"] = result["celestial_timings"]
+    return result
+
+@app.get("/api/transits/monthly")
+def get_monthly_transits_endpoint(
+    year: Optional[int] = Query(None, description="Year (e.g. 2026)"),
+    month: Optional[int] = Query(None, ge=1, le=12, description="Month (1-12)"),
+    lat: float = Query(28.6139, ge=-90.0, le=90.0),
+    lon: float = Query(77.2090, ge=-180.0, le=180.0),
+    tz_str: str = Query("Asia/Kolkata", alias="timezone")
+):
+    """
+    Computes monthly planetary transits (Gochar):
+    - 9 Grahas live sidereal positions (Lahiri)
+    - Newton-Raphson sign ingress/egress timestamps
+    - Retrograde and direct station turning points (speed = 0)
+    - Exact lunar phases (Amavasya, First Quarter, Purnima, Third Quarter) and illumination %
+    - 3-degree planetary conjunction detection
+    """
+    now = datetime.now()
+    y = year or now.year
+    m = month or now.month
+    return calculate_monthly_transits(y, m, lat, lon, tz_str)
+
+@app.get("/api/rashifal/daily")
+def get_daily_rashifal_endpoint(
+    date_str: Optional[str] = Query(None, alias="date", description="Target date YYYY-MM-DD"),
+    lat: float = Query(28.6139, ge=-90.0, le=90.0),
+    lon: float = Query(77.2090, ge=-180.0, le=180.0),
+    tz_str: str = Query("Asia/Kolkata", alias="timezone")
+):
+    """
+    Generates algorithmic daily horoscope for all 12 Rashis (Mesh to Meen)
+    across 6 distinct sections:
+    - Overall Outlook
+    - Career & Work
+    - Finance
+    - Relationships
+    - Wellness
+    - Helpful Focus
+    Grounded in actual computed Gochara factors: Moon transit house (1-12),
+    Chandrashtama (8th house), benefic/malefic transits, Nakshatra lord relationship,
+    lucky numbers (1-9), lucky colors, and auspicious periods.
+    """
+    if date_str:
+        try:
+            target_dt = date.fromisoformat(date_str)
+        except ValueError:
+            target_dt = date.today()
+    else:
+        target_dt = date.today()
+    return calculate_12sign_daily_rashifal(target_dt, lat, lon, tz_str)
+
+@app.get("/api/holidays/list")
+@app.get("/api/holidays")
+def get_holidays_endpoint(
+    year: Optional[int] = Query(None, description="Year (e.g. 2026)"),
+    month: Optional[int] = Query(None, ge=1, le=12, description="Month (1-12)"),
+    category: Optional[str] = Query(None, description="Category: national, gazetted, restricted, state, religious, vrat, bank"),
+    region: Optional[str] = Query(None, description="State/Region code: ALL, DL, MH, TN, KA, WB, etc."),
+    lat: float = Query(28.6139, ge=-90.0, le=90.0),
+    lon: float = Query(77.2090, ge=-180.0, le=180.0),
+    tz_str: str = Query("Asia/Kolkata", alias="timezone")
+):
+    """
+    Returns verified Indian national, central gazetted, restricted, state/regional holidays,
+    religious festivals, Vrat dates, and banking holidays with source provenance and
+    authentic tithi observance rules (udaya_tithi, madhyahna, nishita, pradosha).
+    """
+    return get_holidays_and_festivals(
+        year=year,
+        month=month,
+        category=category,
+        region=region,
+        lat=lat,
+        lon=lon,
+        tz_str=tz_str
+    )
+
+@app.get("/api/calendar/month")
+def get_calendar_month_endpoint(
+    year: Optional[int] = Query(None, description="Year (e.g. 2026)"),
+    month: Optional[int] = Query(None, ge=1, le=12, description="Month (1-12)"),
+    lat: float = Query(28.6139, ge=-90.0, le=90.0),
+    lon: float = Query(77.2090, ge=-180.0, le=180.0),
+    tz_str: str = Query("Asia/Kolkata", alias="timezone"),
+    convention: str = Query("amanta", description="amanta or purnimanta"),
+    region: Optional[str] = Query("ALL", description="State/Region code")
+):
+    """
+    High-performance combined calendar grid payload for 2D/3D views:
+    Combines every day's date, 5-Anga Panchang, Moon Rashi, holidays, festivals,
+    and lunar phases for the entire requested month.
+    """
+    now = datetime.now()
+    y = year or now.year
+    m = month or now.month
+    return calculate_calendar_month(
+        year=y,
+        month=m,
+        lat=lat,
+        lon=lon,
+        tz_str=tz_str,
+        month_convention=convention,
+        region=region or "ALL"
+    )
 
 @app.post("/api/jaimini/calculate")
 def get_jaimini_calculation(req: BirthDetails):
