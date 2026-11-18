@@ -4,9 +4,11 @@
  * Manages the global state for the AstroVerse application.
  * Replaces disjointed variables and localStorage usage.
  */
+import ApiClient from "./ApiClient.js";
 
 class AstroCalendarContext {
   constructor() {
+    this.api = new ApiClient();
     this.state = {
       viewMode: "3d", // '3d' or '2d'
       date: new Date().toISOString(),
@@ -61,5 +63,5 @@ class AstroCalendarContext {
   }
 }
 
-// Export a singleton instance
-window.astroCalendarContext = new AstroCalendarContext();
+export const astroCalendarContext = new AstroCalendarContext();
+export default AstroCalendarContext;
