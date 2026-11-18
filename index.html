@@ -83,7 +83,10 @@
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(typeof initGoogleAuth==='function')initGoogleAuth();"></script>
   <!-- Cashfree Payments Web Checkout SDK v3 -->
   <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+  <!-- AstroCalendar Unified State Management -->
+  <script src="/src/AstroCalendarContext.js" type="module"></script>
   <!-- Firebase App & Analytics SDK (v11 Modular) - Secrets loaded securely via runtime config -->
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
     import { getAnalytics, isSupported, logEvent } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
@@ -465,6 +468,10 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+      }
+      .av-card-3d, .av-card-3d *, .cal-grid-3d, .cal-grid-3d * {
+        animation-duration: initial !important;
+        transition-duration: initial !important;
       }
     }
 
@@ -5560,7 +5567,7 @@
         transparent 100px,
         transparent 200px
       );
-      z-index: 1;
+      z-index: 10;
     }
     .reader-content-prose {
       position: relative;
@@ -5915,7 +5922,7 @@
     }
     .pdf-page-content {
       position: relative;
-      z-index: 1;
+      z-index: 10;
       width: 100%;
       height: 100%;
       display: flex;
@@ -6520,21 +6527,30 @@
     .cal-perspective-viewport {
       perspective: 1200px;
       perspective-origin: 50% 50%;
-      overflow: hidden;
-      padding: 4px;
+      overflow: visible;
     }
-    .cal-month-grid {
+    #cal-celestial-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      border-radius: 16px;
+    }
+    .cal-month-grid.cal-grid-3d {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      transform-style: preserve-3d;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+    .cal-month-grid.cal-grid-2d {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 8px;
-      transition: transform 0.3s ease;
-    }
-    .cal-month-grid.cal-grid-3d {
-      transform-style: preserve-3d;
-    }
-    .cal-month-grid.cal-grid-2d {
-      transform-style: flat;
-      transform: none !important;
     }
 
     /* Date Card */
@@ -6551,19 +6567,34 @@
       cursor: pointer;
       user-select: none;
       transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
-      overflow: hidden;
+      overflow: visible;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      -webkit-font-smoothing: subpixel-antialiased;
     }
     .cal-grid-3d .cal-date-card {
       transform-style: preserve-3d;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+      will-change: transform;
+    }
+
+    .cal-grid-3d .cal-date-card:hover {
+      transform: translateZ(16px) scale(1.02);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(245, 158, 11, 0.25);
+    }
+
+    .cal-grid-3d .cal-date-card.selected {
+      transform: translateZ(22px) scale(1.03);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 32px rgba(245, 158, 11, 0.4);
     }
     .cal-date-card:hover {
-      border-color: rgba(212, 175, 55, 0.6);
+      border-color: rgba(245, 158, 11, 0.6);
       background: rgba(26, 38, 64, 0.95);
       z-index: 10;
     }
     .cal-grid-3d .cal-date-card:hover {
       transform: translateZ(16px) scale(1.02);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(212, 175, 55, 0.3);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(245, 158, 11, 0.35);
     }
     .cal-date-card.pad-day {
       opacity: 0.35;
@@ -6578,13 +6609,13 @@
       box-shadow: 0 0 14px rgba(245, 196, 94, 0.25);
     }
     .cal-date-card.selected {
-      border-color: #F5C45E;
+      border-color: #F59E0B;
       background: linear-gradient(145deg, rgba(40, 60, 100, 0.95) 0%, rgba(24, 35, 60, 0.95) 100%);
-      box-shadow: 0 0 20px rgba(245, 196, 94, 0.45);
+      box-shadow: 0 0 22px rgba(245, 158, 11, 0.5), 0 8px 24px rgba(0, 0, 0, 0.6);
       z-index: 12;
     }
     .cal-grid-3d .cal-date-card.selected {
-      transform: translateZ(22px) scale(1.03);
+      transform: translateZ(28px) scale(1.03);
     }
     .cal-card-top-row {
       display: flex;
@@ -7308,12 +7339,27 @@
     }
     @media (prefers-reduced-motion: reduce) {
       .cal-perspective-viewport {
-        perspective: none !important;
+        perspective: 1400px !important;
       }
-      .cal-month-grid, .cal-date-card, .cal-sub-tab-panel {
+      .cal-month-grid.cal-grid-3d {
+        transform: rotateX(8deg) translateZ(0) !important;
+        transition: none !important;
+        animation: none !important;
+      }
+      .cal-month-grid.cal-grid-2d {
         transform: none !important;
         transition: none !important;
         animation: none !important;
+      }
+      .cal-date-card, .cal-sub-tab-panel {
+        transition: none !important;
+        animation: none !important;
+      }
+      .cal-grid-3d .cal-date-card:hover {
+        transform: translateZ(16px) !important;
+      }
+      .cal-grid-3d .cal-date-card.selected {
+        transform: translateZ(28px) !important;
       }
     }
 
@@ -8346,6 +8392,7 @@
 
               <!-- Perspective Viewport -->
               <div class="cal-perspective-viewport" id="cal-perspective-viewport">
+                <canvas id="cal-celestial-canvas" aria-hidden="true"></canvas>
                 <div class="cal-month-grid cal-grid-3d" id="cal-month-grid" role="grid">
                   <!-- Date cards generated dynamically by JS -->
                 </div>
@@ -18493,6 +18540,10 @@
               lastSyncedProfileUserId = userId;
               lastSyncedProfileTime = Date.now();
               renderSavedProfilesList();
+              
+              if (savedUserProfiles.length > 0 && !currentCalculatedChart) {
+                loadSavedProfileToKundli(savedUserProfiles[0].id, true);
+              }
             }
           }
         } catch (err) {
@@ -18583,7 +18634,7 @@
       showToast(`Profile for ${currentCalculatedChart.name} saved successfully to cloud!`, "success");
     }
 
-    function loadSavedProfileToKundli(profileId) {
+    function loadSavedProfileToKundli(profileId, silent = false) {
       const p = savedUserProfiles.find(x => String(x.id) === String(profileId));
       if (!p) return;
 
@@ -18594,8 +18645,10 @@
       if (p.lat) document.getElementById('k-resolved-lat').value = p.lat;
       if (p.lon) document.getElementById('k-resolved-lon').value = p.lon;
 
-      switchNavSection('kundli');
-      showToast(`Loaded profile: ${p.name}`, "info");
+      if (!silent) {
+        switchNavSection('kundli');
+        showToast(`Loaded profile: ${p.name}`, "info");
+      }
       generateUserKundli();
     }
 
@@ -22388,6 +22441,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
     function initLuxuryGSAP() {
       if (typeof window.gsap === 'undefined') return;
+      gsap.config({ reducedMotion: "auto" });
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         return; // Respect reduced motion preference
       }
@@ -22856,7 +22910,7 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
       // Step 3: Fetch authoritative backend Swiss Ephemeris Panchang
       try {
         if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') return;
-        const res = await fetch(`/api/panchang/calculate?date=${encodeURIComponent(todayIso)}&lat=${lat}&lon=${lon}&timezone=${encodeURIComponent(tz)}`);
+        const res = await fetch(`/api/kundli/panchang?type=calculate&date=${encodeURIComponent(todayIso)}&lat=${lat}&lon=${lon}&timezone=${encodeURIComponent(tz)}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data.panchang) {
@@ -23023,10 +23077,20 @@ let currentCalendarState = {
 
 function loadStoredCalendarPreferences() {
   try {
-    const savedMode = localStorage.getItem('astro_calendar_view_mode');
-    if (savedMode === '3d' || savedMode === '2d') {
-      currentCalendarState.viewMode = savedMode;
+    const oldMode = localStorage.getItem('astro_calendar_view_mode');
+    let savedModeV2 = localStorage.getItem('astro_calendar_view_mode_v2');
+
+    if (oldMode) {
+      localStorage.removeItem('astro_calendar_view_mode');
+      localStorage.setItem('astro_calendar_view_mode_v2', '3d');
+      currentCalendarState.viewMode = '3d';
+    } else if (savedModeV2 === '3d' || savedModeV2 === '2d') {
+      currentCalendarState.viewMode = savedModeV2;
+    } else {
+      currentCalendarState.viewMode = '3d';
+      localStorage.setItem('astro_calendar_view_mode_v2', '3d');
     }
+
     const savedTrad = localStorage.getItem('astro_calendar_convention');
     if (savedTrad === 'purnimanta' || savedTrad === 'amanta') {
       currentCalendarState.tradition = savedTrad;
@@ -23038,13 +23102,16 @@ function loadStoredCalendarPreferences() {
         currentCalendarState.location = loc;
       }
     }
-  } catch (_) {}
+  } catch (_) {
+    currentCalendarState.viewMode = '3d';
+  }
 }
 
 function saveCalendarLocationPreferences() {
   try {
     localStorage.setItem('astro_calendar_location', JSON.stringify(currentCalendarState.location));
-    localStorage.setItem('astro_calendar_view_mode', currentCalendarState.viewMode);
+    localStorage.setItem('astro_calendar_view_mode_v2', currentCalendarState.viewMode || '3d');
+    localStorage.setItem('astro_calendar_view_mode', currentCalendarState.viewMode || '3d');
     localStorage.setItem('astro_calendar_convention', currentCalendarState.tradition);
   } catch (_) {}
 }
@@ -23828,11 +23895,330 @@ function calculateClientNavagrahaTransits(targetDate = '2026-11-17') {
 
 
 // ==============================================================================
+// LAYER 1: CELESTIAL CANVAS RENDERER (#cal-celestial-canvas)
+// ==============================================================================
+let celestialCanvasState = {
+  canvas: null,
+  ctx: null,
+  animId: null,
+  stars: [],
+  dust: [],
+  zodiacAngle: 0,
+  targetPhaseDeg: 90,
+  currentPhaseDeg: 90,
+  lunarLabel: '',
+  isInitialized: false
+};
+window.celestialCanvasState = celestialCanvasState;
+
+function initCelestialCanvas() {
+  const canvas = document.getElementById('cal-celestial-canvas');
+  if (!canvas) return;
+  celestialCanvasState.canvas = canvas;
+  celestialCanvasState.ctx = canvas.getContext('2d');
+
+  // Procedural twinkling starfield (120 stars)
+  if (celestialCanvasState.stars.length === 0) {
+    for (let i = 0; i < 120; i++) {
+      celestialCanvasState.stars.push({
+        x: Math.random(),
+        y: Math.random(),
+        r: Math.random() * 1.5 + 0.4,
+        alpha: Math.random() * 0.7 + 0.3,
+        speed: Math.random() * 0.02 + 0.005,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  // Cosmic dust particles (30 particles)
+  if (celestialCanvasState.dust.length === 0) {
+    for (let i = 0; i < 30; i++) {
+      celestialCanvasState.dust.push({
+        x: Math.random(),
+        y: Math.random(),
+        r: Math.random() * 2 + 0.8,
+        alpha: Math.random() * 0.15 + 0.05,
+        vx: (Math.random() - 0.5) * 0.0003,
+        vy: (Math.random() - 0.5) * 0.0003
+      });
+    }
+  }
+
+  function resizeCelestialCanvas() {
+    if (!canvas || !canvas.parentElement) return;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(300, Math.floor(rect.width * dpr));
+    canvas.height = Math.max(300, Math.floor(rect.height * dpr));
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+  }
+
+  resizeCelestialCanvas();
+
+  if (!celestialCanvasState.isInitialized) {
+    window.addEventListener('resize', resizeCelestialCanvas);
+    if (window.ResizeObserver && canvas.parentElement) {
+      new ResizeObserver(() => resizeCelestialCanvas()).observe(canvas.parentElement);
+    }
+    celestialCanvasState.isInitialized = true;
+  }
+
+  updateCelestialMoonPhase();
+
+  if (celestialCanvasState.animId) {
+    cancelAnimationFrame(celestialCanvasState.animId);
+  }
+  renderCelestialFrame();
+}
+
+function updateCelestialMoonPhase() {
+  try {
+    const loc = currentCalendarState.location;
+    const tradition = currentCalendarState.tradition;
+    const panchang = calculateAdvancedClientPanchang(currentCalendarState.selectedDate, loc.lat, loc.lon, loc.tz, tradition);
+    if (panchang && panchang.longitudes) {
+      const moonSid = panchang.longitudes.moon_sidereal;
+      const sunSid = panchang.longitudes.sun_sidereal;
+      celestialCanvasState.targetPhaseDeg = (moonSid - sunSid + 360) % 360;
+      celestialCanvasState.lunarLabel = `${panchang.tithi.name} • ${panchang.lunar_phase.illumination}% lit`;
+    }
+  } catch (_) {}
+}
+
+function renderCelestialFrame() {
+  const canvas = celestialCanvasState.canvas;
+  const ctx = celestialCanvasState.ctx;
+  if (!canvas || !ctx) return;
+
+  // In 2D mode, keep canvas idle
+  if (currentCalendarState.viewMode !== '3d') {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    celestialCanvasState.animId = requestAnimationFrame(renderCelestialFrame);
+    return;
+  }
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = canvas.width / dpr;
+  const h = canvas.height / dpr;
+
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  // 1. Deep cosmic navy backdrop (#0B0F19) with radial depth
+  const bgGrad = ctx.createRadialGradient(w * 0.5, h * 0.38, 40, w * 0.5, h * 0.48, Math.max(w, h) * 0.75);
+  bgGrad.addColorStop(0, '#11192E');
+  bgGrad.addColorStop(0.5, '#0E1524');
+  bgGrad.addColorStop(1, '#0B0F19');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // 2. Procedural twinkling starfield & cosmic dust
+  const time = Date.now() * 0.001;
+  const stars = celestialCanvasState.stars;
+  for (let i = 0; i < stars.length; i++) {
+    const s = stars[i];
+    const tw = Math.sin(time * s.speed * 60 + s.phase);
+    const a = Math.max(0.12, Math.min(1, s.alpha + tw * 0.35));
+    ctx.beginPath();
+    ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = (i % 8 === 0)
+      ? `rgba(245, 158, 11, ${a * 0.95})`
+      : ((i % 5 === 0) ? `rgba(254, 240, 138, ${a * 0.9})` : `rgba(255, 255, 255, ${a})`);
+    ctx.fill();
+  }
+
+  const dust = celestialCanvasState.dust;
+  for (let i = 0; i < dust.length; i++) {
+    const d = dust[i];
+    d.x = (d.x + d.vx + 1) % 1;
+    d.y = (d.y + d.vy + 1) % 1;
+    ctx.beginPath();
+    ctx.arc(d.x * w, d.y * h, d.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(245, 158, 11, ${d.alpha})`;
+    ctx.fill();
+  }
+
+  // 3. Rotating Golden Vedic Zodiac Constellation Ring (#F59E0B)
+  const ringX = w * 0.5;
+  const ringY = h * 0.42;
+  const ringR = Math.min(w * 0.42, h * 0.42, 340);
+  if (ringR > 50) {
+    ctx.save();
+    ctx.translate(ringX, ringY);
+    ctx.rotate(celestialCanvasState.zodiacAngle);
+
+    // Outer gold ring
+    ctx.beginPath();
+    ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.22)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Inner gold ring
+    ctx.beginPath();
+    ctx.arc(0, 0, ringR * 0.84, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 12 Zodiac segments & glyphs
+    const zodiacSigns = [
+      { en: 'Mesha', sym: '♈' },
+      { en: 'Vrishabha', sym: '♉' },
+      { en: 'Mithuna', sym: '♊' },
+      { en: 'Karka', sym: '♋' },
+      { en: 'Simha', sym: '♌' },
+      { en: 'Kanya', sym: '♍' },
+      { en: 'Tula', sym: '♎' },
+      { en: 'Vrishchika', sym: '♏' },
+      { en: 'Dhanu', sym: '♐' },
+      { en: 'Makara', sym: '♑' },
+      { en: 'Kumbha', sym: '♒' },
+      { en: 'Meena', sym: '♓' }
+    ];
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '11px serif';
+    for (let i = 0; i < 12; i++) {
+      const angle = (i * 30) * Math.PI / 180;
+      const x1 = Math.cos(angle) * ringR * 0.84;
+      const y1 = Math.sin(angle) * ringR * 0.84;
+      const x2 = Math.cos(angle) * ringR;
+      const y2 = Math.sin(angle) * ringR;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.18)';
+      ctx.stroke();
+
+      const midAngle = angle + (15 * Math.PI / 180);
+      const glyphR = ringR * 0.92;
+      const gx = Math.cos(midAngle) * glyphR;
+      const gy = Math.sin(midAngle) * glyphR;
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.45)';
+      ctx.fillText(zodiacSigns[i].sym, gx, gy);
+    }
+    ctx.restore();
+
+    const isReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!isReduced) {
+      celestialCanvasState.zodiacAngle += 0.0006;
+    }
+  }
+
+  // 4. Dynamic 3D Spherical Moon Phase Model with live illumination angle
+  render3DMoonModel(ctx, w, h);
+
+  ctx.restore();
+
+  celestialCanvasState.animId = requestAnimationFrame(renderCelestialFrame);
+}
+
+function render3DMoonModel(ctx, w, h) {
+  const target = celestialCanvasState.targetPhaseDeg;
+  let diff = target - celestialCanvasState.currentPhaseDeg;
+  if (diff > 180) diff -= 360;
+  if (diff < -180) diff += 360;
+  celestialCanvasState.currentPhaseDeg = (celestialCanvasState.currentPhaseDeg + diff * 0.1 + 360) % 360;
+
+  const phaseDeg = celestialCanvasState.currentPhaseDeg;
+  const isWaxing = phaseDeg <= 180;
+  const moonR = Math.min(34, Math.max(24, w * 0.038));
+  const moonX = Math.max(moonR + 16, Math.min(w - moonR - 16, w * 0.88));
+  const moonY = moonR + 16;
+
+  ctx.save();
+
+  // Subtle atmospheric halo
+  const halo = ctx.createRadialGradient(moonX, moonY, moonR * 0.6, moonX, moonY, moonR * 2.2);
+  halo.addColorStop(0, 'rgba(245, 158, 11, 0.22)');
+  halo.addColorStop(0.5, 'rgba(245, 158, 11, 0.06)');
+  halo.addColorStop(1, 'rgba(245, 158, 11, 0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonR * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3D Spherical unlit base (dark lunar sphere with curved shading)
+  const darkGrad = ctx.createRadialGradient(moonX - moonR * 0.35, moonY - moonR * 0.35, moonR * 0.1, moonX, moonY, moonR);
+  darkGrad.addColorStop(0, '#1E293B');
+  darkGrad.addColorStop(0.65, '#0F172A');
+  darkGrad.addColorStop(1, '#050811');
+  ctx.fillStyle = darkGrad;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw 3D illuminated lunar phase
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Phase illumination geometry
+  const k = Math.cos(phaseDeg * Math.PI / 180);
+  ctx.beginPath();
+  if (isWaxing) {
+    ctx.arc(moonX, moonY, moonR, -Math.PI / 2, Math.PI / 2, false);
+    ctx.ellipse(moonX, moonY, Math.abs(k) * moonR, moonR, 0, Math.PI / 2, -Math.PI / 2, k < 0);
+  } else {
+    ctx.arc(moonX, moonY, moonR, Math.PI / 2, -Math.PI / 2, false);
+    ctx.ellipse(moonX, moonY, Math.abs(k) * moonR, moonR, 0, -Math.PI / 2, Math.PI / 2, k < 0);
+  }
+  ctx.closePath();
+
+  // Rich 3D spherical lighting gradient on illuminated surface
+  const lightOffsetX = isWaxing ? moonR * 0.35 : -moonR * 0.35;
+  const litGrad = ctx.createRadialGradient(moonX + lightOffsetX, moonY - moonR * 0.3, moonR * 0.1, moonX, moonY, moonR);
+  litGrad.addColorStop(0, '#FFFBEB');
+  litGrad.addColorStop(0.35, '#FDE68A');
+  litGrad.addColorStop(0.75, '#F59E0B');
+  litGrad.addColorStop(1, '#B45309');
+  ctx.fillStyle = litGrad;
+  ctx.fill();
+
+  // Subtle lunar maria/craters texture
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.15)';
+  ctx.beginPath();
+  ctx.arc(moonX + moonR * 0.15, moonY - moonR * 0.1, moonR * 0.22, 0, Math.PI * 2);
+  ctx.arc(moonX - moonR * 0.1, moonY + moonR * 0.2, moonR * 0.28, 0, Math.PI * 2);
+  ctx.arc(moonX + moonR * 0.25, moonY + moonR * 0.15, moonR * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // Delicate Vedic gold rim stroke around sphere
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Lunar Phase Caption
+  if (celestialCanvasState.lunarLabel) {
+    ctx.font = '10px "Plus Jakarta Sans", sans-serif';
+    ctx.fillStyle = '#FDE68A';
+    ctx.textAlign = 'center';
+    ctx.fillText(celestialCanvasState.lunarLabel, moonX, moonY + moonR + 13);
+  }
+
+  ctx.restore();
+}
+
+
+// ==============================================================================
 // 5. UI INITIALIZATION & RENDERERS
 // ==============================================================================
 
 function initCalendarView() {
   loadStoredCalendarPreferences();
+
+  // Initialize Layer 1 Celestial Canvas
+  initCelestialCanvas();
 
   // Populate month & year selectors
   const monthSelect = document.getElementById('cal-select-month');
@@ -24019,7 +24405,10 @@ function renderCalendarMonthGrid() {
   const isReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!isReducedMotion && window.gsap) {
     try {
-      gsap.fromTo(monthGridEl, { opacity: 0.3, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" });
+      gsap.fromTo(monthGridEl, 
+        { opacity: 0, rotationX: -5, scale: 0.98 }, 
+        { opacity: 1, rotationX: 8, scale: 1, duration: 0.5, ease: "power2.out" }
+      );
     } catch (_) {}
   }
 
@@ -24027,6 +24416,9 @@ function renderCalendarMonthGrid() {
   const selPanchang = calculateAdvancedClientPanchang(currentCalendarState.selectedDate, loc.lat, loc.lon, loc.tz, tradition);
   const selHolidays = getHolidaysForDate(currentCalendarState.selectedDate, tradition);
   updateDayInspector(selPanchang, selHolidays);
+
+  // Synchronize 3D Celestial Moon Phase Model
+  updateCelestialMoonPhase();
 
   // Setup 3D Orbital Tilt interaction on viewport
   setupCalendar3DPerspectiveMotion();
@@ -24117,6 +24509,9 @@ function selectCalendarDate(dateStr) {
     updateDayInspector(panchang, holidays);
   }
 
+  // Synchronize 3D Celestial Moon Phase Model
+  updateCelestialMoonPhase();
+
   // Update date input
   const dInput = document.getElementById('cal-input-date');
   if (dInput) dInput.value = dateStr;
@@ -24169,39 +24564,88 @@ function handleCalendarCellKey(event, dateStr) {
 
 // 3D Orbital Perspective Motion setup
 function setupCalendar3DPerspectiveMotion() {
-  const isReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (isReducedMotion) return;
-
   const viewport = document.getElementById('cal-perspective-viewport');
   const grid = document.getElementById('cal-month-grid');
-  if (!viewport || !grid || currentCalendarState.viewMode !== '3d') return;
+  if (!viewport || !grid) return;
+
+  const isReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (isReducedMotion) {
+    if (currentCalendarState.viewMode === '3d') {
+      grid.style.transform = 'rotateX(8deg) translateZ(0)';
+    } else {
+      grid.style.transform = '';
+    }
+    return;
+  }
+
+  // Ensure resting elevation is set in 3D mode
+  if (currentCalendarState.viewMode === '3d' && (!grid.style.transform || grid.style.transform === 'none')) {
+    grid.style.transform = 'rotateX(8deg) translateZ(0)';
+  }
 
   if (viewport.getAttribute('data-3d-listener-bound') === 'true') return;
   viewport.setAttribute('data-3d-listener-bound', 'true');
 
   let ticking = false;
-  viewport.addEventListener('mousemove', (e) => {
+
+  function handlePointerTilt(clientX, clientY) {
     if (currentCalendarState.viewMode !== '3d') return;
     const rect = viewport.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const mouseX = clientX - rect.left;
+    const mouseY = clientY - rect.top;
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
     if (!ticking) {
       requestAnimationFrame(() => {
-        const rotY = Math.max(-5, Math.min(5, ((mouseX - centerX) / centerX) * 5));
+        const rotY = Math.max(-6, Math.min(6, ((mouseX - centerX) / centerX) * 6));
         const rotX = Math.max(-5, Math.min(5, -((mouseY - centerY) / centerY) * 5));
-        grid.style.transform = `rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+        grid.style.transform = `rotateX(${(8 + rotX).toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
         ticking = false;
       });
       ticking = true;
     }
-  }, { passive: true });
+  }
 
-  viewport.addEventListener('mouseleave', () => {
-    grid.style.transform = '';
-  }, { passive: true });
+  function resetToResting() {
+    if (currentCalendarState.viewMode === '3d') {
+      grid.style.transform = 'rotateX(8deg) translateZ(0)';
+    } else {
+      grid.style.transform = '';
+    }
+  }
+
+  const moveHandler = (e) => handlePointerTilt(e.clientX, e.clientY);
+  const leaveHandler = () => resetToResting();
+  const startHandler = (e) => {
+    if (e.touches && e.touches.length > 0) {
+      handlePointerTilt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+  const moveTouchHandler = (e) => {
+    if (e.touches && e.touches.length > 0) {
+      handlePointerTilt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+  const endHandler = () => resetToResting();
+  const cancelHandler = () => resetToResting();
+
+  viewport.addEventListener('mousemove', moveHandler, { passive: true });
+  viewport.addEventListener('mouseleave', leaveHandler, { passive: true });
+  viewport.addEventListener('touchstart', startHandler, { passive: true });
+  viewport.addEventListener('touchmove', moveTouchHandler, { passive: true });
+  viewport.addEventListener('touchend', endHandler, { passive: true });
+  viewport.addEventListener('touchcancel', cancelHandler, { passive: true });
+
+  viewport.cleanup = () => {
+    viewport.removeEventListener('mousemove', moveHandler);
+    viewport.removeEventListener('mouseleave', leaveHandler);
+    viewport.removeEventListener('touchstart', startHandler);
+    viewport.removeEventListener('touchmove', moveTouchHandler);
+    viewport.removeEventListener('touchend', endHandler);
+    viewport.removeEventListener('touchcancel', cancelHandler);
+  };
 }
 
 
@@ -24925,7 +25369,10 @@ function changeCalendarSelectedDate(offset) {
 function setCalendarViewMode(mode, save = true) {
   currentCalendarState.viewMode = mode;
   if (save) {
-    try { localStorage.setItem('astro_calendar_view_mode', mode); } catch (_) {}
+    try {
+      localStorage.setItem('astro_calendar_view_mode_v2', mode);
+      localStorage.setItem('astro_calendar_view_mode', mode);
+    } catch (_) {}
   }
 
   const btn3d = document.getElementById('cal-view-btn-3d');
@@ -24942,7 +25389,16 @@ function setCalendarViewMode(mode, save = true) {
   if (gridEl) {
     gridEl.classList.toggle('cal-grid-3d', mode === '3d');
     gridEl.classList.toggle('cal-grid-2d', mode === '2d');
-    if (mode === '2d') gridEl.style.transform = '';
+    if (mode === '3d') {
+      gridEl.style.transform = 'rotateX(8deg) translateZ(0)';
+    } else {
+      gridEl.style.transform = '';
+    }
+  }
+
+  const canvasEl = document.getElementById('cal-celestial-canvas');
+  if (canvasEl) {
+    canvasEl.style.display = (mode === '3d') ? 'block' : 'none';
   }
 }
 
@@ -25014,7 +25470,7 @@ async function syncCalendarMonthFromBackend(year, month) {
   const conv = currentCalendarState.tradition;
 
   try {
-    const res = await fetch(`/api/calendar/month?year=${year}&month=${month}&lat=${loc.lat}&lon=${loc.lon}&tz=${encodeURIComponent(loc.tz)}&convention=${conv}`);
+    const res = await fetch(`/api/kundli/calendar?year=${year}&month=${month}&lat=${loc.lat}&lon=${loc.lon}&timezone=${encodeURIComponent(loc.tz)}&convention=${conv}`);
     if (res.ok) {
       const data = await res.json();
       if (data && Array.isArray(data.days) && data.days.length > 0) {
@@ -36643,11 +37099,12 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
     // ==============================================================================
     // DASHA & TRANSITS VIEW WITH 3-TIER EXPANDABLE TIMELINE & LIVE GOCHARA ENGINE
     // ==============================================================================
-    let expandedDashaLord = null;
     let expandedAntarKey = null;
 
     function toggleDashaTimelineExpand(lord) {
-      expandedDashaLord = (expandedDashaLord === lord) ? null : lord;
+      const state = window.astroCalendarContext.getState();
+      const expandedDashaLord = (state.expandedDashaLord === lord) ? null : lord;
+      window.astroCalendarContext.setState({ expandedDashaLord });
       renderKundliDashasView();
     }
 
@@ -36928,7 +37385,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       if (container && Array.isArray(vd.timeline)) {
         const treeHtml = vd.timeline.map((m, mIdx) => {
           const isActive = m.is_active;
-          const isExpanded = (m.maha_dasha === expandedDashaLord);
+          const isExpanded = (m.maha_dasha === window.astroCalendarContext.getState().expandedDashaLord);
           const isPast = (m.status === 'PAST');
           const isFuture = (m.status === 'FUTURE');
 
