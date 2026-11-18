@@ -48,10 +48,17 @@ class AstroCalendarContext {
   }
 
   saveToLocalStorage() {
-    localStorage.setItem("astroCalendarState", JSON.stringify(this.state));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("astroCalendarState", JSON.stringify(this.state));
+    }
   }
 
   loadFromLocalStorage() {
+    if (
+      typeof localStorage === "undefined" ||
+      typeof localStorage.getItem !== "function"
+    )
+      return;
     const saved = localStorage.getItem("astroCalendarState");
     if (saved) {
       try {
@@ -59,6 +66,20 @@ class AstroCalendarContext {
       } catch (e) {
         console.error("Failed to load state from localStorage", e);
       }
+    }
+  }
+
+  async fetchPanchangData() {
+    this.setState({ panchangLoading: true, panchangError: null });
+    try {
+      const { date, location } = this.state;
+      const data = await this.api.get(
+        `/api/panchang/daily?date=${date}&lat=${location.lat}&lon=${location.lon}`,
+      );
+      this.setState({ panchangData: data, panchangLoading: false });
+    } catch (e) {
+      console.error("Failed to fetch panchang data", e);
+      this.setState({ panchangError: e.message, panchangLoading: false });
     }
   }
 }

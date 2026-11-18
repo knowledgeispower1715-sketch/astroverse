@@ -1,12 +1,24 @@
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
+import { View, StyleSheet, Text, ActivityIndicator } from "react-native";
 import { Colors } from "../theme/colors";
 
 interface DoshaGrid3DProps {
   data: any;
+  isLoading?: boolean;
 }
 
-export const DoshaGrid3D: React.FC<DoshaGrid3DProps> = ({ data }) => {
+export const DoshaGrid3D: React.FC<DoshaGrid3DProps> = ({
+  data,
+  isLoading,
+}) => {
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="small" color={Colors.gold} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* 3D-like styling with shadows */}

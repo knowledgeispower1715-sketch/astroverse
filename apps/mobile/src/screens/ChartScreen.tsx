@@ -115,7 +115,7 @@ export const ChartScreen: React.FC<{ onOpenProfileModal: () => void }> = ({
             {/* Dosha Analysis Summary */}
             <View style={styles.doshaContainer}>
               <Text style={styles.sectionHeader}>PARASHARI DOSHA STATUS</Text>
-              <DoshaGrid3D data={kundliData?.doshas} />
+              <DoshaGrid3D data={kundliData?.doshas} isLoading={isLoading} />
             </View>
 
             {/* Planetary Positions Table */}

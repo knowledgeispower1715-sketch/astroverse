@@ -128,10 +128,7 @@ app.use((req, res, next) => {
     "Strict-Transport-Security",
     "max-age=63072000; includeSubDomains; preload",
   );
-  res.setHeader(
-    "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.cashfree.com https://sdk.cashfree.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https://astroverse-eta.vercel.app https://*.supabase.co https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://geocoding-api.open-meteo.com https://accounts.google.com https://*.googleapis.com https://*.firebaseio.com; frame-src 'self' https://*.cashfree.com https://sdk.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com",
-  );
+  res.setHeader("Content-Security-Policy", process.env.CSP_HEADER || "");
 
   // Sensitive endpoint cache controls (Phase 8: zero public caching on authenticated/admin data)
   if (
@@ -224,16 +221,7 @@ app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
 
 const ALLOWED_ORIGINS = process.env.CORS_ALLOWED_ORIGINS
   ? process.env.CORS_ALLOWED_ORIGINS.split(",")
-  : [
-      "https://astroverse-eta.vercel.app",
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:8081",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:8081",
-      ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-    ];
+  : [];
 
 // Cashfree Webhook Endpoints (Canonical & Aliases, including trailing slashes)
 export const CASHFREE_WEBHOOK_PATHS = [
@@ -521,12 +509,10 @@ async function authenticate(
 ) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res
-      .status(401)
-      .json({
-        error: "UNAUTHORIZED",
-        message: "Authentication token required.",
-      });
+    return res.status(401).json({
+      error: "UNAUTHORIZED",
+      message: "Authentication token required.",
+    });
   }
 
   const token = authHeader.split(" ")[1].trim();
@@ -551,12 +537,10 @@ async function authenticate(
   }
 
   if (!user) {
-    return res
-      .status(401)
-      .json({
-        error: "INVALID_OR_EXPIRED_SESSION",
-        message: "Session has expired or is invalid.",
-      });
+    return res.status(401).json({
+      error: "INVALID_OR_EXPIRED_SESSION",
+      message: "Session has expired or is invalid.",
+    });
   }
 
   if (user.status !== AccountStatus.ACTIVE) {
@@ -725,12 +709,10 @@ function requireAdmin(
 function requireAdminAssurance(requiredScope?: string) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user || !isAnyAdmin(req.user.role)) {
-      return res
-        .status(403)
-        .json({
-          error: "FORBIDDEN",
-          message: "Administrative access required.",
-        });
+      return res.status(403).json({
+        error: "FORBIDDEN",
+        message: "Administrative access required.",
+      });
     }
 
     const rawToken = (req.headers["x-admin-assurance-token"] ||
@@ -952,12 +934,10 @@ app.post(
   async (req: Request, res: Response) => {
     const { identifier } = req.body;
     if (!identifier) {
-      return res
-        .status(400)
-        .json({
-          error: "IDENTIFIER_REQUIRED",
-          message: "Phone number or email address is required.",
-        });
+      return res.status(400).json({
+        error: "IDENTIFIER_REQUIRED",
+        message: "Phone number or email address is required.",
+      });
     }
 
     const clientIp =
@@ -978,23 +958,19 @@ app.post(
 
     if (isEmail) {
       if (!emailRegex.test(cleanId)) {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_IDENTIFIER_FORMAT",
-            message: "Invalid email address format.",
-          });
+        return res.status(400).json({
+          error: "INVALID_IDENTIFIER_FORMAT",
+          message: "Invalid email address format.",
+        });
       }
     } else {
-      const digitsOnly = cleanId.replace(/[\s\-(\)]/g, "");
+      const digitsOnly = cleanId.replace(/[\s\-()]/g, "");
       if (!phoneRegex.test(digitsOnly)) {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_IDENTIFIER_FORMAT",
-            message:
-              "Invalid phone number. Must be 10-15 digits with optional country code.",
-          });
+        return res.status(400).json({
+          error: "INVALID_IDENTIFIER_FORMAT",
+          message:
+            "Invalid phone number. Must be 10-15 digits with optional country code.",
+        });
       }
     }
 
@@ -1054,12 +1030,10 @@ app.post(
   async (req: Request, res: Response) => {
     const { identifier, otp, displayName } = req.body;
     if (!identifier || !otp) {
-      return res
-        .status(400)
-        .json({
-          error: "FIELDS_REQUIRED",
-          message: "Identifier and OTP are required.",
-        });
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "Identifier and OTP are required.",
+      });
     }
 
     const cleanId = String(identifier).trim();
@@ -1212,24 +1186,20 @@ app.post(
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (cleanEmail && !emailRegex.test(cleanEmail)) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_EMAIL_FORMAT",
-          message: "Please provide a valid email address.",
-        });
+      return res.status(400).json({
+        error: "INVALID_EMAIL_FORMAT",
+        message: "Please provide a valid email address.",
+      });
     }
 
     const phoneRegex = /^\+?[0-9]{10,15}$/;
     if (cleanPhone) {
-      const digitsOnly = cleanPhone.replace(/[\s\-(\)]/g, "");
+      const digitsOnly = cleanPhone.replace(/[\s\-()]/g, "");
       if (!phoneRegex.test(digitsOnly)) {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_PHONE_FORMAT",
-            message: "Please provide a valid 10-15 digit phone number.",
-          });
+        return res.status(400).json({
+          error: "INVALID_PHONE_FORMAT",
+          message: "Please provide a valid 10-15 digit phone number.",
+        });
       }
     }
 
@@ -1267,12 +1237,10 @@ app.post(
         req.socket.remoteAddress ||
         "127.0.0.1";
       if (!checkIpRateLimit(clientIp)) {
-        return res
-          .status(429)
-          .json({
-            error: "RATE_LIMIT_EXCEEDED",
-            message: "Too many requests. Please wait 10 minutes.",
-          });
+        return res.status(429).json({
+          error: "RATE_LIMIT_EXCEEDED",
+          message: "Too many requests. Please wait 10 minutes.",
+        });
       }
 
       if (existing) {
@@ -1463,12 +1431,10 @@ app.post(
   async (req: Request, res: Response) => {
     const { identifier, password } = req.body;
     if (!identifier || !password) {
-      return res
-        .status(400)
-        .json({
-          error: "FIELDS_REQUIRED",
-          message: "Identifier and password are required.",
-        });
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "Identifier and password are required.",
+      });
     }
 
     const cleanId = String(identifier).trim();
@@ -1477,12 +1443,10 @@ app.post(
       req.socket.remoteAddress ||
       "127.0.0.1";
     if (!checkIpRateLimit(clientIp)) {
-      return res
-        .status(429)
-        .json({
-          error: "RATE_LIMIT_EXCEEDED",
-          message: "Too many attempts. Please try again later.",
-        });
+      return res.status(429).json({
+        error: "RATE_LIMIT_EXCEEDED",
+        message: "Too many attempts. Please try again later.",
+      });
     }
 
     try {
@@ -1915,12 +1879,10 @@ app.post("/api/auth/admin-logout", async (req: Request, res: Response) => {
       message: "Administrator session terminated successfully.",
     });
   } catch (err: any) {
-    res
-      .status(200)
-      .json({
-        status: "LOGGED_OUT",
-        message: "Administrator session terminated.",
-      });
+    res.status(200).json({
+      status: "LOGGED_OUT",
+      message: "Administrator session terminated.",
+    });
   }
 });
 
@@ -1937,33 +1899,27 @@ app.post(
   authenticate,
   async (req: AuthenticatedRequest, res: Response) => {
     if (!req.user || !isAnyAdmin(req.user.role)) {
-      return res
-        .status(403)
-        .json({
-          error: "FORBIDDEN",
-          message: "Administrative access required.",
-        });
+      return res.status(403).json({
+        error: "FORBIDDEN",
+        message: "Administrative access required.",
+      });
     }
 
     const token = req.sessionToken;
     if (!token) {
-      return res
-        .status(400)
-        .json({
-          error: "TOKEN_REQUIRED",
-          message: "Active session token required.",
-        });
+      return res.status(400).json({
+        error: "TOKEN_REQUIRED",
+        message: "Active session token required.",
+      });
     }
 
     const tokenHash = hashToken(token);
     const session = await db.findSessionByTokenHash(tokenHash);
     if (!session) {
-      return res
-        .status(401)
-        .json({
-          error: "SESSION_NOT_FOUND",
-          message: "Active session not found or already terminated.",
-        });
+      return res.status(401).json({
+        error: "SESSION_NOT_FOUND",
+        message: "Active session not found or already terminated.",
+      });
     }
 
     const policy = resolveAdminSessionPolicy();
@@ -2017,12 +1973,10 @@ app.post(
     const rawToken = tokenFromHeader || req.body?.accessToken;
     const action = req.body?.action;
     if (!rawToken || typeof rawToken !== "string") {
-      return res
-        .status(401)
-        .json({
-          error: "UNAUTHORIZED",
-          message: "Supabase access token is required.",
-        });
+      return res.status(401).json({
+        error: "UNAUTHORIZED",
+        message: "Supabase access token is required.",
+      });
     }
 
     const clientIp =
@@ -2040,12 +1994,10 @@ app.post(
           outcome: "FAILED",
           reason: supaResult.error || "Invalid Supabase access token",
         });
-        return res
-          .status(401)
-          .json({
-            error: "INVALID_TOKEN",
-            message: "Invalid or expired Supabase authentication token.",
-          });
+        return res.status(401).json({
+          error: "INVALID_TOKEN",
+          message: "Invalid or expired Supabase authentication token.",
+        });
       }
 
       const email = (supaResult.user.email || "").trim().toLowerCase();
@@ -2060,12 +2012,10 @@ app.post(
       }
 
       if (!user) {
-        return res
-          .status(401)
-          .json({
-            error: "USER_NOT_FOUND",
-            message: "Administrator account not registered in system.",
-          });
+        return res.status(401).json({
+          error: "USER_NOT_FOUND",
+          message: "Administrator account not registered in system.",
+        });
       }
 
       // Invariant 2: Strict administrator role authorization
@@ -2151,12 +2101,10 @@ app.post(
       // Branch 1: Enrollment just completed by owner
       if (action === "ENROLLMENT_COMPLETED") {
         if (supaResult.aal !== "aal2" && verifiedFactors.length === 0) {
-          return res
-            .status(400)
-            .json({
-              error: "ENROLLMENT_UNVERIFIED",
-              message: "MFA factor has not been verified.",
-            });
+          return res.status(400).json({
+            error: "ENROLLMENT_UNVERIFIED",
+            message: "MFA factor has not been verified.",
+          });
         }
 
         await db.updateUser(user.id, { mfaEnabled: true, mfaEnforced: true });
@@ -2528,12 +2476,10 @@ app.post(
   async (req: Request, res: Response) => {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({
-          error: "FIELDS_REQUIRED",
-          message: "Administrator email and password are required.",
-        });
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "Administrator email and password are required.",
+      });
     }
 
     if (isProductionEnvironment()) {
@@ -2553,12 +2499,10 @@ app.post(
     try {
       let user = await db.findUserByIdentifier(cleanEmail);
       if (!user || !user.passwordHash || !user.passwordSalt) {
-        return res
-          .status(401)
-          .json({
-            error: "INVALID_CREDENTIALS",
-            message: "Invalid administrator email or password.",
-          });
+        return res.status(401).json({
+          error: "INVALID_CREDENTIALS",
+          message: "Invalid administrator email or password.",
+        });
       }
 
       const valid = verifyPassword(
@@ -2567,21 +2511,17 @@ app.post(
         user.passwordHash,
       );
       if (!valid) {
-        return res
-          .status(401)
-          .json({
-            error: "INVALID_CREDENTIALS",
-            message: "Invalid administrator email or password.",
-          });
+        return res.status(401).json({
+          error: "INVALID_CREDENTIALS",
+          message: "Invalid administrator email or password.",
+        });
       }
 
       if (!isAnyAdmin(user.role)) {
-        return res
-          .status(403)
-          .json({
-            error: "ADMIN_NOT_AUTHORIZED",
-            message: "This account does not have administrative privileges.",
-          });
+        return res.status(403).json({
+          error: "ADMIN_NOT_AUTHORIZED",
+          message: "This account does not have administrative privileges.",
+        });
       }
 
       await db.updateUser(user.id, {
@@ -2618,12 +2558,10 @@ app.post(
   async (req: Request, res: Response) => {
     const { identifier } = req.body;
     if (!identifier) {
-      return res
-        .status(400)
-        .json({
-          error: "IDENTIFIER_REQUIRED",
-          message: "Email address or phone number is required.",
-        });
+      return res.status(400).json({
+        error: "IDENTIFIER_REQUIRED",
+        message: "Email address or phone number is required.",
+      });
     }
 
     const cleanId = String(identifier).trim();
@@ -2632,12 +2570,10 @@ app.post(
       req.socket.remoteAddress ||
       "127.0.0.1";
     if (!checkIpRateLimit(clientIp)) {
-      return res
-        .status(429)
-        .json({
-          error: "RATE_LIMIT_EXCEEDED",
-          message: "Too many requests. Please wait 10 minutes.",
-        });
+      return res.status(429).json({
+        error: "RATE_LIMIT_EXCEEDED",
+        message: "Too many requests. Please wait 10 minutes.",
+      });
     }
 
     try {
@@ -2697,12 +2633,10 @@ app.post(
   async (req: Request, res: Response) => {
     const { identifier, resetCode, newPassword } = req.body;
     if (!identifier || !resetCode || !newPassword) {
-      return res
-        .status(400)
-        .json({
-          error: "FIELDS_REQUIRED",
-          message: "Identifier, reset code, and new password are required.",
-        });
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "Identifier, reset code, and new password are required.",
+      });
     }
 
     const resetPasswordValidation = validatePasswordComplexity(newPassword, {
@@ -3188,12 +3122,10 @@ app.post(
         : bodyToken;
 
     if (!token) {
-      return res
-        .status(401)
-        .json({
-          error: "TOKEN_REQUIRED",
-          message: "Supabase access token required.",
-        });
+      return res.status(401).json({
+        error: "TOKEN_REQUIRED",
+        message: "Supabase access token required.",
+      });
     }
 
     const supaResult = await verifySupabaseToken(token);
@@ -3250,12 +3182,10 @@ app.post(
   async (req: AuthenticatedRequest, res: Response) => {
     const { targetIdentifier, otp } = req.body;
     if (!targetIdentifier || !otp) {
-      return res
-        .status(400)
-        .json({
-          error: "FIELDS_REQUIRED",
-          message: "targetIdentifier and otp are required.",
-        });
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "targetIdentifier and otp are required.",
+      });
     }
 
     const cleanTarget = String(targetIdentifier).trim();
@@ -3267,12 +3197,10 @@ app.post(
       record.expiresAt < Date.now() ||
       record.otp !== String(otp).trim()
     ) {
-      return res
-        .status(401)
-        .json({
-          error: "INVALID_OR_EXPIRED_OTP",
-          message: "Invalid or expired verification code for linking target.",
-        });
+      return res.status(401).json({
+        error: "INVALID_OR_EXPIRED_OTP",
+        message: "Invalid or expired verification code for linking target.",
+      });
     }
 
     // Single-use
@@ -3743,12 +3671,10 @@ app.get(
     try {
       const profile = await db.getProfileById(id);
       if (!profile)
-        return res
-          .status(404)
-          .json({
-            error: "PROFILE_NOT_FOUND",
-            message: "Birth profile not found.",
-          });
+        return res.status(404).json({
+          error: "PROFILE_NOT_FOUND",
+          message: "Birth profile not found.",
+        });
       if (profile.userId !== req.user!.id) {
         const accessCheck = validatePrivilegedCustomerAccess(
           req.user!,
@@ -3901,12 +3827,10 @@ app.post(
   async (req: AuthenticatedRequest, res: Response) => {
     const { title, reportType, payload } = req.body;
     if (!title || !reportType || !payload) {
-      return res
-        .status(400)
-        .json({
-          error: "MISSING_FIELDS",
-          message: "title, reportType, and payload are required.",
-        });
+      return res.status(400).json({
+        error: "MISSING_FIELDS",
+        message: "title, reportType, and payload are required.",
+      });
     }
 
     try {
@@ -3943,12 +3867,10 @@ app.get(
     try {
       const report = await db.getSavedReportById(id);
       if (!report) {
-        return res
-          .status(404)
-          .json({
-            error: "REPORT_NOT_FOUND",
-            message: "Report publication not found.",
-          });
+        return res.status(404).json({
+          error: "REPORT_NOT_FOUND",
+          message: "Report publication not found.",
+        });
       }
 
       // Strict ownership gate
@@ -5274,13 +5196,11 @@ app.post(
             cfCustomerId !== sessionUser.id &&
             sessionUser.role !== Role.SUPER_ADMIN
           ) {
-            return res
-              .status(403)
-              .json({
-                error: "FORBIDDEN",
-                message:
-                  "Payment order does not belong to the authenticated user.",
-              });
+            return res.status(403).json({
+              error: "FORBIDDEN",
+              message:
+                "Payment order does not belong to the authenticated user.",
+            });
           }
           const totalAmount = Number(cfStatus.order_amount);
           const pkg = APPROVED_RECHARGE_PACKAGES.find(
@@ -6318,12 +6238,10 @@ app.post(
     const { tier } = req.body;
     const normTier = String(tier || "FREE").toUpperCase();
     if (!["FREE", "PLUS", "PREMIUM"].includes(normTier)) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_TIER",
-          message: "Simulated tier must be FREE, PLUS, or PREMIUM.",
-        });
+      return res.status(400).json({
+        error: "INVALID_TIER",
+        message: "Simulated tier must be FREE, PLUS, or PREMIUM.",
+      });
     }
     try {
       const previewSession = db.createOrUpdateAdminPreviewSession(
@@ -6793,12 +6711,10 @@ app.post(
         "[EXPORT] Customer data export error:",
         err?.message || err,
       );
-      return res
-        .status(500)
-        .json({
-          error: "EXPORT_FAILED",
-          message: err?.message || "Failed to export customer data",
-        });
+      return res.status(500).json({
+        error: "EXPORT_FAILED",
+        message: err?.message || "Failed to export customer data",
+      });
     }
   },
 );
@@ -6814,12 +6730,10 @@ app.put(
     const { status, reason } = req.body;
 
     if (!status || !Object.values(AccountStatus).includes(status)) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_STATUS",
-          message: "Status must be ACTIVE, SUSPENDED, or DEACTIVATED.",
-        });
+      return res.status(400).json({
+        error: "INVALID_STATUS",
+        message: "Status must be ACTIVE, SUSPENDED, or DEACTIVATED.",
+      });
     }
 
     try {
@@ -6830,12 +6744,10 @@ app.put(
       const targetCanonical = normalizeRole(targetUser.role);
       const actorCanonical = normalizeRole(req.user!.role);
       if (targetCanonical === Role.OWNER && actorCanonical !== Role.OWNER) {
-        return res
-          .status(403)
-          .json({
-            error: "FORBIDDEN",
-            message: "Cannot modify Platform Owner account status.",
-          });
+        return res.status(403).json({
+          error: "FORBIDDEN",
+          message: "Cannot modify Platform Owner account status.",
+        });
       }
 
       const updated = await db.updateUser(id, { status });
@@ -7078,34 +6990,27 @@ app.post(
   async (req: AuthenticatedRequest, res: Response) => {
     const { code } = req.body;
     if (!code || !/^\d{6}$/.test(String(code).trim())) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_CODE",
-          message: "Please provide a 6-digit verification code.",
-        });
+      return res.status(400).json({
+        error: "INVALID_CODE",
+        message: "Please provide a 6-digit verification code.",
+      });
     }
 
     try {
       const user = await db.findUserById(req.user!.id);
       if (!user || !user.mfaSecret) {
-        return res
-          .status(400)
-          .json({
-            error: "MFA_NOT_INITIALIZED",
-            message: "Please initialize MFA setup first.",
-          });
+        return res.status(400).json({
+          error: "MFA_NOT_INITIALIZED",
+          message: "Please initialize MFA setup first.",
+        });
       }
 
       const isValid = verifyTotpCode(user.mfaSecret, String(code));
       if (!isValid) {
-        return res
-          .status(400)
-          .json({
-            error: "MFA_CODE_MISMATCH",
-            message:
-              "Invalid 6-digit code. Please verify device time and retry.",
-          });
+        return res.status(400).json({
+          error: "MFA_CODE_MISMATCH",
+          message: "Invalid 6-digit code. Please verify device time and retry.",
+        });
       }
 
       // Generate single-use recovery codes
@@ -7190,12 +7095,10 @@ app.post(
           outcome: "FAILED",
           reason: "Incorrect TOTP code or invalid recovery code",
         });
-        return res
-          .status(401)
-          .json({
-            error: "MFA_VERIFICATION_FAILED",
-            message: "Invalid 6-digit TOTP or recovery code.",
-          });
+        return res.status(401).json({
+          error: "MFA_VERIFICATION_FAILED",
+          message: "Invalid 6-digit TOTP or recovery code.",
+        });
       }
 
       const requestedScope =
@@ -9046,42 +8949,34 @@ app.post(
     const admin = req.user!;
 
     if (!userId || typeof userId !== "string" || !userId.trim()) {
-      return res
-        .status(400)
-        .json({
-          error: "USER_ID_REQUIRED",
-          message: "A valid userId is required.",
-        });
+      return res.status(400).json({
+        error: "USER_ID_REQUIRED",
+        message: "A valid userId is required.",
+      });
     }
 
     const numAmount = Number(amount);
     if (!Number.isFinite(numAmount) || numAmount <= 0) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_AMOUNT",
-          message: "Adjustment amount must be a positive number.",
-        });
+      return res.status(400).json({
+        error: "INVALID_AMOUNT",
+        message: "Adjustment amount must be a positive number.",
+      });
     }
 
     const normType = String(type || "").toUpperCase();
     if (normType !== "CREDIT" && normType !== "DEBIT") {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_ADJUSTMENT_TYPE",
-          message: "Adjustment type must be 'CREDIT' or 'DEBIT'.",
-        });
+      return res.status(400).json({
+        error: "INVALID_ADJUSTMENT_TYPE",
+        message: "Adjustment type must be 'CREDIT' or 'DEBIT'.",
+      });
     }
 
     if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
-      return res
-        .status(400)
-        .json({
-          error: "REASON_REQUIRED",
-          message:
-            "A detailed reason (at least 5 characters) is required for audit compliance.",
-        });
+      return res.status(400).json({
+        error: "REASON_REQUIRED",
+        message:
+          "A detailed reason (at least 5 characters) is required for audit compliance.",
+      });
     }
 
     try {
@@ -9306,12 +9201,10 @@ app.post(
   async (req: AuthenticatedRequest, res: Response) => {
     const { orderId, amount, reason, refundId: requestedRefundId } = req.body;
     if (!orderId || typeof orderId !== "string" || !orderId.trim()) {
-      return res
-        .status(400)
-        .json({
-          error: "ORDER_ID_REQUIRED",
-          message: "A valid orderId is required for refund.",
-        });
+      return res.status(400).json({
+        error: "ORDER_ID_REQUIRED",
+        message: "A valid orderId is required for refund.",
+      });
     }
 
     const cleanOrderId = orderId.trim();
@@ -9340,22 +9233,18 @@ app.post(
         );
       }
       if (!order) {
-        return res
-          .status(404)
-          .json({
-            error: "ORDER_NOT_FOUND",
-            message: `Order ${cleanOrderId} does not exist.`,
-          });
+        return res.status(404).json({
+          error: "ORDER_NOT_FOUND",
+          message: `Order ${cleanOrderId} does not exist.`,
+        });
       }
 
       // Eligibility check
       if (order.status === OrderStatus.REFUNDED) {
-        return res
-          .status(400)
-          .json({
-            error: "ALREADY_REFUNDED",
-            message: "Order has already been fully refunded.",
-          });
+        return res.status(400).json({
+          error: "ALREADY_REFUNDED",
+          message: "Order has already been fully refunded.",
+        });
       }
 
       if (
@@ -9597,12 +9486,10 @@ app.post(
   async (req: AuthenticatedRequest, res: Response) => {
     const { orderId } = req.body;
     if (!orderId || typeof orderId !== "string" || !orderId.trim()) {
-      return res
-        .status(400)
-        .json({
-          error: "ORDER_ID_REQUIRED",
-          message: "A valid orderId is required for recovery.",
-        });
+      return res.status(400).json({
+        error: "ORDER_ID_REQUIRED",
+        message: "A valid orderId is required for recovery.",
+      });
     }
 
     const cleanOrderId = orderId.trim();
@@ -10652,12 +10539,9 @@ app.post(
         message: `Successfully upgraded to AstroVerse ${tier} (${period.toLowerCase()}) using wallet balance.`,
       });
     } catch (err: any) {
-      res
-        .status(500)
-        .json({
-          error:
-            err.message || "Failed to complete wallet subscription purchase",
-        });
+      res.status(500).json({
+        error: err.message || "Failed to complete wallet subscription purchase",
+      });
     }
   },
 );
@@ -10749,12 +10633,10 @@ app.post(
           message: `Successfully upgraded to AstroVerse ${tier} (${period.toLowerCase()}) using wallet balance.`,
         });
       } catch (err: any) {
-        return res
-          .status(500)
-          .json({
-            error:
-              err.message || "Failed to complete wallet subscription purchase",
-          });
+        return res.status(500).json({
+          error:
+            err.message || "Failed to complete wallet subscription purchase",
+        });
       }
     }
 
@@ -10914,12 +10796,10 @@ app.post(
             cfCustomerId !== user.id &&
             user.role !== Role.SUPER_ADMIN
           ) {
-            return res
-              .status(403)
-              .json({
-                error: "ORDER_USER_MISMATCH",
-                message: "Payment order does not belong to authenticated user.",
-              });
+            return res.status(403).json({
+              error: "ORDER_USER_MISMATCH",
+              message: "Payment order does not belong to authenticated user.",
+            });
           }
           order = await db.createPaymentOrder({
             userId: cfCustomerId || user.id,
@@ -10939,20 +10819,16 @@ app.post(
       } catch (_) {}
     }
     if (!order) {
-      return res
-        .status(404)
-        .json({
-          error: "ORDER_NOT_FOUND",
-          message: "Subscription payment order not found.",
-        });
+      return res.status(404).json({
+        error: "ORDER_NOT_FOUND",
+        message: "Subscription payment order not found.",
+      });
     }
     if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-      return res
-        .status(403)
-        .json({
-          error: "ORDER_USER_MISMATCH",
-          message: "Payment order does not belong to authenticated user.",
-        });
+      return res.status(403).json({
+        error: "ORDER_USER_MISMATCH",
+        message: "Payment order does not belong to authenticated user.",
+      });
     }
 
     // Cross-product replay prevention (AV-SEC-02)
@@ -11015,12 +10891,10 @@ app.post(
         : BillingPeriod.MONTHLY;
     const plan = SUBSCRIPTION_PLANS[targetTier];
     if (!plan) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_TIER",
-          message: "Subscription tier not recognized.",
-        });
+      return res.status(400).json({
+        error: "INVALID_TIER",
+        message: "Subscription tier not recognized.",
+      });
     }
     const expectedPaise =
       period === BillingPeriod.ANNUAL
@@ -11359,12 +11233,10 @@ app.all(
               cfCustomerId !== user.id &&
               user.role !== Role.SUPER_ADMIN
             ) {
-              return res
-                .status(403)
-                .json({
-                  error: "ORDER_USER_MISMATCH",
-                  message: "Order does not belong to the authenticated user.",
-                });
+              return res.status(403).json({
+                error: "ORDER_USER_MISMATCH",
+                message: "Order does not belong to the authenticated user.",
+              });
             }
 
             const orderNote = cfStatus.order_note || "";
@@ -11456,12 +11328,10 @@ app.all(
         });
       }
       if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-        return res
-          .status(403)
-          .json({
-            error: "ORDER_USER_MISMATCH",
-            message: "Order does not belong to the authenticated user.",
-          });
+        return res.status(403).json({
+          error: "ORDER_USER_MISMATCH",
+          message: "Order does not belong to the authenticated user.",
+        });
       }
       if (order.status === OrderStatus.PAID) {
         const userRec = await db.findUserById(order.userId);
@@ -11694,23 +11564,19 @@ app.post(
     const { id, proposedAmountRupees, proposedAnnualRupees } = req.body;
     const prod = getCanonicalProduct(id);
     if (!prod) {
-      return res
-        .status(404)
-        .json({
-          error: "PRODUCT_NOT_FOUND",
-          message: `Product '${id}' does not exist.`,
-        });
+      return res.status(404).json({
+        error: "PRODUCT_NOT_FOUND",
+        message: `Product '${id}' does not exist.`,
+      });
     }
 
     const currentPrice = prod.amountRupees;
     const newPrice = Number(proposedAmountRupees);
     if (!Number.isFinite(newPrice) || newPrice <= 0) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_PRICE",
-          message: "Proposed price must be a positive number.",
-        });
+      return res.status(400).json({
+        error: "INVALID_PRICE",
+        message: "Proposed price must be a positive number.",
+      });
     }
 
     const diffRupees = newPrice - currentPrice;
@@ -11764,22 +11630,18 @@ app.put(
       reason !== undefined &&
       (typeof reason !== "string" || reason.trim().length < 5)
     ) {
-      return res
-        .status(400)
-        .json({
-          error: "REASON_REQUIRED",
-          message: "A detailed reason (at least 5 characters) is required.",
-        });
+      return res.status(400).json({
+        error: "REASON_REQUIRED",
+        message: "A detailed reason (at least 5 characters) is required.",
+      });
     }
 
     const prod = getCanonicalProduct(id);
     if (!prod) {
-      return res
-        .status(404)
-        .json({
-          error: "PRODUCT_NOT_FOUND",
-          message: `Product '${id}' not found.`,
-        });
+      return res.status(404).json({
+        error: "PRODUCT_NOT_FOUND",
+        message: `Product '${id}' not found.`,
+      });
     }
 
     const oldPrice = prod.amountRupees;
@@ -11883,22 +11745,18 @@ app.post(
     try {
       const { secretKey, appId, env } = req.body;
       if (!secretKey || typeof secretKey !== "string") {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_CREDENTIALS",
-            message: "secretKey is required.",
-          });
+        return res.status(400).json({
+          error: "INVALID_CREDENTIALS",
+          message: "secretKey is required.",
+        });
       }
 
       const trimmedSecret = secretKey.trim();
       if (trimmedSecret.length < 24) {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_CREDENTIALS",
-            message: "Secret key is too short.",
-          });
+        return res.status(400).json({
+          error: "INVALID_CREDENTIALS",
+          message: "Secret key is too short.",
+        });
       }
 
       const effectiveAppId =
@@ -11979,12 +11837,10 @@ app.get(
     try {
       const customer360 = await db.getCustomer360(req.params.id);
       if (!customer360) {
-        return res
-          .status(404)
-          .json({
-            error: "CUSTOMER_NOT_FOUND",
-            message: "Customer record does not exist.",
-          });
+        return res.status(404).json({
+          error: "CUSTOMER_NOT_FOUND",
+          message: "Customer record does not exist.",
+        });
       }
 
       await db.recordAuditEvent({
@@ -12018,12 +11874,10 @@ app.post(
     try {
       const { content, category } = req.body;
       if (!content || typeof content !== "string" || !content.trim()) {
-        return res
-          .status(400)
-          .json({
-            error: "CONTENT_REQUIRED",
-            message: "Note content is required.",
-          });
+        return res.status(400).json({
+          error: "CONTENT_REQUIRED",
+          message: "Note content is required.",
+        });
       }
       const adminUser = req.user!;
       const note = await db.addCustomerNote(
@@ -12091,21 +11945,17 @@ app.post(
       const { userId, featureKey, durationDays, source, reason, metadata } =
         req.body;
       if (!userId || !featureKey) {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_PARAMS",
-            message: "userId and featureKey are required.",
-          });
+        return res.status(400).json({
+          error: "INVALID_PARAMS",
+          message: "userId and featureKey are required.",
+        });
       }
       if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
-        return res
-          .status(400)
-          .json({
-            error: "REASON_REQUIRED",
-            message:
-              "A detailed reason (at least 5 characters) is required for audit compliance.",
-          });
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
       }
       const validSources = [
         "ADMIN_GRANT",
@@ -12153,12 +12003,10 @@ app.post(
       return res.status(201).json({ success: true, entitlement });
     } catch (err: any) {
       if (err?.message === "USER_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "USER_NOT_FOUND",
-            message: "Target user does not exist.",
-          });
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: "Target user does not exist.",
+        });
       }
       return handleServiceError(res, err, "Failed to grant entitlement");
     }
@@ -12176,21 +12024,17 @@ app.post(
     try {
       const { entitlementId, reason } = req.body;
       if (!entitlementId) {
-        return res
-          .status(400)
-          .json({
-            error: "ENTITLEMENT_ID_REQUIRED",
-            message: "entitlementId is required.",
-          });
+        return res.status(400).json({
+          error: "ENTITLEMENT_ID_REQUIRED",
+          message: "entitlementId is required.",
+        });
       }
       if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
-        return res
-          .status(400)
-          .json({
-            error: "REASON_REQUIRED",
-            message:
-              "A detailed reason (at least 5 characters) is required for audit compliance.",
-          });
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
       }
       const effectiveReason = reason.trim();
       const result = await db.revokeEntitlement(
@@ -12216,12 +12060,10 @@ app.post(
       return res.json(result);
     } catch (err: any) {
       if (err?.message === "ENTITLEMENT_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "ENTITLEMENT_NOT_FOUND",
-            message: "Entitlement record not found.",
-          });
+        return res.status(404).json({
+          error: "ENTITLEMENT_NOT_FOUND",
+          message: "Entitlement record not found.",
+        });
       }
       return handleServiceError(res, err, "Failed to revoke entitlement");
     }
@@ -12240,29 +12082,23 @@ app.post(
       const { userId, tier, billingPeriod, durationDays, reason, grantSource } =
         req.body;
       if (!userId || !tier) {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_PARAMS",
-            message: "userId and tier are required.",
-          });
+        return res.status(400).json({
+          error: "INVALID_PARAMS",
+          message: "userId and tier are required.",
+        });
       }
       if (!["FREE", "PLUS", "PREMIUM"].includes(tier)) {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_TIER",
-            message: "tier must be FREE, PLUS, or PREMIUM.",
-          });
+        return res.status(400).json({
+          error: "INVALID_TIER",
+          message: "tier must be FREE, PLUS, or PREMIUM.",
+        });
       }
       if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
-        return res
-          .status(400)
-          .json({
-            error: "REASON_REQUIRED",
-            message:
-              "A detailed reason (at least 5 characters) is required for audit compliance.",
-          });
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
       }
 
       // Reject VERIFIED_PAID_PURCHASE from admin endpoint
@@ -12362,12 +12198,10 @@ app.post(
       });
     } catch (err: any) {
       if (err?.message === "USER_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "USER_NOT_FOUND",
-            message: "Target user does not exist.",
-          });
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: "Target user does not exist.",
+        });
       }
       return handleServiceError(res, err, "Failed to assign subscription tier");
     }
@@ -12399,13 +12233,11 @@ app.post(
         });
       }
       if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
-        return res
-          .status(400)
-          .json({
-            error: "REASON_REQUIRED",
-            message:
-              "A detailed reason (at least 5 characters) is required for audit compliance.",
-          });
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
       }
       const effectiveReason = reason.trim();
 
@@ -12429,21 +12261,17 @@ app.post(
       });
     } catch (err: any) {
       if (err?.message === "USER_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "USER_NOT_FOUND",
-            message: "Target user does not exist.",
-          });
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: "Target user does not exist.",
+        });
       }
       if (err?.message === "NO_ACTIVE_SUBSCRIPTION_TO_EXTEND") {
-        return res
-          .status(400)
-          .json({
-            error: "NO_ACTIVE_SUBSCRIPTION",
-            message:
-              "User does not have an active PLUS or PREMIUM subscription to extend.",
-          });
+        return res.status(400).json({
+          error: "NO_ACTIVE_SUBSCRIPTION",
+          message:
+            "User does not have an active PLUS or PREMIUM subscription to extend.",
+        });
       }
       return handleServiceError(res, err, "Failed to extend subscription");
     }
@@ -12466,13 +12294,11 @@ app.post(
           .json({ error: "INVALID_PARAMS", message: "userId is required." });
       }
       if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
-        return res
-          .status(400)
-          .json({
-            error: "REASON_REQUIRED",
-            message:
-              "A detailed reason (at least 5 characters) is required for audit compliance.",
-          });
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
       }
       const mode =
         cancelMode === "CANCEL_RENEWAL"
@@ -12502,12 +12328,10 @@ app.post(
       });
     } catch (err: any) {
       if (err?.message === "USER_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "USER_NOT_FOUND",
-            message: "Target user does not exist.",
-          });
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: "Target user does not exist.",
+        });
       }
       return handleServiceError(res, err, "Failed to cancel subscription");
     }
@@ -12577,13 +12401,11 @@ app.post(
         discountValue === undefined ||
         !applicableTo
       ) {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_PARAMS",
-            message:
-              "code, discountType, discountValue, and applicableTo are required.",
-          });
+        return res.status(400).json({
+          error: "INVALID_PARAMS",
+          message:
+            "code, discountType, discountValue, and applicableTo are required.",
+        });
       }
       const promo = await db.createPromotion({
         code,
@@ -12612,12 +12434,10 @@ app.post(
       return res.status(201).json({ success: true, promotion: promo });
     } catch (err: any) {
       if (err?.message === "PROMO_CODE_EXISTS") {
-        return res
-          .status(409)
-          .json({
-            error: "PROMO_CODE_EXISTS",
-            message: "A promotional campaign with this code already exists.",
-          });
+        return res.status(409).json({
+          error: "PROMO_CODE_EXISTS",
+          message: "A promotional campaign with this code already exists.",
+        });
       }
       return handleServiceError(res, err, "Failed to create promotion");
     }
@@ -12635,12 +12455,10 @@ app.put(
     try {
       const { isActive } = req.body;
       if (typeof isActive !== "boolean") {
-        return res
-          .status(400)
-          .json({
-            error: "INVALID_STATUS",
-            message: "isActive boolean is required.",
-          });
+        return res.status(400).json({
+          error: "INVALID_STATUS",
+          message: "isActive boolean is required.",
+        });
       }
       const promo = await db.togglePromotion(req.params.id, isActive);
 
@@ -12658,12 +12476,10 @@ app.put(
       return res.json({ success: true, promotion: promo });
     } catch (err: any) {
       if (err?.message === "PROMOTION_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "PROMOTION_NOT_FOUND",
-            message: "Promotional campaign not found.",
-          });
+        return res.status(404).json({
+          error: "PROMOTION_NOT_FOUND",
+          message: "Promotional campaign not found.",
+        });
       }
       return handleServiceError(res, err, "Failed to update promotion status");
     }
@@ -12717,12 +12533,10 @@ app.post(
       return res.json({ success: true, astrologer: astro });
     } catch (err: any) {
       if (err?.message === "ASTROLOGER_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "ASTROLOGER_NOT_FOUND",
-            message: "Astrologer not found.",
-          });
+        return res.status(404).json({
+          error: "ASTROLOGER_NOT_FOUND",
+          message: "Astrologer not found.",
+        });
       }
       return handleServiceError(
         res,
@@ -13313,25 +13127,21 @@ app.get("/api/geocode", async (req: Request, res: Response) => {
     .toString()
     .trim();
   if (query.length < 2) {
-    return res
-      .status(400)
-      .json({
-        error: "Query parameter q must be at least 2 characters long",
-        results: [],
-      });
+    return res.status(400).json({
+      error: "Query parameter q must be at least 2 characters long",
+      results: [],
+    });
   }
 
   try {
     const outcome = await resolveGeocodeQuery(query);
     return res.json(outcome);
   } catch (err: any) {
-    return res
-      .status(500)
-      .json({
-        error: "Failed to resolve location query",
-        details: err?.message || String(err),
-        results: [],
-      });
+    return res.status(500).json({
+      error: "Failed to resolve location query",
+      details: err?.message || String(err),
+      results: [],
+    });
   }
 });
 
@@ -13519,12 +13329,10 @@ app.post(
 
     const product = REPORT_CATALOGUE[productId];
     if (!product) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_PRODUCT",
-          message: `Product '${productId}' not found in catalogue.`,
-        });
+      return res.status(400).json({
+        error: "INVALID_PRODUCT",
+        message: `Product '${productId}' not found in catalogue.`,
+      });
     }
 
     try {
@@ -13551,22 +13359,18 @@ app.post(
           if (userProfiles && userProfiles.length > 0) {
             profile = userProfiles[0];
           } else {
-            return res
-              .status(404)
-              .json({
-                error: "PROFILE_NOT_FOUND",
-                message: "Selected birth profile not found.",
-              });
+            return res.status(404).json({
+              error: "PROFILE_NOT_FOUND",
+              message: "Selected birth profile not found.",
+            });
           }
         }
       }
       if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-        return res
-          .status(403)
-          .json({
-            error: "FORBIDDEN",
-            message: "Cannot generate report using another user's profile.",
-          });
+        return res.status(403).json({
+          error: "FORBIDDEN",
+          message: "Cannot generate report using another user's profile.",
+        });
       }
 
       let partnerProfile: any = null;
@@ -13577,24 +13381,20 @@ app.post(
       ) {
         partnerProfile = await db.getProfileById(partnerProfileId);
         if (!partnerProfile) {
-          return res
-            .status(404)
-            .json({
-              error: "PARTNER_PROFILE_NOT_FOUND",
-              message: "Selected partner profile not found.",
-            });
+          return res.status(404).json({
+            error: "PARTNER_PROFILE_NOT_FOUND",
+            message: "Selected partner profile not found.",
+          });
         }
         if (
           partnerProfile.userId !== user.id &&
           user.role !== Role.SUPER_ADMIN
         ) {
-          return res
-            .status(403)
-            .json({
-              error: "FORBIDDEN",
-              message:
-                "Cannot generate report using another user's partner profile.",
-            });
+          return res.status(403).json({
+            error: "FORBIDDEN",
+            message:
+              "Cannot generate report using another user's partner profile.",
+          });
         }
       } else if (
         req.body.partnerProfileData &&
@@ -13936,13 +13736,11 @@ app.post(
             cfCustomerId !== user.id &&
             user.role !== Role.SUPER_ADMIN
           ) {
-            return res
-              .status(403)
-              .json({
-                error: "ORDER_USER_MISMATCH",
-                message:
-                  "Payment order does not belong to the authenticated user.",
-              });
+            return res.status(403).json({
+              error: "ORDER_USER_MISMATCH",
+              message:
+                "Payment order does not belong to the authenticated user.",
+            });
           }
           order = await db.createPaymentOrder({
             userId: cfCustomerId || user.id,
@@ -13962,20 +13760,16 @@ app.post(
       } catch (_) {}
     }
     if (!order) {
-      return res
-        .status(404)
-        .json({
-          error: "ORDER_NOT_FOUND",
-          message: "Payment order was not found in platform records.",
-        });
+      return res.status(404).json({
+        error: "ORDER_NOT_FOUND",
+        message: "Payment order was not found in platform records.",
+      });
     }
     if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-      return res
-        .status(403)
-        .json({
-          error: "ORDER_USER_MISMATCH",
-          message: "Payment order does not belong to the authenticated user.",
-        });
+      return res.status(403).json({
+        error: "ORDER_USER_MISMATCH",
+        message: "Payment order does not belong to the authenticated user.",
+      });
     }
 
     // Cross-product replay prevention (AV-SEC-02)
@@ -14056,22 +13850,18 @@ app.post(
           if (userProfiles && userProfiles.length > 0) {
             profile = userProfiles[0];
           } else {
-            return res
-              .status(404)
-              .json({
-                error: "PROFILE_NOT_FOUND",
-                message: "Profile not found.",
-              });
+            return res.status(404).json({
+              error: "PROFILE_NOT_FOUND",
+              message: "Profile not found.",
+            });
           }
         }
       }
       if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-        return res
-          .status(403)
-          .json({
-            error: "FORBIDDEN",
-            message: "Cannot generate report using another user's profile.",
-          });
+        return res.status(403).json({
+          error: "FORBIDDEN",
+          message: "Cannot generate report using another user's profile.",
+        });
       }
 
       let partnerProfile: any = null;
@@ -14082,24 +13872,20 @@ app.post(
       ) {
         partnerProfile = await db.getProfileById(partnerProfileId);
         if (!partnerProfile) {
-          return res
-            .status(404)
-            .json({
-              error: "PARTNER_PROFILE_NOT_FOUND",
-              message: "Selected partner profile not found.",
-            });
+          return res.status(404).json({
+            error: "PARTNER_PROFILE_NOT_FOUND",
+            message: "Selected partner profile not found.",
+          });
         }
         if (
           partnerProfile.userId !== user.id &&
           user.role !== Role.SUPER_ADMIN
         ) {
-          return res
-            .status(403)
-            .json({
-              error: "FORBIDDEN",
-              message:
-                "Cannot generate report using another user's partner profile.",
-            });
+          return res.status(403).json({
+            error: "FORBIDDEN",
+            message:
+              "Cannot generate report using another user's partner profile.",
+          });
         }
       } else if (
         req.body.partnerProfileData &&
@@ -14341,12 +14127,10 @@ app.get(
       const { sessionId } = req.params;
       const sessionRecord = await db.findConsultationSessionById(sessionId);
       if (!sessionRecord) {
-        return res
-          .status(404)
-          .json({
-            error: "SESSION_NOT_FOUND",
-            message: "Consultation session not found.",
-          });
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
       }
 
       const guestTrialId =
@@ -14371,20 +14155,16 @@ app.get(
       });
     } catch (err: any) {
       if (err.message === "SESSION_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "SESSION_NOT_FOUND",
-            message: "Consultation session not found.",
-          });
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
       }
       if (err.message === "FORBIDDEN_SESSION_ACCESS") {
-        return res
-          .status(403)
-          .json({
-            error: "FORBIDDEN_SESSION_ACCESS",
-            message: "Not authorized to access this session.",
-          });
+        return res.status(403).json({
+          error: "FORBIDDEN_SESSION_ACCESS",
+          message: "Not authorized to access this session.",
+        });
       }
       handleServiceError(res, err, "Failed to check consultation session");
     }
@@ -14399,22 +14179,18 @@ app.post(
     try {
       const { sessionId, paymentMethod, guestTrialId } = req.body || {};
       if (!sessionId || typeof sessionId !== "string") {
-        return res
-          .status(400)
-          .json({
-            error: "SESSION_ID_REQUIRED",
-            message: "Session ID is required.",
-          });
+        return res.status(400).json({
+          error: "SESSION_ID_REQUIRED",
+          message: "Session ID is required.",
+        });
       }
 
       const sessionRecord = await db.findConsultationSessionById(sessionId);
       if (!sessionRecord) {
-        return res
-          .status(404)
-          .json({
-            error: "SESSION_NOT_FOUND",
-            message: "Consultation session not found.",
-          });
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
       }
 
       const userId = req.user
@@ -14455,20 +14231,16 @@ app.post(
       }
     } catch (err: any) {
       if (err.message === "SESSION_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "SESSION_NOT_FOUND",
-            message: "Consultation session not found.",
-          });
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
       }
       if (err.message === "FORBIDDEN_SESSION_ACCESS") {
-        return res
-          .status(403)
-          .json({
-            error: "FORBIDDEN_SESSION_ACCESS",
-            message: "Not authorized to modify this session.",
-          });
+        return res.status(403).json({
+          error: "FORBIDDEN_SESSION_ACCESS",
+          message: "Not authorized to modify this session.",
+        });
       }
       handleServiceError(res, err, "Failed to confirm paid consultation");
     }
@@ -14483,22 +14255,18 @@ app.post(
     try {
       const { sessionId, guestTrialId } = req.body || {};
       if (!sessionId || typeof sessionId !== "string") {
-        return res
-          .status(400)
-          .json({
-            error: "SESSION_ID_REQUIRED",
-            message: "Session ID is required.",
-          });
+        return res.status(400).json({
+          error: "SESSION_ID_REQUIRED",
+          message: "Session ID is required.",
+        });
       }
 
       const sessionRecord = await db.findConsultationSessionById(sessionId);
       if (!sessionRecord) {
-        return res
-          .status(404)
-          .json({
-            error: "SESSION_NOT_FOUND",
-            message: "Consultation session not found.",
-          });
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
       }
 
       const userId = req.user
@@ -14514,20 +14282,16 @@ app.post(
       });
     } catch (err: any) {
       if (err.message === "SESSION_NOT_FOUND") {
-        return res
-          .status(404)
-          .json({
-            error: "SESSION_NOT_FOUND",
-            message: "Consultation session not found.",
-          });
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
       }
       if (err.message === "FORBIDDEN_SESSION_ACCESS") {
-        return res
-          .status(403)
-          .json({
-            error: "FORBIDDEN_SESSION_ACCESS",
-            message: "Not authorized to modify this session.",
-          });
+        return res.status(403).json({
+          error: "FORBIDDEN_SESSION_ACCESS",
+          message: "Not authorized to modify this session.",
+        });
       }
       handleServiceError(res, err, "Failed to end consultation session");
     }
@@ -14550,12 +14314,10 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       sessionId,
     } = req.body;
     if (!question || typeof question !== "string" || !question.trim()) {
-      return res
-        .status(400)
-        .json({
-          error: "QUESTION_REQUIRED",
-          message: "Question string is required.",
-        });
+      return res.status(400).json({
+        error: "QUESTION_REQUIRED",
+        message: "Question string is required.",
+      });
     }
 
     let activeConsultationSession: ConsultationSessionRecord | null = null;
@@ -15214,43 +14976,35 @@ app.post("/api/numerology/analyze", async (req: Request, res: Response) => {
     analysisTarget !== "mobile_number"
   ) {
     if (!targetDob) {
-      return res
-        .status(400)
-        .json({
-          error: "BIRTH_DATE_REQUIRED",
-          message: "Valid ISO birthDate (YYYY-MM-DD) is required.",
-        });
+      return res.status(400).json({
+        error: "BIRTH_DATE_REQUIRED",
+        message: "Valid ISO birthDate (YYYY-MM-DD) is required.",
+      });
     }
   }
 
   // Validate birth date format & bounds whenever provided
   if (targetDob) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDob)) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_BIRTH_DATE",
-          message: "Birth date must be in YYYY-MM-DD format.",
-        });
+      return res.status(400).json({
+        error: "INVALID_BIRTH_DATE",
+        message: "Birth date must be in YYYY-MM-DD format.",
+      });
     }
     const dateObj = new Date(targetDob);
     const now = new Date();
     if (isNaN(dateObj.getTime()) || dateObj > now) {
-      return res
-        .status(400)
-        .json({
-          error: "FUTURE_BIRTH_DATE",
-          message: "Birth date cannot be in the future.",
-        });
+      return res.status(400).json({
+        error: "FUTURE_BIRTH_DATE",
+        message: "Birth date cannot be in the future.",
+      });
     }
     const year = parseInt(targetDob.slice(0, 4), 10);
     if (year < 1900) {
-      return res
-        .status(400)
-        .json({
-          error: "INVALID_BIRTH_YEAR",
-          message: "Birth year must be 1900 or later.",
-        });
+      return res.status(400).json({
+        error: "INVALID_BIRTH_YEAR",
+        message: "Birth year must be 1900 or later.",
+      });
     }
   }
 
@@ -15283,12 +15037,10 @@ app.post("/api/numerology/analyze", async (req: Request, res: Response) => {
     const targetName = (calculationSpelling || name).trim();
     if (analysisTarget === "mobile_number") {
       if (!phoneNumber)
-        return res
-          .status(400)
-          .json({
-            error: "PHONE_REQUIRED",
-            message: "phoneNumber is required.",
-          });
+        return res.status(400).json({
+          error: "PHONE_REQUIRED",
+          message: "phoneNumber is required.",
+        });
       const digits = String(phoneNumber).replace(/\D/g, "");
       const calcDigits = digits.slice(-10);
       const total = calcDigits
@@ -15466,12 +15218,10 @@ app.post(
         .json({ error: "NAME_REQUIRED", message: "Name string is required." });
     }
     if (!targetDob || typeof targetDob !== "string") {
-      return res
-        .status(400)
-        .json({
-          error: "BIRTH_DATE_REQUIRED",
-          message: "Valid birthDate (YYYY-MM-DD) is required.",
-        });
+      return res.status(400).json({
+        error: "BIRTH_DATE_REQUIRED",
+        message: "Valid birthDate (YYYY-MM-DD) is required.",
+      });
     }
 
     const user = await db.findUserById(req.user!.id);
