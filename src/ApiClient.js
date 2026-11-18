@@ -3,7 +3,7 @@
  * Centralized API client with configurable base URL.
  */
 class ApiClient {
-  constructor(baseUrl = process.env.API_BASE_URL || "http://localhost:5000") {
+  constructor(baseUrl = "http://localhost:5000") {
     this.baseUrl = baseUrl;
   }
 
