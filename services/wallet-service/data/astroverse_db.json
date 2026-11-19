@@ -3552,6 +3552,66 @@
       "lastLoginAt": "2026-11-18T15:52:49.857Z",
       "createdAt": "2026-11-18T15:52:49.857Z",
       "updatedAt": "2026-11-18T15:52:49.895Z"
+    },
+    {
+      "id": "usr_72594a6e023e20c4",
+      "phone": null,
+      "email": "consult_user_1795132416729@example.com",
+      "phoneVerified": false,
+      "emailVerified": false,
+      "displayName": "consult_user_1795132416729",
+      "passwordHash": "dummy_hash",
+      "passwordSalt": null,
+      "resetTokenHash": null,
+      "resetTokenExpiresAt": null,
+      "role": "USER",
+      "status": "ACTIVE",
+      "preferredLanguage": "en",
+      "preferredTimezone": "Asia/Kolkata",
+      "walletBalance": 1615,
+      "lastLoginAt": "2026-11-19T23:53:36.729Z",
+      "createdAt": "2026-11-19T23:53:36.729Z",
+      "updatedAt": "2026-11-19T23:53:36.806Z"
+    },
+    {
+      "id": "usr_baa91ab67860262a",
+      "phone": null,
+      "email": "consult_admin_1795132416734@example.com",
+      "phoneVerified": false,
+      "emailVerified": false,
+      "displayName": "consult_admin_1795132416734",
+      "passwordHash": "dummy_hash",
+      "passwordSalt": null,
+      "resetTokenHash": null,
+      "resetTokenExpiresAt": null,
+      "role": "SUPER_ADMIN",
+      "status": "ACTIVE",
+      "preferredLanguage": "en",
+      "preferredTimezone": "Asia/Kolkata",
+      "walletBalance": 0,
+      "lastLoginAt": "2026-11-19T23:53:36.734Z",
+      "createdAt": "2026-11-19T23:53:36.734Z",
+      "updatedAt": "2026-11-19T23:53:36.734Z"
+    },
+    {
+      "id": "usr_61f7a83b14f7ae54",
+      "phone": null,
+      "email": "other_1795132416789@example.com",
+      "phoneVerified": false,
+      "emailVerified": false,
+      "displayName": "other_1795132416789",
+      "passwordHash": "dummy",
+      "passwordSalt": null,
+      "resetTokenHash": null,
+      "resetTokenExpiresAt": null,
+      "role": "USER",
+      "status": "ACTIVE",
+      "preferredLanguage": "en",
+      "preferredTimezone": "Asia/Kolkata",
+      "walletBalance": 500,
+      "lastLoginAt": "2026-11-19T23:53:36.789Z",
+      "createdAt": "2026-11-19T23:53:36.789Z",
+      "updatedAt": "2026-11-19T23:53:36.789Z"
     }
   ],
   "sessions": [
@@ -4751,9 +4811,167 @@
       "ipAddress": "::ffff:127.0.0.1",
       "userAgent": null,
       "createdAt": "2026-11-18T15:52:49.860Z"
+    },
+    {
+      "id": "sess_027d41a73d53434b",
+      "userId": "usr_72594a6e023e20c4",
+      "tokenHash": "1cdf044e1498c1429681bbb111d3203ecfdb5cd54fc952653ecefe6cf31f5796",
+      "expiresAt": "2026-11-20T00:53:36.731Z",
+      "ipAddress": null,
+      "userAgent": null,
+      "createdAt": "2026-11-19T23:53:36.732Z"
+    },
+    {
+      "id": "sess_94b4615a61934390",
+      "userId": "usr_baa91ab67860262a",
+      "tokenHash": "44ca2dc075c62f028ecef8d110680f58724b25a45d3547d72f3aa63d36f4776a",
+      "expiresAt": "2026-11-20T00:53:36.736Z",
+      "ipAddress": null,
+      "userAgent": null,
+      "createdAt": "2026-11-19T23:53:36.736Z"
     }
   ],
   "auditEvents": [
+    {
+      "id": "aud_c2a53c8a221a6ed4",
+      "userId": "usr_72594a6e023e20c4",
+      "actorId": "usr_72594a6e023e20c4",
+      "actorRole": null,
+      "action": "CONSULTATION_SETTLED",
+      "targetType": "CONSULTATION_SESSION",
+      "targetId": "sess_dur_1795132416805",
+      "outcome": "SUCCESS",
+      "requestId": null,
+      "reason": null,
+      "metadata": {
+        "astrologerId": "astro_001",
+        "deduction": 90,
+        "newBalance": 1615,
+        "settledBy": "INTERNAL_SERVICE"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-11-19T23:53:36.808Z"
+    },
+    {
+      "id": "aud_66bd6fa836767c0d",
+      "userId": "usr_72594a6e023e20c4",
+      "actorId": "usr_72594a6e023e20c4",
+      "actorRole": null,
+      "action": "CONSULTATION_SETTLED",
+      "targetType": "CONSULTATION_SESSION",
+      "targetId": "sess_alias_header_1795132416799",
+      "outcome": "SUCCESS",
+      "requestId": null,
+      "reason": null,
+      "metadata": {
+        "astrologerId": "astro_001",
+        "deduction": 30,
+        "newBalance": 1705,
+        "settledBy": "INTERNAL_SERVICE"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-11-19T23:53:36.802Z"
+    },
+    {
+      "id": "aud_9a5860b621689507",
+      "userId": "usr_72594a6e023e20c4",
+      "actorId": "usr_72594a6e023e20c4",
+      "actorRole": null,
+      "action": "CONSULTATION_SETTLED",
+      "targetType": "CONSULTATION_SESSION",
+      "targetId": "sess_admin_1795132416793",
+      "outcome": "SUCCESS",
+      "requestId": null,
+      "reason": null,
+      "metadata": {
+        "astrologerId": "astro_001",
+        "deduction": 20,
+        "newBalance": 1735,
+        "settledBy": "usr_baa91ab67860262a"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-11-19T23:53:36.795Z"
+    },
+    {
+      "id": "aud_c7934d0444530311",
+      "userId": "usr_72594a6e023e20c4",
+      "actorId": "usr_72594a6e023e20c4",
+      "actorRole": null,
+      "action": "CONSULTATION_SETTLED",
+      "targetType": "CONSULTATION_SESSION",
+      "targetId": "sess_alias_1795132416783",
+      "outcome": "SUCCESS",
+      "requestId": null,
+      "reason": null,
+      "metadata": {
+        "astrologerId": "astro_001",
+        "deduction": 45,
+        "newBalance": 1755,
+        "settledBy": "INTERNAL_SERVICE"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-11-19T23:53:36.786Z"
+    },
+    {
+      "id": "aud_471e2e244fb0d75a",
+      "userId": "usr_72594a6e023e20c4",
+      "actorId": "usr_72594a6e023e20c4",
+      "actorRole": null,
+      "action": "CONSULTATION_SETTLED",
+      "targetType": "CONSULTATION_SESSION",
+      "targetId": "sess_idempotent_1795132416774",
+      "outcome": "SUCCESS",
+      "requestId": null,
+      "reason": null,
+      "metadata": {
+        "astrologerId": "astro_001",
+        "deduction": 50,
+        "newBalance": 1800,
+        "settledBy": "INTERNAL_SERVICE"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-11-19T23:53:36.780Z"
+    },
+    {
+      "id": "aud_9f0fb91d55c6b0b5",
+      "userId": "usr_72594a6e023e20c4",
+      "actorId": "usr_72594a6e023e20c4",
+      "actorRole": null,
+      "action": "CONSULTATION_SETTLED",
+      "targetType": "CONSULTATION_SESSION",
+      "targetId": "sess_idempotent_1795132416774",
+      "outcome": "SUCCESS",
+      "requestId": null,
+      "reason": null,
+      "metadata": {
+        "astrologerId": "astro_001",
+        "deduction": 50,
+        "newBalance": 1800,
+        "settledBy": "INTERNAL_SERVICE"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-11-19T23:53:36.777Z"
+    },
+    {
+      "id": "aud_155be643ed76139e",
+      "userId": "usr_72594a6e023e20c4",
+      "actorId": "usr_72594a6e023e20c4",
+      "actorRole": null,
+      "action": "CONSULTATION_SETTLED",
+      "targetType": "CONSULTATION_SESSION",
+      "targetId": "sess_success_1795132416768",
+      "outcome": "SUCCESS",
+      "requestId": null,
+      "reason": null,
+      "metadata": {
+        "astrologerId": "astro_001",
+        "deduction": 150,
+        "newBalance": 1850,
+        "settledBy": "INTERNAL_SERVICE"
+      },
+      "ipAddress": null,
+      "createdAt": "2026-11-19T23:53:36.770Z"
+    },
     {
       "id": "aud_500f144c2e9b9d90",
       "userId": "usr_db4fe9b9e0d0d941",
@@ -8804,13 +9022,13 @@
       "languages": "Hindi, English, Sanskrit",
       "experienceYears": 18,
       "rating": 4.98,
-      "ordersCount": 4214,
+      "ordersCount": 4220,
       "ratePerMinute": 45,
       "isOnline": true,
       "isBusy": false,
-      "pendingPayout": 36,
+      "pendingPayout": 267,
       "createdAt": "2026-10-21T00:00:00.000Z",
-      "updatedAt": "2026-10-31T08:10:37.159Z",
+      "updatedAt": "2026-11-19T23:53:36.806Z",
       "isVerified": true
     },
     {
@@ -8847,6 +9065,138 @@
     }
   ],
   "walletLedgers": [
+    {
+      "id": "led_ff5fdff852b83d84",
+      "userId": null,
+      "astrologerId": "astro_001",
+      "amount": 54,
+      "entryType": "ASTROLOGER_CREDIT",
+      "idempotencyKey": "CREDIT_ASTRO_sess_dur_1795132416805",
+      "referenceId": "sess_dur_1795132416805",
+      "description": "Astrologer earnings share for session sess_dur_1795132416805",
+      "createdAt": "2026-11-19T23:53:36.806Z"
+    },
+    {
+      "id": "led_b1a9d4495476bbfe",
+      "userId": "usr_72594a6e023e20c4",
+      "astrologerId": "astro_001",
+      "amount": -90,
+      "entryType": "CONSULTATION_DEBIT",
+      "idempotencyKey": "DEBIT_sess_dur_1795132416805",
+      "referenceId": "sess_dur_1795132416805",
+      "description": "Consultation session with Acharya Ramanuj",
+      "createdAt": "2026-11-19T23:53:36.806Z"
+    },
+    {
+      "id": "led_419e2099d676f62f",
+      "userId": null,
+      "astrologerId": "astro_001",
+      "amount": 18,
+      "entryType": "ASTROLOGER_CREDIT",
+      "idempotencyKey": "CREDIT_ASTRO_sess_alias_header_1795132416799",
+      "referenceId": "sess_alias_header_1795132416799",
+      "description": "Astrologer earnings share for session sess_alias_header_1795132416799",
+      "createdAt": "2026-11-19T23:53:36.800Z"
+    },
+    {
+      "id": "led_cae6bcea738162a2",
+      "userId": "usr_72594a6e023e20c4",
+      "astrologerId": "astro_001",
+      "amount": -30,
+      "entryType": "CONSULTATION_DEBIT",
+      "idempotencyKey": "DEBIT_sess_alias_header_1795132416799",
+      "referenceId": "sess_alias_header_1795132416799",
+      "description": "Consultation session with Acharya Ramanuj",
+      "createdAt": "2026-11-19T23:53:36.800Z"
+    },
+    {
+      "id": "led_a45fb7a9b310fdb0",
+      "userId": null,
+      "astrologerId": "astro_001",
+      "amount": 12,
+      "entryType": "ASTROLOGER_CREDIT",
+      "idempotencyKey": "CREDIT_ASTRO_sess_admin_1795132416793",
+      "referenceId": "sess_admin_1795132416793",
+      "description": "Astrologer earnings share for session sess_admin_1795132416793",
+      "createdAt": "2026-11-19T23:53:36.793Z"
+    },
+    {
+      "id": "led_5fcfa408abc3db0f",
+      "userId": "usr_72594a6e023e20c4",
+      "astrologerId": "astro_001",
+      "amount": -20,
+      "entryType": "CONSULTATION_DEBIT",
+      "idempotencyKey": "DEBIT_sess_admin_1795132416793",
+      "referenceId": "sess_admin_1795132416793",
+      "description": "Consultation session with Acharya Ramanuj",
+      "createdAt": "2026-11-19T23:53:36.793Z"
+    },
+    {
+      "id": "led_3d1c063b9321119d",
+      "userId": null,
+      "astrologerId": "astro_001",
+      "amount": 27,
+      "entryType": "ASTROLOGER_CREDIT",
+      "idempotencyKey": "CREDIT_ASTRO_sess_alias_1795132416783",
+      "referenceId": "sess_alias_1795132416783",
+      "description": "Astrologer earnings share for session sess_alias_1795132416783",
+      "createdAt": "2026-11-19T23:53:36.784Z"
+    },
+    {
+      "id": "led_7243468593fadeec",
+      "userId": "usr_72594a6e023e20c4",
+      "astrologerId": "astro_001",
+      "amount": -45,
+      "entryType": "CONSULTATION_DEBIT",
+      "idempotencyKey": "DEBIT_sess_alias_1795132416783",
+      "referenceId": "sess_alias_1795132416783",
+      "description": "Consultation session with Acharya Ramanuj",
+      "createdAt": "2026-11-19T23:53:36.784Z"
+    },
+    {
+      "id": "led_489463940b91bb93",
+      "userId": null,
+      "astrologerId": "astro_001",
+      "amount": 30,
+      "entryType": "ASTROLOGER_CREDIT",
+      "idempotencyKey": "CREDIT_ASTRO_sess_idempotent_1795132416774",
+      "referenceId": "sess_idempotent_1795132416774",
+      "description": "Astrologer earnings share for session sess_idempotent_1795132416774",
+      "createdAt": "2026-11-19T23:53:36.774Z"
+    },
+    {
+      "id": "led_ab8fb2cf1adfb213",
+      "userId": "usr_72594a6e023e20c4",
+      "astrologerId": "astro_001",
+      "amount": -50,
+      "entryType": "CONSULTATION_DEBIT",
+      "idempotencyKey": "DEBIT_sess_idempotent_1795132416774",
+      "referenceId": "sess_idempotent_1795132416774",
+      "description": "Consultation session with Acharya Ramanuj",
+      "createdAt": "2026-11-19T23:53:36.774Z"
+    },
+    {
+      "id": "led_a2d86c8be2fe3c51",
+      "userId": null,
+      "astrologerId": "astro_001",
+      "amount": 90,
+      "entryType": "ASTROLOGER_CREDIT",
+      "idempotencyKey": "CREDIT_ASTRO_sess_success_1795132416768",
+      "referenceId": "sess_success_1795132416768",
+      "description": "Astrologer earnings share for session sess_success_1795132416768",
+      "createdAt": "2026-11-19T23:53:36.768Z"
+    },
+    {
+      "id": "led_8467e2d8d8f8f201",
+      "userId": "usr_72594a6e023e20c4",
+      "astrologerId": "astro_001",
+      "amount": -150,
+      "entryType": "CONSULTATION_DEBIT",
+      "idempotencyKey": "DEBIT_sess_success_1795132416768",
+      "referenceId": "sess_success_1795132416768",
+      "description": "Consultation session with Acharya Ramanuj",
+      "createdAt": "2026-11-19T23:53:36.768Z"
+    },
     {
       "id": "led_25aab268f651b83b",
       "userId": "usr_db4fe9b9e0d0d941",
