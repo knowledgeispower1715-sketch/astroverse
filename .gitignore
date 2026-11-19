@@ -104,3 +104,9 @@ test-results/
 test-results.json
 tests/e2e/test-results/
 tests/e2e/test-results.json
+
+# Understand-Anything intermediate and temporary scratch
+.ua/intermediate/
+.ua/tmp/
+.ua/*.mjs
+

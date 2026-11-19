@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-11-19T20:29:35.032Z",
+  "gitCommitHash": "064ca4980e6189f932e88a03288ed4b7636afdc3",
+  "stats": {
+    "totalFiles": 5351,
+    "totalNodes": 15186,
+    "totalEdges": 38696,
+    "totalLayers": 8,
+    "tourSteps": 6
+  }
+}

@@ -6693,7 +6693,20 @@
       line-height: 1.2;
     }
 
-    /* Stationary, Clear Month Grid Container (Zero Scrollbars) */
+    /* Stationary, Clear Month Grid Container (Zero Scrollbars Guaranteed Across All Devices) */
+    .cal-calendar-surface,
+    .cal-perspective-viewport,
+    .cal-month-grid {
+      scrollbar-width: none !important;
+      -ms-overflow-style: none !important;
+    }
+    .cal-calendar-surface::-webkit-scrollbar,
+    .cal-perspective-viewport::-webkit-scrollbar,
+    .cal-month-grid::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
     .cal-perspective-viewport {
       overflow: visible !important;
       position: relative;
