@@ -331,6 +331,18 @@
       }
     },
     {
+      "source": "/api/calendar/(.*)",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
+      "source": "/api/calendar",
+      "destination": {
+        "service": "wallet-service"
+      }
+    },
+    {
       "source": "/api/hora/(.*)",
       "destination": {
         "service": "kundli-engine"
