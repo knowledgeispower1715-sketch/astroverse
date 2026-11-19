@@ -368,4 +368,101 @@ describe('CONSULTATION SETTLEMENT & INTERNAL SERVICE KEY SECURITY TEST MATRIX', 
     assert.strictEqual(res.status, 400);
     assert.strictEqual(res.body.error, 'TAMPERED_CHARGE');
   });
+
+  // 17. Production environment without configured key strictly fails closed
+  it('17. Production environment without configured internal key strictly fails closed with HTTP 500', async () => {
+    const origEnv = process.env.NODE_ENV;
+    const origKey = process.env.INTERNAL_SERVICE_KEY;
+    const origAstroKey = process.env.ASTROVERSE_INTERNAL_KEY;
+    try {
+      process.env.NODE_ENV = 'production';
+      delete process.env.INTERNAL_SERVICE_KEY;
+      delete process.env.ASTROVERSE_INTERNAL_KEY;
+
+      const res = await makeRequest(server, 'POST', '/api/wallet/settle-consultation', {
+        'X-Internal-Service-Key': 'valid_looking_key_16_chars_long',
+      }, {
+        userId: customerUser.id,
+        astrologerId: 'astro_001',
+        sessionId: `sess_prod_fail_${Date.now()}`,
+        totalDeduction: 100,
+      });
+      assert.strictEqual(res.status, 500);
+      assert.strictEqual(res.body.error, 'GATEWAY_CONFIGURATION_ERROR');
+    } finally {
+      process.env.NODE_ENV = origEnv;
+      if (origKey !== undefined) process.env.INTERNAL_SERVICE_KEY = origKey;
+      if (origAstroKey !== undefined) process.env.ASTROVERSE_INTERNAL_KEY = origAstroKey;
+    }
+  });
+
+  // 18. Production environment rejects default committed fallback key with HTTP 401
+  it('18. In production, committed fallback secret is rejected with HTTP 401', async () => {
+    const origEnv = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+      process.env.INTERNAL_SERVICE_KEY = 'valid_production_secret_key_exceeding_16_chars';
+
+      const res = await makeRequest(server, 'POST', '/api/wallet/settle-consultation', {
+        'X-Internal-Service-Key': 'astroverse-consultation-internal-secret-2026',
+      }, {
+        userId: customerUser.id,
+        astrologerId: 'astro_001',
+        sessionId: `sess_prod_fallback_${Date.now()}`,
+        totalDeduction: 100,
+      });
+      assert.strictEqual(res.status, 401);
+      assert.strictEqual(res.body.error, 'UNAUTHORIZED');
+    } finally {
+      process.env.NODE_ENV = origEnv;
+      process.env.INTERNAL_SERVICE_KEY = TEST_INTERNAL_KEY;
+    }
+  });
+
+  // 19. Production environment with weak key (<16 chars) fails closed with HTTP 500
+  it('19. In production, weak internal key (<16 chars) fails closed with HTTP 500', async () => {
+    const origEnv = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+      process.env.INTERNAL_SERVICE_KEY = 'short_key';
+
+      const res = await makeRequest(server, 'POST', '/api/wallet/settle-consultation', {
+        'X-Internal-Service-Key': 'short_key',
+      }, {
+        userId: customerUser.id,
+        astrologerId: 'astro_001',
+        sessionId: `sess_prod_weak_${Date.now()}`,
+        totalDeduction: 100,
+      });
+      assert.strictEqual(res.status, 500);
+      assert.strictEqual(res.body.error, 'GATEWAY_CONFIGURATION_ERROR');
+    } finally {
+      process.env.NODE_ENV = origEnv;
+      process.env.INTERNAL_SERVICE_KEY = TEST_INTERNAL_KEY;
+    }
+  });
+
+  // 20. Non-production environment without configured key accepts development fallback key
+  it('20. In non-production, unconfigured key accepts development fallback key', async () => {
+    const origKey = process.env.INTERNAL_SERVICE_KEY;
+    const origAstroKey = process.env.ASTROVERSE_INTERNAL_KEY;
+    try {
+      delete process.env.INTERNAL_SERVICE_KEY;
+      delete process.env.ASTROVERSE_INTERNAL_KEY;
+
+      const res = await makeRequest(server, 'POST', '/api/wallet/settle-consultation', {
+        'X-Internal-Service-Key': 'astroverse-consultation-internal-secret-2026',
+      }, {
+        userId: customerUser.id,
+        astrologerId: 'astro_001',
+        sessionId: `sess_dev_fallback_${Date.now()}`,
+        totalDeduction: 10,
+      });
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.status, 'SETTLED');
+    } finally {
+      if (origKey !== undefined) process.env.INTERNAL_SERVICE_KEY = origKey;
+      if (origAstroKey !== undefined) process.env.ASTROVERSE_INTERNAL_KEY = origAstroKey;
+    }
+  });
 });
