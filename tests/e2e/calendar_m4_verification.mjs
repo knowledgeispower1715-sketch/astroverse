@@ -29,10 +29,9 @@ import { chromium } from "playwright";
     pageErrors.push(err.message);
   });
 
-  const fileUrl =
-    "file:///" + path.resolve("e:/rea/index.html").replace(/\\/g, "/");
-  console.log(`Loading application from: ${fileUrl}`);
-  await page.goto(fileUrl, { waitUntil: "domcontentloaded" });
+  const appUrl = "http://localhost:3000/index.html";
+  console.log(`Loading application from: ${appUrl}`);
+  await page.goto(appUrl, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
 
   let passedAssertions = 0;
@@ -529,10 +528,11 @@ import { chromium } from "playwright";
   // 16. Multi-Viewport Responsive Tests (320px to 1920px)
   const viewports = [
     { width: 1920, height: 1080, name: "Desktop Full HD" },
-    { width: 1280, height: 800, name: "Laptop WXGA" },
-    { width: 768, height: 1024, name: "Tablet Portrait" },
-    { width: 375, height: 667, name: "Mobile iPhone SE" },
-    { width: 320, height: 568, name: "Mobile Ultra-Narrow 320px" },
+    { width: 1280, height: 720, name: "Desktop 1280x720" },
+    { width: 1024, height: 768, name: "Tablet Landscape 1024x768" },
+    { width: 768, height: 1024, name: "Tablet Portrait 768x1024" },
+    { width: 375, height: 667, name: "Mobile iPhone SE 375x667" },
+    { width: 320, height: 568, name: "Mobile Ultra-Narrow 320x568" },
   ];
 
   for (const vp of viewports) {
@@ -551,6 +551,19 @@ import { chromium } from "playwright";
       !overflowCheck.hasHorizontalOverflow,
       `Viewport ${vp.name} (${vp.width}x${vp.height}): Zero horizontal overflow (scrollWidth=${overflowCheck.bodyScrollWidth}, innerWidth=${overflowCheck.windowInnerWidth})`,
     );
+
+    if (vp.width <= 768) {
+      const dockVisible = await page.evaluate(() => {
+        const dock = document.querySelector(".mobile-bottom-dock");
+        if (!dock) return false;
+        const style = window.getComputedStyle(dock);
+        return style.display === "flex" && style.visibility !== "hidden";
+      });
+      assert(
+        dockVisible,
+        `Viewport ${vp.name}: Mobile bottom dock is visible (display: flex)`,
+      );
+    }
   }
 
   // 17. Regression Check on Prior Defect Fixes (M3)

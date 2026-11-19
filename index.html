@@ -6527,10 +6527,10 @@
     }
 
     /* ==============================================================================
-       DEDICATED 3D CELESTIAL COSMIC STAGE
+       DEDICATED 3D CELESTIAL COSMIC STAGE & GRAND VEDIC OBSERVATORY
        ============================================================================== */
     .cal-celestial-hero-stage {
-      background: linear-gradient(135deg, rgba(8, 14, 30, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
+      background: linear-gradient(135deg, rgba(8, 14, 30, 0.98) 0%, rgba(15, 23, 42, 0.96) 100%);
       border: 1px solid rgba(212, 175, 55, 0.35);
       border-radius: 16px;
       padding: 16px 18px;
@@ -6541,17 +6541,17 @@
     }
     .cal-celestial-stage-inner {
       display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
       gap: 18px;
-      align-items: center;
+      align-items: stretch;
     }
     .cal-celestial-canvas-wrap {
       position: relative;
-      height: 340px;
+      height: 380px;
       border-radius: 14px;
       overflow: hidden;
       border: 1px solid rgba(245, 196, 94, 0.35);
-      background: radial-gradient(circle at 45% 50%, #131E3D 0%, #090E1E 65%, #05070F 100%);
+      background: radial-gradient(circle at 50% 50%, #101B36 0%, #080D1D 65%, #04060B 100%);
       box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8), 0 8px 24px rgba(0, 0, 0, 0.4);
     }
     #cal-celestial-canvas {
@@ -6571,9 +6571,9 @@
       font-size: 10.5px;
       font-weight: 700;
       color: #F8FAFC;
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(8px);
-      padding: 4px 9px;
+      padding: 4px 10px;
       border-radius: 6px;
       border: 1px solid rgba(255, 255, 255, 0.14);
       pointer-events: none;
@@ -6595,7 +6595,7 @@
       font-size: 10.5px;
       font-weight: 700;
       color: #E2E8F0;
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(245, 196, 94, 0.28);
       border-radius: 6px;
@@ -6614,24 +6614,135 @@
       transform: translateY(-1px);
     }
     .cal-orbit-ctrl-btn.active {
-      background: rgba(245, 158, 11, 0.2);
+      background: rgba(245, 158, 11, 0.25);
       border-color: #F59E0B;
       color: #FDE68A;
     }
     .cal-celestial-metrics-panel {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      justify-content: space-between;
     }
+
+    /* Dedicated 3D Lunar Orb Showcase Card */
+    .cal-lunar-showcase-card {
+      background: linear-gradient(135deg, rgba(14, 22, 42, 0.95) 0%, rgba(20, 32, 58, 0.9) 100%);
+      border: 1px solid rgba(245, 196, 94, 0.35);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+    .cal-lunar-orb-wrap {
+      flex-shrink: 0;
+      width: 105px;
+      height: 105px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    #cal-moon-sphere-canvas {
+      width: 105px;
+      height: 105px;
+      display: block;
+      border-radius: 50%;
+    }
+    .cal-lunar-details-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+      min-width: 0;
+    }
+    .cal-lunar-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .cal-lunar-live-pill {
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #F5C45E;
+      background: rgba(245, 196, 94, 0.12);
+      border: 1px solid rgba(245, 196, 94, 0.3);
+      padding: 1px 6px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .cal-lunar-paksha-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #93C5FD;
+      background: rgba(147, 197, 253, 0.1);
+      border: 1px solid rgba(147, 197, 253, 0.25);
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .cal-lunar-tithi-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #F8FAFC;
+      font-family: var(--av-font-serif, 'Cinzel', Georgia, serif);
+      line-height: 1.2;
+    }
+    .cal-lunar-illum-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .cal-lunar-illum-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 700;
+      color: #CBD5E1;
+    }
+    .cal-lunar-bar-track {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .cal-lunar-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #F59E0B 0%, #FDE68A 100%);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .cal-lunar-times-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 10.5px;
+      color: #94A3B8;
+    }
+    .cal-lunar-time {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .cal-lunar-time strong {
+      color: #F1F5F9;
+    }
+
     .cal-celestial-metric-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 8px;
+      padding-bottom: 6px;
     }
     .cal-celestial-metric-title {
-      font-size: 14.5px;
+      font-size: 14px;
       font-weight: 800;
       color: #F8FAFC;
       font-family: var(--av-font-serif, 'Cinzel', Georgia, serif);
@@ -6697,12 +6808,17 @@
     .cal-calendar-surface,
     .cal-perspective-viewport,
     .cal-month-grid {
+      overflow: visible !important;
+      overflow-x: hidden !important;
+      overflow-y: hidden !important;
       scrollbar-width: none !important;
       -ms-overflow-style: none !important;
+      max-height: none !important;
     }
     .cal-calendar-surface::-webkit-scrollbar,
     .cal-perspective-viewport::-webkit-scrollbar,
-    .cal-month-grid::-webkit-scrollbar {
+    .cal-month-grid::-webkit-scrollbar,
+    .cal-date-card::-webkit-scrollbar {
       display: none !important;
       width: 0 !important;
       height: 0 !important;
@@ -6725,7 +6841,7 @@
       transform: none !important;
     }
 
-    /* Date Card - 100% STATIONARY (NO SLIDING, NO ROTATION) */
+    /* Date Card - 100% STATIONARY (NO SLIDING, NO ROTATION ON HOVER) */
     .cal-date-card {
       background: rgba(18, 28, 48, 0.85);
       border: 1px solid rgba(255, 255, 255, 0.09);
@@ -6739,21 +6855,21 @@
       position: relative;
       cursor: pointer;
       user-select: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
       overflow: hidden;
       transform: none !important;
       -webkit-font-smoothing: subpixel-antialiased;
     }
     .cal-grid-3d .cal-date-card {
       transform: none !important;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
     }
 
     .cal-date-card:hover,
     .cal-grid-3d .cal-date-card:hover {
-      border-color: rgba(245, 196, 94, 0.75) !important;
-      background: rgba(26, 38, 64, 0.95) !important;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(245, 196, 94, 0.25) !important;
+      border-color: #F5C45E !important;
+      background: rgba(26, 38, 64, 0.98) !important;
+      box-shadow: 0 0 16px rgba(245, 196, 94, 0.3) !important;
       transform: none !important;
       z-index: 5;
     }
@@ -7443,7 +7559,7 @@
         grid-template-columns: 1fr;
       }
       .cal-celestial-canvas-wrap {
-        height: 220px;
+        height: 340px;
       }
       .cal-workspace-grid-layout {
         grid-template-columns: 1fr;
@@ -7463,7 +7579,20 @@
         grid-template-columns: 1fr;
       }
       .cal-celestial-canvas-wrap {
-        height: 200px;
+        height: 290px;
+      }
+      .cal-lunar-showcase-card {
+        flex-direction: row;
+        gap: 10px;
+        padding: 10px 12px;
+      }
+      .cal-lunar-orb-wrap {
+        width: 90px;
+        height: 90px;
+      }
+      #cal-moon-sphere-canvas {
+        width: 90px;
+        height: 90px;
       }
       .cal-hero-card {
         padding: 16px 18px;
@@ -7471,18 +7600,21 @@
       .cal-hero-title {
         font-size: 20px;
       }
+      .cal-month-grid {
+        gap: 4px !important;
+      }
       .cal-date-card {
-        min-height: 94px;
-        padding: 5px 6px;
+        min-height: 88px !important;
+        padding: 4px 3px !important;
       }
       .cal-card-day-num {
-        font-size: 13px;
+        font-size: 12px;
       }
       .cal-tithi-chip {
-        font-size: 9px;
+        font-size: 8.5px;
       }
       .cal-nak-rashi-row {
-        font-size: 8.5px;
+        font-size: 8px;
       }
       .cal-rashifal-cards-grid {
         grid-template-columns: 1fr;
@@ -7493,23 +7625,52 @@
         padding: 0 4px 60px;
       }
       .cal-calendar-surface {
-        padding: 10px 8px;
+        padding: 10px 4px !important;
+        overflow: hidden !important;
+      }
+      .cal-perspective-viewport,
+      .cal-month-grid {
+        overflow: visible !important;
+        overflow-x: hidden !important;
+        overflow-y: hidden !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+      }
+      .cal-celestial-canvas-wrap {
+        height: 250px;
+      }
+      .cal-lunar-showcase-card {
+        flex-direction: row;
+        gap: 8px;
+        padding: 8px 10px;
+      }
+      .cal-lunar-orb-wrap {
+        width: 76px;
+        height: 76px;
+      }
+      #cal-moon-sphere-canvas {
+        width: 76px;
+        height: 76px;
+      }
+      .cal-lunar-tithi-name {
+        font-size: 13px;
       }
       .cal-month-grid {
-        gap: 4px;
+        gap: 2.5px !important;
       }
       .cal-date-card {
-        min-height: 82px;
-        padding: 4px 3px;
+        min-height: 78px !important;
+        padding: 3px 2px !important;
       }
       .cal-card-day-num {
-        font-size: 12px;
+        font-size: 11px !important;
       }
       .cal-tithi-chip {
-        font-size: 8px;
+        font-size: 7.5px !important;
+        padding: 1px 2px !important;
       }
       .cal-fest-badge-chip {
-        display: none; /* Icon/dot fallback on tiny screens */
+        display: none !important; /* Conceal on ultra-narrow mobile to eliminate all column expansion and scrollbars */
       }
       .cal-lunar-phases-row {
         grid-template-columns: 1fr;
@@ -8488,11 +8649,14 @@
           </div>
 
           <div class="cal-controls-right">
-            <!-- 3D Celestial Engine Status Pill -->
+            <!-- 3D vs 2D Viewing Mode Switch -->
             <div class="cal-switch-group" role="group" aria-label="Viewing Mode">
-              <span class="cal-toggle-pill active" id="cal-view-btn-3d" style="cursor: default;">
-                <i class="fa-solid fa-cube" style="color: #F5C45E;"></i> 3D Celestial Orbit
-              </span>
+              <button class="cal-toggle-pill active" id="cal-view-btn-3d" onclick="setCalendarViewMode('3d')">
+                <i class="fa-solid fa-cube" style="color: #F5C45E;"></i> 3D Cosmic
+              </button>
+              <button class="cal-toggle-pill" id="cal-view-btn-2d" onclick="setCalendarViewMode('2d')">
+                <i class="fa-solid fa-table-cells" style="color: #64B5F6;"></i> Classic 2D
+              </button>
             </div>
 
             <!-- Amanta vs Purnimanta Tradition Switch -->
@@ -8538,7 +8702,7 @@
           <!-- Dedicated 3D Celestial Cosmic Stage (Rotating Zodiac Ring, Planets & 3D Moon Phase) -->
           <div class="cal-celestial-hero-stage" id="cal-celestial-hero-stage">
             <div class="cal-celestial-stage-inner">
-              <div class="cal-celestial-canvas-wrap">
+              <div class="cal-celestial-canvas-wrap" id="cal-celestial-3d-wrap">
                 <canvas id="cal-celestial-canvas" aria-hidden="true"></canvas>
                 <div class="cal-celestial-canvas-overlay-tag">
                   <i class="fa-solid fa-satellite-dish" style="color: #10B981;"></i> 3D Celestial Orbit &bull; Sidereal Swiss Ephemeris
@@ -8553,10 +8717,40 @@
                   <button type="button" class="cal-orbit-ctrl-btn" id="btn-focus-today-orbit" onclick="focusTodayInCelestialStage()" title="Align to Today">
                     <i class="fa-solid fa-calendar-check"></i> Today
                   </button>
+                  <button type="button" class="cal-orbit-ctrl-btn" id="btn-toggle-orbit-perspective" onclick="toggleCelestialPerspective()" title="Toggle 3D Perspective vs Top-Down">
+                    <i class="fa-solid fa-arrows-spin" id="icon-orbit-perspective"></i> 3D View
+                  </button>
                 </div>
               </div>
 
               <div class="cal-celestial-metrics-panel">
+                <!-- Dedicated 3D Lunar Orb & Live Tithi Phase Showcase -->
+                <div class="cal-lunar-showcase-card">
+                  <div class="cal-lunar-orb-wrap">
+                    <canvas id="cal-moon-sphere-canvas" width="160" height="160" aria-label="3D Moon Phase"></canvas>
+                  </div>
+                  <div class="cal-lunar-details-wrap">
+                    <div class="cal-lunar-tag-row">
+                      <span class="cal-lunar-live-pill"><i class="fa-solid fa-circle-dot" style="color: #F5C45E;"></i> LIVE MOON</span>
+                      <span class="cal-lunar-paksha-pill" id="cal-stage-paksha-pill">Shukla Paksha</span>
+                    </div>
+                    <div class="cal-lunar-tithi-name" id="cal-stage-lunar-tithi">Shukla Ashtami</div>
+                    <div class="cal-lunar-illum-bar-wrap">
+                      <div class="cal-lunar-illum-text">
+                        <span id="cal-stage-lunar-illum-pct">58.4% Illuminated</span>
+                        <span id="cal-stage-lunar-phase-type">Waxing Gibbous</span>
+                      </div>
+                      <div class="cal-lunar-bar-track">
+                        <div class="cal-lunar-bar-fill" id="cal-stage-lunar-bar-fill" style="width: 58.4%;"></div>
+                      </div>
+                    </div>
+                    <div class="cal-lunar-times-row">
+                      <span class="cal-lunar-time"><i class="fa-solid fa-moon" style="color: #93C5FD;"></i> Rise: <strong id="cal-stage-moonrise">12:45 PM</strong></span>
+                      <span class="cal-lunar-time"><i class="fa-solid fa-cloud-moon" style="color: #CBD5E1;"></i> Set: <strong id="cal-stage-moonset">01:10 AM</strong></span>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="cal-celestial-metric-header">
                   <div class="cal-celestial-metric-title">
                     <i class="fa-solid fa-om" style="color: #F5C45E;"></i> Sidereal Cosmic Geometry
@@ -23303,9 +23497,12 @@ let currentCalendarState = {
 
 function loadStoredCalendarPreferences() {
   try {
-    currentCalendarState.viewMode = '3d';
-    localStorage.setItem('astro_calendar_view_mode_v2', '3d');
-    localStorage.removeItem('astro_calendar_view_mode');
+    const savedMode = localStorage.getItem('astro_calendar_view_mode') || localStorage.getItem('astro_calendar_view_mode_v2');
+    if (savedMode === '2d' || savedMode === '3d') {
+      currentCalendarState.viewMode = savedMode;
+    } else {
+      currentCalendarState.viewMode = '3d';
+    }
 
     const savedTrad = localStorage.getItem('astro_calendar_convention');
     if (savedTrad === 'purnimanta' || savedTrad === 'amanta') {
@@ -24138,10 +24335,23 @@ let celestialCanvasState = {
   lunarSubLabel: '',
   isInitialized: false,
   isPaused: false,
+  isTopDown: false,
   showGrahaLabels: true,
   grahas: []
 };
 window.celestialCanvasState = celestialCanvasState;
+
+function toggleCelestialPerspective() {
+  celestialCanvasState.isTopDown = !celestialCanvasState.isTopDown;
+  const btn = document.getElementById('btn-toggle-orbit-perspective');
+  if (btn) {
+    btn.innerHTML = celestialCanvasState.isTopDown
+      ? '<i class="fa-solid fa-circle-notch"></i> Flat Wheel'
+      : '<i class="fa-solid fa-arrows-spin"></i> 3D View';
+    btn.classList.toggle('active', celestialCanvasState.isTopDown);
+  }
+}
+window.toggleCelestialPerspective = toggleCelestialPerspective;
 
 function initCelestialCanvas() {
   const canvas = document.getElementById('cal-celestial-canvas');
@@ -24245,6 +24455,37 @@ function updateCelestialStageMetrics(panchang) {
     const activeHoraEl = document.getElementById('cal-stage-active-hora');
     const muhuratWindowEl = document.getElementById('cal-stage-muhurat-window');
 
+    // Dedicated Live Moon Phase Card Elements
+    const lunarTithiEl = document.getElementById('cal-stage-lunar-tithi');
+    const pakshaPillEl = document.getElementById('cal-stage-paksha-pill');
+    const lunarIllumPctEl = document.getElementById('cal-stage-lunar-illum-pct');
+    const lunarPhaseTypeEl = document.getElementById('cal-stage-lunar-phase-type');
+    const lunarBarFillEl = document.getElementById('cal-stage-lunar-bar-fill');
+    const moonriseEl = document.getElementById('cal-stage-moonrise');
+    const moonsetEl = document.getElementById('cal-stage-moonset');
+
+    if (lunarTithiEl && panchang.tithi) {
+      lunarTithiEl.textContent = `${panchang.tithi.name}`;
+    }
+    if (pakshaPillEl && panchang.tithi) {
+      pakshaPillEl.textContent = `${panchang.tithi.paksha}`;
+    }
+    if (lunarIllumPctEl && panchang.lunar_phase) {
+      lunarIllumPctEl.textContent = `${panchang.lunar_phase.illumination}% Illuminated`;
+    }
+    if (lunarPhaseTypeEl && panchang.lunar_phase) {
+      lunarPhaseTypeEl.textContent = panchang.lunar_phase.phase_name || (panchang.lunar_phase.illumination > 50 ? 'Waxing Gibbous' : 'Waxing Crescent');
+    }
+    if (lunarBarFillEl && panchang.lunar_phase) {
+      lunarBarFillEl.style.width = `${panchang.lunar_phase.illumination}%`;
+    }
+    if (moonriseEl && panchang.celestial_timings) {
+      moonriseEl.textContent = panchang.celestial_timings.moonrise || '12:45 PM';
+    }
+    if (moonsetEl && panchang.celestial_timings) {
+      moonsetEl.textContent = panchang.celestial_timings.moonset || '01:10 AM';
+    }
+
     if (sunRashiEl) {
       const sunDeg = (panchang.longitudes && panchang.longitudes.sun_sidereal) ? ` ${(panchang.longitudes.sun_sidereal % 30).toFixed(1)}°` : '';
       sunRashiEl.textContent = `${panchang.sunRashi.name} (${panchang.sunRashi.symbol || '☉'})${sunDeg}`;
@@ -24274,6 +24515,8 @@ function updateCelestialStageMetrics(panchang) {
     if (muhuratWindowEl) {
       muhuratWindowEl.textContent = `Abhijit: ${panchang.muhurats.abhijit} • Rahu: ${panchang.muhurats.rahu_kaal}`;
     }
+
+    render3DMoonSphere();
   } catch (_) {}
 }
 
@@ -24358,12 +24601,12 @@ function renderCelestialFrame() {
     ctx.fill();
   }
 
-  // 3. 3D Isometric Dharmachakra (Zodiac Ring) & 9 Grahas
+  // 3. Grand 3D Bhachakra Zodiac Orrery (Full-Width, Centered & Highly Demarcated)
   const isCompact = (w < 560);
-  const ringX = isCompact ? Math.floor(w * 0.38) : Math.floor(w * 0.40);
+  const ringX = Math.floor(w * 0.50);
   const ringY = Math.floor(h * 0.50);
-  const ringR = isCompact ? Math.min(w * 0.34, h * 0.40, 95) : Math.min(w * 0.32, h * 0.42, 120);
-  const tilt = 0.58; // 3D isometric perspective tilt ratio
+  const ringR = isCompact ? Math.min(w * 0.40, h * 0.42, 115) : Math.min(w * 0.38, h * 0.44, 150);
+  const tilt = celestialCanvasState.isTopDown ? 1.0 : 0.74; // 3D perspective tilt or 1.0 flat wheel
 
   if (ringR > 35) {
     ctx.save();
@@ -24377,21 +24620,21 @@ function renderCelestialFrame() {
     // Outer Golden Ring
     ctx.beginPath();
     ctx.ellipse(ringX, ringY, ringR, ringR * tilt, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(245, 196, 94, 0.42)';
-    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = 'rgba(245, 196, 94, 0.45)';
+    ctx.lineWidth = 1.8;
     ctx.stroke();
 
     // Middle Nakshatra Ring
     ctx.beginPath();
     ctx.ellipse(ringX, ringY, ringR * 0.84, ringR * 0.84 * tilt, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(245, 196, 94, 0.22)';
+    ctx.strokeStyle = 'rgba(245, 196, 94, 0.25)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Inner Core Ring
     ctx.beginPath();
     ctx.ellipse(ringX, ringY, ringR * 0.44, ringR * 0.44 * tilt, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(245, 196, 94, 0.16)';
+    ctx.strokeStyle = 'rgba(245, 196, 94, 0.18)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
@@ -24399,7 +24642,7 @@ function renderCelestialFrame() {
     ctx.beginPath();
     ctx.arc(ringX, ringY, 4, 0, Math.PI * 2);
     ctx.fillStyle = '#F5C45E';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 12;
     ctx.shadowColor = '#F5C45E';
     ctx.fill();
     ctx.shadowBlur = 0;
@@ -24407,23 +24650,36 @@ function renderCelestialFrame() {
     // 27 Nakshatras Tick Marks along perimeter
     for (let k = 0; k < 27; k++) {
       const nAngle = (k * (360 / 27)) * Math.PI / 180 + celestialCanvasState.zodiacAngle;
-      const nx1 = ringX + Math.cos(nAngle) * (ringR * 0.96);
-      const ny1 = ringY + Math.sin(nAngle) * (ringR * 0.96 * tilt);
-      const nx2 = ringX + Math.cos(nAngle) * (ringR * 1.03);
-      const ny2 = ringY + Math.sin(nAngle) * (ringR * 1.03 * tilt);
+      const nx1 = ringX + Math.cos(nAngle) * (ringR * 0.95);
+      const ny1 = ringY + Math.sin(nAngle) * (ringR * 0.95 * tilt);
+      const nx2 = ringX + Math.cos(nAngle) * (ringR * 1.04);
+      const ny2 = ringY + Math.sin(nAngle) * (ringR * 1.04 * tilt);
       ctx.beginPath();
       ctx.moveTo(nx1, ny1);
       ctx.lineTo(nx2, ny2);
-      ctx.strokeStyle = 'rgba(254, 240, 138, 0.35)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = (k % 3 === 0) ? 'rgba(254, 240, 138, 0.65)' : 'rgba(254, 240, 138, 0.32)';
+      ctx.lineWidth = (k % 3 === 0) ? 1.2 : 0.8;
       ctx.stroke();
     }
 
     // 12 Zodiac signs & glyphs with spokes
-    const zodiacGlyphs = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
+    const ZODIAC_METRICS = [
+      { glyph: '♈', name: 'Mesha' },
+      { glyph: '♉', name: 'Vrish' },
+      { glyph: '♊', name: 'Mithun' },
+      { glyph: '♋', name: 'Karka' },
+      { glyph: '♌', name: 'Simha' },
+      { glyph: '♍', name: 'Kanya' },
+      { glyph: '♎', name: 'Tula' },
+      { glyph: '♏', name: 'Vrisch' },
+      { glyph: '♐', name: 'Dhanu' },
+      { glyph: '♑', name: 'Makar' },
+      { glyph: '♒', name: 'Kumbh' },
+      { glyph: '♓', name: 'Meena' }
+    ];
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = isCompact ? '9.5px serif' : '11px serif';
 
     for (let i = 0; i < 12; i++) {
       const angle = (i * 30) * Math.PI / 180 + celestialCanvasState.zodiacAngle;
@@ -24435,20 +24691,28 @@ function renderCelestialFrame() {
       ctx.beginPath();
       ctx.moveTo(x1, y1);
       ctx.lineTo(x2, y2);
-      ctx.strokeStyle = 'rgba(245, 196, 94, 0.2)';
+      ctx.strokeStyle = 'rgba(245, 196, 94, 0.22)';
+      ctx.lineWidth = 1;
       ctx.stroke();
 
       const midAngle = angle + (15 * Math.PI / 180);
-      const gx = ringX + Math.cos(midAngle) * (ringR * 0.68);
-      const gy = ringY + Math.sin(midAngle) * (ringR * 0.68 * tilt);
-      ctx.fillStyle = 'rgba(245, 196, 94, 0.7)';
-      ctx.fillText(zodiacGlyphs[i], gx, gy);
+      const gx = ringX + Math.cos(midAngle) * (ringR * 0.64);
+      const gy = ringY + Math.sin(midAngle) * (ringR * 0.64 * tilt);
+
+      ctx.font = isCompact ? '10px serif' : '11.5px serif';
+      ctx.fillStyle = 'rgba(245, 196, 94, 0.85)';
+      ctx.fillText(ZODIAC_METRICS[i].glyph, gx, gy - (isCompact ? 0 : 4));
+
+      if (!isCompact && ringR > 110) {
+        ctx.font = '7.5px "Plus Jakarta Sans", sans-serif';
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.6)';
+        ctx.fillText(ZODIAC_METRICS[i].name, gx, gy + 7);
+      }
     }
 
     // 9 Navagrahas plotted at exact sidereal longitudes
     const grahas = celestialCanvasState.grahas;
     if (Array.isArray(grahas) && grahas.length > 0) {
-      // Sort grahas by isometric depth (sin(angle)) so background planets draw before foreground
       const planetR = ringR * 0.86;
       const mappedPlanets = grahas.map(g => {
         const cfg = GRAHA_ORBIT_CONFIG[g.nameEn] || { code: 'Gr', hi: '', sym: '●', color: '#F5C45E', glow: '#FDE68A', r: 5 };
@@ -24462,25 +24726,25 @@ function renderCelestialFrame() {
       mappedPlanets.sort((a, b) => a.depth - b.depth);
 
       for (let p = 0; p < mappedPlanets.length; p++) {
-        const { g, cfg, px, py, depth } = mappedPlanets[p];
-        const scale = 0.75 + depth * 0.45;
+        const { g, cfg, px, py, pAngle, depth } = mappedPlanets[p];
+        const scale = 0.8 + depth * 0.4;
         const pr = cfg.r * scale;
 
         // Atmospheric planetary aura
-        const aura = ctx.createRadialGradient(px, py, pr * 0.3, px, py, pr * 2.6);
+        const aura = ctx.createRadialGradient(px, py, pr * 0.3, px, py, pr * 2.8);
         aura.addColorStop(0, cfg.glow + '88');
         aura.addColorStop(1, cfg.glow + '00');
         ctx.fillStyle = aura;
         ctx.beginPath();
-        ctx.arc(px, py, pr * 2.6, 0, Math.PI * 2);
+        ctx.arc(px, py, pr * 2.8, 0, Math.PI * 2);
         ctx.fill();
 
         // Special: Shani (Saturn) 3D tilted ring
         if (cfg.hasRing) {
           ctx.save();
           ctx.beginPath();
-          ctx.ellipse(px, py, pr * 2.2, pr * 0.8, -0.3, 0, Math.PI * 2);
-          ctx.strokeStyle = 'rgba(245, 196, 94, 0.65)';
+          ctx.ellipse(px, py, pr * 2.3, pr * 0.85, -0.3, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(245, 196, 94, 0.7)';
           ctx.lineWidth = 1.4;
           ctx.stroke();
           ctx.restore();
@@ -24491,7 +24755,7 @@ function renderCelestialFrame() {
           ctx.save();
           ctx.beginPath();
           ctx.arc(px, py, pr * 1.5, 0, Math.PI * 2);
-          ctx.strokeStyle = 'rgba(254, 240, 138, 0.45)';
+          ctx.strokeStyle = 'rgba(254, 240, 138, 0.5)';
           ctx.lineWidth = 1;
           ctx.stroke();
           ctx.restore();
@@ -24507,21 +24771,25 @@ function renderCelestialFrame() {
         ctx.arc(px, py, pr, 0, Math.PI * 2);
         ctx.fill();
 
-        // Planet label / badge
+        // Non-overlapping Radial Planet Label
         if (celestialCanvasState.showGrahaLabels) {
-          const degStr = Math.floor(g.siderealLong % 30);
-          const labelText = `${cfg.code} ${degStr}°`;
-          ctx.font = 'bold 9px "Plus Jakarta Sans", sans-serif';
+          const degStr = (g.siderealLong % 30).toFixed(1);
+          const retroStr = g.isRetrograde ? ' ℞' : '';
+          const labelText = `${cfg.code} ${degStr}°${retroStr}`;
+          ctx.font = 'bold 8.5px "Plus Jakarta Sans", sans-serif';
           const txtWidth = ctx.measureText(labelText).width;
-          const lx = px;
-          const ly = py - pr - 8;
+
+          // Compute radial outward offset from ring center so badges don't collide
+          const radOffset = pr + 12;
+          const lx = px + Math.cos(pAngle) * radOffset;
+          const ly = py + Math.sin(pAngle) * radOffset * tilt;
 
           // Pill background
-          ctx.fillStyle = 'rgba(11, 16, 32, 0.85)';
-          ctx.strokeStyle = 'rgba(245, 196, 94, 0.35)';
+          ctx.fillStyle = 'rgba(11, 16, 32, 0.88)';
+          ctx.strokeStyle = 'rgba(245, 196, 94, 0.4)';
           ctx.lineWidth = 0.8;
           ctx.beginPath();
-          ctx.roundRect(lx - txtWidth / 2 - 3, ly - 7, txtWidth + 6, 12, 3);
+          ctx.roundRect(lx - txtWidth / 2 - 3, ly - 6, txtWidth + 6, 12, 3);
           ctx.fill();
           ctx.stroke();
 
@@ -24529,7 +24797,7 @@ function renderCelestialFrame() {
           ctx.fillStyle = '#FDE68A';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(labelText, lx, ly - 1);
+          ctx.fillText(labelText, lx, ly);
         }
       }
     }
@@ -24543,121 +24811,124 @@ function renderCelestialFrame() {
     }
   }
 
-  // 4. Photorealistic 3D Moon Phase Model on the right
-  render3DMoonModel(ctx, w, h);
-
   ctx.restore();
 
   celestialCanvasState.animId = requestAnimationFrame(renderCelestialFrame);
 }
 
-function render3DMoonModel(ctx, w, h) {
-  const target = celestialCanvasState.targetPhaseDeg;
-  let diff = target - celestialCanvasState.currentPhaseDeg;
-  if (diff > 180) diff -= 360;
-  if (diff < -180) diff += 360;
-  celestialCanvasState.currentPhaseDeg = (celestialCanvasState.currentPhaseDeg + diff * 0.12 + 360) % 360;
+// Dedicated 3D Lunar Orb Renderer (#cal-moon-sphere-canvas)
+function render3DMoonSphere() {
+  const moonCanvas = document.getElementById('cal-moon-sphere-canvas');
+  if (!moonCanvas) return;
+  const mCtx = moonCanvas.getContext('2d');
+  if (!mCtx) return;
 
-  const phaseDeg = celestialCanvasState.currentPhaseDeg;
-  const isWaxing = phaseDeg <= 180;
-  const isCompact = (w < 560);
-  const moonR = isCompact ? Math.min(32, Math.max(24, Math.floor(h * 0.15))) : Math.min(40, Math.max(28, Math.floor(h * 0.18)));
-  const moonX = isCompact ? Math.min(Math.floor(w * 0.82), w - moonR - 12) : Math.min(Math.floor(w * 0.82), w - moonR - 20);
-  const moonY = Math.floor(h * 0.46);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = moonCanvas.getBoundingClientRect();
+  const w = (rect.width > 0 ? rect.width : 105);
+  const h = (rect.height > 0 ? rect.height : 105);
+  moonCanvas.width = Math.floor(w * dpr);
+  moonCanvas.height = Math.floor(h * dpr);
 
-  ctx.save();
+  mCtx.save();
+  mCtx.scale(dpr, dpr);
+  mCtx.clearRect(0, 0, w, h);
 
-  // Subtle atmospheric moonlight halo
-  const halo = ctx.createRadialGradient(moonX, moonY, moonR * 0.6, moonX, moonY, moonR * 2.3);
-  halo.addColorStop(0, 'rgba(245, 196, 94, 0.22)');
-  halo.addColorStop(0.5, 'rgba(245, 196, 94, 0.06)');
-  halo.addColorStop(1, 'rgba(245, 196, 94, 0)');
-  ctx.fillStyle = halo;
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR * 2.3, 0, Math.PI * 2);
-  ctx.fill();
+  const cx = w / 2;
+  const cy = h / 2;
+  const moonR = Math.min(cx, cy) - 6;
 
-  // 3D Spherical unlit base (dark lunar sphere with curved shading)
-  const darkGrad = ctx.createRadialGradient(moonX - moonR * 0.35, moonY - moonR * 0.35, moonR * 0.1, moonX, moonY, moonR);
+  if (moonR < 10) {
+    mCtx.restore();
+    return;
+  }
+
+  // Atmospheric moonlight halo
+  const halo = mCtx.createRadialGradient(cx, cy, moonR * 0.7, cx, cy, moonR * 1.35);
+  halo.addColorStop(0, 'rgba(245, 196, 94, 0.28)');
+  halo.addColorStop(0.5, 'rgba(147, 197, 253, 0.10)');
+  halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  mCtx.fillStyle = halo;
+  mCtx.beginPath();
+  mCtx.arc(cx, cy, moonR * 1.35, 0, Math.PI * 2);
+  mCtx.fill();
+
+  // Dark unlit base sphere
+  const darkGrad = mCtx.createRadialGradient(cx - moonR * 0.35, cy - moonR * 0.35, moonR * 0.1, cx, cy, moonR);
   darkGrad.addColorStop(0, '#1E293B');
   darkGrad.addColorStop(0.65, '#0F172A');
   darkGrad.addColorStop(1, '#050811');
-  ctx.fillStyle = darkGrad;
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
-  ctx.fill();
+  mCtx.fillStyle = darkGrad;
+  mCtx.beginPath();
+  mCtx.arc(cx, cy, moonR, 0, Math.PI * 2);
+  mCtx.fill();
 
-  // Draw 3D illuminated lunar phase
+  // Subtle dark side crater texture
+  mCtx.fillStyle = 'rgba(10, 15, 29, 0.55)';
+  mCtx.beginPath();
+  mCtx.arc(cx - moonR * 0.25, cy - moonR * 0.15, moonR * 0.22, 0, Math.PI * 2);
+  mCtx.arc(cx + moonR * 0.15, cy + moonR * 0.3, moonR * 0.26, 0, Math.PI * 2);
+  mCtx.arc(cx - moonR * 0.1, cy + moonR * 0.2, moonR * 0.18, 0, Math.PI * 2);
+  mCtx.fill();
+
+  // Phase angle and illuminated geometry
+  const phaseDeg = (celestialCanvasState.targetPhaseDeg !== undefined) ? celestialCanvasState.targetPhaseDeg : 90;
+  const isWaxing = phaseDeg <= 180;
   const frac = (1 - Math.cos(phaseDeg * Math.PI / 180)) / 2;
   const k = Math.cos(phaseDeg * Math.PI / 180);
 
-  if (frac > 0.03) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
-    ctx.clip();
+  if (frac > 0.02) {
+    mCtx.save();
+    mCtx.beginPath();
+    mCtx.arc(cx, cy, moonR, 0, Math.PI * 2);
+    mCtx.clip();
 
-    ctx.beginPath();
-    if (frac >= 0.94) {
-      // 100% Full Moon (Purnima) - full luminous sphere
-      ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+    mCtx.beginPath();
+    if (frac >= 0.96) {
+      mCtx.arc(cx, cy, moonR, 0, Math.PI * 2);
     } else if (isWaxing) {
-      // Waxing: right hemisphere illuminated
-      ctx.arc(moonX, moonY, moonR, -Math.PI / 2, Math.PI / 2, false);
-      ctx.ellipse(moonX, moonY, Math.abs(k) * moonR, moonR, 0, Math.PI / 2, -Math.PI / 2, k > 0);
+      mCtx.arc(cx, cy, moonR, -Math.PI / 2, Math.PI / 2, false);
+      mCtx.ellipse(cx, cy, Math.abs(k) * moonR, moonR, 0, Math.PI / 2, -Math.PI / 2, k > 0);
     } else {
-      // Waning: left hemisphere illuminated
-      ctx.arc(moonX, moonY, moonR, Math.PI / 2, -Math.PI / 2, false);
-      ctx.ellipse(moonX, moonY, Math.abs(k) * moonR, moonR, 0, -Math.PI / 2, Math.PI / 2, k > 0);
+      mCtx.arc(cx, cy, moonR, Math.PI / 2, -Math.PI / 2, false);
+      mCtx.ellipse(cx, cy, Math.abs(k) * moonR, moonR, 0, -Math.PI / 2, Math.PI / 2, k > 0);
     }
-    ctx.closePath();
+    mCtx.closePath();
 
-    // Rich 3D spherical lighting gradient on illuminated surface
-    const lightOffsetX = (frac >= 0.94) ? 0 : (isWaxing ? moonR * 0.35 : -moonR * 0.35);
-    const litGrad = ctx.createRadialGradient(moonX + lightOffsetX, moonY - moonR * 0.25, moonR * 0.1, moonX, moonY, moonR);
+    const lightOffsetX = (frac >= 0.96) ? 0 : (isWaxing ? moonR * 0.35 : -moonR * 0.35);
+    const litGrad = mCtx.createRadialGradient(cx + lightOffsetX, cy - moonR * 0.25, moonR * 0.05, cx, cy, moonR);
     litGrad.addColorStop(0, '#FFFFFF');
-    litGrad.addColorStop(0.25, '#FFFDF5');
-    litGrad.addColorStop(0.55, '#FDE68A');
+    litGrad.addColorStop(0.2, '#FFFDF5');
+    litGrad.addColorStop(0.5, '#FDE68A');
     litGrad.addColorStop(0.85, '#F59E0B');
     litGrad.addColorStop(1, '#92400E');
-    ctx.fillStyle = litGrad;
-    ctx.fill();
+    mCtx.fillStyle = litGrad;
+    mCtx.fill();
 
-    // Subtle lunar craters texture
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.15)';
-    ctx.beginPath();
-    ctx.arc(moonX + moonR * 0.15, moonY - moonR * 0.1, moonR * 0.22, 0, Math.PI * 2);
-    ctx.arc(moonX - moonR * 0.1, moonY + moonR * 0.2, moonR * 0.28, 0, Math.PI * 2);
-    ctx.arc(moonX + moonR * 0.25, moonY + moonR * 0.15, moonR * 0.18, 0, Math.PI * 2);
-    ctx.fill();
+    // Mare / crater textures on illuminated face
+    mCtx.fillStyle = 'rgba(15, 23, 42, 0.16)';
+    mCtx.beginPath();
+    mCtx.arc(cx + moonR * 0.15, cy - moonR * 0.1, moonR * 0.20, 0, Math.PI * 2);
+    mCtx.arc(cx - moonR * 0.12, cy + moonR * 0.22, moonR * 0.24, 0, Math.PI * 2);
+    mCtx.arc(cx + moonR * 0.24, cy + moonR * 0.14, moonR * 0.16, 0, Math.PI * 2);
+    mCtx.fill();
 
-    ctx.restore();
+    mCtx.restore();
   }
 
-  // Delicate Vedic gold rim stroke around sphere
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(245, 196, 94, 0.38)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  // Golden boundary rim
+  mCtx.beginPath();
+  mCtx.arc(cx, cy, moonR, 0, Math.PI * 2);
+  mCtx.strokeStyle = 'rgba(245, 196, 94, 0.45)';
+  mCtx.lineWidth = 1.2;
+  mCtx.stroke();
 
-  // Lunar Phase Primary Caption (Tithi)
-  if (celestialCanvasState.lunarLabel) {
-    ctx.font = isCompact ? 'bold 11px "Plus Jakarta Sans", sans-serif' : 'bold 12.5px "Plus Jakarta Sans", sans-serif';
-    ctx.fillStyle = '#FDE68A';
-    ctx.textAlign = 'center';
-    ctx.fillText(celestialCanvasState.lunarLabel, moonX, moonY + moonR + 14);
-  }
+  mCtx.restore();
+}
+window.render3DMoonSphere = render3DMoonSphere;
 
-  // Lunar Phase Secondary Caption (% Illumination & Paksha)
-  if (celestialCanvasState.lunarSubLabel) {
-    ctx.font = '10px "Plus Jakarta Sans", sans-serif';
-    ctx.fillStyle = '#CBD5E1';
-    ctx.textAlign = 'center';
-    ctx.fillText(celestialCanvasState.lunarSubLabel, moonX, moonY + moonR + 28);
-  }
-
-  ctx.restore();
+function render3DMoonModel(ctx, w, h) {
+  render3DMoonSphere();
 }
 
 
@@ -25753,32 +26024,41 @@ function changeCalendarSelectedDate(offset) {
 }
 
 function setCalendarViewMode(mode = '3d', save = true) {
-  currentCalendarState.viewMode = '3d';
+  const targetMode = (mode === '2d') ? '2d' : '3d';
+  currentCalendarState.viewMode = targetMode;
   if (save) {
     try {
-      localStorage.setItem('astro_calendar_view_mode_v2', '3d');
-      localStorage.setItem('astro_calendar_view_mode', '3d');
+      localStorage.setItem('astro_calendar_view_mode_v2', targetMode);
+      localStorage.setItem('astro_calendar_view_mode', targetMode);
     } catch (_) {}
   }
 
   const btn3d = document.getElementById('cal-view-btn-3d');
-  if (btn3d) btn3d.classList.add('active');
+  const btn2d = document.getElementById('cal-view-btn-2d');
+  if (btn3d) {
+    btn3d.classList.toggle('active', targetMode === '3d');
+    btn3d.setAttribute('aria-pressed', targetMode === '3d' ? 'true' : 'false');
+  }
+  if (btn2d) {
+    btn2d.classList.toggle('active', targetMode === '2d');
+    btn2d.setAttribute('aria-pressed', targetMode === '2d' ? 'true' : 'false');
+  }
 
   const modeTextEl = document.getElementById('cal-current-mode-text');
   if (modeTextEl) {
-    modeTextEl.textContent = '3D Celestial View';
+    modeTextEl.textContent = (targetMode === '3d') ? '3D Cosmic View' : 'Classic 2D Grid';
   }
 
   const gridEl = document.getElementById('cal-month-grid');
   if (gridEl) {
-    gridEl.classList.add('cal-grid-3d');
-    gridEl.classList.remove('cal-grid-2d');
-    gridEl.style.transform = 'rotateX(8deg) translateZ(0)';
+    gridEl.classList.toggle('cal-grid-3d', targetMode === '3d');
+    gridEl.classList.toggle('cal-grid-2d', targetMode === '2d');
+    gridEl.style.transform = 'none';
   }
 
   const canvasEl = document.getElementById('cal-celestial-canvas');
   if (canvasEl) {
-    canvasEl.style.display = 'block';
+    canvasEl.style.display = (targetMode === '3d') ? 'block' : 'none';
   }
 }
 
@@ -25932,6 +26212,10 @@ window.loadStoredCalendarPreferences = loadStoredCalendarPreferences;
 
       const cards = document.querySelectorAll('.av-card-3d:not([data-3d-bound="true"]), .cosmic-service-card:not([data-3d-bound="true"])');
       cards.forEach(card => {
+        if (card.classList.contains('cal-date-card') || card.closest('#view-calendar') || card.closest('.cal-calendar-surface')) {
+          card.style.transform = 'none';
+          return;
+        }
         card.setAttribute('data-3d-bound', 'true');
         let ticking = false;
         let bounds = null;

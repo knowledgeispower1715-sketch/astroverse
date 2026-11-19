@@ -1,3 +1,4 @@
+/* oxlint-disable typescript/no-var-requires */
 /**
  * Safe client storage abstraction for React Native / Web / Test environments
  */

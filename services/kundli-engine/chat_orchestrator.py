@@ -553,7 +553,7 @@ def generate_scope_grounded_response(
                 )
             else:
                 msg = (
-                    f"प्रणाम, {user_name} जी! मैं आचार्य देवरात्न हूँ, शास्त्रीय पराशरी ज्योतिष, करियर मार्गदर्शन और रणनीतिक जीवन निर्णयों का विशेषज्ञ।\n\n"
+                    f"प्रणाम, {user_name} जी! मैं आचार्य देवव्रतन (आचार्य देवरात्न) हूँ, शास्त्रीय पराशरी ज्योतिष, करियर मार्गदर्शन और रणनीतिक जीवन निर्णयों का विशेषज्ञ।\n\n"
                     f"AstroVerse में आपका स्वागत है। वैदिक ज्योतिष धर्म, सामर्थ्य और कर्म के अनुकूल समय को प्रकाशित करने वाला विज्ञान है। "
                     f"मैं करियर की दिशा, वित्तीय प्रगति और रणनीतिक जीवन योजनाओं में पूर्ण प्रामाणिकता से आपका मार्गदर्शन करने के लिए उपस्थित हूँ।\n\n"
                     f"सटीक व्यक्तिगत फलादेश हेतु आप किसी भी समय अपनी जन्म तिथि, समय व स्थान यहाँ साझा कर सकते हैं अथवा ऊपर से जन्म कुंडली लिंक कर सकते हैं।\n\n"
@@ -1025,12 +1025,95 @@ def generate_scope_grounded_response(
         moon_s = kundli.get("planets", {}).get("Moon", {}).get("sign", "") if kundli else ""
         has_chart_grounded = bool(kundli and lagna_s and moon_s)
 
+        # Extract active dasha for chart grounding
+        d_maha = ""
+        d_antar = ""
+        if dasha and isinstance(dasha, dict):
+            active_now = dasha.get("active_now", {})
+            if isinstance(active_now, dict):
+                d_maha = active_now.get("maha_dasha", "")
+                d_antar = active_now.get("antar_dasha", "")
+        if not d_maha and kundli:
+            d_maha = "Jupiter"
+            d_antar = "Sun"
+
+        HINDI_GRAHAS = {
+            "Sun": "सूर्य", "Moon": "चंद्र", "Mars": "मंगल", "Mercury": "बुध",
+            "Jupiter": "बृहस्पति (गुरु)", "Venus": "शुक्र", "Saturn": "शनि",
+            "Rahu": "राहु", "Ketu": "केतु"
+        }
+        d_maha_hi = HINDI_GRAHAS.get(d_maha, d_maha)
+        d_antar_hi = HINDI_GRAHAS.get(d_antar, d_antar)
+
+        # Repetition Guard: Check for prior assistant turns in conversation
+        has_prior_turn = False
+        if session_history and isinstance(session_history, list):
+            has_prior_turn = any(
+                isinstance(m, dict) and m.get("role") in ["assistant", "model"]
+                for m in session_history
+            ) or len(session_history) > 1
+
+        if has_prior_turn:
+            if is_hi:
+                lagna_display = HINDI_SIGNS.get(lagna_s, lagna_s)
+                dasha_part_hi = f" (सक्रिय **{d_maha_hi}-{d_antar_hi} दशा**)" if (d_maha_hi and d_antar_hi) else ""
+                if has_chart_grounded:
+                    message = (
+                        f"प्रणाम! मैं आपकी क्या सहायता कर सकता हूँ? "
+                        f"आप अपनी **{lagna_display} लग्न** पत्रिका{dasha_part_hi} के आधार पर "
+                        f"करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर प्रश्न पूछ सकते हैं।"
+                    )
+                else:
+                    message = (
+                        f"प्रणाम! मैं आपकी क्या सहायता कर सकता हूँ? "
+                        f"आप सामान्य ज्योतिषीय सिद्धांतों, ग्रह गोचर अथवा शास्त्रीय नियमों पर प्रश्न पूछ सकते हैं।"
+                    )
+                suggested = [
+                    "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+                    "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
+                    "आगामी कौन सा गोचर करियर में सहायक होगा?",
+                    "सक्रिय दशा में मानसिक शांति हेतु शास्त्रीय उपाय बताएं"
+                ]
+            else:
+                dasha_part_en = f" (**{d_maha}-{d_antar}** Dasha)" if (d_maha and d_antar) else ""
+                if has_chart_grounded:
+                    message = (
+                        f"Pranam! How may I assist your astrological exploration today? "
+                        f"Feel free to ask about your career, marriage timing, Dhana Yogas, or remedies for your **{lagna_s} Lagna** chart{dasha_part_en}."
+                    )
+                else:
+                    message = (
+                        f"Pranam! How may I assist your astrological exploration today? "
+                        f"Feel free to ask about general astrological principles, planetary transits, or Vedic Jyotish philosophy."
+                    )
+                suggested = [
+                    "Analyze my 10th House of Career & promotion timing",
+                    "When is an auspicious timing window for marriage?",
+                    "Which upcoming transit supports career acceleration?",
+                    "What classical remedies are prescribed for my active Dasha?"
+                ]
+            return {
+                "status": "completed",
+                "scope": SCOPE_SOCIAL_CONVERSATION,
+                "intent": "greeting",
+                "message": message,
+                "bilingual_summary": {
+                    "en": f"Courteous follow-up assistance prompt by {persona_display}.",
+                    "hi": f"{persona_display} द्वारा निरंतर परामर्श सत्र हेतु संक्षिप्त सहायता संदेश।"
+                },
+                "chartEvidence": [],
+                "relatedInsights": [],
+                "suggestedQuestions": suggested,
+                "remedyCard": None
+            }
+
         if is_hi:
             lagna_s = HINDI_SIGNS.get(lagna_s, lagna_s)
             moon_s = HINDI_SIGNS.get(moon_s, moon_s)
+            dasha_hi_note = f", सक्रिय **{d_maha_hi}-{d_antar_hi} दशा**" if (d_maha_hi and d_antar_hi) else ""
             if persona_id == "dr-sunita-shastri":
                 if has_chart_grounded:
-                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि** — संबंध व मुहूर्त विश्लेषण हेतु तैयार है।)*"
+                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि**{dasha_hi_note} — संबंध व मुहूर्त विश्लेषण हेतु तैयार है।)*"
                 else:
                     chart_note = "\n\n*(वर्तमान में सार्वभौमिक गोचर मोड सक्रिय है। व्यक्तिगत कुंडली मिलान और सूक्ष्म समय विश्लेषण हेतु जन्म कुंडली लिंक कर सकते हैं।)*"
                 message = (
@@ -1048,7 +1131,7 @@ def generate_scope_grounded_response(
                 ]
             elif persona_id == "pandit-raghavendra":
                 if has_chart_grounded:
-                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि** — वैदिक शांति उपायों हेतु तैयार है।)*"
+                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि**{dasha_hi_note} — वैदिक शांति उपायों हेतु तैयार है।)*"
                 else:
                     chart_note = "\n\n*(वर्तमान में सार्वभौमिक गोचर मोड सक्रिय है। व्यक्तिगत दोष शांति और रत्न परामर्श हेतु जन्म कुंडली बनाएं।)*"
                 message = (
@@ -1065,11 +1148,11 @@ def generate_scope_grounded_response(
                 ]
             else:
                 if has_chart_grounded:
-                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि** — करियर और धन योगों के विश्लेषण हेतु तैयार है।)*"
+                    chart_note = f"\n\n*(आपकी जन्म कुंडली — **{lagna_s} लग्न**, **{moon_s} चंद्र राशि**{dasha_hi_note} — करियर और धन योगों के विश्लेषण हेतु तैयार है।)*"
                 else:
                     chart_note = "\n\n*(वर्तमान में सार्वभौमिक गोचर मोड सक्रिय है। अपने सटीक लग्न और विंशोत्तरी दशा के अनुसार परामर्श हेतु किसी भी समय जन्म कुंडली लिंक कर सकते हैं।)*"
                 message = (
-                    f"प्रणाम! मैं आचार्य देवरात्न हूँ, शास्त्रीय पराशरी ज्योतिष, करियर मार्गदर्शन और रणनीतिक जीवन निर्णयों का विशेषज्ञ।\n\n"
+                    f"प्रणाम! मैं आचार्य देवव्रतन (आचार्य देवरात्न) हूँ, शास्त्रीय पराशरी ज्योतिष, करियर मार्गदर्शन और रणनीतिक जीवन निर्णयों का विशेषज्ञ।\n\n"
                     f"AstroVerse में आपका स्वागत है। वैदिक ज्योतिष आपके धर्म, सामर्थ्य और कर्म के अनुकूल समय को प्रकाशित करने वाला पावन विज्ञान है। "
                     f"चाहे आप अपने करियर की दिशा, धन संचय के योग, या सामान्य ज्योतिषीय सिद्धांतों के विषय में मार्गदर्शन चाहते हों, "
                     f"मैं पूर्ण प्रामाणिकता और स्पष्टता से आपका मार्गदर्शन करने के लिए उपस्थित हूँ।{chart_note}\n\n"
@@ -1082,9 +1165,10 @@ def generate_scope_grounded_response(
                     "मेरे करियर और प्रगति को बल देने वाले वैदिक उपाय क्या हैं?"
                 ]
         else:
+            dasha_en_note = f", active **{d_maha} Mahadasha** with **{d_antar} Antardasha**" if (d_maha and d_antar) else ""
             if persona_id == "dr-sunita-shastri":
                 if has_chart_grounded:
-                    chart_note = f"\n\n*(Your natal chart — **{lagna_s} Lagna**, Moon in **{moon_s}** — is loaded and ready whenever you wish to evaluate relationship timing or synastry.)*"
+                    chart_note = f"\n\n*(Your natal chart — **{lagna_s} Lagna**, **{moon_s} Moon** (Moon in **{moon_s}**){dasha_en_note} — is loaded and ready whenever you wish to evaluate relationship timing or synastry.)*"
                 else:
                     chart_note = "\n\n*(We are in universal transit mode. You can link your birth chart anytime to unlock personalized synastry and timing.)*"
                 message = (
@@ -1102,7 +1186,7 @@ def generate_scope_grounded_response(
                 ]
             elif persona_id == "pandit-raghavendra":
                 if has_chart_grounded:
-                    chart_note = f"\n\n*(Your natal coordinates — **{lagna_s} Lagna**, Moon in **{moon_s}** — are verified for remedial and transit assessment.)*"
+                    chart_note = f"\n\n*(Your natal coordinates — **{lagna_s} Lagna**, **{moon_s} Moon** (Moon in **{moon_s}**){dasha_en_note} — are verified for remedial and transit assessment.)*"
                 else:
                     chart_note = "\n\n*(Operating in universal transit mode. Calculate your Janam Kundli whenever you wish to examine personalized doshas and gemstone suitability.)*"
                 message = (
@@ -1119,7 +1203,7 @@ def generate_scope_grounded_response(
                 ]
             else:
                 if has_chart_grounded:
-                    chart_note = f"\n\n*(Your calculated chart — **{lagna_s} Lagna**, Moon in **{moon_s}** — is loaded and ready whenever you wish to examine personal transits or dasha timings.)*"
+                    chart_note = f"\n\n*(Your calculated chart — **{lagna_s} Lagna**, **{moon_s} Moon** (Moon in **{moon_s}**){dasha_en_note} — is loaded and ready whenever you wish to examine personal transits or dasha timings.)*"
                 else:
                     chart_note = "\n\n*(Operating in universal transit mode. You can calculate your Janam Kundli anytime to ground our consultation in your exact natal Lagna and Vimshottari Dasha.)*"
                 message = (

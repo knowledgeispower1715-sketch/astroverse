@@ -2,12 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
 import { AddressInfo } from 'net';
-import { bootstrapPostgresSchema, DDL_STATEMENTS } from '../src/schemaBootstrap';
+import { bootstrapPostgresSchema, DDL_STATEMENTS, APPLICATION_TABLES } from '../src/schemaBootstrap';
 import { isAuthorizedAdminEmail, Role } from '../src/security/permissions';
-
-// Import app
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const app = require('../src/server');
+import app from '../src/server';
 
 test('ASTROVERSE P0 AUTHENTICATION LIFECYCLE & RESILIENCE TEST SUITE', async (t) => {
   let server: http.Server;
@@ -38,7 +35,6 @@ test('ASTROVERSE P0 AUTHENTICATION LIFECYCLE & RESILIENCE TEST SUITE', async (t)
     const mockPrisma = {
       $queryRawUnsafe: async (sql: string) => {
         queryCount++;
-        const { APPLICATION_TABLES } = require('../src/schemaBootstrap');
         return APPLICATION_TABLES.map((t: string) => ({ table_name: t, rls_enabled: true, rls_forced: false }));
       },
       $executeRawUnsafe: async (sql: string) => {
@@ -62,7 +58,6 @@ test('ASTROVERSE P0 AUTHENTICATION LIFECYCLE & RESILIENCE TEST SUITE', async (t)
         if (queryCallCount === 1) {
           return []; // Initially missing tables
         }
-        const { APPLICATION_TABLES } = require('../src/schemaBootstrap');
         return APPLICATION_TABLES.map((t: string) => ({ table_name: t, rls_enabled: true, rls_forced: false }));
       },
       $executeRawUnsafe: async (sql: string) => {

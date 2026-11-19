@@ -4,7 +4,8 @@
   "packageManager": "npm@11.16.0",
   "scripts": {
     "dev": "ts-node server.ts",
-    "build": "echo 'Consultation service ready'"
+    "build": "echo 'Consultation service ready'",
+    "test": "ts-node tests/consultation_auth_security.test.ts"
   },
   "dependencies": {
     "@types/node": "^20.11.30",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
+    "socket.io-client": "^4.8.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.3"
   }

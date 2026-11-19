@@ -27,6 +27,12 @@ env/
 .devin/
 .factory/
 .claude/
+.cline/
+.clinerules
+.continue/
+.cursor/
+.windsurf/
+.github/copilot-instructions.md
 agent/
 codedb.snapshot
 .backups/

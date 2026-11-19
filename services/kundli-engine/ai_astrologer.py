@@ -120,8 +120,8 @@ def get_planet_lordships(planet: str, lagna_sign: str) -> List[int]:
     return houses
 
 def generate_astrological_reading(
-    category: str,
-    user_query: str,
+    category: Optional[str] = None,
+    user_query: str = "",
     kundli: Optional[dict] = None,
     dasha: Optional[dict] = None,
     doshas: Optional[dict] = None,
@@ -224,30 +224,42 @@ def generate_astrological_reading(
     is_career_transit = any(w in q for w in ["transit", "gochar", "गोचर"]) and any(w in q for w in ["career", "switch", "job", "business", "नौकरी", "व्यापार", "व्यवसाय", "परिवर्तन"])
     is_dasha_stability = any(w in q for w in ["dasha", "दशा"]) and any(w in q for w in ["stability", "career", "professional", "work", "job", "स्थिरता", "कार्यक्षेत्र", "नौकरी"])
 
-    is_career = not is_career_transit and not is_dasha_stability and not is_ambiguous_future and (any(w in q for w in [
+    # Keyword domain matching
+    has_career_kw = not is_career_transit and not is_dasha_stability and not is_ambiguous_future and any(w in q for w in [
         "career", "job", "promot", "profession", "business", "work", "boss",
         "interview", "office", "10th", "transfer", "startup", "colleague", "vocation", "करियर", "नौकरी", "पदोन्नति"
-    ]) or (cat == "career" and not is_greeting))
+    ])
 
-    is_marriage = any(w in q for w in [
+    has_marriage_kw = any(w in q for w in [
         "marri", "love", "partner", "spouse", "husband", "wife", "relationship",
         "compatibility", "7th", "divorce", "wedding", "romance", "synastry", "navamsha", "d9", "विवाह", "शादी", "जीवनसाथी"
-    ]) or (cat in ["marriage", "relationship"] and not is_greeting)
+    ])
 
-    is_wealth = any(w in q for w in [
+    has_wealth_kw = any(w in q for w in [
         "wealth", "money", "financ", "invest", "stock", "debt", "loan", "property",
         "income", "gains", "11th", "2nd", "dhana", "asset", "crypto", "savings", "धन", "दौलत", "निवेश"
-    ]) or (cat in ["wealth", "finance"] and not is_greeting)
+    ])
 
-    is_health = any(w in q for w in [
+    has_health_kw = any(w in q for w in [
         "health", "disease", "illness", "sick", "hospital", "pain", "stress",
         "mental", "vitality", "energy", "6th", "8th", "anxiety", "depression", "स्वास्थ्य", "रोग"
-    ]) or (cat == "health" and not is_greeting)
+    ])
 
-    is_remedy = any(w in q for w in [
+    has_remedy_kw = any(w in q for w in [
         "remed", "mantra", "gem", "stone", "pukhraj", "ruby", "emerald", "sapphire",
         "puja", "sade", "sati", "dosha", "daan", "fast", "charity", "rudraksha", "उपाय", "मन्त्र", "रत्न"
-    ]) or (cat in ["remedies", "remedy"] and not is_greeting)
+    ])
+
+    has_domain_kw = (
+        has_career_kw or has_marriage_kw or has_wealth_kw or has_health_kw or has_remedy_kw
+    )
+
+    # Keyword domain matches strictly take precedence over category fallback
+    is_career = has_career_kw or (cat == "career" and not has_domain_kw and not is_greeting)
+    is_marriage = has_marriage_kw or (cat in ["marriage", "relationship"] and not has_domain_kw and not is_greeting)
+    is_wealth = has_wealth_kw or (cat in ["wealth", "finance"] and not has_domain_kw and not is_greeting)
+    is_health = has_health_kw or (cat == "health" and not has_domain_kw and not is_greeting)
+    is_remedy = has_remedy_kw or (cat in ["remedies", "remedy"] and not has_domain_kw and not is_greeting)
 
     is_timing = not is_career_transit and not is_dasha_stability and any(w in q for w in [
         "when", "timing", "dates", "period", "year", "month", "soon", "how long",
@@ -335,6 +347,9 @@ def generate_astrological_reading(
         h7_str = f"graced by {', '.join(h7_planets)}" if h7_planets else "clear of immediate affliction"
         h2_str = f"tenanted by {', '.join(h2_planets)}" if h2_planets else "governed by your 2nd lord"
         h11_str = f"occupied by {', '.join(h11_planets)}" if h11_planets else "energized by your 11th lord"
+        h7_idx = (SIGNS_LIST.index(lagna) + 6) % 12 if lagna in SIGNS_LIST else 1
+        h7_sign = SIGNS_LIST[h7_idx]
+        h7_lord = SIGN_LORDS.get(h7_sign, "Venus")
     else:
         lagna = "Universal Transit"
         lagna_deg = 0.0
@@ -349,6 +364,8 @@ def generate_astrological_reading(
         h7_str = "guided by universal Venusian alignments"
         h2_str = "influenced by general planetary Horas"
         h11_str = "linked to general Jupiter transits"
+        h7_sign = "Taurus"
+        h7_lord = "Venus"
 
     # Assemble Chart Evidence Array
     chart_evidence: List[Dict[str, str]] = []
@@ -790,6 +807,7 @@ def generate_astrological_reading(
                 body_md = (
                     f"{greeting_prefix}Evaluating relationship stability and marriage timing for **{lagna} Lagna**:\n\n"
                     f"### 7th House of Kalatra & Partnership Analysis\n"
+                    f"Under your **{lagna} Lagna**, the 7th House of partnership falls in **{h7_sign}**, governed by **{h7_lord}**. "
                     f"Your 7th House of Kalatra is {h7_str}, and your marital verification status is: **{manglik}**. "
                     f"Under active **{active_maha}-{active_antar}** Dasha, planetary transits create a structured, supportive window "
                     f"over the next 6 to 12 months for formalizing alliances or stabilizing long-term commitments.\n\n"
@@ -801,7 +819,7 @@ def generate_astrological_reading(
                 body_md = (
                     f"{greeting_prefix}In sacred classical Jyotish for **{lagna} Lagna** and **{moon_sign} Moon**:\n\n"
                     f"### Scriptural Evaluation of Kalatra Bhava\n"
-                    f"The 7th House governs sacred marital vows (*Vivaha Samskara*). Your 7th house is {h7_str}, and dosha evaluation reflects: **{manglik}**. "
+                    f"The 7th House ({h7_sign}, governed by {h7_lord}) governs sacred marital vows (*Vivaha Samskara*). Your 7th house is {h7_str}, and dosha evaluation reflects: **{manglik}**. "
                     f"Your current cycle is guided by **{active_maha} Mahadasha** and **{active_antar} Antardasha**.\n\n"
                     f"### Traditional Harmonization\n"
                     f"To foster marital peace and attract a noble partner: Chant the **Gauri Shankar Mantra** or observe gentle fasts on Thursdays "
@@ -813,7 +831,7 @@ def generate_astrological_reading(
                 body_md = (
                     f"{greeting_prefix}Examining your relationship architecture through Jaimini and Parashari synastry for **{lagna} Lagna**:\n\n"
                     f"### Emotional & Partnership Geometry\n"
-                    f"Under your {lagna} Lagna, your 7th House of partnership is {h7_str}. Regarding marital doshas: **{manglik}**. "
+                    f"Under your {lagna} Lagna, your 7th House of partnership falls in **{h7_sign}** (ruled by **{h7_lord}**), and is {h7_str}. Regarding marital doshas: **{manglik}**. "
                     f"Your emotional core is rooted in **{moon_sign}** ({moon_nak} Nakshatra), giving you deep empathy, loyalty, and discernment.\n\n"
                     f"### D9 Navamsha & Partner Characteristics\n"
                     f"Your D9 Navamsha indicators point toward a companion who is intellectually mature, emotionally grounded, and shares your core values. "

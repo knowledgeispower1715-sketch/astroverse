@@ -220,8 +220,14 @@ app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
 });
 
 const ALLOWED_ORIGINS = process.env.CORS_ALLOWED_ORIGINS
-  ? process.env.CORS_ALLOWED_ORIGINS.split(",")
-  : [];
+  ? process.env.CORS_ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://localhost:5000",
+      "http://127.0.0.1:5000",
+      "https://astroverse-eta.vercel.app"
+    ];
 
 // Cashfree Webhook Endpoints (Canonical & Aliases, including trailing slashes)
 export const CASHFREE_WEBHOOK_PATHS = [
@@ -246,11 +252,14 @@ export function isCashfreeWebhookPath(path: string): boolean {
 // Enable CORS with origin verification and preflight support
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (
+  const isAllowed =
     !origin ||
     ALLOWED_ORIGINS.includes(origin) ||
-    process.env.NODE_ENV === "test"
-  ) {
+    process.env.NODE_ENV === "test" ||
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+    /^https:\/\/astroverse.*\.vercel\.app$/.test(origin);
+
+  if (isAllowed) {
     res.header("Access-Control-Allow-Origin", origin || "*");
   } else {
     res.header(
@@ -261,7 +270,7 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cf-Access-Jwt-Assertion, X-Admin-Assurance-Token, X-Admin-Mfa-Token, x-webhook-signature, x-webhook-timestamp, x-idempotency-key",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cf-Access-Jwt-Assertion, X-Admin-Assurance-Token, X-Admin-Mfa-Token, x-webhook-signature, x-webhook-timestamp, x-idempotency-key, x-internal-service-key, x-astroverse-internal-key",
   );
   res.header("Access-Control-Allow-Credentials", "true");
   if (req.method === "OPTIONS") {
@@ -285,6 +294,7 @@ export const KNOWN_COMPROMISED_INTERNAL_KEYS = new Set([
   "astroverse-internal-gateway-secret",
   "dummy_internal_key",
   "internal_secret",
+  "astroverse-consultation-internal-secret-2026",
 ]);
 
 export function isProductionEnvironment(): boolean {
@@ -350,23 +360,30 @@ export function resolveAdminSessionPolicy(): AdminSessionPolicy {
 }
 
 export function getValidatedInternalServiceKey(): string {
-  const key = (process.env.ASTROVERSE_INTERNAL_KEY || "").trim();
+  const key = (
+    process.env.INTERNAL_SERVICE_KEY ||
+    process.env.ASTROVERSE_INTERNAL_KEY ||
+    ""
+  ).trim();
   const isProd = isProductionEnvironment();
 
   if (isProd) {
     if (!key) {
       throw new Error(
-        "[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY is mandatory in production.",
+        "[CRITICAL_SECURITY_HALT] INTERNAL_SERVICE_KEY or ASTROVERSE_INTERNAL_KEY is mandatory in production.",
       );
     }
-    if (KNOWN_COMPROMISED_INTERNAL_KEYS.has(key)) {
+    if (
+      KNOWN_COMPROMISED_INTERNAL_KEYS.has(key) ||
+      key === "astroverse-consultation-internal-secret-2026"
+    ) {
       throw new Error(
-        "[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY matches a known compromised fallback credential.",
+        "[CRITICAL_SECURITY_HALT] Internal service key matches a known compromised fallback credential.",
       );
     }
     if (key.length < 16) {
       throw new Error(
-        "[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY must be at least 16 characters in production.",
+        "[CRITICAL_SECURITY_HALT] Internal service key must be at least 16 characters in production.",
       );
     }
   }
@@ -479,6 +496,31 @@ function checkIpRateLimit(ip: string): boolean {
 
 // ==================== ERROR HANDLING HELPER ====================
 
+function sanitizeErrorMessage(msg: string): string {
+  if (!msg) return "Internal Server Error";
+  if (
+    msg.includes("postgres://") ||
+    msg.includes("postgresql://") ||
+    msg.includes("redis://") ||
+    msg.includes("password=") ||
+    msg.includes("PWD=")
+  ) {
+    return "Database connection error.";
+  }
+  if (isProductionEnvironment()) {
+    if (
+      msg.includes("/") ||
+      msg.includes("\\") ||
+      msg.includes("PrismaClient") ||
+      msg.includes("ECONNREFUSED") ||
+      msg.includes("ENOTFOUND")
+    ) {
+      return "An internal system error occurred.";
+    }
+  }
+  return msg;
+}
+
 function handleServiceError(
   res: Response,
   err: any,
@@ -491,7 +533,8 @@ function handleServiceError(
         "Production deployment requires a connected PostgreSQL database (DATABASE_URL). Ephemeral storage fallback is strictly disabled.",
     });
   }
-  const msg = err?.message || defaultMsg;
+  const rawMsg = err?.message || defaultMsg;
+  const msg = sanitizeErrorMessage(rawMsg);
   return res.status(500).json({ error: msg, message: msg });
 }
 
@@ -500,6 +543,7 @@ function handleServiceError(
 export interface AuthenticatedRequest extends Request {
   user?: UserRecord;
   sessionToken?: string;
+  isInternalService?: boolean;
 }
 
 async function authenticate(
@@ -624,6 +668,74 @@ async function optionalAuthenticate(
     // Continue unauthenticated if token resolution encounters an error
   }
   next();
+}
+
+/**
+ * Dual-Mode Authentication Middleware for Consultation Settlement:
+ * 1. Validates internal service key (X-Internal-Service-Key or X-Astroverse-Internal-Key) for microservice-to-microservice calls.
+ * 2. Falls back to Bearer session token authentication for administrative / user callers.
+ */
+export async function authenticateSettlementCaller(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  const serviceKeyHeader =
+    req.headers["x-internal-service-key"] ||
+    req.headers["x-astroverse-internal-key"];
+
+  if (serviceKeyHeader !== undefined) {
+    const rawKey = String(serviceKeyHeader).trim();
+    const isProd = isProductionEnvironment();
+
+    // 1. Fail closed if incoming key is empty, matches known compromised key,
+    // or attempts to use the development fallback key in production
+    if (
+      !rawKey ||
+      KNOWN_COMPROMISED_INTERNAL_KEYS.has(rawKey) ||
+      (isProd && rawKey === "astroverse-consultation-internal-secret-2026")
+    ) {
+      return res.status(401).json({
+        error: "UNAUTHORIZED",
+        message: "Internal service key is missing, empty, or compromised.",
+      });
+    }
+
+    // 2. Resolve and validate server internal service key
+    let expectedKey = "";
+    try {
+      expectedKey = getValidatedInternalServiceKey();
+    } catch (secErr: any) {
+      console.error(
+        "[SETTLEMENT] Internal service key validation failed:",
+        secErr?.message || secErr,
+      );
+      return res.status(500).json({
+        error: "GATEWAY_CONFIGURATION_ERROR",
+        message:
+          "Internal service authentication configuration is invalid or missing in production.",
+      });
+    }
+
+    // 3. In non-production, fallback to local development key if unset
+    if (!expectedKey && !isProd) {
+      expectedKey = "astroverse-consultation-internal-secret-2026";
+    }
+
+    // 4. Timing-safe comparison
+    if (!timingSafeEqualString(rawKey, expectedKey)) {
+      return res.status(401).json({
+        error: "UNAUTHORIZED",
+        message: "Invalid internal service key.",
+      });
+    }
+
+    req.isInternalService = true;
+    return next();
+  }
+
+  // Fall back to standard session authentication (Bearer token)
+  return authenticate(req, res, next);
 }
 
 export const ADMIN_OWNER_USER_ID = (
@@ -5365,20 +5477,40 @@ app.post(
   },
 );
 
-app.post(
-  "/api/wallet/settle-consultation",
-  authenticate,
-  async (req: AuthenticatedRequest, res: Response) => {
-    const sessionUser = req.user!;
-    const {
-      userId: clientUserId,
-      astrologerId,
-      sessionId,
-      totalDeduction,
-      durationSeconds,
-      durationMinutes,
-    } = req.body;
+async function handleConsultationSettlement(
+  req: AuthenticatedRequest,
+  res: Response,
+) {
+  const isInternal = Boolean(req.isInternalService);
+  const sessionUser = req.user;
+  const {
+    userId: clientUserId,
+    astrologerId,
+    sessionId,
+    totalDeduction,
+    amount,
+    duration,
+    durationSeconds,
+    durationMinutes,
+  } = req.body || {};
 
+  // Server-authoritative target user resolution
+  let userId: string;
+  if (isInternal) {
+    if (!clientUserId || typeof clientUserId !== "string" || !clientUserId.trim()) {
+      return res.status(400).json({
+        error: "MISSING_FIELDS",
+        message: "userId, astrologerId, and sessionId are required.",
+      });
+    }
+    userId = clientUserId.trim();
+  } else {
+    if (!sessionUser) {
+      return res.status(401).json({
+        error: "UNAUTHORIZED",
+        message: "Authentication token required.",
+      });
+    }
     if (
       clientUserId &&
       clientUserId !== sessionUser.id &&
@@ -5389,127 +5521,155 @@ app.post(
         message: "Cannot settle consultation for another user account.",
       });
     }
-    const userId =
+    userId =
       sessionUser.role === Role.SUPER_ADMIN && clientUserId
         ? clientUserId
         : sessionUser.id;
+  }
 
-    if (!astrologerId || !sessionId) {
+  if (!astrologerId || !sessionId) {
+    return res.status(400).json({
+      error: "MISSING_FIELDS",
+      message: "userId, astrologerId, and sessionId are required.",
+    });
+  }
+
+  const astro = await db.findAstrologerById(astrologerId);
+  if (!astro) {
+    return res.status(404).json({
+      error: "ASTROLOGER_NOT_FOUND",
+      message: "Astrologer not found in directory.",
+    });
+  }
+
+  // Support amount alias for totalDeduction, and duration alias for durationSeconds
+  const rawDeduction = totalDeduction ?? amount;
+  const rawDurationSeconds =
+    durationSeconds != null
+      ? durationSeconds
+      : typeof duration === "number"
+        ? duration
+        : null;
+
+  // Server-authoritative charge calculation
+  let deductionAmount: number;
+  if (rawDurationSeconds != null || durationMinutes != null) {
+    const rawSecs =
+      rawDurationSeconds != null
+        ? Number(rawDurationSeconds)
+        : Number(durationMinutes) * 60;
+    if (!Number.isFinite(rawSecs) || rawSecs <= 0 || isNaN(rawSecs)) {
       return res.status(400).json({
-        error: "MISSING_FIELDS",
-        message: "astrologerId and sessionId are required.",
+        error: "INVALID_DURATION",
+        message:
+          "Duration must be a positive finite number of seconds or minutes.",
       });
     }
+    const mins = Math.max(1, Math.ceil(rawSecs / 60));
+    const serverCalculated =
+      Math.round(mins * astro.ratePerMinute * 100) / 100;
 
-    const astro = await db.findAstrologerById(astrologerId);
-    if (!astro) {
-      return res.status(404).json({
-        error: "ASTROLOGER_NOT_FOUND",
-        message: "Astrologer not found in directory.",
-      });
-    }
-
-    // Server-authoritative charge calculation
-    let deductionAmount: number;
-    if (durationSeconds != null || durationMinutes != null) {
-      const rawSecs =
-        durationSeconds != null
-          ? Number(durationSeconds)
-          : Number(durationMinutes) * 60;
-      if (!Number.isFinite(rawSecs) || rawSecs <= 0 || isNaN(rawSecs)) {
-        return res.status(400).json({
-          error: "INVALID_DURATION",
-          message:
-            "Duration must be a positive finite number of seconds or minutes.",
-        });
-      }
-      const mins = Math.max(1, Math.ceil(rawSecs / 60));
-      const serverCalculated =
-        Math.round(mins * astro.ratePerMinute * 100) / 100;
-
-      if (typeof totalDeduction === "number") {
-        if (
-          !Number.isFinite(totalDeduction) ||
-          totalDeduction <= 0 ||
-          isNaN(totalDeduction)
-        ) {
-          return res.status(400).json({
-            error: "INVALID_DEDUCTION",
-            message: "Deduction amount must be a positive finite number.",
-          });
-        }
-        if (totalDeduction < serverCalculated) {
-          return res.status(400).json({
-            error: "TAMPERED_CHARGE",
-            message: `Supplied deduction (₹${totalDeduction}) is less than server-calculated rate for duration (₹${serverCalculated}).`,
-          });
-        }
-        deductionAmount = Math.round(totalDeduction * 100) / 100;
-      } else {
-        deductionAmount = serverCalculated;
-      }
-    } else if (typeof totalDeduction === "number") {
+    if (typeof rawDeduction === "number") {
       if (
-        !Number.isFinite(totalDeduction) ||
-        totalDeduction <= 0 ||
-        isNaN(totalDeduction)
+        !Number.isFinite(rawDeduction) ||
+        rawDeduction <= 0 ||
+        isNaN(rawDeduction)
       ) {
         return res.status(400).json({
           error: "INVALID_DEDUCTION",
           message: "Deduction amount must be a positive finite number.",
         });
       }
-      deductionAmount = Math.round(totalDeduction * 100) / 100;
-    } else {
-      return res.status(400).json({
-        error: "MISSING_CHARGE_SPECIFICATION",
-        message: "Either totalDeduction or duration must be provided.",
-      });
-    }
-
-    const MAX_SESSION_DEDUCTION = 50000.0;
-    if (deductionAmount > MAX_SESSION_DEDUCTION) {
-      return res.status(400).json({
-        error: "EXCESSIVE_DEDUCTION",
-        message: `Single consultation deduction cannot exceed safety limit of ₹${MAX_SESSION_DEDUCTION}.`,
-      });
-    }
-
-    try {
-      const settlement = await db.settleConsultation(
-        userId,
-        astrologerId,
-        sessionId,
-        deductionAmount,
-      );
-
-      await db.recordAuditEvent({
-        userId,
-        action: "CONSULTATION_SETTLED",
-        targetType: "CONSULTATION_SESSION",
-        targetId: sessionId,
-        metadata: {
-          astrologerId,
-          deduction: deductionAmount,
-          newBalance: settlement.newBalance,
-        },
-      });
-
-      res.json(settlement);
-    } catch (error: any) {
-      if (error.message === "INSUFFICIENT_FUNDS") {
-        const user = await db.findUserById(userId);
+      if (rawDeduction < serverCalculated) {
         return res.status(400).json({
-          error: "INSUFFICIENT_FUNDS",
-          message:
-            "Wallet balance is insufficient to settle this consultation.",
-          currentBalance: user ? user.walletBalance : 0,
-          requiredAmount: deductionAmount,
+          error: "TAMPERED_CHARGE",
+          message: `Supplied deduction (₹${rawDeduction}) is less than server-calculated rate for duration (₹${serverCalculated}).`,
         });
       }
-      return handleServiceError(res, error, "Settlement failed");
+      deductionAmount = Math.round(rawDeduction * 100) / 100;
+    } else {
+      deductionAmount = serverCalculated;
     }
-  },
+  } else if (typeof rawDeduction === "number") {
+    if (
+      !Number.isFinite(rawDeduction) ||
+      rawDeduction <= 0 ||
+      isNaN(rawDeduction)
+    ) {
+      return res.status(400).json({
+        error: "INVALID_DEDUCTION",
+        message: "Deduction amount must be a positive finite number.",
+      });
+    }
+    deductionAmount = Math.round(rawDeduction * 100) / 100;
+  } else {
+    return res.status(400).json({
+      error: "MISSING_CHARGE_SPECIFICATION",
+      message: "Either totalDeduction (or amount) or duration must be provided.",
+    });
+  }
+
+  const MAX_SESSION_DEDUCTION = 50000.0;
+  if (deductionAmount > MAX_SESSION_DEDUCTION) {
+    return res.status(400).json({
+      error: "EXCESSIVE_DEDUCTION",
+      message: `Single consultation deduction cannot exceed safety limit of ₹${MAX_SESSION_DEDUCTION}.`,
+    });
+  }
+
+  try {
+    const settlement = await db.settleConsultation(
+      userId,
+      astrologerId,
+      sessionId,
+      deductionAmount,
+    );
+
+    await db.recordAuditEvent({
+      userId,
+      action: "CONSULTATION_SETTLED",
+      targetType: "CONSULTATION_SESSION",
+      targetId: sessionId,
+      metadata: {
+        astrologerId,
+        deduction: deductionAmount,
+        newBalance: settlement.newBalance,
+        settledBy: isInternal ? "INTERNAL_SERVICE" : (sessionUser ? sessionUser.id : "UNKNOWN"),
+      },
+    });
+
+    res.json(settlement);
+  } catch (error: any) {
+    if (error.message === "INSUFFICIENT_FUNDS") {
+      const user = await db.findUserById(userId);
+      return res.status(400).json({
+        error: "INSUFFICIENT_FUNDS",
+        message:
+          "Wallet balance is insufficient to settle this consultation.",
+        currentBalance: user ? user.walletBalance : 0,
+        requiredAmount: deductionAmount,
+      });
+    }
+    if (error.message === "USER_NOT_FOUND") {
+      return res.status(404).json({
+        error: "USER_NOT_FOUND",
+        message: "User account not found.",
+      });
+    }
+    return handleServiceError(res, error, "Settlement failed");
+  }
+}
+
+app.post(
+  "/api/wallet/settle-consultation",
+  authenticateSettlementCaller,
+  handleConsultationSettlement,
+);
+
+app.post(
+  "/api/consultation/settle",
+  authenticateSettlementCaller,
+  handleConsultationSettlement,
 );
 
 app.post(
@@ -15950,6 +16110,10 @@ if (
 module.exports = app;
 module.exports.default = app;
 module.exports.app = app;
+module.exports.KNOWN_COMPROMISED_INTERNAL_KEYS = KNOWN_COMPROMISED_INTERNAL_KEYS;
+module.exports.getValidatedInternalServiceKey = getValidatedInternalServiceKey;
+module.exports.isProductionEnvironment = isProductionEnvironment;
+module.exports.authenticateSettlementCaller = authenticateSettlementCaller;
 module.exports.resolveGeocodeQuery = resolveGeocodeQuery;
 module.exports.validateRechargeAmount = validateRechargeAmount;
 module.exports.calculateWalletRechargePricing = calculateWalletRechargePricing;

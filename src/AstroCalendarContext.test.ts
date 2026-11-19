@@ -9,7 +9,8 @@ vi.stubGlobal("localStorage", {
   key: vi.fn(),
 });
 
-import { astroCalendarContext } from "./AstroCalendarContext";
+// @ts-expect-error JS file without type definitions
+import { astroCalendarContext } from "./AstroCalendarContext.js";
 
 describe("AstroCalendarContext", () => {
   it("should fetch panchang data and update state", async () => {

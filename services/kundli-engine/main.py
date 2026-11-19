@@ -232,7 +232,7 @@ class BirthDetails(BaseModel):
     unknown_time: bool = Field(False, description="Flag indicating if birth time is unknown")
 
 class AIQuestionRequest(BaseModel):
-    category: str = Field("career", description="Category: career, marriage, wealth, health, general")
+    category: Optional[str] = Field(None, description="Category: career, marriage, wealth, health, general")
     question: str = Field(..., description="User's query")
     dob: Optional[str] = None
     lat: Optional[float] = None
@@ -1020,10 +1020,10 @@ def ask_ai_astrologer(req: AIQuestionRequest):
         return {
             "mode": "PERSONALIZED_CHART_GROUNDED",
             "profile_loaded": True,
-            "category": reading.get("intent", req.category),
+            "category": reading.get("intent", req.category or "general"),
             "reading": reading,
             "message": reading.get("message", reading.get("reading", "")),
-            "intent": reading.get("intent", req.category),
+            "intent": reading.get("intent", req.category or "general"),
             "chartEvidence": reading.get("chartEvidence", []),
             "relatedInsights": reading.get("relatedInsights", []),
             "suggestedQuestions": reading.get("suggestedQuestions", []),
@@ -1046,10 +1046,10 @@ def ask_ai_astrologer(req: AIQuestionRequest):
         return {
             "mode": "GENERAL_TRANSIT_UNPERSONALIZED",
             "profile_loaded": False,
-            "category": reading.get("intent", req.category),
+            "category": reading.get("intent", req.category or "general"),
             "reading": reading,
             "message": reading.get("message", reading.get("reading", "")),
-            "intent": reading.get("intent", req.category),
+            "intent": reading.get("intent", req.category or "general"),
             "chartEvidence": reading.get("chartEvidence", []),
             "relatedInsights": reading.get("relatedInsights", []),
             "suggestedQuestions": reading.get("suggestedQuestions", []),

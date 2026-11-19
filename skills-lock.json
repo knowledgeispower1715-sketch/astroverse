@@ -1,17 +1,73 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
+    "playwright-ci": {
+      "source": "testdino-hq/playwright-skill",
+      "commit": "178d1cb537604279d7b54500c4823a6db42b9de6",
+      "sourceType": "github",
+      "skillPath": "ci/SKILL.md",
+      "computedHash": "79a04cdbd45222c58292b4e9208b51c889b5275d770ed653056e900afc54cdd5"
+    },
+    "playwright-cli": {
+      "source": "testdino-hq/playwright-skill",
+      "commit": "178d1cb537604279d7b54500c4823a6db42b9de6",
+      "sourceType": "github",
+      "skillPath": "playwright-cli/SKILL.md",
+      "computedHash": "e4fd58ba4f99364d6c3debbb90f1e331b7f8defaf139ab27e945464642022ef3"
+    },
+    "playwright-core": {
+      "source": "testdino-hq/playwright-skill",
+      "commit": "178d1cb537604279d7b54500c4823a6db42b9de6",
+      "sourceType": "github",
+      "skillPath": "core/SKILL.md",
+      "computedHash": "75986d17252d0183f2f4fb090339391ad5ab337d2c3d30c3ae2dcf42ff539940"
+    },
+    "playwright-frontend": {
+      "source": "testdino-hq/playwright-skill",
+      "commit": "178d1cb537604279d7b54500c4823a6db42b9de6",
+      "sourceType": "github",
+      "skillPath": "frontend/SKILL.md",
+      "computedHash": "39e5648201b6a01a7aed10ae81c7db9a6e9f155a317b09c4e2707a16252f6c61"
+    },
+    "playwright-migration": {
+      "source": "testdino-hq/playwright-skill",
+      "commit": "178d1cb537604279d7b54500c4823a6db42b9de6",
+      "sourceType": "github",
+      "skillPath": "migration/SKILL.md",
+      "computedHash": "e920d81d2fdcd546e130551d5a402d5fc669839dd27ef5853be6284fbf675a8d"
+    },
+    "playwright-pom": {
+      "source": "testdino-hq/playwright-skill",
+      "commit": "178d1cb537604279d7b54500c4823a6db42b9de6",
+      "sourceType": "github",
+      "skillPath": "pom/SKILL.md",
+      "computedHash": "10919984555f6b46f897e1a0a2989895a8074620fde12cb11b06e3ed44b4ad15"
+    },
+    "playwright-qa": {
+      "source": "testdino-hq/playwright-skill",
+      "commit": "178d1cb537604279d7b54500c4823a6db42b9de6",
+      "sourceType": "github",
+      "skillPath": "qa/SKILL.md",
+      "computedHash": "580fe7b066962479648fa40984b878b373d05a5190b5cc24fb7014a5b7bd5c59"
+    },
+    "seo": {
+      "source": "Bhanunamikaze/Agentic-SEO-Skill",
+      "commit": "445c46c268d947fac25c4b57d38aaf723129fe62",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "461f036c91087abf4b50e192e1cc6585398228cf45cd18eae6cc5c6c4812ca54"
+    },
     "supabase": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/supabase/SKILL.md",
-      "computedHash": "af1844ade632808fc0c15cf2db87daf3b2431c5262dc8a0c3ea7d70880fadf91"
+      "computedHash": ""
     },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
-      "computedHash": "128fac78002d916c8ca908245d398e634f540d8bcf20915b2b2359aeb18eba59"
+      "computedHash": ""
     }
   }
 }

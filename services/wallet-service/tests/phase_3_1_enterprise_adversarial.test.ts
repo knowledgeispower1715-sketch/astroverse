@@ -3,7 +3,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import http from 'node:http';
 import crypto from 'node:crypto';
-import app from '../src/server';
+import app, { reconcileUserPendingOrders, calculateWalletRechargePricing } from '../src/server';
 import { db, Role, AccountStatus, OrderStatus } from '../src/db';
 import {
   setRuntimeCashfreeSecretKey,
@@ -534,8 +534,6 @@ describe('PHASE 3.1 ENTERPRISE ADVERSARIAL & INTEGRITY VERIFICATION SUITE', () =
 
   describe('6. Elimination of Hardcoded Recovery & User-Scoped Reconciliation', () => {
     it('6.1 reconcileUserPendingOrders operates generically without hard-coded Aryan/tiwariji UUIDs', async () => {
-      const { reconcileUserPendingOrders } = require('../src/server');
-
       // Create a test pending order for standard test user
       const orderId = `cf_wal_test_${Date.now()}`;
       await db.createPaymentOrder({
@@ -614,8 +612,6 @@ describe('PHASE 3.1 ENTERPRISE ADVERSARIAL & INTEGRITY VERIFICATION SUITE', () =
 
   describe('8. Payment Reconciliation & Integer Paise Integrity', () => {
     it('8.1 All wallet recharge packages calculate exact integer paise with zero floating-point leakage', () => {
-      const { calculateWalletRechargePricing } = require('../src/server');
-
       for (const amount of [100, 250, 500, 1000, 2500, 5000, 10000]) {
         const pricing = calculateWalletRechargePricing(amount);
         assert.strictEqual(pricing.valid, true);
