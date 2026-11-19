@@ -509,6 +509,7 @@ class ResilientDatabase {
   private schemaBootstrapPromise: Promise<boolean> | null = null;
   private cachedMonitorMetrics: { data: any; expiresAt: number; timestamp: number } | null = null;
   private cachedPlatformMetrics: { data: any; expiresAt: number; timestamp: number } | null = null;
+  private cachedUserDirectorySummary: { data: any; expiresAt: number; timestamp: number } | null = null;
   private lastForceFreshAt: number = 0;
 
   constructor() {
@@ -1750,7 +1751,7 @@ class ResilientDatabase {
     return { users, total, page, limit, totalPages };
   }
 
-  async getUserDirectorySummary(): Promise<{
+  async getUserDirectorySummary(forceFresh: boolean = false): Promise<{
     totalAccounts: number;
     activeAccounts: number;
     suspendedAccounts: number;
@@ -1778,47 +1779,28 @@ class ResilientDatabase {
       withoutMfa: number;
     }>;
   }> {
+    const nowMs = Date.now();
+    if (!forceFresh && this.cachedUserDirectorySummary && nowMs < this.cachedUserDirectorySummary.expiresAt) {
+      return this.cachedUserDirectorySummary.data;
+    }
+
     if (this.isPostgresAvailable && this.prisma) {
       try {
         const now = new Date();
         const [
-          totalAccounts,
-          activeAccounts,
-          suspendedAccounts,
-          deactivatedAccounts,
-          verifiedAccounts,
-          unverifiedAccounts,
-          mfaEnabledAccounts,
-          adminCount,
-          activeAdminCount,
-          freeCustomersCount,
-          activeSubscribersCount,
-          expiredSubscribersCount,
+          allUsers,
           paidOrdersUsers,
-          complimentaryEntitlements,
-          allUsersForBreakdown
+          complimentaryEntitlements
         ] = await Promise.all([
-          this.prisma.user.count(),
-          this.prisma.user.count({ where: { status: 'ACTIVE' } }),
-          this.prisma.user.count({ where: { status: 'SUSPENDED' } }),
-          this.prisma.user.count({ where: { status: 'DEACTIVATED' } }),
-          this.prisma.user.count({ where: { emailVerified: true } }),
-          this.prisma.user.count({ where: { emailVerified: false } }),
-          this.prisma.user.count({ where: { mfaEnabled: true } }),
-          this.prisma.user.count({ where: { role: { not: 'USER' } } }),
-          this.prisma.user.count({ where: { role: { not: 'USER' }, status: 'ACTIVE' } }),
-          this.prisma.user.count({ where: { subscriptionTier: { notIn: ['PLUS', 'PREMIUM'] } } }),
-          this.prisma.user.count({
-            where: {
-              subscriptionTier: { in: ['PLUS', 'PREMIUM'] },
-              subscriptionStatus: 'ACTIVE',
-              OR: [{ subscriptionExpiresAt: null }, { subscriptionExpiresAt: { gt: now } }]
-            }
-          }),
-          this.prisma.user.count({
-            where: {
-              subscriptionTier: { in: ['PLUS', 'PREMIUM'] },
-              OR: [{ subscriptionStatus: 'EXPIRED' }, { subscriptionExpiresAt: { lte: now } }]
+          this.prisma.user.findMany({
+            select: {
+              role: true,
+              status: true,
+              emailVerified: true,
+              mfaEnabled: true,
+              subscriptionTier: true,
+              subscriptionStatus: true,
+              subscriptionExpiresAt: true
             }
           }),
           this.prisma.paymentOrder.findMany({
@@ -1834,11 +1816,31 @@ class ResilientDatabase {
             },
             select: { userId: true },
             distinct: ['userId']
-          }),
-          this.prisma.user.findMany({
-            select: { role: true, status: true, mfaEnabled: true }
           })
         ]);
+
+        const usersList = allUsers || [];
+        const totalAccounts = usersList.length;
+        const activeAccounts = usersList.filter((u: any) => u.status === 'ACTIVE').length;
+        const suspendedAccounts = usersList.filter((u: any) => u.status === 'SUSPENDED').length;
+        const deactivatedAccounts = usersList.filter((u: any) => u.status === 'DEACTIVATED').length;
+        const verifiedAccounts = usersList.filter((u: any) => !!u.emailVerified).length;
+        const unverifiedAccounts = usersList.filter((u: any) => !u.emailVerified).length;
+        const mfaEnabledAccounts = usersList.filter((u: any) => !!u.mfaEnabled).length;
+        const adminCount = usersList.filter((u: any) => u.role !== 'USER').length;
+        const activeAdminCount = usersList.filter((u: any) => u.role !== 'USER' && u.status === 'ACTIVE').length;
+        const freeCustomersCount = usersList.filter((u: any) => !['PLUS', 'PREMIUM'].includes(u.subscriptionTier)).length;
+        const activeSubscribersCount = usersList.filter((u: any) => {
+          if (!['PLUS', 'PREMIUM'].includes(u.subscriptionTier)) return false;
+          if (u.subscriptionStatus !== 'ACTIVE') return false;
+          if (!u.subscriptionExpiresAt) return true;
+          return new Date(u.subscriptionExpiresAt) > now;
+        }).length;
+        const expiredSubscribersCount = usersList.filter((u: any) => {
+          if (!['PLUS', 'PREMIUM'].includes(u.subscriptionTier)) return false;
+          if (u.subscriptionStatus === 'EXPIRED') return true;
+          return !!u.subscriptionExpiresAt && new Date(u.subscriptionExpiresAt) <= now;
+        }).length;
 
         const complimentaryUserIds = new Set((complimentaryEntitlements || []).map((e: any) => e.userId));
         const complimentarySubscribersCount = complimentaryUserIds.size;
@@ -1853,7 +1855,7 @@ class ResilientDatabase {
         for (const r of canonicalRoles) {
           roleBreakdown[r] = { total: 0, active: 0, suspended: 0, deactivated: 0, withMfa: 0, withoutMfa: 0 };
         }
-        for (const u of (allUsersForBreakdown || [])) {
+        for (const u of usersList) {
           const norm = normalizeRole(u.role);
           if (!roleBreakdown[norm]) {
             roleBreakdown[norm] = { total: 0, active: 0, suspended: 0, deactivated: 0, withMfa: 0, withoutMfa: 0 };
@@ -1866,7 +1868,7 @@ class ResilientDatabase {
           else roleBreakdown[norm].withoutMfa++;
         }
 
-        return {
+        const summaryResult = {
           totalAccounts,
           activeAccounts,
           suspendedAccounts,
@@ -1887,6 +1889,14 @@ class ResilientDatabase {
           accountsAwaitingReview,
           roleBreakdown
         };
+
+        this.cachedUserDirectorySummary = {
+          data: summaryResult,
+          expiresAt: Date.now() + 60000,
+          timestamp: Date.now()
+        };
+
+        return summaryResult;
       } catch (err: any) {
         console.error('[DB] getUserDirectorySummary Prisma error:', err?.message || err);
         throw new Error('DATABASE_QUERY_FAILED: getUserDirectorySummary failed - ' + (err?.message || err));
@@ -1897,7 +1907,6 @@ class ResilientDatabase {
       throw new Error('DATABASE_UNAVAILABLE: getUserDirectorySummary - Prisma client not connected');
     }
 
-    const nowMs = Date.now();
     const users = this.data.users || [];
     const totalAccounts = users.length;
     const activeAccounts = users.filter(u => u.status === 'ACTIVE').length;
@@ -1952,7 +1961,7 @@ class ResilientDatabase {
       else roleBreakdown[norm].withoutMfa++;
     }
 
-    return {
+    const fallbackResult = {
       totalAccounts,
       activeAccounts,
       suspendedAccounts,
@@ -1973,6 +1982,18 @@ class ResilientDatabase {
       accountsAwaitingReview,
       roleBreakdown
     };
+
+    this.cachedUserDirectorySummary = {
+      data: fallbackResult,
+      expiresAt: Date.now() + 60000,
+      timestamp: Date.now()
+    };
+
+    return fallbackResult;
+  }
+
+  invalidateUserDirectorySummaryCache(): void {
+    this.cachedUserDirectorySummary = null;
   }
 
   async countActiveOwners(): Promise<number> {
@@ -6627,7 +6648,7 @@ class ResilientDatabase {
           this.prisma.savedReport.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
           this.prisma.paymentOrder.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
           this.prisma.walletLedger.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
-          this.prisma.consultationSession.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } }),
+          this.prisma.consultationSession.findMany({ where: { userId }, orderBy: { startedAt: 'desc' } }),
           this.prisma.entitlement.findMany({ where: { userId }, orderBy: { grantedAt: 'desc' } }),
           this.prisma.customerNote.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
         ]);
@@ -7817,7 +7838,7 @@ class ResilientDatabase {
       try {
         const rows = await this.prisma.consultationSession.findMany({
           take: limit,
-          orderBy: { createdAt: 'desc' }
+          orderBy: { startedAt: 'desc' }
         });
         return (rows || []).map((r: any) => ({
           id: r.id,

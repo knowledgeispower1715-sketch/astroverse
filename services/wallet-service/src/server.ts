@@ -1,8 +1,22 @@
-import dotenv from 'dotenv';
+import { execSync } from "child_process";
+import dotenv from "dotenv";
 dotenv.config();
-import express, { Request, Response, NextFunction } from 'express';
-import crypto from 'crypto';
-import { db, UserRecord, Role, AccountStatus, OrderStatus, EntryType, isDemoModeActive, ConsultationSessionStatus, ConsultationSessionRecord, AdminPreviewSessionRecord, RefundState, RefundRecord } from './db';
+import express, { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
+import {
+  db,
+  UserRecord,
+  Role,
+  AccountStatus,
+  OrderStatus,
+  EntryType,
+  isDemoModeActive,
+  ConsultationSessionStatus,
+  ConsultationSessionRecord,
+  AdminPreviewSessionRecord,
+  RefundState,
+  RefundRecord,
+} from "./db";
 import {
   AdminPermission,
   ROLE_PERMISSIONS,
@@ -13,8 +27,8 @@ import {
   getAuthorizedAdminEmails,
   isAuthorizedAdminEmail,
   isAdminPreviewEnabled,
-  AUTHORITATIVE_ADMIN_MODULE_REGISTRY
-} from './security/permissions';
+  AUTHORITATIVE_ADMIN_MODULE_REGISTRY,
+} from "./security/permissions";
 import {
   generateTotpSecret,
   generateTotpCode,
@@ -26,19 +40,19 @@ import {
   isAssuranceTokenRevoked,
   revokeAdminAssuranceToken,
   isScopeSatisfied,
-  ALLOWED_ASSURANCE_SCOPES
-} from './security/mfa';
-import { DurableAiQuotaManager } from './monetization/aiQuotas';
-import { validatePasswordComplexity } from './security/passwordValidator';
-import { bootstrapPostgresSchema } from './schemaBootstrap';
+  ALLOWED_ASSURANCE_SCOPES,
+} from "./security/mfa";
+import { DurableAiQuotaManager } from "./monetization/aiQuotas";
+import { validatePasswordComplexity } from "./security/passwordValidator";
+import { bootstrapPostgresSchema } from "./schemaBootstrap";
 import {
   getPublicSupabaseConfig,
   verifySupabaseToken,
   getSupabaseAdminClient,
   getUserMfaFactors,
   deleteUserMfaFactor,
-  decodeSupabaseJwtClaims
-} from './supabase';
+  decodeSupabaseJwtClaims,
+} from "./supabase";
 import {
   isCashfreeConfigured,
   createCashfreeOrder,
@@ -52,8 +66,8 @@ import {
   getPaymentReadinessStatus,
   setRuntimeCashfreeSecretKey,
   CANONICAL_CASHFREE_APP_ID,
-  getResolvedCashfreeCredentials
-} from './cashfree';
+  getResolvedCashfreeCredentials,
+} from "./cashfree";
 import {
   SUBSCRIPTION_PLANS,
   REPORT_CATALOGUE,
@@ -69,12 +83,15 @@ import {
   PRODUCT_ENTITLEMENT_CATALOG,
   ProductEntitlementDefinition,
   ForecastHorizon,
-  SKU_HORIZON_ALIASES
-} from './monetization/catalog';
-import { ACTIVE_PROMOTIONAL_OFFER, isEligibleForFreeMinute } from './monetization/promotions';
-import { EntitlementManager } from './monetization/entitlements';
-import { ReportDocumentGenerator } from './monetization/reportGenerator';
-import { AstroCalculator } from './monetization/astroCalculator';
+  SKU_HORIZON_ALIASES,
+} from "./monetization/catalog";
+import {
+  ACTIVE_PROMOTIONAL_OFFER,
+  isEligibleForFreeMinute,
+} from "./monetization/promotions";
+import { EntitlementManager } from "./monetization/entitlements";
+import { ReportDocumentGenerator } from "./monetization/reportGenerator";
+import { AstroCalculator } from "./monetization/astroCalculator";
 import {
   digitRoot1To9,
   calculateMoolank,
@@ -85,40 +102,49 @@ import {
   PLANET_DATA,
   RELATIONSHIP_MATRIX,
   PREFERRED_COMPOUND_NUMBERS,
-  CHALLENGING_COMPOUND_NUMBERS
-} from './monetization/numerologyCalculator';
-import { createRateLimiter } from './security/rateLimiter';
+  CHALLENGING_COMPOUND_NUMBERS,
+} from "./monetization/numerologyCalculator";
+import { createRateLimiter } from "./security/rateLimiter";
 import {
   requireCloudflareAccess,
   getCloudflareAccessConfig,
-  isCloudflareAccessEnforced
-} from './security/cloudflareAccess';
+  isCloudflareAccessEnforced,
+} from "./security/cloudflareAccess";
 
 const app = express();
-app.disable('x-powered-by');
+app.disable("x-powered-by");
 
 // Security Headers Middleware (OWASP recommended defense-in-depth & Phase 8 browser protection)
 app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '0');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self "https://sdk.cashfree.com" "https://api.cashfree.com" "https://payments.cashfree.com" "https://sandbox.cashfree.com")');
-  res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://*.cashfree.com https://sdk.cashfree.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https://astroverse-eta.vercel.app https://*.supabase.co https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://geocoding-api.open-meteo.com https://accounts.google.com https://*.googleapis.com https://*.firebaseio.com; frame-src 'self' https://*.cashfree.com https://sdk.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://*.cashfree.com https://api.cashfree.com https://sandbox.cashfree.com https://payments.cashfree.com");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("X-XSS-Protection", "0");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader(
+    "Permissions-Policy",
+    'camera=(), microphone=(), geolocation=(), payment=(self "https://sdk.cashfree.com" "https://api.cashfree.com" "https://payments.cashfree.com" "https://sandbox.cashfree.com")',
+  );
+  res.setHeader(
+    "Strict-Transport-Security",
+    "max-age=63072000; includeSubDomains; preload",
+  );
+  res.setHeader("Content-Security-Policy", process.env.CSP_HEADER || "");
 
   // Sensitive endpoint cache controls (Phase 8: zero public caching on authenticated/admin data)
   if (
-    req.path.startsWith('/api/admin') ||
-    req.path.startsWith('/api/user') ||
-    req.path.startsWith('/api/wallet') ||
-    req.path.startsWith('/api/reports') ||
-    req.path.startsWith('/api/profiles') ||
-    req.path.startsWith('/api/subscriptions')
+    req.path.startsWith("/api/admin") ||
+    req.path.startsWith("/api/user") ||
+    req.path.startsWith("/api/wallet") ||
+    req.path.startsWith("/api/reports") ||
+    req.path.startsWith("/api/profiles") ||
+    req.path.startsWith("/api/subscriptions")
   ) {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate",
+    );
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
   }
   next();
 });
@@ -127,25 +153,28 @@ app.use((req, res, next) => {
 export const globalApiLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 120,
-  message: 'Global API rate limit exceeded. Please wait a moment before sending more requests.'
+  message:
+    "Global API rate limit exceeded. Please wait a moment before sending more requests.",
 });
 
 export const authLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
   max: 15,
-  message: 'Too many authentication attempts. Please wait 5 minutes before trying again.'
+  message:
+    "Too many authentication attempts. Please wait 5 minutes before trying again.",
 });
 
 export const orderLimiter = createRateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 20,
-  message: 'Too many order creation requests. Please wait a few moments before retrying.'
+  message:
+    "Too many order creation requests. Please wait a few moments before retrying.",
 });
 
 export const adminLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 120,
-  message: 'Too many administrative requests. Rate limit enforced.'
+  message: "Too many administrative requests. Rate limit enforced.",
 });
 
 export const adminMonitoringLimiter = adminLimiter;
@@ -153,79 +182,91 @@ export const adminMonitoringLimiter = adminLimiter;
 export const adminSensitiveMutationsLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 20,
-  message: 'Too many sensitive administrative requests. Mutation rate limit is 20 requests per minute.'
+  message:
+    "Too many sensitive administrative requests. Mutation rate limit is 20 requests per minute.",
 });
 
 // Apply Global Rate Limiting across all API routes
-app.use('/api', globalApiLimiter);
+app.use("/api", globalApiLimiter);
 
-app.use(express.json({
-  limit: '512kb',
-  verify: (req: any, _res: any, buf: Buffer) => {
-    req.rawBody = buf;
-  }
-}));
+app.use(
+  express.json({
+    limit: "512kb",
+    verify: (req: any, _res: any, buf: Buffer) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 
 app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
-  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+  if (err && (err.type === "entity.too.large" || err.status === 413)) {
     return res.status(413).json({
-      error: 'PAYLOAD_TOO_LARGE',
-      message: 'Request payload exceeds maximum allowed size of 512 KB.'
+      error: "PAYLOAD_TOO_LARGE",
+      message: "Request payload exceeds maximum allowed size of 512 KB.",
     });
   }
-  if (err && (err instanceof SyntaxError && (err as any).status === 400 && 'body' in err)) {
+  if (
+    err &&
+    err instanceof SyntaxError &&
+    (err as any).status === 400 &&
+    "body" in err
+  ) {
     return res.status(400).json({
-      error: 'MALFORMED_JSON',
-      message: 'Malformed JSON payload.'
+      error: "MALFORMED_JSON",
+      message: "Malformed JSON payload.",
     });
   }
   next(err);
 });
 
-const ALLOWED_ORIGINS = [
-  'https://astroverse-eta.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'http://localhost:8081',
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:8081',
-  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
-];
+const ALLOWED_ORIGINS = process.env.CORS_ALLOWED_ORIGINS
+  ? process.env.CORS_ALLOWED_ORIGINS.split(",")
+  : [];
 
 // Cashfree Webhook Endpoints (Canonical & Aliases, including trailing slashes)
 export const CASHFREE_WEBHOOK_PATHS = [
-  '/api/wallet/webhook',
-  '/api/wallet/webhook/',
-  '/api/webhooks/cashfree',
-  '/api/webhooks/cashfree/',
-  '/api/cashfree/webhook',
-  '/api/cashfree/webhook/'
+  "/api/wallet/webhook",
+  "/api/wallet/webhook/",
+  "/api/webhooks/cashfree",
+  "/api/webhooks/cashfree/",
+  "/api/cashfree/webhook",
+  "/api/cashfree/webhook/",
 ];
 
 // Helper: check if request path matches any cashfree webhook path
 export function isCashfreeWebhookPath(path: string): boolean {
-  const norm = (path || '').replace(/\/+$/, '') || '/';
-  return norm === '/api/wallet/webhook' || norm === '/api/webhooks/cashfree' || norm === '/api/cashfree/webhook';
+  const norm = (path || "").replace(/\/+$/, "") || "/";
+  return (
+    norm === "/api/wallet/webhook" ||
+    norm === "/api/webhooks/cashfree" ||
+    norm === "/api/cashfree/webhook"
+  );
 }
 
 // Enable CORS with origin verification and preflight support
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (!origin || ALLOWED_ORIGINS.includes(origin) || process.env.NODE_ENV === 'test') {
-    res.header('Access-Control-Allow-Origin', origin || '*');
+  if (
+    !origin ||
+    ALLOWED_ORIGINS.includes(origin) ||
+    process.env.NODE_ENV === "test"
+  ) {
+    res.header("Access-Control-Allow-Origin", origin || "*");
   } else {
-    res.header('Access-Control-Allow-Origin', 'https://astroverse-eta.vercel.app');
+    res.header(
+      "Access-Control-Allow-Origin",
+      "https://astroverse-eta.vercel.app",
+    );
   }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cf-Access-Jwt-Assertion, X-Admin-Assurance-Token, X-Admin-Mfa-Token, x-webhook-signature, x-webhook-timestamp, x-idempotency-key'
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cf-Access-Jwt-Assertion, X-Admin-Assurance-Token, X-Admin-Mfa-Token, x-webhook-signature, x-webhook-timestamp, x-idempotency-key",
   );
-  res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') {
+  res.header("Access-Control-Allow-Credentials", "true");
+  if (req.method === "OPTIONS") {
     if (isCashfreeWebhookPath(req.path)) {
-      res.header('Allow', 'POST, GET, HEAD, OPTIONS');
+      res.header("Allow", "POST, GET, HEAD, OPTIONS");
       return res.status(204).end();
     }
     return res.sendStatus(200);
@@ -235,24 +276,29 @@ app.use((req, res, next) => {
 
 // Helper: Hash session tokens with SHA-256 for secure DB storage
 function hashToken(token: string): string {
-  return crypto.createHash('sha256').update(token).digest('hex');
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
 // Known compromised internal credentials that must be permanently rejected
 export const KNOWN_COMPROMISED_INTERNAL_KEYS = new Set([
-  'astroverse-internal-gateway-secret-2026',
-  'astroverse-internal-gateway-secret',
-  'dummy_internal_key',
-  'internal_secret'
+  "astroverse-internal-gateway-secret-2026",
+  "astroverse-internal-gateway-secret",
+  "dummy_internal_key",
+  "internal_secret",
 ]);
 
 export function isProductionEnvironment(): boolean {
-  const isVercelPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
-  return (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') && !isVercelPreview;
+  const isVercelPreview =
+    process.env.VERCEL_ENV === "preview" ||
+    process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === "1";
+  return (
+    (process.env.NODE_ENV === "production" || process.env.VERCEL === "1") &&
+    !isVercelPreview
+  );
 }
 
 export interface AdminSessionPolicy {
-  environment: 'production' | 'preview' | 'development';
+  environment: "production" | "preview" | "development";
   idleTimeoutMinutes: number;
   idleTimeoutSeconds: number;
   absoluteCapMinutes: number;
@@ -263,53 +309,65 @@ export interface AdminSessionPolicy {
 
 export function resolveAdminSessionPolicy(): AdminSessionPolicy {
   const isProd = isProductionEnvironment();
-  const isPreview = process.env.VERCEL_ENV === 'preview' || process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === '1';
+  const isPreview =
+    process.env.VERCEL_ENV === "preview" ||
+    process.env.ALLOW_PREVIEW_EPHEMERAL_STORAGE === "1";
 
   if (isProd) {
     // Production policy: strictly 10 minutes idle, 60 minutes absolute cap, MFA strictly enforced
     return {
-      environment: 'production',
+      environment: "production",
       idleTimeoutMinutes: 10,
       idleTimeoutSeconds: 600,
       absoluteCapMinutes: 60,
       absoluteCapSeconds: 3600,
       slidingRenewalSupported: true,
-      mfaRequired: true
+      mfaRequired: true,
     };
   }
 
   // Preview QA or Development environment:
   // Extended 60-minute inactivity timeout for uninterrupted administrative QA review
-  const envIdle = process.env.ADMIN_SESSION_IDLE_TIMEOUT_MINUTES ? parseInt(process.env.ADMIN_SESSION_IDLE_TIMEOUT_MINUTES, 10) : 60;
+  const envIdle = process.env.ADMIN_SESSION_IDLE_TIMEOUT_MINUTES
+    ? parseInt(process.env.ADMIN_SESSION_IDLE_TIMEOUT_MINUTES, 10)
+    : 60;
   const idleMinutes = Number.isFinite(envIdle) && envIdle > 0 ? envIdle : 60;
 
-  const envCap = process.env.ADMIN_SESSION_ABSOLUTE_CAP_MINUTES ? parseInt(process.env.ADMIN_SESSION_ABSOLUTE_CAP_MINUTES, 10) : 240;
+  const envCap = process.env.ADMIN_SESSION_ABSOLUTE_CAP_MINUTES
+    ? parseInt(process.env.ADMIN_SESSION_ABSOLUTE_CAP_MINUTES, 10)
+    : 240;
   const capMinutes = Number.isFinite(envCap) && envCap > 0 ? envCap : 240;
 
   return {
-    environment: isPreview ? 'preview' : 'development',
+    environment: isPreview ? "preview" : "development",
     idleTimeoutMinutes: idleMinutes,
     idleTimeoutSeconds: idleMinutes * 60,
     absoluteCapMinutes: capMinutes,
     absoluteCapSeconds: capMinutes * 60,
     slidingRenewalSupported: true,
-    mfaRequired: false
+    mfaRequired: false,
   };
 }
 
 export function getValidatedInternalServiceKey(): string {
-  const key = (process.env.ASTROVERSE_INTERNAL_KEY || '').trim();
+  const key = (process.env.ASTROVERSE_INTERNAL_KEY || "").trim();
   const isProd = isProductionEnvironment();
-  
+
   if (isProd) {
     if (!key) {
-      throw new Error('[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY is mandatory in production.');
+      throw new Error(
+        "[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY is mandatory in production.",
+      );
     }
     if (KNOWN_COMPROMISED_INTERNAL_KEYS.has(key)) {
-      throw new Error('[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY matches a known compromised fallback credential.');
+      throw new Error(
+        "[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY matches a known compromised fallback credential.",
+      );
     }
     if (key.length < 16) {
-      throw new Error('[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY must be at least 16 characters in production.');
+      throw new Error(
+        "[CRITICAL_SECURITY_HALT] ASTROVERSE_INTERNAL_KEY must be at least 16 characters in production.",
+      );
     }
   }
   return key;
@@ -317,8 +375,8 @@ export function getValidatedInternalServiceKey(): string {
 
 export function timingSafeEqualString(a: string, b: string): boolean {
   if (!a || !b) return false;
-  const bufA = Buffer.from(a, 'utf8');
-  const bufB = Buffer.from(b, 'utf8');
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
   if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
 }
@@ -340,31 +398,42 @@ export function sanitizeUser(user: any): any {
 
 // Helper: Scrypt password hashing & timing-safe verification
 function hashPassword(password: string, salt: string): string {
-  return crypto.scryptSync(password, salt, 64).toString('hex');
+  return crypto.scryptSync(password, salt, 64).toString("hex");
 }
 
-function verifyPassword(password: string, salt: string, storedHash: string): boolean {
+function verifyPassword(
+  password: string,
+  salt: string,
+  storedHash: string,
+): boolean {
   const hash = hashPassword(password, salt);
   return timingSafeEqualString(hash, storedHash);
 }
 
 // Helper: Mask sensitive personal identifiers in logs (redacts emails & phone numbers)
 export function maskIdentifier(id: string): string {
-  if (!id) return '';
+  if (!id) return "";
   const trimmed = id.trim();
-  if (trimmed.includes('@')) {
-    const parts = trimmed.split('@');
+  if (trimmed.includes("@")) {
+    const parts = trimmed.split("@");
     const local = parts[0];
-    const domain = parts[1] || '';
-    const maskedLocal = local.length <= 2
-      ? local[0] + '*'
-      : local[0] + '*'.repeat(Math.max(1, local.length - 2)) + local[local.length - 1];
+    const domain = parts[1] || "";
+    const maskedLocal =
+      local.length <= 2
+        ? local[0] + "*"
+        : local[0] +
+          "*".repeat(Math.max(1, local.length - 2)) +
+          local[local.length - 1];
     return `${maskedLocal}@${domain}`;
   }
   if (trimmed.length > 4) {
-    return trimmed.slice(0, 3) + '*'.repeat(Math.max(1, trimmed.length - 7)) + trimmed.slice(-4);
+    return (
+      trimmed.slice(0, 3) +
+      "*".repeat(Math.max(1, trimmed.length - 7)) +
+      trimmed.slice(-4)
+    );
   }
-  return '***';
+  return "***";
 }
 
 // In-Memory OTP Store with Anti-Abuse, Cooldown, and Attempt Counting
@@ -384,7 +453,7 @@ const otpStore = {
       otp: rec.otp,
       expiresAt: rec.expiresAt,
       lastSentAt: rec.lastSentAt,
-      attempts: rec.attempts
+      attempts: rec.attempts,
     };
   },
   set: (key: string, val: OtpEntry): void => {
@@ -393,28 +462,33 @@ const otpStore = {
       otp: val.otp,
       expiresAt: val.expiresAt,
       lastSentAt: val.lastSentAt,
-      attempts: val.attempts
+      attempts: val.attempts,
     });
   },
   delete: (key: string): void => {
     db.deleteOtp(key);
-  }
+  },
 };
 
 // Durable IP Rate Limiter (Max 20 requests per 10 minutes per IP)
 function checkIpRateLimit(ip: string): boolean {
-  if (process.env.NODE_ENV === 'test') return true;
+  if (process.env.NODE_ENV === "test") return true;
   const result = db.checkAndIncrementRateLimit(ip, 20, 10 * 60 * 1000);
   return result.allowed;
 }
 
 // ==================== ERROR HANDLING HELPER ====================
 
-function handleServiceError(res: Response, err: any, defaultMsg = 'Internal Server Error') {
-  if (err?.message && err.message.includes('DURABLE_STORAGE_REQUIRED')) {
+function handleServiceError(
+  res: Response,
+  err: any,
+  defaultMsg = "Internal Server Error",
+) {
+  if (err?.message && err.message.includes("DURABLE_STORAGE_REQUIRED")) {
     return res.status(503).json({
-      error: 'DATABASE_CONFIGURATION_REQUIRED',
-      message: 'Production deployment requires a connected PostgreSQL database (DATABASE_URL). Ephemeral storage fallback is strictly disabled.'
+      error: "DATABASE_CONFIGURATION_REQUIRED",
+      message:
+        "Production deployment requires a connected PostgreSQL database (DATABASE_URL). Ephemeral storage fallback is strictly disabled.",
     });
   }
   const msg = err?.message || defaultMsg;
@@ -428,13 +502,20 @@ export interface AuthenticatedRequest extends Request {
   sessionToken?: string;
 }
 
-async function authenticate(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+async function authenticate(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication token required.' });
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      error: "UNAUTHORIZED",
+      message: "Authentication token required.",
+    });
   }
 
-  const token = authHeader.split(' ')[1].trim();
+  const token = authHeader.split(" ")[1].trim();
   const tokenHash = hashToken(token);
 
   let session = await db.findSessionByTokenHash(tokenHash);
@@ -450,36 +531,47 @@ async function authenticate(req: AuthenticatedRequest, res: Response, next: Next
         id: supaResult.user.id,
         email: supaResult.user.email,
         phone: supaResult.user.phone,
-        user_metadata: supaResult.user.user_metadata
+        user_metadata: supaResult.user.user_metadata,
       });
     }
   }
 
   if (!user) {
-    return res.status(401).json({ error: 'INVALID_OR_EXPIRED_SESSION', message: 'Session has expired or is invalid.' });
+    return res.status(401).json({
+      error: "INVALID_OR_EXPIRED_SESSION",
+      message: "Session has expired or is invalid.",
+    });
   }
 
   if (user.status !== AccountStatus.ACTIVE) {
     return res.status(403).json({
-      error: 'ACCOUNT_INACTIVE',
-      message: `Account is currently ${user.status.toLowerCase()}. Please contact support.`
+      error: "ACCOUNT_INACTIVE",
+      message: `Account is currently ${user.status.toLowerCase()}. Please contact support.`,
     });
   }
 
   // Admin Session Lifecycle: Enforce absolute session cap and sliding inactivity extension
   if (session && isAnyAdmin(user.role)) {
     const policy = resolveAdminSessionPolicy();
-    const sessionCreatedAt = session.createdAt ? new Date(session.createdAt).getTime() : 0;
-    if (sessionCreatedAt > 0 && (Date.now() - sessionCreatedAt > policy.absoluteCapSeconds * 1000)) {
+    const sessionCreatedAt = session.createdAt
+      ? new Date(session.createdAt).getTime()
+      : 0;
+    if (
+      sessionCreatedAt > 0 &&
+      Date.now() - sessionCreatedAt > policy.absoluteCapSeconds * 1000
+    ) {
       await db.deleteSession(tokenHash);
       return res.status(401).json({
-        error: 'SESSION_EXPIRED_ABSOLUTE_CAP',
-        message: `Administrative session exceeded absolute lifetime limit of ${policy.absoluteCapMinutes} minutes. Please sign in again.`
+        error: "SESSION_EXPIRED_ABSOLUTE_CAP",
+        message: `Administrative session exceeded absolute lifetime limit of ${policy.absoluteCapMinutes} minutes. Please sign in again.`,
       });
     }
 
     const targetExpires = Date.now() + policy.idleTimeoutSeconds * 1000;
-    const maxExpires = sessionCreatedAt > 0 ? (sessionCreatedAt + policy.absoluteCapSeconds * 1000) : targetExpires;
+    const maxExpires =
+      sessionCreatedAt > 0
+        ? sessionCreatedAt + policy.absoluteCapSeconds * 1000
+        : targetExpires;
     const finalExpiresMs = Math.min(targetExpires, maxExpires);
     const currentExpiresMs = new Date(session.expiresAt).getTime();
 
@@ -495,10 +587,10 @@ async function authenticate(req: AuthenticatedRequest, res: Response, next: Next
 
 async function resolveOptionalUser(req: Request): Promise<UserRecord | null> {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }
-  const token = authHeader.split(' ')[1].trim();
+  const token = authHeader.split(" ")[1].trim();
   const tokenHash = hashToken(token);
   let session = await db.findSessionByTokenHash(tokenHash);
   let user: UserRecord | null = null;
@@ -511,14 +603,18 @@ async function resolveOptionalUser(req: Request): Promise<UserRecord | null> {
         id: supaResult.user.id,
         email: supaResult.user.email,
         phone: supaResult.user.phone,
-        user_metadata: supaResult.user.user_metadata
+        user_metadata: supaResult.user.user_metadata,
       });
     }
   }
   return user && user.status === AccountStatus.ACTIVE ? user : null;
 }
 
-async function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
+async function optionalAuthenticate(
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction,
+) {
   try {
     const user = await resolveOptionalUser(req);
     if (user) {
@@ -530,29 +626,35 @@ async function optionalAuthenticate(req: AuthenticatedRequest, _res: Response, n
   next();
 }
 
-export const ADMIN_OWNER_USER_ID = (process.env.ADMIN_OWNER_USER_ID || 'b204eff9-1a9b-4805-8c07-c35d3a9de3ee').trim();
+export const ADMIN_OWNER_USER_ID = (
+  process.env.ADMIN_OWNER_USER_ID || "b204eff9-1a9b-4805-8c07-c35d3a9de3ee"
+).trim();
 
-function requireAdmin(permissionOrRoles?: AdminPermission | AdminPermission[] | Role[]) {
+function requireAdmin(
+  permissionOrRoles?: AdminPermission | AdminPermission[] | Role[],
+) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'UNAUTHORIZED' });
+      return res.status(401).json({ error: "UNAUTHORIZED" });
     }
     const userRole = req.user.role;
     if (!isAnyAdmin(userRole)) {
       return res.status(403).json({
-        error: 'FORBIDDEN',
-        message: 'You do not have administrative privileges to perform this action.'
+        error: "FORBIDDEN",
+        message:
+          "You do not have administrative privileges to perform this action.",
       });
     }
 
     // Server-side allowlist re-verification & revocation guard (Actor 14)
     const adminAllowlist = getAuthorizedAdminEmails();
     if (adminAllowlist.length > 0) {
-      const userEmail = (req.user.email || '').trim().toLowerCase();
+      const userEmail = (req.user.email || "").trim().toLowerCase();
       if (!userEmail || !isAuthorizedAdminEmail(userEmail)) {
         return res.status(403).json({
-          error: 'FORBIDDEN',
-          message: 'Administrator authorization has been revoked from the server allowlist.'
+          error: "FORBIDDEN",
+          message:
+            "Administrator authorization has been revoked from the server allowlist.",
         });
       }
     }
@@ -567,20 +669,25 @@ function requireAdmin(permissionOrRoles?: AdminPermission | AdminPermission[] | 
       const isRoleArray = Object.values(Role).includes(first as Role);
       if (isRoleArray) {
         const canonicalUser = normalizeRole(userRole);
-        const isAllowed = (permissionOrRoles as Role[]).some(r => r === userRole || normalizeRole(r) === canonicalUser);
+        const isAllowed = (permissionOrRoles as Role[]).some(
+          (r) => r === userRole || normalizeRole(r) === canonicalUser,
+        );
         if (!isAllowed) {
           return res.status(403).json({
-            error: 'FORBIDDEN',
-            message: 'Your administrative role does not have permission for this operation.'
+            error: "FORBIDDEN",
+            message:
+              "Your administrative role does not have permission for this operation.",
           });
         }
         return next();
       } else {
-        const isAllowed = (permissionOrRoles as AdminPermission[]).some(p => hasPermission(userRole, p));
+        const isAllowed = (permissionOrRoles as AdminPermission[]).some((p) =>
+          hasPermission(userRole, p),
+        );
         if (!isAllowed) {
           return res.status(403).json({
-            error: 'FORBIDDEN',
-            message: `Your administrative role does not have permission for this operation.`
+            error: "FORBIDDEN",
+            message: `Your administrative role does not have permission for this operation.`,
           });
         }
         return next();
@@ -590,8 +697,8 @@ function requireAdmin(permissionOrRoles?: AdminPermission | AdminPermission[] | 
     // Single permission check
     if (!hasPermission(userRole, permissionOrRoles as AdminPermission)) {
       return res.status(403).json({
-        error: 'FORBIDDEN',
-        message: `Operation requires permission: ${permissionOrRoles}`
+        error: "FORBIDDEN",
+        message: `Operation requires permission: ${permissionOrRoles}`,
       });
     }
 
@@ -602,38 +709,52 @@ function requireAdmin(permissionOrRoles?: AdminPermission | AdminPermission[] | 
 function requireAdminAssurance(requiredScope?: string) {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user || !isAnyAdmin(req.user.role)) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Administrative access required.' });
+      return res.status(403).json({
+        error: "FORBIDDEN",
+        message: "Administrative access required.",
+      });
     }
 
-    const rawToken = (req.headers['x-admin-assurance-token'] || req.headers['x-admin-mfa-token']) as string;
-    const token = (rawToken && rawToken !== 'null' && rawToken !== 'undefined') ? rawToken.trim() : null;
+    const rawToken = (req.headers["x-admin-assurance-token"] ||
+      req.headers["x-admin-mfa-token"]) as string;
+    const token =
+      rawToken && rawToken !== "null" && rawToken !== "undefined"
+        ? rawToken.trim()
+        : null;
     if (token) {
       if (isAssuranceTokenRevoked(token)) {
         return res.status(401).json({
-          error: 'MFA_ASSURANCE_REVOKED',
-          message: 'Administrative MFA step-up assurance token has been revoked.'
+          error: "MFA_ASSURANCE_REVOKED",
+          message:
+            "Administrative MFA step-up assurance token has been revoked.",
         });
       }
 
       const verified = verifyAdminAssuranceToken(token);
       if (!verified) {
         return res.status(401).json({
-          error: 'MFA_ASSURANCE_INVALID_OR_EXPIRED',
-          message: 'Administrative MFA step-up assurance token has expired or is invalid.'
+          error: "MFA_ASSURANCE_INVALID_OR_EXPIRED",
+          message:
+            "Administrative MFA step-up assurance token has expired or is invalid.",
         });
       }
 
       if (verified.userId !== req.user.id) {
         return res.status(401).json({
-          error: 'MFA_ASSURANCE_IDENTITY_MISMATCH',
-          message: 'Administrative MFA step-up assurance token belongs to a different administrator.'
+          error: "MFA_ASSURANCE_IDENTITY_MISMATCH",
+          message:
+            "Administrative MFA step-up assurance token belongs to a different administrator.",
         });
       }
 
-      if (requiredScope && verified.scope && !isScopeSatisfied(verified.scope, requiredScope)) {
+      if (
+        requiredScope &&
+        verified.scope &&
+        !isScopeSatisfied(verified.scope, requiredScope)
+      ) {
         return res.status(403).json({
-          error: 'MFA_ASSURANCE_INSUFFICIENT_SCOPE',
-          message: `Administrative MFA assurance token does not possess the required '${requiredScope}' scope.`
+          error: "MFA_ASSURANCE_INSUFFICIENT_SCOPE",
+          message: `Administrative MFA assurance token does not possess the required '${requiredScope}' scope.`,
         });
       }
 
@@ -642,20 +763,27 @@ function requireAdminAssurance(requiredScope?: string) {
 
     // Direct Supabase AAL2 JWT step-up assurance check
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const candidateToken = authHeader.split(' ')[1].trim();
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const candidateToken = authHeader.split(" ")[1].trim();
       const claims = decodeSupabaseJwtClaims(candidateToken);
-      if (claims && claims.aal === 'aal2') {
+      if (claims && claims.aal === "aal2") {
         return next();
       }
     }
 
     // High impact operation strictly requires assurance token if user is designated owner, MFA is enabled, in production, enforced, or strictly required
     const isOwner = req.user.id === ADMIN_OWNER_USER_ID;
-    if (isOwner || isProductionEnvironment() || req.user.mfaEnabled || req.user.mfaEnforced || req.headers['x-admin-require-mfa'] === 'true') {
+    if (
+      isOwner ||
+      isProductionEnvironment() ||
+      req.user.mfaEnabled ||
+      req.user.mfaEnforced ||
+      req.headers["x-admin-require-mfa"] === "true"
+    ) {
       return res.status(428).json({
-        error: 'MFA_ASSURANCE_REQUIRED',
-        message: 'This sensitive administrative action requires verified multi-factor authentication (MFA) step-up token.'
+        error: "MFA_ASSURANCE_REQUIRED",
+        message:
+          "This sensitive administrative action requires verified multi-factor authentication (MFA) step-up token.",
       });
     }
 
@@ -675,7 +803,7 @@ export interface PrivilegedCustomerAccessResult {
 export function validatePrivilegedCustomerAccess(
   actor: UserRecord,
   targetUserId: string,
-  req: Request
+  req: Request,
 ): PrivilegedCustomerAccessResult {
   if (actor.id === targetUserId) {
     return { authorized: true };
@@ -685,34 +813,47 @@ export function validatePrivilegedCustomerAccess(
     return {
       authorized: false,
       statusCode: 403,
-      error: 'FORBIDDEN',
-      message: 'Access denied: cannot access another customer\'s profile records.'
+      error: "FORBIDDEN",
+      message:
+        "Access denied: cannot access another customer's profile records.",
     };
   }
 
   // 1. Justified reason required
-  const explicitReason = req.headers['x-admin-reason'] !== undefined ? String(req.headers['x-admin-reason']).trim() : null;
-  const bodyReason = req.body && req.body.adminReason ? String(req.body.adminReason).trim() : null;
-  const defaultTestReason = (process.env.NODE_ENV === 'test' && !req.headers['x-admin-strict-audit']) ? 'Test suite administrative access' : '';
-  const reason = explicitReason !== null ? explicitReason : (bodyReason || defaultTestReason);
+  const explicitReason =
+    req.headers["x-admin-reason"] !== undefined
+      ? String(req.headers["x-admin-reason"]).trim()
+      : null;
+  const bodyReason =
+    req.body && req.body.adminReason
+      ? String(req.body.adminReason).trim()
+      : null;
+  const defaultTestReason =
+    process.env.NODE_ENV === "test" && !req.headers["x-admin-strict-audit"]
+      ? "Test suite administrative access"
+      : "";
+  const reason =
+    explicitReason !== null ? explicitReason : bodyReason || defaultTestReason;
   if (!reason || reason.length < 5) {
     return {
       authorized: false,
       statusCode: 400,
-      error: 'ADMIN_REASON_REQUIRED',
-      message: 'Administrative access to customer birth data requires a justified business reason (x-admin-reason header).'
+      error: "ADMIN_REASON_REQUIRED",
+      message:
+        "Administrative access to customer birth data requires a justified business reason (x-admin-reason header).",
     };
   }
 
   // 2. Step-up MFA assurance token check
-  const assuranceToken = (req.headers['x-admin-assurance-token'] || req.headers['x-admin-mfa-token']) as string;
+  const assuranceToken = (req.headers["x-admin-assurance-token"] ||
+    req.headers["x-admin-mfa-token"]) as string;
   if (assuranceToken) {
     if (isAssuranceTokenRevoked(assuranceToken)) {
       return {
         authorized: false,
         statusCode: 401,
-        error: 'MFA_ASSURANCE_REVOKED',
-        message: 'Administrative MFA step-up assurance token has been revoked.'
+        error: "MFA_ASSURANCE_REVOKED",
+        message: "Administrative MFA step-up assurance token has been revoked.",
       };
     }
 
@@ -721,26 +862,33 @@ export function validatePrivilegedCustomerAccess(
       return {
         authorized: false,
         statusCode: 401,
-        error: 'MFA_ASSURANCE_INVALID_OR_EXPIRED',
-        message: 'Administrative MFA step-up assurance token is invalid or has expired.'
+        error: "MFA_ASSURANCE_INVALID_OR_EXPIRED",
+        message:
+          "Administrative MFA step-up assurance token is invalid or has expired.",
       };
     }
     return { authorized: true, reason };
   }
 
   // If no assurance token provided:
-  if (isProductionEnvironment() || actor.mfaEnabled || actor.mfaEnforced || req.headers['x-admin-require-mfa'] === 'true') {
+  if (
+    isProductionEnvironment() ||
+    actor.mfaEnabled ||
+    actor.mfaEnforced ||
+    req.headers["x-admin-require-mfa"] === "true"
+  ) {
     return {
       authorized: false,
       statusCode: 428,
-      error: 'MFA_ASSURANCE_REQUIRED',
-      message: 'Administrative access to customer birth data requires a verified step-up MFA assurance token (x-admin-assurance-token header).'
+      error: "MFA_ASSURANCE_REQUIRED",
+      message:
+        "Administrative access to customer birth data requires a verified step-up MFA assurance token (x-admin-assurance-token header).",
     };
   }
 
   return {
     authorized: true,
-    reason: reason || 'Administrative testing access'
+    reason: reason || "Administrative testing access",
   };
 }
 
@@ -762,9 +910,12 @@ function resolveRequestTier(user: any, req: Request): SubscriptionTier {
     }
 
     // 2. In non-production testing, allow admin caller header override
-    if (process.env.NODE_ENV !== 'production' && req.headers['x-simulated-tier']) {
-      const headerTier = String(req.headers['x-simulated-tier']).toUpperCase();
-      if (['FREE', 'PLUS', 'PREMIUM'].includes(headerTier)) {
+    if (
+      process.env.NODE_ENV !== "production" &&
+      req.headers["x-simulated-tier"]
+    ) {
+      const headerTier = String(req.headers["x-simulated-tier"]).toUpperCase();
+      if (["FREE", "PLUS", "PREMIUM"].includes(headerTier)) {
         return headerTier as SubscriptionTier;
       }
     }
@@ -777,313 +928,466 @@ function resolveRequestTier(user: any, req: Request): SubscriptionTier {
 // ==================== 1. AUTHENTICATION & SESSIONS ====================
 
 // POST /api/auth/request-otp
-app.post('/api/auth/request-otp', authLimiter, async (req: Request, res: Response) => {
-  const { identifier } = req.body;
-  if (!identifier) {
-    return res.status(400).json({ error: 'IDENTIFIER_REQUIRED', message: 'Phone number or email address is required.' });
-  }
-
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  if (!checkIpRateLimit(clientIp)) {
-    return res.status(429).json({
-      error: 'RATE_LIMIT_EXCEEDED',
-      message: 'Too many requests from this IP. Please wait 10 minutes.'
-    });
-  }
-
-  const cleanId = String(identifier).trim();
-  const isEmail = cleanId.includes('@');
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^\+?[0-9]{10,15}$/;
-
-  if (isEmail) {
-    if (!emailRegex.test(cleanId)) {
-      return res.status(400).json({ error: 'INVALID_IDENTIFIER_FORMAT', message: 'Invalid email address format.' });
-    }
-  } else {
-    const digitsOnly = cleanId.replace(/[\s\-\(\)]/g, '');
-    if (!phoneRegex.test(digitsOnly)) {
-      return res.status(400).json({ error: 'INVALID_IDENTIFIER_FORMAT', message: 'Invalid phone number. Must be 10-15 digits with optional country code.' });
-    }
-  }
-
-  // Check 60-second cooldown
-  const existing = otpStore.get(cleanId);
-  const now = Date.now();
-  if (existing && (now - existing.lastSentAt) < 60 * 1000) {
-    const remainingSeconds = Math.ceil((60 * 1000 - (now - existing.lastSentAt)) / 1000);
-    return res.status(429).json({
-      error: 'COOLDOWN_ACTIVE',
-      message: `Please wait ${remainingSeconds} seconds before requesting a new code.`,
-      cooldownSeconds: remainingSeconds
-    });
-  }
-
-  // Generate 6-digit cryptographic OTP
-  const otp = crypto.randomInt(100000, 999999).toString();
-  const expiresAt = now + 5 * 60 * 1000; // 5-minute validity
-
-  otpStore.set(cleanId, {
-    otp,
-    expiresAt,
-    lastSentAt: now,
-    attempts: 0
-  });
-
-  await db.recordAuditEvent({
-    action: 'OTP_DISPATCHED',
-    targetType: isEmail ? 'EMAIL' : 'PHONE',
-    targetId: cleanId,
-    ipAddress: clientIp,
-    metadata: { channel: isEmail ? 'resend/email' : 'twilio/sms' }
-  });
-
-  console.log(`[AUTH_OTP_DISPATCH] Dispatched verification OTP to ${isEmail ? 'email' : 'phone'} ${maskIdentifier(cleanId)}`);
-
-  const responsePayload: any = {
-    status: 'OTP_SENT',
-    message: `Verification code sent to ${cleanId}.`,
-    cooldownSeconds: 60
-  };
-  if (process.env.NODE_ENV === 'test') {
-    responsePayload.devPreviewOtp = otp; // Only populated for isolated automated test runs
-  }
-  res.json(responsePayload);
-});
-
-// POST /api/auth/verify-otp
-app.post('/api/auth/verify-otp', authLimiter, async (req: Request, res: Response) => {
-  const { identifier, otp, displayName } = req.body;
-  if (!identifier || !otp) {
-    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier and OTP are required.' });
-  }
-
-  const cleanId = String(identifier).trim();
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  const record = otpStore.get(cleanId);
-
-  if (!record || record.expiresAt < Date.now()) {
-    return res.status(401).json({
-      error: 'INVALID_OR_EXPIRED_OTP',
-      message: 'The verification code has expired or was not requested. Please request a new code.'
-    });
-  }
-
-  record.attempts += 1;
-  otpStore.set(cleanId, record);
-  if (record.attempts > 5) {
-    otpStore.delete(cleanId);
-    return res.status(429).json({
-      error: 'TOO_MANY_ATTEMPTS',
-      message: 'Too many incorrect attempts. This code has been invalidated. Please request a new code.'
-    });
-  }
-
-  if (record.otp !== String(otp).trim()) {
-    return res.status(401).json({
-      error: 'INVALID_OR_EXPIRED_OTP',
-      message: 'Incorrect verification code. Please check and try again.'
-    });
-  }
-
-  // Single-use eviction
-  otpStore.delete(cleanId);
-
-  try {
-    const isEmail = cleanId.includes('@');
-    let user = await db.findUserByIdentifier(cleanId);
-    let isNewUser = false;
-
-    if (!user) {
-      isNewUser = true;
-      const isAdminCandidate = isEmail && isAuthorizedAdminEmail(cleanId);
-      user = await db.createUser({
-        phone: isEmail ? null : cleanId,
-        email: isEmail ? cleanId.toLowerCase() : null,
-        phoneVerified: !isEmail,
-        emailVerified: isEmail,
-        displayName: displayName || (isEmail ? cleanId.split('@')[0] : `User_${cleanId.slice(-4)}`),
-        role: isAdminCandidate ? Role.OWNER : Role.USER,
-        status: AccountStatus.ACTIVE,
-        walletBalance: 0.00 // Strict zero balance for all new registrations
+app.post(
+  "/api/auth/request-otp",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { identifier } = req.body;
+    if (!identifier) {
+      return res.status(400).json({
+        error: "IDENTIFIER_REQUIRED",
+        message: "Phone number or email address is required.",
       });
-    } else {
-      // Reject if account suspended or deactivated
-      if (user.status !== AccountStatus.ACTIVE) {
-        return res.status(403).json({
-          error: 'ACCOUNT_INACTIVE',
-          message: `Your account is ${user.status.toLowerCase()}. Please contact customer support.`
+    }
+
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    if (!checkIpRateLimit(clientIp)) {
+      return res.status(429).json({
+        error: "RATE_LIMIT_EXCEEDED",
+        message: "Too many requests from this IP. Please wait 10 minutes.",
+      });
+    }
+
+    const cleanId = String(identifier).trim();
+    const isEmail = cleanId.includes("@");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
+
+    if (isEmail) {
+      if (!emailRegex.test(cleanId)) {
+        return res.status(400).json({
+          error: "INVALID_IDENTIFIER_FORMAT",
+          message: "Invalid email address format.",
         });
       }
-
-      // Mark verified
-      const updates: Partial<UserRecord> = { lastLoginAt: new Date().toISOString() };
-      if (isEmail) {
-        updates.emailVerified = true;
-        if (isAuthorizedAdminEmail(cleanId)) {
-          if (!isAnyAdmin(user.role)) {
-            updates.role = Role.OWNER;
-          }
-        } else if (getAuthorizedAdminEmails().length > 0 && isAnyAdmin(user.role) && user.role !== Role.SUPER_ADMIN && cleanId !== 'admin@astroverse.app') {
-          updates.role = Role.USER;
-        }
-      } else {
-        updates.phoneVerified = true;
+    } else {
+      const digitsOnly = cleanId.replace(/[\s\-()]/g, "");
+      if (!phoneRegex.test(digitsOnly)) {
+        return res.status(400).json({
+          error: "INVALID_IDENTIFIER_FORMAT",
+          message:
+            "Invalid phone number. Must be 10-15 digits with optional country code.",
+        });
       }
-      user = await db.updateUser(user.id, updates);
     }
 
-    // Issue cryptographic 256-bit session token
-    const rawSessionToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashToken(rawSessionToken);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day session
+    // Check 60-second cooldown
+    const existing = otpStore.get(cleanId);
+    const now = Date.now();
+    if (existing && now - existing.lastSentAt < 60 * 1000) {
+      const remainingSeconds = Math.ceil(
+        (60 * 1000 - (now - existing.lastSentAt)) / 1000,
+      );
+      return res.status(429).json({
+        error: "COOLDOWN_ACTIVE",
+        message: `Please wait ${remainingSeconds} seconds before requesting a new code.`,
+        cooldownSeconds: remainingSeconds,
+      });
+    }
 
-    await db.createSession({
-      userId: user.id,
-      tokenHash,
+    // Generate 6-digit cryptographic OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = now + 5 * 60 * 1000; // 5-minute validity
+
+    otpStore.set(cleanId, {
+      otp,
       expiresAt,
-      ipAddress: clientIp,
-      userAgent: req.headers['user-agent'] || null
+      lastSentAt: now,
+      attempts: 0,
     });
 
     await db.recordAuditEvent({
-      userId: user.id,
-      action: isNewUser ? 'AUTH_REGISTER' : 'AUTH_LOGIN',
-      targetType: 'USER',
-      targetId: user.id,
+      action: "OTP_DISPATCHED",
+      targetType: isEmail ? "EMAIL" : "PHONE",
+      targetId: cleanId,
       ipAddress: clientIp,
-      metadata: { identifier: cleanId, method: isEmail ? 'email_otp' : 'phone_otp' }
+      metadata: { channel: isEmail ? "resend/email" : "twilio/sms" },
     });
 
-    res.json({
-      status: 'AUTHENTICATED',
-      sessionToken: rawSessionToken,
-      user: sanitizeUser(user)
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    console.log(
+      `[AUTH_OTP_DISPATCH] Dispatched verification OTP to ${isEmail ? "email" : "phone"} ${maskIdentifier(cleanId)}`,
+    );
+
+    const responsePayload: any = {
+      status: "OTP_SENT",
+      message: `Verification code sent to ${cleanId}.`,
+      cooldownSeconds: 60,
+    };
+    if (process.env.NODE_ENV === "test") {
+      responsePayload.devPreviewOtp = otp; // Only populated for isolated automated test runs
+    }
+    res.json(responsePayload);
+  },
+);
+
+// POST /api/auth/verify-otp
+app.post(
+  "/api/auth/verify-otp",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { identifier, otp, displayName } = req.body;
+    if (!identifier || !otp) {
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "Identifier and OTP are required.",
+      });
+    }
+
+    const cleanId = String(identifier).trim();
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    const record = otpStore.get(cleanId);
+
+    if (!record || record.expiresAt < Date.now()) {
+      return res.status(401).json({
+        error: "INVALID_OR_EXPIRED_OTP",
+        message:
+          "The verification code has expired or was not requested. Please request a new code.",
+      });
+    }
+
+    record.attempts += 1;
+    otpStore.set(cleanId, record);
+    if (record.attempts > 5) {
+      otpStore.delete(cleanId);
+      return res.status(429).json({
+        error: "TOO_MANY_ATTEMPTS",
+        message:
+          "Too many incorrect attempts. This code has been invalidated. Please request a new code.",
+      });
+    }
+
+    if (record.otp !== String(otp).trim()) {
+      return res.status(401).json({
+        error: "INVALID_OR_EXPIRED_OTP",
+        message: "Incorrect verification code. Please check and try again.",
+      });
+    }
+
+    // Single-use eviction
+    otpStore.delete(cleanId);
+
+    try {
+      const isEmail = cleanId.includes("@");
+      let user = await db.findUserByIdentifier(cleanId);
+      let isNewUser = false;
+
+      if (!user) {
+        isNewUser = true;
+        const isAdminCandidate = isEmail && isAuthorizedAdminEmail(cleanId);
+        user = await db.createUser({
+          phone: isEmail ? null : cleanId,
+          email: isEmail ? cleanId.toLowerCase() : null,
+          phoneVerified: !isEmail,
+          emailVerified: isEmail,
+          displayName:
+            displayName ||
+            (isEmail ? cleanId.split("@")[0] : `User_${cleanId.slice(-4)}`),
+          role: isAdminCandidate ? Role.OWNER : Role.USER,
+          status: AccountStatus.ACTIVE,
+          walletBalance: 0.0, // Strict zero balance for all new registrations
+        });
+      } else {
+        // Reject if account suspended or deactivated
+        if (user.status !== AccountStatus.ACTIVE) {
+          return res.status(403).json({
+            error: "ACCOUNT_INACTIVE",
+            message: `Your account is ${user.status.toLowerCase()}. Please contact customer support.`,
+          });
+        }
+
+        // Mark verified
+        const updates: Partial<UserRecord> = {
+          lastLoginAt: new Date().toISOString(),
+        };
+        if (isEmail) {
+          updates.emailVerified = true;
+          if (isAuthorizedAdminEmail(cleanId)) {
+            if (!isAnyAdmin(user.role)) {
+              updates.role = Role.OWNER;
+            }
+          } else if (
+            getAuthorizedAdminEmails().length > 0 &&
+            isAnyAdmin(user.role) &&
+            user.role !== Role.SUPER_ADMIN &&
+            cleanId !== "admin@astroverse.app"
+          ) {
+            updates.role = Role.USER;
+          }
+        } else {
+          updates.phoneVerified = true;
+        }
+        user = await db.updateUser(user.id, updates);
+      }
+
+      // Issue cryptographic 256-bit session token
+      const rawSessionToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = hashToken(rawSessionToken);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day session
+
+      await db.createSession({
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        ipAddress: clientIp,
+        userAgent: req.headers["user-agent"] || null,
+      });
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: isNewUser ? "AUTH_REGISTER" : "AUTH_LOGIN",
+        targetType: "USER",
+        targetId: user.id,
+        ipAddress: clientIp,
+        metadata: {
+          identifier: cleanId,
+          method: isEmail ? "email_otp" : "phone_otp",
+        },
+      });
+
+      res.json({
+        status: "AUTHENTICATED",
+        sessionToken: rawSessionToken,
+        user: sanitizeUser(user),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // POST /api/auth/register-password
-app.post('/api/auth/register-password', authLimiter, async (req: Request, res: Response) => {
-  const { email, password, displayName, phone, otp } = req.body;
-  if (!password) {
-    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Password is required.' });
-  }
-
-  const cleanEmail = email ? String(email).trim().toLowerCase() : null;
-  const cleanPhone = phone ? String(phone).trim() : null;
-
-  if (!cleanEmail && !cleanPhone) {
-    return res.status(400).json({
-      error: 'FIELDS_REQUIRED',
-      message: 'At least an email address or mobile phone number is required.'
-    });
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (cleanEmail && !emailRegex.test(cleanEmail)) {
-    return res.status(400).json({ error: 'INVALID_EMAIL_FORMAT', message: 'Please provide a valid email address.' });
-  }
-
-  const phoneRegex = /^\+?[0-9]{10,15}$/;
-  if (cleanPhone) {
-    const digitsOnly = cleanPhone.replace(/[\s\-\(\)]/g, '');
-    if (!phoneRegex.test(digitsOnly)) {
-      return res.status(400).json({ error: 'INVALID_PHONE_FORMAT', message: 'Please provide a valid 10-15 digit phone number.' });
-    }
-  }
-
-  try {
-    let existing: UserRecord | null = null;
-    if (cleanEmail) {
-      existing = await db.findUserByEmail(cleanEmail);
-    }
-    if (!existing && cleanPhone) {
-      existing = await db.findUserByPhone(cleanPhone);
+app.post(
+  "/api/auth/register-password",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { email, password, displayName, phone, otp } = req.body;
+    if (!password) {
+      return res
+        .status(400)
+        .json({ error: "FIELDS_REQUIRED", message: "Password is required." });
     }
 
-    if (existing && existing.status !== AccountStatus.ACTIVE) {
-      return res.status(403).json({
-        error: 'ACCOUNT_INACTIVE',
-        message: `Account is ${existing.status.toLowerCase()}. Please contact customer support.`
-      });
-    }
+    const cleanEmail = email ? String(email).trim().toLowerCase() : null;
+    const cleanPhone = phone ? String(phone).trim() : null;
 
-    const passwordValidation = validatePasswordComplexity(password, { minLength: 8, requireSymbols: false });
-    if (!passwordValidation.valid) {
+    if (!cleanEmail && !cleanPhone) {
       return res.status(400).json({
-        error: 'WEAK_PASSWORD',
-        message: passwordValidation.reason || 'Password must be at least 8 characters long and contain both letters and numbers.'
+        error: "FIELDS_REQUIRED",
+        message:
+          "At least an email address or mobile phone number is required.",
       });
     }
 
-    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-    if (!checkIpRateLimit(clientIp)) {
-      return res.status(429).json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests. Please wait 10 minutes.' });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (cleanEmail && !emailRegex.test(cleanEmail)) {
+      return res.status(400).json({
+        error: "INVALID_EMAIL_FORMAT",
+        message: "Please provide a valid email address.",
+      });
     }
 
-    if (existing) {
-      if (existing.passwordHash) {
-        const errCode = (cleanEmail && existing.email === cleanEmail) ? 'EMAIL_ALREADY_EXISTS' : 'ACCOUNT_ALREADY_EXISTS';
-        return res.status(409).json({
-          error: errCode,
-          message: 'An account with this email or phone already exists. Please log in.'
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
+    if (cleanPhone) {
+      const digitsOnly = cleanPhone.replace(/[\s\-()]/g, "");
+      if (!phoneRegex.test(digitsOnly)) {
+        return res.status(400).json({
+          error: "INVALID_PHONE_FORMAT",
+          message: "Please provide a valid 10-15 digit phone number.",
+        });
+      }
+    }
+
+    try {
+      let existing: UserRecord | null = null;
+      if (cleanEmail) {
+        existing = await db.findUserByEmail(cleanEmail);
+      }
+      if (!existing && cleanPhone) {
+        existing = await db.findUserByPhone(cleanPhone);
+      }
+
+      if (existing && existing.status !== AccountStatus.ACTIVE) {
+        return res.status(403).json({
+          error: "ACCOUNT_INACTIVE",
+          message: `Account is ${existing.status.toLowerCase()}. Please contact customer support.`,
         });
       }
 
-      // Existing account without password (OTP-only registration)
-      // Strictly require a fresh, single-use, server-verified OTP challenge bound to this identifier
-      const challengeTarget = cleanEmail || cleanPhone!;
-      if (!otp) {
-        return res.status(401).json({
-          error: 'VERIFICATION_REQUIRED',
-          message: 'Account ownership verification required. Please provide a valid OTP sent to your device to attach a password to this account.'
+      const passwordValidation = validatePasswordComplexity(password, {
+        minLength: 8,
+        requireSymbols: false,
+      });
+      if (!passwordValidation.valid) {
+        return res.status(400).json({
+          error: "WEAK_PASSWORD",
+          message:
+            passwordValidation.reason ||
+            "Password must be at least 8 characters long and contain both letters and numbers.",
         });
       }
 
-      const record = otpStore.get(challengeTarget);
-      if (!record || record.expiresAt < Date.now()) {
-        return res.status(401).json({
-          error: 'INVALID_OR_EXPIRED_OTP',
-          message: 'The verification code has expired or was not requested. Please request a new code.'
-        });
-      }
-
-      record.attempts += 1;
-      otpStore.set(challengeTarget, record);
-      if (record.attempts > 5) {
-        otpStore.delete(challengeTarget);
+      const clientIp =
+        (req.headers["x-forwarded-for"] as string) ||
+        req.socket.remoteAddress ||
+        "127.0.0.1";
+      if (!checkIpRateLimit(clientIp)) {
         return res.status(429).json({
-          error: 'TOO_MANY_ATTEMPTS',
-          message: 'Too many incorrect attempts. This code has been invalidated. Please request a new code.'
+          error: "RATE_LIMIT_EXCEEDED",
+          message: "Too many requests. Please wait 10 minutes.",
         });
       }
 
-      if (record.otp !== String(otp).trim()) {
-        return res.status(401).json({
-          error: 'INVALID_OR_EXPIRED_OTP',
-          message: 'Incorrect verification code. Please check and try again.'
+      if (existing) {
+        if (existing.passwordHash) {
+          const errCode =
+            cleanEmail && existing.email === cleanEmail
+              ? "EMAIL_ALREADY_EXISTS"
+              : "ACCOUNT_ALREADY_EXISTS";
+          return res.status(409).json({
+            error: errCode,
+            message:
+              "An account with this email or phone already exists. Please log in.",
+          });
+        }
+
+        // Existing account without password (OTP-only registration)
+        // Strictly require a fresh, single-use, server-verified OTP challenge bound to this identifier
+        const challengeTarget = cleanEmail || cleanPhone!;
+        if (!otp) {
+          return res.status(401).json({
+            error: "VERIFICATION_REQUIRED",
+            message:
+              "Account ownership verification required. Please provide a valid OTP sent to your device to attach a password to this account.",
+          });
+        }
+
+        const record = otpStore.get(challengeTarget);
+        if (!record || record.expiresAt < Date.now()) {
+          return res.status(401).json({
+            error: "INVALID_OR_EXPIRED_OTP",
+            message:
+              "The verification code has expired or was not requested. Please request a new code.",
+          });
+        }
+
+        record.attempts += 1;
+        otpStore.set(challengeTarget, record);
+        if (record.attempts > 5) {
+          otpStore.delete(challengeTarget);
+          return res.status(429).json({
+            error: "TOO_MANY_ATTEMPTS",
+            message:
+              "Too many incorrect attempts. This code has been invalidated. Please request a new code.",
+          });
+        }
+
+        if (record.otp !== String(otp).trim()) {
+          return res.status(401).json({
+            error: "INVALID_OR_EXPIRED_OTP",
+            message: "Incorrect verification code. Please check and try again.",
+          });
+        }
+
+        // Single-use eviction to prevent replay attacks
+        otpStore.delete(challengeTarget);
+
+        const salt = crypto.randomBytes(16).toString("hex");
+        const hash = hashPassword(password, salt);
+
+        const user = await db.updateUser(existing.id, {
+          passwordHash: hash,
+          passwordSalt: salt,
+          emailVerified: cleanEmail ? true : existing.emailVerified,
+          phoneVerified: cleanPhone ? true : existing.phoneVerified,
+          displayName: displayName
+            ? String(displayName).trim()
+            : existing.displayName,
+          lastLoginAt: new Date().toISOString(),
+        });
+
+        const rawSessionToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = hashToken(rawSessionToken);
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        await db.createSession({
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+          ipAddress: clientIp,
+          userAgent: req.headers["user-agent"] || null,
+        });
+
+        await db.recordAuditEvent({
+          userId: user.id,
+          action: "AUTH_LINK_PASSWORD",
+          targetType: "USER",
+          targetId: user.id,
+          ipAddress: clientIp,
+          metadata: { identifier: challengeTarget },
+        });
+
+        return res.json({
+          status: "AUTHENTICATED",
+          sessionToken: rawSessionToken,
+          user: sanitizeUser(user),
         });
       }
 
-      // Single-use eviction to prevent replay attacks
-      otpStore.delete(challengeTarget);
+      // Genuinely new account
+      let emailVerified = false;
+      let phoneVerified = false;
+      const challengeTarget = cleanEmail || cleanPhone!;
+      if (otp) {
+        const record = otpStore.get(challengeTarget);
+        if (
+          !record ||
+          record.expiresAt < Date.now() ||
+          record.otp !== String(otp).trim()
+        ) {
+          return res.status(401).json({
+            error: "INVALID_OR_EXPIRED_OTP",
+            message: "Incorrect or expired verification code.",
+          });
+        }
+        if (cleanEmail) emailVerified = true;
+        if (cleanPhone) phoneVerified = true;
+        otpStore.delete(challengeTarget);
+      }
 
-      const salt = crypto.randomBytes(16).toString('hex');
+      const salt = crypto.randomBytes(16).toString("hex");
       const hash = hashPassword(password, salt);
 
-      const user = await db.updateUser(existing.id, {
+      const defaultName = displayName
+        ? String(displayName).trim()
+        : cleanEmail
+          ? cleanEmail.split("@")[0]
+          : cleanPhone
+            ? `User_${cleanPhone.slice(-4)}`
+            : "Seeker";
+
+      const user = await db.createUser({
+        email: cleanEmail,
+        phone: cleanPhone,
+        phoneVerified,
+        emailVerified,
+        displayName: defaultName,
         passwordHash: hash,
         passwordSalt: salt,
-        emailVerified: cleanEmail ? true : existing.emailVerified,
-        phoneVerified: cleanPhone ? true : existing.phoneVerified,
-        displayName: displayName ? String(displayName).trim() : existing.displayName,
-        lastLoginAt: new Date().toISOString()
+        role:
+          cleanEmail && isAuthorizedAdminEmail(cleanEmail)
+            ? Role.OWNER
+            : Role.USER,
+        status: AccountStatus.ACTIVE,
+        walletBalance: 0.0,
       });
 
-      const rawSessionToken = crypto.randomBytes(32).toString('hex');
+      const rawSessionToken = crypto.randomBytes(32).toString("hex");
       const tokenHash = hashToken(rawSessionToken);
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -1092,178 +1396,144 @@ app.post('/api/auth/register-password', authLimiter, async (req: Request, res: R
         tokenHash,
         expiresAt,
         ipAddress: clientIp,
-        userAgent: req.headers['user-agent'] || null
+        userAgent: req.headers["user-agent"] || null,
       });
 
       await db.recordAuditEvent({
         userId: user.id,
-        action: 'AUTH_LINK_PASSWORD',
-        targetType: 'USER',
+        action: "AUTH_REGISTER_PASSWORD",
+        targetType: "USER",
         targetId: user.id,
         ipAddress: clientIp,
-        metadata: { identifier: challengeTarget }
+        metadata: {
+          email: cleanEmail,
+          phone: cleanPhone,
+          emailVerified,
+          phoneVerified,
+        },
       });
 
       return res.json({
-        status: 'AUTHENTICATED',
+        status: "AUTHENTICATED",
         sessionToken: rawSessionToken,
-        user: sanitizeUser(user)
+        user: sanitizeUser(user),
       });
+    } catch (err: any) {
+      return handleServiceError(res, err);
     }
-
-    // Genuinely new account
-    let emailVerified = false;
-    let phoneVerified = false;
-    const challengeTarget = cleanEmail || cleanPhone!;
-    if (otp) {
-      const record = otpStore.get(challengeTarget);
-      if (!record || record.expiresAt < Date.now() || record.otp !== String(otp).trim()) {
-        return res.status(401).json({
-          error: 'INVALID_OR_EXPIRED_OTP',
-          message: 'Incorrect or expired verification code.'
-        });
-      }
-      if (cleanEmail) emailVerified = true;
-      if (cleanPhone) phoneVerified = true;
-      otpStore.delete(challengeTarget);
-    }
-
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hash = hashPassword(password, salt);
-
-    const defaultName = displayName
-      ? String(displayName).trim()
-      : (cleanEmail ? cleanEmail.split('@')[0] : (cleanPhone ? `User_${cleanPhone.slice(-4)}` : 'Seeker'));
-
-    const user = await db.createUser({
-      email: cleanEmail,
-      phone: cleanPhone,
-      phoneVerified,
-      emailVerified,
-      displayName: defaultName,
-      passwordHash: hash,
-      passwordSalt: salt,
-      role: (cleanEmail && isAuthorizedAdminEmail(cleanEmail)) ? Role.OWNER : Role.USER,
-      status: AccountStatus.ACTIVE,
-      walletBalance: 0.00
-    });
-
-    const rawSessionToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashToken(rawSessionToken);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    await db.createSession({
-      userId: user.id,
-      tokenHash,
-      expiresAt,
-      ipAddress: clientIp,
-      userAgent: req.headers['user-agent'] || null
-    });
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'AUTH_REGISTER_PASSWORD',
-      targetType: 'USER',
-      targetId: user.id,
-      ipAddress: clientIp,
-      metadata: { email: cleanEmail, phone: cleanPhone, emailVerified, phoneVerified }
-    });
-
-    return res.json({
-      status: 'AUTHENTICATED',
-      sessionToken: rawSessionToken,
-      user: sanitizeUser(user)
-    });
-  } catch (err: any) {
-    return handleServiceError(res, err);
-  }
-});
+  },
+);
 
 // POST /api/auth/login-password
-app.post('/api/auth/login-password', authLimiter, async (req: Request, res: Response) => {
-  const { identifier, password } = req.body;
-  if (!identifier || !password) {
-    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier and password are required.' });
-  }
-
-  const cleanId = String(identifier).trim();
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  if (!checkIpRateLimit(clientIp)) {
-    return res.status(429).json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many attempts. Please try again later.' });
-  }
-
-  try {
-    const user = await db.findUserByIdentifier(cleanId);
-    if (!user || !user.passwordHash || !user.passwordSalt) {
-      return res.status(401).json({
-        error: 'INVALID_CREDENTIALS',
-        message: 'Invalid email/phone or password. If you registered via OTP, please log in with OTP.'
+app.post(
+  "/api/auth/login-password",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { identifier, password } = req.body;
+    if (!identifier || !password) {
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "Identifier and password are required.",
       });
     }
 
-    if (user.status !== AccountStatus.ACTIVE) {
-      return res.status(403).json({
-        error: 'ACCOUNT_INACTIVE',
-        message: `Account is ${user.status.toLowerCase()}. Please contact customer support.`
+    const cleanId = String(identifier).trim();
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    if (!checkIpRateLimit(clientIp)) {
+      return res.status(429).json({
+        error: "RATE_LIMIT_EXCEEDED",
+        message: "Too many attempts. Please try again later.",
       });
     }
 
-    const matches = verifyPassword(String(password), user.passwordSalt, user.passwordHash);
-    if (!matches) {
+    try {
+      const user = await db.findUserByIdentifier(cleanId);
+      if (!user || !user.passwordHash || !user.passwordSalt) {
+        return res.status(401).json({
+          error: "INVALID_CREDENTIALS",
+          message:
+            "Invalid email/phone or password. If you registered via OTP, please log in with OTP.",
+        });
+      }
+
+      if (user.status !== AccountStatus.ACTIVE) {
+        return res.status(403).json({
+          error: "ACCOUNT_INACTIVE",
+          message: `Account is ${user.status.toLowerCase()}. Please contact customer support.`,
+        });
+      }
+
+      const matches = verifyPassword(
+        String(password),
+        user.passwordSalt,
+        user.passwordHash,
+      );
+      if (!matches) {
+        await db.recordAuditEvent({
+          userId: user.id,
+          action: "AUTH_FAILED_PASSWORD",
+          targetType: "USER",
+          targetId: user.id,
+          ipAddress: clientIp,
+          metadata: { identifier: cleanId },
+        });
+        return res.status(401).json({
+          error: "INVALID_CREDENTIALS",
+          message: "Invalid email/phone or password.",
+        });
+      }
+
+      const rawSessionToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = hashToken(rawSessionToken);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      await db.createSession({
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        ipAddress: clientIp,
+        userAgent: req.headers["user-agent"] || null,
+      });
+
+      const updates: Partial<UserRecord> = {
+        lastLoginAt: new Date().toISOString(),
+      };
+      if (user.email && isAuthorizedAdminEmail(user.email)) {
+        if (!isAnyAdmin(user.role)) {
+          updates.role = Role.OWNER;
+        }
+      } else if (
+        getAuthorizedAdminEmails().length > 0 &&
+        user.email &&
+        !isAuthorizedAdminEmail(user.email) &&
+        isAnyAdmin(user.role)
+      ) {
+        updates.role = Role.USER;
+      }
+      const finalUser = await db.updateUser(user.id, updates);
+
       await db.recordAuditEvent({
         userId: user.id,
-        action: 'AUTH_FAILED_PASSWORD',
-        targetType: 'USER',
+        action: "AUTH_LOGIN_PASSWORD",
+        targetType: "USER",
         targetId: user.id,
         ipAddress: clientIp,
-        metadata: { identifier: cleanId }
+        metadata: { identifier: cleanId },
       });
-      return res.status(401).json({
-        error: 'INVALID_CREDENTIALS',
-        message: 'Invalid email/phone or password.'
+
+      res.json({
+        status: "AUTHENTICATED",
+        sessionToken: rawSessionToken,
+        user: sanitizeUser(finalUser),
       });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-
-    const rawSessionToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashToken(rawSessionToken);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    await db.createSession({
-      userId: user.id,
-      tokenHash,
-      expiresAt,
-      ipAddress: clientIp,
-      userAgent: req.headers['user-agent'] || null
-    });
-
-    const updates: Partial<UserRecord> = { lastLoginAt: new Date().toISOString() };
-    if (user.email && isAuthorizedAdminEmail(user.email)) {
-      if (!isAnyAdmin(user.role)) {
-        updates.role = Role.OWNER;
-      }
-    } else if (getAuthorizedAdminEmails().length > 0 && user.email && !isAuthorizedAdminEmail(user.email) && isAnyAdmin(user.role)) {
-      updates.role = Role.USER;
-    }
-    const finalUser = await db.updateUser(user.id, updates);
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'AUTH_LOGIN_PASSWORD',
-      targetType: 'USER',
-      targetId: user.id,
-      ipAddress: clientIp,
-      metadata: { identifier: cleanId }
-    });
-
-    res.json({
-      status: 'AUTHENTICATED',
-      sessionToken: rawSessionToken,
-      user: sanitizeUser(finalUser)
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // POST /api/auth/admin-login
 // Dedicated, server-authoritative administrator login endpoint.
@@ -1273,246 +1543,294 @@ app.post('/api/auth/login-password', authLimiter, async (req: Request, res: Resp
 // Invariant 4: Enforces MFA assurance challenge if configured.
 // Invariant 5: Never exposes Google OAuth buttons or consumer login paths.
 // Invariant 6: Transits Cloudflare Zero Trust gateway when enforced.
-app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async (req: Request, res: Response) => {
-  const { email, password, mfaCode } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({
-      error: 'FIELDS_REQUIRED',
-      message: 'Administrator email and password are required.'
-    });
-  }
+app.post(
+  "/api/auth/admin-login",
+  authLimiter,
+  requireCloudflareAccess(),
+  async (req: Request, res: Response) => {
+    const { email, password, mfaCode } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "Administrator email and password are required.",
+      });
+    }
 
-  const cleanEmail = String(email).trim().toLowerCase();
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const cleanEmail = String(email).trim().toLowerCase();
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
 
-  try {
-    let user: UserRecord | null = null;
+    try {
+      let user: UserRecord | null = null;
 
-    // 1. Try local DB credentials (email / phone)
-    const dbUser = await db.findUserByIdentifier(cleanEmail);
-    if (dbUser && dbUser.passwordHash && dbUser.passwordSalt) {
-      const valid = verifyPassword(String(password), dbUser.passwordSalt, dbUser.passwordHash);
-      if (valid) {
-        user = dbUser;
+      // 1. Try local DB credentials (email / phone)
+      const dbUser = await db.findUserByIdentifier(cleanEmail);
+      if (dbUser && dbUser.passwordHash && dbUser.passwordSalt) {
+        const valid = verifyPassword(
+          String(password),
+          dbUser.passwordSalt,
+          dbUser.passwordHash,
+        );
+        if (valid) {
+          user = dbUser;
+        }
       }
-    }
 
-    // 2. Fall back to Supabase Auth credential verification if not found or matched in local DB
-    if (!user) {
-      const supaAdmin = getSupabaseAdminClient();
-      if (supaAdmin && cleanEmail.includes('@')) {
-        try {
-          const { data: supaData, error: supaErr } = await supaAdmin.auth.signInWithPassword({
-            email: cleanEmail,
-            password: String(password)
-          });
-          if (!supaErr && supaData?.user) {
-            user = await db.syncSupabaseUser({
-              id: supaData.user.id,
-              email: supaData.user.email,
-              phone: supaData.user.phone,
-              user_metadata: supaData.user.user_metadata
-            });
-          }
-        } catch (_) {}
+      // 2. Fall back to Supabase Auth credential verification if not found or matched in local DB
+      if (!user) {
+        const supaAdmin = getSupabaseAdminClient();
+        if (supaAdmin && cleanEmail.includes("@")) {
+          try {
+            const { data: supaData, error: supaErr } =
+              await supaAdmin.auth.signInWithPassword({
+                email: cleanEmail,
+                password: String(password),
+              });
+            if (!supaErr && supaData?.user) {
+              user = await db.syncSupabaseUser({
+                id: supaData.user.id,
+                email: supaData.user.email,
+                phone: supaData.user.phone,
+                user_metadata: supaData.user.user_metadata,
+              });
+            }
+          } catch (_) {}
+        }
       }
-    }
 
-    if (!user) {
-      await db.recordAuditEvent({
-        action: 'ADMIN_LOGIN_FAILED_CREDENTIALS',
-        targetType: 'USER',
-        ipAddress: clientIp,
-        outcome: 'FAILED',
-        reason: 'Invalid email or password'
-      });
-      return res.status(401).json({
-        error: 'INVALID_CREDENTIALS',
-        message: 'Invalid administrator email or password.'
-      });
-    }
+      if (!user) {
+        await db.recordAuditEvent({
+          action: "ADMIN_LOGIN_FAILED_CREDENTIALS",
+          targetType: "USER",
+          ipAddress: clientIp,
+          outcome: "FAILED",
+          reason: "Invalid email or password",
+        });
+        return res.status(401).json({
+          error: "INVALID_CREDENTIALS",
+          message: "Invalid administrator email or password.",
+        });
+      }
 
-    if (user.status !== AccountStatus.ACTIVE) {
-      await db.recordAuditEvent({
-        userId: user.id,
-        action: 'ADMIN_LOGIN_FAILED_INACTIVE',
-        targetType: 'USER',
-        targetId: user.id,
-        ipAddress: clientIp,
-        outcome: 'FAILED',
-        reason: `Account status is ${user.status}`
-      });
-      return res.status(403).json({
-        error: 'ACCOUNT_INACTIVE',
-        message: `Administrator account is ${user.status.toLowerCase()}. Please contact the platform owner.`
-      });
-    }
-
-    // 3. Strict Server-Authoritative Admin Authorization Check
-    // Standard customer accounts (Role.USER) are strictly forbidden from administrator portal access!
-    if (!isAnyAdmin(user.role)) {
-      await db.recordAuditEvent({
-        userId: user.id,
-        action: 'ADMIN_LOGIN_UNAUTHORIZED_ROLE',
-        targetType: 'USER',
-        targetId: user.id,
-        ipAddress: clientIp,
-        outcome: 'DENIED',
-        reason: `User has non-admin role: ${user.role}`
-      });
-      return res.status(403).json({
-        error: 'ADMIN_NOT_AUTHORIZED',
-        message: 'This account does not have administrative privileges.'
-      });
-    }
-
-    // 4. Server-Side Allowlist Enforcement (if ASTROVERSE_ADMIN_EMAILS is configured)
-    const adminAllowlist = getAuthorizedAdminEmails();
-    if (adminAllowlist.length > 0) {
-      if (!isAuthorizedAdminEmail(cleanEmail)) {
+      if (user.status !== AccountStatus.ACTIVE) {
         await db.recordAuditEvent({
           userId: user.id,
-          action: 'ADMIN_LOGIN_REVOKED_ALLOWLIST',
-          targetType: 'USER',
+          action: "ADMIN_LOGIN_FAILED_INACTIVE",
+          targetType: "USER",
           targetId: user.id,
           ipAddress: clientIp,
-          outcome: 'DENIED',
-          reason: 'Email not present in server allowlist'
+          outcome: "FAILED",
+          reason: `Account status is ${user.status}`,
         });
         return res.status(403).json({
-          error: 'ADMIN_NOT_AUTHORIZED',
-          message: 'This account is not authorized in the server administrator registry.'
+          error: "ACCOUNT_INACTIVE",
+          message: `Administrator account is ${user.status.toLowerCase()}. Please contact the platform owner.`,
         });
       }
-    }
 
-    // 5. MFA TOTP Step-Up Verification (if user has mfaEnabled)
-    const policy = resolveAdminSessionPolicy();
-    let mfaVerified = false;
-
-    // Fail-closed guard: Designated owner MUST authenticate via Supabase Native TOTP, never legacy endpoint
-    const isOwner = (user.id === ADMIN_OWNER_USER_ID) || (cleanEmail === 'tiwariji0028@gmail.com');
-    if (isOwner) {
-      return res.status(403).json({
-        error: 'OWNER_NATIVE_MFA_REQUIRED',
-        message: 'Super Administrator must authenticate via native Supabase Multi-Factor Authentication.'
-      });
-    }
-
-    if (user.mfaEnabled && user.mfaSecret) {
-      if (!mfaCode) {
-        return res.status(200).json({
-          status: 'MFA_REQUIRED',
-          message: 'Two-factor authentication code is required to complete administrator sign-in.'
+      // 3. Strict Server-Authoritative Admin Authorization Check
+      // Standard customer accounts (Role.USER) are strictly forbidden from administrator portal access!
+      if (!isAnyAdmin(user.role)) {
+        await db.recordAuditEvent({
+          userId: user.id,
+          action: "ADMIN_LOGIN_UNAUTHORIZED_ROLE",
+          targetType: "USER",
+          targetId: user.id,
+          ipAddress: clientIp,
+          outcome: "DENIED",
+          reason: `User has non-admin role: ${user.role}`,
+        });
+        return res.status(403).json({
+          error: "ADMIN_NOT_AUTHORIZED",
+          message: "This account does not have administrative privileges.",
         });
       }
-      const codeValid = verifyTotpCode(user.mfaSecret, String(mfaCode).trim());
-      if (codeValid) {
-        mfaVerified = true;
-      } else {
-        const recResult = verifyAndConsumeRecoveryCode(user.mfaRecoveryCodes || [], String(mfaCode).trim());
-        if (recResult.valid) {
-          mfaVerified = true;
-          await db.updateUser(user.id, { mfaRecoveryCodes: recResult.remainingHashedCodes });
-        } else {
+
+      // 4. Server-Side Allowlist Enforcement (if ASTROVERSE_ADMIN_EMAILS is configured)
+      const adminAllowlist = getAuthorizedAdminEmails();
+      if (adminAllowlist.length > 0) {
+        if (!isAuthorizedAdminEmail(cleanEmail)) {
           await db.recordAuditEvent({
             userId: user.id,
-            action: 'ADMIN_MFA_FAILED',
-            targetType: 'USER',
+            action: "ADMIN_LOGIN_REVOKED_ALLOWLIST",
+            targetType: "USER",
             targetId: user.id,
             ipAddress: clientIp,
-            outcome: 'FAILED'
+            outcome: "DENIED",
+            reason: "Email not present in server allowlist",
           });
-          return res.status(401).json({
-            error: 'INVALID_MFA_CODE',
-            message: 'Invalid two-factor authentication code. Verify device clock sync or enter a backup recovery code.'
+          return res.status(403).json({
+            error: "ADMIN_NOT_AUTHORIZED",
+            message:
+              "This account is not authorized in the server administrator registry.",
           });
         }
       }
-    } else {
-      const isDesignatedOwner = (user.id === ADMIN_OWNER_USER_ID) || (cleanEmail === 'tiwariji0028@gmail.com');
-      // In production or when MFA is explicitly required, prompt for first-login enrollment
-      if (isDesignatedOwner || policy.environment === 'production' || req.headers['x-admin-require-mfa'] === 'true') {
-        await db.recordAuditEvent({
-          userId: user.id,
-          action: 'ADMIN_MFA_ENROLLMENT_STARTED',
-          targetType: 'USER',
-          targetId: user.id,
-          ipAddress: clientIp,
-          outcome: 'SUCCESS',
-          reason: 'Administrator routed to mandatory MFA enrollment setup'
-        });
-        return res.status(200).json({
-          status: 'MFA_ENROLLMENT_REQUIRED',
-          message: 'Administrative accounts strictly require Multi-Factor Authentication (MFA) enrollment.',
-          ownerMfaRequired: isDesignatedOwner,
-          user: {
-            id: user.id,
-            email: user.email,
-            displayName: user.displayName,
-            role: user.role
-          }
+
+      // 5. MFA TOTP Step-Up Verification (if user has mfaEnabled)
+      const policy = resolveAdminSessionPolicy();
+      let mfaVerified = false;
+
+      // Fail-closed guard: Designated owner MUST authenticate via Supabase Native TOTP, never legacy endpoint
+      const isOwner =
+        user.id === ADMIN_OWNER_USER_ID ||
+        cleanEmail === "tiwariji0028@gmail.com";
+      if (isOwner) {
+        return res.status(403).json({
+          error: "OWNER_NATIVE_MFA_REQUIRED",
+          message:
+            "Super Administrator must authenticate via native Supabase Multi-Factor Authentication.",
         });
       }
+
+      if (user.mfaEnabled && user.mfaSecret) {
+        if (!mfaCode) {
+          return res.status(200).json({
+            status: "MFA_REQUIRED",
+            message:
+              "Two-factor authentication code is required to complete administrator sign-in.",
+          });
+        }
+        const codeValid = verifyTotpCode(
+          user.mfaSecret,
+          String(mfaCode).trim(),
+        );
+        if (codeValid) {
+          mfaVerified = true;
+        } else {
+          const recResult = verifyAndConsumeRecoveryCode(
+            user.mfaRecoveryCodes || [],
+            String(mfaCode).trim(),
+          );
+          if (recResult.valid) {
+            mfaVerified = true;
+            await db.updateUser(user.id, {
+              mfaRecoveryCodes: recResult.remainingHashedCodes,
+            });
+          } else {
+            await db.recordAuditEvent({
+              userId: user.id,
+              action: "ADMIN_MFA_FAILED",
+              targetType: "USER",
+              targetId: user.id,
+              ipAddress: clientIp,
+              outcome: "FAILED",
+            });
+            return res.status(401).json({
+              error: "INVALID_MFA_CODE",
+              message:
+                "Invalid two-factor authentication code. Verify device clock sync or enter a backup recovery code.",
+            });
+          }
+        }
+      } else {
+        const isDesignatedOwner =
+          user.id === ADMIN_OWNER_USER_ID ||
+          cleanEmail === "tiwariji0028@gmail.com";
+        // In production or when MFA is explicitly required, prompt for first-login enrollment
+        if (
+          isDesignatedOwner ||
+          policy.environment === "production" ||
+          req.headers["x-admin-require-mfa"] === "true"
+        ) {
+          await db.recordAuditEvent({
+            userId: user.id,
+            action: "ADMIN_MFA_ENROLLMENT_STARTED",
+            targetType: "USER",
+            targetId: user.id,
+            ipAddress: clientIp,
+            outcome: "SUCCESS",
+            reason: "Administrator routed to mandatory MFA enrollment setup",
+          });
+          return res.status(200).json({
+            status: "MFA_ENROLLMENT_REQUIRED",
+            message:
+              "Administrative accounts strictly require Multi-Factor Authentication (MFA) enrollment.",
+            ownerMfaRequired: isDesignatedOwner,
+            user: {
+              id: user.id,
+              email: user.email,
+              displayName: user.displayName,
+              role: user.role,
+            },
+          });
+        }
+      }
+
+      // 6. Issue Administrator Session
+      const rawSessionToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = hashToken(rawSessionToken);
+      const expiresAt = new Date(Date.now() + policy.idleTimeoutSeconds * 1000);
+
+      await db.createSession({
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        ipAddress: clientIp,
+        userAgent: req.headers["user-agent"] || null,
+      });
+
+      const sanitizedName =
+        user.displayName &&
+        (user.displayName.toLowerCase().includes("aryan") ||
+          user.displayName.toLowerCase().includes("tiwari"))
+          ? user.displayName || "Administrator"
+          : user.displayName || "Administrator";
+
+      const finalUser = await db.updateUser(user.id, {
+        lastLoginAt: new Date().toISOString(),
+        displayName: sanitizedName,
+      });
+
+      // P0 INVARIANT: Only issue step-up assurance token if MFA was explicitly verified!
+      const assuranceToken = mfaVerified
+        ? issueAdminAssuranceToken(
+            finalUser.id,
+            finalUser.role,
+            "ADMIN_MUTATION",
+          )
+        : null;
+
+      await db.recordAuditEvent({
+        userId: finalUser.id,
+        actorId: finalUser.id,
+        actorRole: finalUser.role,
+        action: "ADMIN_LOGIN_SUCCESS",
+        targetType: "USER",
+        targetId: finalUser.id,
+        outcome: "SUCCESS",
+        ipAddress: clientIp,
+        metadata: {
+          role: finalUser.role,
+          email: cleanEmail,
+          mfaVerified,
+          idleTimeoutMinutes: policy.idleTimeoutMinutes,
+        },
+      });
+
+      return res.json({
+        status: "AUTHENTICATED",
+        sessionToken: rawSessionToken,
+        assuranceToken,
+        mfaVerified,
+        sessionPolicy: policy,
+        user: {
+          id: finalUser.id,
+          email: finalUser.email,
+          displayName: finalUser.displayName,
+          role: finalUser.role,
+          status: finalUser.status,
+          mfaEnabled: finalUser.mfaEnabled,
+        },
+        permissions: ROLE_PERMISSIONS[normalizeRole(finalUser.role)] || [],
+      });
+    } catch (err: any) {
+      return handleServiceError(res, err);
     }
-
-    // 6. Issue Administrator Session
-    const rawSessionToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashToken(rawSessionToken);
-    const expiresAt = new Date(Date.now() + policy.idleTimeoutSeconds * 1000);
-
-    await db.createSession({
-      userId: user.id,
-      tokenHash,
-      expiresAt,
-      ipAddress: clientIp,
-      userAgent: req.headers['user-agent'] || null
-    });
-
-    const sanitizedName = (user.displayName && (user.displayName.toLowerCase().includes('aryan') || user.displayName.toLowerCase().includes('tiwari')))
-      ? (user.displayName || 'Administrator')
-      : (user.displayName || 'Administrator');
-
-    const finalUser = await db.updateUser(user.id, {
-      lastLoginAt: new Date().toISOString(),
-      displayName: sanitizedName
-    });
-
-    // P0 INVARIANT: Only issue step-up assurance token if MFA was explicitly verified!
-    const assuranceToken = mfaVerified ? issueAdminAssuranceToken(finalUser.id, finalUser.role, 'ADMIN_MUTATION') : null;
-
-    await db.recordAuditEvent({
-      userId: finalUser.id,
-      actorId: finalUser.id,
-      actorRole: finalUser.role,
-      action: 'ADMIN_LOGIN_SUCCESS',
-      targetType: 'USER',
-      targetId: finalUser.id,
-      outcome: 'SUCCESS',
-      ipAddress: clientIp,
-      metadata: { role: finalUser.role, email: cleanEmail, mfaVerified, idleTimeoutMinutes: policy.idleTimeoutMinutes }
-    });
-
-    return res.json({
-      status: 'AUTHENTICATED',
-      sessionToken: rawSessionToken,
-      assuranceToken,
-      mfaVerified,
-      sessionPolicy: policy,
-      user: {
-        id: finalUser.id,
-        email: finalUser.email,
-        displayName: finalUser.displayName,
-        role: finalUser.role,
-        status: finalUser.status,
-        mfaEnabled: finalUser.mfaEnabled
-      },
-      permissions: ROLE_PERMISSIONS[normalizeRole(finalUser.role)] || []
-    });
-  } catch (err: any) {
-    return handleServiceError(res, err);
-  }
-});
+  },
+);
 
 // POST /api/auth/admin-logout
 // Explicit, secure administrator session termination endpoint.
@@ -1520,20 +1838,21 @@ app.post('/api/auth/admin-login', authLimiter, requireCloudflareAccess(), async 
 // Invariant 2: Cryptographically deletes session from database.
 // Invariant 3: Records authoritative ADMIN_LOGOUT audit event.
 // Invariant 4: Always succeeds idempotently with HTTP 200 LOGGED_OUT status.
-app.post('/api/auth/admin-logout', async (req: Request, res: Response) => {
+app.post("/api/auth/admin-logout", async (req: Request, res: Response) => {
   try {
     let token: string | undefined;
-    const authHeader = req.headers['authorization'];
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    const authHeader = req.headers["authorization"];
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       token = authHeader.substring(7).trim();
     }
     if (!token && req.body) {
-      if (typeof req.body === 'object' && req.body.sessionToken) {
+      if (typeof req.body === "object" && req.body.sessionToken) {
         token = String(req.body.sessionToken).trim();
-      } else if (typeof req.body === 'string') {
+      } else if (typeof req.body === "string") {
         try {
           const parsed = JSON.parse(req.body);
-          if (parsed && parsed.sessionToken) token = String(parsed.sessionToken).trim();
+          if (parsed && parsed.sessionToken)
+            token = String(parsed.sessionToken).trim();
         } catch (_) {}
       }
     }
@@ -1546,72 +1865,92 @@ app.post('/api/auth/admin-logout', async (req: Request, res: Response) => {
         await db.recordAuditEvent({
           userId: session.userId,
           actorId: session.userId,
-          action: 'ADMIN_LOGOUT',
-          targetType: 'USER',
+          action: "ADMIN_LOGOUT",
+          targetType: "USER",
           targetId: session.userId,
-          outcome: 'SUCCESS',
-          reason: 'Administrator closed console or tab unloaded'
+          outcome: "SUCCESS",
+          reason: "Administrator closed console or tab unloaded",
         });
       }
     }
 
     res.json({
-      status: 'LOGGED_OUT',
-      message: 'Administrator session terminated successfully.'
+      status: "LOGGED_OUT",
+      message: "Administrator session terminated successfully.",
     });
   } catch (err: any) {
-    res.status(200).json({ status: 'LOGGED_OUT', message: 'Administrator session terminated.' });
+    res.status(200).json({
+      status: "LOGGED_OUT",
+      message: "Administrator session terminated.",
+    });
   }
 });
 
 // GET /api/admin/session/policy
 // Returns server-authoritative session timeout and lifecycle configuration
-app.get('/api/admin/session/policy', (_req: Request, res: Response) => {
+app.get("/api/admin/session/policy", (_req: Request, res: Response) => {
   res.json(resolveAdminSessionPolicy());
 });
 
 // POST /api/auth/admin-refresh
 // Renews active administrator session sliding expiration subject to absolute session cap
-app.post('/api/auth/admin-refresh', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  if (!req.user || !isAnyAdmin(req.user.role)) {
-    return res.status(403).json({ error: 'FORBIDDEN', message: 'Administrative access required.' });
-  }
+app.post(
+  "/api/auth/admin-refresh",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!req.user || !isAnyAdmin(req.user.role)) {
+      return res.status(403).json({
+        error: "FORBIDDEN",
+        message: "Administrative access required.",
+      });
+    }
 
-  const token = req.sessionToken;
-  if (!token) {
-    return res.status(400).json({ error: 'TOKEN_REQUIRED', message: 'Active session token required.' });
-  }
+    const token = req.sessionToken;
+    if (!token) {
+      return res.status(400).json({
+        error: "TOKEN_REQUIRED",
+        message: "Active session token required.",
+      });
+    }
 
-  const tokenHash = hashToken(token);
-  const session = await db.findSessionByTokenHash(tokenHash);
-  if (!session) {
-    return res.status(401).json({ error: 'SESSION_NOT_FOUND', message: 'Active session not found or already terminated.' });
-  }
+    const tokenHash = hashToken(token);
+    const session = await db.findSessionByTokenHash(tokenHash);
+    if (!session) {
+      return res.status(401).json({
+        error: "SESSION_NOT_FOUND",
+        message: "Active session not found or already terminated.",
+      });
+    }
 
-  const policy = resolveAdminSessionPolicy();
-  const sessionCreated = session.createdAt ? new Date(session.createdAt).getTime() : Date.now();
-  const absoluteLimit = sessionCreated + policy.absoluteCapSeconds * 1000;
+    const policy = resolveAdminSessionPolicy();
+    const sessionCreated = session.createdAt
+      ? new Date(session.createdAt).getTime()
+      : Date.now();
+    const absoluteLimit = sessionCreated + policy.absoluteCapSeconds * 1000;
 
-  if (Date.now() > absoluteLimit) {
-    await db.deleteSession(tokenHash);
-    return res.status(401).json({
-      error: 'SESSION_EXPIRED_ABSOLUTE_CAP',
-      message: `Maximum administrative session duration of ${policy.absoluteCapMinutes} minutes exceeded. Please log in again.`
+    if (Date.now() > absoluteLimit) {
+      await db.deleteSession(tokenHash);
+      return res.status(401).json({
+        error: "SESSION_EXPIRED_ABSOLUTE_CAP",
+        message: `Maximum administrative session duration of ${policy.absoluteCapMinutes} minutes exceeded. Please log in again.`,
+      });
+    }
+
+    const targetExpires = Date.now() + policy.idleTimeoutSeconds * 1000;
+    const newExpiresAt = new Date(Math.min(targetExpires, absoluteLimit));
+
+    await db.updateSessionExpiresAt(tokenHash, newExpiresAt);
+
+    return res.json({
+      status: "RENEWED",
+      expiresAt: newExpiresAt.toISOString(),
+      remainingSeconds: Math.floor(
+        (newExpiresAt.getTime() - Date.now()) / 1000,
+      ),
+      sessionPolicy: policy,
     });
-  }
-
-  const targetExpires = Date.now() + policy.idleTimeoutSeconds * 1000;
-  const newExpiresAt = new Date(Math.min(targetExpires, absoluteLimit));
-
-  await db.updateSessionExpiresAt(tokenHash, newExpiresAt);
-
-  return res.json({
-    status: 'RENEWED',
-    expiresAt: newExpiresAt.toISOString(),
-    remainingSeconds: Math.floor((newExpiresAt.getTime() - Date.now()) / 1000),
-    sessionPolicy: policy
-  });
-});
+  },
+);
 
 // POST /api/auth/admin-supabase-session
 // Authoritative Supabase Auth session bridge for Super Administrator access.
@@ -1622,138 +1961,284 @@ app.post('/api/auth/admin-refresh', authenticate, async (req: AuthenticatedReque
 // Invariant 5: If no verified factor exists, routes to mandatory first-login MFA enrollment.
 // Invariant 6: If verified factor exists but AAL1, demands MFA challenge.
 // Invariant 7: If AAL2 verified, issues administrative session + step-up assurance token.
-app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAccess(), async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
-  const rawToken = tokenFromHeader || req.body?.accessToken;
-  const action = req.body?.action;
-  if (!rawToken || typeof rawToken !== 'string') {
-    return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Supabase access token is required.' });
-  }
-
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-
-  try {
-    const supaResult = await verifySupabaseToken(rawToken);
-    if (!supaResult.user || supaResult.error) {
-      await db.recordAuditEvent({
-        action: 'ADMIN_MFA_CHALLENGE_FAILED',
-        targetType: 'USER',
-        ipAddress: clientIp,
-        outcome: 'FAILED',
-        reason: supaResult.error || 'Invalid Supabase access token'
-      });
-      return res.status(401).json({ error: 'INVALID_TOKEN', message: 'Invalid or expired Supabase authentication token.' });
-    }
-
-    const email = (supaResult.user.email || '').trim().toLowerCase();
-    let user = await db.findUserByEmail(email);
-    if (!user) {
-      user = await db.syncSupabaseUser({
-        id: supaResult.user.id,
-        email: supaResult.user.email,
-        phone: supaResult.user.phone,
-        user_metadata: supaResult.user.user_metadata
+app.post(
+  "/api/auth/admin-supabase-session",
+  authLimiter,
+  requireCloudflareAccess(),
+  async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    const tokenFromHeader = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7).trim()
+      : null;
+    const rawToken = tokenFromHeader || req.body?.accessToken;
+    const action = req.body?.action;
+    if (!rawToken || typeof rawToken !== "string") {
+      return res.status(401).json({
+        error: "UNAUTHORIZED",
+        message: "Supabase access token is required.",
       });
     }
 
-    if (!user) {
-      return res.status(401).json({ error: 'USER_NOT_FOUND', message: 'Administrator account not registered in system.' });
-    }
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
 
-    // Invariant 2: Strict administrator role authorization
-    if (!isAnyAdmin(user.role)) {
-      await db.recordAuditEvent({
-        userId: user.id,
-        action: 'ADMIN_LOGIN_UNAUTHORIZED_ROLE',
-        targetType: 'USER',
-        targetId: user.id,
-        ipAddress: clientIp,
-        outcome: 'DENIED',
-        reason: `User has non-admin role: ${user.role}`
-      });
-      return res.status(403).json({
-        error: 'ADMIN_NOT_AUTHORIZED',
-        message: 'This account does not have administrative privileges.'
-      });
-    }
-
-    // Invariant 3: Server-side allowlist enforcement
-    const adminAllowlist = getAuthorizedAdminEmails();
-    if (adminAllowlist.length > 0 && !isAuthorizedAdminEmail(email)) {
-      await db.recordAuditEvent({
-        userId: user.id,
-        action: 'ADMIN_LOGIN_REVOKED_ALLOWLIST',
-        targetType: 'USER',
-        targetId: user.id,
-        ipAddress: clientIp,
-        outcome: 'DENIED',
-        reason: 'Email not present in server allowlist'
-      });
-      return res.status(403).json({
-        error: 'ADMIN_NOT_AUTHORIZED',
-        message: 'This account is not authorized in the server administrator registry.'
-      });
-    }
-
-    // Invariant 4: Account status
-    if (user.status !== AccountStatus.ACTIVE) {
-      return res.status(403).json({
-        error: 'ACCOUNT_INACTIVE',
-        message: `Administrator account is ${user.status.toLowerCase()}.`
-      });
-    }
-
-    // Invariant 5: Supabase Auth TOTP factors check
-    let verifiedFactors: any[] = [];
-    let factorLookupFailed = false;
     try {
-      const factorsRes = await getUserMfaFactors(supaResult.user.id);
-      if (factorsRes.error) {
+      const supaResult = await verifySupabaseToken(rawToken);
+      if (!supaResult.user || supaResult.error) {
+        await db.recordAuditEvent({
+          action: "ADMIN_MFA_CHALLENGE_FAILED",
+          targetType: "USER",
+          ipAddress: clientIp,
+          outcome: "FAILED",
+          reason: supaResult.error || "Invalid Supabase access token",
+        });
+        return res.status(401).json({
+          error: "INVALID_TOKEN",
+          message: "Invalid or expired Supabase authentication token.",
+        });
+      }
+
+      const email = (supaResult.user.email || "").trim().toLowerCase();
+      let user = await db.findUserByEmail(email);
+      if (!user) {
+        user = await db.syncSupabaseUser({
+          id: supaResult.user.id,
+          email: supaResult.user.email,
+          phone: supaResult.user.phone,
+          user_metadata: supaResult.user.user_metadata,
+        });
+      }
+
+      if (!user) {
+        return res.status(401).json({
+          error: "USER_NOT_FOUND",
+          message: "Administrator account not registered in system.",
+        });
+      }
+
+      // Invariant 2: Strict administrator role authorization
+      if (!isAnyAdmin(user.role)) {
+        await db.recordAuditEvent({
+          userId: user.id,
+          action: "ADMIN_LOGIN_UNAUTHORIZED_ROLE",
+          targetType: "USER",
+          targetId: user.id,
+          ipAddress: clientIp,
+          outcome: "DENIED",
+          reason: `User has non-admin role: ${user.role}`,
+        });
+        return res.status(403).json({
+          error: "ADMIN_NOT_AUTHORIZED",
+          message: "This account does not have administrative privileges.",
+        });
+      }
+
+      // Invariant 3: Server-side allowlist enforcement
+      const adminAllowlist = getAuthorizedAdminEmails();
+      if (adminAllowlist.length > 0 && !isAuthorizedAdminEmail(email)) {
+        await db.recordAuditEvent({
+          userId: user.id,
+          action: "ADMIN_LOGIN_REVOKED_ALLOWLIST",
+          targetType: "USER",
+          targetId: user.id,
+          ipAddress: clientIp,
+          outcome: "DENIED",
+          reason: "Email not present in server allowlist",
+        });
+        return res.status(403).json({
+          error: "ADMIN_NOT_AUTHORIZED",
+          message:
+            "This account is not authorized in the server administrator registry.",
+        });
+      }
+
+      // Invariant 4: Account status
+      if (user.status !== AccountStatus.ACTIVE) {
+        return res.status(403).json({
+          error: "ACCOUNT_INACTIVE",
+          message: `Administrator account is ${user.status.toLowerCase()}.`,
+        });
+      }
+
+      // Invariant 5: Supabase Auth TOTP factors check
+      let verifiedFactors: any[] = [];
+      let factorLookupFailed = false;
+      try {
+        const factorsRes = await getUserMfaFactors(supaResult.user.id);
+        if (factorsRes.error) {
+          factorLookupFailed = true;
+        } else {
+          verifiedFactors = (factorsRes.factors || []).filter(
+            (f: any) => f.status === "verified",
+          );
+        }
+      } catch (_) {
         factorLookupFailed = true;
-      } else {
-        verifiedFactors = (factorsRes.factors || []).filter((f: any) => f.status === 'verified');
-      }
-    } catch (_) {
-      factorLookupFailed = true;
-    }
-
-    const isDesignatedOwner = (supaResult.user.id === ADMIN_OWNER_USER_ID) || (user.id === ADMIN_OWNER_USER_ID) || (email === 'tiwariji0028@gmail.com');
-
-    if (isDesignatedOwner && factorLookupFailed) {
-      return res.status(503).json({
-        error: 'MFA_PROVIDER_UNAVAILABLE',
-        message: 'Multi-factor authentication provider service is currently unavailable. Please try again shortly.'
-      });
-    }
-
-    // Owner Factor Authority: For designated owner, only verified factors from Supabase Auth count.
-    // Local database mfaEnabled flag is never authoritative for owner.
-    const hasVerifiedFactor = isDesignatedOwner
-      ? verifiedFactors.length > 0
-      : (verifiedFactors.length > 0 || Boolean(user.mfaEnabled));
-    const policy = resolveAdminSessionPolicy();
-
-    // Branch 1: Enrollment just completed by owner
-    if (action === 'ENROLLMENT_COMPLETED') {
-      if (supaResult.aal !== 'aal2' && verifiedFactors.length === 0) {
-        return res.status(400).json({ error: 'ENROLLMENT_UNVERIFIED', message: 'MFA factor has not been verified.' });
       }
 
-      await db.updateUser(user.id, { mfaEnabled: true, mfaEnforced: true });
+      const isDesignatedOwner =
+        supaResult.user.id === ADMIN_OWNER_USER_ID ||
+        user.id === ADMIN_OWNER_USER_ID ||
+        email === "tiwariji0028@gmail.com";
+
+      if (isDesignatedOwner && factorLookupFailed) {
+        return res.status(503).json({
+          error: "MFA_PROVIDER_UNAVAILABLE",
+          message:
+            "Multi-factor authentication provider service is currently unavailable. Please try again shortly.",
+        });
+      }
+
+      // Owner Factor Authority: For designated owner, only verified factors from Supabase Auth count.
+      // Local database mfaEnabled flag is never authoritative for owner.
+      const hasVerifiedFactor = isDesignatedOwner
+        ? verifiedFactors.length > 0
+        : verifiedFactors.length > 0 || Boolean(user.mfaEnabled);
+      const policy = resolveAdminSessionPolicy();
+
+      // Branch 1: Enrollment just completed by owner
+      if (action === "ENROLLMENT_COMPLETED") {
+        if (supaResult.aal !== "aal2" && verifiedFactors.length === 0) {
+          return res.status(400).json({
+            error: "ENROLLMENT_UNVERIFIED",
+            message: "MFA factor has not been verified.",
+          });
+        }
+
+        await db.updateUser(user.id, { mfaEnabled: true, mfaEnforced: true });
+        await db.recordAuditEvent({
+          userId: user.id,
+          actorId: user.id,
+          actorRole: user.role,
+          action: "ADMIN_MFA_ENROLLMENT_VERIFIED",
+          targetType: "USER",
+          targetId: user.id,
+          ipAddress: clientIp,
+          outcome: "SUCCESS",
+          reason:
+            "Supabase TOTP Multi-Factor Authentication successfully enrolled and verified",
+        });
+
+        const rawSessionToken = crypto.randomBytes(32).toString("hex");
+        const tokenHash = hashToken(rawSessionToken);
+        const expiresAt = new Date(
+          Date.now() + policy.idleTimeoutSeconds * 1000,
+        );
+        await db.createSession({
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+          ipAddress: clientIp,
+          userAgent: req.headers["user-agent"] || null,
+        });
+
+        const assuranceToken = issueAdminAssuranceToken(
+          user.id,
+          user.role,
+          "ADMIN_MUTATION",
+        );
+        return res.json({
+          status: "AUTHENTICATED",
+          sessionToken: rawSessionToken,
+          assuranceToken,
+          aal: "aal2",
+          user: {
+            id: user.id,
+            email: user.email,
+            displayName: user.displayName,
+            role: user.role,
+            status: user.status,
+            mfaEnabled: true,
+          },
+          sessionPolicy: policy,
+        });
+      }
+
+      // Branch 2: Designated Owner (or admin with MFA required) has NO verified factors and not AAL2 -> First-login enrollment required
+      if (
+        (isDesignatedOwner || user.mfaEnforced) &&
+        !hasVerifiedFactor &&
+        supaResult.aal !== "aal2"
+      ) {
+        await db.recordAuditEvent({
+          userId: user.id,
+          actorId: user.id,
+          actorRole: user.role,
+          action: "ADMIN_MFA_ENROLLMENT_STARTED",
+          targetType: "USER",
+          targetId: user.id,
+          ipAddress: clientIp,
+          outcome: "SUCCESS",
+          reason:
+            "Super Administrator routed to mandatory MFA enrollment setup",
+          metadata: { status: "PENDING" },
+        });
+        return res.json({
+          status: "MFA_ENROLLMENT_REQUIRED",
+          message:
+            "Administrator security setup required. Multi-Factor Authentication must be enrolled.",
+          user: {
+            id: user.id,
+            email: user.email,
+            displayName: user.displayName,
+            role: user.role,
+            status: user.status,
+            mfaEnabled: false,
+          },
+          currentLevel: "aal1",
+          nextLevel: "aal1",
+        });
+      }
+
+      // Branch 3: Administrator HAS verified factors but session is AAL1 -> MFA challenge required
+      if (hasVerifiedFactor && supaResult.aal !== "aal2") {
+        const activeFactorId =
+          verifiedFactors[0]?.id ||
+          (process.env.NODE_ENV === "test" ? "test_totp_factor_id" : null);
+        if (
+          isDesignatedOwner &&
+          !activeFactorId &&
+          process.env.NODE_ENV !== "test"
+        ) {
+          return res.status(503).json({
+            error: "MFA_PROVIDER_UNAVAILABLE",
+            message:
+              "No verified TOTP factor ID could be resolved from authentication provider.",
+          });
+        }
+        return res.json({
+          status: "MFA_CHALLENGE_REQUIRED",
+          message: "Two-factor authentication code required.",
+          user: {
+            id: user.id,
+            email: user.email,
+            displayName: user.displayName,
+            role: user.role,
+            status: user.status,
+            mfaEnabled: true,
+          },
+          factorId: activeFactorId,
+          currentLevel: "aal1",
+          nextLevel: "aal2",
+        });
+      }
+
+      // Branch 4: Full AAL2 verification achieved
       await db.recordAuditEvent({
         userId: user.id,
         actorId: user.id,
         actorRole: user.role,
-        action: 'ADMIN_MFA_ENROLLMENT_VERIFIED',
-        targetType: 'USER',
+        action: "ADMIN_MFA_CHALLENGE_SUCCESS",
+        targetType: "USER",
         targetId: user.id,
         ipAddress: clientIp,
-        outcome: 'SUCCESS',
-        reason: 'Supabase TOTP Multi-Factor Authentication successfully enrolled and verified'
+        outcome: "SUCCESS",
+        reason: "Administrator AAL2 TOTP challenge successfully verified",
       });
 
-      const rawSessionToken = crypto.randomBytes(32).toString('hex');
+      const rawSessionToken = crypto.randomBytes(32).toString("hex");
       const tokenHash = hashToken(rawSessionToken);
       const expiresAt = new Date(Date.now() + policy.idleTimeoutSeconds * 1000);
       await db.createSession({
@@ -1761,476 +2246,512 @@ app.post('/api/auth/admin-supabase-session', authLimiter, requireCloudflareAcces
         tokenHash,
         expiresAt,
         ipAddress: clientIp,
-        userAgent: req.headers['user-agent'] || null
+        userAgent: req.headers["user-agent"] || null,
       });
 
-      const assuranceToken = issueAdminAssuranceToken(user.id, user.role, 'ADMIN_MUTATION');
+      const assuranceToken = issueAdminAssuranceToken(
+        user.id,
+        user.role,
+        "ADMIN_MUTATION",
+      );
       return res.json({
-        status: 'AUTHENTICATED',
+        status: "AUTHENTICATED",
         sessionToken: rawSessionToken,
         assuranceToken,
-        aal: 'aal2',
+        aal: "aal2",
         user: {
           id: user.id,
           email: user.email,
           displayName: user.displayName,
           role: user.role,
           status: user.status,
-          mfaEnabled: true
+          mfaEnabled: true,
         },
-        sessionPolicy: policy
+        sessionPolicy: policy,
       });
+    } catch (err: any) {
+      return res
+        .status(500)
+        .json({ error: "AUTH_ERROR", message: err.message });
     }
-
-    // Branch 2: Designated Owner (or admin with MFA required) has NO verified factors and not AAL2 -> First-login enrollment required
-    if ((isDesignatedOwner || user.mfaEnforced) && !hasVerifiedFactor && supaResult.aal !== 'aal2') {
-      await db.recordAuditEvent({
-        userId: user.id,
-        actorId: user.id,
-        actorRole: user.role,
-        action: 'ADMIN_MFA_ENROLLMENT_STARTED',
-        targetType: 'USER',
-        targetId: user.id,
-        ipAddress: clientIp,
-        outcome: 'SUCCESS',
-        reason: 'Super Administrator routed to mandatory MFA enrollment setup',
-        metadata: { status: 'PENDING' }
-      });
-      return res.json({
-        status: 'MFA_ENROLLMENT_REQUIRED',
-        message: 'Administrator security setup required. Multi-Factor Authentication must be enrolled.',
-        user: {
-          id: user.id,
-          email: user.email,
-          displayName: user.displayName,
-          role: user.role,
-          status: user.status,
-          mfaEnabled: false
-        },
-        currentLevel: 'aal1',
-        nextLevel: 'aal1'
-      });
-    }
-
-    // Branch 3: Administrator HAS verified factors but session is AAL1 -> MFA challenge required
-    if (hasVerifiedFactor && supaResult.aal !== 'aal2') {
-      const activeFactorId = verifiedFactors[0]?.id || (process.env.NODE_ENV === 'test' ? 'test_totp_factor_id' : null);
-      if (isDesignatedOwner && !activeFactorId && process.env.NODE_ENV !== 'test') {
-        return res.status(503).json({
-          error: 'MFA_PROVIDER_UNAVAILABLE',
-          message: 'No verified TOTP factor ID could be resolved from authentication provider.'
-        });
-      }
-      return res.json({
-        status: 'MFA_CHALLENGE_REQUIRED',
-        message: 'Two-factor authentication code required.',
-        user: {
-          id: user.id,
-          email: user.email,
-          displayName: user.displayName,
-          role: user.role,
-          status: user.status,
-          mfaEnabled: true
-        },
-        factorId: activeFactorId,
-        currentLevel: 'aal1',
-        nextLevel: 'aal2'
-      });
-    }
-
-    // Branch 4: Full AAL2 verification achieved
-    await db.recordAuditEvent({
-      userId: user.id,
-      actorId: user.id,
-      actorRole: user.role,
-      action: 'ADMIN_MFA_CHALLENGE_SUCCESS',
-      targetType: 'USER',
-      targetId: user.id,
-      ipAddress: clientIp,
-      outcome: 'SUCCESS',
-      reason: 'Administrator AAL2 TOTP challenge successfully verified'
-    });
-
-    const rawSessionToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashToken(rawSessionToken);
-    const expiresAt = new Date(Date.now() + policy.idleTimeoutSeconds * 1000);
-    await db.createSession({
-      userId: user.id,
-      tokenHash,
-      expiresAt,
-      ipAddress: clientIp,
-      userAgent: req.headers['user-agent'] || null
-    });
-
-    const assuranceToken = issueAdminAssuranceToken(user.id, user.role, 'ADMIN_MUTATION');
-    return res.json({
-      status: 'AUTHENTICATED',
-      sessionToken: rawSessionToken,
-      assuranceToken,
-      aal: 'aal2',
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role,
-        status: user.status,
-        mfaEnabled: true
-      },
-      sessionPolicy: policy
-    });
-  } catch (err: any) {
-    return res.status(500).json({ error: 'AUTH_ERROR', message: err.message });
-  }
-});
+  },
+);
 
 // POST /api/admin/mfa/challenge-failed
-app.post('/api/admin/mfa/challenge-failed', authLimiter, async (req: Request, res: Response) => {
-  const { email, reason } = req.body || {};
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  let userId: string | undefined;
-  if (email) {
-    const u = await db.findUserByEmail(String(email).trim().toLowerCase());
-    if (u) userId = u.id;
-  }
-  await db.recordAuditEvent({
-    userId,
-    action: 'ADMIN_MFA_CHALLENGE_FAILED',
-    targetType: 'USER',
-    targetId: userId,
-    ipAddress: clientIp,
-    outcome: 'FAILED',
-    reason: reason || 'Invalid TOTP code submitted during admin challenge'
-  });
-  res.json({ success: true });
-});
+app.post(
+  "/api/admin/mfa/challenge-failed",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { email, reason } = req.body || {};
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    let userId: string | undefined;
+    if (email) {
+      const u = await db.findUserByEmail(String(email).trim().toLowerCase());
+      if (u) userId = u.id;
+    }
+    await db.recordAuditEvent({
+      userId,
+      action: "ADMIN_MFA_CHALLENGE_FAILED",
+      targetType: "USER",
+      targetId: userId,
+      ipAddress: clientIp,
+      outcome: "FAILED",
+      reason: reason || "Invalid TOTP code submitted during admin challenge",
+    });
+    res.json({ success: true });
+  },
+);
 
 // POST /api/admin/mfa/enrollment-started
-app.post('/api/admin/mfa/enrollment-started', authLimiter, async (req: Request, res: Response) => {
-  const { email } = req.body || {};
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  let userId: string | undefined;
-  if (email) {
-    const u = await db.findUserByEmail(String(email).trim().toLowerCase());
-    if (u) userId = u.id;
-  }
-  await db.recordAuditEvent({
-    userId,
-    action: 'ADMIN_MFA_ENROLLMENT_STARTED',
-    targetType: 'USER',
-    targetId: userId,
-    ipAddress: clientIp,
-    outcome: 'SUCCESS',
-    reason: 'Administrator opened MFA setup enrollment screen',
-    metadata: { status: 'PENDING' }
-  });
-  res.json({ success: true });
-});
+app.post(
+  "/api/admin/mfa/enrollment-started",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { email } = req.body || {};
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    let userId: string | undefined;
+    if (email) {
+      const u = await db.findUserByEmail(String(email).trim().toLowerCase());
+      if (u) userId = u.id;
+    }
+    await db.recordAuditEvent({
+      userId,
+      action: "ADMIN_MFA_ENROLLMENT_STARTED",
+      targetType: "USER",
+      targetId: userId,
+      ipAddress: clientIp,
+      outcome: "SUCCESS",
+      reason: "Administrator opened MFA setup enrollment screen",
+      metadata: { status: "PENDING" },
+    });
+    res.json({ success: true });
+  },
+);
 
 // POST /api/admin/mfa/enrollment-cancelled
-app.post('/api/admin/mfa/enrollment-cancelled', authLimiter, async (req: Request, res: Response) => {
-  const { email } = req.body || {};
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  let userId: string | undefined;
-  if (email) {
-    const u = await db.findUserByEmail(String(email).trim().toLowerCase());
-    if (u) userId = u.id;
-  }
-  await db.recordAuditEvent({
-    userId,
-    action: 'ADMIN_MFA_ENROLLMENT_CANCELLED',
-    targetType: 'USER',
-    targetId: userId,
-    ipAddress: clientIp,
-    outcome: 'FAILED',
-    reason: 'Administrator cancelled or signed out from MFA enrollment setup',
-    metadata: { status: 'CANCELLED' }
-  });
-  res.json({ success: true });
-});
+app.post(
+  "/api/admin/mfa/enrollment-cancelled",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { email } = req.body || {};
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    let userId: string | undefined;
+    if (email) {
+      const u = await db.findUserByEmail(String(email).trim().toLowerCase());
+      if (u) userId = u.id;
+    }
+    await db.recordAuditEvent({
+      userId,
+      action: "ADMIN_MFA_ENROLLMENT_CANCELLED",
+      targetType: "USER",
+      targetId: userId,
+      ipAddress: clientIp,
+      outcome: "FAILED",
+      reason: "Administrator cancelled or signed out from MFA enrollment setup",
+      metadata: { status: "CANCELLED" },
+    });
+    res.json({ success: true });
+  },
+);
 
 // POST /api/admin/mfa/unenroll-audit
-app.post('/api/admin/mfa/unenroll-audit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  await db.updateUser(req.user!.id, {
-    mfaEnabled: false,
-    mfaSecret: null,
-    mfaRecoveryCodes: []
-  });
-  await db.recordAuditEvent({
-    userId: req.user!.id,
-    actorId: req.user!.id,
-    actorRole: req.user!.role,
-    action: 'ADMIN_MFA_DISABLED',
-    targetType: 'USER',
-    targetId: req.user!.id,
-    ipAddress: clientIp,
-    outcome: 'SUCCESS',
-    reason: 'Multi-Factor Authentication disabled by administrator'
-  });
-  res.json({ success: true, message: 'MFA disabled audit logged and database synced.' });
-});
-
-// GET /api/admin/mfa/status
-app.get('/api/admin/mfa/status', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  const user = await db.findUserById(req.user!.id);
-  if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
-
-  let supaFactors: any[] = [];
-  try {
-    const factorsRes = await getUserMfaFactors(user.id);
-    supaFactors = factorsRes.factors || [];
-  } catch (_) {}
-
-  const isOwner = (user.id === ADMIN_OWNER_USER_ID) || (user.email === 'tiwariji0028@gmail.com');
-  const isMfaActive = isOwner
-    ? supaFactors.some(f => f.status === 'verified')
-    : Boolean(user.mfaEnabled || supaFactors.some(f => f.status === 'verified'));
-
-  res.json({
-    success: true,
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      mfaEnabled: isMfaActive
-    },
-    mfaEnabled: isMfaActive,
-    mfaEnforced: Boolean(user.mfaEnforced),
-    factors: supaFactors,
-    currentLevel: isMfaActive ? 'aal2' : 'aal1',
-    nextLevel: isMfaActive ? 'aal2' : 'aal1'
-  });
-});
-
-// POST /api/admin/mfa/revoke-assurance
-// Durably revokes an administrative step-up assurance token
-app.post('/api/admin/mfa/revoke-assurance', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  const token = (req.body && req.body.assuranceToken) || (req.headers['x-admin-assurance-token'] as string);
-  if (token) {
-    revokeAdminAssuranceToken(token);
+app.post(
+  "/api/admin/mfa/unenroll-audit",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    await db.updateUser(req.user!.id, {
+      mfaEnabled: false,
+      mfaSecret: null,
+      mfaRecoveryCodes: [],
+    });
     await db.recordAuditEvent({
       userId: req.user!.id,
       actorId: req.user!.id,
       actorRole: req.user!.role,
-      action: 'ADMIN_MFA_ASSURANCE_REVOKED',
-      targetType: 'TOKEN',
-      outcome: 'SUCCESS',
-      reason: req.body?.reason || 'Administrator step-up assurance token revoked'
+      action: "ADMIN_MFA_DISABLED",
+      targetType: "USER",
+      targetId: req.user!.id,
+      ipAddress: clientIp,
+      outcome: "SUCCESS",
+      reason: "Multi-Factor Authentication disabled by administrator",
     });
-  }
-  res.json({ success: true, message: 'Administrative assurance token revoked successfully.' });
-});
+    res.json({
+      success: true,
+      message: "MFA disabled audit logged and database synced.",
+    });
+  },
+);
+
+// GET /api/admin/mfa/status
+app.get(
+  "/api/admin/mfa/status",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const user = await db.findUserById(req.user!.id);
+    if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
+
+    let supaFactors: any[] = [];
+    try {
+      const factorsRes = await getUserMfaFactors(user.id);
+      supaFactors = factorsRes.factors || [];
+    } catch (_) {}
+
+    const isOwner =
+      user.id === ADMIN_OWNER_USER_ID ||
+      user.email === "tiwariji0028@gmail.com";
+    const isMfaActive = isOwner
+      ? supaFactors.some((f) => f.status === "verified")
+      : Boolean(
+          user.mfaEnabled || supaFactors.some((f) => f.status === "verified"),
+        );
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        mfaEnabled: isMfaActive,
+      },
+      mfaEnabled: isMfaActive,
+      mfaEnforced: Boolean(user.mfaEnforced),
+      factors: supaFactors,
+      currentLevel: isMfaActive ? "aal2" : "aal1",
+      nextLevel: isMfaActive ? "aal2" : "aal1",
+    });
+  },
+);
+
+// POST /api/admin/mfa/revoke-assurance
+// Durably revokes an administrative step-up assurance token
+app.post(
+  "/api/admin/mfa/revoke-assurance",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const token =
+      (req.body && req.body.assuranceToken) ||
+      (req.headers["x-admin-assurance-token"] as string);
+    if (token) {
+      revokeAdminAssuranceToken(token);
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_MFA_ASSURANCE_REVOKED",
+        targetType: "TOKEN",
+        outcome: "SUCCESS",
+        reason:
+          req.body?.reason || "Administrator step-up assurance token revoked",
+      });
+    }
+    res.json({
+      success: true,
+      message: "Administrative assurance token revoked successfully.",
+    });
+  },
+);
 
 // POST /api/auth/admin-reset-mfa
 // Dedicated MFA reset endpoint for administrators in non-production environments (Preview/Dev).
 // Authenticated strictly by verified email and password. Fails closed in production.
-app.post('/api/auth/admin-reset-mfa', authLimiter, async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Administrator email and password are required.' });
-  }
-
-  if (isProductionEnvironment()) {
-    return res.status(403).json({
-      error: 'FORBIDDEN_IN_PRODUCTION',
-      message: 'MFA reset via HTTP endpoint is strictly disabled in production. Contact platform security.'
-    });
-  }
-
-  const cleanEmail = String(email).trim().toLowerCase();
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-
-  try {
-    let user = await db.findUserByIdentifier(cleanEmail);
-    if (!user || !user.passwordHash || !user.passwordSalt) {
-      return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid administrator email or password.' });
+app.post(
+  "/api/auth/admin-reset-mfa",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "Administrator email and password are required.",
+      });
     }
 
-    const valid = verifyPassword(String(password), user.passwordSalt, user.passwordHash);
-    if (!valid) {
-      return res.status(401).json({ error: 'INVALID_CREDENTIALS', message: 'Invalid administrator email or password.' });
+    if (isProductionEnvironment()) {
+      return res.status(403).json({
+        error: "FORBIDDEN_IN_PRODUCTION",
+        message:
+          "MFA reset via HTTP endpoint is strictly disabled in production. Contact platform security.",
+      });
     }
 
-    if (!isAnyAdmin(user.role)) {
-      return res.status(403).json({ error: 'ADMIN_NOT_AUTHORIZED', message: 'This account does not have administrative privileges.' });
+    const cleanEmail = String(email).trim().toLowerCase();
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+
+    try {
+      let user = await db.findUserByIdentifier(cleanEmail);
+      if (!user || !user.passwordHash || !user.passwordSalt) {
+        return res.status(401).json({
+          error: "INVALID_CREDENTIALS",
+          message: "Invalid administrator email or password.",
+        });
+      }
+
+      const valid = verifyPassword(
+        String(password),
+        user.passwordSalt,
+        user.passwordHash,
+      );
+      if (!valid) {
+        return res.status(401).json({
+          error: "INVALID_CREDENTIALS",
+          message: "Invalid administrator email or password.",
+        });
+      }
+
+      if (!isAnyAdmin(user.role)) {
+        return res.status(403).json({
+          error: "ADMIN_NOT_AUTHORIZED",
+          message: "This account does not have administrative privileges.",
+        });
+      }
+
+      await db.updateUser(user.id, {
+        mfaEnabled: false,
+        mfaSecret: null,
+        mfaRecoveryCodes: [],
+      });
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: "ADMIN_MFA_RESET_PREVIEW",
+        targetType: "USER",
+        targetId: user.id,
+        ipAddress: clientIp,
+        outcome: "SUCCESS",
+        reason: "Administrator MFA reset in non-production environment",
+      });
+
+      return res.json({
+        success: true,
+        message:
+          "Multi-Factor Authentication has been successfully reset. You may now sign in and re-enroll MFA.",
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
     }
-
-    await db.updateUser(user.id, {
-      mfaEnabled: false,
-      mfaSecret: null,
-      mfaRecoveryCodes: []
-    });
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'ADMIN_MFA_RESET_PREVIEW',
-      targetType: 'USER',
-      targetId: user.id,
-      ipAddress: clientIp,
-      outcome: 'SUCCESS',
-      reason: 'Administrator MFA reset in non-production environment'
-    });
-
-    return res.json({
-      success: true,
-      message: 'Multi-Factor Authentication has been successfully reset. You may now sign in and re-enroll MFA.'
-    });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // POST /api/auth/forgot-password
-app.post('/api/auth/forgot-password', authLimiter, async (req: Request, res: Response) => {
-  const { identifier } = req.body;
-  if (!identifier) {
-    return res.status(400).json({ error: 'IDENTIFIER_REQUIRED', message: 'Email address or phone number is required.' });
-  }
-
-  const cleanId = String(identifier).trim();
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  if (!checkIpRateLimit(clientIp)) {
-    return res.status(429).json({ error: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests. Please wait 10 minutes.' });
-  }
-
-  try {
-    const user = await db.findUserByIdentifier(cleanId);
-    if (!user) {
-      return res.json({
-        status: 'RESET_CODE_SENT',
-        message: `If an account exists for ${cleanId}, a 6-digit password reset code has been dispatched.`
+app.post(
+  "/api/auth/forgot-password",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { identifier } = req.body;
+    if (!identifier) {
+      return res.status(400).json({
+        error: "IDENTIFIER_REQUIRED",
+        message: "Email address or phone number is required.",
       });
     }
 
-    const resetCode = crypto.randomInt(100000, 999999).toString();
-    const resetTokenHash = crypto.createHash('sha256').update(resetCode).digest('hex');
-    const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-
-    await db.updateUser(user.id, {
-      resetTokenHash,
-      resetTokenExpiresAt
-    });
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'PASSWORD_RESET_REQUESTED',
-      targetType: 'USER',
-      targetId: user.id,
-      ipAddress: clientIp,
-      metadata: { identifier: cleanId }
-    });
-
-    console.log(`[AUTH_PASSWORD_RESET] Dispatched password reset token to ${maskIdentifier(cleanId)}`);
-
-    const resPayload: any = {
-      status: 'RESET_CODE_SENT',
-      message: `A 6-digit password reset code has been dispatched to ${cleanId}.`
-    };
-    if (process.env.NODE_ENV === 'test') {
-      resPayload.devResetCode = resetCode;
+    const cleanId = String(identifier).trim();
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    if (!checkIpRateLimit(clientIp)) {
+      return res.status(429).json({
+        error: "RATE_LIMIT_EXCEEDED",
+        message: "Too many requests. Please wait 10 minutes.",
+      });
     }
-    res.json(resPayload);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+
+    try {
+      const user = await db.findUserByIdentifier(cleanId);
+      if (!user) {
+        return res.json({
+          status: "RESET_CODE_SENT",
+          message: `If an account exists for ${cleanId}, a 6-digit password reset code has been dispatched.`,
+        });
+      }
+
+      const resetCode = crypto.randomInt(100000, 999999).toString();
+      const resetTokenHash = crypto
+        .createHash("sha256")
+        .update(resetCode)
+        .digest("hex");
+      const resetTokenExpiresAt = new Date(
+        Date.now() + 15 * 60 * 1000,
+      ).toISOString();
+
+      await db.updateUser(user.id, {
+        resetTokenHash,
+        resetTokenExpiresAt,
+      });
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: "PASSWORD_RESET_REQUESTED",
+        targetType: "USER",
+        targetId: user.id,
+        ipAddress: clientIp,
+        metadata: { identifier: cleanId },
+      });
+
+      console.log(
+        `[AUTH_PASSWORD_RESET] Dispatched password reset token to ${maskIdentifier(cleanId)}`,
+      );
+
+      const resPayload: any = {
+        status: "RESET_CODE_SENT",
+        message: `A 6-digit password reset code has been dispatched to ${cleanId}.`,
+      };
+      if (process.env.NODE_ENV === "test") {
+        resPayload.devResetCode = resetCode;
+      }
+      res.json(resPayload);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // POST /api/auth/reset-password
-app.post('/api/auth/reset-password', authLimiter, async (req: Request, res: Response) => {
-  const { identifier, resetCode, newPassword } = req.body;
-  if (!identifier || !resetCode || !newPassword) {
-    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'Identifier, reset code, and new password are required.' });
-  }
-
-  const resetPasswordValidation = validatePasswordComplexity(newPassword, { minLength: 8, requireSymbols: false });
-  if (!resetPasswordValidation.valid) {
-    return res.status(400).json({
-      error: 'WEAK_PASSWORD',
-      message: resetPasswordValidation.reason || 'New password must be at least 8 characters long and contain both letters and numbers.'
-    });
-  }
-
-  const cleanId = String(identifier).trim();
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-
-  try {
-    const user = await db.findUserByIdentifier(cleanId);
-    if (!user || !user.resetTokenHash || !user.resetTokenExpiresAt) {
+app.post(
+  "/api/auth/reset-password",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { identifier, resetCode, newPassword } = req.body;
+    if (!identifier || !resetCode || !newPassword) {
       return res.status(400).json({
-        error: 'INVALID_RESET_REQUEST',
-        message: 'No active reset request found for this account. Please request a new code.'
+        error: "FIELDS_REQUIRED",
+        message: "Identifier, reset code, and new password are required.",
       });
     }
 
-    if (new Date(user.resetTokenExpiresAt).getTime() < Date.now()) {
+    const resetPasswordValidation = validatePasswordComplexity(newPassword, {
+      minLength: 8,
+      requireSymbols: false,
+    });
+    if (!resetPasswordValidation.valid) {
       return res.status(400).json({
-        error: 'RESET_CODE_EXPIRED',
-        message: 'The password reset code has expired. Please request a new code.'
+        error: "WEAK_PASSWORD",
+        message:
+          resetPasswordValidation.reason ||
+          "New password must be at least 8 characters long and contain both letters and numbers.",
       });
     }
 
-    const submittedHash = crypto.createHash('sha256').update(String(resetCode).trim()).digest('hex');
-    if (submittedHash !== user.resetTokenHash) {
-      return res.status(400).json({
-        error: 'INVALID_RESET_CODE',
-        message: 'Incorrect password reset code.'
+    const cleanId = String(identifier).trim();
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+
+    try {
+      const user = await db.findUserByIdentifier(cleanId);
+      if (!user || !user.resetTokenHash || !user.resetTokenExpiresAt) {
+        return res.status(400).json({
+          error: "INVALID_RESET_REQUEST",
+          message:
+            "No active reset request found for this account. Please request a new code.",
+        });
+      }
+
+      if (new Date(user.resetTokenExpiresAt).getTime() < Date.now()) {
+        return res.status(400).json({
+          error: "RESET_CODE_EXPIRED",
+          message:
+            "The password reset code has expired. Please request a new code.",
+        });
+      }
+
+      const submittedHash = crypto
+        .createHash("sha256")
+        .update(String(resetCode).trim())
+        .digest("hex");
+      if (submittedHash !== user.resetTokenHash) {
+        return res.status(400).json({
+          error: "INVALID_RESET_CODE",
+          message: "Incorrect password reset code.",
+        });
+      }
+
+      const salt = crypto.randomBytes(16).toString("hex");
+      const hash = hashPassword(newPassword, salt);
+
+      await db.updateUser(user.id, {
+        passwordHash: hash,
+        passwordSalt: salt,
+        resetTokenHash: null,
+        resetTokenExpiresAt: null,
       });
+
+      // Invalidate existing sessions for security
+      await db.deleteUserSessions(user.id);
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: "PASSWORD_RESET_COMPLETED",
+        targetType: "USER",
+        targetId: user.id,
+        ipAddress: clientIp,
+        metadata: { identifier: cleanId },
+      });
+
+      res.json({
+        status: "PASSWORD_RESET_SUCCESS",
+        message:
+          "Password has been reset successfully. Please log in with your new password.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hash = hashPassword(newPassword, salt);
-
-    await db.updateUser(user.id, {
-      passwordHash: hash,
-      passwordSalt: salt,
-      resetTokenHash: null,
-      resetTokenExpiresAt: null
-    });
-
-    // Invalidate existing sessions for security
-    await db.deleteUserSessions(user.id);
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'PASSWORD_RESET_COMPLETED',
-      targetType: 'USER',
-      targetId: user.id,
-      ipAddress: clientIp,
-      metadata: { identifier: cleanId }
-    });
-
-    res.json({
-      status: 'PASSWORD_RESET_SUCCESS',
-      message: 'Password has been reset successfully. Please log in with your new password.'
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // POST /api/auth/logout
-app.post('/api/auth/logout', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (req.sessionToken) {
-      await db.deleteSession(hashToken(req.sessionToken));
+app.post(
+  "/api/auth/logout",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (req.sessionToken) {
+        await db.deleteSession(hashToken(req.sessionToken));
+      }
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        action: "AUTH_LOGOUT",
+        targetType: "USER",
+        targetId: req.user!.id,
+      });
+      res.json({
+        status: "LOGGED_OUT",
+        message: "Session terminated successfully.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      action: 'AUTH_LOGOUT',
-      targetType: 'USER',
-      targetId: req.user!.id
-    });
-    res.json({ status: 'LOGGED_OUT', message: 'Session terminated successfully.' });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // ============================================================================
 // GOOGLE OAUTH 2.0 & GOOGLE IDENTITY SERVICES (GIS) AUTHENTICATION
 // ============================================================================
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com';
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID ||
+  "488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com";
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 
 interface GooglePayload {
   email: string;
@@ -2241,54 +2762,71 @@ interface GooglePayload {
 }
 
 async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
-  if (!token || typeof token !== 'string') return null;
+  if (!token || typeof token !== "string") return null;
 
   // Test mode bypass for synthetic verification
-  if (process.env.NODE_ENV === 'test' && token.startsWith('test_google_token_')) {
-    if (token.includes('_unverified')) {
+  if (
+    process.env.NODE_ENV === "test" &&
+    token.startsWith("test_google_token_")
+  ) {
+    if (token.includes("_unverified")) {
       return null; // Simulate unverified email rejection
     }
-    if (token.includes('_wrong_aud')) {
+    if (token.includes("_wrong_aud")) {
       return null; // Simulate audience mismatch rejection
     }
-    if (token.includes('_expired')) {
+    if (token.includes("_expired")) {
       return null; // Simulate expired token rejection
     }
-    const parts = token.split('_');
-    const email = parts[3] || 'google.user@example.com';
+    const parts = token.split("_");
+    const email = parts[3] || "google.user@example.com";
     return {
       email,
-      name: 'Google Test User',
-      sub: 'google_sub_123456789',
-      email_verified: true
+      name: "Google Test User",
+      sub: "google_sub_123456789",
+      email_verified: true,
     };
   }
 
   // 1. Try decoding JWT payload to inspect structure
   try {
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length === 3) {
-      const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf8');
+      const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+      const payloadJson = Buffer.from(payloadBase64, "base64").toString("utf8");
       const payload = JSON.parse(payloadJson);
 
       // Verify token with Google tokeninfo endpoint
       try {
-        const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`);
+        const resp = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`,
+        );
         if (resp.ok) {
           const verified = await resp.json();
           const isAudValid = verified.aud === GOOGLE_CLIENT_ID;
-          const isIssValid = verified.iss === 'accounts.google.com' || verified.iss === 'https://accounts.google.com';
-          const isEmailVerified = verified.email_verified === 'true' || verified.email_verified === true;
-          const isNotExpired = verified.exp ? (Number(verified.exp) * 1000 > Date.now()) : true;
+          const isIssValid =
+            verified.iss === "accounts.google.com" ||
+            verified.iss === "https://accounts.google.com";
+          const isEmailVerified =
+            verified.email_verified === "true" ||
+            verified.email_verified === true;
+          const isNotExpired = verified.exp
+            ? Number(verified.exp) * 1000 > Date.now()
+            : true;
 
-          if (isAudValid && isIssValid && isEmailVerified && isNotExpired && verified.email) {
+          if (
+            isAudValid &&
+            isIssValid &&
+            isEmailVerified &&
+            isNotExpired &&
+            verified.email
+          ) {
             return {
               email: verified.email.toLowerCase().trim(),
               name: verified.name,
               sub: verified.sub,
               picture: verified.picture,
-              email_verified: true
+              email_verified: true,
             };
           }
           return null;
@@ -2296,17 +2834,25 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
       } catch {
         // Fallback to verified structure if client ID matches and network is offline
         const isAudValid = payload.aud === GOOGLE_CLIENT_ID;
-        const isIssValid = payload.iss?.includes('accounts.google.com');
+        const isIssValid = payload.iss?.includes("accounts.google.com");
         const isEmailVerified = payload.email_verified === true;
-        const isNotExpired = payload.exp ? (payload.exp * 1000 > Date.now()) : true;
+        const isNotExpired = payload.exp
+          ? payload.exp * 1000 > Date.now()
+          : true;
 
-        if (isAudValid && isIssValid && isEmailVerified && isNotExpired && payload.email) {
+        if (
+          isAudValid &&
+          isIssValid &&
+          isEmailVerified &&
+          isNotExpired &&
+          payload.email
+        ) {
           return {
             email: payload.email.toLowerCase().trim(),
             name: payload.name,
             sub: payload.sub,
             picture: payload.picture,
-            email_verified: true
+            email_verified: true,
           };
         }
         return null;
@@ -2318,18 +2864,21 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
 
   // 2. Try verifying as an access token via Google UserInfo API
   try {
-    const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` }
+    const resp = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${token}` },
     });
     if (resp.ok) {
       const data = await resp.json();
-      if (data.email && (data.email_verified === true || data.email_verified === 'true')) {
+      if (
+        data.email &&
+        (data.email_verified === true || data.email_verified === "true")
+      ) {
         return {
           email: data.email.toLowerCase().trim(),
           name: data.name,
           sub: data.sub,
           picture: data.picture,
-          email_verified: true
+          email_verified: true,
         };
       }
     }
@@ -2338,27 +2887,35 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
   return null;
 }
 
-async function exchangeGoogleCode(code: string, redirectUri?: string): Promise<{ payload: GooglePayload | null; error?: string }> {
-  if (!code || typeof code !== 'string') return { payload: null, error: 'MISSING_CODE' };
+async function exchangeGoogleCode(
+  code: string,
+  redirectUri?: string,
+): Promise<{ payload: GooglePayload | null; error?: string }> {
+  if (!code || typeof code !== "string")
+    return { payload: null, error: "MISSING_CODE" };
 
-  if (process.env.NODE_ENV === 'test' && code.startsWith('test_google_code_')) {
-    if (code.includes('_invalid')) {
-      return { payload: null, error: 'INVALID_CODE' };
+  if (process.env.NODE_ENV === "test" && code.startsWith("test_google_code_")) {
+    if (code.includes("_invalid")) {
+      return { payload: null, error: "INVALID_CODE" };
     }
-    const email = code.replace('test_google_code_', '').split('_')[0] || 'code.user@example.com';
+    const email =
+      code.replace("test_google_code_", "").split("_")[0] ||
+      "code.user@example.com";
     return {
       payload: {
         email,
-        name: 'Google Code User',
-        sub: 'google_sub_code_987654321',
-        email_verified: true
-      }
+        name: "Google Code User",
+        sub: "google_sub_code_987654321",
+        email_verified: true,
+      },
     };
   }
 
   if (!GOOGLE_CLIENT_SECRET) {
-    console.warn('[Google OAuth2] Code exchange unavailable: GOOGLE_CLIENT_SECRET is missing from server environment variables.');
-    return { payload: null, error: 'MISSING_CLIENT_SECRET' };
+    console.warn(
+      "[Google OAuth2] Code exchange unavailable: GOOGLE_CLIENT_SECRET is missing from server environment variables.",
+    );
+    return { payload: null, error: "MISSING_CLIENT_SECRET" };
   }
 
   try {
@@ -2366,20 +2923,24 @@ async function exchangeGoogleCode(code: string, redirectUri?: string): Promise<{
       code,
       client_id: GOOGLE_CLIENT_ID,
       client_secret: GOOGLE_CLIENT_SECRET,
-      redirect_uri: redirectUri || 'https://astroverse-eta.vercel.app/',
-      grant_type: 'authorization_code'
+      redirect_uri: redirectUri || "https://astroverse-eta.vercel.app/",
+      grant_type: "authorization_code",
     });
 
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString()
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
     });
 
     if (!tokenRes.ok) {
       const errText = await tokenRes.text();
-      console.error('[Google OAuth2] Code exchange failed:', tokenRes.status, errText);
-      return { payload: null, error: 'TOKEN_EXCHANGE_REJECTED' };
+      console.error(
+        "[Google OAuth2] Code exchange failed:",
+        tokenRes.status,
+        errText,
+      );
+      return { payload: null, error: "TOKEN_EXCHANGE_REJECTED" };
     }
     const tokenData = await tokenRes.json();
     if (tokenData.id_token) {
@@ -2392,856 +2953,1096 @@ async function exchangeGoogleCode(code: string, redirectUri?: string): Promise<{
   } catch (err: any) {
     return { payload: null, error: err.message };
   }
-  return { payload: null, error: 'NO_TOKEN_IN_RESPONSE' };
+  return { payload: null, error: "NO_TOKEN_IN_RESPONSE" };
 }
 
 // GET /api/auth/google/config
-app.get('/api/auth/google/config', (_req: Request, res: Response) => {
+app.get("/api/auth/google/config", (_req: Request, res: Response) => {
   res.json({
     clientId: GOOGLE_CLIENT_ID,
-    redirectUri: 'https://astroverse-eta.vercel.app/'
+    redirectUri: "https://astroverse-eta.vercel.app/",
   });
 });
 
 // GET /api/auth/google/callback
-app.get('/api/auth/google/callback', (req: Request, res: Response) => {
+app.get("/api/auth/google/callback", (req: Request, res: Response) => {
   const code = req.query.code as string;
   const state = req.query.state as string;
   const error = req.query.error as string;
 
   if (error) {
-    return res.redirect(`https://astroverse-eta.vercel.app/?auth_error=${encodeURIComponent(error)}`);
+    return res.redirect(
+      `https://astroverse-eta.vercel.app/?auth_error=${encodeURIComponent(error)}`,
+    );
   }
 
-  const target = new URL('https://astroverse-eta.vercel.app/');
-  if (code) target.searchParams.set('code', code);
-  if (state) target.searchParams.set('state', state);
+  const target = new URL("https://astroverse-eta.vercel.app/");
+  if (code) target.searchParams.set("code", code);
+  if (state) target.searchParams.set("state", state);
   res.redirect(target.toString());
 });
 
 // POST /api/auth/google
-app.post('/api/auth/google', authLimiter, async (req: Request, res: Response) => {
-  const { credential, idToken, token, code, redirectUri } = req.body;
-  const rawToken = credential || idToken || token;
+app.post(
+  "/api/auth/google",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const { credential, idToken, token, code, redirectUri } = req.body;
+    const rawToken = credential || idToken || token;
 
-  let payload: GooglePayload | null = null;
-  let codeError: string | undefined;
+    let payload: GooglePayload | null = null;
+    let codeError: string | undefined;
 
-  if (rawToken) {
-    payload = await verifyGoogleToken(rawToken);
-  } else if (code) {
-    const exchangeResult = await exchangeGoogleCode(code, redirectUri);
-    payload = exchangeResult.payload;
-    codeError = exchangeResult.error;
-  }
-
-  if (!payload || !payload.email) {
-    const detailMsg = codeError === 'MISSING_CLIENT_SECRET'
-      ? 'Google authorization code received, but GOOGLE_CLIENT_SECRET is not configured on the server. Please sign in using the Google One-Tap or GIS button.'
-      : 'Failed to authenticate with Google. Please check your account and try again.';
-    return res.status(401).json({
-      error: 'INVALID_GOOGLE_CREDENTIAL',
-      codeError,
-      message: detailMsg
-    });
-  }
-
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-  const cleanEmail = payload.email.trim().toLowerCase();
-
-  try {
-    let user = await db.findUserByIdentifier(cleanEmail);
-    let isNewUser = false;
-
-    if (!user) {
-      isNewUser = true;
-      user = await db.createUser({
-        phone: null,
-        email: cleanEmail,
-        phoneVerified: false,
-        emailVerified: true,
-        displayName: payload.name || cleanEmail.split('@')[0],
-        role: isAuthorizedAdminEmail(cleanEmail) ? Role.OWNER : Role.USER,
-        status: AccountStatus.ACTIVE,
-        walletBalance: 0.00
-      });
-    } else {
-      if (user.status !== AccountStatus.ACTIVE) {
-        return res.status(403).json({
-          error: 'ACCOUNT_INACTIVE',
-          message: `Your account is ${user.status.toLowerCase()}. Please contact customer support.`
-        });
-      }
-
-      const updates: Partial<UserRecord> = {
-        lastLoginAt: new Date().toISOString(),
-        emailVerified: true
-      };
-      if (!user.displayName && payload.name) {
-        updates.displayName = payload.name;
-      }
-      if (isAuthorizedAdminEmail(cleanEmail)) {
-        if (!isAnyAdmin(user.role)) {
-          updates.role = Role.OWNER;
-        }
-      } else if (getAuthorizedAdminEmails().length > 0 && isAnyAdmin(user.role)) {
-        updates.role = Role.USER;
-      }
-      user = await db.updateUser(user.id, updates);
+    if (rawToken) {
+      payload = await verifyGoogleToken(rawToken);
+    } else if (code) {
+      const exchangeResult = await exchangeGoogleCode(code, redirectUri);
+      payload = exchangeResult.payload;
+      codeError = exchangeResult.error;
     }
 
-    // Issue cryptographic 256-bit session token
-    const rawSessionToken = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashToken(rawSessionToken);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day session
+    if (!payload || !payload.email) {
+      const detailMsg =
+        codeError === "MISSING_CLIENT_SECRET"
+          ? "Google authorization code received, but GOOGLE_CLIENT_SECRET is not configured on the server. Please sign in using the Google One-Tap or GIS button."
+          : "Failed to authenticate with Google. Please check your account and try again.";
+      return res.status(401).json({
+        error: "INVALID_GOOGLE_CREDENTIAL",
+        codeError,
+        message: detailMsg,
+      });
+    }
 
-    await db.createSession({
-      userId: user.id,
-      tokenHash,
-      expiresAt,
-      ipAddress: clientIp,
-      userAgent: req.headers['user-agent'] || null
-    });
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    const cleanEmail = payload.email.trim().toLowerCase();
 
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: isNewUser ? 'AUTH_REGISTER' : 'AUTH_LOGIN',
-      targetType: 'USER',
-      targetId: user.id,
-      ipAddress: clientIp,
-      metadata: { identifier: cleanEmail, method: 'google_oauth', googleSub: payload.sub }
-    });
+    try {
+      let user = await db.findUserByIdentifier(cleanEmail);
+      let isNewUser = false;
 
-    res.json({
-      status: 'AUTHENTICATED',
-      sessionToken: rawSessionToken,
-      user: sanitizeUser(user)
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      if (!user) {
+        isNewUser = true;
+        user = await db.createUser({
+          phone: null,
+          email: cleanEmail,
+          phoneVerified: false,
+          emailVerified: true,
+          displayName: payload.name || cleanEmail.split("@")[0],
+          role: isAuthorizedAdminEmail(cleanEmail) ? Role.OWNER : Role.USER,
+          status: AccountStatus.ACTIVE,
+          walletBalance: 0.0,
+        });
+      } else {
+        if (user.status !== AccountStatus.ACTIVE) {
+          return res.status(403).json({
+            error: "ACCOUNT_INACTIVE",
+            message: `Your account is ${user.status.toLowerCase()}. Please contact customer support.`,
+          });
+        }
+
+        const updates: Partial<UserRecord> = {
+          lastLoginAt: new Date().toISOString(),
+          emailVerified: true,
+        };
+        if (!user.displayName && payload.name) {
+          updates.displayName = payload.name;
+        }
+        if (isAuthorizedAdminEmail(cleanEmail)) {
+          if (!isAnyAdmin(user.role)) {
+            updates.role = Role.OWNER;
+          }
+        } else if (
+          getAuthorizedAdminEmails().length > 0 &&
+          isAnyAdmin(user.role)
+        ) {
+          updates.role = Role.USER;
+        }
+        user = await db.updateUser(user.id, updates);
+      }
+
+      // Issue cryptographic 256-bit session token
+      const rawSessionToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = hashToken(rawSessionToken);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day session
+
+      await db.createSession({
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        ipAddress: clientIp,
+        userAgent: req.headers["user-agent"] || null,
+      });
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: isNewUser ? "AUTH_REGISTER" : "AUTH_LOGIN",
+        targetType: "USER",
+        targetId: user.id,
+        ipAddress: clientIp,
+        metadata: {
+          identifier: cleanEmail,
+          method: "google_oauth",
+          googleSub: payload.sub,
+        },
+      });
+
+      res.json({
+        status: "AUTHENTICATED",
+        sessionToken: rawSessionToken,
+        user: sanitizeUser(user),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // GET /api/auth/supabase/config
 // Returns public Supabase configuration for client-side SDK initialization.
 // Invariant: NEVER exposes service role secret or internal credentials.
-app.get('/api/auth/supabase/config', (_req: Request, res: Response) => {
+app.get("/api/auth/supabase/config", (_req: Request, res: Response) => {
   res.json(getPublicSupabaseConfig());
 });
 
 // POST /api/auth/supabase/sync
 // Synchronizes authenticated Supabase session with AstroVerse backend,
 // links user profile, and returns sanitized user record and active entitlements.
-app.post('/api/auth/supabase/sync', authLimiter, async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  const bodyToken = req.body?.accessToken || req.body?.sessionToken;
-  const token = (authHeader && authHeader.startsWith('Bearer '))
-    ? authHeader.split(' ')[1].trim()
-    : bodyToken;
+app.post(
+  "/api/auth/supabase/sync",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    const bodyToken = req.body?.accessToken || req.body?.sessionToken;
+    const token =
+      authHeader && authHeader.startsWith("Bearer ")
+        ? authHeader.split(" ")[1].trim()
+        : bodyToken;
 
-  if (!token) {
-    return res.status(401).json({ error: 'TOKEN_REQUIRED', message: 'Supabase access token required.' });
-  }
-
-  const supaResult = await verifySupabaseToken(token);
-  if (!supaResult.user || supaResult.error) {
-    return res.status(401).json({
-      error: 'INVALID_SUPABASE_TOKEN',
-      message: supaResult.error || 'Failed to verify Supabase authentication token.'
-    });
-  }
-
-  try {
-    const user = await db.syncSupabaseUser({
-      id: supaResult.user.id,
-      email: supaResult.user.email,
-      phone: supaResult.user.phone,
-      user_metadata: supaResult.user.user_metadata
-    });
-
-    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'SUPABASE_SYNC',
-      targetType: 'USER',
-      targetId: user.id,
-      ipAddress: clientIp,
-      metadata: { email: user.email, authProvider: 'supabase' }
-    });
-
-    const profiles = await db.getProfilesByUserId(user.id);
-    const entitlements = EntitlementManager.resolveEffectiveTier(user);
-
-    res.json({
-      status: 'AUTHENTICATED',
-      sessionToken: token,
-      user: sanitizeUser(user),
-      profiles,
-      entitlements,
-      walletBalance: user.walletBalance
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'SYNC_FAILED', message: err.message });
-  }
-});
-
-// POST /api/auth/link-identity (Link unlinked phone or email to current account)
-app.post('/api/auth/link-identity', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { targetIdentifier, otp } = req.body;
-  if (!targetIdentifier || !otp) {
-    return res.status(400).json({ error: 'FIELDS_REQUIRED', message: 'targetIdentifier and otp are required.' });
-  }
-
-  const cleanTarget = String(targetIdentifier).trim();
-  const isEmail = cleanTarget.includes('@');
-  const record = otpStore.get(cleanTarget);
-
-  if (!record || record.expiresAt < Date.now() || record.otp !== String(otp).trim()) {
-    return res.status(401).json({ error: 'INVALID_OR_EXPIRED_OTP', message: 'Invalid or expired verification code for linking target.' });
-  }
-
-  // Single-use
-  otpStore.delete(cleanTarget);
-
-  try {
-    // Check if target is already claimed by another user
-    const existingUser = await db.findUserByIdentifier(cleanTarget);
-    if (existingUser && existingUser.id !== req.user!.id) {
-      return res.status(409).json({
-        error: 'IDENTIFIER_ALREADY_LINKED',
-        message: `This ${isEmail ? 'email' : 'phone number'} is already associated with another Astroverse account.`
+    if (!token) {
+      return res.status(401).json({
+        error: "TOKEN_REQUIRED",
+        message: "Supabase access token required.",
       });
     }
 
-    const updates: Partial<UserRecord> = {};
-    if (isEmail) {
-      updates.email = cleanTarget.toLowerCase();
-      updates.emailVerified = true;
-    } else {
-      updates.phone = cleanTarget;
-      updates.phoneVerified = true;
+    const supaResult = await verifySupabaseToken(token);
+    if (!supaResult.user || supaResult.error) {
+      return res.status(401).json({
+        error: "INVALID_SUPABASE_TOKEN",
+        message:
+          supaResult.error || "Failed to verify Supabase authentication token.",
+      });
     }
 
-    const updatedUser = await db.updateUser(req.user!.id, updates);
+    try {
+      const user = await db.syncSupabaseUser({
+        id: supaResult.user.id,
+        email: supaResult.user.email,
+        phone: supaResult.user.phone,
+        user_metadata: supaResult.user.user_metadata,
+      });
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      action: 'IDENTITY_LINKED',
-      targetType: isEmail ? 'EMAIL' : 'PHONE',
-      targetId: cleanTarget,
-      metadata: { linkedField: isEmail ? 'email' : 'phone' }
-    });
+      const clientIp =
+        (req.headers["x-forwarded-for"] as string) ||
+        req.socket.remoteAddress ||
+        "127.0.0.1";
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: "SUPABASE_SYNC",
+        targetType: "USER",
+        targetId: user.id,
+        ipAddress: clientIp,
+        metadata: { email: user.email, authProvider: "supabase" },
+      });
 
-    res.json({
-      status: 'LINKED',
-      message: `Successfully linked ${cleanTarget} to your account.`,
-      user: updatedUser
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      const profiles = await db.getProfilesByUserId(user.id);
+      const entitlements = EntitlementManager.resolveEffectiveTier(user);
+
+      res.json({
+        status: "AUTHENTICATED",
+        sessionToken: token,
+        user: sanitizeUser(user),
+        profiles,
+        entitlements,
+        walletBalance: user.walletBalance,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "SYNC_FAILED", message: err.message });
+    }
+  },
+);
+
+// POST /api/auth/link-identity (Link unlinked phone or email to current account)
+app.post(
+  "/api/auth/link-identity",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { targetIdentifier, otp } = req.body;
+    if (!targetIdentifier || !otp) {
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message: "targetIdentifier and otp are required.",
+      });
+    }
+
+    const cleanTarget = String(targetIdentifier).trim();
+    const isEmail = cleanTarget.includes("@");
+    const record = otpStore.get(cleanTarget);
+
+    if (
+      !record ||
+      record.expiresAt < Date.now() ||
+      record.otp !== String(otp).trim()
+    ) {
+      return res.status(401).json({
+        error: "INVALID_OR_EXPIRED_OTP",
+        message: "Invalid or expired verification code for linking target.",
+      });
+    }
+
+    // Single-use
+    otpStore.delete(cleanTarget);
+
+    try {
+      // Check if target is already claimed by another user
+      const existingUser = await db.findUserByIdentifier(cleanTarget);
+      if (existingUser && existingUser.id !== req.user!.id) {
+        return res.status(409).json({
+          error: "IDENTIFIER_ALREADY_LINKED",
+          message: `This ${isEmail ? "email" : "phone number"} is already associated with another Astroverse account.`,
+        });
+      }
+
+      const updates: Partial<UserRecord> = {};
+      if (isEmail) {
+        updates.email = cleanTarget.toLowerCase();
+        updates.emailVerified = true;
+      } else {
+        updates.phone = cleanTarget;
+        updates.phoneVerified = true;
+      }
+
+      const updatedUser = await db.updateUser(req.user!.id, updates);
+
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        action: "IDENTITY_LINKED",
+        targetType: isEmail ? "EMAIL" : "PHONE",
+        targetId: cleanTarget,
+        metadata: { linkedField: isEmail ? "email" : "phone" },
+      });
+
+      res.json({
+        status: "LINKED",
+        message: `Successfully linked ${cleanTarget} to your account.`,
+        user: updatedUser,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // ==================== 2. USER PROFILE & SETTINGS ====================
 
 // GET /api/user/me
-app.get('/api/user/me', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    await reconcileUserPendingOrders(req.user!.id);
-  } catch (err: any) {
-    console.warn('[RECONCILIATION] Non-blocking error in /api/user/me:', err?.message || err);
-  }
-  const user = (await db.findUserById(req.user!.id)) || req.user!;
-  res.json({
-    id: user.id,
-    displayName: user.displayName,
-    phone: user.phone,
-    email: user.email,
-    phoneVerified: user.phoneVerified,
-    emailVerified: user.emailVerified,
-    role: user.role,
-    status: user.status,
-    walletBalance: user.walletBalance,
-    subscriptionTier: user.subscriptionTier,
-    subscriptionStatus: user.subscriptionStatus,
-    subscriptionBillingPeriod: user.subscriptionBillingPeriod,
-    subscriptionExpiresAt: user.subscriptionExpiresAt,
-    preferredLanguage: user.preferredLanguage,
-    preferredTimezone: user.preferredTimezone,
-    createdAt: user.createdAt,
-    lastLoginAt: user.lastLoginAt
-  });
-});
+app.get(
+  "/api/user/me",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      await reconcileUserPendingOrders(req.user!.id);
+    } catch (err: any) {
+      console.warn(
+        "[RECONCILIATION] Non-blocking error in /api/user/me:",
+        err?.message || err,
+      );
+    }
+    const user = (await db.findUserById(req.user!.id)) || req.user!;
+    res.json({
+      id: user.id,
+      displayName: user.displayName,
+      phone: user.phone,
+      email: user.email,
+      phoneVerified: user.phoneVerified,
+      emailVerified: user.emailVerified,
+      role: user.role,
+      status: user.status,
+      walletBalance: user.walletBalance,
+      subscriptionTier: user.subscriptionTier,
+      subscriptionStatus: user.subscriptionStatus,
+      subscriptionBillingPeriod: user.subscriptionBillingPeriod,
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+      preferredLanguage: user.preferredLanguage,
+      preferredTimezone: user.preferredTimezone,
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt,
+    });
+  },
+);
 
 // GET /api/user/profile
-app.get('/api/user/profile', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const user = (await db.findUserById(req.user!.id)) || req.user!;
-  res.json(sanitizeUser(user));
-});
+app.get(
+  "/api/user/profile",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const user = (await db.findUserById(req.user!.id)) || req.user!;
+    res.json(sanitizeUser(user));
+  },
+);
 
 // PUT /api/user/profile
-app.put('/api/user/profile', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { displayName, preferredLanguage, preferredTimezone } = req.body;
-  try {
-    const updates: Partial<UserRecord> = {};
-    if (displayName != null) updates.displayName = String(displayName).trim();
-    if (preferredLanguage != null) updates.preferredLanguage = String(preferredLanguage).trim();
-    if (preferredTimezone != null) updates.preferredTimezone = String(preferredTimezone).trim();
+app.put(
+  "/api/user/profile",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { displayName, preferredLanguage, preferredTimezone } = req.body;
+    try {
+      const updates: Partial<UserRecord> = {};
+      if (displayName != null) updates.displayName = String(displayName).trim();
+      if (preferredLanguage != null)
+        updates.preferredLanguage = String(preferredLanguage).trim();
+      if (preferredTimezone != null)
+        updates.preferredTimezone = String(preferredTimezone).trim();
 
-    const updated = await db.updateUser(req.user!.id, updates);
+      const updated = await db.updateUser(req.user!.id, updates);
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      action: 'USER_PROFILE_UPDATED',
-      targetType: 'USER',
-      targetId: req.user!.id,
-      metadata: updates
-    });
-
-    res.json({ status: 'UPDATED', user: sanitizeUser(updated) });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /api/user/deactivate
-app.post('/api/user/deactivate', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    await db.updateUser(req.user!.id, { status: AccountStatus.DEACTIVATED });
-    await db.deleteUserSessions(req.user!.id);
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      action: 'ACCOUNT_DEACTIVATED',
-      targetType: 'USER',
-      targetId: req.user!.id
-    });
-
-    res.json({ status: 'DEACTIVATED', message: 'Your account has been deactivated. You may contact support to reactivate.' });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// DELETE /api/user/account (Full permanent deletion)
-app.delete('/api/user/account', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    await db.deleteUser(userId);
-
-    await db.recordAuditEvent({
-      action: 'ACCOUNT_DELETED',
-      targetType: 'USER',
-      targetId: userId,
-      metadata: { deletedAt: new Date().toISOString() }
-    });
-
-    res.json({ status: 'DELETED', message: 'Your account and all associated profiles have been permanently removed.' });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /api/user/migrate-guest (Import locally stored guest profiles into authenticated account)
-app.post('/api/user/migrate-guest', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const sessionUser = req.user!;
-  const { profiles } = req.body;
-
-  if (!Array.isArray(profiles) || profiles.length === 0) {
-    return res.status(400).json({
-      error: 'INVALID_PAYLOAD',
-      message: 'profiles array is required and must not be empty.'
-    });
-  }
-
-  try {
-    const imported: any[] = [];
-    const skipped: any[] = [];
-    const existingProfiles = await db.getProfilesByUserId(sessionUser.id);
-
-    for (const p of profiles) {
-      if (!p.profileName || !p.dateOfBirth || !p.timeOfBirth || !p.birthplaceName ||
-          !Number.isFinite(Number(p.latitude)) || !Number.isFinite(Number(p.longitude)) ||
-          Number(p.latitude) < -90 || Number(p.latitude) > 90 ||
-          Number(p.longitude) < -180 || Number(p.longitude) > 180) {
-        skipped.push({ profileName: p.profileName || 'Unknown', reason: 'MISSING_OR_INVALID_COORDINATES' });
-        continue;
-      }
-
-      const numLat = Number(p.latitude);
-      const numLon = Number(p.longitude);
-      const trimmedName = String(p.profileName).trim();
-
-      // Idempotency: skip if profile with same name, DOB, and coordinates already exists
-      const duplicate = existingProfiles.find(ep =>
-        ep.profileName.toLowerCase() === trimmedName.toLowerCase() &&
-        ep.dateOfBirth === p.dateOfBirth &&
-        Math.abs(ep.latitude - numLat) < 0.001 &&
-        Math.abs(ep.longitude - numLon) < 0.001
-      );
-
-      if (duplicate) {
-        skipped.push({ profileName: trimmedName, reason: 'ALREADY_EXISTS', existingId: duplicate.id });
-        continue;
-      }
-
-      const created = await db.createProfile({
-        userId: sessionUser.id,
-        profileName: trimmedName,
-        relationship: p.relationship || 'Self',
-        dateOfBirth: p.dateOfBirth,
-        timeOfBirth: p.timeOfBirth,
-        birthplaceName: String(p.birthplaceName).trim(),
-        latitude: numLat,
-        longitude: numLon,
-        resolvedTimezone: p.resolvedTimezone || 'Asia/Kolkata'
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        action: "USER_PROFILE_UPDATED",
+        targetType: "USER",
+        targetId: req.user!.id,
+        metadata: updates,
       });
 
-      imported.push(created);
-      existingProfiles.push(created);
+      res.json({ status: "UPDATED", user: sanitizeUser(updated) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+// POST /api/user/deactivate
+app.post(
+  "/api/user/deactivate",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      await db.updateUser(req.user!.id, { status: AccountStatus.DEACTIVATED });
+      await db.deleteUserSessions(req.user!.id);
+
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        action: "ACCOUNT_DEACTIVATED",
+        targetType: "USER",
+        targetId: req.user!.id,
+      });
+
+      res.json({
+        status: "DEACTIVATED",
+        message:
+          "Your account has been deactivated. You may contact support to reactivate.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+// DELETE /api/user/account (Full permanent deletion)
+app.delete(
+  "/api/user/account",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      await db.deleteUser(userId);
+
+      await db.recordAuditEvent({
+        action: "ACCOUNT_DELETED",
+        targetType: "USER",
+        targetId: userId,
+        metadata: { deletedAt: new Date().toISOString() },
+      });
+
+      res.json({
+        status: "DELETED",
+        message:
+          "Your account and all associated profiles have been permanently removed.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+// POST /api/user/migrate-guest (Import locally stored guest profiles into authenticated account)
+app.post(
+  "/api/user/migrate-guest",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const sessionUser = req.user!;
+    const { profiles } = req.body;
+
+    if (!Array.isArray(profiles) || profiles.length === 0) {
+      return res.status(400).json({
+        error: "INVALID_PAYLOAD",
+        message: "profiles array is required and must not be empty.",
+      });
     }
 
-    await db.recordAuditEvent({
-      userId: sessionUser.id,
-      action: 'GUEST_PROFILES_MIGRATED',
-      targetType: 'USER',
-      targetId: sessionUser.id,
-      ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1',
-      metadata: { importedCount: imported.length, skippedCount: skipped.length }
-    });
+    try {
+      const imported: any[] = [];
+      const skipped: any[] = [];
+      const existingProfiles = await db.getProfilesByUserId(sessionUser.id);
 
-    return res.json({
-      status: 'MIGRATED',
-      importedCount: imported.length,
-      skippedCount: skipped.length,
-      importedProfiles: imported,
-      skipped
-    });
-  } catch (err: any) {
-    return handleServiceError(res, err);
-  }
-});
+      for (const p of profiles) {
+        if (
+          !p.profileName ||
+          !p.dateOfBirth ||
+          !p.timeOfBirth ||
+          !p.birthplaceName ||
+          !Number.isFinite(Number(p.latitude)) ||
+          !Number.isFinite(Number(p.longitude)) ||
+          Number(p.latitude) < -90 ||
+          Number(p.latitude) > 90 ||
+          Number(p.longitude) < -180 ||
+          Number(p.longitude) > 180
+        ) {
+          skipped.push({
+            profileName: p.profileName || "Unknown",
+            reason: "MISSING_OR_INVALID_COORDINATES",
+          });
+          continue;
+        }
+
+        const numLat = Number(p.latitude);
+        const numLon = Number(p.longitude);
+        const trimmedName = String(p.profileName).trim();
+
+        // Idempotency: skip if profile with same name, DOB, and coordinates already exists
+        const duplicate = existingProfiles.find(
+          (ep) =>
+            ep.profileName.toLowerCase() === trimmedName.toLowerCase() &&
+            ep.dateOfBirth === p.dateOfBirth &&
+            Math.abs(ep.latitude - numLat) < 0.001 &&
+            Math.abs(ep.longitude - numLon) < 0.001,
+        );
+
+        if (duplicate) {
+          skipped.push({
+            profileName: trimmedName,
+            reason: "ALREADY_EXISTS",
+            existingId: duplicate.id,
+          });
+          continue;
+        }
+
+        const created = await db.createProfile({
+          userId: sessionUser.id,
+          profileName: trimmedName,
+          relationship: p.relationship || "Self",
+          dateOfBirth: p.dateOfBirth,
+          timeOfBirth: p.timeOfBirth,
+          birthplaceName: String(p.birthplaceName).trim(),
+          latitude: numLat,
+          longitude: numLon,
+          resolvedTimezone: p.resolvedTimezone || "Asia/Kolkata",
+        });
+
+        imported.push(created);
+        existingProfiles.push(created);
+      }
+
+      await db.recordAuditEvent({
+        userId: sessionUser.id,
+        action: "GUEST_PROFILES_MIGRATED",
+        targetType: "USER",
+        targetId: sessionUser.id,
+        ipAddress:
+          (req.headers["x-forwarded-for"] as string) ||
+          req.socket.remoteAddress ||
+          "127.0.0.1",
+        metadata: {
+          importedCount: imported.length,
+          skippedCount: skipped.length,
+        },
+      });
+
+      return res.json({
+        status: "MIGRATED",
+        importedCount: imported.length,
+        skippedCount: skipped.length,
+        importedProfiles: imported,
+        skipped,
+      });
+    } catch (err: any) {
+      return handleServiceError(res, err);
+    }
+  },
+);
 
 // ==================== 3. BIRTH PROFILES (SELF, SPOUSE, CHILD, FRIEND) ====================
 
-app.post('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const {
-    userId,
-    profileName,
-    relationship,
-    dateOfBirth,
-    timeOfBirth,
-    birthTimeStatus = 'EXACT',
-    approximateWindowMinutes,
-    approximateTimeRange,
-    birthTimeConfirmed,
-    birthplaceName,
-    latitude,
-    longitude,
-    resolvedTimezone
-  } = req.body;
-
-  const resolvedStatus: 'EXACT' | 'APPROXIMATE' | 'UNKNOWN' =
-    String(birthTimeStatus).toUpperCase() === 'UNKNOWN' ? 'UNKNOWN' :
-    String(birthTimeStatus).toUpperCase() === 'APPROXIMATE' ? 'APPROXIMATE' : 'EXACT';
-
-  const resolvedConfirmed = birthTimeConfirmed !== undefined
-    ? Boolean(birthTimeConfirmed)
-    : (resolvedStatus === 'EXACT');
-
-  if (!profileName || !dateOfBirth || !birthplaceName || latitude == null || longitude == null) {
-    return res.status(400).json({
-      error: 'REQUIRED_FIELDS_MISSING',
-      message: 'profileName, dateOfBirth, birthplaceName, latitude, and longitude are strictly required.'
-    });
-  }
-
-  // timeOfBirth is required ONLY if status is EXACT
-  if (resolvedStatus === 'EXACT' && (!timeOfBirth || String(timeOfBirth).trim() === '')) {
-    return res.status(400).json({
-      error: 'REQUIRED_FIELDS_MISSING',
-      message: 'timeOfBirth is required when birthTimeStatus is EXACT.'
-    });
-  }
-
-  const numLat = Number(latitude);
-  const numLon = Number(longitude);
-  if (!Number.isFinite(numLat) || !Number.isFinite(numLon) || numLat < -90 || numLat > 90 || numLon < -180 || numLon > 180) {
-    return res.status(400).json({
-      error: 'INVALID_COORDINATES',
-      message: 'latitude must be between -90 and 90, and longitude between -180 and 180.'
-    });
-  }
-
-  // Derive owner ID from the authenticated session (never trust client-supplied userId alone)
-  const sessionUser = req.user!;
-  let targetUserId = sessionUser.id;
-
-  // Cross-account operations are strictly forbidden unless verified with step-up assurance
-  if (userId && String(userId) !== sessionUser.id) {
-    const accessCheck = validatePrivilegedCustomerAccess(sessionUser, String(userId), req);
-    if (!accessCheck.authorized) {
-      return res.status(accessCheck.statusCode || 403).json({
-        error: accessCheck.error,
-        message: accessCheck.message
-      });
-    }
-    const targetUser = await db.findUserById(String(userId));
-    if (!targetUser) {
-      return res.status(404).json({
-        error: 'TARGET_USER_NOT_FOUND',
-        message: 'Target user account does not exist.'
-      });
-    }
-    targetUserId = targetUser.id;
-  }
-
-  try {
-    const trimmedName = String(profileName).trim();
-    const cleanTime = resolvedStatus === 'UNKNOWN' ? null : (timeOfBirth ? String(timeOfBirth).trim() : null);
-    const profile = await db.createProfile({
-      userId: targetUserId,
-      profileName: trimmedName,
-      relationship: relationship || 'Self',
+app.post(
+  "/api/profiles",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const {
+      userId,
+      profileName,
+      relationship,
       dateOfBirth,
-      timeOfBirth: cleanTime,
-      birthTimeStatus: resolvedStatus,
-      approximateWindowMinutes: approximateWindowMinutes != null ? Number(approximateWindowMinutes) : null,
-      approximateTimeRange: approximateTimeRange || null,
-      birthTimeConfirmed: resolvedConfirmed,
-      birthplaceName: String(birthplaceName).trim(),
-      latitude: numLat,
-      longitude: numLon,
-      resolvedTimezone: resolvedTimezone || 'Asia/Kolkata'
-    });
+      timeOfBirth,
+      birthTimeStatus = "EXACT",
+      approximateWindowMinutes,
+      approximateTimeRange,
+      birthTimeConfirmed,
+      birthplaceName,
+      latitude,
+      longitude,
+      resolvedTimezone,
+    } = req.body;
 
-    await db.recordAuditEvent({
-      userId: targetUserId,
-      actorId: sessionUser.id,
-      actorRole: sessionUser.role,
-      action: sessionUser.id !== targetUserId ? 'ADMIN_PRIVILEGED_PROFILE_CREATE' : 'PROFILE_CREATED',
-      targetType: 'PROFILE',
-      targetId: profile.id,
-      reason: sessionUser.id !== targetUserId ? accessCheckReason(req) : undefined,
-      metadata: { profileName: trimmedName, relationship, actorId: sessionUser.id, birthTimeStatus: resolvedStatus }
-    });
+    const resolvedStatus: "EXACT" | "APPROXIMATE" | "UNKNOWN" =
+      String(birthTimeStatus).toUpperCase() === "UNKNOWN"
+        ? "UNKNOWN"
+        : String(birthTimeStatus).toUpperCase() === "APPROXIMATE"
+          ? "APPROXIMATE"
+          : "EXACT";
 
-    res.json(profile);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    const resolvedConfirmed =
+      birthTimeConfirmed !== undefined
+        ? Boolean(birthTimeConfirmed)
+        : resolvedStatus === "EXACT";
+
+    if (
+      !profileName ||
+      !dateOfBirth ||
+      !birthplaceName ||
+      latitude == null ||
+      longitude == null
+    ) {
+      return res.status(400).json({
+        error: "REQUIRED_FIELDS_MISSING",
+        message:
+          "profileName, dateOfBirth, birthplaceName, latitude, and longitude are strictly required.",
+      });
+    }
+
+    // timeOfBirth is required ONLY if status is EXACT
+    if (
+      resolvedStatus === "EXACT" &&
+      (!timeOfBirth || String(timeOfBirth).trim() === "")
+    ) {
+      return res.status(400).json({
+        error: "REQUIRED_FIELDS_MISSING",
+        message: "timeOfBirth is required when birthTimeStatus is EXACT.",
+      });
+    }
+
+    const numLat = Number(latitude);
+    const numLon = Number(longitude);
+    if (
+      !Number.isFinite(numLat) ||
+      !Number.isFinite(numLon) ||
+      numLat < -90 ||
+      numLat > 90 ||
+      numLon < -180 ||
+      numLon > 180
+    ) {
+      return res.status(400).json({
+        error: "INVALID_COORDINATES",
+        message:
+          "latitude must be between -90 and 90, and longitude between -180 and 180.",
+      });
+    }
+
+    // Derive owner ID from the authenticated session (never trust client-supplied userId alone)
+    const sessionUser = req.user!;
+    let targetUserId = sessionUser.id;
+
+    // Cross-account operations are strictly forbidden unless verified with step-up assurance
+    if (userId && String(userId) !== sessionUser.id) {
+      const accessCheck = validatePrivilegedCustomerAccess(
+        sessionUser,
+        String(userId),
+        req,
+      );
+      if (!accessCheck.authorized) {
+        return res.status(accessCheck.statusCode || 403).json({
+          error: accessCheck.error,
+          message: accessCheck.message,
+        });
+      }
+      const targetUser = await db.findUserById(String(userId));
+      if (!targetUser) {
+        return res.status(404).json({
+          error: "TARGET_USER_NOT_FOUND",
+          message: "Target user account does not exist.",
+        });
+      }
+      targetUserId = targetUser.id;
+    }
+
+    try {
+      const trimmedName = String(profileName).trim();
+      const cleanTime =
+        resolvedStatus === "UNKNOWN"
+          ? null
+          : timeOfBirth
+            ? String(timeOfBirth).trim()
+            : null;
+      const profile = await db.createProfile({
+        userId: targetUserId,
+        profileName: trimmedName,
+        relationship: relationship || "Self",
+        dateOfBirth,
+        timeOfBirth: cleanTime,
+        birthTimeStatus: resolvedStatus,
+        approximateWindowMinutes:
+          approximateWindowMinutes != null
+            ? Number(approximateWindowMinutes)
+            : null,
+        approximateTimeRange: approximateTimeRange || null,
+        birthTimeConfirmed: resolvedConfirmed,
+        birthplaceName: String(birthplaceName).trim(),
+        latitude: numLat,
+        longitude: numLon,
+        resolvedTimezone: resolvedTimezone || "Asia/Kolkata",
+      });
+
+      await db.recordAuditEvent({
+        userId: targetUserId,
+        actorId: sessionUser.id,
+        actorRole: sessionUser.role,
+        action:
+          sessionUser.id !== targetUserId
+            ? "ADMIN_PRIVILEGED_PROFILE_CREATE"
+            : "PROFILE_CREATED",
+        targetType: "PROFILE",
+        targetId: profile.id,
+        reason:
+          sessionUser.id !== targetUserId ? accessCheckReason(req) : undefined,
+        metadata: {
+          profileName: trimmedName,
+          relationship,
+          actorId: sessionUser.id,
+          birthTimeStatus: resolvedStatus,
+        },
+      });
+
+      res.json(profile);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 function accessCheckReason(req: Request): string {
-  return String(req.headers['x-admin-reason'] || (req.body && req.body.adminReason) || 'Administrative access').trim();
+  return String(
+    req.headers["x-admin-reason"] ||
+      (req.body && req.body.adminReason) ||
+      "Administrative access",
+  ).trim();
 }
 
-app.get('/api/profiles', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const profiles = await db.getProfilesByUserId(req.user!.id);
-    res.json(profiles);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get(
+  "/api/profiles",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const profiles = await db.getProfilesByUserId(req.user!.id);
+      res.json(profiles);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
-app.get('/api/profiles/item/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  try {
-    const profile = await db.getProfileById(id);
-    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Birth profile not found.' });
-    if (profile.userId !== req.user!.id) {
-      const accessCheck = validatePrivilegedCustomerAccess(req.user!, profile.userId, req);
+app.get(
+  "/api/profiles/item/:id",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+      const profile = await db.getProfileById(id);
+      if (!profile)
+        return res.status(404).json({
+          error: "PROFILE_NOT_FOUND",
+          message: "Birth profile not found.",
+        });
+      if (profile.userId !== req.user!.id) {
+        const accessCheck = validatePrivilegedCustomerAccess(
+          req.user!,
+          profile.userId,
+          req,
+        );
+        if (!accessCheck.authorized) {
+          return res.status(accessCheck.statusCode || 403).json({
+            error: accessCheck.error,
+            message: accessCheck.message,
+          });
+        }
+        await db.recordAuditEvent({
+          userId: profile.userId,
+          actorId: req.user!.id,
+          actorRole: req.user!.role,
+          action: "ADMIN_PRIVILEGED_PROFILE_VIEW",
+          targetType: "PROFILE",
+          targetId: profile.id,
+          reason: accessCheck.reason,
+          metadata: { profileName: profile.profileName },
+        });
+      }
+      res.json(profile);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+app.get(
+  "/api/profiles/:userId",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { userId } = req.params;
+    if (req.user!.id !== userId) {
+      const accessCheck = validatePrivilegedCustomerAccess(
+        req.user!,
+        userId,
+        req,
+      );
       if (!accessCheck.authorized) {
         return res.status(accessCheck.statusCode || 403).json({
           error: accessCheck.error,
-          message: accessCheck.message
+          message: accessCheck.message,
         });
       }
       await db.recordAuditEvent({
-        userId: profile.userId,
+        userId,
         actorId: req.user!.id,
         actorRole: req.user!.role,
-        action: 'ADMIN_PRIVILEGED_PROFILE_VIEW',
-        targetType: 'PROFILE',
-        targetId: profile.id,
+        action: "ADMIN_PRIVILEGED_PROFILES_LIST",
+        targetType: "PROFILE",
+        targetId: userId,
         reason: accessCheck.reason,
-        metadata: { profileName: profile.profileName }
       });
     }
-    res.json(profile);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/profiles/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { userId } = req.params;
-  if (req.user!.id !== userId) {
-    const accessCheck = validatePrivilegedCustomerAccess(req.user!, userId, req);
-    if (!accessCheck.authorized) {
-      return res.status(accessCheck.statusCode || 403).json({
-        error: accessCheck.error,
-        message: accessCheck.message
-      });
+    try {
+      const profiles = await db.getProfilesByUserId(userId);
+      res.json(profiles);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    await db.recordAuditEvent({
-      userId,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_PRIVILEGED_PROFILES_LIST',
-      targetType: 'PROFILE',
-      targetId: userId,
-      reason: accessCheck.reason
-    });
-  }
-  try {
-    const profiles = await db.getProfilesByUserId(userId);
-    res.json(profiles);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
-app.put('/api/profiles/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  try {
-    const profile = await db.getProfileById(id);
-    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
-    if (profile.userId !== req.user!.id) {
-      const accessCheck = validatePrivilegedCustomerAccess(req.user!, profile.userId, req);
-      if (!accessCheck.authorized) {
-        return res.status(accessCheck.statusCode || 403).json({
-          error: accessCheck.error,
-          message: accessCheck.message
+app.put(
+  "/api/profiles/:id",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+      const profile = await db.getProfileById(id);
+      if (!profile) return res.status(404).json({ error: "PROFILE_NOT_FOUND" });
+      if (profile.userId !== req.user!.id) {
+        const accessCheck = validatePrivilegedCustomerAccess(
+          req.user!,
+          profile.userId,
+          req,
+        );
+        if (!accessCheck.authorized) {
+          return res.status(accessCheck.statusCode || 403).json({
+            error: accessCheck.error,
+            message: accessCheck.message,
+          });
+        }
+        await db.recordAuditEvent({
+          userId: profile.userId,
+          actorId: req.user!.id,
+          actorRole: req.user!.role,
+          action: "ADMIN_PRIVILEGED_PROFILE_UPDATE",
+          targetType: "PROFILE",
+          targetId: profile.id,
+          reason: accessCheck.reason,
+          metadata: req.body,
         });
       }
-      await db.recordAuditEvent({
-        userId: profile.userId,
-        actorId: req.user!.id,
-        actorRole: req.user!.role,
-        action: 'ADMIN_PRIVILEGED_PROFILE_UPDATE',
-        targetType: 'PROFILE',
-        targetId: profile.id,
-        reason: accessCheck.reason,
-        metadata: req.body
-      });
+      const updated = await db.updateProfile(id, req.body);
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    const updated = await db.updateProfile(id, req.body);
-    res.json(updated);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
-app.delete('/api/profiles/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  try {
-    const profile = await db.getProfileById(id);
-    if (!profile) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
-    if (profile.userId !== req.user!.id) {
-      const accessCheck = validatePrivilegedCustomerAccess(req.user!, profile.userId, req);
-      if (!accessCheck.authorized) {
-        return res.status(accessCheck.statusCode || 403).json({
-          error: accessCheck.error,
-          message: accessCheck.message
+app.delete(
+  "/api/profiles/:id",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+      const profile = await db.getProfileById(id);
+      if (!profile) return res.status(404).json({ error: "PROFILE_NOT_FOUND" });
+      if (profile.userId !== req.user!.id) {
+        const accessCheck = validatePrivilegedCustomerAccess(
+          req.user!,
+          profile.userId,
+          req,
+        );
+        if (!accessCheck.authorized) {
+          return res.status(accessCheck.statusCode || 403).json({
+            error: accessCheck.error,
+            message: accessCheck.message,
+          });
+        }
+        await db.recordAuditEvent({
+          userId: profile.userId,
+          actorId: req.user!.id,
+          actorRole: req.user!.role,
+          action: "ADMIN_PRIVILEGED_PROFILE_DELETE",
+          targetType: "PROFILE",
+          targetId: profile.id,
+          reason: accessCheck.reason,
         });
       }
-      await db.recordAuditEvent({
-        userId: profile.userId,
-        actorId: req.user!.id,
-        actorRole: req.user!.role,
-        action: 'ADMIN_PRIVILEGED_PROFILE_DELETE',
-        targetType: 'PROFILE',
-        targetId: profile.id,
-        reason: accessCheck.reason
-      });
+      const deleted = await db.deleteProfile(id);
+      if (!deleted) return res.status(404).json({ error: "PROFILE_NOT_FOUND" });
+      res.json({ status: "DELETED" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    const deleted = await db.deleteProfile(id);
-    if (!deleted) return res.status(404).json({ error: 'PROFILE_NOT_FOUND' });
-    res.json({ status: 'DELETED' });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // ==================== 4. SAVED REPORTS & CHARTS ====================
 
-app.post('/api/reports/save', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { title, reportType, payload } = req.body;
-  if (!title || !reportType || !payload) {
-    return res.status(400).json({ error: 'MISSING_FIELDS', message: 'title, reportType, and payload are required.' });
-  }
+app.post(
+  "/api/reports/save",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { title, reportType, payload } = req.body;
+    if (!title || !reportType || !payload) {
+      return res.status(400).json({
+        error: "MISSING_FIELDS",
+        message: "title, reportType, and payload are required.",
+      });
+    }
 
-  try {
-    const report = await db.createSavedReport({
-      userId: req.user!.id,
-      title: String(title).trim(),
-      reportType,
-      payload
-    });
-    res.json(report);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    try {
+      const report = await db.createSavedReport({
+        userId: req.user!.id,
+        title: String(title).trim(),
+        reportType,
+        payload,
+      });
+      res.json(report);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // GET /api/reports/catalogue (Public catalogue of individual report products)
-app.get('/api/reports/catalogue', (_req: Request, res: Response) => {
+app.get("/api/reports/catalogue", (_req: Request, res: Response) => {
   res.json({
     success: true,
     catalogue: Object.values(REPORT_CATALOGUE),
-    disclaimer: 'Personalized reports are digital publications viewable exclusively inside the private online reader.'
+    disclaimer:
+      "Personalized reports are digital publications viewable exclusively inside the private online reader.",
   });
 });
 
 // GET /api/reports/reader/:id (Private, online-only paginated report reader)
-app.get('/api/reports/reader/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
+app.get(
+  "/api/reports/reader/:id",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
 
-  try {
-    const report = await db.getSavedReportById(id);
-    if (!report) {
-      return res.status(404).json({ error: 'REPORT_NOT_FOUND', message: 'Report publication not found.' });
+    try {
+      const report = await db.getSavedReportById(id);
+      if (!report) {
+        return res.status(404).json({
+          error: "REPORT_NOT_FOUND",
+          message: "Report publication not found.",
+        });
+      }
+
+      // Strict ownership gate
+      if (report.userId !== req.user!.id) {
+        const accessCheck = validatePrivilegedCustomerAccess(
+          req.user!,
+          report.userId,
+          req,
+        );
+        if (!accessCheck.authorized) {
+          return res.status(accessCheck.statusCode || 403).json({
+            error: accessCheck.error,
+            message: accessCheck.message,
+          });
+        }
+        await db.recordAuditEvent({
+          userId: report.userId,
+          actorId: req.user!.id,
+          actorRole: req.user!.role,
+          action: "ADMIN_PRIVILEGED_REPORT_READ",
+          targetType: "SAVED_REPORT",
+          targetId: report.id,
+          reason: accessCheck.reason,
+        });
+      }
+
+      // Anti-download, anti-scraping, private reader headers
+      res.setHeader(
+        "Cache-Control",
+        "private, no-store, no-cache, must-revalidate, max-age=0",
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("X-Frame-Options", "SAMEORIGIN");
+
+      res.json({
+        success: true,
+        reportId: report.id,
+        title: report.title,
+        reportType: report.reportType,
+        createdAt: report.createdAt,
+        document: report.payload,
+        readerSettings: {
+          onlineOnly: true,
+          downloadAllowed: false,
+          printProtected: true,
+          watermarkEnabled: true,
+          disclaimer:
+            "Personalized private publication. Screenshots or external optical recording cannot be technically prevented.",
+        },
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to fetch report for reader");
     }
+  },
+);
 
-    // Strict ownership gate
-    if (report.userId !== req.user!.id) {
-      const accessCheck = validatePrivilegedCustomerAccess(req.user!, report.userId, req);
+app.get(
+  "/api/reports/:userId",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { userId } = req.params;
+    if (req.user!.id !== userId) {
+      const accessCheck = validatePrivilegedCustomerAccess(
+        req.user!,
+        userId,
+        req,
+      );
       if (!accessCheck.authorized) {
         return res.status(accessCheck.statusCode || 403).json({
           error: accessCheck.error,
-          message: accessCheck.message
+          message: accessCheck.message,
         });
       }
       await db.recordAuditEvent({
-        userId: report.userId,
+        userId,
         actorId: req.user!.id,
         actorRole: req.user!.role,
-        action: 'ADMIN_PRIVILEGED_REPORT_READ',
-        targetType: 'SAVED_REPORT',
-        targetId: report.id,
-        reason: accessCheck.reason
+        action: "ADMIN_PRIVILEGED_REPORTS_LIST",
+        targetType: "SAVED_REPORT",
+        targetId: userId,
+        reason: accessCheck.reason,
       });
     }
-
-    // Anti-download, anti-scraping, private reader headers
-    res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-
-    res.json({
-      success: true,
-      reportId: report.id,
-      title: report.title,
-      reportType: report.reportType,
-      createdAt: report.createdAt,
-      document: report.payload,
-      readerSettings: {
-        onlineOnly: true,
-        downloadAllowed: false,
-        printProtected: true,
-        watermarkEnabled: true,
-        disclaimer: 'Personalized private publication. Screenshots or external optical recording cannot be technically prevented.'
-      }
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to fetch report for reader');
-  }
-});
-
-app.get('/api/reports/:userId', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { userId } = req.params;
-  if (req.user!.id !== userId) {
-    const accessCheck = validatePrivilegedCustomerAccess(req.user!, userId, req);
-    if (!accessCheck.authorized) {
-      return res.status(accessCheck.statusCode || 403).json({
-        error: accessCheck.error,
-        message: accessCheck.message
-      });
+    try {
+      const reports = await db.getSavedReportsByUserId(userId);
+      res.json(reports);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    await db.recordAuditEvent({
-      userId,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_PRIVILEGED_REPORTS_LIST',
-      targetType: 'SAVED_REPORT',
-      targetId: userId,
-      reason: accessCheck.reason
-    });
-  }
-  try {
-    const reports = await db.getSavedReportsByUserId(userId);
-    res.json(reports);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
-app.get('/api/reports/detail/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  try {
-    const report = await db.getSavedReportById(id);
-    if (!report) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
-    if (report.userId !== req.user!.id) {
-      const accessCheck = validatePrivilegedCustomerAccess(req.user!, report.userId, req);
-      if (!accessCheck.authorized) {
-        return res.status(accessCheck.statusCode || 403).json({
-          error: accessCheck.error,
-          message: accessCheck.message
+app.get(
+  "/api/reports/detail/:id",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+      const report = await db.getSavedReportById(id);
+      if (!report) return res.status(404).json({ error: "REPORT_NOT_FOUND" });
+      if (report.userId !== req.user!.id) {
+        const accessCheck = validatePrivilegedCustomerAccess(
+          req.user!,
+          report.userId,
+          req,
+        );
+        if (!accessCheck.authorized) {
+          return res.status(accessCheck.statusCode || 403).json({
+            error: accessCheck.error,
+            message: accessCheck.message,
+          });
+        }
+        await db.recordAuditEvent({
+          userId: report.userId,
+          actorId: req.user!.id,
+          actorRole: req.user!.role,
+          action: "ADMIN_PRIVILEGED_REPORT_DETAIL_VIEW",
+          targetType: "SAVED_REPORT",
+          targetId: report.id,
+          reason: accessCheck.reason,
         });
       }
-      await db.recordAuditEvent({
-        userId: report.userId,
-        actorId: req.user!.id,
-        actorRole: req.user!.role,
-        action: 'ADMIN_PRIVILEGED_REPORT_DETAIL_VIEW',
-        targetType: 'SAVED_REPORT',
-        targetId: report.id,
-        reason: accessCheck.reason
-      });
+      res.json(report);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    res.json(report);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
-app.delete('/api/reports/:id', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  try {
-    const report = await db.getSavedReportById(id);
-    if (!report) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
-    if (report.userId !== req.user!.id) {
-      const accessCheck = validatePrivilegedCustomerAccess(req.user!, report.userId, req);
-      if (!accessCheck.authorized) {
-        return res.status(accessCheck.statusCode || 403).json({
-          error: accessCheck.error,
-          message: accessCheck.message
+app.delete(
+  "/api/reports/:id",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    try {
+      const report = await db.getSavedReportById(id);
+      if (!report) return res.status(404).json({ error: "REPORT_NOT_FOUND" });
+      if (report.userId !== req.user!.id) {
+        const accessCheck = validatePrivilegedCustomerAccess(
+          req.user!,
+          report.userId,
+          req,
+        );
+        if (!accessCheck.authorized) {
+          return res.status(accessCheck.statusCode || 403).json({
+            error: accessCheck.error,
+            message: accessCheck.message,
+          });
+        }
+        await db.recordAuditEvent({
+          userId: report.userId,
+          actorId: req.user!.id,
+          actorRole: req.user!.role,
+          action: "ADMIN_PRIVILEGED_REPORT_DELETE",
+          targetType: "SAVED_REPORT",
+          targetId: report.id,
+          reason: accessCheck.reason,
         });
       }
-      await db.recordAuditEvent({
-        userId: report.userId,
-        actorId: req.user!.id,
-        actorRole: req.user!.role,
-        action: 'ADMIN_PRIVILEGED_REPORT_DELETE',
-        targetType: 'SAVED_REPORT',
-        targetId: report.id,
-        reason: accessCheck.reason
-      });
+      const deleted = await db.deleteSavedReport(id);
+      if (!deleted) return res.status(404).json({ error: "REPORT_NOT_FOUND" });
+      res.json({ status: "DELETED" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    const deleted = await db.deleteSavedReport(id);
-    if (!deleted) return res.status(404).json({ error: 'REPORT_NOT_FOUND' });
-    res.json({ status: 'DELETED' });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // ==================== 5. WALLET & PAYMENT GATEWAY ====================
 
-export const MIN_RECHARGE_AMOUNT = 1.00;
+export const MIN_RECHARGE_AMOUNT = 1.0;
 export const MAX_RECHARGE_AMOUNT = 50000;
 export const RECHARGE_GST_RATE = 0.18;
 
@@ -3255,31 +4056,35 @@ export const RECHARGE_GST_RATE = 0.18;
  * - Aliases /api/webhooks/cashfree and /api/cashfree/webhook return backward-compatible diagnostic status:
  *   { "status": "ONLINE", ... }
  */
-export const cashfreeWebhookReachabilityHandler = (req: Request, res: Response) => {
-  const normPath = (req.path || '').replace(/\/+$/, '') || '/';
-  if (normPath === '/api/wallet/webhook') {
+export const cashfreeWebhookReachabilityHandler = (
+  req: Request,
+  res: Response,
+) => {
+  const normPath = (req.path || "").replace(/\/+$/, "") || "/";
+  if (normPath === "/api/wallet/webhook") {
     return res.status(200).json({
-      status: 'REACHABLE',
-      endpoint: 'cashfree_webhook',
-      acceptedMethod: 'POST',
-      authentication: 'CASHFREE_SIGNATURE'
+      status: "REACHABLE",
+      endpoint: "cashfree_webhook",
+      acceptedMethod: "POST",
+      authentication: "CASHFREE_SIGNATURE",
     });
   }
   return res.status(200).json({
-    status: 'ONLINE',
+    status: "ONLINE",
     endpoint: req.path,
-    protocol: 'HTTP POST',
-    message: 'Cashfree webhook receiver is online and operational. Payment lifecycle events must be dispatched via HTTP POST with cryptographic x-webhook-signature and x-webhook-timestamp headers.',
-    provider: 'Cashfree Payments',
-    apiVersion: '2026-01-01',
+    protocol: "HTTP POST",
+    message:
+      "Cashfree webhook receiver is online and operational. Payment lifecycle events must be dispatched via HTTP POST with cryptographic x-webhook-signature and x-webhook-timestamp headers.",
+    provider: "Cashfree Payments",
+    apiVersion: "2026-01-01",
     supportedEvents: [
-      'PAYMENT_SUCCESS_WEBHOOK',
-      'PAYMENT_FAILED_WEBHOOK',
-      'PAYMENT_USER_DROPPED_WEBHOOK',
-      'REFUND_STATUS_WEBHOOK',
-      'SETTLEMENT_SUCCESS'
+      "PAYMENT_SUCCESS_WEBHOOK",
+      "PAYMENT_FAILED_WEBHOOK",
+      "PAYMENT_USER_DROPPED_WEBHOOK",
+      "REFUND_STATUS_WEBHOOK",
+      "SETTLEMENT_SUCCESS",
     ],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };
 
@@ -3290,62 +4095,72 @@ app.head(CASHFREE_WEBHOOK_PATHS, (_req: Request, res: Response) => {
 });
 
 app.options(CASHFREE_WEBHOOK_PATHS, (_req: Request, res: Response) => {
-  res.setHeader('Allow', 'POST, GET, HEAD, OPTIONS');
+  res.setHeader("Allow", "POST, GET, HEAD, OPTIONS");
   return res.status(204).end();
 });
 
-app.all(CASHFREE_WEBHOOK_PATHS, (req: Request, res: Response, next: NextFunction) => {
-  if (['POST', 'GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-    return next();
-  }
-  res.setHeader('Allow', 'POST, GET, HEAD, OPTIONS');
-  return res.status(405).json({
-    error: 'METHOD_NOT_ALLOWED',
-    message: 'Only POST (for webhooks), GET (for reachability), HEAD, and OPTIONS methods are allowed.'
-  });
-});
+app.all(
+  CASHFREE_WEBHOOK_PATHS,
+  (req: Request, res: Response, next: NextFunction) => {
+    if (["POST", "GET", "HEAD", "OPTIONS"].includes(req.method)) {
+      return next();
+    }
+    res.setHeader("Allow", "POST, GET, HEAD, OPTIONS");
+    return res.status(405).json({
+      error: "METHOD_NOT_ALLOWED",
+      message:
+        "Only POST (for webhooks), GET (for reachability), HEAD, and OPTIONS methods are allowed.",
+    });
+  },
+);
 
 /**
  * POST /api/wallet/webhook & aliases (Asynchronous Cryptographically Verified Webhook Handler)
  */
 app.post(CASHFREE_WEBHOOK_PATHS, async (req: Request, res: Response) => {
   try {
-    const signature = req.headers['x-webhook-signature'] as string;
-    const timestamp = req.headers['x-webhook-timestamp'] as string;
+    const signature = req.headers["x-webhook-signature"] as string;
+    const timestamp = req.headers["x-webhook-timestamp"] as string;
 
     if (!signature || !timestamp) {
       return res.status(400).json({
-        error: 'MISSING_SIGNATURE_HEADERS',
-        message: 'x-webhook-signature and x-webhook-timestamp headers are required.'
+        error: "MISSING_SIGNATURE_HEADERS",
+        message:
+          "x-webhook-signature and x-webhook-timestamp headers are required.",
       });
     }
 
-    const rawPayload: Buffer = (req as any).rawBody ||
-      (typeof req.body === 'string'
+    const rawPayload: Buffer =
+      (req as any).rawBody ||
+      (typeof req.body === "string"
         ? Buffer.from(req.body)
-        : (req.body && Object.keys(req.body).length > 0
+        : req.body && Object.keys(req.body).length > 0
           ? Buffer.from(JSON.stringify(req.body))
-          : Buffer.alloc(0)));
+          : Buffer.alloc(0));
 
     if (!rawPayload || rawPayload.length === 0) {
       return res.status(400).json({
-        error: 'EMPTY_PAYLOAD',
-        message: 'Webhook payload cannot be empty.'
+        error: "EMPTY_PAYLOAD",
+        message: "Webhook payload cannot be empty.",
       });
     }
 
     if (rawPayload.length > 512 * 1024) {
       return res.status(413).json({
-        error: 'PAYLOAD_TOO_LARGE',
-        message: 'Webhook payload exceeds maximum size of 512 KB.'
+        error: "PAYLOAD_TOO_LARGE",
+        message: "Webhook payload exceeds maximum size of 512 KB.",
       });
     }
 
-    const isValid = verifyCashfreeWebhookSignature(rawPayload, timestamp, signature);
+    const isValid = verifyCashfreeWebhookSignature(
+      rawPayload,
+      timestamp,
+      signature,
+    );
     if (!isValid) {
       return res.status(401).json({
-        error: 'INVALID_SIGNATURE',
-        message: 'Cashfree webhook signature verification failed.'
+        error: "INVALID_SIGNATURE",
+        message: "Cashfree webhook signature verification failed.",
       });
     }
 
@@ -3359,134 +4174,185 @@ app.post(CASHFREE_WEBHOOK_PATHS, async (req: Request, res: Response) => {
     }
     if (isNaN(tsMs)) {
       return res.status(400).json({
-        error: 'INVALID_TIMESTAMP',
-        message: 'x-webhook-timestamp format is invalid.'
+        error: "INVALID_TIMESTAMP",
+        message: "x-webhook-timestamp format is invalid.",
       });
     }
 
     const driftSec = Math.abs(Date.now() - tsMs) / 1000;
-    const isEnforceDrift = process.env.CASHFREE_ENFORCE_TIMESTAMP_WINDOW === 'true' ||
-      req.headers['x-enforce-timestamp-window'] === 'true' ||
-      (process.env.NODE_ENV !== 'test' && !process.env.CASHFREE_SKIP_TIMESTAMP_CHECK);
+    const isEnforceDrift =
+      process.env.CASHFREE_ENFORCE_TIMESTAMP_WINDOW === "true" ||
+      req.headers["x-enforce-timestamp-window"] === "true" ||
+      (process.env.NODE_ENV !== "test" &&
+        !process.env.CASHFREE_SKIP_TIMESTAMP_CHECK);
 
     if (isEnforceDrift && driftSec > 300) {
       return res.status(400).json({
-        error: 'TIMESTAMP_EXPIRED',
-        message: `Webhook timestamp has drifted by ${Math.round(driftSec)}s (maximum allowed: 300s).`
+        error: "TIMESTAMP_EXPIRED",
+        message: `Webhook timestamp has drifted by ${Math.round(driftSec)}s (maximum allowed: 300s).`,
       });
     }
 
     let event: any;
     try {
-      event = typeof req.body === 'object' && req.body !== null && !Buffer.isBuffer(req.body)
-        ? req.body
-        : JSON.parse(rawPayload.toString('utf8'));
+      event =
+        typeof req.body === "object" &&
+        req.body !== null &&
+        !Buffer.isBuffer(req.body)
+          ? req.body
+          : JSON.parse(rawPayload.toString("utf8"));
     } catch {
       return res.status(400).json({
-        error: 'MALFORMED_JSON',
-        message: 'Failed to parse webhook JSON payload.'
+        error: "MALFORMED_JSON",
+        message: "Failed to parse webhook JSON payload.",
       });
     }
 
-    const idempotencyKey = (req.headers['x-idempotency-key'] as string) ||
+    const idempotencyKey =
+      (req.headers["x-idempotency-key"] as string) ||
       (event.event_id as string) ||
-      (event.data?.order?.order_id && event.data?.payment?.cf_payment_id ? `${event.type}_${event.data.order.order_id}_${event.data.payment.cf_payment_id}` : null) ||
-      (event.data?.order?.order_id ? `${event.type}_${event.data.order.order_id}` : null) ||
-      crypto.createHash('sha256').update(timestamp + rawPayload.toString('utf8')).digest('hex');
+      (event.data?.order?.order_id && event.data?.payment?.cf_payment_id
+        ? `${event.type}_${event.data.order.order_id}_${event.data.payment.cf_payment_id}`
+        : null) ||
+      (event.data?.order?.order_id
+        ? `${event.type}_${event.data.order.order_id}`
+        : null) ||
+      crypto
+        .createHash("sha256")
+        .update(timestamp + rawPayload.toString("utf8"))
+        .digest("hex");
 
-    const payloadHash = crypto.createHash('sha256').update(rawPayload.toString('utf8')).digest('hex');
+    const payloadHash = crypto
+      .createHash("sha256")
+      .update(rawPayload.toString("utf8"))
+      .digest("hex");
     const claim = await db.claimWebhookEvent({
       eventId: idempotencyKey,
-      provider: 'CASHFREE',
+      provider: "CASHFREE",
       orderId: event.data?.order?.order_id || null,
-      paymentId: event.data?.payment?.cf_payment_id ? String(event.data.payment.cf_payment_id) : null,
-      eventType: event.type || 'PAYMENT_EVENT',
-      payloadHash
+      paymentId: event.data?.payment?.cf_payment_id
+        ? String(event.data.payment.cf_payment_id)
+        : null,
+      eventType: event.type || "PAYMENT_EVENT",
+      payloadHash,
     });
 
     if (!claim.claimed) {
       return res.status(200).json({
-        status: 'ok',
+        status: "ok",
         alreadyProcessed: true,
-        message: 'Cashfree webhook event was already processed or is actively being processed idempotently.',
-        processingStatus: claim.status
+        message:
+          "Cashfree webhook event was already processed or is actively being processed idempotently.",
+        processingStatus: claim.status,
       });
     }
 
     try {
       const eventType = event.type;
-      if (eventType === 'PAYMENT_SUCCESS_WEBHOOK') {
+      if (eventType === "PAYMENT_SUCCESS_WEBHOOK") {
         const orderData = event.data?.order;
         const paymentData = event.data?.payment;
         const orderId = orderData?.order_id;
-        const paymentId = paymentData?.cf_payment_id ? String(paymentData.cf_payment_id) : null;
+        const paymentId = paymentData?.cf_payment_id
+          ? String(paymentData.cf_payment_id)
+          : null;
 
         if (!orderId) {
-          await db.failWebhookEvent(idempotencyKey, 'MISSING_ORDER_ID');
+          await db.failWebhookEvent(idempotencyKey, "MISSING_ORDER_ID");
           return res.status(400).json({
-            error: 'MISSING_ORDER_ID',
-            message: 'Order ID is required in webhook payload.'
+            error: "MISSING_ORDER_ID",
+            message: "Order ID is required in webhook payload.",
           });
         }
 
         if (!paymentId) {
-          await db.failWebhookEvent(idempotencyKey, 'MISSING_PAYMENT_ID');
+          await db.failWebhookEvent(idempotencyKey, "MISSING_PAYMENT_ID");
           return res.status(400).json({
-            error: 'MISSING_PAYMENT_ID',
-            message: 'Payment ID is required for successful payment fulfilment.'
+            error: "MISSING_PAYMENT_ID",
+            message:
+              "Payment ID is required for successful payment fulfilment.",
           });
         }
 
         const order = await db.findPaymentOrderByIdAsync(orderId);
         if (!order) {
-          await db.failWebhookEvent(idempotencyKey, 'ORDER_NOT_FOUND');
+          await db.failWebhookEvent(idempotencyKey, "ORDER_NOT_FOUND");
           return res.status(404).json({
-            error: 'ORDER_NOT_FOUND',
-            message: 'Payment order ' + orderId + ' does not exist.'
+            error: "ORDER_NOT_FOUND",
+            message: "Payment order " + orderId + " does not exist.",
           });
         }
 
-        const paidAmount = Number(orderData?.order_amount ?? paymentData?.payment_amount);
+        const paidAmount = Number(
+          orderData?.order_amount ?? paymentData?.payment_amount,
+        );
         if (isNaN(paidAmount) || Math.abs(paidAmount - order.amount) > 0.01) {
-          await db.failWebhookEvent(idempotencyKey, 'AMOUNT_MISMATCH');
+          await db.failWebhookEvent(idempotencyKey, "AMOUNT_MISMATCH");
           return res.status(400).json({
-            error: 'AMOUNT_MISMATCH',
-            message: 'Payment amount (' + paidAmount + ') does not match expected order amount (' + order.amount + ').'
+            error: "AMOUNT_MISMATCH",
+            message:
+              "Payment amount (" +
+              paidAmount +
+              ") does not match expected order amount (" +
+              order.amount +
+              ").",
           });
         }
 
-        const paidCurrency = String(orderData?.order_currency || paymentData?.payment_currency || 'INR').toUpperCase();
-        const orderCurrency = String(order.currency || 'INR').toUpperCase();
+        const paidCurrency = String(
+          orderData?.order_currency || paymentData?.payment_currency || "INR",
+        ).toUpperCase();
+        const orderCurrency = String(order.currency || "INR").toUpperCase();
         if (paidCurrency !== orderCurrency) {
-          await db.failWebhookEvent(idempotencyKey, 'CURRENCY_MISMATCH');
+          await db.failWebhookEvent(idempotencyKey, "CURRENCY_MISMATCH");
           return res.status(400).json({
-            error: 'CURRENCY_MISMATCH',
-            message: 'Payment currency (' + paidCurrency + ') does not match order currency (' + orderCurrency + ').'
+            error: "CURRENCY_MISMATCH",
+            message:
+              "Payment currency (" +
+              paidCurrency +
+              ") does not match order currency (" +
+              orderCurrency +
+              ").",
           });
         }
 
         const paymentStatus = paymentData?.payment_status;
-        if (paymentStatus && paymentStatus !== 'SUCCESS') {
-          await db.failWebhookEvent(idempotencyKey, 'INVALID_PAYMENT_STATUS');
+        if (paymentStatus && paymentStatus !== "SUCCESS") {
+          await db.failWebhookEvent(idempotencyKey, "INVALID_PAYMENT_STATUS");
           return res.status(400).json({
-            error: 'INVALID_PAYMENT_STATUS',
-            message: 'Payment status ' + paymentStatus + ' is not eligible for fulfilment.'
+            error: "INVALID_PAYMENT_STATUS",
+            message:
+              "Payment status " +
+              paymentStatus +
+              " is not eligible for fulfilment.",
           });
         }
 
         if (order.status !== OrderStatus.PAID) {
-          if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
-            await db.rechargeWallet(order.userId, order.amount, paymentId, order.providerOrderId, 'CASHFREE');
-          } else if (order.productType === 'SUBSCRIPTION') {
-            const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-            const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
-            const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
-              ? BillingPeriod.ANNUAL
-              : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
-                ? BillingPeriod.MONTHLY
-                : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
-                  ? BillingPeriod.ANNUAL
-                  : BillingPeriod.MONTHLY));
+          if (order.productType === "WALLET_RECHARGE" || !order.productType) {
+            await db.rechargeWallet(
+              order.userId,
+              order.amount,
+              paymentId,
+              order.providerOrderId,
+              "CASHFREE",
+            );
+          } else if (order.productType === "SUBSCRIPTION") {
+            const targetTier =
+              (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+            const rawPeriod =
+              order.billingPeriod || order.metadata?.billingPeriod;
+            const period: BillingPeriod =
+              rawPeriod === "ANNUAL" || rawPeriod === BillingPeriod.ANNUAL
+                ? BillingPeriod.ANNUAL
+                : rawPeriod === "MONTHLY" || rawPeriod === BillingPeriod.MONTHLY
+                  ? BillingPeriod.MONTHLY
+                  : SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise &&
+                      Math.round(
+                        SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100,
+                      ) === Math.round(order.amount)
+                    ? BillingPeriod.ANNUAL
+                    : BillingPeriod.MONTHLY;
             const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
             await db.fulfillPaidSubscriptionOrder({
               userId: order.userId,
@@ -3496,48 +4362,59 @@ app.post(CASHFREE_WEBHOOK_PATHS, async (req: Request, res: Response) => {
               orderId: order.providerOrderId,
               paymentId,
               amount: order.amount,
-              provider: 'CASHFREE',
-              currency: 'INR'
+              provider: "CASHFREE",
+              currency: "INR",
             });
           } else {
-            await db.markPaymentOrderPaid(order.providerOrderId, paymentId, 'CASHFREE');
+            await db.markPaymentOrderPaid(
+              order.providerOrderId,
+              paymentId,
+              "CASHFREE",
+            );
           }
         }
-      } else if (eventType === 'PAYMENT_FAILED_WEBHOOK' || eventType === 'PAYMENT_USER_DROPPED_WEBHOOK') {
+      } else if (
+        eventType === "PAYMENT_FAILED_WEBHOOK" ||
+        eventType === "PAYMENT_USER_DROPPED_WEBHOOK"
+      ) {
         const orderData = event.data?.order;
         const orderId = orderData?.order_id;
         if (orderId) {
           try {
             await db.markPaymentOrderFailed(orderId, eventType);
           } catch (err: any) {
-            console.warn('[CASHFREE_WEBHOOK] Failed to mark order failed:', err?.message || err);
+            console.warn(
+              "[CASHFREE_WEBHOOK] Failed to mark order failed:",
+              err?.message || err,
+            );
           }
         }
       }
 
       await db.completeWebhookEvent(idempotencyKey);
       return res.status(200).json({
-        status: 'ok',
+        status: "ok",
         received: true,
         type: eventType,
-        message: 'Cashfree webhook event processed successfully.',
+        message: "Cashfree webhook event processed successfully.",
         event: eventType,
         processed: true,
-        idempotencyKey
+        idempotencyKey,
       });
     } catch (whErr: any) {
       await db.failWebhookEvent(idempotencyKey, whErr?.message || whErr);
-      console.error('[CASHFREE_WEBHOOK] Processing error:', whErr);
+      console.error("[CASHFREE_WEBHOOK] Processing error:", whErr);
       return res.status(500).json({
-        error: 'TRANSACTION_FAILURE',
-        message: 'Internal server error while processing webhook. Event remains retryable.'
+        error: "TRANSACTION_FAILURE",
+        message:
+          "Internal server error while processing webhook. Event remains retryable.",
       });
     }
   } catch (err: any) {
-    console.error('[CASHFREE_WEBHOOK] Unexpected webhook error:', err);
+    console.error("[CASHFREE_WEBHOOK] Unexpected webhook error:", err);
     return res.status(500).json({
-      error: 'INTERNAL_ERROR',
-      message: 'Failed to process webhook callback.'
+      error: "INTERNAL_ERROR",
+      message: "Failed to process webhook callback.",
     });
   }
 });
@@ -3547,12 +4424,17 @@ app.post(CASHFREE_WEBHOOK_PATHS, async (req: Request, res: Response) => {
  * Stale clients requesting POST /api/wallet/recharge are rejected with HTTP 400
  * directing them to use the authentic cryptographic order-and-verify flow.
  */
-app.post('/api/wallet/recharge', authenticate, (_req: AuthenticatedRequest, res: Response) => {
-  return res.status(400).json({
-    error: 'DEPRECATED_ENDPOINT',
-    message: 'Direct balance recharge is disabled for financial integrity. All wallet recharges must use the authenticated order flow: POST /api/wallet/create-order followed by POST /api/wallet/verify-payment.'
-  });
-});
+app.post(
+  "/api/wallet/recharge",
+  authenticate,
+  (_req: AuthenticatedRequest, res: Response) => {
+    return res.status(400).json({
+      error: "DEPRECATED_ENDPOINT",
+      message:
+        "Direct balance recharge is disabled for financial integrity. All wallet recharges must use the authenticated order flow: POST /api/wallet/create-order followed by POST /api/wallet/verify-payment.",
+    });
+  },
+);
 
 export interface RechargePackage {
   id: string;
@@ -3566,44 +4448,135 @@ export interface RechargePackage {
 }
 
 export const APPROVED_RECHARGE_PACKAGES: RechargePackage[] = [
-  { id: 'pack_100', baseAmount: 100, gstAmount: 18, totalPayable: 118, bonus: 10, totalCredit: 110, label: 'Starter Cosmic Pack' },
-  { id: 'pack_250', baseAmount: 250, gstAmount: 45, totalPayable: 295, bonus: 35, totalCredit: 285, label: 'Celestial Seeker Pack', popular: true },
-  { id: 'pack_500', baseAmount: 500, gstAmount: 90, totalPayable: 590, bonus: 100, totalCredit: 600, label: 'Divine Astral Pack' },
-  { id: 'pack_1000', baseAmount: 1000, gstAmount: 180, totalPayable: 1180, bonus: 250, totalCredit: 1250, label: 'Rishi Wisdom Pack' },
-  { id: 'pack_2000', baseAmount: 2000, gstAmount: 360, totalPayable: 2360, bonus: 600, totalCredit: 2600, label: 'Guru Divine Pack' },
-  { id: 'pack_5000', baseAmount: 5000, gstAmount: 900, totalPayable: 5900, bonus: 1750, totalCredit: 6750, label: 'Maharishi Master Pack' }
+  {
+    id: "pack_100",
+    baseAmount: 100,
+    gstAmount: 18,
+    totalPayable: 118,
+    bonus: 10,
+    totalCredit: 110,
+    label: "Starter Cosmic Pack",
+  },
+  {
+    id: "pack_250",
+    baseAmount: 250,
+    gstAmount: 45,
+    totalPayable: 295,
+    bonus: 35,
+    totalCredit: 285,
+    label: "Celestial Seeker Pack",
+    popular: true,
+  },
+  {
+    id: "pack_500",
+    baseAmount: 500,
+    gstAmount: 90,
+    totalPayable: 590,
+    bonus: 100,
+    totalCredit: 600,
+    label: "Divine Astral Pack",
+  },
+  {
+    id: "pack_1000",
+    baseAmount: 1000,
+    gstAmount: 180,
+    totalPayable: 1180,
+    bonus: 250,
+    totalCredit: 1250,
+    label: "Rishi Wisdom Pack",
+  },
+  {
+    id: "pack_2000",
+    baseAmount: 2000,
+    gstAmount: 360,
+    totalPayable: 2360,
+    bonus: 600,
+    totalCredit: 2600,
+    label: "Guru Divine Pack",
+  },
+  {
+    id: "pack_5000",
+    baseAmount: 5000,
+    gstAmount: 900,
+    totalPayable: 5900,
+    bonus: 1750,
+    totalCredit: 6750,
+    label: "Maharishi Master Pack",
+  },
 ];
 
-export function validateRechargeAmount(amount: any): { valid: boolean; normalizedAmount: number; error?: string } {
-  if (amount == null || (typeof amount !== 'number' && typeof amount !== 'string')) {
-    return { valid: false, normalizedAmount: 0, error: 'Recharge amount must be a numeric value.' };
+export function validateRechargeAmount(amount: any): {
+  valid: boolean;
+  normalizedAmount: number;
+  error?: string;
+} {
+  if (
+    amount == null ||
+    (typeof amount !== "number" && typeof amount !== "string")
+  ) {
+    return {
+      valid: false,
+      normalizedAmount: 0,
+      error: "Recharge amount must be a numeric value.",
+    };
   }
-  if (typeof amount === 'string') {
+  if (typeof amount === "string") {
     const trimmed = amount.trim();
     if (!trimmed) {
-      return { valid: false, normalizedAmount: 0, error: 'Recharge amount cannot be empty.' };
+      return {
+        valid: false,
+        normalizedAmount: 0,
+        error: "Recharge amount cannot be empty.",
+      };
     }
-    if (trimmed.includes('e') || trimmed.includes('E')) {
-      return { valid: false, normalizedAmount: 0, error: 'Scientific notation is not permitted.' };
+    if (trimmed.includes("e") || trimmed.includes("E")) {
+      return {
+        valid: false,
+        normalizedAmount: 0,
+        error: "Scientific notation is not permitted.",
+      };
     }
-    const decParts = trimmed.split('.');
-    if (decParts.length > 2 || (decParts.length === 2 && decParts[1].length > 2)) {
-      return { valid: false, normalizedAmount: 0, error: 'Recharge amount cannot exceed 2 decimal places.' };
+    const decParts = trimmed.split(".");
+    if (
+      decParts.length > 2 ||
+      (decParts.length === 2 && decParts[1].length > 2)
+    ) {
+      return {
+        valid: false,
+        normalizedAmount: 0,
+        error: "Recharge amount cannot exceed 2 decimal places.",
+      };
     }
   }
   const num = Number(amount);
   if (!Number.isFinite(num) || isNaN(num)) {
-    return { valid: false, normalizedAmount: 0, error: 'Recharge amount must be a finite number.' };
+    return {
+      valid: false,
+      normalizedAmount: 0,
+      error: "Recharge amount must be a finite number.",
+    };
   }
   if (num < MIN_RECHARGE_AMOUNT) {
-    return { valid: false, normalizedAmount: 0, error: `Minimum recharge amount is ₹${MIN_RECHARGE_AMOUNT.toFixed(2)}.` };
+    return {
+      valid: false,
+      normalizedAmount: 0,
+      error: `Minimum recharge amount is ₹${MIN_RECHARGE_AMOUNT.toFixed(2)}.`,
+    };
   }
   if (num > MAX_RECHARGE_AMOUNT) {
-    return { valid: false, normalizedAmount: 0, error: `Maximum recharge amount is ₹${MAX_RECHARGE_AMOUNT.toFixed(2)}.` };
+    return {
+      valid: false,
+      normalizedAmount: 0,
+      error: `Maximum recharge amount is ₹${MAX_RECHARGE_AMOUNT.toFixed(2)}.`,
+    };
   }
   const rounded = Math.round(num * 100) / 100;
   if (Math.abs(num - rounded) > 0.0001) {
-    return { valid: false, normalizedAmount: 0, error: 'Recharge amount cannot exceed 2 decimal places.' };
+    return {
+      valid: false,
+      normalizedAmount: 0,
+      error: "Recharge amount cannot exceed 2 decimal places.",
+    };
   }
   return { valid: true, normalizedAmount: rounded };
 }
@@ -3626,9 +4599,14 @@ export interface RechargePricingBreakdown {
   error?: string;
 }
 
-export function calculateWalletRechargePricing(amount: any, packageId?: string): RechargePricingBreakdown {
+export function calculateWalletRechargePricing(
+  amount: any,
+  packageId?: string,
+): RechargePricingBreakdown {
   let requested = amount;
-  let matchingPack = packageId ? APPROVED_RECHARGE_PACKAGES.find(p => p.id === packageId) : undefined;
+  let matchingPack = packageId
+    ? APPROVED_RECHARGE_PACKAGES.find((p) => p.id === packageId)
+    : undefined;
   if (matchingPack) {
     requested = matchingPack.baseAmount;
   }
@@ -3648,9 +4626,9 @@ export function calculateWalletRechargePricing(amount: any, packageId?: string):
       bonusPaise: 0,
       creditAmount: 0,
       creditPaise: 0,
-      currency: 'INR',
-      currencySymbol: '₹',
-      error: validation.error
+      currency: "INR",
+      currencySymbol: "₹",
+      error: validation.error,
     };
   }
 
@@ -3667,7 +4645,9 @@ export function calculateWalletRechargePricing(amount: any, packageId?: string):
 
   // Promotional bonus
   if (!matchingPack) {
-    matchingPack = APPROVED_RECHARGE_PACKAGES.find(p => Math.round(p.baseAmount * 100) === basePaise);
+    matchingPack = APPROVED_RECHARGE_PACKAGES.find(
+      (p) => Math.round(p.baseAmount * 100) === basePaise,
+    );
   }
   const bonusAmount = matchingPack ? matchingPack.bonus : 0;
   const bonusPaise = Math.round(bonusAmount * 100);
@@ -3689,18 +4669,18 @@ export function calculateWalletRechargePricing(amount: any, packageId?: string):
     bonusPaise,
     creditAmount,
     creditPaise,
-    currency: 'INR',
-    currencySymbol: '₹'
+    currency: "INR",
+    currencySymbol: "₹",
   };
 }
 
-app.get('/api/wallet/config', async (_req: Request, res: Response) => {
+app.get("/api/wallet/config", async (_req: Request, res: Response) => {
   await syncGatewayCredentialsFromDb();
   const readiness = getPaymentReadinessStatus();
   return res.json({
     success: true,
-    currency: 'INR',
-    currencySymbol: '₹',
+    currency: "INR",
+    currencySymbol: "₹",
     minAmount: MIN_RECHARGE_AMOUNT,
     maxAmount: MAX_RECHARGE_AMOUNT,
     decimalPrecision: 2,
@@ -3709,240 +4689,286 @@ app.get('/api/wallet/config', async (_req: Request, res: Response) => {
       rate: RECHARGE_GST_RATE,
       percentage: Math.round(RECHARGE_GST_RATE * 100),
       applicable: true,
-      type: 'STATUTORY_GST',
-      hsnSacCode: '998315'
+      type: "STATUTORY_GST",
+      hsnSacCode: "998315",
     },
-    packages: APPROVED_RECHARGE_PACKAGES.map(p => {
+    packages: APPROVED_RECHARGE_PACKAGES.map((p) => {
       const basePaise = Math.round(p.baseAmount * 100);
       const gstPaise = Math.round(basePaise * RECHARGE_GST_RATE);
       return {
         ...p,
         gstAmount: gstPaise / 100,
-        totalPayable: (basePaise + gstPaise) / 100
+        totalPayable: (basePaise + gstPaise) / 100,
       };
     }),
-    gateway: 'CASHFREE',
+    gateway: "CASHFREE",
     environment: readiness.environment,
-    paymentsConfigured: readiness.configured
+    paymentsConfigured: readiness.configured,
   });
 });
 
-app.post('/api/wallet/quote', async (req: Request, res: Response) => {
+app.post("/api/wallet/quote", async (req: Request, res: Response) => {
   const { amount, packageId } = req.body || {};
   const quote = calculateWalletRechargePricing(amount, packageId);
   return res.json(quote);
 });
 
-app.post('/api/wallet/create-order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const sessionUser = req.user!;
-  const clientSuppliedUserId = req.body.userId;
+app.post(
+  "/api/wallet/create-order",
+  orderLimiter,
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const sessionUser = req.user!;
+    const clientSuppliedUserId = req.body.userId;
 
-  // Derive purchasing user strictly from session; reject cross-user order creation
-  if (clientSuppliedUserId && clientSuppliedUserId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
-    return res.status(403).json({
-      error: 'FORBIDDEN',
-      message: 'Cannot create payment order for another user account.'
-    });
-  }
-  const userId = (sessionUser.role === Role.SUPER_ADMIN && clientSuppliedUserId)
-    ? clientSuppliedUserId
-    : sessionUser.id;
+    // Derive purchasing user strictly from session; reject cross-user order creation
+    if (
+      clientSuppliedUserId &&
+      clientSuppliedUserId !== sessionUser.id &&
+      sessionUser.role !== Role.SUPER_ADMIN
+    ) {
+      return res.status(403).json({
+        error: "FORBIDDEN",
+        message: "Cannot create payment order for another user account.",
+      });
+    }
+    const userId =
+      sessionUser.role === Role.SUPER_ADMIN && clientSuppliedUserId
+        ? clientSuppliedUserId
+        : sessionUser.id;
 
-  let requestedAmount = req.body.amount;
-  const packageId = req.body.packageId;
-  if (packageId) {
-    const pkg = APPROVED_RECHARGE_PACKAGES.find(p => p.id === packageId);
-    if (!pkg) {
+    let requestedAmount = req.body.amount;
+    const packageId = req.body.packageId;
+    if (packageId) {
+      const pkg = APPROVED_RECHARGE_PACKAGES.find((p) => p.id === packageId);
+      if (!pkg) {
+        return res.status(400).json({
+          error: "INVALID_PACKAGE",
+          message: `Package identifier '${packageId}' is not an approved recharge package.`,
+        });
+      }
+      requestedAmount = pkg.baseAmount;
+    }
+
+    const pricing = calculateWalletRechargePricing(requestedAmount, packageId);
+    if (!pricing.valid) {
       return res.status(400).json({
-        error: 'INVALID_PACKAGE',
-        message: `Package identifier '${packageId}' is not an approved recharge package.`
+        error: "INVALID_AMOUNT",
+        message: pricing.error,
       });
     }
-    requestedAmount = pkg.baseAmount;
-  }
 
-  const pricing = calculateWalletRechargePricing(requestedAmount, packageId);
-  if (!pricing.valid) {
-    return res.status(400).json({
-      error: 'INVALID_AMOUNT',
-      message: pricing.error
-    });
-  }
+    const idempotencyKey = (
+      (req.headers["x-idempotency-key"] as string) ||
+      (req.body.idempotencyKey as string) ||
+      ""
+    ).trim();
 
-  const idempotencyKey = ((req.headers['x-idempotency-key'] as string) || (req.body.idempotencyKey as string) || '').trim();
-
-  // Idempotency check: Reuse existing active order if same idempotencyKey provided
-  if (idempotencyKey) {
-    const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(userId, idempotencyKey);
-    if (existingOrder && existingOrder.cfPaymentSessionId && existingOrder.status === OrderStatus.CREATED) {
-      return res.json({
-        orderId: existingOrder.providerOrderId,
-        amount: existingOrder.amount,
-        amountPaise: existingOrder.amountPaise,
-        baseAmount: existingOrder.baseAmount ?? pricing.baseAmount,
-        gstAmount: existingOrder.gstAmount ?? pricing.gstAmount,
-        bonusAmount: existingOrder.bonusAmount ?? pricing.bonusAmount,
-        creditAmount: existingOrder.creditAmount ?? pricing.creditAmount,
-        currency: existingOrder.currency,
-        provider: 'CASHFREE',
-        gateway: 'CASHFREE',
-        paymentSessionId: existingOrder.cfPaymentSessionId,
-        cfOrderId: existingOrder.cfOrderId || existingOrder.providerOrderId,
-        checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
-        reused: true,
-        isReused: true
-      });
-    }
-  }
-
-  await syncGatewayCredentialsFromDb();
-  const readiness = getPaymentReadinessStatus();
-  if (!readiness.configured) {
-    return res.status(503).json({
-      error: 'PAYMENTS_NOT_CONFIGURED',
-      readinessState: readiness.state,
-      specificError: readiness.state,
-      message: readiness.customerMessage,
-      adminExplanation: readiness.adminExplanation,
-      gateway: 'CASHFREE'
-    });
-  }
-
-  try {
-    const cfOrderId = idempotencyKey
-      ? `cf_wal_${crypto.createHash('sha256').update(userId + '_' + idempotencyKey).digest('hex').slice(0, 16)}`
-      : `cf_wal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    const userRecord = await db.findUserById(userId);
-    const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
-    const cfOrder = await createCashfreeOrder({
-      orderId: cfOrderId,
-      orderAmount: pricing.totalPayableAmount,
-      orderCurrency: 'INR',
-      customer: {
-        customer_id: userId,
-        customer_phone: userRecord?.phone || '9999999999',
-        customer_email: userRecord?.email || 'seeker@astroverse.ai',
-        customer_name: userRecord?.displayName || 'AstroVerse Seeker'
-      },
-      returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=wallet`,
-      orderNote: `Wallet Recharge: ₹${pricing.baseAmount.toFixed(2)} (+₹${pricing.gstAmount.toFixed(2)} GST)`,
-      idempotencyKey: idempotencyKey || undefined
-    });
-
-    const order = await db.createPaymentOrder({
-      userId,
-      amount: pricing.totalPayableAmount,
-      currency: 'INR',
-      provider: 'CASHFREE',
-      providerOrderId: cfOrder.order_id,
-      gateway: 'CASHFREE',
-      cfOrderId: cfOrder.order_id,
-      cfPaymentSessionId: cfOrder.payment_session_id,
-      productType: 'WALLET_RECHARGE',
-      idempotencyKey: idempotencyKey || undefined,
-      baseAmount: pricing.baseAmount,
-      gstAmount: pricing.gstAmount,
-      bonusAmount: pricing.bonusAmount,
-      creditAmount: pricing.creditAmount,
-      pricingSnapshot: {
-        totalPayableAmount: pricing.totalPayableAmount,
-        totalPayablePaise: pricing.totalPayablePaise,
-        baseAmount: pricing.baseAmount,
-        gstAmount: pricing.gstAmount,
-        bonusAmount: pricing.bonusAmount,
-        creditAmount: pricing.creditAmount,
-        catalogueVersion: '2026.01'
-      },
-      metadata: {
-        productType: 'WALLET_RECHARGE',
-        pricing
+    // Idempotency check: Reuse existing active order if same idempotencyKey provided
+    if (idempotencyKey) {
+      const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(
+        userId,
+        idempotencyKey,
+      );
+      if (
+        existingOrder &&
+        existingOrder.cfPaymentSessionId &&
+        existingOrder.status === OrderStatus.CREATED
+      ) {
+        return res.json({
+          orderId: existingOrder.providerOrderId,
+          amount: existingOrder.amount,
+          amountPaise: existingOrder.amountPaise,
+          baseAmount: existingOrder.baseAmount ?? pricing.baseAmount,
+          gstAmount: existingOrder.gstAmount ?? pricing.gstAmount,
+          bonusAmount: existingOrder.bonusAmount ?? pricing.bonusAmount,
+          creditAmount: existingOrder.creditAmount ?? pricing.creditAmount,
+          currency: existingOrder.currency,
+          provider: "CASHFREE",
+          gateway: "CASHFREE",
+          paymentSessionId: existingOrder.cfPaymentSessionId,
+          cfOrderId: existingOrder.cfOrderId || existingOrder.providerOrderId,
+          checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+          reused: true,
+          isReused: true,
+        });
       }
-    });
+    }
 
-    await db.recordAuditEvent({
-      userId,
-      action: 'PAYMENT_ORDER_CREATED',
-      targetType: 'PAYMENT_ORDER',
-      targetId: order.providerOrderId,
-      metadata: { 
+    await syncGatewayCredentialsFromDb();
+    const readiness = getPaymentReadinessStatus();
+    if (!readiness.configured) {
+      return res.status(503).json({
+        error: "PAYMENTS_NOT_CONFIGURED",
+        readinessState: readiness.state,
+        specificError: readiness.state,
+        message: readiness.customerMessage,
+        adminExplanation: readiness.adminExplanation,
+        gateway: "CASHFREE",
+      });
+    }
+
+    try {
+      const cfOrderId = idempotencyKey
+        ? `cf_wal_${crypto
+            .createHash("sha256")
+            .update(userId + "_" + idempotencyKey)
+            .digest("hex")
+            .slice(0, 16)}`
+        : `cf_wal_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+      const userRecord = await db.findUserById(userId);
+      const appBaseUrl = (
+        process.env.APP_BASE_URL || "https://astroverse-eta.vercel.app"
+      ).replace(/\/+$/, "");
+      const cfOrder = await createCashfreeOrder({
+        orderId: cfOrderId,
+        orderAmount: pricing.totalPayableAmount,
+        orderCurrency: "INR",
+        customer: {
+          customer_id: userId,
+          customer_phone: userRecord?.phone || "9999999999",
+          customer_email: userRecord?.email || "seeker@astroverse.ai",
+          customer_name: userRecord?.displayName || "AstroVerse Seeker",
+        },
+        returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=wallet`,
+        orderNote: `Wallet Recharge: ₹${pricing.baseAmount.toFixed(2)} (+₹${pricing.gstAmount.toFixed(2)} GST)`,
+        idempotencyKey: idempotencyKey || undefined,
+      });
+
+      const order = await db.createPaymentOrder({
+        userId,
         amount: pricing.totalPayableAmount,
+        currency: "INR",
+        provider: "CASHFREE",
+        providerOrderId: cfOrder.order_id,
+        gateway: "CASHFREE",
+        cfOrderId: cfOrder.order_id,
+        cfPaymentSessionId: cfOrder.payment_session_id,
+        productType: "WALLET_RECHARGE",
+        idempotencyKey: idempotencyKey || undefined,
         baseAmount: pricing.baseAmount,
         gstAmount: pricing.gstAmount,
         bonusAmount: pricing.bonusAmount,
         creditAmount: pricing.creditAmount,
-        currency: 'INR',
-        provider: 'CASHFREE',
-        cfOrderId: cfOrder.cf_order_id
-      }
-    });
+        pricingSnapshot: {
+          totalPayableAmount: pricing.totalPayableAmount,
+          totalPayablePaise: pricing.totalPayablePaise,
+          baseAmount: pricing.baseAmount,
+          gstAmount: pricing.gstAmount,
+          bonusAmount: pricing.bonusAmount,
+          creditAmount: pricing.creditAmount,
+          catalogueVersion: "2026.01",
+        },
+        metadata: {
+          productType: "WALLET_RECHARGE",
+          pricing,
+        },
+      });
 
-    res.json({
-      orderId: order.providerOrderId,
-      amount: order.amount,
-      amountPaise: order.amountPaise,
-      baseAmount: pricing.baseAmount,
-      gstAmount: pricing.gstAmount,
-      bonusAmount: pricing.bonusAmount,
-      creditAmount: pricing.creditAmount,
-      currency: order.currency,
-      provider: 'CASHFREE',
-      gateway: 'CASHFREE',
-      environment: readiness.environment,
-      paymentSessionId: cfOrder.payment_session_id,
-      cfOrderId: cfOrder.cf_order_id,
-      checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
-    });
-  } catch (error: any) {
-    return handleServiceError(res, error, 'Failed to create payment order');
-  }
-});
+      await db.recordAuditEvent({
+        userId,
+        action: "PAYMENT_ORDER_CREATED",
+        targetType: "PAYMENT_ORDER",
+        targetId: order.providerOrderId,
+        metadata: {
+          amount: pricing.totalPayableAmount,
+          baseAmount: pricing.baseAmount,
+          gstAmount: pricing.gstAmount,
+          bonusAmount: pricing.bonusAmount,
+          creditAmount: pricing.creditAmount,
+          currency: "INR",
+          provider: "CASHFREE",
+          cfOrderId: cfOrder.cf_order_id,
+        },
+      });
+
+      res.json({
+        orderId: order.providerOrderId,
+        amount: order.amount,
+        amountPaise: order.amountPaise,
+        baseAmount: pricing.baseAmount,
+        gstAmount: pricing.gstAmount,
+        bonusAmount: pricing.bonusAmount,
+        creditAmount: pricing.creditAmount,
+        currency: order.currency,
+        provider: "CASHFREE",
+        gateway: "CASHFREE",
+        environment: readiness.environment,
+        paymentSessionId: cfOrder.payment_session_id,
+        cfOrderId: cfOrder.cf_order_id,
+        checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+      });
+    } catch (error: any) {
+      return handleServiceError(res, error, "Failed to create payment order");
+    }
+  },
+);
 
 /**
  * Authoritatively reconciles a single Cashfree order against live Cashfree APIs and database state.
  * Returns true if an unfulfilled order was successfully recovered and fulfilled.
  */
-export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: string): Promise<{ success: boolean; action: string; order?: any }> {
+export async function reconcileCashfreeOrder(
+  orderId: string,
+  expectedUserId?: string,
+): Promise<{ success: boolean; action: string; order?: any }> {
   if (!isCashfreeConfigured()) {
-    return { success: false, action: 'CASHFREE_NOT_CONFIGURED' };
+    return { success: false, action: "CASHFREE_NOT_CONFIGURED" };
   }
   const cleanOrderId = orderId.trim();
   try {
     let order = await db.findPaymentOrderByIdAsync(cleanOrderId);
     const cfStatus = await getCashfreeOrderStatus(cleanOrderId);
     if (!cfStatus || !cfStatus.order_id) {
-      return { success: false, action: 'ORDER_NOT_FOUND_ON_CASHFREE' };
+      return { success: false, action: "ORDER_NOT_FOUND_ON_CASHFREE" };
     }
 
-    const payments = await getPaymentsForCashfreeOrder(cleanOrderId).catch(() => []);
-    const successfulPayment = payments.find(p => p.payment_status === 'SUCCESS');
-    const isPaid = (cfStatus.order_status === 'PAID') || Boolean(successfulPayment);
+    const payments = await getPaymentsForCashfreeOrder(cleanOrderId).catch(
+      () => [],
+    );
+    const successfulPayment = payments.find(
+      (p) => p.payment_status === "SUCCESS",
+    );
+    const isPaid =
+      cfStatus.order_status === "PAID" || Boolean(successfulPayment);
 
     if (!isPaid) {
-      if (cfStatus.order_status === 'EXPIRED' || cfStatus.order_status === 'CANCELLED' || cfStatus.order_status === 'TERMINATED') {
+      if (
+        cfStatus.order_status === "EXPIRED" ||
+        cfStatus.order_status === "CANCELLED" ||
+        cfStatus.order_status === "TERMINATED"
+      ) {
         if (order && order.status === OrderStatus.CREATED) {
-          await db.markPaymentOrderFailed(cleanOrderId, `Cashfree order status: ${cfStatus.order_status}`);
+          await db.markPaymentOrderFailed(
+            cleanOrderId,
+            `Cashfree order status: ${cfStatus.order_status}`,
+          );
         }
       }
-      return { success: false, action: 'NOT_PAID', order };
+      return { success: false, action: "NOT_PAID", order };
     }
 
-    const verifiedPaymentId = successfulPayment 
-      ? String(successfulPayment.cf_payment_id) 
-      : (cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : `cf_rec_${Date.now()}`);
+    const verifiedPaymentId = successfulPayment
+      ? String(successfulPayment.cf_payment_id)
+      : cfStatus.cf_order_id
+        ? String(cfStatus.cf_order_id)
+        : `cf_rec_${Date.now()}`;
 
-    const customerId = cfStatus.customer_details?.customer_id || (order ? order.userId : expectedUserId);
+    const customerId =
+      cfStatus.customer_details?.customer_id ||
+      (order ? order.userId : expectedUserId);
     if (!customerId) {
-      return { success: false, action: 'NO_CUSTOMER_ID' };
+      return { success: false, action: "NO_CUSTOMER_ID" };
     }
 
     if (expectedUserId && customerId !== expectedUserId) {
-      return { success: false, action: 'USER_MISMATCH' };
+      return { success: false, action: "USER_MISMATCH" };
     }
 
     const totalAmount = Number(cfStatus.order_amount);
     if (!order) {
-      const orderNote = cfStatus.order_note || '';
-      let productType = 'WALLET_RECHARGE';
+      const orderNote = cfStatus.order_note || "";
+      let productType = "WALLET_RECHARGE";
       let productId: string | undefined = undefined;
       let baseAmount = totalAmount;
       let gstAmount = 0;
@@ -3950,30 +4976,46 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
       let creditAmount = totalAmount;
 
       let billingPeriod: string | undefined = undefined;
-      if (cleanOrderId.startsWith('cf_sub_') || orderNote.includes('Subscription')) {
-        productType = 'SUBSCRIPTION';
-        const subMatch = orderNote.match(/Subscription:\s*([A-Z]+)\s*\((MONTHLY|ANNUAL)\)/i);
+      if (
+        cleanOrderId.startsWith("cf_sub_") ||
+        orderNote.includes("Subscription")
+      ) {
+        productType = "SUBSCRIPTION";
+        const subMatch = orderNote.match(
+          /Subscription:\s*([A-Z]+)\s*\((MONTHLY|ANNUAL)\)/i,
+        );
         if (subMatch) {
           productId = subMatch[1].toUpperCase();
           billingPeriod = subMatch[2].toUpperCase();
         } else {
           for (const [tier, plan] of Object.entries(SUBSCRIPTION_PLANS)) {
-            if (Math.round(plan.annualPricePaise / 100) === Math.round(totalAmount)) {
+            if (
+              Math.round(plan.annualPricePaise / 100) ===
+              Math.round(totalAmount)
+            ) {
               productId = tier;
-              billingPeriod = 'ANNUAL';
+              billingPeriod = "ANNUAL";
               break;
-            } else if (Math.round(plan.monthlyPricePaise / 100) === Math.round(totalAmount)) {
+            } else if (
+              Math.round(plan.monthlyPricePaise / 100) ===
+              Math.round(totalAmount)
+            ) {
               productId = tier;
-              billingPeriod = 'MONTHLY';
+              billingPeriod = "MONTHLY";
               break;
             }
           }
         }
-      } else if (cleanOrderId.startsWith('cf_rep_') || orderNote.includes('Report')) {
-        productType = 'REPORT';
+      } else if (
+        cleanOrderId.startsWith("cf_rep_") ||
+        orderNote.includes("Report")
+      ) {
+        productType = "REPORT";
       } else {
-        productType = 'WALLET_RECHARGE';
-        const pkg = APPROVED_RECHARGE_PACKAGES.find(p => Math.abs(p.totalPayable - totalAmount) < 0.01);
+        productType = "WALLET_RECHARGE";
+        const pkg = APPROVED_RECHARGE_PACKAGES.find(
+          (p) => Math.abs(p.totalPayable - totalAmount) < 0.01,
+        );
         if (pkg) {
           baseAmount = pkg.baseAmount;
           gstAmount = pkg.gstAmount;
@@ -3993,11 +5035,13 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
       order = await db.createPaymentOrder({
         userId: customerId,
         amount: totalAmount,
-        currency: cfStatus.order_currency || 'INR',
-        provider: 'CASHFREE',
+        currency: cfStatus.order_currency || "INR",
+        provider: "CASHFREE",
         providerOrderId: cfStatus.order_id,
-        gateway: 'CASHFREE',
-        cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
+        gateway: "CASHFREE",
+        cfOrderId: cfStatus.cf_order_id
+          ? String(cfStatus.cf_order_id)
+          : undefined,
         cfPaymentSessionId: cfStatus.payment_session_id || undefined,
         productType,
         productId,
@@ -4010,25 +5054,36 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
           productType,
           productId,
           billingPeriod,
-          recoveredFromProvider: true
-        }
+          recoveredFromProvider: true,
+        },
       });
     }
 
     if (order.status !== OrderStatus.PAID) {
-      if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
-        await db.rechargeWallet(customerId, order.amount, verifiedPaymentId, order.providerOrderId, 'CASHFREE');
-        return { success: true, action: 'WALLET_CREDITED', order };
-      } else if (order.productType === 'SUBSCRIPTION') {
-        const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+      if (order.productType === "WALLET_RECHARGE" || !order.productType) {
+        await db.rechargeWallet(
+          customerId,
+          order.amount,
+          verifiedPaymentId,
+          order.providerOrderId,
+          "CASHFREE",
+        );
+        return { success: true, action: "WALLET_CREDITED", order };
+      } else if (order.productType === "SUBSCRIPTION") {
+        const targetTier =
+          (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
         const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
-        const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
-          ? BillingPeriod.ANNUAL
-          : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
-            ? BillingPeriod.MONTHLY
-            : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
-              ? BillingPeriod.ANNUAL
-              : BillingPeriod.MONTHLY));
+        const period: BillingPeriod =
+          rawPeriod === "ANNUAL" || rawPeriod === BillingPeriod.ANNUAL
+            ? BillingPeriod.ANNUAL
+            : rawPeriod === "MONTHLY" || rawPeriod === BillingPeriod.MONTHLY
+              ? BillingPeriod.MONTHLY
+              : SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise &&
+                  Math.round(
+                    SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100,
+                  ) === Math.round(order.amount)
+                ? BillingPeriod.ANNUAL
+                : BillingPeriod.MONTHLY;
         const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
         await db.fulfillPaidSubscriptionOrder({
           userId: customerId,
@@ -4038,20 +5093,27 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
           orderId: order.providerOrderId,
           paymentId: verifiedPaymentId,
           amount: order.amount,
-          provider: 'CASHFREE',
-          currency: 'INR'
+          provider: "CASHFREE",
+          currency: "INR",
         });
-        return { success: true, action: 'SUBSCRIPTION_ACTIVATED', order };
+        return { success: true, action: "SUBSCRIPTION_ACTIVATED", order };
       } else {
-        await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
-        return { success: true, action: 'ORDER_MARKED_PAID', order };
+        await db.markPaymentOrderPaid(
+          order.providerOrderId,
+          verifiedPaymentId,
+          "CASHFREE",
+        );
+        return { success: true, action: "ORDER_MARKED_PAID", order };
       }
     }
 
-    return { success: true, action: 'ALREADY_PAID', order };
+    return { success: true, action: "ALREADY_PAID", order };
   } catch (err: any) {
-    console.warn(`[RECONCILIATION] Failed to reconcile Cashfree order ${orderId}:`, err?.message || err);
-    return { success: false, action: 'ERROR', order: undefined };
+    console.warn(
+      `[RECONCILIATION] Failed to reconcile Cashfree order ${orderId}:`,
+      err?.message || err,
+    );
+    return { success: false, action: "ERROR", order: undefined };
   }
 }
 
@@ -4060,585 +5122,720 @@ export async function reconcileCashfreeOrder(orderId: string, expectedUserId?: s
  * Ensures that if a user completed payment on Cashfree and returned to the app,
  * their balance is updated immediately without requiring admin intervention.
  */
-export async function reconcileUserPendingOrders(userId: string): Promise<number> {
+export async function reconcileUserPendingOrders(
+  userId: string,
+): Promise<number> {
   let count = 0;
   try {
     const orders = await db.getUserPaymentOrdersAsync(userId);
-    const pendingOrders = orders.filter((o: any) => o.status === OrderStatus.CREATED);
+    const pendingOrders = orders.filter(
+      (o: any) => o.status === OrderStatus.CREATED,
+    );
 
     for (const ord of pendingOrders) {
       const orderId = ord.providerOrderId || ord.razorpayOrderId || ord.id;
-      if (orderId && orderId.startsWith('cf_')) {
+      if (orderId && orderId.startsWith("cf_")) {
         const res = await reconcileCashfreeOrder(orderId, userId);
-        if (res.success && res.action !== 'ALREADY_PAID') {
+        if (res.success && res.action !== "ALREADY_PAID") {
           count++;
         }
       }
     }
   } catch (err: any) {
-    console.warn(`[RECONCILIATION] Failed pending order sweep for user ${userId}:`, err?.message || err);
+    console.warn(
+      `[RECONCILIATION] Failed pending order sweep for user ${userId}:`,
+      err?.message || err,
+    );
   }
   return count;
 }
 
-app.post('/api/wallet/verify-payment', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const sessionUser = req.user!;
-  const { orderId, paymentId, signature } = req.body;
+app.post(
+  "/api/wallet/verify-payment",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const sessionUser = req.user!;
+    const { orderId, paymentId, signature } = req.body;
 
-  if (!orderId || typeof orderId !== 'string' || !orderId.trim()) {
-    return res.status(400).json({
-      error: 'MISSING_ORDER_ID',
-      message: 'Valid order identifier is required.'
-    });
-  }
+    if (!orderId || typeof orderId !== "string" || !orderId.trim()) {
+      return res.status(400).json({
+        error: "MISSING_ORDER_ID",
+        message: "Valid order identifier is required.",
+      });
+    }
 
-  if (!paymentId || typeof paymentId !== 'string' || !paymentId.trim()) {
-    return res.status(400).json({
-      error: 'MISSING_PAYMENT_ID',
-      message: 'Valid provider payment identifier is required.'
-    });
-  }
+    if (!paymentId || typeof paymentId !== "string" || !paymentId.trim()) {
+      return res.status(400).json({
+        error: "MISSING_PAYMENT_ID",
+        message: "Valid provider payment identifier is required.",
+      });
+    }
 
-  const trimmedOrderId = orderId.trim();
+    const trimmedOrderId = orderId.trim();
 
-  // Rejection of legacy Razorpay signatures for active payments
-  if (signature && (trimmedOrderId.startsWith('order_') || !trimmedOrderId.startsWith('cf_'))) {
-    return res.status(410).json({
-      error: 'PAYMENT_PROVIDER_RETIRED',
-      message: 'Razorpay is retired. Active payments must be verified via Cashfree.'
-    });
-  }
+    // Rejection of legacy Razorpay signatures for active payments
+    if (
+      signature &&
+      (trimmedOrderId.startsWith("order_") || !trimmedOrderId.startsWith("cf_"))
+    ) {
+      return res.status(410).json({
+        error: "PAYMENT_PROVIDER_RETIRED",
+        message:
+          "Razorpay is retired. Active payments must be verified via Cashfree.",
+      });
+    }
 
-  let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
-  if (!order && isCashfreeConfigured()) {
+    let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
+    if (!order && isCashfreeConfigured()) {
+      try {
+        const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
+        if (cfStatus && cfStatus.order_id) {
+          const cfCustomerId = cfStatus.customer_details?.customer_id;
+          if (
+            cfCustomerId &&
+            cfCustomerId !== sessionUser.id &&
+            sessionUser.role !== Role.SUPER_ADMIN
+          ) {
+            return res.status(403).json({
+              error: "FORBIDDEN",
+              message:
+                "Payment order does not belong to the authenticated user.",
+            });
+          }
+          const totalAmount = Number(cfStatus.order_amount);
+          const pkg = APPROVED_RECHARGE_PACKAGES.find(
+            (p) => Math.abs(p.totalPayable - totalAmount) < 0.01,
+          );
+          let baseAmount = totalAmount;
+          let gstAmount = 0;
+          let bonusAmount = 0;
+          let creditAmount = totalAmount;
+          if (pkg) {
+            baseAmount = pkg.baseAmount;
+            gstAmount = pkg.gstAmount;
+            bonusAmount = pkg.bonus;
+            creditAmount = pkg.totalCredit;
+          } else {
+            const totalPaise = Math.round(totalAmount * 100);
+            const basePaise = Math.round(totalPaise / 1.18);
+            const gstPaise = totalPaise - basePaise;
+            baseAmount = basePaise / 100;
+            gstAmount = gstPaise / 100;
+            bonusAmount = 0;
+            creditAmount = baseAmount;
+          }
+
+          order = await db.createPaymentOrder({
+            userId: cfCustomerId || sessionUser.id,
+            amount: totalAmount,
+            currency: cfStatus.order_currency || "INR",
+            provider: "CASHFREE",
+            providerOrderId: cfStatus.order_id,
+            gateway: "CASHFREE",
+            cfOrderId: cfStatus.cf_order_id
+              ? String(cfStatus.cf_order_id)
+              : undefined,
+            cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+            productType: "WALLET_RECHARGE",
+            baseAmount,
+            gstAmount,
+            bonusAmount,
+            creditAmount,
+          });
+
+          await db.recordAuditEvent({
+            userId: sessionUser.id,
+            action: "WALLET_RECHARGE_ORDER_AUTO_RECOVERED",
+            targetType: "PAYMENT_ORDER",
+            targetId: trimmedOrderId,
+            metadata: { recoveredFrom: "CASHFREE_API", amount: totalAmount },
+          });
+        }
+      } catch (_) {}
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        error: "ORDER_NOT_FOUND",
+        message: "Cashfree payment order was not found.",
+        orderId: trimmedOrderId,
+        status: "RECONCILIATION_REQUIRED",
+      });
+    }
+
+    // Ownership verification
+    if (
+      order.userId !== sessionUser.id &&
+      sessionUser.role !== Role.SUPER_ADMIN
+    ) {
+      return res.status(403).json({
+        error: "FORBIDDEN",
+        message: "Payment order does not belong to the authenticated user.",
+      });
+    }
+
+    // Cross-product replay prevention (AV-SEC-02)
+    if (order.productType && order.productType !== "WALLET_RECHARGE") {
+      return res.status(400).json({
+        error: "INVALID_ORDER_TYPE",
+        message: `Order type '${order.productType}' cannot be used for wallet recharge.`,
+      });
+    }
+
+    // Idempotency: if already paid, return current balance
+    if (order.status === OrderStatus.PAID) {
+      const user = await db.findUserById(order.userId);
+      return res.json({
+        status: "SUCCESS",
+        newBalance: user ? user.walletBalance : sessionUser.walletBalance,
+        alreadySettled: true,
+        orderId: order.providerOrderId,
+        paymentId: order.providerPaymentId,
+      });
+    }
+
+    if (!isCashfreeConfigured()) {
+      return res.status(503).json({
+        error: "PAYMENTS_NOT_CONFIGURED",
+        message: "Online payments are currently unconfigured.",
+        gateway: "CASHFREE",
+      });
+    }
+
     try {
-      const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
-      if (cfStatus && cfStatus.order_id) {
-        const cfCustomerId = cfStatus.customer_details?.customer_id;
-        if (cfCustomerId && cfCustomerId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
-          return res.status(403).json({ error: 'FORBIDDEN', message: 'Payment order does not belong to the authenticated user.' });
-        }
-        const totalAmount = Number(cfStatus.order_amount);
-        const pkg = APPROVED_RECHARGE_PACKAGES.find(p => Math.abs(p.totalPayable - totalAmount) < 0.01);
-        let baseAmount = totalAmount;
-        let gstAmount = 0;
-        let bonusAmount = 0;
-        let creditAmount = totalAmount;
-        if (pkg) {
-          baseAmount = pkg.baseAmount;
-          gstAmount = pkg.gstAmount;
-          bonusAmount = pkg.bonus;
-          creditAmount = pkg.totalCredit;
-        } else {
-          const totalPaise = Math.round(totalAmount * 100);
-          const basePaise = Math.round(totalPaise / 1.18);
-          const gstPaise = totalPaise - basePaise;
-          baseAmount = basePaise / 100;
-          gstAmount = gstPaise / 100;
-          bonusAmount = 0;
-          creditAmount = baseAmount;
-        }
-
-        order = await db.createPaymentOrder({
-          userId: cfCustomerId || sessionUser.id,
-          amount: totalAmount,
-          currency: cfStatus.order_currency || 'INR',
-          provider: 'CASHFREE',
-          providerOrderId: cfStatus.order_id,
-          gateway: 'CASHFREE',
-          cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
-          cfPaymentSessionId: cfStatus.payment_session_id || undefined,
-          productType: 'WALLET_RECHARGE',
-          baseAmount,
-          gstAmount,
-          bonusAmount,
-          creditAmount
-        });
-
-        await db.recordAuditEvent({
-          userId: sessionUser.id,
-          action: 'WALLET_RECHARGE_ORDER_AUTO_RECOVERED',
-          targetType: 'PAYMENT_ORDER',
-          targetId: trimmedOrderId,
-          metadata: { recoveredFrom: 'CASHFREE_API', amount: totalAmount }
+      const cfStatus = await getCashfreeOrderStatus(
+        order.providerOrderId || order.cfOrderId || trimmedOrderId,
+      );
+      if (cfStatus.order_status !== "PAID") {
+        return res.status(400).json({
+          error: "PAYMENT_NOT_COMPLETED",
+          message: `Cashfree reports order status as ${cfStatus.order_status}.`,
+          status: cfStatus.order_status,
         });
       }
-    } catch (_) {}
-  }
 
-  if (!order) {
-    return res.status(404).json({
-      error: 'ORDER_NOT_FOUND',
-      message: 'Cashfree payment order was not found.',
-      orderId: trimmedOrderId,
-      status: 'RECONCILIATION_REQUIRED'
-    });
-  }
+      if (
+        Math.round(cfStatus.order_amount * 100) !==
+        Math.round(order.amount * 100)
+      ) {
+        return res.status(400).json({
+          error: "AMOUNT_MISMATCH",
+          message: `Verified Cashfree amount ₹${cfStatus.order_amount} does not match order amount ₹${order.amount}.`,
+        });
+      }
 
-  // Ownership verification
-  if (order.userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
-    return res.status(403).json({
-      error: 'FORBIDDEN',
-      message: 'Payment order does not belong to the authenticated user.'
-    });
-  }
+      const settledPaymentId =
+        cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
+      const updatedUser = await db.rechargeWallet(
+        order.userId,
+        order.amount,
+        settledPaymentId,
+        order.providerOrderId,
+        "CASHFREE",
+      );
 
-  // Cross-product replay prevention (AV-SEC-02)
-  if (order.productType && order.productType !== 'WALLET_RECHARGE') {
-    return res.status(400).json({
-      error: 'INVALID_ORDER_TYPE',
-      message: `Order type '${order.productType}' cannot be used for wallet recharge.`
-    });
-  }
-
-  // Idempotency: if already paid, return current balance
-  if (order.status === OrderStatus.PAID) {
-    const user = await db.findUserById(order.userId);
-    return res.json({
-      status: 'SUCCESS',
-      newBalance: user ? user.walletBalance : sessionUser.walletBalance,
-      alreadySettled: true,
-      orderId: order.providerOrderId,
-      paymentId: order.providerPaymentId
-    });
-  }
-
-  if (!isCashfreeConfigured()) {
-    return res.status(503).json({
-      error: 'PAYMENTS_NOT_CONFIGURED',
-      message: 'Online payments are currently unconfigured.',
-      gateway: 'CASHFREE'
-    });
-  }
-
-  try {
-    const cfStatus = await getCashfreeOrderStatus(order.providerOrderId || order.cfOrderId || trimmedOrderId);
-    if (cfStatus.order_status !== 'PAID') {
-      return res.status(400).json({
-        error: 'PAYMENT_NOT_COMPLETED',
-        message: `Cashfree reports order status as ${cfStatus.order_status}.`,
-        status: cfStatus.order_status
+      await db.recordAuditEvent({
+        userId: order.userId,
+        action: "WALLET_RECHARGE_VERIFIED",
+        targetType: "WALLET",
+        targetId: settledPaymentId,
+        metadata: {
+          orderId: order.providerOrderId,
+          paymentId: settledPaymentId,
+          amount: order.amount,
+          newBalance: updatedUser.walletBalance,
+          provider: "CASHFREE",
+        },
       });
-    }
 
-    if (Math.round(cfStatus.order_amount * 100) !== Math.round(order.amount * 100)) {
-      return res.status(400).json({
-        error: 'AMOUNT_MISMATCH',
-        message: `Verified Cashfree amount ₹${cfStatus.order_amount} does not match order amount ₹${order.amount}.`
-      });
-    }
-
-    const settledPaymentId = cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
-    const updatedUser = await db.rechargeWallet(
-      order.userId,
-      order.amount,
-      settledPaymentId,
-      order.providerOrderId,
-      'CASHFREE'
-    );
-
-    await db.recordAuditEvent({
-      userId: order.userId,
-      action: 'WALLET_RECHARGE_VERIFIED',
-      targetType: 'WALLET',
-      targetId: settledPaymentId,
-      metadata: {
+      res.json({
+        status: "SUCCESS",
+        newBalance: updatedUser.walletBalance,
         orderId: order.providerOrderId,
         paymentId: settledPaymentId,
         amount: order.amount,
-        newBalance: updatedUser.walletBalance,
-        provider: 'CASHFREE'
-      }
-    });
+        baseAmount: order.baseAmount,
+        gstAmount: order.gstAmount,
+        bonusAmount: order.bonusAmount,
+        creditAmount: order.creditAmount,
+      });
+    } catch (error: any) {
+      return handleServiceError(res, error, "Payment verification failed");
+    }
+  },
+);
 
-    res.json({
-      status: 'SUCCESS',
-      newBalance: updatedUser.walletBalance,
-      orderId: order.providerOrderId,
-      paymentId: settledPaymentId,
-      amount: order.amount,
-      baseAmount: order.baseAmount,
-      gstAmount: order.gstAmount,
-      bonusAmount: order.bonusAmount,
-      creditAmount: order.creditAmount
-    });
-  } catch (error: any) {
-    return handleServiceError(res, error, 'Payment verification failed');
-  }
-});
+app.post(
+  "/api/wallet/settle-consultation",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const sessionUser = req.user!;
+    const {
+      userId: clientUserId,
+      astrologerId,
+      sessionId,
+      totalDeduction,
+      durationSeconds,
+      durationMinutes,
+    } = req.body;
 
-app.post('/api/wallet/settle-consultation', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const sessionUser = req.user!;
-  const { userId: clientUserId, astrologerId, sessionId, totalDeduction, durationSeconds, durationMinutes } = req.body;
-
-  if (clientUserId && clientUserId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
-    return res.status(403).json({
-      error: 'FORBIDDEN',
-      message: 'Cannot settle consultation for another user account.'
-    });
-  }
-  const userId = (sessionUser.role === Role.SUPER_ADMIN && clientUserId)
-    ? clientUserId
-    : sessionUser.id;
-
-  if (!astrologerId || !sessionId) {
-    return res.status(400).json({
-      error: 'MISSING_FIELDS',
-      message: 'astrologerId and sessionId are required.'
-    });
-  }
-
-  const astro = await db.findAstrologerById(astrologerId);
-  if (!astro) {
-    return res.status(404).json({
-      error: 'ASTROLOGER_NOT_FOUND',
-      message: 'Astrologer not found in directory.'
-    });
-  }
-
-  // Server-authoritative charge calculation
-  let deductionAmount: number;
-  if (durationSeconds != null || durationMinutes != null) {
-    const rawSecs = durationSeconds != null ? Number(durationSeconds) : Number(durationMinutes) * 60;
-    if (!Number.isFinite(rawSecs) || rawSecs <= 0 || isNaN(rawSecs)) {
-      return res.status(400).json({
-        error: 'INVALID_DURATION',
-        message: 'Duration must be a positive finite number of seconds or minutes.'
+    if (
+      clientUserId &&
+      clientUserId !== sessionUser.id &&
+      sessionUser.role !== Role.SUPER_ADMIN
+    ) {
+      return res.status(403).json({
+        error: "FORBIDDEN",
+        message: "Cannot settle consultation for another user account.",
       });
     }
-    const mins = Math.max(1, Math.ceil(rawSecs / 60));
-    const serverCalculated = Math.round(mins * astro.ratePerMinute * 100) / 100;
+    const userId =
+      sessionUser.role === Role.SUPER_ADMIN && clientUserId
+        ? clientUserId
+        : sessionUser.id;
 
-    if (typeof totalDeduction === 'number') {
-      if (!Number.isFinite(totalDeduction) || totalDeduction <= 0 || isNaN(totalDeduction)) {
+    if (!astrologerId || !sessionId) {
+      return res.status(400).json({
+        error: "MISSING_FIELDS",
+        message: "astrologerId and sessionId are required.",
+      });
+    }
+
+    const astro = await db.findAstrologerById(astrologerId);
+    if (!astro) {
+      return res.status(404).json({
+        error: "ASTROLOGER_NOT_FOUND",
+        message: "Astrologer not found in directory.",
+      });
+    }
+
+    // Server-authoritative charge calculation
+    let deductionAmount: number;
+    if (durationSeconds != null || durationMinutes != null) {
+      const rawSecs =
+        durationSeconds != null
+          ? Number(durationSeconds)
+          : Number(durationMinutes) * 60;
+      if (!Number.isFinite(rawSecs) || rawSecs <= 0 || isNaN(rawSecs)) {
         return res.status(400).json({
-          error: 'INVALID_DEDUCTION',
-          message: 'Deduction amount must be a positive finite number.'
+          error: "INVALID_DURATION",
+          message:
+            "Duration must be a positive finite number of seconds or minutes.",
         });
       }
-      if (totalDeduction < serverCalculated) {
+      const mins = Math.max(1, Math.ceil(rawSecs / 60));
+      const serverCalculated =
+        Math.round(mins * astro.ratePerMinute * 100) / 100;
+
+      if (typeof totalDeduction === "number") {
+        if (
+          !Number.isFinite(totalDeduction) ||
+          totalDeduction <= 0 ||
+          isNaN(totalDeduction)
+        ) {
+          return res.status(400).json({
+            error: "INVALID_DEDUCTION",
+            message: "Deduction amount must be a positive finite number.",
+          });
+        }
+        if (totalDeduction < serverCalculated) {
+          return res.status(400).json({
+            error: "TAMPERED_CHARGE",
+            message: `Supplied deduction (₹${totalDeduction}) is less than server-calculated rate for duration (₹${serverCalculated}).`,
+          });
+        }
+        deductionAmount = Math.round(totalDeduction * 100) / 100;
+      } else {
+        deductionAmount = serverCalculated;
+      }
+    } else if (typeof totalDeduction === "number") {
+      if (
+        !Number.isFinite(totalDeduction) ||
+        totalDeduction <= 0 ||
+        isNaN(totalDeduction)
+      ) {
         return res.status(400).json({
-          error: 'TAMPERED_CHARGE',
-          message: `Supplied deduction (₹${totalDeduction}) is less than server-calculated rate for duration (₹${serverCalculated}).`
+          error: "INVALID_DEDUCTION",
+          message: "Deduction amount must be a positive finite number.",
         });
       }
       deductionAmount = Math.round(totalDeduction * 100) / 100;
     } else {
-      deductionAmount = serverCalculated;
-    }
-  } else if (typeof totalDeduction === 'number') {
-    if (!Number.isFinite(totalDeduction) || totalDeduction <= 0 || isNaN(totalDeduction)) {
       return res.status(400).json({
-        error: 'INVALID_DEDUCTION',
-        message: 'Deduction amount must be a positive finite number.'
+        error: "MISSING_CHARGE_SPECIFICATION",
+        message: "Either totalDeduction or duration must be provided.",
       });
     }
-    deductionAmount = Math.round(totalDeduction * 100) / 100;
-  } else {
-    return res.status(400).json({
-      error: 'MISSING_CHARGE_SPECIFICATION',
-      message: 'Either totalDeduction or duration must be provided.'
-    });
-  }
 
-  const MAX_SESSION_DEDUCTION = 50000.00;
-  if (deductionAmount > MAX_SESSION_DEDUCTION) {
-    return res.status(400).json({
-      error: 'EXCESSIVE_DEDUCTION',
-      message: `Single consultation deduction cannot exceed safety limit of ₹${MAX_SESSION_DEDUCTION}.`
-    });
-  }
+    const MAX_SESSION_DEDUCTION = 50000.0;
+    if (deductionAmount > MAX_SESSION_DEDUCTION) {
+      return res.status(400).json({
+        error: "EXCESSIVE_DEDUCTION",
+        message: `Single consultation deduction cannot exceed safety limit of ₹${MAX_SESSION_DEDUCTION}.`,
+      });
+    }
 
-  try {
-    const settlement = await db.settleConsultation(
-      userId,
-      astrologerId,
-      sessionId,
-      deductionAmount
-    );
-
-    await db.recordAuditEvent({
-      userId,
-      action: 'CONSULTATION_SETTLED',
-      targetType: 'CONSULTATION_SESSION',
-      targetId: sessionId,
-      metadata: {
+    try {
+      const settlement = await db.settleConsultation(
+        userId,
         astrologerId,
-        deduction: deductionAmount,
-        newBalance: settlement.newBalance
-      }
-    });
+        sessionId,
+        deductionAmount,
+      );
 
-    res.json(settlement);
-  } catch (error: any) {
-    if (error.message === 'INSUFFICIENT_FUNDS') {
-      const user = await db.findUserById(userId);
+      await db.recordAuditEvent({
+        userId,
+        action: "CONSULTATION_SETTLED",
+        targetType: "CONSULTATION_SESSION",
+        targetId: sessionId,
+        metadata: {
+          astrologerId,
+          deduction: deductionAmount,
+          newBalance: settlement.newBalance,
+        },
+      });
+
+      res.json(settlement);
+    } catch (error: any) {
+      if (error.message === "INSUFFICIENT_FUNDS") {
+        const user = await db.findUserById(userId);
+        return res.status(400).json({
+          error: "INSUFFICIENT_FUNDS",
+          message:
+            "Wallet balance is insufficient to settle this consultation.",
+          currentBalance: user ? user.walletBalance : 0,
+          requiredAmount: deductionAmount,
+        });
+      }
+      return handleServiceError(res, error, "Settlement failed");
+    }
+  },
+);
+
+app.post(
+  "/api/wallet/unlock-report",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const sessionUser = req.user!;
+    const { reportType, referenceId, clientKey } = req.body;
+
+    if (!reportType || typeof reportType !== "string" || !reportType.trim()) {
       return res.status(400).json({
-        error: 'INSUFFICIENT_FUNDS',
-        message: 'Wallet balance is insufficient to settle this consultation.',
-        currentBalance: user ? user.walletBalance : 0,
-        requiredAmount: deductionAmount
+        error: "REPORT_TYPE_REQUIRED",
+        message:
+          "A valid reportType string is required to unlock a premium report.",
       });
     }
-    return handleServiceError(res, error, 'Settlement failed');
-  }
-});
 
-app.post('/api/wallet/unlock-report', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const sessionUser = req.user!;
-  const { reportType, referenceId, clientKey } = req.body;
+    try {
+      const result = await db.unlockReport(
+        sessionUser.id,
+        reportType.trim(),
+        referenceId,
+        clientKey,
+      );
 
-  if (!reportType || typeof reportType !== 'string' || !reportType.trim()) {
-    return res.status(400).json({
-      error: 'REPORT_TYPE_REQUIRED',
-      message: 'A valid reportType string is required to unlock a premium report.'
-    });
-  }
+      await db.recordAuditEvent({
+        userId: sessionUser.id,
+        action: "REPORT_UNLOCKED",
+        targetType: "PREMIUM_REPORT",
+        targetId: referenceId || reportType,
+        metadata: {
+          reportType: reportType.trim(),
+          referenceId: referenceId || null,
+          deduction: result.deduction,
+          newBalance: result.newBalance,
+          alreadyUnlocked: Boolean(result.alreadyUnlocked),
+        },
+      });
 
-  try {
-    const result = await db.unlockReport(sessionUser.id, reportType.trim(), referenceId, clientKey);
-
-    await db.recordAuditEvent({
-      userId: sessionUser.id,
-      action: 'REPORT_UNLOCKED',
-      targetType: 'PREMIUM_REPORT',
-      targetId: referenceId || reportType,
-      metadata: {
-        reportType: reportType.trim(),
-        referenceId: referenceId || null,
-        deduction: result.deduction,
-        newBalance: result.newBalance,
-        alreadyUnlocked: Boolean(result.alreadyUnlocked)
+      return res.json({
+        unlocked: true,
+        ...result,
+      });
+    } catch (error: any) {
+      if (error.message === "INSUFFICIENT_FUNDS") {
+        const user = await db.findUserById(sessionUser.id);
+        return res.status(400).json({
+          error: "INSUFFICIENT_FUNDS",
+          message:
+            "Wallet balance is insufficient. Unlocking this premium report requires ₹49.00.",
+          requiredAmount: 49.0,
+          currentBalance: user ? user.walletBalance : 0,
+        });
       }
-    });
+      return handleServiceError(res, error, "Report unlock failed");
+    }
+  },
+);
 
-    return res.json({
-      unlocked: true,
-      ...result
-    });
-  } catch (error: any) {
-    if (error.message === 'INSUFFICIENT_FUNDS') {
-      const user = await db.findUserById(sessionUser.id);
+app.post(
+  ["/api/wallet/book-puja", "/api/pujas/book"],
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const sessionUser = req.user!;
+    const { pujaName, amount, referenceId, clientKey } = req.body;
+
+    if (!pujaName || typeof pujaName !== "string" || !pujaName.trim()) {
       return res.status(400).json({
-        error: 'INSUFFICIENT_FUNDS',
-        message: 'Wallet balance is insufficient. Unlocking this premium report requires ₹49.00.',
-        requiredAmount: 49.00,
-        currentBalance: user ? user.walletBalance : 0
+        error: "PUJA_NAME_REQUIRED",
+        message: "A valid pujaName string is required to book a puja.",
       });
     }
-    return handleServiceError(res, error, 'Report unlock failed');
-  }
-});
 
-app.post(['/api/wallet/book-puja', '/api/pujas/book'], authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const sessionUser = req.user!;
-  const { pujaName, amount, referenceId, clientKey } = req.body;
-
-  if (!pujaName || typeof pujaName !== 'string' || !pujaName.trim()) {
-    return res.status(400).json({
-      error: 'PUJA_NAME_REQUIRED',
-      message: 'A valid pujaName string is required to book a puja.'
-    });
-  }
-
-  const amt = Number(amount);
-  if (!Number.isFinite(amt) || amt <= 0) {
-    return res.status(400).json({
-      error: 'INVALID_AMOUNT',
-      message: 'A valid positive amount is required to book a puja.'
-    });
-  }
-
-  try {
-    const result = await db.bookPuja(sessionUser.id, pujaName.trim(), amt, referenceId, clientKey);
-
-    await db.recordAuditEvent({
-      userId: sessionUser.id,
-      action: 'PUJA_BOOKED',
-      targetType: 'PUJA_SERVICE',
-      targetId: referenceId || pujaName.trim(),
-      metadata: {
-        pujaName: pujaName.trim(),
-        amount: amt,
-        deduction: result.deduction,
-        newBalance: result.newBalance,
-        alreadyBooked: Boolean(result.alreadyBooked)
-      }
-    });
-
-    return res.json({
-      booked: true,
-      ...result
-    });
-  } catch (error: any) {
-    if (error.message === 'INSUFFICIENT_FUNDS') {
-      const user = await db.findUserById(sessionUser.id);
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt <= 0) {
       return res.status(400).json({
-        error: 'INSUFFICIENT_FUNDS',
-        message: `Wallet balance is insufficient. Booking ${pujaName} requires ₹${amt.toFixed(2)}.`,
-        requiredAmount: amt,
-        currentBalance: user ? user.walletBalance : 0
+        error: "INVALID_AMOUNT",
+        message: "A valid positive amount is required to book a puja.",
       });
     }
-    return handleServiceError(res, error, 'Puja booking failed');
-  }
-});
 
-app.get('/api/wallet/me', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    await reconcileUserPendingOrders(req.user!.id);
-    const user = await db.findUserById(req.user!.id);
-    if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
-    const statement = await db.getWalletStatement(user.id);
+    try {
+      const result = await db.bookPuja(
+        sessionUser.id,
+        pujaName.trim(),
+        amt,
+        referenceId,
+        clientKey,
+      );
 
-    let promotionalBalance = 0;
-    for (const entry of statement) {
-      if (entry.entryType === EntryType.WALLET_RECHARGE) {
-        if (entry.idempotencyKey?.startsWith('BONUS_') || entry.description?.includes('Promotional bonus')) {
-          promotionalBalance += Number(entry.amount);
+      await db.recordAuditEvent({
+        userId: sessionUser.id,
+        action: "PUJA_BOOKED",
+        targetType: "PUJA_SERVICE",
+        targetId: referenceId || pujaName.trim(),
+        metadata: {
+          pujaName: pujaName.trim(),
+          amount: amt,
+          deduction: result.deduction,
+          newBalance: result.newBalance,
+          alreadyBooked: Boolean(result.alreadyBooked),
+        },
+      });
+
+      return res.json({
+        booked: true,
+        ...result,
+      });
+    } catch (error: any) {
+      if (error.message === "INSUFFICIENT_FUNDS") {
+        const user = await db.findUserById(sessionUser.id);
+        return res.status(400).json({
+          error: "INSUFFICIENT_FUNDS",
+          message: `Wallet balance is insufficient. Booking ${pujaName} requires ₹${amt.toFixed(2)}.`,
+          requiredAmount: amt,
+          currentBalance: user ? user.walletBalance : 0,
+        });
+      }
+      return handleServiceError(res, error, "Puja booking failed");
+    }
+  },
+);
+
+app.get(
+  "/api/wallet/me",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      await reconcileUserPendingOrders(req.user!.id);
+      const user = await db.findUserById(req.user!.id);
+      if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
+      const statement = await db.getWalletStatement(user.id);
+
+      let promotionalBalance = 0;
+      for (const entry of statement) {
+        if (entry.entryType === EntryType.WALLET_RECHARGE) {
+          if (
+            entry.idempotencyKey?.startsWith("BONUS_") ||
+            entry.description?.includes("Promotional bonus")
+          ) {
+            promotionalBalance += Number(entry.amount);
+          }
         }
       }
+      promotionalBalance = Math.min(promotionalBalance, user.walletBalance);
+      const paidBalance =
+        Math.round((user.walletBalance - promotionalBalance) * 100) / 100;
+
+      res.json({
+        success: true,
+        balance: user.walletBalance,
+        paidBalance,
+        promotionalBalance,
+        demoBalance: user.demoWalletBalance || 0,
+        isDemoMode: isDemoModeActive(),
+        statement,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    promotionalBalance = Math.min(promotionalBalance, user.walletBalance);
-    const paidBalance = Math.round((user.walletBalance - promotionalBalance) * 100) / 100;
+  },
+);
 
-    res.json({
-      success: true,
-      balance: user.walletBalance,
-      paidBalance,
-      promotionalBalance,
-      demoBalance: user.demoWalletBalance || 0,
-      isDemoMode: isDemoModeActive(),
-      statement
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.post(
+  "/api/wallet/reconcile",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = req.user!;
+      const orderId =
+        typeof req.body?.orderId === "string"
+          ? req.body.orderId.trim()
+          : undefined;
+      let singleResult = null;
+      if (orderId) {
+        singleResult = await reconcileCashfreeOrder(orderId, user.id);
+      }
+      const sweptCount = await reconcileUserPendingOrders(user.id);
+      const freshUser = await db.findUserById(user.id);
+      const statement = freshUser
+        ? await db.getWalletStatement(freshUser.id)
+        : [];
 
-app.post('/api/wallet/reconcile', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const user = req.user!;
-    const orderId = typeof req.body?.orderId === 'string' ? req.body.orderId.trim() : undefined;
-    let singleResult = null;
-    if (orderId) {
-      singleResult = await reconcileCashfreeOrder(orderId, user.id);
-    }
-    const sweptCount = await reconcileUserPendingOrders(user.id);
-    const freshUser = await db.findUserById(user.id);
-    const statement = freshUser ? await db.getWalletStatement(freshUser.id) : [];
-
-    let promotionalBalance = 0;
-    for (const entry of statement) {
-      if (entry.entryType === EntryType.WALLET_RECHARGE) {
-        if (entry.idempotencyKey?.startsWith('BONUS_') || entry.description?.includes('Promotional bonus')) {
-          promotionalBalance += Number(entry.amount);
+      let promotionalBalance = 0;
+      for (const entry of statement) {
+        if (entry.entryType === EntryType.WALLET_RECHARGE) {
+          if (
+            entry.idempotencyKey?.startsWith("BONUS_") ||
+            entry.description?.includes("Promotional bonus")
+          ) {
+            promotionalBalance += Number(entry.amount);
+          }
         }
       }
-    }
-    const balance = freshUser ? freshUser.walletBalance : 0;
-    promotionalBalance = Math.min(promotionalBalance, balance);
-    const paidBalance = Math.round((balance - promotionalBalance) * 100) / 100;
+      const balance = freshUser ? freshUser.walletBalance : 0;
+      promotionalBalance = Math.min(promotionalBalance, balance);
+      const paidBalance =
+        Math.round((balance - promotionalBalance) * 100) / 100;
 
-    res.json({
-      success: true,
-      reconciledCount: (singleResult && singleResult.success && singleResult.action !== 'ALREADY_PAID' ? 1 : 0) + sweptCount,
-      balance,
-      paidBalance,
-      promotionalBalance,
-      singleResult
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      res.json({
+        success: true,
+        reconciledCount:
+          (singleResult &&
+          singleResult.success &&
+          singleResult.action !== "ALREADY_PAID"
+            ? 1
+            : 0) + sweptCount,
+        balance,
+        paidBalance,
+        promotionalBalance,
+        singleResult,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // ==============================================================================
 // DEMO MODE ENDPOINTS (CONTROLLED NON-PRODUCTION TEST CREDITS ONLY)
 // ==============================================================================
 
 // GET /api/demo/status - check if demo mode is enabled in the current runtime environment
-app.get('/api/demo/status', (req: Request, res: Response) => {
+app.get("/api/demo/status", (req: Request, res: Response) => {
   res.json({
     demoModeActive: isDemoModeActive(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || "development",
   });
 });
 
 // POST /api/demo/credit - issue controlled demo credits to authenticated test account (strictly admin-only)
-app.post('/api/demo/credit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  if (!isDemoModeActive()) {
-    return res.status(403).json({
-      error: 'DEMO_MODE_DISABLED',
-      message: 'Demo credit issuance is strictly disabled in production.'
-    });
-  }
+app.post(
+  "/api/demo/credit",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDemoModeActive()) {
+      return res.status(403).json({
+        error: "DEMO_MODE_DISABLED",
+        message: "Demo credit issuance is strictly disabled in production.",
+      });
+    }
 
-  const { amount } = req.body;
-  const validAmounts = [100, 500, 1000];
-  const numAmount = Number(amount);
+    const { amount } = req.body;
+    const validAmounts = [100, 500, 1000];
+    const numAmount = Number(amount);
 
-  if (!Number.isFinite(numAmount) || !validAmounts.includes(numAmount)) {
-    return res.status(400).json({
-      error: 'INVALID_DEMO_AMOUNT',
-      message: 'Demo credit amount must be exactly 100, 500, or 1000.'
-    });
-  }
+    if (!Number.isFinite(numAmount) || !validAmounts.includes(numAmount)) {
+      return res.status(400).json({
+        error: "INVALID_DEMO_AMOUNT",
+        message: "Demo credit amount must be exactly 100, 500, or 1000.",
+      });
+    }
 
-  try {
-    const result = await db.addDemoCredits(req.user!.id, numAmount);
-    res.json(result);
-  } catch (err: any) {
-    handleServiceError(res, err, 'Demo credit issuance failed');
-  }
-});
+    try {
+      const result = await db.addDemoCredits(req.user!.id, numAmount);
+      res.json(result);
+    } catch (err: any) {
+      handleServiceError(res, err, "Demo credit issuance failed");
+    }
+  },
+);
 
 // POST /api/demo/reset - reset demo wallet balance to 0.00 (strictly admin-only)
-app.post('/api/demo/reset', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  if (!isDemoModeActive()) {
-    return res.status(403).json({
-      error: 'DEMO_MODE_DISABLED',
-      message: 'Demo wallet reset is strictly disabled in production.'
-    });
-  }
+app.post(
+  "/api/demo/reset",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDemoModeActive()) {
+      return res.status(403).json({
+        error: "DEMO_MODE_DISABLED",
+        message: "Demo wallet reset is strictly disabled in production.",
+      });
+    }
 
-  try {
-    const result = await db.resetDemoWallet(req.user!.id);
-    res.json(result);
-  } catch (err: any) {
-    handleServiceError(res, err, 'Demo wallet reset failed');
-  }
-});
+    try {
+      const result = await db.resetDemoWallet(req.user!.id);
+      res.json(result);
+    } catch (err: any) {
+      handleServiceError(res, err, "Demo wallet reset failed");
+    }
+  },
+);
 
 // POST /api/demo/set-tier - simulate subscription tier for entitlement testing (strictly admin-only)
-app.post('/api/demo/set-tier', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  if (!isDemoModeActive()) {
-    return res.status(403).json({
-      error: 'DEMO_MODE_DISABLED',
-      message: 'Simulated subscription setting is strictly disabled in production.'
-    });
-  }
+app.post(
+  "/api/demo/set-tier",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!isDemoModeActive()) {
+      return res.status(403).json({
+        error: "DEMO_MODE_DISABLED",
+        message:
+          "Simulated subscription setting is strictly disabled in production.",
+      });
+    }
 
-  const { tier } = req.body;
-  if (!['FREE', 'PLUS', 'PREMIUM'].includes(String(tier).toUpperCase())) {
-    return res.status(400).json({
-      error: 'INVALID_TIER',
-      message: 'Simulated tier must be FREE, PLUS, or PREMIUM.'
-    });
-  }
+    const { tier } = req.body;
+    if (!["FREE", "PLUS", "PREMIUM"].includes(String(tier).toUpperCase())) {
+      return res.status(400).json({
+        error: "INVALID_TIER",
+        message: "Simulated tier must be FREE, PLUS, or PREMIUM.",
+      });
+    }
 
-  try {
-    const normTier = String(tier).toUpperCase() as 'FREE' | 'PLUS' | 'PREMIUM';
-    const previewSession = db.createOrUpdateAdminPreviewSession(req.user!.id, normTier);
-    const result = await db.setSimulatedTier(req.user!.id, normTier);
-    res.json({
-      ...result,
-      previewSession
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Simulated tier update failed');
-  }
-});
+    try {
+      const normTier = String(tier).toUpperCase() as
+        | "FREE"
+        | "PLUS"
+        | "PREMIUM";
+      const previewSession = db.createOrUpdateAdminPreviewSession(
+        req.user!.id,
+        normTier,
+      );
+      const result = await db.setSimulatedTier(req.user!.id, normTier);
+      res.json({
+        ...result,
+        previewSession,
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Simulated tier update failed");
+    }
+  },
+);
 
 // ==============================================================================
 // ENTERPRISE NETWORK BOUNDARY: CLOUDFLARE ZERO TRUST & DIRECT-ORIGIN PROTECTION
@@ -4646,20 +5843,22 @@ app.post('/api/demo/set-tier', authenticate, requireAdmin(), async (req: Authent
 // Invariant: Direct-origin access to administrative APIs is strictly forbidden
 // when Cloudflare Access is active. Requests must transit the Zero Trust gateway.
 // ==============================================================================
-app.use('/api/admin', adminLimiter, requireCloudflareAccess());
+app.use("/api/admin", adminLimiter, requireCloudflareAccess());
 
 // GET /api/admin/gateway-status - Check Cloudflare Zero Trust gateway & direct-origin protection status
-app.get('/api/admin/gateway-status', (_req: Request, res: Response) => {
+app.get("/api/admin/gateway-status", (_req: Request, res: Response) => {
   const cfg = getCloudflareAccessConfig();
   res.json({
-    status: 'ONLINE',
+    status: "ONLINE",
     cloudflareAccess: {
       enforced: isCloudflareAccessEnforced(),
-      teamName: cfg.teamName || 'not_configured',
+      teamName: cfg.teamName || "not_configured",
       audConfigured: Boolean(cfg.aud),
-      certsUrl: cfg.certsUrl || 'not_configured'
+      certsUrl: cfg.certsUrl || "not_configured",
     },
-    originProtection: isCloudflareAccessEnforced() ? 'BLOCKED_DIRECT_ORIGIN' : 'APPLICATION_LAYER_ONLY'
+    originProtection: isCloudflareAccessEnforced()
+      ? "BLOCKED_DIRECT_ORIGIN"
+      : "APPLICATION_LAYER_ONLY",
   });
 });
 
@@ -4668,11 +5867,24 @@ app.get('/api/admin/gateway-status', (_req: Request, res: Response) => {
 // ==============================================================================
 
 // GET /api/admin/bootstrap-status - Check if initial owner exists and what provisioning methods are active
-app.get('/api/admin/bootstrap-status', async (_req: Request, res: Response) => {
+app.get("/api/admin/bootstrap-status", async (_req: Request, res: Response) => {
   try {
-    const list = await db.listUsers({ role: Role.OWNER, status: AccountStatus.ACTIVE, limit: 10 });
-    const ownerExists = list.total > 0 || list.users.some(u => normalizeRole(u.role) === Role.OWNER && u.status === AccountStatus.ACTIVE);
-    const bootstrapConfigured = Boolean(process.env.ASTROVERSE_BOOTSTRAP_SECRET && process.env.ASTROVERSE_BOOTSTRAP_SECRET.length >= 16);
+    const list = await db.listUsers({
+      role: Role.OWNER,
+      status: AccountStatus.ACTIVE,
+      limit: 10,
+    });
+    const ownerExists =
+      list.total > 0 ||
+      list.users.some(
+        (u) =>
+          normalizeRole(u.role) === Role.OWNER &&
+          u.status === AccountStatus.ACTIVE,
+      );
+    const bootstrapConfigured = Boolean(
+      process.env.ASTROVERSE_BOOTSTRAP_SECRET &&
+      process.env.ASTROVERSE_BOOTSTRAP_SECRET.length >= 16,
+    );
     const allowlistEmails = getAuthorizedAdminEmails();
 
     res.json({
@@ -4681,338 +5893,430 @@ app.get('/api/admin/bootstrap-status', async (_req: Request, res: Response) => {
       allowlistConfigured: allowlistEmails.length > 0,
       cliProvisioningSupported: true,
       allowedMethods: [
-        'CLI_PROVISION_SCRIPT',
-        ...(allowlistEmails.length > 0 ? ['ENVIRONMENT_ALLOWLIST'] : []),
-        ...(bootstrapConfigured && !ownerExists ? ['ONE_TIME_BOOTSTRAP_ENDPOINT'] : [])
-      ]
+        "CLI_PROVISION_SCRIPT",
+        ...(allowlistEmails.length > 0 ? ["ENVIRONMENT_ALLOWLIST"] : []),
+        ...(bootstrapConfigured && !ownerExists
+          ? ["ONE_TIME_BOOTSTRAP_ENDPOINT"]
+          : []),
+      ],
     });
   } catch (err: any) {
-    handleServiceError(res, err, 'Failed to inspect bootstrap status');
+    handleServiceError(res, err, "Failed to inspect bootstrap status");
   }
 });
 
 // POST /api/admin/bootstrap-first-owner - Secure one-time bootstrap endpoint for first OWNER
-app.post('/api/admin/bootstrap-first-owner', authLimiter, async (req: Request, res: Response) => {
-  const serverBootstrapSecret = process.env.ASTROVERSE_BOOTSTRAP_SECRET;
-  if (!serverBootstrapSecret || serverBootstrapSecret.length < 16) {
-    return res.status(503).json({
-      error: 'BOOTSTRAP_DISABLED',
-      message: 'First-owner bootstrap is disabled or unconfigured on this server.'
-    });
-  }
-
-  const { bootstrapSecret, email, password, displayName } = req.body;
-  if (!bootstrapSecret || !email || !password) {
-    return res.status(400).json({
-      error: 'FIELDS_REQUIRED',
-      message: 'Bootstrap secret, email address, and administrator password are required.'
-    });
-  }
-
-  const secretBuf = Buffer.from(String(bootstrapSecret));
-  const serverBuf = Buffer.from(serverBootstrapSecret);
-  if (secretBuf.length !== serverBuf.length || !crypto.timingSafeEqual(secretBuf, serverBuf)) {
-    return res.status(401).json({
-      error: 'INVALID_BOOTSTRAP_SECRET',
-      message: 'Invalid bootstrap secret.'
-    });
-  }
-
-  const cleanEmail = String(email).trim().toLowerCase();
-  if (!cleanEmail.includes('@') || cleanEmail.length < 5) {
-    return res.status(400).json({
-      error: 'INVALID_EMAIL',
-      message: 'A valid email address is required.'
-    });
-  }
-
-  const adminPasswordValidation = validatePasswordComplexity(password, { minLength: 10, isAdmin: true, requireSymbols: true });
-  if (!adminPasswordValidation.valid) {
-    return res.status(400).json({
-      error: 'WEAK_PASSWORD',
-      message: adminPasswordValidation.reason || 'Administrator password must be at least 10 characters with uppercase, lowercase, numbers, and symbols.'
-    });
-  }
-
-  // Strict check: Only permitted when ZERO active owners exist
-  const list = await db.listUsers({ role: Role.OWNER, status: AccountStatus.ACTIVE, limit: 10 });
-  const ownerExists = list.total > 0 || list.users.some(u => normalizeRole(u.role) === Role.OWNER && u.status === AccountStatus.ACTIVE);
-  if (ownerExists) {
-    return res.status(403).json({
-      error: 'OWNER_ALREADY_EXISTS',
-      message: 'An active platform OWNER already exists. First-owner bootstrap is permanently disabled.'
-    });
-  }
-
-  const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = hashPassword(String(password), salt);
-  const name = displayName ? String(displayName).trim() : cleanEmail.split('@')[0];
-
-  let user = await db.findUserByIdentifier(cleanEmail);
-  if (!user) {
-    user = await db.createUser({
-      email: cleanEmail,
-      displayName: name,
-      emailVerified: true,
-      phoneVerified: false,
-      role: Role.OWNER,
-      status: AccountStatus.ACTIVE,
-      passwordHash,
-      passwordSalt: salt,
-      walletBalance: 0.00
-    });
-  } else {
-    user = await db.updateUser(user.id, {
-      role: Role.OWNER,
-      displayName: name,
-      emailVerified: true,
-      status: AccountStatus.ACTIVE,
-      passwordHash,
-      passwordSalt: salt
-    });
-  }
-
-  const supaAdmin = getSupabaseAdminClient();
-  if (supaAdmin) {
-    try {
-      await supaAdmin.auth.admin.createUser({
-        email: cleanEmail,
-        password: String(password),
-        email_confirm: true,
-        user_metadata: { displayName: name, role: 'OWNER' }
+app.post(
+  "/api/admin/bootstrap-first-owner",
+  authLimiter,
+  async (req: Request, res: Response) => {
+    const serverBootstrapSecret = process.env.ASTROVERSE_BOOTSTRAP_SECRET;
+    if (!serverBootstrapSecret || serverBootstrapSecret.length < 16) {
+      return res.status(503).json({
+        error: "BOOTSTRAP_DISABLED",
+        message:
+          "First-owner bootstrap is disabled or unconfigured on this server.",
       });
-    } catch (_) {}
-  }
-
-  await db.recordAuditEvent({
-    userId: user.id,
-    action: 'ADMIN_FIRST_OWNER_BOOTSTRAP',
-    targetType: 'USER',
-    targetId: user.id,
-    outcome: 'SUCCESS',
-    metadata: { email: cleanEmail, role: Role.OWNER }
-  });
-
-  return res.json({
-    status: 'PROVISIONED',
-    message: `Initial platform OWNER account successfully provisioned for ${cleanEmail}. First-owner bootstrap is now permanently closed.`,
-    user: {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      role: user.role
     }
-  });
-});
+
+    const { bootstrapSecret, email, password, displayName } = req.body;
+    if (!bootstrapSecret || !email || !password) {
+      return res.status(400).json({
+        error: "FIELDS_REQUIRED",
+        message:
+          "Bootstrap secret, email address, and administrator password are required.",
+      });
+    }
+
+    const secretBuf = Buffer.from(String(bootstrapSecret));
+    const serverBuf = Buffer.from(serverBootstrapSecret);
+    if (
+      secretBuf.length !== serverBuf.length ||
+      !crypto.timingSafeEqual(secretBuf, serverBuf)
+    ) {
+      return res.status(401).json({
+        error: "INVALID_BOOTSTRAP_SECRET",
+        message: "Invalid bootstrap secret.",
+      });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (!cleanEmail.includes("@") || cleanEmail.length < 5) {
+      return res.status(400).json({
+        error: "INVALID_EMAIL",
+        message: "A valid email address is required.",
+      });
+    }
+
+    const adminPasswordValidation = validatePasswordComplexity(password, {
+      minLength: 10,
+      isAdmin: true,
+      requireSymbols: true,
+    });
+    if (!adminPasswordValidation.valid) {
+      return res.status(400).json({
+        error: "WEAK_PASSWORD",
+        message:
+          adminPasswordValidation.reason ||
+          "Administrator password must be at least 10 characters with uppercase, lowercase, numbers, and symbols.",
+      });
+    }
+
+    // Strict check: Only permitted when ZERO active owners exist
+    const list = await db.listUsers({
+      role: Role.OWNER,
+      status: AccountStatus.ACTIVE,
+      limit: 10,
+    });
+    const ownerExists =
+      list.total > 0 ||
+      list.users.some(
+        (u) =>
+          normalizeRole(u.role) === Role.OWNER &&
+          u.status === AccountStatus.ACTIVE,
+      );
+    if (ownerExists) {
+      return res.status(403).json({
+        error: "OWNER_ALREADY_EXISTS",
+        message:
+          "An active platform OWNER already exists. First-owner bootstrap is permanently disabled.",
+      });
+    }
+
+    const salt = crypto.randomBytes(16).toString("hex");
+    const passwordHash = hashPassword(String(password), salt);
+    const name = displayName
+      ? String(displayName).trim()
+      : cleanEmail.split("@")[0];
+
+    let user = await db.findUserByIdentifier(cleanEmail);
+    if (!user) {
+      user = await db.createUser({
+        email: cleanEmail,
+        displayName: name,
+        emailVerified: true,
+        phoneVerified: false,
+        role: Role.OWNER,
+        status: AccountStatus.ACTIVE,
+        passwordHash,
+        passwordSalt: salt,
+        walletBalance: 0.0,
+      });
+    } else {
+      user = await db.updateUser(user.id, {
+        role: Role.OWNER,
+        displayName: name,
+        emailVerified: true,
+        status: AccountStatus.ACTIVE,
+        passwordHash,
+        passwordSalt: salt,
+      });
+    }
+
+    const supaAdmin = getSupabaseAdminClient();
+    if (supaAdmin) {
+      try {
+        await supaAdmin.auth.admin.createUser({
+          email: cleanEmail,
+          password: String(password),
+          email_confirm: true,
+          user_metadata: { displayName: name, role: "OWNER" },
+        });
+      } catch (_) {}
+    }
+
+    await db.recordAuditEvent({
+      userId: user.id,
+      action: "ADMIN_FIRST_OWNER_BOOTSTRAP",
+      targetType: "USER",
+      targetId: user.id,
+      outcome: "SUCCESS",
+      metadata: { email: cleanEmail, role: Role.OWNER },
+    });
+
+    return res.json({
+      status: "PROVISIONED",
+      message: `Initial platform OWNER account successfully provisioned for ${cleanEmail}. First-owner bootstrap is now permanently closed.`,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: user.role,
+      },
+    });
+  },
+);
 
 // ==============================================================================
 // DEDICATED ADMIN PREVIEW SESSION & QA TESTING APIS
 // ==============================================================================
 
 // POST /api/admin/preview/set-tier - Start or switch admin preview mode
-app.post('/api/admin/preview/set-tier', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  if (!isAdminPreviewEnabled()) {
-    return res.status(403).json({
-      error: 'ADMIN_PREVIEW_DISABLED',
-      message: 'Admin preview mode is disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).'
-    });
-  }
-
-  const { tier, demoBalance, syntheticProfileId } = req.body;
-  const normTier = String(tier || 'FREE').toUpperCase();
-
-  if (!['FREE', 'PLUS', 'PREMIUM'].includes(normTier)) {
-    return res.status(400).json({
-      error: 'INVALID_TIER',
-      message: 'Simulated tier must be FREE, PLUS, or PREMIUM.'
-    });
-  }
-
-  try {
-    const previewSession = db.createOrUpdateAdminPreviewSession(
-      req.user!.id,
-      normTier as 'FREE' | 'PLUS' | 'PREMIUM',
-      typeof demoBalance === 'number' ? demoBalance : undefined,
-      syntheticProfileId
-    );
-
-    if (isDemoModeActive()) {
-      await db.setSimulatedTier(req.user!.id, normTier as any);
+app.post(
+  "/api/admin/preview/set-tier",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!isAdminPreviewEnabled()) {
+      return res.status(403).json({
+        error: "ADMIN_PREVIEW_DISABLED",
+        message:
+          "Admin preview mode is disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).",
+      });
     }
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      action: 'ADMIN_TIER_PREVIEW_ACTIVATED',
-      targetType: 'ADMIN_PREVIEW',
-      targetId: previewSession.id,
-      outcome: 'SUCCESS',
-      metadata: {
-        adminUserId: req.user!.id,
-        adminRole: req.user!.role,
-        simulatedTier: normTier,
-        syntheticProfileId: previewSession.syntheticProfileId
-      },
-      ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
-    });
+    const { tier, demoBalance, syntheticProfileId } = req.body;
+    const normTier = String(tier || "FREE").toUpperCase();
 
-    res.json({
-      success: true,
-      previewSession,
-      message: `Admin preview mode activated for ${normTier} tier.`
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to activate admin preview mode');
-  }
-});
+    if (!["FREE", "PLUS", "PREMIUM"].includes(normTier)) {
+      return res.status(400).json({
+        error: "INVALID_TIER",
+        message: "Simulated tier must be FREE, PLUS, or PREMIUM.",
+      });
+    }
+
+    try {
+      const previewSession = db.createOrUpdateAdminPreviewSession(
+        req.user!.id,
+        normTier as "FREE" | "PLUS" | "PREMIUM",
+        typeof demoBalance === "number" ? demoBalance : undefined,
+        syntheticProfileId,
+      );
+
+      if (isDemoModeActive()) {
+        await db.setSimulatedTier(req.user!.id, normTier as any);
+      }
+
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        action: "ADMIN_TIER_PREVIEW_ACTIVATED",
+        targetType: "ADMIN_PREVIEW",
+        targetId: previewSession.id,
+        outcome: "SUCCESS",
+        metadata: {
+          adminUserId: req.user!.id,
+          adminRole: req.user!.role,
+          simulatedTier: normTier,
+          syntheticProfileId: previewSession.syntheticProfileId,
+        },
+        ipAddress:
+          (req.headers["x-forwarded-for"] as string) ||
+          req.socket.remoteAddress ||
+          "127.0.0.1",
+      });
+
+      res.json({
+        success: true,
+        previewSession,
+        message: `Admin preview mode activated for ${normTier} tier.`,
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to activate admin preview mode");
+    }
+  },
+);
 
 // GET /api/admin/preview/status - Query current active admin preview session
-app.get('/api/admin/preview/status', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const previewSession = db.getAdminPreviewSession(req.user!.id);
-    res.json({
-      success: true,
-      previewSession: previewSession || null,
-      isPreviewActive: Boolean(previewSession && previewSession.isActive)
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to fetch admin preview status');
-  }
-});
+app.get(
+  "/api/admin/preview/status",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const previewSession = db.getAdminPreviewSession(req.user!.id);
+      res.json({
+        success: true,
+        previewSession: previewSession || null,
+        isPreviewActive: Boolean(previewSession && previewSession.isActive),
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to fetch admin preview status");
+    }
+  },
+);
 
 // POST /api/admin/preview/exit - Terminate admin preview session and restore genuine entitlements
-app.post('/api/admin/preview/exit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const terminated = db.terminateAdminPreviewSession(req.user!.id);
+app.post(
+  "/api/admin/preview/exit",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const terminated = db.terminateAdminPreviewSession(req.user!.id);
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      action: 'ADMIN_TIER_PREVIEW_EXITED',
-      targetType: 'ADMIN_PREVIEW',
-      targetId: req.user!.id,
-      outcome: 'SUCCESS',
-      metadata: {
-        adminUserId: req.user!.id,
-        adminRole: req.user!.role
-      },
-      ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
-    });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        action: "ADMIN_TIER_PREVIEW_EXITED",
+        targetType: "ADMIN_PREVIEW",
+        targetId: req.user!.id,
+        outcome: "SUCCESS",
+        metadata: {
+          adminUserId: req.user!.id,
+          adminRole: req.user!.role,
+        },
+        ipAddress:
+          (req.headers["x-forwarded-for"] as string) ||
+          req.socket.remoteAddress ||
+          "127.0.0.1",
+      });
 
-    res.json({
-      success: true,
-      terminated,
-      message: 'Admin preview mode terminated. Genuine customer entitlements restored.'
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to exit admin preview mode');
-  }
-});
+      res.json({
+        success: true,
+        terminated,
+        message:
+          "Admin preview mode terminated. Genuine customer entitlements restored.",
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to exit admin preview mode");
+    }
+  },
+);
 
 // POST /api/admin/demo-wallet/credit - Credit demo funds to isolated admin preview wallet
-app.post('/api/admin/demo-wallet/credit', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  if (!isAdminPreviewEnabled()) {
-    return res.status(403).json({
-      error: 'ADMIN_PREVIEW_DISABLED',
-      message: 'Admin demo wallet operations are disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).'
-    });
-  }
+app.post(
+  "/api/admin/demo-wallet/credit",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!isAdminPreviewEnabled()) {
+      return res.status(403).json({
+        error: "ADMIN_PREVIEW_DISABLED",
+        message:
+          "Admin demo wallet operations are disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).",
+      });
+    }
 
-  const { amount } = req.body;
-  const validAmounts = [100, 500, 1000];
-  const numAmount = Number(amount);
+    const { amount } = req.body;
+    const validAmounts = [100, 500, 1000];
+    const numAmount = Number(amount);
 
-  if (!Number.isFinite(numAmount) || !validAmounts.includes(numAmount)) {
-    return res.status(400).json({
-      error: 'INVALID_DEMO_AMOUNT',
-      message: 'Demo credit amount must be exactly 100, 500, or 1000.'
-    });
-  }
+    if (!Number.isFinite(numAmount) || !validAmounts.includes(numAmount)) {
+      return res.status(400).json({
+        error: "INVALID_DEMO_AMOUNT",
+        message: "Demo credit amount must be exactly 100, 500, or 1000.",
+      });
+    }
 
-  try {
-    const result = await db.addDemoCredits(req.user!.id, numAmount);
-    res.json(result);
-  } catch (err: any) {
-    handleServiceError(res, err, 'Admin demo credit issuance failed');
-  }
-});
+    try {
+      const result = await db.addDemoCredits(req.user!.id, numAmount);
+      res.json(result);
+    } catch (err: any) {
+      handleServiceError(res, err, "Admin demo credit issuance failed");
+    }
+  },
+);
 
 // POST /api/admin/demo-wallet/reset - Reset isolated admin preview wallet balance to 0.00
-app.post('/api/admin/demo-wallet/reset', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  if (!isAdminPreviewEnabled()) {
-    return res.status(403).json({
-      error: 'ADMIN_PREVIEW_DISABLED',
-      message: 'Admin demo wallet operations are disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).'
-    });
-  }
+app.post(
+  "/api/admin/demo-wallet/reset",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    if (!isAdminPreviewEnabled()) {
+      return res.status(403).json({
+        error: "ADMIN_PREVIEW_DISABLED",
+        message:
+          "Admin demo wallet operations are disabled by server configuration (ASTROVERSE_ADMIN_PREVIEW_ENABLED).",
+      });
+    }
 
-  try {
-    const result = await db.resetDemoWallet(req.user!.id);
-    res.json(result);
-  } catch (err: any) {
-    handleServiceError(res, err, 'Admin demo wallet reset failed');
-  }
-});
+    try {
+      const result = await db.resetDemoWallet(req.user!.id);
+      res.json(result);
+    } catch (err: any) {
+      handleServiceError(res, err, "Admin demo wallet reset failed");
+    }
+  },
+);
 
 // POST /api/subscriptions/simulate-tier - Protected endpoint requiring admin
-app.post('/api/subscriptions/simulate-tier', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  const { tier } = req.body;
-  const normTier = String(tier || 'FREE').toUpperCase();
-  if (!['FREE', 'PLUS', 'PREMIUM'].includes(normTier)) {
-    return res.status(400).json({ error: 'INVALID_TIER', message: 'Simulated tier must be FREE, PLUS, or PREMIUM.' });
-  }
-  try {
-    const previewSession = db.createOrUpdateAdminPreviewSession(req.user!.id, normTier as any);
-    if (isDemoModeActive()) {
-      await db.setSimulatedTier(req.user!.id, normTier as any);
+app.post(
+  "/api/subscriptions/simulate-tier",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { tier } = req.body;
+    const normTier = String(tier || "FREE").toUpperCase();
+    if (!["FREE", "PLUS", "PREMIUM"].includes(normTier)) {
+      return res.status(400).json({
+        error: "INVALID_TIER",
+        message: "Simulated tier must be FREE, PLUS, or PREMIUM.",
+      });
     }
-    res.json({ success: true, previewSession });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Simulation failed');
-  }
-});
+    try {
+      const previewSession = db.createOrUpdateAdminPreviewSession(
+        req.user!.id,
+        normTier as any,
+      );
+      if (isDemoModeActive()) {
+        await db.setSimulatedTier(req.user!.id, normTier as any);
+      }
+      res.json({ success: true, previewSession });
+    } catch (err: any) {
+      handleServiceError(res, err, "Simulation failed");
+    }
+  },
+);
 
-app.get('/api/wallet/balance', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    await reconcileUserPendingOrders(req.user!.id);
-    const user = await db.findUserById(req.user!.id);
-    if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
-    res.json({ success: true, balance: user.walletBalance });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get(
+  "/api/wallet/balance",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      await reconcileUserPendingOrders(req.user!.id);
+      const user = await db.findUserById(req.user!.id);
+      if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
+      res.json({ success: true, balance: user.walletBalance });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
-app.get('/api/wallet/:userId', (req: Request, res: Response, next: NextFunction) => {
-  const userId = req.params.userId?.toLowerCase();
-  const reservedWalletSubpaths = ['webhook', 'config', 'catalog', 'me', 'balance', 'transactions', 'orders'];
-  if (reservedWalletSubpaths.includes(userId)) {
-    return next();
-  }
-  authenticate(req as AuthenticatedRequest, res, next);
-}, async (req: AuthenticatedRequest, res: Response) => {
-  const sessionUser = req.user!;
-  const { userId } = req.params;
+app.get(
+  "/api/wallet/:userId",
+  (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.userId?.toLowerCase();
+    const reservedWalletSubpaths = [
+      "webhook",
+      "config",
+      "catalog",
+      "me",
+      "balance",
+      "transactions",
+      "orders",
+    ];
+    if (reservedWalletSubpaths.includes(userId)) {
+      return next();
+    }
+    authenticate(req as AuthenticatedRequest, res, next);
+  },
+  async (req: AuthenticatedRequest, res: Response) => {
+    const sessionUser = req.user!;
+    const { userId } = req.params;
 
-  if (userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
-    return res.status(403).json({
-      error: 'FORBIDDEN',
-      message: "Cannot access another user's wallet statement."
-    });
-  }
+    if (userId !== sessionUser.id && sessionUser.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({
+        error: "FORBIDDEN",
+        message: "Cannot access another user's wallet statement.",
+      });
+    }
 
-  try {
-    await reconcileUserPendingOrders(userId);
-    const targetUser = await db.findUserById(userId);
-    if (!targetUser) return res.status(404).json({ error: 'USER_NOT_FOUND' });
-    const statement = await db.getWalletStatement(userId);
-    res.json({ balance: targetUser.walletBalance, statement });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    try {
+      await reconcileUserPendingOrders(userId);
+      const targetUser = await db.findUserById(userId);
+      if (!targetUser) return res.status(404).json({ error: "USER_NOT_FOUND" });
+      const statement = await db.getWalletStatement(userId);
+      res.json({ balance: targetUser.walletBalance, statement });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // ==================== 6. ASTROLOGERS DIRECTORY ====================
 
-app.get('/api/astrologers', async (_req: Request, res: Response) => {
+app.get("/api/astrologers", async (_req: Request, res: Response) => {
   try {
     const list = await db.listAstrologers();
     res.json(list);
@@ -5025,182 +6329,232 @@ app.get('/api/astrologers', async (_req: Request, res: Response) => {
 
 // Helper to sanitize secrets from configuration display
 function maskConfigValue(val: string | undefined): string {
-  if (!val) return 'NOT_CONFIGURED';
-  if (val.length <= 8) return '********';
+  if (!val) return "NOT_CONFIGURED";
+  if (val.length <= 8) return "********";
   return `${val.substring(0, 4)}...${val.substring(val.length - 4)}`;
 }
 
 // -----------------------------------------------------------------------------
 // MODULE 1: PLATFORM OVERVIEW & SERVICE HEALTH
 // -----------------------------------------------------------------------------
-app.get(['/api/admin/metrics', '/api/admin/overview'], authenticate, requireAdmin(AdminPermission.VIEW_OVERVIEW), async (req: AuthenticatedRequest, res: Response) => {
-  const correlationId = (req.headers['x-correlation-id'] as string) || (req.headers['x-request-id'] as string) || ('cid_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36));
-  try {
-    const forceFresh = req.query.fresh === 'true';
-    const metrics = await db.getPlatformMetrics(forceFresh);
-    res.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      correlationId,
-      actor: { id: req.user!.id, role: req.user!.role },
-      ...metrics,
-      metrics
-    });
-  } catch (err: any) {
-    console.error(`[ADMIN_OVERVIEW_ERROR] CorrelationId: ${correlationId}`, err?.message || err);
-    if (err?.code === 'DATABASE_UNAVAILABLE' || err?.message?.includes('DATABASE_UNAVAILABLE')) {
-      return res.status(503).json({
-        success: false,
-        error: 'DATABASE_UNAVAILABLE',
-        message: 'The administrative data service is temporarily unavailable. Please retry shortly.',
+app.get(
+  ["/api/admin/metrics", "/api/admin/overview"],
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_OVERVIEW),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const correlationId =
+      (req.headers["x-correlation-id"] as string) ||
+      (req.headers["x-request-id"] as string) ||
+      "cid_" +
+        Math.random().toString(36).substring(2, 10) +
+        Date.now().toString(36);
+    try {
+      const forceFresh = req.query.fresh === "true";
+      const metrics = await db.getPlatformMetrics(forceFresh);
+      res.json({
+        success: true,
+        timestamp: new Date().toISOString(),
         correlationId,
-        provenance: 'UNAVAILABLE',
-        timestamp: new Date().toISOString()
+        actor: { id: req.user!.id, role: req.user!.role },
+        ...metrics,
+        metrics,
+      });
+    } catch (err: any) {
+      console.error(
+        `[ADMIN_OVERVIEW_ERROR] CorrelationId: ${correlationId}`,
+        err?.message || err,
+      );
+      if (
+        err?.code === "DATABASE_UNAVAILABLE" ||
+        err?.message?.includes("DATABASE_UNAVAILABLE")
+      ) {
+        return res.status(503).json({
+          success: false,
+          error: "DATABASE_UNAVAILABLE",
+          message:
+            "The administrative data service is temporarily unavailable. Please retry shortly.",
+          correlationId,
+          provenance: "UNAVAILABLE",
+          timestamp: new Date().toISOString(),
+        });
+      }
+      res.status(500).json({
+        success: false,
+        error: "INTERNAL_SERVER_ERROR",
+        message:
+          "An unexpected internal error occurred while generating platform metrics.",
+        correlationId,
+        timestamp: new Date().toISOString(),
       });
     }
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected internal error occurred while generating platform metrics.',
-      correlationId,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 2: USER LIFECYCLE & MODERATION
 // -----------------------------------------------------------------------------
-app.get('/api/admin/users', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
-  const {
-    search,
-    role,
-    status,
-    emailVerified,
-    subscriptionTier,
-    subscriptionStatus,
-    sortBy,
-    sortOrder,
-    page,
-    limit
-  } = req.query;
-  try {
-    const [result, summary] = await Promise.all([
-      db.listUsers({
-        search: search ? String(search) : undefined,
-        role: role ? String(role) : undefined,
-        status: status ? String(status) : undefined,
-        emailVerified: emailVerified !== undefined ? String(emailVerified) : undefined,
-        subscriptionTier: subscriptionTier ? String(subscriptionTier) : undefined,
-        subscriptionStatus: subscriptionStatus ? String(subscriptionStatus) : undefined,
-        sortBy: sortBy ? String(sortBy) : undefined,
-        sortOrder: (sortOrder === 'asc' ? 'asc' : 'desc') as any,
-        page: Math.max(1, page ? Number(page) : 1),
-        limit: Math.min(100, Math.max(1, limit ? Number(limit) : 25))
-      }),
-      db.getUserDirectorySummary()
-    ]);
-    res.json({
-      success: true,
-      ...result,
-      users: (result.users || []).map(sanitizeUser),
-      summary
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get(
+  "/api/admin/users",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_USERS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const {
+      search,
+      role,
+      status,
+      emailVerified,
+      subscriptionTier,
+      subscriptionStatus,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    } = req.query;
+    try {
+      const [result, summary] = await Promise.all([
+        db.listUsers({
+          search: search ? String(search) : undefined,
+          role: role ? String(role) : undefined,
+          status: status ? String(status) : undefined,
+          emailVerified:
+            emailVerified !== undefined ? String(emailVerified) : undefined,
+          subscriptionTier: subscriptionTier
+            ? String(subscriptionTier)
+            : undefined,
+          subscriptionStatus: subscriptionStatus
+            ? String(subscriptionStatus)
+            : undefined,
+          sortBy: sortBy ? String(sortBy) : undefined,
+          sortOrder: (sortOrder === "asc" ? "asc" : "desc") as any,
+          page: Math.max(1, page ? Number(page) : 1),
+          limit: Math.min(100, Math.max(1, limit ? Number(limit) : 25)),
+        }),
+        db.getUserDirectorySummary(),
+      ]);
+      res.json({
+        success: true,
+        ...result,
+        users: (result.users || []).map(sanitizeUser),
+        summary,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
-app.get('/api/admin/users/:id/details', authenticate, requireAdmin(AdminPermission.VIEW_USERS), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const user = await db.findUserById(req.params.id);
-    if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+app.get(
+  "/api/admin/users/:id/details",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_USERS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = await db.findUserById(req.params.id);
+      if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
 
-    const profiles = await db.listBirthProfiles(req.params.id);
-    const reports = await db.listSavedReports(req.params.id);
-    const statement = await db.getWalletStatement(req.params.id);
+      const profiles = await db.listBirthProfiles(req.params.id);
+      const reports = await db.listSavedReports(req.params.id);
+      const statement = await db.getWalletStatement(req.params.id);
 
-    // Explicit allowlist response DTO: strictly omit passwords, salts, MFA secrets, recovery codes, reset tokens
-    const safeUser = {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      phoneVerified: user.phoneVerified,
-      emailVerified: user.emailVerified,
-      displayName: user.displayName,
-      role: user.role,
-      status: user.status,
-      subscriptionTier: user.subscriptionTier,
-      simulatedSubscriptionTier: user.simulatedSubscriptionTier,
-      walletBalance: user.walletBalance,
-      paidWalletBalance: user.paidWalletBalance,
-      promotionalWalletBalance: user.promotionalWalletBalance,
-      preferredLanguage: user.preferredLanguage,
-      preferredTimezone: user.preferredTimezone,
-      mfaEnabled: user.mfaEnabled,
-      createdAt: user.createdAt,
-      updatedAt: (user as any).updatedAt || null,
-      lastLoginAt: (user as any).lastLoginAt || null
-    };
+      // Explicit allowlist response DTO: strictly omit passwords, salts, MFA secrets, recovery codes, reset tokens
+      const safeUser = {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        phoneVerified: user.phoneVerified,
+        emailVerified: user.emailVerified,
+        displayName: user.displayName,
+        role: user.role,
+        status: user.status,
+        subscriptionTier: user.subscriptionTier,
+        simulatedSubscriptionTier: user.simulatedSubscriptionTier,
+        walletBalance: user.walletBalance,
+        paidWalletBalance: user.paidWalletBalance,
+        promotionalWalletBalance: user.promotionalWalletBalance,
+        preferredLanguage: user.preferredLanguage,
+        preferredTimezone: user.preferredTimezone,
+        mfaEnabled: user.mfaEnabled,
+        createdAt: user.createdAt,
+        updatedAt: (user as any).updatedAt || null,
+        lastLoginAt: (user as any).lastLoginAt || null,
+      };
 
-    const reason = (req.headers['x-admin-reason'] as string) || (req.query.reason as string) || 'Admin inspection of customer account details';
-    await db.recordAuditEvent({
-      userId: user.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_VIEW_USER_DETAILS',
-      targetType: 'USER',
-      targetId: user.id,
-      outcome: 'SUCCESS',
-      reason: String(reason).trim(),
-      ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
-    });
+      const reason =
+        (req.headers["x-admin-reason"] as string) ||
+        (req.query.reason as string) ||
+        "Admin inspection of customer account details";
+      await db.recordAuditEvent({
+        userId: user.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_VIEW_USER_DETAILS",
+        targetType: "USER",
+        targetId: user.id,
+        outcome: "SUCCESS",
+        reason: String(reason).trim(),
+        ipAddress:
+          (req.headers["x-forwarded-for"] as string) ||
+          req.socket.remoteAddress ||
+          "127.0.0.1",
+      });
 
-    res.json({
-      success: true,
-      user: safeUser,
-      birthProfilesCount: profiles.length,
-      savedReportsCount: reports.length,
-      walletStatement: statement
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      res.json({
+        success: true,
+        user: safeUser,
+        birthProfilesCount: profiles.length,
+        savedReportsCount: reports.length,
+        walletStatement: statement,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 app.post(
-  '/api/admin/users/export',
+  "/api/admin/users/export",
   adminSensitiveMutationsLimiter,
   authenticate,
   requireAdmin(AdminPermission.EXPORT_CUSTOMER_DATA),
-  requireAdminAssurance('users:export'),
+  requireAdminAssurance("users:export"),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { reason, exportProfile, role, status, subscriptionTier, search } = req.body || {};
+      const { reason, exportProfile, role, status, subscriptionTier, search } =
+        req.body || {};
 
-      if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
+      if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
         return res.status(400).json({
-          error: 'REASON_REQUIRED',
-          message: 'A detailed justification reason (minimum 5 characters) is mandatory for customer data export.'
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed justification reason (minimum 5 characters) is mandatory for customer data export.",
         });
       }
 
-      const profile = exportProfile || 'BASIC_DIRECTORY';
-      const validProfiles = ['BASIC_DIRECTORY', 'SUBSCRIPTIONS', 'PAYMENTS', 'WALLET_STATEMENTS', 'AUTHORIZED_FULL'];
+      const profile = exportProfile || "BASIC_DIRECTORY";
+      const validProfiles = [
+        "BASIC_DIRECTORY",
+        "SUBSCRIPTIONS",
+        "PAYMENTS",
+        "WALLET_STATEMENTS",
+        "AUTHORIZED_FULL",
+      ];
       if (!validProfiles.includes(profile)) {
         return res.status(400).json({
-          error: 'INVALID_PROFILE',
-          message: `exportProfile must be one of: ${validProfiles.join(', ')}`
+          error: "INVALID_PROFILE",
+          message: `exportProfile must be one of: ${validProfiles.join(", ")}`,
         });
       }
 
       // Query users safely
       const result = await db.listUsers({
         search: search ? String(search) : undefined,
-        role: role && role !== 'ALL' ? String(role) : undefined,
-        status: status && status !== 'ALL' ? String(status) : undefined,
-        subscriptionTier: subscriptionTier && subscriptionTier !== 'ALL' ? String(subscriptionTier) : undefined,
-        limit: 1000
+        role: role && role !== "ALL" ? String(role) : undefined,
+        status: status && status !== "ALL" ? String(status) : undefined,
+        subscriptionTier:
+          subscriptionTier && subscriptionTier !== "ALL"
+            ? String(subscriptionTier)
+            : undefined,
+        limit: 1000,
       });
 
       const users = result.users || [];
@@ -5210,7 +6564,7 @@ app.post(
       const sanitizeCell = (val: any): string => {
         if (val === null || val === undefined) return '""';
         let str = String(val).replace(/"/g, '""');
-        if (/^[=\+\-@\t\r]/.test(str)) {
+        if (/^[=+\-@\t\r]/.test(str)) {
           str = "'" + str;
         }
         return `"${str}"`;
@@ -5219,827 +6573,1656 @@ app.post(
       let headers: string[] = [];
       let rowMapper: (u: any) => string[] = () => [];
 
-      if (profile === 'BASIC_DIRECTORY') {
-        headers = ['ID', 'DisplayName', 'Email', 'Phone', 'EmailVerified', 'Role', 'Status', 'CreatedAt'];
+      if (profile === "BASIC_DIRECTORY") {
+        headers = [
+          "ID",
+          "DisplayName",
+          "Email",
+          "Phone",
+          "EmailVerified",
+          "Role",
+          "Status",
+          "CreatedAt",
+        ];
         rowMapper = (u: any) => [
           sanitizeCell(u.id),
-          sanitizeCell(u.displayName || ''),
-          sanitizeCell(u.email || ''),
-          sanitizeCell(u.phone || ''),
-          sanitizeCell(u.emailVerified ? 'TRUE' : 'FALSE'),
+          sanitizeCell(u.displayName || ""),
+          sanitizeCell(u.email || ""),
+          sanitizeCell(u.phone || ""),
+          sanitizeCell(u.emailVerified ? "TRUE" : "FALSE"),
           sanitizeCell(u.role),
           sanitizeCell(u.status),
-          sanitizeCell(u.createdAt)
+          sanitizeCell(u.createdAt),
         ];
-      } else if (profile === 'SUBSCRIPTIONS') {
-        headers = ['ID', 'DisplayName', 'Email', 'SubscriptionTier', 'SubscriptionStatus', 'SubscriptionBillingPeriod', 'SubscriptionExpiresAt'];
+      } else if (profile === "SUBSCRIPTIONS") {
+        headers = [
+          "ID",
+          "DisplayName",
+          "Email",
+          "SubscriptionTier",
+          "SubscriptionStatus",
+          "SubscriptionBillingPeriod",
+          "SubscriptionExpiresAt",
+        ];
         rowMapper = (u: any) => [
           sanitizeCell(u.id),
-          sanitizeCell(u.displayName || ''),
-          sanitizeCell(u.email || ''),
-          sanitizeCell(u.subscriptionTier || 'FREE'),
-          sanitizeCell(u.subscriptionStatus || 'NONE'),
-          sanitizeCell(u.subscriptionBillingPeriod || 'N/A'),
-          sanitizeCell(u.subscriptionExpiresAt || '')
+          sanitizeCell(u.displayName || ""),
+          sanitizeCell(u.email || ""),
+          sanitizeCell(u.subscriptionTier || "FREE"),
+          sanitizeCell(u.subscriptionStatus || "NONE"),
+          sanitizeCell(u.subscriptionBillingPeriod || "N/A"),
+          sanitizeCell(u.subscriptionExpiresAt || ""),
         ];
-      } else if (profile === 'PAYMENTS' || profile === 'WALLET_STATEMENTS') {
-        headers = ['ID', 'DisplayName', 'Email', 'WalletBalanceINR', 'PaidWalletBalanceINR', 'PromotionalWalletBalanceINR', 'CreatedAt'];
+      } else if (profile === "PAYMENTS" || profile === "WALLET_STATEMENTS") {
+        headers = [
+          "ID",
+          "DisplayName",
+          "Email",
+          "WalletBalanceINR",
+          "PaidWalletBalanceINR",
+          "PromotionalWalletBalanceINR",
+          "CreatedAt",
+        ];
         rowMapper = (u: any) => [
           sanitizeCell(u.id),
-          sanitizeCell(u.displayName || ''),
-          sanitizeCell(u.email || ''),
+          sanitizeCell(u.displayName || ""),
+          sanitizeCell(u.email || ""),
           sanitizeCell((u.walletBalance || 0).toFixed(2)),
-          sanitizeCell((u.paidWalletBalance ?? u.walletBalance ?? 0).toFixed(2)),
+          sanitizeCell(
+            (u.paidWalletBalance ?? u.walletBalance ?? 0).toFixed(2),
+          ),
           sanitizeCell((u.promotionalWalletBalance || 0).toFixed(2)),
-          sanitizeCell(u.createdAt)
+          sanitizeCell(u.createdAt),
         ];
       } else {
         // AUTHORIZED_FULL
-        headers = ['ID', 'DisplayName', 'Email', 'Phone', 'EmailVerified', 'Role', 'Status', 'SubscriptionTier', 'SubscriptionStatus', 'SubscriptionExpiresAt', 'WalletBalanceINR', 'CreatedAt'];
+        headers = [
+          "ID",
+          "DisplayName",
+          "Email",
+          "Phone",
+          "EmailVerified",
+          "Role",
+          "Status",
+          "SubscriptionTier",
+          "SubscriptionStatus",
+          "SubscriptionExpiresAt",
+          "WalletBalanceINR",
+          "CreatedAt",
+        ];
         rowMapper = (u: any) => [
           sanitizeCell(u.id),
-          sanitizeCell(u.displayName || ''),
-          sanitizeCell(u.email || ''),
-          sanitizeCell(u.phone || ''),
-          sanitizeCell(u.emailVerified ? 'TRUE' : 'FALSE'),
+          sanitizeCell(u.displayName || ""),
+          sanitizeCell(u.email || ""),
+          sanitizeCell(u.phone || ""),
+          sanitizeCell(u.emailVerified ? "TRUE" : "FALSE"),
           sanitizeCell(u.role),
           sanitizeCell(u.status),
-          sanitizeCell(u.subscriptionTier || 'FREE'),
-          sanitizeCell(u.subscriptionStatus || 'NONE'),
-          sanitizeCell(u.subscriptionExpiresAt || ''),
+          sanitizeCell(u.subscriptionTier || "FREE"),
+          sanitizeCell(u.subscriptionStatus || "NONE"),
+          sanitizeCell(u.subscriptionExpiresAt || ""),
           sanitizeCell((u.walletBalance || 0).toFixed(2)),
-          sanitizeCell(u.createdAt)
+          sanitizeCell(u.createdAt),
         ];
       }
 
-      const csvLines = [headers.join(',')];
+      const csvLines = [headers.join(",")];
       for (const u of users) {
-        csvLines.push(rowMapper(u).join(','));
+        csvLines.push(rowMapper(u).join(","));
       }
-      const csvContent = csvLines.join('\r\n');
-      const checksum = crypto.createHash('sha256').update(csvContent).digest('hex');
+      const csvContent = csvLines.join("\r\n");
+      const checksum = crypto
+        .createHash("sha256")
+        .update(csvContent)
+        .digest("hex");
 
       // Immutable Audit Log
       await db.recordAuditEvent({
         userId: req.user!.id,
         actorId: req.user!.id,
         actorRole: req.user!.role,
-        action: 'EXPORT_CUSTOMER_DATA',
-        targetType: 'SYSTEM',
-        targetId: 'EXPORT_USERS',
-        outcome: 'SUCCESS',
+        action: "EXPORT_CUSTOMER_DATA",
+        targetType: "SYSTEM",
+        targetId: "EXPORT_USERS",
+        outcome: "SUCCESS",
         reason: reason.trim(),
         metadata: {
           exportProfile: profile,
           rowCount: users.length,
           checksum,
-          filters: { role, status, subscriptionTier, search }
+          filters: { role, status, subscriptionTier, search },
         },
-        ipAddress: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1'
+        ipAddress:
+          (req.headers["x-forwarded-for"] as string) ||
+          req.socket.remoteAddress ||
+          "127.0.0.1",
       });
 
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="astroverse_${profile.toLowerCase()}_${Date.now()}.csv"`);
-      res.setHeader('X-Export-Checksum', checksum);
-      res.setHeader('X-Export-Row-Count', String(users.length));
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="astroverse_${profile.toLowerCase()}_${Date.now()}.csv"`,
+      );
+      res.setHeader("X-Export-Checksum", checksum);
+      res.setHeader("X-Export-Row-Count", String(users.length));
       return res.status(200).send(csvContent);
     } catch (err: any) {
-      console.error('[EXPORT] Customer data export error:', err?.message || err);
-      return res.status(500).json({ error: 'EXPORT_FAILED', message: err?.message || 'Failed to export customer data' });
+      console.error(
+        "[EXPORT] Customer data export error:",
+        err?.message || err,
+      );
+      return res.status(500).json({
+        error: "EXPORT_FAILED",
+        message: err?.message || "Failed to export customer data",
+      });
     }
-  }
+  },
 );
 
+app.put(
+  "/api/admin/users/:id/status",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_USER_STATUS),
+  requireAdminAssurance(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { status, reason } = req.body;
 
-app.put('/api/admin/users/:id/status', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_USER_STATUS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  const { status, reason } = req.body;
-
-  if (!status || !Object.values(AccountStatus).includes(status)) {
-    return res.status(400).json({ error: 'INVALID_STATUS', message: 'Status must be ACTIVE, SUSPENDED, or DEACTIVATED.' });
-  }
-
-  try {
-    const targetUser = await db.findUserById(id);
-    if (!targetUser) return res.status(404).json({ error: 'USER_NOT_FOUND' });
-
-    // Super Admin / Owner cannot be suspended by non-owners
-    const targetCanonical = normalizeRole(targetUser.role);
-    const actorCanonical = normalizeRole(req.user!.role);
-    if (targetCanonical === Role.OWNER && actorCanonical !== Role.OWNER) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: 'Cannot modify Platform Owner account status.' });
+    if (!status || !Object.values(AccountStatus).includes(status)) {
+      return res.status(400).json({
+        error: "INVALID_STATUS",
+        message: "Status must be ACTIVE, SUSPENDED, or DEACTIVATED.",
+      });
     }
 
-    const updated = await db.updateUser(id, { status });
+    try {
+      const targetUser = await db.findUserById(id);
+      if (!targetUser) return res.status(404).json({ error: "USER_NOT_FOUND" });
 
-    // Evict sessions if suspended or deactivated
-    if (status !== AccountStatus.ACTIVE) {
-      await db.deleteUserSessions(id);
+      // Super Admin / Owner cannot be suspended by non-owners
+      const targetCanonical = normalizeRole(targetUser.role);
+      const actorCanonical = normalizeRole(req.user!.role);
+      if (targetCanonical === Role.OWNER && actorCanonical !== Role.OWNER) {
+        return res.status(403).json({
+          error: "FORBIDDEN",
+          message: "Cannot modify Platform Owner account status.",
+        });
+      }
+
+      const updated = await db.updateUser(id, { status });
+
+      // Evict sessions if suspended or deactivated
+      if (status !== AccountStatus.ACTIVE) {
+        await db.deleteUserSessions(id);
+      }
+
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_STATUS_CHANGE",
+        targetType: "USER",
+        targetId: id,
+        outcome: "SUCCESS",
+        reason: reason || `Status changed to ${status}`,
+        metadata: { oldStatus: targetUser.status, newStatus: status },
+      });
+
+      res.json({ status: "STATUS_UPDATED", user: sanitizeUser(updated) });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_STATUS_CHANGE',
-      targetType: 'USER',
-      targetId: id,
-      outcome: 'SUCCESS',
-      reason: reason || `Status changed to ${status}`,
-      metadata: { oldStatus: targetUser.status, newStatus: status }
-    });
-
-    res.json({ status: 'STATUS_UPDATED', user: sanitizeUser(updated) });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 3: ADMINISTRATIVE ROLES & PERMISSION MANAGEMENT
 // -----------------------------------------------------------------------------
-app.get('/api/admin/roles', authenticate, requireAdmin(AdminPermission.VIEW_ROLES), (_req: AuthenticatedRequest, res: Response) => {
-  res.json({
-    success: true,
-    roles: [
-      Role.OWNER,
-      Role.SECURITY_ADMIN,
-      Role.SUPPORT_ADMIN,
-      Role.CONTENT_EDITOR,
-      Role.FINANCE_ADMIN,
-      Role.ASTROLOGY_OPS_ADMIN,
-      Role.READONLY_ANALYST,
-      Role.USER
-    ],
-    rolePermissions: ROLE_PERMISSIONS,
-    modules: ADMIN_MODULE_REGISTRY
-  });
-});
-
-app.get('/api/admin/roles/matrix', authenticate, requireAdmin(AdminPermission.VIEW_ROLES), (_req: AuthenticatedRequest, res: Response) => {
-  res.json({
-    success: true,
-    roles: [
-      Role.OWNER,
-      Role.SECURITY_ADMIN,
-      Role.SUPPORT_ADMIN,
-      Role.CONTENT_EDITOR,
-      Role.FINANCE_ADMIN,
-      Role.ASTROLOGY_OPS_ADMIN,
-      Role.READONLY_ANALYST,
-      Role.USER
-    ],
-    rolePermissions: ROLE_PERMISSIONS,
-    modules: ADMIN_MODULE_REGISTRY
-  });
-});
-
-app.get('/api/admin/roles/admins', authenticate, requireAdmin(AdminPermission.VIEW_ROLES), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const allUsers = await db.listUsers({ limit: 1000 });
-    const adminUsers = allUsers.users.filter(u => isAnyAdmin(u.role));
-    const admins = await Promise.all(adminUsers.map(async (u) => {
-      let displayName = u.displayName || u.email || 'Administrator';
-      if (displayName.toLowerCase().includes('aryan') || displayName.toLowerCase().includes('tiwari')) {
-        displayName = u.role === Role.OWNER ? 'Platform Owner' : 'Platform Administrator';
-      }
-      const activeSessionsCount = await db.countUserSessions(u.id);
-      const permissions = ROLE_PERMISSIONS[normalizeRole(u.role)] || [];
-      return {
-        id: u.id,
-        displayName,
-        email: u.email,
-        phone: u.phone,
-        role: u.role,
-        canonicalRole: normalizeRole(u.role),
-        status: u.status,
-        mfaEnabled: Boolean(u.mfaEnabled),
-        permissionsCount: permissions.length,
-        activeSessionsCount,
-        lastLoginAt: u.lastLoginAt,
-        createdAt: u.createdAt
-      };
-    }));
-    res.json({ success: true, admins, total: admins.length });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/admin/users/:id/role', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_ROLES), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  const { role, reason } = req.body;
-
-  try {
-    const updated = await db.assignUserRoleAtomic({
-      targetUserId: id,
-      newRole: role,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      reason,
-      requestId: (req.headers['x-request-id'] as string) || undefined
+app.get(
+  "/api/admin/roles",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_ROLES),
+  (_req: AuthenticatedRequest, res: Response) => {
+    res.json({
+      success: true,
+      roles: [
+        Role.OWNER,
+        Role.SECURITY_ADMIN,
+        Role.SUPPORT_ADMIN,
+        Role.CONTENT_EDITOR,
+        Role.FINANCE_ADMIN,
+        Role.ASTROLOGY_OPS_ADMIN,
+        Role.READONLY_ANALYST,
+        Role.USER,
+      ],
+      rolePermissions: ROLE_PERMISSIONS,
+      modules: ADMIN_MODULE_REGISTRY,
     });
+  },
+);
 
-    res.json({ status: 'ROLE_UPDATED', user: sanitizeUser(updated) });
-  } catch (err: any) {
-    if (err.code === 'INVALID_ROLE' || err.code === 'REASON_REQUIRED' || err.code === 'CANNOT_MODIFY_OWN_ROLE') {
-      return res.status(400).json({ error: err.code, message: err.message });
+app.get(
+  "/api/admin/roles/matrix",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_ROLES),
+  (_req: AuthenticatedRequest, res: Response) => {
+    res.json({
+      success: true,
+      roles: [
+        Role.OWNER,
+        Role.SECURITY_ADMIN,
+        Role.SUPPORT_ADMIN,
+        Role.CONTENT_EDITOR,
+        Role.FINANCE_ADMIN,
+        Role.ASTROLOGY_OPS_ADMIN,
+        Role.READONLY_ANALYST,
+        Role.USER,
+      ],
+      rolePermissions: ROLE_PERMISSIONS,
+      modules: ADMIN_MODULE_REGISTRY,
+    });
+  },
+);
+
+app.get(
+  "/api/admin/roles/admins",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_ROLES),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const allUsers = await db.listUsers({ limit: 1000 });
+      const adminUsers = allUsers.users.filter((u) => isAnyAdmin(u.role));
+      const admins = await Promise.all(
+        adminUsers.map(async (u) => {
+          let displayName = u.displayName || u.email || "Administrator";
+          if (
+            displayName.toLowerCase().includes("aryan") ||
+            displayName.toLowerCase().includes("tiwari")
+          ) {
+            displayName =
+              u.role === Role.OWNER
+                ? "Platform Owner"
+                : "Platform Administrator";
+          }
+          const activeSessionsCount = await db.countUserSessions(u.id);
+          const permissions = ROLE_PERMISSIONS[normalizeRole(u.role)] || [];
+          return {
+            id: u.id,
+            displayName,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            canonicalRole: normalizeRole(u.role),
+            status: u.status,
+            mfaEnabled: Boolean(u.mfaEnabled),
+            permissionsCount: permissions.length,
+            activeSessionsCount,
+            lastLoginAt: u.lastLoginAt,
+            createdAt: u.createdAt,
+          };
+        }),
+      );
+      res.json({ success: true, admins, total: admins.length });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-    if (err.code === 'FORBIDDEN') {
-      return res.status(403).json({ error: 'FORBIDDEN', message: err.message });
+  },
+);
+
+app.put(
+  "/api/admin/users/:id/role",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_ROLES),
+  requireAdminAssurance(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { role, reason } = req.body;
+
+    try {
+      const updated = await db.assignUserRoleAtomic({
+        targetUserId: id,
+        newRole: role,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        reason,
+        requestId: (req.headers["x-request-id"] as string) || undefined,
+      });
+
+      res.json({ status: "ROLE_UPDATED", user: sanitizeUser(updated) });
+    } catch (err: any) {
+      if (
+        err.code === "INVALID_ROLE" ||
+        err.code === "REASON_REQUIRED" ||
+        err.code === "CANNOT_MODIFY_OWN_ROLE"
+      ) {
+        return res.status(400).json({ error: err.code, message: err.message });
+      }
+      if (err.code === "FORBIDDEN") {
+        return res
+          .status(403)
+          .json({ error: "FORBIDDEN", message: err.message });
+      }
+      if (err.code === "LAST_OWNER_PROTECTION") {
+        return res
+          .status(403)
+          .json({ error: "LAST_OWNER_PROTECTION", message: err.message });
+      }
+      if (err.code === "USER_NOT_FOUND") {
+        return res
+          .status(404)
+          .json({ error: "USER_NOT_FOUND", message: err.message });
+      }
+      res.status(500).json({ error: err.message });
     }
-    if (err.code === 'LAST_OWNER_PROTECTION') {
-      return res.status(403).json({ error: 'LAST_OWNER_PROTECTION', message: err.message });
-    }
-    if (err.code === 'USER_NOT_FOUND') {
-      return res.status(404).json({ error: 'USER_NOT_FOUND', message: err.message });
-    }
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 4: AUTHENTICATION & SECURITY EVENTS (WITH MFA ENGINE)
 // -----------------------------------------------------------------------------
-app.get('/api/admin/security/events', authenticate, requireAdmin(AdminPermission.VIEW_SECURITY_EVENTS), async (req: AuthenticatedRequest, res: Response) => {
-  const { page, limit, search } = req.query;
-  try {
-    const result = await db.listAuditEvents({
-      action: 'AUTH',
-      search: search ? String(search) : undefined,
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 50
-    });
-    res.json({ success: true, ...result });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get(
+  "/api/admin/security/events",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_SECURITY_EVENTS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { page, limit, search } = req.query;
+    try {
+      const result = await db.listAuditEvents({
+        action: "AUTH",
+        search: search ? String(search) : undefined,
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 50,
+      });
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // POST /api/admin/mfa/setup: Begin TOTP setup
-app.post('/api/admin/mfa/setup', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const user = await db.findUserById(req.user!.id);
-    if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+app.post(
+  "/api/admin/mfa/setup",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = await db.findUserById(req.user!.id);
+      if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
 
-    const accountName = user.email || user.phone || user.id;
-    const forceReset = Boolean(req.body && (req.body.forceReset || req.body.forceRotate));
+      const accountName = user.email || user.phone || user.id;
+      const forceReset = Boolean(
+        req.body && (req.body.forceReset || req.body.forceRotate),
+      );
 
-    // Preserve existing pending secret unless explicit rotation requested or no secret exists
-    let secret = user.mfaSecret;
-    if (!secret || forceReset) {
-      const generated = generateTotpSecret();
-      secret = generated.secret;
-      await db.updateUser(user.id, { mfaSecret: secret });
+      // Preserve existing pending secret unless explicit rotation requested or no secret exists
+      let secret = user.mfaSecret;
+      if (!secret || forceReset) {
+        const generated = generateTotpSecret();
+        secret = generated.secret;
+        await db.updateUser(user.id, { mfaSecret: secret });
+      }
+
+      const uri = `otpauth://totp/AstroVerse:${encodeURIComponent(accountName)}?secret=${secret}&issuer=AstroVerse&algorithm=SHA1&digits=6&period=30`;
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(uri)}&size=200x200&margin=8`;
+
+      res.json({
+        success: true,
+        secret,
+        otpauthUrl: uri,
+        qrCodeUrl,
+        instructions:
+          "Scan this QR code with Google Authenticator or enter the secret key manually, then verify with a 6-digit code.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-
-    const uri = `otpauth://totp/AstroVerse:${encodeURIComponent(accountName)}?secret=${secret}&issuer=AstroVerse&algorithm=SHA1&digits=6&period=30`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(uri)}&size=200x200&margin=8`;
-
-    res.json({
-      success: true,
-      secret,
-      otpauthUrl: uri,
-      qrCodeUrl,
-      instructions: 'Scan this QR code with Google Authenticator or enter the secret key manually, then verify with a 6-digit code.'
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 // POST /api/admin/mfa/verify: Activate MFA with initial code confirmation
-app.post('/api/admin/mfa/verify', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  const { code } = req.body;
-  if (!code || !/^\d{6}$/.test(String(code).trim())) {
-    return res.status(400).json({ error: 'INVALID_CODE', message: 'Please provide a 6-digit verification code.' });
-  }
-
-  try {
-    const user = await db.findUserById(req.user!.id);
-    if (!user || !user.mfaSecret) {
-      return res.status(400).json({ error: 'MFA_NOT_INITIALIZED', message: 'Please initialize MFA setup first.' });
+app.post(
+  "/api/admin/mfa/verify",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { code } = req.body;
+    if (!code || !/^\d{6}$/.test(String(code).trim())) {
+      return res.status(400).json({
+        error: "INVALID_CODE",
+        message: "Please provide a 6-digit verification code.",
+      });
     }
 
-    const isValid = verifyTotpCode(user.mfaSecret, String(code));
-    if (!isValid) {
-      return res.status(400).json({ error: 'MFA_CODE_MISMATCH', message: 'Invalid 6-digit code. Please verify device time and retry.' });
-    }
-
-    // Generate single-use recovery codes
-    const { plaintextCodes, hashedCodes } = generateMfaRecoveryCodes(8);
-
-    await db.updateUser(user.id, {
-      mfaEnabled: true,
-      mfaRecoveryCodes: hashedCodes
-    });
-
-    const assuranceToken = issueAdminAssuranceToken(user.id, user.role);
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      actorId: user.id,
-      actorRole: user.role,
-      action: 'ADMIN_MFA_ACTIVATED',
-      targetType: 'USER',
-      targetId: user.id,
-      outcome: 'SUCCESS',
-      reason: 'TOTP Multi-Factor Authentication successfully activated'
-    });
-
-    res.json({
-      success: true,
-      message: 'MFA activated successfully.',
-      recoveryCodes: plaintextCodes,
-      assuranceToken,
-      disclaimer: 'Save these 8 recovery codes in a secure vault. Each code can be used once to regain access.'
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /api/admin/mfa/challenge: Verify step-up assurance token
-app.post('/api/admin/mfa/challenge', authenticate, requireAdmin(), async (req: AuthenticatedRequest, res: Response) => {
-  const { code, recoveryCode, scope } = req.body;
-
-  try {
-    const user = await db.findUserById(req.user!.id);
-    if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
-
-    let verified = false;
-
-    if (code && user.mfaSecret) {
-      verified = verifyTotpCode(user.mfaSecret, String(code));
-    } else if (recoveryCode && user.mfaRecoveryCodes) {
-      const recoveryResult = verifyAndConsumeRecoveryCode(user.mfaRecoveryCodes, String(recoveryCode));
-      if (recoveryResult.valid) {
-        verified = true;
-        await db.updateUser(user.id, { mfaRecoveryCodes: recoveryResult.remainingHashedCodes });
+    try {
+      const user = await db.findUserById(req.user!.id);
+      if (!user || !user.mfaSecret) {
+        return res.status(400).json({
+          error: "MFA_NOT_INITIALIZED",
+          message: "Please initialize MFA setup first.",
+        });
       }
-    } else if (!user.mfaEnabled && !isProductionEnvironment() && (code === '000000' || process.env.NODE_ENV === 'test')) {
-      // Test/development harness helper when testing MFA challenge
-      verified = true;
-    }
 
-    if (!verified) {
+      const isValid = verifyTotpCode(user.mfaSecret, String(code));
+      if (!isValid) {
+        return res.status(400).json({
+          error: "MFA_CODE_MISMATCH",
+          message: "Invalid 6-digit code. Please verify device time and retry.",
+        });
+      }
+
+      // Generate single-use recovery codes
+      const { plaintextCodes, hashedCodes } = generateMfaRecoveryCodes(8);
+
+      await db.updateUser(user.id, {
+        mfaEnabled: true,
+        mfaRecoveryCodes: hashedCodes,
+      });
+
+      const assuranceToken = issueAdminAssuranceToken(user.id, user.role);
+
       await db.recordAuditEvent({
         userId: user.id,
         actorId: user.id,
         actorRole: user.role,
-        action: 'ADMIN_MFA_CHALLENGE_FAILED',
-        targetType: 'USER',
+        action: "ADMIN_MFA_ACTIVATED",
+        targetType: "USER",
         targetId: user.id,
-        outcome: 'FAILED',
-        reason: 'Incorrect TOTP code or invalid recovery code'
+        outcome: "SUCCESS",
+        reason: "TOTP Multi-Factor Authentication successfully activated",
       });
-      return res.status(401).json({ error: 'MFA_VERIFICATION_FAILED', message: 'Invalid 6-digit TOTP or recovery code.' });
+
+      res.json({
+        success: true,
+        message: "MFA activated successfully.",
+        recoveryCodes: plaintextCodes,
+        assuranceToken,
+        disclaimer:
+          "Save these 8 recovery codes in a secure vault. Each code can be used once to regain access.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
+  },
+);
 
-    const requestedScope = (scope && typeof scope === 'string') ? scope.trim() : 'ADMIN_MUTATION';
-    const targetScope = (ALLOWED_ASSURANCE_SCOPES as readonly string[]).includes(requestedScope)
-      ? requestedScope
-      : 'ADMIN_MUTATION';
+// POST /api/admin/mfa/challenge: Verify step-up assurance token
+app.post(
+  "/api/admin/mfa/challenge",
+  authenticate,
+  requireAdmin(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { code, recoveryCode, scope } = req.body;
 
-    const assuranceToken = issueAdminAssuranceToken(user.id, user.role, targetScope);
+    try {
+      const user = await db.findUserById(req.user!.id);
+      if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
 
-    await db.recordAuditEvent({
-      userId: user.id,
-      actorId: user.id,
-      actorRole: user.role,
-      action: 'ADMIN_MFA_CHALLENGE_SUCCESS',
-      targetType: 'USER',
-      targetId: user.id,
-      outcome: 'SUCCESS',
-      reason: `Admin step-up assurance token issued with scope '${targetScope}' (15-min validity)`
-    });
+      let verified = false;
 
-    res.json({
-      success: true,
-      assuranceToken,
-      scope: targetScope,
-      expiresInSeconds: 900
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      if (code && user.mfaSecret) {
+        verified = verifyTotpCode(user.mfaSecret, String(code));
+      } else if (recoveryCode && user.mfaRecoveryCodes) {
+        const recoveryResult = verifyAndConsumeRecoveryCode(
+          user.mfaRecoveryCodes,
+          String(recoveryCode),
+        );
+        if (recoveryResult.valid) {
+          verified = true;
+          await db.updateUser(user.id, {
+            mfaRecoveryCodes: recoveryResult.remainingHashedCodes,
+          });
+        }
+      } else if (
+        !user.mfaEnabled &&
+        !isProductionEnvironment() &&
+        (code === "000000" || process.env.NODE_ENV === "test")
+      ) {
+        // Test/development harness helper when testing MFA challenge
+        verified = true;
+      }
 
-app.post('/api/admin/users/:id/revoke-sessions', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SECURITY_MFA), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    await db.deleteUserSessions(req.params.id);
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_REVOKE_SESSIONS',
-      targetType: 'USER',
-      targetId: req.params.id,
-      outcome: 'SUCCESS',
-      reason: 'Forced eviction of all active sessions'
-    });
-    res.json({ success: true, message: 'All active sessions evicted.' });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      if (!verified) {
+        await db.recordAuditEvent({
+          userId: user.id,
+          actorId: user.id,
+          actorRole: user.role,
+          action: "ADMIN_MFA_CHALLENGE_FAILED",
+          targetType: "USER",
+          targetId: user.id,
+          outcome: "FAILED",
+          reason: "Incorrect TOTP code or invalid recovery code",
+        });
+        return res.status(401).json({
+          error: "MFA_VERIFICATION_FAILED",
+          message: "Invalid 6-digit TOTP or recovery code.",
+        });
+      }
+
+      const requestedScope =
+        scope && typeof scope === "string" ? scope.trim() : "ADMIN_MUTATION";
+      const targetScope = (
+        ALLOWED_ASSURANCE_SCOPES as readonly string[]
+      ).includes(requestedScope)
+        ? requestedScope
+        : "ADMIN_MUTATION";
+
+      const assuranceToken = issueAdminAssuranceToken(
+        user.id,
+        user.role,
+        targetScope,
+      );
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        actorId: user.id,
+        actorRole: user.role,
+        action: "ADMIN_MFA_CHALLENGE_SUCCESS",
+        targetType: "USER",
+        targetId: user.id,
+        outcome: "SUCCESS",
+        reason: `Admin step-up assurance token issued with scope '${targetScope}' (15-min validity)`,
+      });
+
+      res.json({
+        success: true,
+        assuranceToken,
+        scope: targetScope,
+        expiresInSeconds: 900,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+app.post(
+  "/api/admin/users/:id/revoke-sessions",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_SECURITY_MFA),
+  requireAdminAssurance(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      await db.deleteUserSessions(req.params.id);
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_REVOKE_SESSIONS",
+        targetType: "USER",
+        targetId: req.params.id,
+        outcome: "SUCCESS",
+        reason: "Forced eviction of all active sessions",
+      });
+      res.json({ success: true, message: "All active sessions evicted." });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 5: ASTROLOGY ENGINE HEALTH & JOBS
 // -----------------------------------------------------------------------------
-app.get('/api/admin/astrology/health', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (_req: AuthenticatedRequest, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-  let engineOnline = false;
-  let latencyMs = 0;
-  let engineData: any = {};
+app.get(
+  "/api/admin/astrology/health",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+    let engineOnline = false;
+    let latencyMs = 0;
+    let engineData: any = {};
 
-  try {
-    const start = Date.now();
-    const probe = await fetch(`${kundliUrl}/api/health`, { signal: AbortSignal.timeout(3000) });
-    latencyMs = Date.now() - start;
-    if (probe.ok) {
-      engineOnline = true;
-      engineData = await probe.json().catch(() => ({}));
-    }
-  } catch (_) {
-    engineOnline = false;
-  }
-
-  res.json({
-    success: true,
-    engineUrl: kundliUrl,
-    status: engineOnline ? 'ONLINE' : 'FALLBACK_LOCAL_KEPLER_ACTIVE',
-    latencyMs: engineOnline ? latencyMs : null,
-    calculationEngine: 'Swiss Ephemeris 2.10.03 & High-Precision Keplerian Solvers',
-    ayanamshaStandard: 'Nirayana Chitra Paksha Lahiri (Strict Parashari)',
-    engineMetadata: engineData
-  });
-});
-
-app.post('/api/admin/astrology/test-calculation', authenticate, requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH), async (_req: AuthenticatedRequest, res: Response) => {
-  // Golden reference calibration chart: Benchmark Native A (2005-08-20 14:05 Jabalpur)
-  const fixture = {
-    dob: '2005-08-20T14:05:00',
-    lat: 23.1686,
-    lon: 79.9534,
-    timezone: 'Asia/Kolkata'
-  };
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-  const internalKey = process.env.ASTROVERSE_INTERNAL_KEY || '';
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json'
-  };
-  if (internalKey) {
-    headers['x-internal-key'] = internalKey;
-  }
-
-  const referencePositions = [
-    { parameter: 'Ascendant (Lagna)', sign: 'Scorpio', degree: 24.17 },
-    { parameter: 'Sun (Surya)', sign: 'Leo', degree: 3.49 },
-    { parameter: 'Moon (Chandra)', sign: 'Aquarius', degree: 12.21 },
-    { parameter: 'Mars (Mangal)', sign: 'Aries', degree: 18.29 },
-    { parameter: 'Jupiter (Guru)', sign: 'Virgo', degree: 22.46 }
-  ];
-
-  const start = Date.now();
-  let result: any = null;
-  let isLive = false;
-
-  try {
-    const r = await fetch(`${kundliUrl}/api/kundli`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(fixture),
-      signal: AbortSignal.timeout(4000)
-    });
-    if (r.ok) {
-      result = await r.json();
-      isLive = true;
-    } else {
-      const errorText = await r.text().catch(() => '');
-      throw new Error(`Kundli engine returned HTTP ${r.status}: ${errorText}`);
-    }
-  } catch (fetchErr: any) {
-    // If synthetic test fixture is explicitly allowed in test harness
-    if (process.env.ALLOW_SYNTHETIC_CALIBRATION_FIXTURE === 'true' || process.env.NODE_ENV === 'test') {
-      result = {
-        engine_version: '2.1.0-test-synthetic',
-        calculation_source: 'Deterministic Synthetic Test Fixture',
-        ayanamsha: 'Chitra Paksha / Lahiri',
-        lagna: { sign: 'Scorpio', degree: 24.17, sign_index: 7 },
-        planets: {
-          Sun: { sign: 'Leo', degree: 3.49, house: 10 },
-          Moon: { sign: 'Aquarius', degree: 12.21, house: 4 },
-          Mars: { sign: 'Aries', degree: 18.29, house: 6 },
-          Jupiter: { sign: 'Virgo', degree: 22.46, house: 11 }
-        }
-      };
-      isLive = false;
-    } else {
-      // Truthful fail-closed reporting when engine is unavailable: Never substitute fake golden values!
-      return res.status(503).json({
-        success: false,
-        calibrationStatus: 'ENGINE_UNAVAILABLE',
-        error: 'KUNDLI_ENGINE_UNAVAILABLE',
-        message: `Kundli Ephemeris Engine is unreachable or returned an error at ${kundliUrl}: ${fetchErr?.message || 'Connection failed'}. Golden fallback values strictly denied.`,
-        requestedBirthDetails: fixture,
-        isLiveEngine: false
+    try {
+      const start = Date.now();
+      const probe = await fetch(`${kundliUrl}/api/health`, {
+        signal: AbortSignal.timeout(3000),
       });
-    }
-  }
-
-  const latencyMs = Date.now() - start;
-  const toleranceThresholdDeg = 0.05;
-  const retLagna = result?.lagna;
-  const retPlanets = result?.planets;
-
-  const comparisons = referencePositions.map(ref => {
-    let actualSign = '';
-    let actualDeg = 0;
-    if (ref.parameter.includes('Ascendant')) {
-      actualSign = retLagna?.sign || '';
-      actualDeg = Number(retLagna?.degree || 0);
-    } else if (ref.parameter.includes('Sun')) {
-      actualSign = retPlanets?.Sun?.sign || '';
-      actualDeg = Number(retPlanets?.Sun?.degree || 0);
-    } else if (ref.parameter.includes('Moon')) {
-      actualSign = retPlanets?.Moon?.sign || '';
-      actualDeg = Number(retPlanets?.Moon?.degree || 0);
-    } else if (ref.parameter.includes('Mars')) {
-      actualSign = retPlanets?.Mars?.sign || '';
-      actualDeg = Number(retPlanets?.Mars?.degree || 0);
-    } else if (ref.parameter.includes('Jupiter')) {
-      actualSign = retPlanets?.Jupiter?.sign || '';
-      actualDeg = Number(retPlanets?.Jupiter?.degree || 0);
+      latencyMs = Date.now() - start;
+      if (probe.ok) {
+        engineOnline = true;
+        engineData = await probe.json().catch(() => ({}));
+      }
+    } catch (_) {
+      engineOnline = false;
     }
 
-    const absError = Math.abs(actualDeg - ref.degree);
-    const signMatch = actualSign.toLowerCase() === ref.sign.toLowerCase();
-    const degreeMatch = absError <= toleranceThresholdDeg;
-    const match = signMatch && degreeMatch;
+    res.json({
+      success: true,
+      engineUrl: kundliUrl,
+      status: engineOnline ? "ONLINE" : "FALLBACK_LOCAL_KEPLER_ACTIVE",
+      latencyMs: engineOnline ? latencyMs : null,
+      calculationEngine:
+        "Swiss Ephemeris 2.10.03 & High-Precision Keplerian Solvers",
+      ayanamshaStandard: "Nirayana Chitra Paksha Lahiri (Strict Parashari)",
+      engineMetadata: engineData,
+    });
+  },
+);
 
-    return {
-      parameter: ref.parameter,
-      expectedSign: ref.sign,
-      actualSign,
-      expectedDeg: ref.degree,
-      actualDeg: Number(actualDeg.toFixed(2)),
-      absoluteErrorDeg: Number(absError.toFixed(4)),
-      toleranceThresholdDeg,
-      match
+app.post(
+  "/api/admin/astrology/test-calculation",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_ASTROLOGY_HEALTH),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    // Golden reference calibration chart: Benchmark Native A (2005-08-20 14:05 Jabalpur)
+    const fixture = {
+      dob: "2005-08-20T14:05:00",
+      lat: 23.1686,
+      lon: 79.9534,
+      timezone: "Asia/Kolkata",
     };
-  });
+    const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+    const internalKey = process.env.ASTROVERSE_INTERNAL_KEY || "";
 
-  const allMatched = comparisons.every(c => c.match);
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (internalKey) {
+      headers["x-internal-key"] = internalKey;
+    }
 
-  res.json({
-    success: allMatched,
-    calibrationStatus: allMatched ? 'CALIBRATED_PASSED' : 'OUT_OF_TOLERANCE',
-    engineVersion: result?.engine_version || '2.1.0',
-    calculationSource: result?.calculation_source || (isLive ? 'Swiss Ephemeris (pyswisseph)' : 'Deterministic Fixture'),
-    ayanamsha: result?.ayanamsha || 'Lahiri / Chitra Paksha',
-    requestedBirthDetails: fixture,
-    calculationTimestamp: new Date().toISOString(),
-    latencyMs,
-    toleranceThresholdDeg,
-    comparedParameters: referencePositions.map(r => r.parameter),
-    comparisons,
-    livePositions: {
-      lagna: comparisons.find(c => c.parameter.includes('Ascendant')),
-      sun: comparisons.find(c => c.parameter.includes('Sun')),
-      moon: comparisons.find(c => c.parameter.includes('Moon')),
-      mars: comparisons.find(c => c.parameter.includes('Mars')),
-      jupiter: comparisons.find(c => c.parameter.includes('Jupiter'))
-    },
-    isLiveEngine: isLive
-  });
-});
+    const referencePositions = [
+      { parameter: "Ascendant (Lagna)", sign: "Scorpio", degree: 24.17 },
+      { parameter: "Sun (Surya)", sign: "Leo", degree: 3.49 },
+      { parameter: "Moon (Chandra)", sign: "Aquarius", degree: 12.21 },
+      { parameter: "Mars (Mangal)", sign: "Aries", degree: 18.29 },
+      { parameter: "Jupiter (Guru)", sign: "Virgo", degree: 22.46 },
+    ];
+
+    const start = Date.now();
+    let result: any = null;
+    let isLive = false;
+
+    try {
+      const r = await fetch(`${kundliUrl}/api/kundli`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(fixture),
+        signal: AbortSignal.timeout(4000),
+      });
+      if (r.ok) {
+        result = await r.json();
+        isLive = true;
+      } else {
+        const errorText = await r.text().catch(() => "");
+        throw new Error(
+          `Kundli engine returned HTTP ${r.status}: ${errorText}`,
+        );
+      }
+    } catch (fetchErr: any) {
+      // If synthetic test fixture is explicitly allowed in test harness
+      if (
+        process.env.ALLOW_SYNTHETIC_CALIBRATION_FIXTURE === "true" ||
+        process.env.NODE_ENV === "test"
+      ) {
+        result = {
+          engine_version: "2.1.0-test-synthetic",
+          calculation_source: "Deterministic Synthetic Test Fixture",
+          ayanamsha: "Chitra Paksha / Lahiri",
+          lagna: { sign: "Scorpio", degree: 24.17, sign_index: 7 },
+          planets: {
+            Sun: { sign: "Leo", degree: 3.49, house: 10 },
+            Moon: { sign: "Aquarius", degree: 12.21, house: 4 },
+            Mars: { sign: "Aries", degree: 18.29, house: 6 },
+            Jupiter: { sign: "Virgo", degree: 22.46, house: 11 },
+          },
+        };
+        isLive = false;
+      } else {
+        // Truthful fail-closed reporting when engine is unavailable: Never substitute fake golden values!
+        return res.status(503).json({
+          success: false,
+          calibrationStatus: "ENGINE_UNAVAILABLE",
+          error: "KUNDLI_ENGINE_UNAVAILABLE",
+          message: `Kundli Ephemeris Engine is unreachable or returned an error at ${kundliUrl}: ${fetchErr?.message || "Connection failed"}. Golden fallback values strictly denied.`,
+          requestedBirthDetails: fixture,
+          isLiveEngine: false,
+        });
+      }
+    }
+
+    const latencyMs = Date.now() - start;
+    const toleranceThresholdDeg = 0.05;
+    const retLagna = result?.lagna;
+    const retPlanets = result?.planets;
+
+    const comparisons = referencePositions.map((ref) => {
+      let actualSign = "";
+      let actualDeg = 0;
+      if (ref.parameter.includes("Ascendant")) {
+        actualSign = retLagna?.sign || "";
+        actualDeg = Number(retLagna?.degree || 0);
+      } else if (ref.parameter.includes("Sun")) {
+        actualSign = retPlanets?.Sun?.sign || "";
+        actualDeg = Number(retPlanets?.Sun?.degree || 0);
+      } else if (ref.parameter.includes("Moon")) {
+        actualSign = retPlanets?.Moon?.sign || "";
+        actualDeg = Number(retPlanets?.Moon?.degree || 0);
+      } else if (ref.parameter.includes("Mars")) {
+        actualSign = retPlanets?.Mars?.sign || "";
+        actualDeg = Number(retPlanets?.Mars?.degree || 0);
+      } else if (ref.parameter.includes("Jupiter")) {
+        actualSign = retPlanets?.Jupiter?.sign || "";
+        actualDeg = Number(retPlanets?.Jupiter?.degree || 0);
+      }
+
+      const absError = Math.abs(actualDeg - ref.degree);
+      const signMatch = actualSign.toLowerCase() === ref.sign.toLowerCase();
+      const degreeMatch = absError <= toleranceThresholdDeg;
+      const match = signMatch && degreeMatch;
+
+      return {
+        parameter: ref.parameter,
+        expectedSign: ref.sign,
+        actualSign,
+        expectedDeg: ref.degree,
+        actualDeg: Number(actualDeg.toFixed(2)),
+        absoluteErrorDeg: Number(absError.toFixed(4)),
+        toleranceThresholdDeg,
+        match,
+      };
+    });
+
+    const allMatched = comparisons.every((c) => c.match);
+
+    res.json({
+      success: allMatched,
+      calibrationStatus: allMatched ? "CALIBRATED_PASSED" : "OUT_OF_TOLERANCE",
+      engineVersion: result?.engine_version || "2.1.0",
+      calculationSource:
+        result?.calculation_source ||
+        (isLive ? "Swiss Ephemeris (pyswisseph)" : "Deterministic Fixture"),
+      ayanamsha: result?.ayanamsha || "Lahiri / Chitra Paksha",
+      requestedBirthDetails: fixture,
+      calculationTimestamp: new Date().toISOString(),
+      latencyMs,
+      toleranceThresholdDeg,
+      comparedParameters: referencePositions.map((r) => r.parameter),
+      comparisons,
+      livePositions: {
+        lagna: comparisons.find((c) => c.parameter.includes("Ascendant")),
+        sun: comparisons.find((c) => c.parameter.includes("Sun")),
+        moon: comparisons.find((c) => c.parameter.includes("Moon")),
+        mars: comparisons.find((c) => c.parameter.includes("Mars")),
+        jupiter: comparisons.find((c) => c.parameter.includes("Jupiter")),
+      },
+      isLiveEngine: isLive,
+    });
+  },
+);
 
 // -----------------------------------------------------------------------------
 // VIMSHOTTARI DASHA & LIVE GOCHARA TRANSIT PROXY / FALLBACK ENDPOINTS
 // -----------------------------------------------------------------------------
-app.get('/api/transits/live', async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+app.get("/api/transits/live", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+  const queryStr = req.url.includes("?")
+    ? req.url.substring(req.url.indexOf("?"))
+    : "";
   try {
-    const r = await fetch(`${kundliUrl}/api/transits/live${queryStr}`, { signal: AbortSignal.timeout(3000) });
+    const r = await fetch(`${kundliUrl}/api/transits/live${queryStr}`, {
+      signal: AbortSignal.timeout(3000),
+    });
     if (r.ok) return res.json(await r.json());
   } catch (_) {}
 
-  const refDt = req.query.ref_dt ? new Date(String(req.query.ref_dt)) : new Date();
-  const natalLagnaIdx = req.query.natal_lagna_idx !== undefined ? Number(req.query.natal_lagna_idx) : undefined;
-  const natalMoonIdx = req.query.natal_moon_idx !== undefined ? Number(req.query.natal_moon_idx) : undefined;
-  const y = refDt.getUTCFullYear(), m = refDt.getUTCMonth() + 1, d = refDt.getUTCDate();
-  const dobStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-  const tobStr = `${String(refDt.getUTCHours()).padStart(2, '0')}:${String(refDt.getUTCMinutes()).padStart(2, '0')}`;
-  const transitChart = AstroCalculator.calculateChart(dobStr, tobStr, 28.6139, 77.2090, false);
+  const refDt = req.query.ref_dt
+    ? new Date(String(req.query.ref_dt))
+    : new Date();
+  const natalLagnaIdx =
+    req.query.natal_lagna_idx !== undefined
+      ? Number(req.query.natal_lagna_idx)
+      : undefined;
+  const natalMoonIdx =
+    req.query.natal_moon_idx !== undefined
+      ? Number(req.query.natal_moon_idx)
+      : undefined;
+  const y = refDt.getUTCFullYear(),
+    m = refDt.getUTCMonth() + 1,
+    d = refDt.getUTCDate();
+  const dobStr = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const tobStr = `${String(refDt.getUTCHours()).padStart(2, "0")}:${String(refDt.getUTCMinutes()).padStart(2, "0")}`;
+  const transitChart = AstroCalculator.calculateChart(
+    dobStr,
+    tobStr,
+    28.6139,
+    77.209,
+    false,
+  );
 
-  const transits = Object.entries(transitChart.planets).map(([key, p]: [string, any]) => {
-    const signIdx = p.signIndex;
-    const hLagna = natalLagnaIdx !== undefined ? ((signIdx - natalLagnaIdx + 12) % 12) + 1 : null;
-    const hMoon = natalMoonIdx !== undefined ? ((signIdx - natalMoonIdx + 12) % 12) + 1 : null;
-    const degInt = Math.floor(p.degree);
-    const minInt = Math.floor((p.degree - degInt) * 60);
-    return {
-      planet: p.name,
-      planet_key: key,
-      sign: p.sign,
-      sign_index: signIdx,
-      degree: Math.round(p.degree * 100) / 100,
-      degree_formatted: `${String(degInt).padStart(2, '0')}° ${String(minInt).padStart(2, '0')}'`,
-      longitude: Math.round(p.total_degree * 10000) / 10000,
-      speed: 0.0,
-      is_retrograde: p.is_retrograde,
-      nakshatra: p.nakshatra,
-      nakshatra_pada: p.pada,
-      nakshatra_lord: p.lord,
-      house_from_lagna: hLagna,
-      house_from_moon: hMoon,
-      sav_bindus: 28,
-      verdict: 'Moderate Fruition',
-      verdict_status: 'MODERATE',
-      verdict_score: 0.5,
-      classical_rationale: `${key} transiting ${p.sign}.`
-    };
-  });
+  const transits = Object.entries(transitChart.planets).map(
+    ([key, p]: [string, any]) => {
+      const signIdx = p.signIndex;
+      const hLagna =
+        natalLagnaIdx !== undefined
+          ? ((signIdx - natalLagnaIdx + 12) % 12) + 1
+          : null;
+      const hMoon =
+        natalMoonIdx !== undefined
+          ? ((signIdx - natalMoonIdx + 12) % 12) + 1
+          : null;
+      const degInt = Math.floor(p.degree);
+      const minInt = Math.floor((p.degree - degInt) * 60);
+      return {
+        planet: p.name,
+        planet_key: key,
+        sign: p.sign,
+        sign_index: signIdx,
+        degree: Math.round(p.degree * 100) / 100,
+        degree_formatted: `${String(degInt).padStart(2, "0")}° ${String(minInt).padStart(2, "0")}'`,
+        longitude: Math.round(p.total_degree * 10000) / 10000,
+        speed: 0.0,
+        is_retrograde: p.is_retrograde,
+        nakshatra: p.nakshatra,
+        nakshatra_pada: p.pada,
+        nakshatra_lord: p.lord,
+        house_from_lagna: hLagna,
+        house_from_moon: hMoon,
+        sav_bindus: 28,
+        verdict: "Moderate Fruition",
+        verdict_status: "MODERATE",
+        verdict_score: 0.5,
+        classical_rationale: `${key} transiting ${p.sign}.`,
+      };
+    },
+  );
   return res.json({
     timestamp_utc: refDt.toISOString(),
-    ayanamsha: 'Lahiri (Chitra Paksha)',
-    ephemeris_engine: 'AstroVerse High-Precision Meeus/Lahiri Fallback',
+    ayanamsha: "Lahiri (Chitra Paksha)",
+    ephemeris_engine: "AstroVerse High-Precision Meeus/Lahiri Fallback",
     transits,
     diagnostics: {
-      sade_sati: { is_active: false, status: 'CLEAR', phase: 'Inactive', description: 'Saturn transits outside 12th, 1st, 2nd from natal Moon.' },
-      kantaka_shani: { is_active: false, type: 'None', description: 'No active Kantaka Shani.' },
-      chandrashtama: { is_active: false, description: 'Transit Moon in safe house relative to natal Moon.' }
-    }
+      sade_sati: {
+        is_active: false,
+        status: "CLEAR",
+        phase: "Inactive",
+        description: "Saturn transits outside 12th, 1st, 2nd from natal Moon.",
+      },
+      kantaka_shani: {
+        is_active: false,
+        type: "None",
+        description: "No active Kantaka Shani.",
+      },
+      chandrashtama: {
+        is_active: false,
+        description: "Transit Moon in safe house relative to natal Moon.",
+      },
+    },
   });
 });
 
-app.post('/api/transits/live', async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+app.post("/api/transits/live", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
   try {
     const r = await fetch(`${kundliUrl}/api/transits/live`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(3000),
     });
     if (r.ok) return res.json(await r.json());
   } catch (_) {}
   const refDt = req.body?.ref_dt ? new Date(req.body.ref_dt) : new Date();
-  const natalLagnaIdx = req.body?.natal_lagna_idx !== undefined ? Number(req.body.natal_lagna_idx) : undefined;
-  const natalMoonIdx = req.body?.natal_moon_idx !== undefined ? Number(req.body.natal_moon_idx) : undefined;
-  const y = refDt.getUTCFullYear(), m = refDt.getUTCMonth() + 1, d = refDt.getUTCDate();
-  const dobStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-  const tobStr = `${String(refDt.getUTCHours()).padStart(2, '0')}:${String(refDt.getUTCMinutes()).padStart(2, '0')}`;
-  const transitChart = AstroCalculator.calculateChart(dobStr, tobStr, 28.6139, 77.2090, false);
-  const transits = Object.entries(transitChart.planets).map(([key, p]: [string, any]) => {
-    const signIdx = p.signIndex;
-    const hLagna = natalLagnaIdx !== undefined ? ((signIdx - natalLagnaIdx + 12) % 12) + 1 : null;
-    const hMoon = natalMoonIdx !== undefined ? ((signIdx - natalMoonIdx + 12) % 12) + 1 : null;
-    const degInt = Math.floor(p.degree);
-    const minInt = Math.floor((p.degree - degInt) * 60);
-    return {
-      planet: p.name,
-      planet_key: key,
-      sign: p.sign,
-      sign_index: signIdx,
-      degree: Math.round(p.degree * 100) / 100,
-      degree_formatted: `${String(degInt).padStart(2, '0')}° ${String(minInt).padStart(2, '0')}'`,
-      longitude: Math.round(p.total_degree * 10000) / 10000,
-      speed: 0.0,
-      is_retrograde: p.is_retrograde,
-      nakshatra: p.nakshatra,
-      nakshatra_pada: p.pada,
-      nakshatra_lord: p.lord,
-      house_from_lagna: hLagna,
-      house_from_moon: hMoon,
-      sav_bindus: 28,
-      verdict: 'Moderate Fruition',
-      verdict_status: 'MODERATE',
-      verdict_score: 0.5,
-      classical_rationale: `${key} transiting ${p.sign}.`
-    };
-  });
+  const natalLagnaIdx =
+    req.body?.natal_lagna_idx !== undefined
+      ? Number(req.body.natal_lagna_idx)
+      : undefined;
+  const natalMoonIdx =
+    req.body?.natal_moon_idx !== undefined
+      ? Number(req.body.natal_moon_idx)
+      : undefined;
+  const y = refDt.getUTCFullYear(),
+    m = refDt.getUTCMonth() + 1,
+    d = refDt.getUTCDate();
+  const dobStr = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const tobStr = `${String(refDt.getUTCHours()).padStart(2, "0")}:${String(refDt.getUTCMinutes()).padStart(2, "0")}`;
+  const transitChart = AstroCalculator.calculateChart(
+    dobStr,
+    tobStr,
+    28.6139,
+    77.209,
+    false,
+  );
+  const transits = Object.entries(transitChart.planets).map(
+    ([key, p]: [string, any]) => {
+      const signIdx = p.signIndex;
+      const hLagna =
+        natalLagnaIdx !== undefined
+          ? ((signIdx - natalLagnaIdx + 12) % 12) + 1
+          : null;
+      const hMoon =
+        natalMoonIdx !== undefined
+          ? ((signIdx - natalMoonIdx + 12) % 12) + 1
+          : null;
+      const degInt = Math.floor(p.degree);
+      const minInt = Math.floor((p.degree - degInt) * 60);
+      return {
+        planet: p.name,
+        planet_key: key,
+        sign: p.sign,
+        sign_index: signIdx,
+        degree: Math.round(p.degree * 100) / 100,
+        degree_formatted: `${String(degInt).padStart(2, "0")}° ${String(minInt).padStart(2, "0")}'`,
+        longitude: Math.round(p.total_degree * 10000) / 10000,
+        speed: 0.0,
+        is_retrograde: p.is_retrograde,
+        nakshatra: p.nakshatra,
+        nakshatra_pada: p.pada,
+        nakshatra_lord: p.lord,
+        house_from_lagna: hLagna,
+        house_from_moon: hMoon,
+        sav_bindus: 28,
+        verdict: "Moderate Fruition",
+        verdict_status: "MODERATE",
+        verdict_score: 0.5,
+        classical_rationale: `${key} transiting ${p.sign}.`,
+      };
+    },
+  );
   return res.json({
     timestamp_utc: refDt.toISOString(),
-    ayanamsha: 'Lahiri (Chitra Paksha)',
-    ephemeris_engine: 'AstroVerse High-Precision Meeus/Lahiri Fallback',
+    ayanamsha: "Lahiri (Chitra Paksha)",
+    ephemeris_engine: "AstroVerse High-Precision Meeus/Lahiri Fallback",
     transits,
     diagnostics: {
-      sade_sati: { is_active: false, status: 'CLEAR', phase: 'Inactive', description: 'Saturn transits outside 12th, 1st, 2nd from natal Moon.' },
-      kantaka_shani: { is_active: false, type: 'None', description: 'No active Kantaka Shani.' },
-      chandrashtama: { is_active: false, description: 'Transit Moon in safe house relative to natal Moon.' }
-    }
+      sade_sati: {
+        is_active: false,
+        status: "CLEAR",
+        phase: "Inactive",
+        description: "Saturn transits outside 12th, 1st, 2nd from natal Moon.",
+      },
+      kantaka_shani: {
+        is_active: false,
+        type: "None",
+        description: "No active Kantaka Shani.",
+      },
+      chandrashtama: {
+        is_active: false,
+        description: "Transit Moon in safe house relative to natal Moon.",
+      },
+    },
   });
 });
 
-app.post('/api/dasha/current', async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+// =============================================================================
+// VEDIC CALENDAR, PANCHANG, TRANSITS & RASHIFAL GATEWAY PROXIES WITH IN-MEMORY CACHE
+// =============================================================================
+
+export interface PanchangCacheEntry {
+  data: any;
+  cachedAt: number;
+  expiresAt: number;
+}
+
+export const PANCHANG_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
+export const panchangCache = new Map<string, PanchangCacheEntry>();
+
+export function getPanchangCacheKey(
+  engineVersion: string,
+  ayanamsha: string,
+  convention: string,
+  dateStr: string,
+  lat: number,
+  lon: number,
+  tz: string,
+): string {
+  const roundLat = (Math.round(lat * 100) / 100).toFixed(2);
+  const roundLon = (Math.round(lon * 100) / 100).toFixed(2);
+  return `panchang:${engineVersion}:${ayanamsha}:${convention}:${dateStr}:${roundLat}:${roundLon}:${tz}`;
+}
+
+export function getCachedPanchang(key: string): any | null {
+  const entry = panchangCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    panchangCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+export function setCachedPanchang(
+  key: string,
+  data: any,
+  ttlMs: number = PANCHANG_CACHE_TTL_MS,
+): void {
+  panchangCache.set(key, {
+    data,
+    cachedAt: Date.now(),
+    expiresAt: Date.now() + ttlMs,
+  });
+}
+
+// 1. /api/calendar/month
+app.get("/api/calendar/month", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+  const now = new Date();
+  const year = req.query.year ? Number(req.query.year) : now.getUTCFullYear();
+  const month = req.query.month
+    ? Number(req.query.month)
+    : now.getUTCMonth() + 1;
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : 28.6139;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : 77.209;
+  const tz = String(req.query.timezone || req.query.tz || "Asia/Kolkata");
+  const convention = String(req.query.convention || "amanta");
+  const region = String(req.query.region || "ALL");
+  const dateStr = `${year}-${String(month).padStart(2, "0")}`;
+
+  const cacheKey = `${getPanchangCacheKey("2.1.0", "lahiri", convention, dateStr, lat, lon, tz)}:${region}`;
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader("X-Cache", "HIT");
+    res.setHeader("X-Cache-Key", cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes("?")
+    ? req.url.substring(req.url.indexOf("?"))
+    : "";
+  try {
+    const r = await fetch(`${kundliUrl}/api/calendar/month${queryStr}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader("X-Cache", "MISS");
+      res.setHeader("X-Cache-Key", cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Resilient fallback for calendar month
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const fallbackDays = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const curDate = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const dayHols = [];
+    if (month === 11 && d === 8) {
+      dayHols.push({
+        id: `diwali-${year}`,
+        nameEn: "Diwali (Deepavali / Lakshmi Puja)",
+        category: "gazetted",
+      });
+    }
+    fallbackDays.push({
+      date: curDate,
+      day: d,
+      tithi_name: "Shukla Pratipada",
+      tithi_index: 0,
+      nakshatra_name: "Ashwini",
+      moon_rashi: "Aries",
+      holidays: dayHols,
+      is_bank_holiday: false,
+    });
+  }
+  const fallback = {
+    year,
+    month,
+    convention,
+    region,
+    total_days: daysInMonth,
+    days: fallbackDays,
+    is_fallback: true,
+  };
+  setCachedPanchang(cacheKey, fallback);
+  res.setHeader("X-Cache", "MISS");
+  res.setHeader("X-Cache-Key", cacheKey);
+  return res.json(fallback);
+});
+
+// 2. /api/panchang/daily & /api/panchang/calculate
+const handlePanchangDaily = async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+  const now = new Date();
+  const dateStr = String(req.query.date || now.toISOString().slice(0, 10));
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : 28.6139;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : 77.209;
+  const tz = String(req.query.timezone || req.query.tz || "Asia/Kolkata");
+  const convention = String(req.query.convention || "amanta");
+
+  const cacheKey = getPanchangCacheKey(
+    "2.1.0",
+    "lahiri",
+    convention,
+    dateStr,
+    lat,
+    lon,
+    tz,
+  );
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader("X-Cache", "HIT");
+    res.setHeader("X-Cache-Key", cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes("?")
+    ? req.url.substring(req.url.indexOf("?"))
+    : "";
+  const endpoint = req.path.includes("/calculate")
+    ? "/api/panchang/calculate"
+    : "/api/panchang/daily";
+  try {
+    const r = await fetch(`${kundliUrl}${endpoint}${queryStr}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader("X-Cache", "MISS");
+      res.setHeader("X-Cache-Key", cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Fallback Panchang response using AstroCalculator
+  const chart = AstroCalculator.calculateChart(
+    dateStr,
+    "12:00",
+    lat,
+    lon,
+    false,
+  );
+  const fallback = {
+    date: dateStr,
+    panchang: {
+      tithi: { name_en: "Shukla Navami", paksha: "Shukla", index: 8 },
+      nakshatra: {
+        name_en: chart.planets.Moon?.nakshatra || "Rohini",
+        lord: chart.planets.Moon?.lord || "Moon",
+      },
+      yoga: { name_en: "Siddha", index: 20 },
+      karana: { name_en: "Bava", index: 0 },
+      vaar: { name_en: "Tuesday", lord: "Mars" },
+    },
+    tithi: { name_en: "Shukla Navami", paksha: "Shukla", index: 8 },
+    nakshatra: {
+      name_en: chart.planets.Moon?.nakshatra || "Rohini",
+      lord: chart.planets.Moon?.lord || "Moon",
+    },
+    moon_rashi: { rashi_en: chart.planets.Moon?.sign || "Taurus" },
+    is_fallback: true,
+  };
+  setCachedPanchang(cacheKey, fallback);
+  res.setHeader("X-Cache", "MISS");
+  res.setHeader("X-Cache-Key", cacheKey);
+  return res.json(fallback);
+};
+
+app.get("/api/panchang/daily", handlePanchangDaily);
+app.get("/api/panchang/calculate", handlePanchangDaily);
+
+// 3. /api/rashifal/daily
+app.get("/api/rashifal/daily", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+  const now = new Date();
+  const dateStr = String(req.query.date || now.toISOString().slice(0, 10));
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : 28.6139;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : 77.209;
+  const tz = String(req.query.timezone || req.query.tz || "Asia/Kolkata");
+
+  const cacheKey = `${getPanchangCacheKey("2.1.0", "lahiri", "amanta", dateStr, lat, lon, tz)}:rashifal`;
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader("X-Cache", "HIT");
+    res.setHeader("X-Cache-Key", cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes("?")
+    ? req.url.substring(req.url.indexOf("?"))
+    : "";
+  try {
+    const r = await fetch(`${kundliUrl}/api/rashifal/daily${queryStr}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader("X-Cache", "MISS");
+      res.setHeader("X-Cache-Key", cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Fallback 12 signs Rashifal
+  const SIGNS_EN = [
+    "Aries",
+    "Taurus",
+    "Gemini",
+    "Cancer",
+    "Leo",
+    "Virgo",
+    "Libra",
+    "Scorpio",
+    "Sagittarius",
+    "Capricorn",
+    "Aquarius",
+    "Pisces",
+  ];
+  const SIGNS_HI_MAP: Record<string, string> = {
+    Aries: "मेष",
+    Taurus: "वृषभ",
+    Gemini: "मिथुन",
+    Cancer: "कर्क",
+    Leo: "सिंह",
+    Virgo: "कन्या",
+    Libra: "तुला",
+    Scorpio: "वृश्चिक",
+    Sagittarius: "धनु",
+    Capricorn: "मकर",
+    Aquarius: "कुंभ",
+    Pisces: "मीन",
+  };
+  const signs = SIGNS_EN.map((name, idx) => ({
+    signIndex: idx,
+    signNameEn: name,
+    signNameHi: SIGNS_HI_MAP[name] || name,
+    rashiLord: "Benefic Planet",
+    moonRashiPresent: idx === 0,
+    outlook: `Favorable day for ${name} natives with steady planetary support and constructive opportunities.`,
+    career: `Progress in professional deliverables. Maintain steady momentum in communications.`,
+    finance: `Prudent financial management brings peace of mind. Avoid speculative volatility.`,
+    relationships: `Warm camaraderie with peers and family. Clear and sincere words build mutual trust.`,
+    wellness: `Balanced vitality and physical stamina. Maintain regular hydration and deep rest.`,
+    helpfulFocus: `Focus on priorities with clarity and confidence.`,
+    luckyNumber: ((idx + 3) % 9) + 1,
+    luckyColor: "Golden Yellow",
+    auspiciousPeriod: "Abhijit Muhurta (11:45 AM – 12:35 PM)",
+  }));
+
+  const fallback = {
+    date: dateStr,
+    weekday: "Today",
+    moon_transit: { rashi_en: "Aries", sign_index: 0 },
+    signs,
+    is_fallback: true,
+  };
+  setCachedPanchang(cacheKey, fallback);
+  res.setHeader("X-Cache", "MISS");
+  res.setHeader("X-Cache-Key", cacheKey);
+  return res.json(fallback);
+});
+
+// 4. /api/holidays & /api/holidays/list
+const handleHolidays = async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+  const now = new Date();
+  const year = req.query.year ? Number(req.query.year) : now.getUTCFullYear();
+  const month = req.query.month ? Number(req.query.month) : "all";
+  const category = String(req.query.category || "all");
+  const region = String(req.query.region || "ALL");
+
+  const cacheKey = `panchang:2.1.0:lahiri:amanta:${year}-${month}:${category}:${region}:holidays`;
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader("X-Cache", "HIT");
+    res.setHeader("X-Cache-Key", cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes("?")
+    ? req.url.substring(req.url.indexOf("?"))
+    : "";
+  try {
+    const r = await fetch(`${kundliUrl}/api/holidays/list${queryStr}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader("X-Cache", "MISS");
+      res.setHeader("X-Cache-Key", cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Fallback holidays with comprehensive dataset
+  const allFallbackHolidays = [
+    {
+      id: `republic-day-${year}`,
+      nameEn: "Republic Day",
+      nameHi: "गणतंत्र दिवस",
+      date: `${year}-01-26`,
+      category: "national",
+      regions: ["ALL"],
+      isOfficial: true,
+      descriptionEn:
+        "Celebrates the enactment of the Constitution of India in 1950.",
+    },
+    {
+      id: `maha-shivratri-${year}`,
+      nameEn: "Maha Shivratri",
+      nameHi: "महाशिवरात्रि",
+      date: `${year}-02-15`,
+      category: "gazetted",
+      regions: ["ALL"],
+      isOfficial: true,
+      descriptionEn: "Sacred worship of Lord Shiva on Krishna Chaturdashi.",
+    },
+    {
+      id: `holi-${year}`,
+      nameEn: "Holi (Dhulandi)",
+      nameHi: "होली",
+      date: `${year}-03-04`,
+      category: "gazetted",
+      regions: ["ALL"],
+      isOfficial: true,
+      descriptionEn:
+        "Grand festival of colors celebrated on Chaitra Krishna Pratipada.",
+    },
+    {
+      id: `eid-ul-fitr-${year}`,
+      nameEn: "Id-ul-Fitr",
+      nameHi: "ईद-उल-फ़ितर",
+      date: `${year}-03-20`,
+      category: "gazetted",
+      regions: ["ALL"],
+      isOfficial: true,
+      descriptionEn: "Islamic celebration marking the conclusion of Ramadan.",
+    },
+    {
+      id: `maharashtra-day-${year}`,
+      nameEn: "Maharashtra Day",
+      nameHi: "महाराष्ट्र दिवस",
+      date: `${year}-05-01`,
+      category: "state",
+      regions: ["MH"],
+      isOfficial: true,
+      descriptionEn: "Commemorates the formation of Maharashtra.",
+    },
+    {
+      id: `independence-day-${year}`,
+      nameEn: "Independence Day",
+      nameHi: "स्वतंत्रता दिवस",
+      date: `${year}-08-15`,
+      category: "national",
+      regions: ["ALL"],
+      isOfficial: true,
+      descriptionEn: "Celebrates the national independence of India in 1947.",
+    },
+    {
+      id: `gandhi-jayanti-${year}`,
+      nameEn: "Mahatma Gandhi's Birthday",
+      nameHi: "महात्मा गांधी जयन्ती",
+      date: `${year}-10-02`,
+      category: "national",
+      regions: ["ALL"],
+      isOfficial: true,
+      descriptionEn: "Celebrates the birthday of Mahatma Gandhi.",
+    },
+    {
+      id: `diwali-${year}`,
+      nameEn: "Diwali (Deepavali / Lakshmi Puja)",
+      nameHi: "दीपावली (लक्ष्मी पूजन)",
+      date: `${year}-11-08`,
+      category: "gazetted",
+      regions: ["ALL"],
+      isOfficial: true,
+      descriptionEn:
+        "Grand festival of lights on Kartika Amavasya during Pradosha.",
+    },
+    {
+      id: `christmas-${year}`,
+      nameEn: "Christmas Day",
+      nameHi: "क्रिसमस दिवस",
+      date: `${year}-12-25`,
+      category: "gazetted",
+      regions: ["ALL"],
+      isOfficial: true,
+      descriptionEn: "Celebration of the nativity of Jesus Christ.",
+    },
+  ];
+
+  let filtered = allFallbackHolidays;
+  if (month !== "all") {
+    filtered = filtered.filter(
+      (h) => Number(h.date.split("-")[1]) === Number(month),
+    );
+  }
+  if (category !== "all") {
+    filtered = filtered.filter((h) => h.category === category);
+  }
+  if (region !== "ALL") {
+    filtered = filtered.filter(
+      (h) => h.regions.includes("ALL") || h.regions.includes(region),
+    );
+  }
+
+  setCachedPanchang(cacheKey, filtered);
+  res.setHeader("X-Cache", "MISS");
+  res.setHeader("X-Cache-Key", cacheKey);
+  return res.json(filtered);
+};
+
+app.get("/api/holidays", handleHolidays);
+app.get("/api/holidays/list", handleHolidays);
+
+// 5. /api/transits/monthly
+app.get("/api/transits/monthly", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+  const now = new Date();
+  const year = req.query.year ? Number(req.query.year) : now.getUTCFullYear();
+  const month = req.query.month
+    ? Number(req.query.month)
+    : now.getUTCMonth() + 1;
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : 28.6139;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : 77.209;
+  const tz = String(req.query.timezone || req.query.tz || "Asia/Kolkata");
+  const dateStr = `${year}-${String(month).padStart(2, "0")}`;
+
+  const cacheKey = `${getPanchangCacheKey("2.1.0", "lahiri", "amanta", dateStr, lat, lon, tz)}:transits`;
+  const cached = getCachedPanchang(cacheKey);
+  if (cached) {
+    res.setHeader("X-Cache", "HIT");
+    res.setHeader("X-Cache-Key", cacheKey);
+    return res.json(cached);
+  }
+
+  const queryStr = req.url.includes("?")
+    ? req.url.substring(req.url.indexOf("?"))
+    : "";
+  try {
+    const r = await fetch(`${kundliUrl}/api/transits/monthly${queryStr}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (r.ok) {
+      const data = await r.json();
+      setCachedPanchang(cacheKey, data);
+      res.setHeader("X-Cache", "MISS");
+      res.setHeader("X-Cache-Key", cacheKey);
+      return res.json(data);
+    }
+  } catch (_) {}
+
+  // Fallback monthly transits
+  const fallback = {
+    year,
+    month,
+    planets: {},
+    ingresses: [],
+    stations: [],
+    lunar_phases: [],
+    conjunctions: [],
+    is_fallback: true,
+  };
+  setCachedPanchang(cacheKey, fallback);
+  res.setHeader("X-Cache", "MISS");
+  res.setHeader("X-Cache-Key", cacheKey);
+  return res.json(fallback);
+});
+
+app.post("/api/dasha/current", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
   try {
     const r = await fetch(`${kundliUrl}/api/dasha/current`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(3000),
     });
     if (r.ok) return res.json(await r.json());
   } catch (_) {}
   const { dob, lat, lon, moon_degree, ref_dt } = req.body || {};
-  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  if (!dob) return res.status(400).json({ error: "dob is required" });
   const dobDate = new Date(dob);
   const refDate = ref_dt ? new Date(ref_dt) : new Date();
   let moonDeg = moon_degree;
   if (moonDeg === undefined || moonDeg === null) {
-    const p = dob.split('T')[0];
-    const t = dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00';
-    const c = AstroCalculator.calculateChart(p, t, Number(lat) || 28.6139, Number(lon) || 77.2090, false);
+    const p = dob.split("T")[0];
+    const t = dob.includes("T") ? dob.split("T")[1].slice(0, 5) : "12:00";
+    const c = AstroCalculator.calculateChart(
+      p,
+      t,
+      Number(lat) || 28.6139,
+      Number(lon) || 77.209,
+      false,
+    );
     moonDeg = c.planets.Moon.total_degree;
   }
-  const result = AstroCalculator.calculateVimshottariDasha(moonDeg, dobDate, refDate);
+  const result = AstroCalculator.calculateVimshottariDasha(
+    moonDeg,
+    dobDate,
+    refDate,
+  );
   return res.json({
-    status: 'SUCCESS',
+    status: "SUCCESS",
     metadata: result.metadata,
     birth_balance: result.birth_balance,
-    active_now: result.active_now
+    active_now: result.active_now,
   });
 });
 
-app.get('/api/dasha/current', async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-  const queryStr = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+app.get("/api/dasha/current", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+  const queryStr = req.url.includes("?")
+    ? req.url.substring(req.url.indexOf("?"))
+    : "";
   try {
-    const r = await fetch(`${kundliUrl}/api/dasha/current${queryStr}`, { signal: AbortSignal.timeout(3000) });
+    const r = await fetch(`${kundliUrl}/api/dasha/current${queryStr}`, {
+      signal: AbortSignal.timeout(3000),
+    });
     if (r.ok) return res.json(await r.json());
   } catch (_) {}
-  const dob = String(req.query.dob || '');
-  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  const dob = String(req.query.dob || "");
+  if (!dob) return res.status(400).json({ error: "dob is required" });
   const dobDate = new Date(dob);
-  const refDate = req.query.ref_dt ? new Date(String(req.query.ref_dt)) : new Date();
-  let moonDeg = req.query.moon_degree !== undefined ? Number(req.query.moon_degree) : undefined;
+  const refDate = req.query.ref_dt
+    ? new Date(String(req.query.ref_dt))
+    : new Date();
+  let moonDeg =
+    req.query.moon_degree !== undefined
+      ? Number(req.query.moon_degree)
+      : undefined;
   if (moonDeg === undefined || isNaN(moonDeg)) {
-    const p = dob.split('T')[0];
-    const t = dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00';
-    const c = AstroCalculator.calculateChart(p, t, Number(req.query.lat) || 28.6139, Number(req.query.lon) || 77.2090, false);
+    const p = dob.split("T")[0];
+    const t = dob.includes("T") ? dob.split("T")[1].slice(0, 5) : "12:00";
+    const c = AstroCalculator.calculateChart(
+      p,
+      t,
+      Number(req.query.lat) || 28.6139,
+      Number(req.query.lon) || 77.209,
+      false,
+    );
     moonDeg = c.planets.Moon.total_degree;
   }
-  const result = AstroCalculator.calculateVimshottariDasha(moonDeg, dobDate, refDate);
+  const result = AstroCalculator.calculateVimshottariDasha(
+    moonDeg,
+    dobDate,
+    refDate,
+  );
   return res.json({
-    status: 'SUCCESS',
+    status: "SUCCESS",
     metadata: result.metadata,
     birth_balance: result.birth_balance,
-    active_now: result.active_now
+    active_now: result.active_now,
   });
 });
 
-app.post('/api/dasha/timeline', async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+app.post("/api/dasha/timeline", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
   try {
     const r = await fetch(`${kundliUrl}/api/dasha/timeline`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(3000),
     });
     if (r.ok) return res.json(await r.json());
   } catch (_) {}
   const { dob, lat, lon, moon_degree, ref_dt } = req.body || {};
-  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  if (!dob) return res.status(400).json({ error: "dob is required" });
   const dobDate = new Date(dob);
   const refDate = ref_dt ? new Date(ref_dt) : new Date();
   let moonDeg = moon_degree;
   if (moonDeg === undefined || moonDeg === null) {
-    const p = dob.split('T')[0];
-    const t = dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00';
-    const c = AstroCalculator.calculateChart(p, t, Number(lat) || 28.6139, Number(lon) || 77.2090, false);
+    const p = dob.split("T")[0];
+    const t = dob.includes("T") ? dob.split("T")[1].slice(0, 5) : "12:00";
+    const c = AstroCalculator.calculateChart(
+      p,
+      t,
+      Number(lat) || 28.6139,
+      Number(lon) || 77.209,
+      false,
+    );
     moonDeg = c.planets.Moon.total_degree;
   }
-  const result = AstroCalculator.calculateVimshottariDasha(moonDeg, dobDate, refDate);
+  const result = AstroCalculator.calculateVimshottariDasha(
+    moonDeg,
+    dobDate,
+    refDate,
+  );
   return res.json(result);
 });
 
-app.post('/api/dasha/pds', async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+app.post("/api/dasha/pds", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
   try {
     const r = await fetch(`${kundliUrl}/api/dasha/pds`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(3000),
     });
     if (r.ok) return res.json(await r.json());
   } catch (_) {}
-  const { maha_lord, antar_lord, antar_start, antar_end, ref_dt } = req.body || {};
+  const { maha_lord, antar_lord, antar_start, antar_end, ref_dt } =
+    req.body || {};
   if (!antar_lord || !antar_start || !antar_end) {
-    return res.status(400).json({ error: 'antar_lord, antar_start, and antar_end are required' });
+    return res
+      .status(400)
+      .json({ error: "antar_lord, antar_start, and antar_end are required" });
   }
   const startMs = new Date(antar_start).getTime();
   const endMs = new Date(antar_end).getTime();
   const refMs = ref_dt ? new Date(ref_dt).getTime() : Date.now();
-  const nakLords = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury'];
+  const nakLords = [
+    "Ketu",
+    "Venus",
+    "Sun",
+    "Moon",
+    "Mars",
+    "Rahu",
+    "Jupiter",
+    "Saturn",
+    "Mercury",
+  ];
   const dYears: Record<string, number> = {
-    Ketu: 7, Venus: 20, Sun: 6, Moon: 10, Mars: 7, Rahu: 18, Jupiter: 16, Saturn: 19, Mercury: 17
+    Ketu: 7,
+    Venus: 20,
+    Sun: 6,
+    Moon: 10,
+    Mars: 7,
+    Rahu: 18,
+    Jupiter: 16,
+    Saturn: 19,
+    Mercury: 17,
   };
   const startIdx = nakLords.indexOf(antar_lord);
   const pdsList = [];
@@ -6053,15 +8236,19 @@ app.post('/api/dasha/pds', async (req: Request, res: Response) => {
     let days = 0;
     if (i === 8) {
       pEndMs = endMs;
-      days = Math.round(Math.max(0, (totalSec / 86400) - runningDays) * 100) / 100;
+      days =
+        Math.round(Math.max(0, totalSec / 86400 - runningDays) * 100) / 100;
     } else {
       days = Math.round(((pEndMs - curMs) / 86400000) * 100) / 100;
       runningDays += days;
     }
-    let status = 'FUTURE';
+    let status = "FUTURE";
     let isActive = false;
-    if (pEndMs <= refMs) status = 'PAST';
-    else if (curMs <= refMs && refMs <= pEndMs) { status = 'CURRENT'; isActive = true; }
+    if (pEndMs <= refMs) status = "PAST";
+    else if (curMs <= refMs && refMs <= pEndMs) {
+      status = "CURRENT";
+      isActive = true;
+    }
     pdsList.push({
       pratyantar_dasha: pdsLord,
       start_date: new Date(curMs).toISOString().slice(0, 10),
@@ -6070,1571 +8257,2072 @@ app.post('/api/dasha/pds', async (req: Request, res: Response) => {
       end_iso: new Date(pEndMs).toISOString(),
       duration_days: days,
       status,
-      is_active: isActive
+      is_active: isActive,
     });
     curMs = pEndMs;
   }
   return res.json({
-    status: 'SUCCESS',
+    status: "SUCCESS",
     maha_lord,
     antar_lord,
     antar_start,
     antar_end,
     count: pdsList.length,
-    pratyantardashas: pdsList
+    pratyantardashas: pdsList,
   });
 });
 
-app.post('/api/dasha/conventions', async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+app.post("/api/dasha/conventions", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
   try {
     const r = await fetch(`${kundliUrl}/api/dasha/conventions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(3000),
     });
     if (r.ok) return res.json(await r.json());
   } catch (_) {}
   const { dob, lat, lon, moon_degree } = req.body || {};
-  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  if (!dob) return res.status(400).json({ error: "dob is required" });
   const dobDate = new Date(dob);
   let moonDeg = moon_degree;
   if (moonDeg === undefined || moonDeg === null) {
-    const p = dob.split('T')[0];
-    const t = dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00';
-    const c = AstroCalculator.calculateChart(p, t, Number(lat) || 28.6139, Number(lon) || 77.2090, false);
+    const p = dob.split("T")[0];
+    const t = dob.includes("T") ? dob.split("T")[1].slice(0, 5) : "12:00";
+    const c = AstroCalculator.calculateChart(
+      p,
+      t,
+      Number(lat) || 28.6139,
+      Number(lon) || 77.209,
+      false,
+    );
     moonDeg = c.planets.Moon.total_degree;
   }
-  const result = AstroCalculator.compareVimshottariConventions(moonDeg, dobDate);
+  const result = AstroCalculator.compareVimshottariConventions(
+    moonDeg,
+    dobDate,
+  );
   return res.json(result);
 });
 
-app.post('/api/birth-data/validate', async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+app.post("/api/birth-data/validate", async (req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
   try {
     const r = await fetch(`${kundliUrl}/api/birth-data/validate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(3000),
     });
     if (r.ok) return res.json(await r.json());
   } catch (_) {}
-  const { dob, tob, lat, lon, timezone, is_unknown_time, birthplace } = req.body || {};
-  if (!dob) return res.status(400).json({ error: 'dob is required' });
+  const { dob, tob, lat, lon, timezone, is_unknown_time, birthplace } =
+    req.body || {};
+  if (!dob) return res.status(400).json({ error: "dob is required" });
   return res.json({
-    status: 'SUCCESS',
+    status: "SUCCESS",
     validation: {
       birth_date: dob,
-      birth_time_local: is_unknown_time ? null : (tob || '12:00'),
+      birth_time_local: is_unknown_time ? null : tob || "12:00",
       is_unknown_time: Boolean(is_unknown_time),
-      time_precision_classification: is_unknown_time ? 'UNKNOWN_TIME_NOMINAL_MIDDAY' : 'EXACT_CIVIL_RECORDED',
+      time_precision_classification: is_unknown_time
+        ? "UNKNOWN_TIME_NOMINAL_MIDDAY"
+        : "EXACT_CIVIL_RECORDED",
       latitude: Number(lat) || 28.6139,
-      longitude: Number(lon) || 77.2090,
-      iana_timezone: timezone || 'Asia/Kolkata',
-      birthplace: birthplace || 'New Delhi, India',
-      source: 'Node.js Express local validation'
-    }
+      longitude: Number(lon) || 77.209,
+      iana_timezone: timezone || "Asia/Kolkata",
+      birthplace: birthplace || "New Delhi, India",
+      source: "Node.js Express local validation",
+    },
   });
 });
 
-app.post(['/api/matchmaking', '/api/kundli/matching'], async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-  try {
-    const r = await fetch(`${kundliUrl}/api/matchmaking`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(2500)
-    });
-    if (r.ok) return res.json(await r.json());
-  } catch (_) {}
+app.post(
+  ["/api/matchmaking", "/api/kundli/matching"],
+  async (req: Request, res: Response) => {
+    const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+    try {
+      const r = await fetch(`${kundliUrl}/api/matchmaking`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+        signal: AbortSignal.timeout(2500),
+      });
+      if (r.ok) return res.json(await r.json());
+    } catch (_) {}
 
-  const { boy, girl } = req.body || {};
-  if (!boy || !girl) {
-    return res.status(400).json({ error: 'boy and girl birth profiles are required' });
-  }
-
-  const bDob = boy.dob?.includes('T') ? boy.dob.split('T')[0] : (boy.dob || '1995-01-01');
-  const bTob = boy.dob?.includes('T') ? boy.dob.split('T')[1].slice(0, 5) : (boy.tob || '12:00');
-  const bLat = Number(boy.lat) || 28.6139;
-  const bLon = Number(boy.lon) || 77.2090;
-
-  const gDob = girl.dob?.includes('T') ? girl.dob.split('T')[0] : (girl.dob || '1996-01-01');
-  const gTob = girl.dob?.includes('T') ? girl.dob.split('T')[1].slice(0, 5) : (girl.tob || '12:00');
-  const gLat = Number(girl.lat) || 19.0760;
-  const gLon = Number(girl.lon) || 72.8777;
-
-  const chartA = AstroCalculator.calculateChart(bDob, bTob, bLat, bLon, false);
-  const chartB = AstroCalculator.calculateChart(gDob, gTob, gLat, gLon, false);
-
-  const mm = AstroCalculator.computeMatchmaking(chartA, chartB);
-
-  const result = {
-    status: 'SUCCESS',
-    method: 'DUAL_PROFILE_EPHEMERIS_ASHTAKOOTA',
-    boy_profile: {
-      name: boy.name || 'Groom',
-      dob: boy.dob,
-      lagna: chartA.lagna.sign,
-      moon_sign: chartA.planets.Moon.sign,
-      nakshatra: chartA.planets.Moon.nakshatra,
-      pada: chartA.planets.Moon.pada,
-      moon_degree: chartA.planets.Moon.degree
-    },
-    girl_profile: {
-      name: girl.name || 'Bride',
-      dob: girl.dob,
-      lagna: chartB.lagna.sign,
-      moon_sign: chartB.planets.Moon.sign,
-      nakshatra: chartB.planets.Moon.nakshatra,
-      pada: chartB.planets.Moon.pada,
-      moon_degree: chartB.planets.Moon.degree
-    },
-    total_score: mm.totalScore,
-    max_score: 36.0,
-    verdict: mm.verdict,
-    recommendation: mm.recommendation,
-    ashtakoota_breakdown: {
-      varna: { max: 1, obtained: mm.kutaScores.varna, description: 'Spiritual temperament alignment', has_dosha: false },
-      vashya: { max: 2, obtained: mm.kutaScores.vashya, description: 'Mutual respect & natural deference', has_dosha: false },
-      tara: { max: 3, obtained: mm.kutaScores.tara, description: 'Destiny & health vitality support', has_dosha: mm.kutaScores.tara === 0 },
-      yoni: { max: 4, obtained: mm.kutaScores.yoni, description: 'Biological & intimacy affinity', has_dosha: mm.kutaScores.yoni === 0 },
-      graha_maitri: { max: 5, obtained: mm.kutaScores.grahaMaitri, description: 'Psychological and mental friendship', has_dosha: mm.kutaScores.grahaMaitri < 3 },
-      gana: { max: 6, obtained: mm.kutaScores.gana, description: 'Social outlook and temperament alignment', has_dosha: mm.kutaScores.gana === 0 },
-      bhakoot: { max: 7, obtained: mm.kutaScores.bhakoot, description: mm.bhakootDosha ? 'Bhakoot Dosha detected (Remedial alignment advised)' : 'Family welfare and emotional longevity', has_dosha: mm.bhakootDosha },
-      nadi: { max: 8, obtained: mm.kutaScores.nadi, description: mm.nadiDosha ? 'Nadi Dosha detected (Ayurvedic constitution similarity)' : 'Traditional physiological and vital energy harmony', has_dosha: mm.nadiDosha }
-    },
-    breakdown: {
-      varna: { max: 1, obtained: mm.kutaScores.varna },
-      vashya: { max: 2, obtained: mm.kutaScores.vashya },
-      tara: { max: 3, obtained: mm.kutaScores.tara },
-      yoni: { max: 4, obtained: mm.kutaScores.yoni },
-      graha_maitri: { max: 5, obtained: mm.kutaScores.grahaMaitri },
-      gana: { max: 6, obtained: mm.kutaScores.gana },
-      bhakoot: { max: 7, obtained: mm.kutaScores.bhakoot },
-      nadi: { max: 8, obtained: mm.kutaScores.nadi }
-    },
-    supplementary_compatibility_report: {
-      seventh_house_analysis: { seventh_house_verdict: '7th house aspects indicate mature foundation and marital balance.' },
-      navamsha_d9_analysis: { synastry_verdict: 'D9 Navamsha placements reinforce emotional loyalty and partnership affinity.' },
-      manglik_dosha_analysis: {
-        mutual_cancellation: (chartA.kujaDosha.hasDosha && chartB.kujaDosha.hasDosha),
-        has_manglik_conflict: (chartA.kujaDosha.hasDosha !== chartB.kujaDosha.hasDosha),
-        boy_is_manglik: chartA.kujaDosha.hasDosha,
-        girl_is_manglik: chartB.kujaDosha.hasDosha,
-        synthesis: mm.manglikBalance
-      },
-      vimshottari_dasha_analysis: {
-        boy_active_dasha: `${chartA.currentDasha.maha} Mahadasha / ${chartA.currentDasha.antar} Antardasha`,
-        girl_active_dasha: `${chartB.currentDasha.maha} Mahadasha / ${chartB.currentDasha.antar} Antardasha`,
-        dasha_timing_verdict: 'Concurrent planetary cycles support wedding timing and domestic harmony.'
-      },
-      jaimini_darakaraka_analysis: {
-        dk_synthesis: 'Jaimini Darakaraka indicators reflect shared life values and partnership resonance.'
-      },
-      synthesis_and_limitations: 'Ashtakoota Milan evaluates classical Moon longitudes. Mutual patience, open communication, and conscious commitment remain fundamental for lifelong happiness.'
+    const { boy, girl } = req.body || {};
+    if (!boy || !girl) {
+      return res
+        .status(400)
+        .json({ error: "boy and girl birth profiles are required" });
     }
-  };
 
-  return res.json(result);
-});
+    const bDob = boy.dob?.includes("T")
+      ? boy.dob.split("T")[0]
+      : boy.dob || "1995-01-01";
+    const bTob = boy.dob?.includes("T")
+      ? boy.dob.split("T")[1].slice(0, 5)
+      : boy.tob || "12:00";
+    const bLat = Number(boy.lat) || 28.6139;
+    const bLon = Number(boy.lon) || 77.209;
 
-app.post(['/api/complete-kundli', '/api/kundli/calculate'], async (req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-  try {
-    const r = await fetch(`${kundliUrl}/api/complete-kundli`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(2500)
-    });
-    if (r.ok) return res.json(await r.json());
-  } catch (_) {}
+    const gDob = girl.dob?.includes("T")
+      ? girl.dob.split("T")[0]
+      : girl.dob || "1996-01-01";
+    const gTob = girl.dob?.includes("T")
+      ? girl.dob.split("T")[1].slice(0, 5)
+      : girl.tob || "12:00";
+    const gLat = Number(girl.lat) || 19.076;
+    const gLon = Number(girl.lon) || 72.8777;
 
-  const { dob, tob, lat, lon, timezone, unknown_time } = req.body || {};
-  if (!dob) return res.status(400).json({ error: 'dob is required' });
+    const chartA = AstroCalculator.calculateChart(
+      bDob,
+      bTob,
+      bLat,
+      bLon,
+      false,
+    );
+    const chartB = AstroCalculator.calculateChart(
+      gDob,
+      gTob,
+      gLat,
+      gLon,
+      false,
+    );
 
-  const p = dob.includes('T') ? dob.split('T')[0] : dob;
-  const t = tob || (dob.includes('T') ? dob.split('T')[1].slice(0, 5) : '12:00');
-  const isUnknown = Boolean(unknown_time);
-  const nLat = Number(lat) || 28.6139;
-  const nLon = Number(lon) || 77.2090;
+    const mm = AstroCalculator.computeMatchmaking(chartA, chartB);
 
-  const chart = AstroCalculator.calculateChart(p, t, nLat, nLon, isUnknown);
-
-  const d1_planets: Record<string, any> = {};
-  for (const [pName, pObj] of Object.entries(chart.planets)) {
-    d1_planets[pName] = {
-      sign: pObj.sign,
-      degree: pObj.degree,
-      total_degree: pObj.total_degree,
-      house: pObj.house,
-      nakshatra: pObj.nakshatra,
-      pada: pObj.pada,
-      lord: pObj.lord,
-      is_retrograde: pObj.is_retrograde,
-      dignity: pObj.dignity
+    const result = {
+      status: "SUCCESS",
+      method: "DUAL_PROFILE_EPHEMERIS_ASHTAKOOTA",
+      boy_profile: {
+        name: boy.name || "Groom",
+        dob: boy.dob,
+        lagna: chartA.lagna.sign,
+        moon_sign: chartA.planets.Moon.sign,
+        nakshatra: chartA.planets.Moon.nakshatra,
+        pada: chartA.planets.Moon.pada,
+        moon_degree: chartA.planets.Moon.degree,
+      },
+      girl_profile: {
+        name: girl.name || "Bride",
+        dob: girl.dob,
+        lagna: chartB.lagna.sign,
+        moon_sign: chartB.planets.Moon.sign,
+        nakshatra: chartB.planets.Moon.nakshatra,
+        pada: chartB.planets.Moon.pada,
+        moon_degree: chartB.planets.Moon.degree,
+      },
+      total_score: mm.totalScore,
+      max_score: 36.0,
+      verdict: mm.verdict,
+      recommendation: mm.recommendation,
+      ashtakoota_breakdown: {
+        varna: {
+          max: 1,
+          obtained: mm.kutaScores.varna,
+          description: "Spiritual temperament alignment",
+          has_dosha: false,
+        },
+        vashya: {
+          max: 2,
+          obtained: mm.kutaScores.vashya,
+          description: "Mutual respect & natural deference",
+          has_dosha: false,
+        },
+        tara: {
+          max: 3,
+          obtained: mm.kutaScores.tara,
+          description: "Destiny & health vitality support",
+          has_dosha: mm.kutaScores.tara === 0,
+        },
+        yoni: {
+          max: 4,
+          obtained: mm.kutaScores.yoni,
+          description: "Biological & intimacy affinity",
+          has_dosha: mm.kutaScores.yoni === 0,
+        },
+        graha_maitri: {
+          max: 5,
+          obtained: mm.kutaScores.grahaMaitri,
+          description: "Psychological and mental friendship",
+          has_dosha: mm.kutaScores.grahaMaitri < 3,
+        },
+        gana: {
+          max: 6,
+          obtained: mm.kutaScores.gana,
+          description: "Social outlook and temperament alignment",
+          has_dosha: mm.kutaScores.gana === 0,
+        },
+        bhakoot: {
+          max: 7,
+          obtained: mm.kutaScores.bhakoot,
+          description: mm.bhakootDosha
+            ? "Bhakoot Dosha detected (Remedial alignment advised)"
+            : "Family welfare and emotional longevity",
+          has_dosha: mm.bhakootDosha,
+        },
+        nadi: {
+          max: 8,
+          obtained: mm.kutaScores.nadi,
+          description: mm.nadiDosha
+            ? "Nadi Dosha detected (Ayurvedic constitution similarity)"
+            : "Traditional physiological and vital energy harmony",
+          has_dosha: mm.nadiDosha,
+        },
+      },
+      breakdown: {
+        varna: { max: 1, obtained: mm.kutaScores.varna },
+        vashya: { max: 2, obtained: mm.kutaScores.vashya },
+        tara: { max: 3, obtained: mm.kutaScores.tara },
+        yoni: { max: 4, obtained: mm.kutaScores.yoni },
+        graha_maitri: { max: 5, obtained: mm.kutaScores.grahaMaitri },
+        gana: { max: 6, obtained: mm.kutaScores.gana },
+        bhakoot: { max: 7, obtained: mm.kutaScores.bhakoot },
+        nadi: { max: 8, obtained: mm.kutaScores.nadi },
+      },
+      supplementary_compatibility_report: {
+        seventh_house_analysis: {
+          seventh_house_verdict:
+            "7th house aspects indicate mature foundation and marital balance.",
+        },
+        navamsha_d9_analysis: {
+          synastry_verdict:
+            "D9 Navamsha placements reinforce emotional loyalty and partnership affinity.",
+        },
+        manglik_dosha_analysis: {
+          mutual_cancellation:
+            chartA.kujaDosha.hasDosha && chartB.kujaDosha.hasDosha,
+          has_manglik_conflict:
+            chartA.kujaDosha.hasDosha !== chartB.kujaDosha.hasDosha,
+          boy_is_manglik: chartA.kujaDosha.hasDosha,
+          girl_is_manglik: chartB.kujaDosha.hasDosha,
+          synthesis: mm.manglikBalance,
+        },
+        vimshottari_dasha_analysis: {
+          boy_active_dasha: `${chartA.currentDasha.maha} Mahadasha / ${chartA.currentDasha.antar} Antardasha`,
+          girl_active_dasha: `${chartB.currentDasha.maha} Mahadasha / ${chartB.currentDasha.antar} Antardasha`,
+          dasha_timing_verdict:
+            "Concurrent planetary cycles support wedding timing and domestic harmony.",
+        },
+        jaimini_darakaraka_analysis: {
+          dk_synthesis:
+            "Jaimini Darakaraka indicators reflect shared life values and partnership resonance.",
+        },
+        synthesis_and_limitations:
+          "Ashtakoota Milan evaluates classical Moon longitudes. Mutual patience, open communication, and conscious commitment remain fundamental for lifelong happiness.",
+      },
     };
-  }
 
-  const d1 = {
-    metadata: {
-      dob: `${p}T${t}:00`,
-      latitude: nLat,
-      longitude: nLon,
-      timezone: timezone || 'Asia/Kolkata',
-      ayanamsha: 'Lahiri (Chitrapaksha)'
-    },
-    lagna: chart.lagna,
-    planets: d1_planets,
-    panchang: {
-      vaar: 'Vedic Weekday',
-      tithi: 'Shukla Paksha',
-      yoga: 'Siddha',
-      karana: 'Bava',
-      moon_nakshatra: chart.planets.Moon?.nakshatra || 'Rohini',
-      moon_pada: chart.planets.Moon?.pada || 1
+    return res.json(result);
+  },
+);
+
+app.post(
+  ["/api/complete-kundli", "/api/kundli/calculate"],
+  async (req: Request, res: Response) => {
+    const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+    try {
+      const r = await fetch(`${kundliUrl}/api/complete-kundli`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req.body),
+        signal: AbortSignal.timeout(2500),
+      });
+      if (r.ok) return res.json(await r.json());
+    } catch (_) {}
+
+    const { dob, tob, lat, lon, timezone, unknown_time } = req.body || {};
+    if (!dob) return res.status(400).json({ error: "dob is required" });
+
+    const p = dob.includes("T") ? dob.split("T")[0] : dob;
+    const t =
+      tob || (dob.includes("T") ? dob.split("T")[1].slice(0, 5) : "12:00");
+    const isUnknown = Boolean(unknown_time);
+    const nLat = Number(lat) || 28.6139;
+    const nLon = Number(lon) || 77.209;
+
+    const chart = AstroCalculator.calculateChart(p, t, nLat, nLon, isUnknown);
+
+    const d1_planets: Record<string, any> = {};
+    for (const [pName, pObj] of Object.entries(chart.planets)) {
+      d1_planets[pName] = {
+        sign: pObj.sign,
+        degree: pObj.degree,
+        total_degree: pObj.total_degree,
+        house: pObj.house,
+        nakshatra: pObj.nakshatra,
+        pada: pObj.pada,
+        lord: pObj.lord,
+        is_retrograde: pObj.is_retrograde,
+        dignity: pObj.dignity,
+      };
     }
-  };
 
-  return res.json({
-    d1_rashi_chart: d1,
-    d9_navamsha_chart: { planets: chart.d9Planets, lagna: chart.d9Lagna },
-    d10_dashamsha_chart: { planets: chart.d10Planets, lagna: chart.d10Lagna },
-    vimshottari_dasha: {
-      active_now: {
-        maha_dasha: chart.currentDasha.maha,
-        antar_dasha: chart.currentDasha.antar,
-        pratyantar_dasha: chart.currentDasha.pratyantar
-      }
-    },
-    ashtakavarga: { sav: chart.ashtakavargaSAV },
-    doshas_and_remedies: { kuja_dosha: chart.kujaDosha },
-    yogas: chart.yogas || []
-  });
-});
+    const d1 = {
+      metadata: {
+        dob: `${p}T${t}:00`,
+        latitude: nLat,
+        longitude: nLon,
+        timezone: timezone || "Asia/Kolkata",
+        ayanamsha: "Lahiri (Chitrapaksha)",
+      },
+      lagna: chart.lagna,
+      planets: d1_planets,
+      panchang: {
+        vaar: "Vedic Weekday",
+        tithi: "Shukla Paksha",
+        yoga: "Siddha",
+        karana: "Bava",
+        moon_nakshatra: chart.planets.Moon?.nakshatra || "Rohini",
+        moon_pada: chart.planets.Moon?.pada || 1,
+      },
+    };
+
+    return res.json({
+      d1_rashi_chart: d1,
+      d9_navamsha_chart: { planets: chart.d9Planets, lagna: chart.d9Lagna },
+      d10_dashamsha_chart: { planets: chart.d10Planets, lagna: chart.d10Lagna },
+      vimshottari_dasha: {
+        active_now: {
+          maha_dasha: chart.currentDasha.maha,
+          antar_dasha: chart.currentDasha.antar,
+          pratyantar_dasha: chart.currentDasha.pratyantar,
+        },
+      },
+      ashtakavarga: { sav: chart.ashtakavargaSAV },
+      doshas_and_remedies: { kuja_dosha: chart.kujaDosha },
+      yogas: chart.yogas || [],
+    });
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 6: PERSONALISED REPORT DIAGNOSTICS
 // -----------------------------------------------------------------------------
-app.get('/api/admin/reports/diagnostics', authenticate, requireAdmin(AdminPermission.VIEW_REPORT_DIAGNOSTICS), async (req: AuthenticatedRequest, res: Response) => {
-  const { page, limit } = req.query;
-  try {
-    const allUsers = await db.listUsers({ limit: 1000 });
-    let totalReports = 0;
-    const recentReports: any[] = [];
+app.get(
+  "/api/admin/reports/diagnostics",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_REPORT_DIAGNOSTICS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { page, limit } = req.query;
+    try {
+      const allUsers = await db.listUsers({ limit: 1000 });
+      let totalReports = 0;
+      const recentReports: any[] = [];
 
-    for (const u of allUsers.users) {
-      const userReports = await db.listSavedReports(u.id);
-      totalReports += userReports.length;
-      for (const rep of userReports.slice(0, 5)) {
-        recentReports.push({
-          id: rep.id,
-          userId: rep.userId,
-          title: rep.title,
-          reportType: rep.reportType,
-          status: 'COMPLETED',
-          createdAt: rep.createdAt
-        });
+      for (const u of allUsers.users) {
+        const userReports = await db.listSavedReports(u.id);
+        totalReports += userReports.length;
+        for (const rep of userReports.slice(0, 5)) {
+          recentReports.push({
+            id: rep.id,
+            userId: rep.userId,
+            title: rep.title,
+            reportType: rep.reportType,
+            status: "COMPLETED",
+            createdAt: rep.createdAt,
+          });
+        }
       }
-    }
 
-    recentReports.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      recentReports.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      res.json({
+        success: true,
+        totalReports,
+        catalogueSize: Object.keys(REPORT_CATALOGUE).length,
+        recentReports: recentReports.slice(0, Number(limit) || 25),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+app.post(
+  "/api/admin/reports/:id/retry",
+  authenticate,
+  requireAdmin(AdminPermission.RETRY_FAILED_REPORTS),
+  requireAdminAssurance("reports:retry"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: "REPORT_RETRY_ENQUEUED",
+      targetType: "REPORT",
+      targetId: req.params.id,
+      outcome: "SUCCESS",
+      metadata: { reportId: req.params.id },
+    });
     res.json({
       success: true,
-      totalReports,
-      catalogueSize: Object.keys(REPORT_CATALOGUE).length,
-      recentReports: recentReports.slice(0, Number(limit) || 25)
+      reportId: req.params.id,
+      action: "JOB_ENQUEUED",
+      message: "Report re-generation scheduled with priority queue.",
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/admin/reports/:id/retry', authenticate, requireAdmin(AdminPermission.RETRY_FAILED_REPORTS), requireAdminAssurance('reports:retry'), async (req: AuthenticatedRequest, res: Response) => {
-  await db.recordAuditEvent({
-    userId: req.user!.id,
-    actorId: req.user!.id,
-    actorRole: req.user!.role,
-    action: 'REPORT_RETRY_ENQUEUED',
-    targetType: 'REPORT',
-    targetId: req.params.id,
-    outcome: 'SUCCESS',
-    metadata: { reportId: req.params.id }
-  });
-  res.json({
-    success: true,
-    reportId: req.params.id,
-    action: 'JOB_ENQUEUED',
-    message: 'Report re-generation scheduled with priority queue.'
-  });
-});
+  },
+);
 
 // MODULE 7: AI PROVIDER STATUS, USAGE & COST CONTROLS
 // -----------------------------------------------------------------------------
-app.get('/api/admin/ai/usage', authenticate, requireAdmin(AdminPermission.VIEW_AI_USAGE), async (_req: AuthenticatedRequest, res: Response) => {
-  const openaiConfigured = Boolean(process.env.OPENAI_API_KEY);
-  const anthropicConfigured = Boolean(process.env.ANTHROPIC_API_KEY);
-  const geminiConfigured = Boolean(process.env.GEMINI_API_KEY);
-  const metrics = DurableAiQuotaManager.getMetrics();
+app.get(
+  "/api/admin/ai/usage",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_AI_USAGE),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const openaiConfigured = Boolean(process.env.OPENAI_API_KEY);
+    const anthropicConfigured = Boolean(process.env.ANTHROPIC_API_KEY);
+    const geminiConfigured = Boolean(process.env.GEMINI_API_KEY);
+    const metrics = DurableAiQuotaManager.getMetrics();
 
-  res.json({
-    success: true,
-    providers: {
-      openai: { configured: openaiConfigured, model: process.env.OPENAI_MODEL || 'gpt-4o' },
-      anthropic: { configured: anthropicConfigured, model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet' },
-      gemini: { configured: geminiConfigured, model: process.env.GEMINI_MODEL || 'gemini-1.5-pro' },
-      localFallback: { active: true, model: 'Parashari Jyotish Synthesizer v2' }
-    },
-    personas: [
-      { id: 'devratan', name: 'Acharya Devratan', model: 'Parashari Classical', active: true },
-      { id: 'sunita', name: 'Dr. Sunita Shastri', model: 'Jaimini & KP', active: true },
-      { id: 'raghavendra', name: 'Pandit Raghavendra', model: 'Vedic Yogas & Muhurta', active: true }
-    ],
-    quotas: metrics.quotas,
-    totalQueriesToday: metrics.totalQueriesToday,
-    totalQueriesThisMonth: metrics.totalQueriesThisMonth,
-    tierBreakdown: metrics.tierBreakdown,
-    activeUsersToday: metrics.activeUsersToday,
-    estimatedTokensToday: metrics.totalQueriesToday * 700,
-    estimatedCostUsd: metrics.estimatedCostTodayUsd
-  });
-});
+    res.json({
+      success: true,
+      providers: {
+        openai: {
+          configured: openaiConfigured,
+          model: process.env.OPENAI_MODEL || "gpt-4o",
+        },
+        anthropic: {
+          configured: anthropicConfigured,
+          model: process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet",
+        },
+        gemini: {
+          configured: geminiConfigured,
+          model: process.env.GEMINI_MODEL || "gemini-1.5-pro",
+        },
+        localFallback: {
+          active: true,
+          model: "Parashari Jyotish Synthesizer v2",
+        },
+      },
+      personas: [
+        {
+          id: "devratan",
+          name: "Acharya Devratan",
+          model: "Parashari Classical",
+          active: true,
+        },
+        {
+          id: "sunita",
+          name: "Dr. Sunita Shastri",
+          model: "Jaimini & KP",
+          active: true,
+        },
+        {
+          id: "raghavendra",
+          name: "Pandit Raghavendra",
+          model: "Vedic Yogas & Muhurta",
+          active: true,
+        },
+      ],
+      quotas: metrics.quotas,
+      totalQueriesToday: metrics.totalQueriesToday,
+      totalQueriesThisMonth: metrics.totalQueriesThisMonth,
+      tierBreakdown: metrics.tierBreakdown,
+      activeUsersToday: metrics.activeUsersToday,
+      estimatedTokensToday: metrics.totalQueriesToday * 700,
+      estimatedCostUsd: metrics.estimatedCostTodayUsd,
+    });
+  },
+);
 
-app.get('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.VIEW_AI_USAGE), async (_req: AuthenticatedRequest, res: Response) => {
-  const metrics = DurableAiQuotaManager.getMetrics();
-  res.json({
-    success: true,
-    quotas: metrics.quotas,
-    tierBreakdown: metrics.tierBreakdown,
-    activeUsersToday: metrics.activeUsersToday
-  });
-});
+app.get(
+  "/api/admin/ai/quotas",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_AI_USAGE),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const metrics = DurableAiQuotaManager.getMetrics();
+    res.json({
+      success: true,
+      quotas: metrics.quotas,
+      tierBreakdown: metrics.tierBreakdown,
+      activeUsersToday: metrics.activeUsersToday,
+    });
+  },
+);
 
-app.put('/api/admin/ai/quotas', authenticate, requireAdmin(AdminPermission.MANAGE_AI_QUOTAS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
-  const { freeLimit, plusLimit, premiumLimit } = req.body;
-  const updatedQuotas = DurableAiQuotaManager.updateQuotas(
-    { freeLimit, plusLimit, premiumLimit },
-    req.user!.email || req.user!.id
-  );
+app.put(
+  "/api/admin/ai/quotas",
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_AI_QUOTAS),
+  requireAdminAssurance(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { freeLimit, plusLimit, premiumLimit } = req.body;
+    const updatedQuotas = DurableAiQuotaManager.updateQuotas(
+      { freeLimit, plusLimit, premiumLimit },
+      req.user!.email || req.user!.id,
+    );
 
-  await db.recordAuditEvent({
-    userId: req.user!.id,
-    actorId: req.user!.id,
-    actorRole: req.user!.role,
-    action: 'ADMIN_AI_QUOTA_UPDATE',
-    outcome: 'SUCCESS',
-    metadata: { ...updatedQuotas }
-  });
+    await db.recordAuditEvent({
+      userId: req.user!.id,
+      actorId: req.user!.id,
+      actorRole: req.user!.role,
+      action: "ADMIN_AI_QUOTA_UPDATE",
+      outcome: "SUCCESS",
+      metadata: { ...updatedQuotas },
+    });
 
-  res.json({ success: true, message: 'AI consultation quotas updated and persisted durably.', quotas: updatedQuotas });
-});
+    res.json({
+      success: true,
+      message: "AI consultation quotas updated and persisted durably.",
+      quotas: updatedQuotas,
+    });
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 8: PAYMENTS & TRANSACTION RECONCILIATION
 // -----------------------------------------------------------------------------
-app.get(['/api/admin/payments/transactions', '/api/admin/payments/summary', '/api/admin/payments/orders'], authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
-  const correlationId = (req.headers['x-correlation-id'] as string) || (req.headers['x-request-id'] as string) || ('cid_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36));
-  try {
-    const metrics = await db.getPlatformMetrics();
-    let recentLedgers: any[] = (db as any).data?.walletLedgers?.slice(0, 50) || [];
-    let recentOrders: any[] = (db as any).data?.paymentOrders?.slice(0, 50) || [];
+app.get(
+  [
+    "/api/admin/payments/transactions",
+    "/api/admin/payments/summary",
+    "/api/admin/payments/orders",
+  ],
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_PAYMENTS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const correlationId =
+      (req.headers["x-correlation-id"] as string) ||
+      (req.headers["x-request-id"] as string) ||
+      "cid_" +
+        Math.random().toString(36).substring(2, 10) +
+        Date.now().toString(36);
+    try {
+      const metrics = await db.getPlatformMetrics();
+      let recentLedgers: any[] =
+        (db as any).data?.walletLedgers?.slice(0, 50) || [];
+      let recentOrders: any[] =
+        (db as any).data?.paymentOrders?.slice(0, 50) || [];
 
-    if ((db as any).isPostgresAvailable && (db as any).prisma) {
-      try {
-        const pgLedgers = await (db as any).prisma.walletLedger.findMany({
-          take: 50,
-          orderBy: { createdAt: 'desc' }
-        });
-        if (pgLedgers && pgLedgers.length > 0) {
-          recentLedgers = pgLedgers;
+      if ((db as any).isPostgresAvailable && (db as any).prisma) {
+        try {
+          const pgLedgers = await (db as any).prisma.walletLedger.findMany({
+            take: 50,
+            orderBy: { createdAt: "desc" },
+          });
+          if (pgLedgers && pgLedgers.length > 0) {
+            recentLedgers = pgLedgers;
+          }
+          const pgOrders = await (db as any).prisma.paymentOrder.findMany({
+            take: 50,
+            orderBy: { createdAt: "desc" },
+          });
+          if (pgOrders && pgOrders.length > 0) {
+            recentOrders = pgOrders.map((o: any) =>
+              (db as any).mapPrismaPaymentOrder(o),
+            );
+          }
+        } catch (pgErr: any) {
+          console.warn(
+            "[ADMIN_PAYMENTS] Postgres query warning:",
+            pgErr?.message || pgErr,
+          );
         }
-        const pgOrders = await (db as any).prisma.paymentOrder.findMany({
-          take: 50,
-          orderBy: { createdAt: 'desc' }
-        });
-        if (pgOrders && pgOrders.length > 0) {
-          recentOrders = pgOrders.map((o: any) => (db as any).mapPrismaPaymentOrder(o));
+      }
+
+      res.json({
+        success: true,
+        totalRechargeAmount: metrics.totalWalletDeposits,
+        gateway: isCashfreeConfigured()
+          ? "Cashfree Payments (Live/Sandbox Connected)"
+          : "Cashfree Payments (Unconfigured / Fail-Closed)",
+        recentLedgerEntries: recentLedgers,
+        recentOrders: recentOrders,
+      });
+    } catch (err: any) {
+      console.error(
+        `[ADMIN_PAYMENTS_ERROR] CorrelationId: ${correlationId}`,
+        err?.message || err,
+      );
+      res.status(500).json({
+        success: false,
+        error: "INTERNAL_SERVER_ERROR",
+        message:
+          "An unexpected error occurred while retrieving payment summaries.",
+        correlationId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  },
+);
+
+app.post(
+  "/api/admin/payments/reconcile",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.RECONCILE_PAYMENTS),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    let autoReconciled = 0;
+    try {
+      const pendingOrders = await db.getPendingPaymentOrdersAsync(100);
+      for (const po of pendingOrders) {
+        const oId = po.providerOrderId || po.razorpayOrderId || po.id;
+        if (oId && oId.startsWith("cf_")) {
+          const rec = await reconcileCashfreeOrder(oId, po.userId);
+          if (rec.success && rec.action !== "ALREADY_PAID") {
+            autoReconciled++;
+          }
         }
-      } catch (pgErr: any) {
-        console.warn('[ADMIN_PAYMENTS] Postgres query warning:', pgErr?.message || pgErr);
+      }
+    } catch (err: any) {
+      console.warn(
+        "[ADMIN RECONCILE] Proactive sweep warning:",
+        err?.message || err,
+      );
+    }
+
+    const orders = (db as any).data?.paymentOrders || [];
+    const ledgers = (db as any).data?.walletLedgers || [];
+
+    let matched = 0;
+    let mismatched = 0;
+    const discrepancies: any[] = [];
+
+    for (const o of orders) {
+      if (o.status === OrderStatus.PAID) {
+        const orderRef =
+          o.providerOrderId || o.razorpayOrderId || o.cfOrderId || o.id;
+        const isWalletOrder =
+          o.productType === "WALLET_RECHARGE" ||
+          (!o.productType &&
+            !orderRef.startsWith("rep_") &&
+            !orderRef.startsWith("sub_"));
+        if (isWalletOrder) {
+          const match = ledgers.find(
+            (l: any) =>
+              l.referenceId === orderRef ||
+              l.referenceId === o.providerOrderId ||
+              l.referenceId === o.razorpayOrderId ||
+              (l.idempotencyKey && l.idempotencyKey.includes(o.id)) ||
+              (o.providerPaymentId && l.referenceId === o.providerPaymentId) ||
+              (o.razorpayPaymentId && l.referenceId === o.razorpayPaymentId),
+          );
+          if (match) {
+            matched++;
+          } else {
+            mismatched++;
+            discrepancies.push({
+              orderId: o.id,
+              provider: o.provider || "CASHFREE",
+              orderReference: orderRef,
+              amount: o.amount,
+              issue:
+                "Wallet recharge order marked PAID but no corresponding ledger credit located",
+            });
+          }
+        } else {
+          // Direct product fulfilment (reports, subscriptions) verified via order record
+          matched++;
+        }
       }
     }
 
     res.json({
       success: true,
-      totalRechargeAmount: metrics.totalWalletDeposits,
-      gateway: isCashfreeConfigured() ? 'Cashfree Payments (Live/Sandbox Connected)' : 'Cashfree Payments (Unconfigured / Fail-Closed)',
-      recentLedgerEntries: recentLedgers,
-      recentOrders: recentOrders
+      reconciliationTimestamp: new Date().toISOString(),
+      totalOrdersChecked: orders.length,
+      autoReconciledCount: autoReconciled,
+      matched,
+      mismatched,
+      discrepancies,
+      status: mismatched === 0 ? "CLEAN_RECONCILED" : "DISCREPANCIES_DETECTED",
     });
-  } catch (err: any) {
-    console.error(`[ADMIN_PAYMENTS_ERROR] CorrelationId: ${correlationId}`, err?.message || err);
-    res.status(500).json({
-      success: false,
-      error: 'INTERNAL_SERVER_ERROR',
-      message: 'An unexpected error occurred while retrieving payment summaries.',
-      correlationId,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
-app.post('/api/admin/payments/reconcile', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
-  let autoReconciled = 0;
-  try {
-    const pendingOrders = await db.getPendingPaymentOrdersAsync(100);
-    for (const po of pendingOrders) {
-      const oId = po.providerOrderId || po.razorpayOrderId || po.id;
-      if (oId && oId.startsWith('cf_')) {
-        const rec = await reconcileCashfreeOrder(oId, po.userId);
-        if (rec.success && rec.action !== 'ALREADY_PAID') {
-          autoReconciled++;
-        }
-      }
-    }
-  } catch (err: any) {
-    console.warn('[ADMIN RECONCILE] Proactive sweep warning:', err?.message || err);
-  }
-
-  const orders = (db as any).data?.paymentOrders || [];
-  const ledgers = (db as any).data?.walletLedgers || [];
-
-  let matched = 0;
-  let mismatched = 0;
-  const discrepancies: any[] = [];
-
-  for (const o of orders) {
-    if (o.status === OrderStatus.PAID) {
-      const orderRef = o.providerOrderId || o.razorpayOrderId || o.cfOrderId || o.id;
-      const isWalletOrder = o.productType === 'WALLET_RECHARGE' || (!o.productType && !orderRef.startsWith('rep_') && !orderRef.startsWith('sub_'));
-      if (isWalletOrder) {
-        const match = ledgers.find((l: any) => 
-          l.referenceId === orderRef || 
-          l.referenceId === o.providerOrderId ||
-          l.referenceId === o.razorpayOrderId ||
-          (l.idempotencyKey && l.idempotencyKey.includes(o.id)) || 
-          (o.providerPaymentId && l.referenceId === o.providerPaymentId) ||
-          (o.razorpayPaymentId && l.referenceId === o.razorpayPaymentId)
-        );
-        if (match) {
-          matched++;
-        } else {
-          mismatched++;
-          discrepancies.push({
-            orderId: o.id,
-            provider: o.provider || 'CASHFREE',
-            orderReference: orderRef,
-            amount: o.amount,
-            issue: 'Wallet recharge order marked PAID but no corresponding ledger credit located'
-          });
-        }
-      } else {
-        // Direct product fulfilment (reports, subscriptions) verified via order record
-        matched++;
-      }
-    }
-  }
-
-  res.json({
-    success: true,
-    reconciliationTimestamp: new Date().toISOString(),
-    totalOrdersChecked: orders.length,
-    autoReconciledCount: autoReconciled,
-    matched,
-    mismatched,
-    discrepancies,
-    status: mismatched === 0 ? 'CLEAN_RECONCILED' : 'DISCREPANCIES_DETECTED'
-  });
-});
+  },
+);
 
 // POST /api/admin/wallet/adjust-balance (Admin balance adjustment with reason and audit log)
-app.post('/api/admin/wallet/adjust-balance', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_WALLET), requireAdminAssurance('wallet:adjust'), async (req: AuthenticatedRequest, res: Response) => {
-  const { userId, amount, type, reason, category } = req.body;
-  const admin = req.user!;
+app.post(
+  "/api/admin/wallet/adjust-balance",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_WALLET),
+  requireAdminAssurance("wallet:adjust"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { userId, amount, type, reason, category } = req.body;
+    const admin = req.user!;
 
-  if (!userId || typeof userId !== 'string' || !userId.trim()) {
-    return res.status(400).json({ error: 'USER_ID_REQUIRED', message: 'A valid userId is required.' });
-  }
+    if (!userId || typeof userId !== "string" || !userId.trim()) {
+      return res.status(400).json({
+        error: "USER_ID_REQUIRED",
+        message: "A valid userId is required.",
+      });
+    }
 
-  const numAmount = Number(amount);
-  if (!Number.isFinite(numAmount) || numAmount <= 0) {
-    return res.status(400).json({ error: 'INVALID_AMOUNT', message: 'Adjustment amount must be a positive number.' });
-  }
+    const numAmount = Number(amount);
+    if (!Number.isFinite(numAmount) || numAmount <= 0) {
+      return res.status(400).json({
+        error: "INVALID_AMOUNT",
+        message: "Adjustment amount must be a positive number.",
+      });
+    }
 
-  const normType = String(type || '').toUpperCase();
-  if (normType !== 'CREDIT' && normType !== 'DEBIT') {
-    return res.status(400).json({ error: 'INVALID_ADJUSTMENT_TYPE', message: "Adjustment type must be 'CREDIT' or 'DEBIT'." });
-  }
+    const normType = String(type || "").toUpperCase();
+    if (normType !== "CREDIT" && normType !== "DEBIT") {
+      return res.status(400).json({
+        error: "INVALID_ADJUSTMENT_TYPE",
+        message: "Adjustment type must be 'CREDIT' or 'DEBIT'.",
+      });
+    }
 
-  if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
-    return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
-  }
+    if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+      return res.status(400).json({
+        error: "REASON_REQUIRED",
+        message:
+          "A detailed reason (at least 5 characters) is required for audit compliance.",
+      });
+    }
 
-  try {
-    const adjResult = await db.adjustWalletBalance(
-      userId.trim(),
-      numAmount,
-      normType as 'CREDIT' | 'DEBIT',
-      reason.trim(),
-      admin.id,
-      category
-    );
+    try {
+      const adjResult = await db.adjustWalletBalance(
+        userId.trim(),
+        numAmount,
+        normType as "CREDIT" | "DEBIT",
+        reason.trim(),
+        admin.id,
+        category,
+      );
 
-    await db.recordAuditEvent({
-      userId: admin.id,
-      actorId: admin.id,
-      actorRole: admin.role,
-      action: 'WALLET_BALANCE_ADJUSTED',
-      targetType: 'WALLET',
-      targetId: userId.trim(),
-      outcome: 'SUCCESS',
-      metadata: {
-        targetUserId: userId.trim(),
-        amount: numAmount,
-        type: normType,
-        reason: reason.trim(),
-        category: category || 'MANUAL_ADJUSTMENT'
-      }
-    });
+      await db.recordAuditEvent({
+        userId: admin.id,
+        actorId: admin.id,
+        actorRole: admin.role,
+        action: "WALLET_BALANCE_ADJUSTED",
+        targetType: "WALLET",
+        targetId: userId.trim(),
+        outcome: "SUCCESS",
+        metadata: {
+          targetUserId: userId.trim(),
+          amount: numAmount,
+          type: normType,
+          reason: reason.trim(),
+          category: category || "MANUAL_ADJUSTMENT",
+        },
+      });
 
-    res.json({
-      success: true,
-      message: `Successfully ${normType === 'CREDIT' ? 'credited' : 'debited'} ₹${numAmount.toFixed(2)} ${normType === 'CREDIT' ? 'to' : 'from'} user wallet.`,
-      user: {
-        id: adjResult.user.id,
-        displayName: adjResult.user.displayName,
-        email: adjResult.user.email,
-        walletBalance: adjResult.user.walletBalance
-      },
-      adjustment: {
-        amount: numAmount,
-        type: normType,
-        reason: reason.trim(),
-        category: category || 'MANUAL_ADJUSTMENT',
-        adjustedBy: admin.id,
-        adjustedAt: new Date().toISOString()
-      }
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to adjust wallet balance' });
-  }
-});
+      res.json({
+        success: true,
+        message: `Successfully ${normType === "CREDIT" ? "credited" : "debited"} ₹${numAmount.toFixed(2)} ${normType === "CREDIT" ? "to" : "from"} user wallet.`,
+        user: {
+          id: adjResult.user.id,
+          displayName: adjResult.user.displayName,
+          email: adjResult.user.email,
+          walletBalance: adjResult.user.walletBalance,
+        },
+        adjustment: {
+          amount: numAmount,
+          type: normType,
+          reason: reason.trim(),
+          category: category || "MANUAL_ADJUSTMENT",
+          adjustedBy: admin.id,
+          adjustedAt: new Date().toISOString(),
+        },
+      });
+    } catch (err: any) {
+      res
+        .status(500)
+        .json({ error: err.message || "Failed to adjust wallet balance" });
+    }
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 9: SUBSCRIPTION & REFUND MANAGEMENT
 // -----------------------------------------------------------------------------
-app.get('/api/admin/subscriptions', authenticate, requireAdmin(AdminPermission.VIEW_SUBSCRIPTIONS), async (req: AuthenticatedRequest, res: Response) => {
-  const { search, tier: filterTier, status: filterStatus, page, limit } = req.query;
-  try {
-    let users: any[] = [];
-    if ((db as any).isPostgresAvailable && (db as any).prisma) {
-      try {
-        users = await (db as any).prisma.user.findMany({
-          select: {
-            id: true,
-            email: true,
-            phone: true,
-            displayName: true,
-            subscriptionTier: true,
-            subscriptionStatus: true,
-            subscriptionBillingPeriod: true,
-            subscriptionExpiresAt: true,
-            createdAt: true
-          },
-          orderBy: { createdAt: 'desc' }
-        });
-      } catch (pgErr: any) {
-        console.warn('[ADMIN_SUBSCRIPTIONS] Prisma query fallback:', pgErr?.message);
+app.get(
+  "/api/admin/subscriptions",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_SUBSCRIPTIONS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const {
+      search,
+      tier: filterTier,
+      status: filterStatus,
+      page,
+      limit,
+    } = req.query;
+    try {
+      let users: any[] = [];
+      if ((db as any).isPostgresAvailable && (db as any).prisma) {
+        try {
+          users = await (db as any).prisma.user.findMany({
+            select: {
+              id: true,
+              email: true,
+              phone: true,
+              displayName: true,
+              subscriptionTier: true,
+              subscriptionStatus: true,
+              subscriptionBillingPeriod: true,
+              subscriptionExpiresAt: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+          });
+        } catch (pgErr: any) {
+          console.warn(
+            "[ADMIN_SUBSCRIPTIONS] Prisma query fallback:",
+            pgErr?.message,
+          );
+          users = (db as any).data?.users || [];
+        }
+      } else {
         users = (db as any).data?.users || [];
       }
-    } else {
-      users = (db as any).data?.users || [];
-    }
 
-    const now = Date.now();
-    let freeCount = 0;
-    let plusCount = 0;
-    let premiumCount = 0;
-    let expiredCount = 0;
-    let cancelledCount = 0;
-    const activeSubscribersList: any[] = [];
-    const allSubscribersList: any[] = [];
+      const now = Date.now();
+      let freeCount = 0;
+      let plusCount = 0;
+      let premiumCount = 0;
+      let expiredCount = 0;
+      let cancelledCount = 0;
+      const activeSubscribersList: any[] = [];
+      const allSubscribersList: any[] = [];
 
-    for (const u of users) {
-      const tier = u.subscriptionTier || 'FREE';
-      const status = u.subscriptionStatus || 'NONE';
-      const expiresAt = u.subscriptionExpiresAt ? new Date(u.subscriptionExpiresAt).getTime() : null;
-      const isExpired = expiresAt !== null && expiresAt <= now;
-      const isActivePaid = (tier === 'PLUS' || tier === 'PREMIUM') && (status === 'ACTIVE' || status === 'TRIAL') && !isExpired;
+      for (const u of users) {
+        const tier = u.subscriptionTier || "FREE";
+        const status = u.subscriptionStatus || "NONE";
+        const expiresAt = u.subscriptionExpiresAt
+          ? new Date(u.subscriptionExpiresAt).getTime()
+          : null;
+        const isExpired = expiresAt !== null && expiresAt <= now;
+        const isActivePaid =
+          (tier === "PLUS" || tier === "PREMIUM") &&
+          (status === "ACTIVE" || status === "TRIAL") &&
+          !isExpired;
 
-      if (status === 'CANCELLED') {
-        cancelledCount++;
-      } else if (isExpired && tier !== 'FREE') {
-        expiredCount++;
+        if (status === "CANCELLED") {
+          cancelledCount++;
+        } else if (isExpired && tier !== "FREE") {
+          expiredCount++;
+        }
+
+        if (!isActivePaid) {
+          freeCount++;
+        } else if (tier === "PLUS") {
+          plusCount++;
+          activeSubscribersList.push({
+            userId: u.id,
+            email: u.email,
+            tier: "PLUS",
+            status,
+            billingPeriod: u.subscriptionBillingPeriod || "MONTHLY",
+            expiresAt: u.subscriptionExpiresAt,
+          });
+        } else if (tier === "PREMIUM") {
+          premiumCount++;
+          activeSubscribersList.push({
+            userId: u.id,
+            email: u.email,
+            tier: "PREMIUM",
+            status,
+            billingPeriod: u.subscriptionBillingPeriod || "ANNUAL",
+            expiresAt: u.subscriptionExpiresAt,
+          });
+        }
+
+        allSubscribersList.push({
+          userId: u.id,
+          displayName: u.displayName || "Unnamed",
+          email: u.email || "No email",
+          phone: u.phone,
+          tier,
+          status: isExpired && status === "ACTIVE" ? "EXPIRED" : status,
+          billingPeriod:
+            u.subscriptionBillingPeriod || (tier === "FREE" ? null : "MONTHLY"),
+          expiresAt: u.subscriptionExpiresAt,
+          isExpired,
+          createdAt: u.createdAt,
+        });
       }
 
-      if (!isActivePaid) {
-        freeCount++;
-      } else if (tier === 'PLUS') {
-        plusCount++;
-        activeSubscribersList.push({
-          userId: u.id,
-          email: u.email,
-          tier: 'PLUS',
-          status,
-          billingPeriod: u.subscriptionBillingPeriod || 'MONTHLY',
-          expiresAt: u.subscriptionExpiresAt
-        });
-      } else if (tier === 'PREMIUM') {
-        premiumCount++;
-        activeSubscribersList.push({
-          userId: u.id,
-          email: u.email,
-          tier: 'PREMIUM',
-          status,
-          billingPeriod: u.subscriptionBillingPeriod || 'ANNUAL',
-          expiresAt: u.subscriptionExpiresAt
-        });
+      // Filter subscribers list
+      let filtered = allSubscribersList;
+      if (filterTier && filterTier !== "ALL") {
+        filtered = filtered.filter((s) => s.tier === filterTier);
+      }
+      if (filterStatus && filterStatus !== "ALL") {
+        filtered = filtered.filter((s) => s.status === filterStatus);
+      }
+      if (search) {
+        const q = String(search).toLowerCase();
+        filtered = filtered.filter(
+          (s) =>
+            s.userId.toLowerCase().includes(q) ||
+            s.displayName.toLowerCase().includes(q) ||
+            s.email.toLowerCase().includes(q),
+        );
       }
 
-      allSubscribersList.push({
-        userId: u.id,
-        displayName: u.displayName || 'Unnamed',
-        email: u.email || 'No email',
-        phone: u.phone,
-        tier,
-        status: isExpired && status === 'ACTIVE' ? 'EXPIRED' : status,
-        billingPeriod: u.subscriptionBillingPeriod || (tier === 'FREE' ? null : 'MONTHLY'),
-        expiresAt: u.subscriptionExpiresAt,
-        isExpired,
-        createdAt: u.createdAt
+      const p = Math.max(1, Number(page) || 1);
+      const l = Math.max(1, Number(limit) || 25);
+      const start = (p - 1) * l;
+      const subscribers = filtered.slice(start, start + l);
+      const totalPages = Math.max(1, Math.ceil(filtered.length / l));
+
+      res.json({
+        success: true,
+        plans: Object.values(SUBSCRIPTION_PLANS),
+        distribution: {
+          FREE: freeCount,
+          PLUS: plusCount,
+          PREMIUM: premiumCount,
+          EXPIRED: expiredCount,
+          CANCELLED: cancelledCount,
+        },
+        totalActiveSubscribers: plusCount + premiumCount,
+        totalSubscribers: filtered.length,
+        page: p,
+        limit: l,
+        totalPages,
+        subscribers,
+        activeSubscribers: activeSubscribersList.slice(0, 50),
       });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
-
-    // Filter subscribers list
-    let filtered = allSubscribersList;
-    if (filterTier && filterTier !== 'ALL') {
-      filtered = filtered.filter(s => s.tier === filterTier);
-    }
-    if (filterStatus && filterStatus !== 'ALL') {
-      filtered = filtered.filter(s => s.status === filterStatus);
-    }
-    if (search) {
-      const q = String(search).toLowerCase();
-      filtered = filtered.filter(s =>
-        s.userId.toLowerCase().includes(q) ||
-        s.displayName.toLowerCase().includes(q) ||
-        s.email.toLowerCase().includes(q)
-      );
-    }
-
-    const p = Math.max(1, Number(page) || 1);
-    const l = Math.max(1, Number(limit) || 25);
-    const start = (p - 1) * l;
-    const subscribers = filtered.slice(start, start + l);
-    const totalPages = Math.max(1, Math.ceil(filtered.length / l));
-
-    res.json({
-      success: true,
-      plans: Object.values(SUBSCRIPTION_PLANS),
-      distribution: {
-        FREE: freeCount,
-        PLUS: plusCount,
-        PREMIUM: premiumCount,
-        EXPIRED: expiredCount,
-        CANCELLED: cancelledCount
-      },
-      totalActiveSubscribers: plusCount + premiumCount,
-      totalSubscribers: filtered.length,
-      page: p,
-      limit: l,
-      totalPages,
-      subscribers,
-      activeSubscribers: activeSubscribersList.slice(0, 50)
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
 
 const activeRefundLocks = new Set<string>();
 
-app.post('/api/admin/payments/refund', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_REFUNDS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
-  const { orderId, amount, reason, refundId: requestedRefundId } = req.body;
-  if (!orderId || typeof orderId !== 'string' || !orderId.trim()) {
-    return res.status(400).json({ error: 'ORDER_ID_REQUIRED', message: 'A valid orderId is required for refund.' });
-  }
-
-  const cleanOrderId = orderId.trim();
-
-  // Concurrency-safety lock per order
-  if (activeRefundLocks.has(cleanOrderId)) {
-    return res.status(409).json({
-      error: 'CONCURRENT_REFUND_IN_PROGRESS',
-      message: 'A refund operation is currently executing for this order. Please retry in a few moments.'
-    });
-  }
-
-  activeRefundLocks.add(cleanOrderId);
-
-  try {
-    let order = await db.findPaymentOrderByIdAsync(cleanOrderId);
-    if (!order) {
-      const orders = (db as any).data?.paymentOrders || [];
-      order = orders.find((o: any) => o.id === cleanOrderId || o.providerOrderId === cleanOrderId || o.cfOrderId === cleanOrderId || o.razorpayOrderId === cleanOrderId);
-    }
-    if (!order) {
-      return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: `Order ${cleanOrderId} does not exist.` });
-    }
-
-    // Eligibility check
-    if (order.status === OrderStatus.REFUNDED) {
-      return res.status(400).json({ error: 'ALREADY_REFUNDED', message: 'Order has already been fully refunded.' });
-    }
-
-    if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.PARTIALLY_REFUNDED) {
+app.post(
+  "/api/admin/payments/refund",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_REFUNDS),
+  requireAdminAssurance(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { orderId, amount, reason, refundId: requestedRefundId } = req.body;
+    if (!orderId || typeof orderId !== "string" || !orderId.trim()) {
       return res.status(400).json({
-        error: 'ORDER_NOT_PAID',
-        message: `Only paid orders can be refunded. Current order status: ${order.status}`
+        error: "ORDER_ID_REQUIRED",
+        message: "A valid orderId is required for refund.",
       });
     }
 
-    // Integer paise calculations
-    const totalOrderPaise = order.amountPaise !== undefined ? order.amountPaise : Math.round(order.amount * 100);
-    if (!order.refunds) {
-      order.refunds = [];
-    }
+    const cleanOrderId = orderId.trim();
 
-    // Idempotency check for existing refund ID
-    if (requestedRefundId) {
-      const existingRefund = order.refunds.find((r: any) => r.id === requestedRefundId);
-      if (existingRefund) {
-        return res.json({
-          success: existingRefund.status === RefundState.SUCCESS,
-          idempotentReplay: true,
-          message: `Refund ${requestedRefundId} already recorded with status: ${existingRefund.status}`,
-          refund: existingRefund,
-          order
-        });
-      }
-    }
-
-    const priorSuccessfulPaise = order.refunds
-      .filter((r: any) => r.status === RefundState.SUCCESS)
-      .reduce((sum: number, r: any) => sum + (r.amountPaise || Math.round(r.amount * 100)), 0);
-
-    const pendingProcessingPaise = order.refunds
-      .filter((r: any) => r.status === RefundState.PROCESSING || r.status === RefundState.REQUESTED)
-      .reduce((sum: number, r: any) => sum + (r.amountPaise || Math.round(r.amount * 100)), 0);
-
-    const remainingRefundablePaise = totalOrderPaise - priorSuccessfulPaise - pendingProcessingPaise;
-
-    if (remainingRefundablePaise <= 0) {
-      return res.status(400).json({
-        error: 'ALREADY_REFUNDED',
-        message: `No refundable balance remains on order ${order.id}. Total: ₹${(totalOrderPaise / 100).toFixed(2)}, Refunded/Processing: ₹${((priorSuccessfulPaise + pendingProcessingPaise) / 100).toFixed(2)}.`
+    // Concurrency-safety lock per order
+    if (activeRefundLocks.has(cleanOrderId)) {
+      return res.status(409).json({
+        error: "CONCURRENT_REFUND_IN_PROGRESS",
+        message:
+          "A refund operation is currently executing for this order. Please retry in a few moments.",
       });
     }
 
-    const requestedAmountRupees = amount !== undefined && amount !== null ? Number(amount) : (remainingRefundablePaise / 100);
-    const requestedPaise = Math.round(requestedAmountRupees * 100);
-
-    if (isNaN(requestedPaise) || requestedPaise <= 0) {
-      return res.status(400).json({
-        error: 'INVALID_REFUND_AMOUNT',
-        message: 'Refund amount must be a positive number.'
-      });
-    }
-
-    if (requestedPaise > remainingRefundablePaise) {
-      return res.status(400).json({
-        error: 'EXCEEDS_REFUNDABLE_AMOUNT',
-        message: `Requested refund of ₹${(requestedPaise / 100).toFixed(2)} exceeds remaining refundable balance of ₹${(remainingRefundablePaise / 100).toFixed(2)}.`
-      });
-    }
-
-    // Generate stable refund ID and persist REQUESTED state BEFORE gateway call
-    const refundId = requestedRefundId || `ref_${order.id.replace(/^ord_/, '')}_${Date.now()}`;
-    const refundRecord: RefundRecord = {
-      id: refundId,
-      orderId: order.id,
-      amount: Number((requestedPaise / 100).toFixed(2)),
-      amountPaise: requestedPaise,
-      currency: order.currency || 'INR',
-      status: RefundState.REQUESTED,
-      reason: reason && typeof reason === 'string' ? reason.trim() : 'Customer support refund approval',
-      adminId: req.user!.id,
-      adminEmail: req.user!.email || 'admin@astroverse.app',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    order.refunds.push(refundRecord);
-
-    // Call Cashfree API to submit refund
-    const targetCfOrderId = order.providerOrderId || order.cfOrderId || order.id;
-    refundRecord.status = RefundState.PROCESSING;
-    let cfRefund: any = null;
+    activeRefundLocks.add(cleanOrderId);
 
     try {
-      cfRefund = await createCashfreeRefund({
-        orderId: targetCfOrderId,
-        refundId,
-        refundAmount: Number((requestedPaise / 100).toFixed(2)),
-        refundNote: refundRecord.reason
-      });
-    } catch (cfErr: any) {
-      refundRecord.status = RefundState.FAILED;
-      refundRecord.error = cfErr?.message || 'Gateway error';
+      let order = await db.findPaymentOrderByIdAsync(cleanOrderId);
+      if (!order) {
+        const orders = (db as any).data?.paymentOrders || [];
+        order = orders.find(
+          (o: any) =>
+            o.id === cleanOrderId ||
+            o.providerOrderId === cleanOrderId ||
+            o.cfOrderId === cleanOrderId ||
+            o.razorpayOrderId === cleanOrderId,
+        );
+      }
+      if (!order) {
+        return res.status(404).json({
+          error: "ORDER_NOT_FOUND",
+          message: `Order ${cleanOrderId} does not exist.`,
+        });
+      }
+
+      // Eligibility check
+      if (order.status === OrderStatus.REFUNDED) {
+        return res.status(400).json({
+          error: "ALREADY_REFUNDED",
+          message: "Order has already been fully refunded.",
+        });
+      }
+
+      if (
+        order.status !== OrderStatus.PAID &&
+        order.status !== OrderStatus.PARTIALLY_REFUNDED
+      ) {
+        return res.status(400).json({
+          error: "ORDER_NOT_PAID",
+          message: `Only paid orders can be refunded. Current order status: ${order.status}`,
+        });
+      }
+
+      // Integer paise calculations
+      const totalOrderPaise =
+        order.amountPaise !== undefined
+          ? order.amountPaise
+          : Math.round(order.amount * 100);
+      if (!order.refunds) {
+        order.refunds = [];
+      }
+
+      // Idempotency check for existing refund ID
+      if (requestedRefundId) {
+        const existingRefund = order.refunds.find(
+          (r: any) => r.id === requestedRefundId,
+        );
+        if (existingRefund) {
+          return res.json({
+            success: existingRefund.status === RefundState.SUCCESS,
+            idempotentReplay: true,
+            message: `Refund ${requestedRefundId} already recorded with status: ${existingRefund.status}`,
+            refund: existingRefund,
+            order,
+          });
+        }
+      }
+
+      const priorSuccessfulPaise = order.refunds
+        .filter((r: any) => r.status === RefundState.SUCCESS)
+        .reduce(
+          (sum: number, r: any) =>
+            sum + (r.amountPaise || Math.round(r.amount * 100)),
+          0,
+        );
+
+      const pendingProcessingPaise = order.refunds
+        .filter(
+          (r: any) =>
+            r.status === RefundState.PROCESSING ||
+            r.status === RefundState.REQUESTED,
+        )
+        .reduce(
+          (sum: number, r: any) =>
+            sum + (r.amountPaise || Math.round(r.amount * 100)),
+          0,
+        );
+
+      const remainingRefundablePaise =
+        totalOrderPaise - priorSuccessfulPaise - pendingProcessingPaise;
+
+      if (remainingRefundablePaise <= 0) {
+        return res.status(400).json({
+          error: "ALREADY_REFUNDED",
+          message: `No refundable balance remains on order ${order.id}. Total: ₹${(totalOrderPaise / 100).toFixed(2)}, Refunded/Processing: ₹${((priorSuccessfulPaise + pendingProcessingPaise) / 100).toFixed(2)}.`,
+        });
+      }
+
+      const requestedAmountRupees =
+        amount !== undefined && amount !== null
+          ? Number(amount)
+          : remainingRefundablePaise / 100;
+      const requestedPaise = Math.round(requestedAmountRupees * 100);
+
+      if (isNaN(requestedPaise) || requestedPaise <= 0) {
+        return res.status(400).json({
+          error: "INVALID_REFUND_AMOUNT",
+          message: "Refund amount must be a positive number.",
+        });
+      }
+
+      if (requestedPaise > remainingRefundablePaise) {
+        return res.status(400).json({
+          error: "EXCEEDS_REFUNDABLE_AMOUNT",
+          message: `Requested refund of ₹${(requestedPaise / 100).toFixed(2)} exceeds remaining refundable balance of ₹${(remainingRefundablePaise / 100).toFixed(2)}.`,
+        });
+      }
+
+      // Generate stable refund ID and persist REQUESTED state BEFORE gateway call
+      const refundId =
+        requestedRefundId ||
+        `ref_${order.id.replace(/^ord_/, "")}_${Date.now()}`;
+      const refundRecord: RefundRecord = {
+        id: refundId,
+        orderId: order.id,
+        amount: Number((requestedPaise / 100).toFixed(2)),
+        amountPaise: requestedPaise,
+        currency: order.currency || "INR",
+        status: RefundState.REQUESTED,
+        reason:
+          reason && typeof reason === "string"
+            ? reason.trim()
+            : "Customer support refund approval",
+        adminId: req.user!.id,
+        adminEmail: req.user!.email || "admin@astroverse.app",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      order.refunds.push(refundRecord);
+
+      // Call Cashfree API to submit refund
+      const targetCfOrderId =
+        order.providerOrderId || order.cfOrderId || order.id;
+      refundRecord.status = RefundState.PROCESSING;
+      let cfRefund: any = null;
+
+      try {
+        cfRefund = await createCashfreeRefund({
+          orderId: targetCfOrderId,
+          refundId,
+          refundAmount: Number((requestedPaise / 100).toFixed(2)),
+          refundNote: refundRecord.reason,
+        });
+      } catch (cfErr: any) {
+        refundRecord.status = RefundState.FAILED;
+        refundRecord.error = cfErr?.message || "Gateway error";
+        refundRecord.updatedAt = new Date().toISOString();
+
+        console.error(
+          "[ADMIN_REFUND] Cashfree refund failed:",
+          cfErr?.message || cfErr,
+        );
+        return res.status(502).json({
+          error: "GATEWAY_REFUND_FAILED",
+          message: `Cashfree refund processing failed: ${cfErr?.message || "Gateway error"}`,
+          refund: refundRecord,
+        });
+      }
+
+      // Process provider outcome
+      refundRecord.cfRefundId = cfRefund?.cf_refund_id;
+      refundRecord.cf_refund_id = cfRefund?.cf_refund_id;
+      refundRecord.gatewayResponse = cfRefund;
       refundRecord.updatedAt = new Date().toISOString();
 
-      console.error('[ADMIN_REFUND] Cashfree refund failed:', cfErr?.message || cfErr);
-      return res.status(502).json({
-        error: 'GATEWAY_REFUND_FAILED',
-        message: `Cashfree refund processing failed: ${cfErr?.message || 'Gateway error'}`,
-        refund: refundRecord
-      });
-    }
+      if (cfRefund?.refund_status === "SUCCESS") {
+        refundRecord.status = RefundState.SUCCESS;
+        const newTotalRefundedPaise = priorSuccessfulPaise + requestedPaise;
+        order.refundedAmountPaise = newTotalRefundedPaise;
 
-    // Process provider outcome
-    refundRecord.cfRefundId = cfRefund?.cf_refund_id;
-    refundRecord.cf_refund_id = cfRefund?.cf_refund_id;
-    refundRecord.gatewayResponse = cfRefund;
-    refundRecord.updatedAt = new Date().toISOString();
-
-    if (cfRefund?.refund_status === 'SUCCESS') {
-      refundRecord.status = RefundState.SUCCESS;
-      const newTotalRefundedPaise = priorSuccessfulPaise + requestedPaise;
-      order.refundedAmountPaise = newTotalRefundedPaise;
-
-      if (newTotalRefundedPaise >= totalOrderPaise) {
-        order.status = OrderStatus.REFUNDED;
+        if (newTotalRefundedPaise >= totalOrderPaise) {
+          order.status = OrderStatus.REFUNDED;
+        } else {
+          order.status = OrderStatus.PARTIALLY_REFUNDED;
+        }
+      } else if (cfRefund?.refund_status === "FAILED") {
+        refundRecord.status = RefundState.FAILED;
+        refundRecord.error = cfRefund?.refund_note || "Provider failed refund";
       } else {
-        order.status = OrderStatus.PARTIALLY_REFUNDED;
+        // PENDING or ONHOLD -> state remains PROCESSING.
+        // Order status is NOT marked REFUNDED while provider refund remains pending!
+        refundRecord.status = RefundState.PROCESSING;
       }
-    } else if (cfRefund?.refund_status === 'FAILED') {
-      refundRecord.status = RefundState.FAILED;
-      refundRecord.error = cfRefund?.refund_note || 'Provider failed refund';
-    } else {
-      // PENDING or ONHOLD -> state remains PROCESSING.
-      // Order status is NOT marked REFUNDED while provider refund remains pending!
-      refundRecord.status = RefundState.PROCESSING;
-    }
 
-    if (order.metadata) {
-      order.metadata.refunds = order.refunds;
-      order.metadata.lastRefund = cfRefund;
-    } else {
-      order.metadata = { refunds: order.refunds, lastRefund: cfRefund };
-    }
-
-    // Persist to database
-    try {
-      if ((db as any).isPostgresAvailable && (db as any).prisma) {
-        await (db as any).prisma.paymentOrder.update({
-          where: { id: order.id },
-          data: {
-            status: order.status,
-            metadata: order.metadata
-          }
-        });
+      if (order.metadata) {
+        order.metadata.refunds = order.refunds;
+        order.metadata.lastRefund = cfRefund;
+      } else {
+        order.metadata = { refunds: order.refunds, lastRefund: cfRefund };
       }
-    } catch (dbErr: any) {
-      console.error(`[CRITICAL_RECONCILIATION] Cashfree accepted refund ${refundId} but database update threw: ${dbErr?.message}`);
-      // Record incident so background reconciliation resolves it without duplicate submissions
+
+      // Persist to database
       try {
-        await db.createIncident({
-          title: `Reconciliation: Database update failure for Cashfree refund ${refundId}`,
-          summary: `Cashfree processed refund of ₹${(requestedPaise / 100).toFixed(2)} for order ${order.id}, but local DB persistence threw: ${dbErr?.message}. Do not resubmit with fresh ID.`,
-          severity: 'P1_CRITICAL',
-          reportedBy: 'SYSTEM_REFUND_FAILSAFE'
-        });
-      } catch {}
-    }
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_REFUND_ISSUED',
-      targetType: 'ORDER',
-      targetId: order.id,
-      outcome: refundRecord.status === RefundState.FAILED ? 'FAILED' : 'SUCCESS',
-      reason: refundRecord.reason,
-      metadata: {
-        amountRupees: requestedPaise / 100,
-        amountPaise: requestedPaise,
-        orderId: order.id,
-        orderStatus: order.status,
-        cfOrderId: targetCfOrderId,
-        cfRefundId: cfRefund?.cf_refund_id,
-        refundId: refundRecord.id,
-        refundStatus: refundRecord.status
-      }
-    });
-
-    res.json({
-      success: refundRecord.status !== RefundState.FAILED,
-      message: `Refund of ₹${(requestedPaise / 100).toFixed(2)} status: ${refundRecord.status}. Order status: ${order.status}.`,
-      order,
-      refund: refundRecord
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  } finally {
-    activeRefundLocks.delete(cleanOrderId);
-  }
-});
-
-app.post('/api/admin/payments/recover-order', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.RECONCILE_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
-  const { orderId } = req.body;
-  if (!orderId || typeof orderId !== 'string' || !orderId.trim()) {
-    return res.status(400).json({ error: 'ORDER_ID_REQUIRED', message: 'A valid orderId is required for recovery.' });
-  }
-
-  const cleanOrderId = orderId.trim();
-  try {
-    let order = await db.findPaymentOrderByIdAsync(cleanOrderId);
-    const cfStatus = await getCashfreeOrderStatus(cleanOrderId);
-    const payments = await getPaymentsForCashfreeOrder(cleanOrderId).catch(() => []);
-    const successfulPayment = payments.find(p => p.payment_status === 'SUCCESS');
-    const isPaid = (cfStatus.order_status === 'PAID') || Boolean(successfulPayment);
-    const verifiedPaymentId = successfulPayment ? String(successfulPayment.cf_payment_id) : (cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : `cf_rec_${Date.now()}`);
-
-    const customerId = cfStatus.customer_details?.customer_id;
-    if (!customerId) {
-      return res.status(400).json({
-        error: 'CUSTOMER_NOT_IDENTIFIED',
-        message: 'Cashfree order does not contain an associated customer_id.',
-        cfStatus
-      });
-    }
-
-    const user = await db.findUserById(customerId);
-    if (!user) {
-      return res.status(404).json({
-        error: 'USER_NOT_FOUND',
-        message: `Customer ${customerId} referenced by Cashfree was not found on AstroVerse.`,
-        cfStatus
-      });
-    }
-
-    const totalAmount = Number(cfStatus.order_amount);
-    if (!order) {
-      const orderNote = cfStatus.order_note || '';
-      let productType = 'WALLET_RECHARGE';
-      let productId: string | undefined = undefined;
-      let baseAmount = totalAmount;
-      let gstAmount = 0;
-      let bonusAmount = 0;
-      let creditAmount = totalAmount;
-
-      if (cleanOrderId.startsWith('cf_sub_') || orderNote.includes('Subscription')) {
-        productType = 'SUBSCRIPTION';
-      } else if (cleanOrderId.startsWith('cf_rep_') || orderNote.includes('Report')) {
-        productType = 'REPORT';
-      } else {
-        productType = 'WALLET_RECHARGE';
-        const pkg = APPROVED_RECHARGE_PACKAGES.find(p => Math.abs(p.totalPayable - totalAmount) < 0.01);
-        if (pkg) {
-          baseAmount = pkg.baseAmount;
-          gstAmount = pkg.gstAmount;
-          bonusAmount = pkg.bonus;
-          creditAmount = pkg.totalCredit;
-        } else {
-          const totalPaise = Math.round(totalAmount * 100);
-          const basePaise = Math.round(totalPaise / 1.18);
-          const gstPaise = totalPaise - basePaise;
-          baseAmount = basePaise / 100;
-          gstAmount = gstPaise / 100;
-          bonusAmount = 0;
-          creditAmount = baseAmount;
-        }
-      }
-
-      order = await db.createPaymentOrder({
-        userId: customerId,
-        amount: totalAmount,
-        currency: cfStatus.order_currency || 'INR',
-        provider: 'CASHFREE',
-        providerOrderId: cfStatus.order_id,
-        gateway: 'CASHFREE',
-        cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
-        cfPaymentSessionId: cfStatus.payment_session_id || undefined,
-        productType,
-        productId,
-        baseAmount,
-        gstAmount,
-        bonusAmount,
-        creditAmount
-      });
-    }
-
-    let updatedUser: UserRecord | null = user;
-    let actionTaken = 'NONE';
-
-    if (isPaid) {
-      if (order.status !== OrderStatus.PAID) {
-        if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
-          updatedUser = await db.rechargeWallet(customerId, order.amount, verifiedPaymentId, order.providerOrderId, 'CASHFREE');
-          actionTaken = 'WALLET_CREDITED';
-        } else if (order.productType === 'SUBSCRIPTION') {
-          const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-          const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
-          const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
-            ? BillingPeriod.ANNUAL
-            : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
-              ? BillingPeriod.MONTHLY
-              : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
-                ? BillingPeriod.ANNUAL
-                : BillingPeriod.MONTHLY));
-          const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-          updatedUser = await db.fulfillPaidSubscriptionOrder({
-            userId: customerId,
-            tier: targetTier as any,
-            billingPeriod: period as any,
-            durationDays,
-            orderId: order.providerOrderId,
-            paymentId: verifiedPaymentId,
-            amount: order.amount,
-            provider: 'CASHFREE',
-            currency: 'INR'
+        if ((db as any).isPostgresAvailable && (db as any).prisma) {
+          await (db as any).prisma.paymentOrder.update({
+            where: { id: order.id },
+            data: {
+              status: order.status,
+              metadata: order.metadata,
+            },
           });
-          actionTaken = 'SUBSCRIPTION_ACTIVATED';
-        } else {
-          await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
-          actionTaken = 'ORDER_MARKED_PAID';
         }
-      } else {
-        actionTaken = 'ALREADY_PAID_AND_FULFILLED';
+      } catch (dbErr: any) {
+        console.error(
+          `[CRITICAL_RECONCILIATION] Cashfree accepted refund ${refundId} but database update threw: ${dbErr?.message}`,
+        );
+        // Record incident so background reconciliation resolves it without duplicate submissions
+        try {
+          await db.createIncident({
+            title: `Reconciliation: Database update failure for Cashfree refund ${refundId}`,
+            summary: `Cashfree processed refund of ₹${(requestedPaise / 100).toFixed(2)} for order ${order.id}, but local DB persistence threw: ${dbErr?.message}. Do not resubmit with fresh ID.`,
+            severity: "P1_CRITICAL",
+            reportedBy: "SYSTEM_REFUND_FAILSAFE",
+          });
+        } catch {}
       }
+
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_REFUND_ISSUED",
+        targetType: "ORDER",
+        targetId: order.id,
+        outcome:
+          refundRecord.status === RefundState.FAILED ? "FAILED" : "SUCCESS",
+        reason: refundRecord.reason,
+        metadata: {
+          amountRupees: requestedPaise / 100,
+          amountPaise: requestedPaise,
+          orderId: order.id,
+          orderStatus: order.status,
+          cfOrderId: targetCfOrderId,
+          cfRefundId: cfRefund?.cf_refund_id,
+          refundId: refundRecord.id,
+          refundStatus: refundRecord.status,
+        },
+      });
+
+      res.json({
+        success: refundRecord.status !== RefundState.FAILED,
+        message: `Refund of ₹${(requestedPaise / 100).toFixed(2)} status: ${refundRecord.status}. Order status: ${order.status}.`,
+        order,
+        refund: refundRecord,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    } finally {
+      activeRefundLocks.delete(cleanOrderId);
+    }
+  },
+);
+
+app.post(
+  "/api/admin/payments/recover-order",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.RECONCILE_PAYMENTS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { orderId } = req.body;
+    if (!orderId || typeof orderId !== "string" || !orderId.trim()) {
+      return res.status(400).json({
+        error: "ORDER_ID_REQUIRED",
+        message: "A valid orderId is required for recovery.",
+      });
     }
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_MANUAL_ORDER_RECOVERY',
-      targetType: 'PAYMENT_ORDER',
-      targetId: cleanOrderId,
-      outcome: 'SUCCESS',
-      metadata: {
-        orderId: cleanOrderId,
-        customerId,
-        amount: totalAmount,
-        actionTaken,
-        paymentId: verifiedPaymentId,
-        isPaid
-      }
-    });
+    const cleanOrderId = orderId.trim();
+    try {
+      let order = await db.findPaymentOrderByIdAsync(cleanOrderId);
+      const cfStatus = await getCashfreeOrderStatus(cleanOrderId);
+      const payments = await getPaymentsForCashfreeOrder(cleanOrderId).catch(
+        () => [],
+      );
+      const successfulPayment = payments.find(
+        (p) => p.payment_status === "SUCCESS",
+      );
+      const isPaid =
+        cfStatus.order_status === "PAID" || Boolean(successfulPayment);
+      const verifiedPaymentId = successfulPayment
+        ? String(successfulPayment.cf_payment_id)
+        : cfStatus.cf_order_id
+          ? String(cfStatus.cf_order_id)
+          : `cf_rec_${Date.now()}`;
 
-    res.json({
-      success: true,
-      recovered: true,
-      actionTaken,
-      orderId: order.providerOrderId,
-      cfOrderId: cfStatus.cf_order_id,
-      paymentId: verifiedPaymentId,
-      customerId,
-      customerEmail: cfStatus.customer_details?.customer_email || user.email,
-      customerName: cfStatus.customer_details?.customer_name || user.displayName,
-      orderStatus: cfStatus.order_status,
-      amount: totalAmount,
-      currency: cfStatus.order_currency || 'INR',
-      newBalance: updatedUser?.walletBalance,
-      payments
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'RECOVERY_FAILED', message: err.message || err });
-  }
-});
+      const customerId = cfStatus.customer_details?.customer_id;
+      if (!customerId) {
+        return res.status(400).json({
+          error: "CUSTOMER_NOT_IDENTIFIED",
+          message: "Cashfree order does not contain an associated customer_id.",
+          cfStatus,
+        });
+      }
+
+      const user = await db.findUserById(customerId);
+      if (!user) {
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: `Customer ${customerId} referenced by Cashfree was not found on AstroVerse.`,
+          cfStatus,
+        });
+      }
+
+      const totalAmount = Number(cfStatus.order_amount);
+      if (!order) {
+        const orderNote = cfStatus.order_note || "";
+        let productType = "WALLET_RECHARGE";
+        let productId: string | undefined = undefined;
+        let baseAmount = totalAmount;
+        let gstAmount = 0;
+        let bonusAmount = 0;
+        let creditAmount = totalAmount;
+
+        if (
+          cleanOrderId.startsWith("cf_sub_") ||
+          orderNote.includes("Subscription")
+        ) {
+          productType = "SUBSCRIPTION";
+        } else if (
+          cleanOrderId.startsWith("cf_rep_") ||
+          orderNote.includes("Report")
+        ) {
+          productType = "REPORT";
+        } else {
+          productType = "WALLET_RECHARGE";
+          const pkg = APPROVED_RECHARGE_PACKAGES.find(
+            (p) => Math.abs(p.totalPayable - totalAmount) < 0.01,
+          );
+          if (pkg) {
+            baseAmount = pkg.baseAmount;
+            gstAmount = pkg.gstAmount;
+            bonusAmount = pkg.bonus;
+            creditAmount = pkg.totalCredit;
+          } else {
+            const totalPaise = Math.round(totalAmount * 100);
+            const basePaise = Math.round(totalPaise / 1.18);
+            const gstPaise = totalPaise - basePaise;
+            baseAmount = basePaise / 100;
+            gstAmount = gstPaise / 100;
+            bonusAmount = 0;
+            creditAmount = baseAmount;
+          }
+        }
+
+        order = await db.createPaymentOrder({
+          userId: customerId,
+          amount: totalAmount,
+          currency: cfStatus.order_currency || "INR",
+          provider: "CASHFREE",
+          providerOrderId: cfStatus.order_id,
+          gateway: "CASHFREE",
+          cfOrderId: cfStatus.cf_order_id
+            ? String(cfStatus.cf_order_id)
+            : undefined,
+          cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+          productType,
+          productId,
+          baseAmount,
+          gstAmount,
+          bonusAmount,
+          creditAmount,
+        });
+      }
+
+      let updatedUser: UserRecord | null = user;
+      let actionTaken = "NONE";
+
+      if (isPaid) {
+        if (order.status !== OrderStatus.PAID) {
+          if (order.productType === "WALLET_RECHARGE" || !order.productType) {
+            updatedUser = await db.rechargeWallet(
+              customerId,
+              order.amount,
+              verifiedPaymentId,
+              order.providerOrderId,
+              "CASHFREE",
+            );
+            actionTaken = "WALLET_CREDITED";
+          } else if (order.productType === "SUBSCRIPTION") {
+            const targetTier =
+              (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+            const rawPeriod =
+              order.billingPeriod || order.metadata?.billingPeriod;
+            const period: BillingPeriod =
+              rawPeriod === "ANNUAL" || rawPeriod === BillingPeriod.ANNUAL
+                ? BillingPeriod.ANNUAL
+                : rawPeriod === "MONTHLY" || rawPeriod === BillingPeriod.MONTHLY
+                  ? BillingPeriod.MONTHLY
+                  : SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise &&
+                      Math.round(
+                        SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100,
+                      ) === Math.round(order.amount)
+                    ? BillingPeriod.ANNUAL
+                    : BillingPeriod.MONTHLY;
+            const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+            updatedUser = await db.fulfillPaidSubscriptionOrder({
+              userId: customerId,
+              tier: targetTier as any,
+              billingPeriod: period as any,
+              durationDays,
+              orderId: order.providerOrderId,
+              paymentId: verifiedPaymentId,
+              amount: order.amount,
+              provider: "CASHFREE",
+              currency: "INR",
+            });
+            actionTaken = "SUBSCRIPTION_ACTIVATED";
+          } else {
+            await db.markPaymentOrderPaid(
+              order.providerOrderId,
+              verifiedPaymentId,
+              "CASHFREE",
+            );
+            actionTaken = "ORDER_MARKED_PAID";
+          }
+        } else {
+          actionTaken = "ALREADY_PAID_AND_FULFILLED";
+        }
+      }
+
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_MANUAL_ORDER_RECOVERY",
+        targetType: "PAYMENT_ORDER",
+        targetId: cleanOrderId,
+        outcome: "SUCCESS",
+        metadata: {
+          orderId: cleanOrderId,
+          customerId,
+          amount: totalAmount,
+          actionTaken,
+          paymentId: verifiedPaymentId,
+          isPaid,
+        },
+      });
+
+      res.json({
+        success: true,
+        recovered: true,
+        actionTaken,
+        orderId: order.providerOrderId,
+        cfOrderId: cfStatus.cf_order_id,
+        paymentId: verifiedPaymentId,
+        customerId,
+        customerEmail: cfStatus.customer_details?.customer_email || user.email,
+        customerName:
+          cfStatus.customer_details?.customer_name || user.displayName,
+        orderStatus: cfStatus.order_status,
+        amount: totalAmount,
+        currency: cfStatus.order_currency || "INR",
+        newBalance: updatedUser?.walletBalance,
+        payments,
+      });
+    } catch (err: any) {
+      res
+        .status(500)
+        .json({ error: "RECOVERY_FAILED", message: err.message || err });
+    }
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 10: CONTENT MANAGEMENT & BANNERS
 // -----------------------------------------------------------------------------
-app.get(['/api/admin/content', '/api/admin/content/banners'], authenticate, requireAdmin(AdminPermission.MANAGE_CONTENT), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const banners = await db.listContentBanners();
-    res.json({ success: true, banners });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get(
+  ["/api/admin/content", "/api/admin/content/banners"],
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_CONTENT),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const banners = await db.listContentBanners();
+      res.json({ success: true, banners });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
-app.put('/api/admin/content/:key', authenticate, requireAdmin(AdminPermission.MANAGE_CONTENT), requireAdminAssurance('content:manage'), async (req: AuthenticatedRequest, res: Response) => {
-  const { key } = req.params;
-  const { title, body, isActive, type } = req.body;
+app.put(
+  "/api/admin/content/:key",
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_CONTENT),
+  requireAdminAssurance("content:manage"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { key } = req.params;
+    const { title, body, isActive, type } = req.body;
 
-  try {
-    const updated = await db.updateContentBanner(key, {
-      title,
-      body,
-      isActive,
-      type,
-      updatedBy: req.user!.email || req.user!.id
-    });
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'CONTENT_BANNER_UPDATED',
-      targetType: 'CONTENT_BANNER',
-      targetId: key,
-      outcome: 'SUCCESS',
-      metadata: { key, title, isActive, type }
-    });
-    res.json({ success: true, banner: updated });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    try {
+      const updated = await db.updateContentBanner(key, {
+        title,
+        body,
+        isActive,
+        type,
+        updatedBy: req.user!.email || req.user!.id,
+      });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "CONTENT_BANNER_UPDATED",
+        targetType: "CONTENT_BANNER",
+        targetId: key,
+        outcome: "SUCCESS",
+        metadata: { key, title, isActive, type },
+      });
+      res.json({ success: true, banner: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 11: FEATURE FLAGS & SAFE PLATFORM SETTINGS
 // -----------------------------------------------------------------------------
-app.get('/api/admin/settings/safe', authenticate, requireAdmin(AdminPermission.VIEW_SETTINGS), (_req: AuthenticatedRequest, res: Response) => {
-  // Never expose plaintext secrets in UI or logs
-  res.json({
-    success: true,
-    environment: process.env.NODE_ENV || 'development',
-    configurationStatus: {
-      DATABASE_URL: maskConfigValue(process.env.DATABASE_URL),
-      SUPABASE_URL: maskConfigValue(process.env.SUPABASE_URL),
-      SUPABASE_ANON_KEY: maskConfigValue(process.env.SUPABASE_ANON_KEY),
-      SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
-      CASHFREE_APP_ID: maskConfigValue(process.env.CASHFREE_APP_ID),
-      CASHFREE_SECRET_KEY: Boolean(process.env.CASHFREE_SECRET_KEY) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
-      CASHFREE_ENV: (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase(),
-      RAZORPAY_KEY_ID: 'RETIRED',
-      RAZORPAY_KEY_SECRET: 'RETIRED',
-      RAZORPAY_WEBHOOK_SECRET: 'RETIRED',
-      GOOGLE_CLIENT_ID: maskConfigValue(process.env.GOOGLE_CLIENT_ID),
-      GOOGLE_CLIENT_SECRET: Boolean(process.env.GOOGLE_CLIENT_SECRET) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
-      KUNDLI_ENGINE_URL: process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000',
-      OPENAI_API_KEY: Boolean(process.env.OPENAI_API_KEY) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED',
-      ANTHROPIC_API_KEY: Boolean(process.env.ANTHROPIC_API_KEY) ? 'CONFIGURED_SERVER_SIDE' : 'NOT_CONFIGURED'
-    },
-    rotationGuide: 'To rotate secrets, update values in Vercel Project Settings -> Environment Variables, then trigger a production deployment.'
-  });
-});
-
-app.get('/api/admin/settings/flags', authenticate, requireAdmin(AdminPermission.VIEW_SETTINGS), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const rawFlags = await db.listFeatureFlags();
-    const flags = (rawFlags || [])
-      .filter(f => f.key !== 'CASHFREE_GATEWAY_CONFIG')
-      .map(f => {
-        if (f.description && (f.description.includes('secretKey') || f.description.includes('cfsk_') || f.description.includes('appSecret'))) {
-          return { ...f, description: '[REDACTED_CREDENTIALS]' };
-        }
-        return f;
-      });
-    res.json({ success: true, flags });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/admin/settings/flags/:key', authenticate, requireAdmin(AdminPermission.MANAGE_FEATURE_FLAGS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
-  const { key } = req.params;
-  const { enabled } = req.body;
-
-  try {
-    const updated = await db.setFeatureFlag(key, Boolean(enabled), req.user!.email || req.user!.id);
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_FEATURE_FLAG_TOGGLE',
-      targetType: 'FEATURE_FLAG',
-      targetId: key,
-      outcome: 'SUCCESS',
-      metadata: { key, enabled }
+app.get(
+  "/api/admin/settings/safe",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_SETTINGS),
+  (_req: AuthenticatedRequest, res: Response) => {
+    // Never expose plaintext secrets in UI or logs
+    res.json({
+      success: true,
+      environment: process.env.NODE_ENV || "development",
+      configurationStatus: {
+        DATABASE_URL: maskConfigValue(process.env.DATABASE_URL),
+        SUPABASE_URL: maskConfigValue(process.env.SUPABASE_URL),
+        SUPABASE_ANON_KEY: maskConfigValue(process.env.SUPABASE_ANON_KEY),
+        SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY
+          ? "CONFIGURED_SERVER_SIDE"
+          : "NOT_CONFIGURED",
+        CASHFREE_APP_ID: maskConfigValue(process.env.CASHFREE_APP_ID),
+        CASHFREE_SECRET_KEY: process.env.CASHFREE_SECRET_KEY
+          ? "CONFIGURED_SERVER_SIDE"
+          : "NOT_CONFIGURED",
+        CASHFREE_ENV: (
+          process.env.CASHFREE_ENV ||
+          (process.env.NODE_ENV === "production" ? "production" : "sandbox")
+        ).toLowerCase(),
+        RAZORPAY_KEY_ID: "RETIRED",
+        RAZORPAY_KEY_SECRET: "RETIRED",
+        RAZORPAY_WEBHOOK_SECRET: "RETIRED",
+        GOOGLE_CLIENT_ID: maskConfigValue(process.env.GOOGLE_CLIENT_ID),
+        GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET
+          ? "CONFIGURED_SERVER_SIDE"
+          : "NOT_CONFIGURED",
+        KUNDLI_ENGINE_URL:
+          process.env.KUNDLI_ENGINE_URL || "http://localhost:8000",
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY
+          ? "CONFIGURED_SERVER_SIDE"
+          : "NOT_CONFIGURED",
+        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
+          ? "CONFIGURED_SERVER_SIDE"
+          : "NOT_CONFIGURED",
+      },
+      rotationGuide:
+        "To rotate secrets, update values in Vercel Project Settings -> Environment Variables, then trigger a production deployment.",
     });
-    res.json({ success: true, flag: updated });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  },
+);
+
+app.get(
+  "/api/admin/settings/flags",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_SETTINGS),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const rawFlags = await db.listFeatureFlags();
+      const flags = (rawFlags || [])
+        .filter((f) => f.key !== "CASHFREE_GATEWAY_CONFIG")
+        .map((f) => {
+          if (
+            f.description &&
+            (f.description.includes("secretKey") ||
+              f.description.includes("cfsk_") ||
+              f.description.includes("appSecret"))
+          ) {
+            return { ...f, description: "[REDACTED_CREDENTIALS]" };
+          }
+          return f;
+        });
+      res.json({ success: true, flags });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
+
+app.put(
+  "/api/admin/settings/flags/:key",
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_FEATURE_FLAGS),
+  requireAdminAssurance(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { key } = req.params;
+    const { enabled } = req.body;
+
+    try {
+      const updated = await db.setFeatureFlag(
+        key,
+        Boolean(enabled),
+        req.user!.email || req.user!.id,
+      );
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_FEATURE_FLAG_TOGGLE",
+        targetType: "FEATURE_FLAG",
+        targetId: key,
+        outcome: "SUCCESS",
+        metadata: { key, enabled },
+      });
+      res.json({ success: true, flag: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 12: SUPPORT & PRIVACY REQUESTS (GDPR / INDIA DPDP ACT)
 // -----------------------------------------------------------------------------
-app.get('/api/admin/privacy/requests', authenticate, requireAdmin(AdminPermission.VIEW_PRIVACY_REQUESTS), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const requests = await db.listPrivacyRequests();
-    res.json({ success: true, requests });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get(
+  "/api/admin/privacy/requests",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_PRIVACY_REQUESTS),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const requests = await db.listPrivacyRequests();
+      res.json({ success: true, requests });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
-app.put('/api/admin/privacy/requests/:id', authenticate, requireAdmin(AdminPermission.MANAGE_PRIVACY_REQUESTS), requireAdminAssurance('privacy:manage'), async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  const { status, notes } = req.body;
+app.put(
+  "/api/admin/privacy/requests/:id",
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_PRIVACY_REQUESTS),
+  requireAdminAssurance("privacy:manage"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { status, notes } = req.body;
 
-  try {
-    const updated = await db.updatePrivacyRequest(id, status, notes);
-    if (!updated) return res.status(404).json({ error: 'REQUEST_NOT_FOUND' });
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'PRIVACY_REQUEST_UPDATED',
-      targetType: 'PRIVACY_REQUEST',
-      targetId: id,
-      outcome: 'SUCCESS',
-      metadata: { id, status, notes }
-    });
-    res.json({ success: true, request: updated });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+    try {
+      const updated = await db.updatePrivacyRequest(id, status, notes);
+      if (!updated) return res.status(404).json({ error: "REQUEST_NOT_FOUND" });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "PRIVACY_REQUEST_UPDATED",
+        targetType: "PRIVACY_REQUEST",
+        targetId: id,
+        outcome: "SUCCESS",
+        metadata: { id, status, notes },
+      });
+      res.json({ success: true, request: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // Authenticated user data export endpoint
-app.get('/api/user/data-export', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const targetUserId = req.query.userId && isAnyAdmin(req.user!.role) ? String(req.query.userId) : req.user!.id;
-    const exportData = await db.exportUserData(targetUserId);
-    if (!exportData) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+app.get(
+  "/api/user/data-export",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const targetUserId =
+        req.query.userId && isAnyAdmin(req.user!.role)
+          ? String(req.query.userId)
+          : req.user!.id;
+      const exportData = await db.exportUserData(targetUserId);
+      if (!exportData) return res.status(404).json({ error: "USER_NOT_FOUND" });
 
-    res.setHeader('Content-Disposition', `attachment; filename="astroverse_user_export_${targetUserId}.json"`);
-    res.setHeader('Content-Type', 'application/json');
-    res.json(exportData);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="astroverse_user_export_${targetUserId}.json"`,
+      );
+      res.setHeader("Content-Type", "application/json");
+      res.json(exportData);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 13: AUDIT TRAIL SEARCH
 // -----------------------------------------------------------------------------
-app.get('/api/admin/audit-logs', authenticate, requireAdmin(AdminPermission.VIEW_AUDIT_LOGS), async (req: AuthenticatedRequest, res: Response) => {
-  const { userId, action, targetType, outcome, search, page, limit } = req.query;
-  try {
-    const logs = await db.listAuditEvents({
-      userId: userId ? String(userId) : undefined,
-      action: action ? String(action) : undefined,
-      targetType: targetType ? String(targetType) : undefined,
-      outcome: outcome ? String(outcome) : undefined,
-      search: search ? String(search) : undefined,
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 50
-    });
-    res.json({ success: true, ...logs });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get(
+  "/api/admin/audit-logs",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_AUDIT_LOGS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { userId, action, targetType, outcome, search, page, limit } =
+      req.query;
+    try {
+      const logs = await db.listAuditEvents({
+        userId: userId ? String(userId) : undefined,
+        action: action ? String(action) : undefined,
+        targetType: targetType ? String(targetType) : undefined,
+        outcome: outcome ? String(outcome) : undefined,
+        search: search ? String(search) : undefined,
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 50,
+      });
+      res.json({ success: true, ...logs });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 14: EXTERNAL INTEGRATIONS HEALTH
 // -----------------------------------------------------------------------------
-app.get('/api/admin/integrations', authenticate, requireAdmin(AdminPermission.VIEW_INTEGRATIONS), async (_req: AuthenticatedRequest, res: Response) => {
-  const now = new Date().toISOString();
+app.get(
+  "/api/admin/integrations",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_INTEGRATIONS),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const now = new Date().toISOString();
 
-  // 1. FastAPI Kundli Ephemeris Probe
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-  let kundliStatus = 'UNAVAILABLE';
-  let kundliLatency: number | null = null;
-  let kundliDetails = `Target: ${kundliUrl}`;
-  let kundliFailureReason: string | null = null;
-  let kundliAuthState = 'VERIFIED';
+    // 1. FastAPI Kundli Ephemeris Probe
+    const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+    let kundliStatus = "UNAVAILABLE";
+    let kundliLatency: number | null = null;
+    let kundliDetails = `Target: ${kundliUrl}`;
+    let kundliFailureReason: string | null = null;
+    let kundliAuthState = "VERIFIED";
 
-  try {
-    const kStart = Date.now();
-    const kRes = await fetch(`${kundliUrl}/api/health`, { signal: AbortSignal.timeout(2000) });
-    kundliLatency = Date.now() - kStart;
-    if (kRes.ok) {
-      kundliStatus = 'OPERATIONAL';
-      kundliDetails = `Swiss Ephemeris & Parashari Engine active (${kundliLatency}ms)`;
-    } else {
-      kundliStatus = 'DEGRADED';
-      kundliFailureReason = `Engine returned HTTP ${kRes.status}`;
-      kundliDetails = `HTTP status ${kRes.status}`;
-    }
-  } catch (err: any) {
-    if (process.env.NODE_ENV === 'test' && !process.env.STRICT_LIVE_INTEGRATION_TESTS) {
-      kundliStatus = 'OPERATIONAL';
-      kundliLatency = 1;
-      kundliDetails = 'Local test harness';
-    } else {
-      kundliStatus = 'UNAVAILABLE';
-      kundliLatency = null; // Truthful: No fake latency on failure!
-      kundliFailureReason = err?.message || 'Connection refused or timed out';
-      kundliDetails = `Engine unreachable at ${kundliUrl}`;
-    }
-  }
-
-  // 2. Supabase Database & Auth Probe
-  let supabaseStatus = 'NOT_CONFIGURED';
-  let supabaseLatency: number | null = null;
-  let supabaseDetails = 'SUPABASE_URL or DATABASE_URL not configured';
-  let supabaseAuthState = 'UNTESTED';
-  let supabaseFailureReason: string | null = null;
-
-  if ((db as any).isPostgresAvailable && (db as any).prisma) {
     try {
-      const dbStart = Date.now();
-      await (db as any).prisma.$queryRawUnsafe('SELECT 1 as ping');
-      supabaseLatency = Date.now() - dbStart;
-      supabaseStatus = 'OPERATIONAL';
-      supabaseAuthState = 'AUTHENTICATED';
-      supabaseDetails = `PostgreSQL / Supabase RLS pool active (${supabaseLatency}ms)`;
-    } catch (dbErr: any) {
-      supabaseStatus = 'DEGRADED';
-      supabaseLatency = null;
-      supabaseAuthState = 'FAILED';
-      supabaseFailureReason = dbErr?.message;
-      supabaseDetails = `Database ping query failed: ${dbErr?.message}`;
+      const kStart = Date.now();
+      const kRes = await fetch(`${kundliUrl}/api/health`, {
+        signal: AbortSignal.timeout(2000),
+      });
+      kundliLatency = Date.now() - kStart;
+      if (kRes.ok) {
+        kundliStatus = "OPERATIONAL";
+        kundliDetails = `Swiss Ephemeris & Parashari Engine active (${kundliLatency}ms)`;
+      } else {
+        kundliStatus = "DEGRADED";
+        kundliFailureReason = `Engine returned HTTP ${kRes.status}`;
+        kundliDetails = `HTTP status ${kRes.status}`;
+      }
+    } catch (err: any) {
+      if (
+        process.env.NODE_ENV === "test" &&
+        !process.env.STRICT_LIVE_INTEGRATION_TESTS
+      ) {
+        kundliStatus = "OPERATIONAL";
+        kundliLatency = 1;
+        kundliDetails = "Local test harness";
+      } else {
+        kundliStatus = "UNAVAILABLE";
+        kundliLatency = null; // Truthful: No fake latency on failure!
+        kundliFailureReason = err?.message || "Connection refused or timed out";
+        kundliDetails = `Engine unreachable at ${kundliUrl}`;
+      }
     }
-  } else if (process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)) {
-    supabaseStatus = 'CONFIGURED';
-    supabaseAuthState = 'AUTHENTICATED';
-    supabaseDetails = `Supabase project: ${process.env.SUPABASE_URL.replace(/^https?:\/\//, '').split('.')[0]}`;
-  } else {
-    supabaseStatus = 'CONFIGURED';
-    supabaseLatency = null; // Standalone mode: no network roundtrip to measure
-    supabaseAuthState = 'NOT_APPLICABLE';
-    supabaseDetails = 'Standalone in-memory / JSON persistent storage';
-  }
 
-  // 3. Cashfree Payment Gateway
-  const paymentReport = getPaymentReadinessStatus();
-  let cashfreeStatus = 'NOT_CONFIGURED';
-  let cashfreeLatency: number | null = null;
-  let cashfreeDetails = paymentReport.adminExplanation || 'Unconfigured';
-  let cashfreeAuthState = 'UNTESTED';
-  let cashfreeFailureReason: string | null = null;
+    // 2. Supabase Database & Auth Probe
+    let supabaseStatus = "NOT_CONFIGURED";
+    let supabaseLatency: number | null = null;
+    let supabaseDetails = "SUPABASE_URL or DATABASE_URL not configured";
+    let supabaseAuthState = "UNTESTED";
+    let supabaseFailureReason: string | null = null;
 
-  if (paymentReport.configured) {
-    cashfreeStatus = paymentReport.state === PaymentReadinessState.READY ? 'CONFIGURED' : 'DEGRADED';
-    cashfreeAuthState = 'AUTHENTICATED';
-    cashfreeDetails = `Environment: ${paymentReport.environment.toUpperCase()}, App ID: ${paymentReport.appIdMasked || 'Configured'}`;
-  } else {
-    cashfreeFailureReason = 'Missing CASHFREE_APP_ID or CASHFREE_SECRET_KEY';
-  }
-
-  // 4. AI Model Providers (Passive status without billable inference)
-  let aiStatus = 'NOT_CONFIGURED';
-  let aiDetails = 'No AI API keys configured';
-  let aiFailureReason: string | null = null;
-  const hasAiKey = Boolean(process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || process.env.GEMINI_API_KEY);
-  if (hasAiKey) {
-    aiStatus = 'CONFIGURED';
-    aiDetails = `Providers active. Billable model calls skipped during passive health checks. Models: ${process.env.OPENAI_MODEL || 'gpt-4o'}, ${process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet'}`;
-  } else {
-    aiFailureReason = 'No API keys configured for OpenAI, Anthropic, or Gemini';
-  }
-
-  // 5. SMS Phone Gateway (Passive status without billable SMS dispatch)
-  let smsStatus = 'NOT_CONFIGURED';
-  let smsDetails = 'SMS gateway credentials not set; OTPs delivered to local console in development';
-  let smsFailureReason: string | null = null;
-  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-    smsStatus = 'CONFIGURED';
-    smsDetails = 'Twilio credentials configured. Billable SMS dispatch skipped during passive health checks.';
-  }
-
-  const checks = [
-    {
-      name: 'Cashfree Payment Gateway',
-      status: cashfreeStatus,
-      latencyMs: cashfreeLatency,
-      lastChecked: now,
-      lastSuccessfulCheck: cashfreeStatus === 'CONFIGURED' ? now : null,
-      authState: cashfreeAuthState,
-      failureReason: cashfreeFailureReason,
-      details: cashfreeDetails
-    },
-    {
-      name: 'Supabase Database & Auth',
-      status: supabaseStatus,
-      latencyMs: supabaseLatency,
-      lastChecked: now,
-      lastSuccessfulCheck: supabaseStatus === 'OPERATIONAL' || supabaseStatus === 'CONFIGURED' ? now : null,
-      authState: supabaseAuthState,
-      failureReason: supabaseFailureReason,
-      details: supabaseDetails
-    },
-    {
-      name: 'FastAPI Kundli Ephemeris',
-      status: kundliStatus,
-      latencyMs: kundliLatency,
-      lastChecked: now,
-      lastSuccessfulCheck: kundliStatus === 'OPERATIONAL' ? now : null,
-      authState: kundliAuthState,
-      failureReason: kundliFailureReason,
-      details: kundliDetails
-    },
-    {
-      name: 'AI Consultation Pipeline',
-      status: aiStatus,
-      latencyMs: null,
-      lastChecked: now,
-      lastSuccessfulCheck: aiStatus === 'CONFIGURED' ? now : null,
-      authState: hasAiKey ? 'AUTHENTICATED' : 'UNTESTED',
-      failureReason: aiFailureReason,
-      details: aiDetails
-    },
-    {
-      name: 'SMS Phone Gateway',
-      status: smsStatus,
-      latencyMs: null,
-      lastChecked: now,
-      lastSuccessfulCheck: smsStatus === 'CONFIGURED' ? now : null,
-      authState: smsStatus === 'CONFIGURED' ? 'AUTHENTICATED' : 'NOT_APPLICABLE',
-      failureReason: smsFailureReason,
-      details: smsDetails
+    if ((db as any).isPostgresAvailable && (db as any).prisma) {
+      try {
+        const dbStart = Date.now();
+        await (db as any).prisma.$queryRawUnsafe("SELECT 1 as ping");
+        supabaseLatency = Date.now() - dbStart;
+        supabaseStatus = "OPERATIONAL";
+        supabaseAuthState = "AUTHENTICATED";
+        supabaseDetails = `PostgreSQL / Supabase RLS pool active (${supabaseLatency}ms)`;
+      } catch (dbErr: any) {
+        supabaseStatus = "DEGRADED";
+        supabaseLatency = null;
+        supabaseAuthState = "FAILED";
+        supabaseFailureReason = dbErr?.message;
+        supabaseDetails = `Database ping query failed: ${dbErr?.message}`;
+      }
+    } else if (
+      process.env.SUPABASE_URL &&
+      (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
+    ) {
+      supabaseStatus = "CONFIGURED";
+      supabaseAuthState = "AUTHENTICATED";
+      supabaseDetails = `Supabase project: ${process.env.SUPABASE_URL.replace(/^https?:\/\//, "").split(".")[0]}`;
+    } else {
+      supabaseStatus = "CONFIGURED";
+      supabaseLatency = null; // Standalone mode: no network roundtrip to measure
+      supabaseAuthState = "NOT_APPLICABLE";
+      supabaseDetails = "Standalone in-memory / JSON persistent storage";
     }
-  ];
 
-  res.json({ success: true, integrations: checks });
-});
+    // 3. Cashfree Payment Gateway
+    const paymentReport = getPaymentReadinessStatus();
+    let cashfreeStatus = "NOT_CONFIGURED";
+    let cashfreeLatency: number | null = null;
+    let cashfreeDetails = paymentReport.adminExplanation || "Unconfigured";
+    let cashfreeAuthState = "UNTESTED";
+    let cashfreeFailureReason: string | null = null;
+
+    if (paymentReport.configured) {
+      cashfreeStatus =
+        paymentReport.state === PaymentReadinessState.READY
+          ? "CONFIGURED"
+          : "DEGRADED";
+      cashfreeAuthState = "AUTHENTICATED";
+      cashfreeDetails = `Environment: ${paymentReport.environment.toUpperCase()}, App ID: ${paymentReport.appIdMasked || "Configured"}`;
+    } else {
+      cashfreeFailureReason = "Missing CASHFREE_APP_ID or CASHFREE_SECRET_KEY";
+    }
+
+    // 4. AI Model Providers (Passive status without billable inference)
+    let aiStatus = "NOT_CONFIGURED";
+    let aiDetails = "No AI API keys configured";
+    let aiFailureReason: string | null = null;
+    const hasAiKey = Boolean(
+      process.env.OPENAI_API_KEY ||
+      process.env.ANTHROPIC_API_KEY ||
+      process.env.GEMINI_API_KEY,
+    );
+    if (hasAiKey) {
+      aiStatus = "CONFIGURED";
+      aiDetails = `Providers active. Billable model calls skipped during passive health checks. Models: ${process.env.OPENAI_MODEL || "gpt-4o"}, ${process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet"}`;
+    } else {
+      aiFailureReason =
+        "No API keys configured for OpenAI, Anthropic, or Gemini";
+    }
+
+    // 5. SMS Phone Gateway (Passive status without billable SMS dispatch)
+    let smsStatus = "NOT_CONFIGURED";
+    let smsDetails =
+      "SMS gateway credentials not set; OTPs delivered to local console in development";
+    let smsFailureReason: string | null = null;
+    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+      smsStatus = "CONFIGURED";
+      smsDetails =
+        "Twilio credentials configured. Billable SMS dispatch skipped during passive health checks.";
+    }
+
+    const checks = [
+      {
+        name: "Cashfree Payment Gateway",
+        status: cashfreeStatus,
+        latencyMs: cashfreeLatency,
+        lastChecked: now,
+        lastSuccessfulCheck: cashfreeStatus === "CONFIGURED" ? now : null,
+        authState: cashfreeAuthState,
+        failureReason: cashfreeFailureReason,
+        details: cashfreeDetails,
+      },
+      {
+        name: "Supabase Database & Auth",
+        status: supabaseStatus,
+        latencyMs: supabaseLatency,
+        lastChecked: now,
+        lastSuccessfulCheck:
+          supabaseStatus === "OPERATIONAL" || supabaseStatus === "CONFIGURED"
+            ? now
+            : null,
+        authState: supabaseAuthState,
+        failureReason: supabaseFailureReason,
+        details: supabaseDetails,
+      },
+      {
+        name: "FastAPI Kundli Ephemeris",
+        status: kundliStatus,
+        latencyMs: kundliLatency,
+        lastChecked: now,
+        lastSuccessfulCheck: kundliStatus === "OPERATIONAL" ? now : null,
+        authState: kundliAuthState,
+        failureReason: kundliFailureReason,
+        details: kundliDetails,
+      },
+      {
+        name: "AI Consultation Pipeline",
+        status: aiStatus,
+        latencyMs: null,
+        lastChecked: now,
+        lastSuccessfulCheck: aiStatus === "CONFIGURED" ? now : null,
+        authState: hasAiKey ? "AUTHENTICATED" : "UNTESTED",
+        failureReason: aiFailureReason,
+        details: aiDetails,
+      },
+      {
+        name: "SMS Phone Gateway",
+        status: smsStatus,
+        latencyMs: null,
+        lastChecked: now,
+        lastSuccessfulCheck: smsStatus === "CONFIGURED" ? now : null,
+        authState:
+          smsStatus === "CONFIGURED" ? "AUTHENTICATED" : "NOT_APPLICABLE",
+        failureReason: smsFailureReason,
+        details: smsDetails,
+      },
+    ];
+
+    res.json({ success: true, integrations: checks });
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 15: MONITORING, ERRORS & INCIDENTS
 // -----------------------------------------------------------------------------
-app.get('/api/admin/monitoring/incidents', authenticate, requireAdmin(AdminPermission.VIEW_INCIDENTS), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const incidents = await db.listIncidents();
-    res.json({ success: true, incidents });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+app.get(
+  "/api/admin/monitoring/incidents",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_INCIDENTS),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const incidents = await db.listIncidents();
+      res.json({ success: true, incidents });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
-app.post('/api/admin/monitoring/incidents', authenticate, requireAdmin(AdminPermission.MANAGE_INCIDENTS), requireAdminAssurance(), async (req: AuthenticatedRequest, res: Response) => {
-  const { title, severity, summary } = req.body;
-  if (!title || !summary) {
-    return res.status(400).json({ error: 'TITLE_AND_SUMMARY_REQUIRED' });
-  }
+app.post(
+  "/api/admin/monitoring/incidents",
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_INCIDENTS),
+  requireAdminAssurance(),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { title, severity, summary } = req.body;
+    if (!title || !summary) {
+      return res.status(400).json({ error: "TITLE_AND_SUMMARY_REQUIRED" });
+    }
 
-  try {
-    const incident = await db.createIncident({
-      title,
-      severity: severity || 'P3_MINOR',
-      summary,
-      reportedBy: req.user!.email || req.user!.id
-    });
+    try {
+      const incident = await db.createIncident({
+        title,
+        severity: severity || "P3_MINOR",
+        summary,
+        reportedBy: req.user!.email || req.user!.id,
+      });
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_INCIDENT_DECLARED',
-      targetType: 'INCIDENT',
-      targetId: incident.id,
-      outcome: 'SUCCESS',
-      metadata: { title, severity }
-    });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_INCIDENT_DECLARED",
+        targetType: "INCIDENT",
+        targetId: incident.id,
+        outcome: "SUCCESS",
+        metadata: { title, severity },
+      });
 
-    res.json({ success: true, incident });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      res.json({ success: true, incident });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
-app.put('/api/admin/monitoring/incidents/:id', authenticate, requireAdmin(AdminPermission.MANAGE_INCIDENTS), async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  const { status, summary, severity } = req.body;
+app.put(
+  "/api/admin/monitoring/incidents/:id",
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_INCIDENTS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { status, summary, severity } = req.body;
 
-  try {
-    const updated = await db.updateIncident(id, { status, summary, severity });
-    if (!updated) return res.status(404).json({ error: 'INCIDENT_NOT_FOUND' });
+    try {
+      const updated = await db.updateIncident(id, {
+        status,
+        summary,
+        severity,
+      });
+      if (!updated)
+        return res.status(404).json({ error: "INCIDENT_NOT_FOUND" });
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_INCIDENT_UPDATED',
-      targetType: 'INCIDENT',
-      targetId: id,
-      outcome: 'SUCCESS',
-      metadata: { status, severity }
-    });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_INCIDENT_UPDATED",
+        targetType: "INCIDENT",
+        targetId: id,
+        outcome: "SUCCESS",
+        metadata: { status, severity },
+      });
 
-    res.json({ success: true, incident: updated });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      res.json({ success: true, incident: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // -----------------------------------------------------------------------------
 // MODULE 17: REAL-TIME DATABASE MONITOR & RELIABILITY TELEMETRY
 // -----------------------------------------------------------------------------
-app.get('/api/admin/database/monitor', authenticate, requireAdmin(AdminPermission.VIEW_DATABASE), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const forceFresh = req.query.fresh === 'true';
-    const monitorData = await db.getDatabaseMonitorMetrics(forceFresh);
-    res.json({ success: true, ...monitorData });
-  } catch (err: any) {
-    res.status(500).json({ error: 'DATABASE_MONITOR_ERROR', message: err.message });
-  }
-});
+app.get(
+  "/api/admin/database/monitor",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_DATABASE),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const forceFresh = req.query.fresh === "true";
+      const monitorData = await db.getDatabaseMonitorMetrics(forceFresh);
+      res.json({ success: true, ...monitorData });
+    } catch (err: any) {
+      res
+        .status(500)
+        .json({ error: "DATABASE_MONITOR_ERROR", message: err.message });
+    }
+  },
+);
 
-app.post('/api/admin/database/ping', authenticate, requireAdmin(AdminPermission.VIEW_DATABASE), async (_req: AuthenticatedRequest, res: Response) => {
-  const start = process.hrtime();
-  try {
-    const count = (await db.listUsers({ limit: 1 })).total;
-    const diff = process.hrtime(start);
-    const pingMs = Math.round(((diff[0] * 1e9 + diff[1]) / 1e6) * 100) / 100;
-    res.json({
-      success: true,
-      status: 'PONG',
-      pingMs: pingMs > 0 ? pingMs : 0.45,
-      recordsVerified: count,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'PING_FAILED', message: err.message });
-  }
-});
+app.post(
+  "/api/admin/database/ping",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_DATABASE),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    const start = process.hrtime();
+    try {
+      const count = (await db.listUsers({ limit: 1 })).total;
+      const diff = process.hrtime(start);
+      const pingMs = Math.round(((diff[0] * 1e9 + diff[1]) / 1e6) * 100) / 100;
+      res.json({
+        success: true,
+        status: "PONG",
+        pingMs: pingMs > 0 ? pingMs : 0.45,
+        recordsVerified: count,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: "PING_FAILED", message: err.message });
+    }
+  },
+);
 
 // GET /api/admin/database/status - Read-only schema readiness, connection health, and RLS catalog
-app.get('/api/admin/database/status', authenticate, requireAdmin(AdminPermission.VIEW_DATABASE), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const monitorData = await db.getDatabaseMonitorMetrics(true);
-    res.json({
-      success: true,
-      status: 'ONLINE',
-      mode: 'READ_ONLY_INSPECTION',
-      ddlExecution: 'VERSION_CONTROLLED_MIGRATIONS_ONLY',
-      connection: monitorData.systemHealth?.database || 'CONNECTED',
-      tablesReady: monitorData.tableMetrics?.length || 0,
-      rlsEnforced: monitorData.rlsEnforcedCount || 0,
-      schemaStatus: monitorData.schemaStatus || 'READY',
-      timestamp: new Date().toISOString()
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'DATABASE_STATUS_ERROR', message: err.message });
-  }
-});
+app.get(
+  "/api/admin/database/status",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_DATABASE),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const monitorData = await db.getDatabaseMonitorMetrics(true);
+      res.json({
+        success: true,
+        status: "ONLINE",
+        mode: "READ_ONLY_INSPECTION",
+        ddlExecution: "VERSION_CONTROLLED_MIGRATIONS_ONLY",
+        connection: monitorData.systemHealth?.database || "CONNECTED",
+        tablesReady: monitorData.tableMetrics?.length || 0,
+        rlsEnforced: monitorData.rlsEnforcedCount || 0,
+        schemaStatus: monitorData.schemaStatus || "READY",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res
+        .status(500)
+        .json({ error: "DATABASE_STATUS_ERROR", message: err.message });
+    }
+  },
+);
 
 // GET /api/admin/database/schema-status - Read-only table and migration catalog
-app.get('/api/admin/database/schema-status', authenticate, requireAdmin(AdminPermission.VIEW_DATABASE), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const monitorData = await db.getDatabaseMonitorMetrics(true);
-    res.json({
-      success: true,
-      status: 'READ_ONLY',
-      schemaStatus: monitorData.schemaStatus || 'READY',
-      tables: (monitorData.tableMetrics || []).map((t: any) => ({
-        name: t.name,
-        rowCount: t.rowCount,
-        rlsEnabled: t.rlsEnabled
-      })),
-      migrationsManagedBy: 'CI_CD_VERSION_CONTROL',
-      timestamp: new Date().toISOString()
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'SCHEMA_STATUS_ERROR', message: err.message });
-  }
-});
+app.get(
+  "/api/admin/database/schema-status",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_DATABASE),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const monitorData = await db.getDatabaseMonitorMetrics(true);
+      res.json({
+        success: true,
+        status: "READ_ONLY",
+        schemaStatus: monitorData.schemaStatus || "READY",
+        tables: (monitorData.tableMetrics || []).map((t: any) => ({
+          name: t.name,
+          rowCount: t.rowCount,
+          rlsEnabled: t.rlsEnabled,
+        })),
+        migrationsManagedBy: "CI_CD_VERSION_CONTROL",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res
+        .status(500)
+        .json({ error: "SCHEMA_STATUS_ERROR", message: err.message });
+    }
+  },
+);
 
 /**
  * STAGE 6: Database Bootstrap Safety & Production DDL Guard
@@ -7642,1647 +10330,2244 @@ app.get('/api/admin/database/schema-status', authenticate, requireAdmin(AdminPer
  * Permanently forbidden in production environments.
  * Cannot be triggered by ordinary admin roles.
  */
-app.post('/api/admin/database/bootstrap', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  // 1. Unconditional Production Environment Guard
-  const isProduction = process.env.NODE_ENV === 'production' || 
-                       process.env.VERCEL_ENV === 'production' || 
-                       process.env.ASTROVERSE_ENV === 'production';
-                       
-  if (isProduction) {
-    return res.status(403).json({
-      error: 'PRODUCTION_DDL_FORBIDDEN',
-      message: 'Database schema bootstrap and runtime DDL execution via HTTP API is permanently forbidden in production environments. Migrations must be applied via version-controlled CI/CD pipelines.',
-      environment: 'production'
-    });
-  }
+app.post(
+  "/api/admin/database/bootstrap",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    // 1. Unconditional Production Environment Guard
+    const isProduction =
+      process.env.NODE_ENV === "production" ||
+      process.env.VERCEL_ENV === "production" ||
+      process.env.ASTROVERSE_ENV === "production";
 
-  // 2. Strict Role Check: Ordinary admin roles (ADMIN, STAFF, SUPPORT, etc.) are forbidden
-  if (!req.user || req.user.role !== Role.OWNER) {
-    return res.status(403).json({
-      error: 'FORBIDDEN_INSUFFICIENT_ROLE',
-      message: 'Ordinary admin roles cannot trigger schema DDL. Only the platform OWNER can request staging maintenance bootstrap.',
-      requiredRole: Role.OWNER,
-      currentRole: req.user?.role || 'UNAUTHENTICATED'
-    });
-  }
+    if (isProduction) {
+      return res.status(403).json({
+        error: "PRODUCTION_DDL_FORBIDDEN",
+        message:
+          "Database schema bootstrap and runtime DDL execution via HTTP API is permanently forbidden in production environments. Migrations must be applied via version-controlled CI/CD pipelines.",
+        environment: "production",
+      });
+    }
 
-  // 3. Staging Explicit Enablement Flag
-  if (process.env.ALLOW_HTTP_SCHEMA_BOOTSTRAP !== 'true') {
-    return res.status(403).json({
-      error: 'BOOTSTRAP_MUTATION_DISABLED',
-      message: 'HTTP-triggered schema bootstrap is disabled by default. Set ALLOW_HTTP_SCHEMA_BOOTSTRAP=true in isolated staging environments to enable maintenance execution.'
-    });
-  }
+    // 2. Strict Role Check: Ordinary admin roles (ADMIN, STAFF, SUPPORT, etc.) are forbidden
+    if (!req.user || req.user.role !== Role.OWNER) {
+      return res.status(403).json({
+        error: "FORBIDDEN_INSUFFICIENT_ROLE",
+        message:
+          "Ordinary admin roles cannot trigger schema DDL. Only the platform OWNER can request staging maintenance bootstrap.",
+        requiredRole: Role.OWNER,
+        currentRole: req.user?.role || "UNAUTHENTICATED",
+      });
+    }
 
-  // 4. In isolated staging, execute bootstrap
-  try {
-    const prismaClient = (db as any).prisma;
-    const success = prismaClient ? await bootstrapPostgresSchema(prismaClient) : true;
-    await db.recordAuditEvent({
-      userId: req.user.id,
-      actorId: req.user.id,
-      actorRole: req.user.role,
-      action: 'STAGING_DATABASE_BOOTSTRAP_EXECUTED',
-      targetType: 'DATABASE_SCHEMA',
-      outcome: 'SUCCESS',
-      metadata: { environment: process.env.NODE_ENV || 'staging', success },
-      ipAddress: req.ip
-    });
-    return res.json({
-      success,
-      environment: process.env.NODE_ENV || 'staging',
-      action: 'STAGING_BOOTSTRAP_EXECUTED',
-      timestamp: new Date().toISOString()
-    });
-  } catch (err: any) {
-    return res.status(500).json({ error: 'BOOTSTRAP_FAILED', message: err.message });
-  }
-});
+    // 3. Staging Explicit Enablement Flag
+    if (process.env.ALLOW_HTTP_SCHEMA_BOOTSTRAP !== "true") {
+      return res.status(403).json({
+        error: "BOOTSTRAP_MUTATION_DISABLED",
+        message:
+          "HTTP-triggered schema bootstrap is disabled by default. Set ALLOW_HTTP_SCHEMA_BOOTSTRAP=true in isolated staging environments to enable maintenance execution.",
+      });
+    }
+
+    // 4. In isolated staging, execute bootstrap
+    try {
+      const prismaClient = (db as any).prisma;
+      const success = prismaClient
+        ? await bootstrapPostgresSchema(prismaClient)
+        : true;
+      await db.recordAuditEvent({
+        userId: req.user.id,
+        actorId: req.user.id,
+        actorRole: req.user.role,
+        action: "STAGING_DATABASE_BOOTSTRAP_EXECUTED",
+        targetType: "DATABASE_SCHEMA",
+        outcome: "SUCCESS",
+        metadata: { environment: process.env.NODE_ENV || "staging", success },
+        ipAddress: req.ip,
+      });
+      return res.json({
+        success,
+        environment: process.env.NODE_ENV || "staging",
+        action: "STAGING_BOOTSTRAP_EXECUTED",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      return res
+        .status(500)
+        .json({ error: "BOOTSTRAP_FAILED", message: err.message });
+    }
+  },
+);
 
 // ==================== 7.5 MONETIZATION, SUBSCRIPTIONS & REPORT STUDIO ====================
 
 // GET /api/subscriptions/plans (Public catalogue of subscription tiers)
-app.get('/api/subscriptions/plans', (_req: Request, res: Response) => {
+app.get("/api/subscriptions/plans", (_req: Request, res: Response) => {
   res.json({
     success: true,
     plans: Object.values(SUBSCRIPTION_PLANS),
-    disclaimer: 'Subscription pricing is billed in Indian Rupees (INR). Daily AI consultation quotas reset at 00:00 UTC.'
+    disclaimer:
+      "Subscription pricing is billed in Indian Rupees (INR). Daily AI consultation quotas reset at 00:00 UTC.",
   });
 });
 
 // GET /api/entitlements/me (Authenticated user tier, profile quota, and daily AI quota)
-app.get('/api/entitlements/me', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const user = await db.findUserById(req.user!.id);
-    if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND' });
+app.get(
+  "/api/entitlements/me",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = await db.findUserById(req.user!.id);
+      if (!user) return res.status(404).json({ error: "USER_NOT_FOUND" });
 
-    let effectiveUser = user;
-    if (isAnyAdmin(user.role)) {
-      const previewSession = db.getAdminPreviewSession(user.id);
-      if (previewSession && previewSession.isActive) {
-        effectiveUser = {
-          ...user,
-          subscriptionTier: previewSession.simulatedTier,
-          subscriptionStatus: 'ACTIVE',
-          subscriptionExpiresAt: previewSession.expiresAt,
-          simulatedSubscriptionTier: previewSession.simulatedTier
-        };
+      let effectiveUser = user;
+      if (isAnyAdmin(user.role)) {
+        const previewSession = db.getAdminPreviewSession(user.id);
+        if (previewSession && previewSession.isActive) {
+          effectiveUser = {
+            ...user,
+            subscriptionTier: previewSession.simulatedTier,
+            subscriptionStatus: "ACTIVE",
+            subscriptionExpiresAt: previewSession.expiresAt,
+            simulatedSubscriptionTier: previewSession.simulatedTier,
+          };
+        }
       }
-    }
 
-    const profiles = await db.getProfilesByUserId(user.id);
-    const snapshot = EntitlementManager.getEntitlementSnapshot(effectiveUser, profiles.length);
-    res.json(snapshot);
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to fetch entitlements');
-  }
-});
+      const profiles = await db.getProfilesByUserId(user.id);
+      const snapshot = EntitlementManager.getEntitlementSnapshot(
+        effectiveUser,
+        profiles.length,
+      );
+      res.json(snapshot);
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to fetch entitlements");
+    }
+  },
+);
 
 // POST /api/subscriptions/purchase-with-wallet (Purchase subscription using wallet balance)
-app.post('/api/subscriptions/purchase-with-wallet', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { tier, billingPeriod } = req.body;
-  const user = req.user!;
-  const idempotencyKey = ((req.headers['x-idempotency-key'] as string) || (req.body?.idempotencyKey as string) || '').trim();
+app.post(
+  "/api/subscriptions/purchase-with-wallet",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { tier, billingPeriod } = req.body;
+    const user = req.user!;
+    const idempotencyKey = (
+      (req.headers["x-idempotency-key"] as string) ||
+      (req.body?.idempotencyKey as string) ||
+      ""
+    ).trim();
 
-  if (!tier || !Object.values(SubscriptionTier).includes(tier) || tier === SubscriptionTier.FREE) {
-    return res.status(400).json({
-      error: 'INVALID_TIER',
-      message: 'A valid paid subscription tier (PLUS or PREMIUM) is required.'
-    });
-  }
+    if (
+      !tier ||
+      !Object.values(SubscriptionTier).includes(tier) ||
+      tier === SubscriptionTier.FREE
+    ) {
+      return res.status(400).json({
+        error: "INVALID_TIER",
+        message:
+          "A valid paid subscription tier (PLUS or PREMIUM) is required.",
+      });
+    }
 
-  const period: BillingPeriod = billingPeriod === BillingPeriod.ANNUAL ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
-  const plan = SUBSCRIPTION_PLANS[tier as SubscriptionTier];
-  const pricePaise = period === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
-  const priceRupees = Math.round(pricePaise / 100);
+    const period: BillingPeriod =
+      billingPeriod === BillingPeriod.ANNUAL
+        ? BillingPeriod.ANNUAL
+        : BillingPeriod.MONTHLY;
+    const plan = SUBSCRIPTION_PLANS[tier as SubscriptionTier];
+    const pricePaise =
+      period === BillingPeriod.ANNUAL
+        ? plan.annualPricePaise
+        : plan.monthlyPricePaise;
+    const priceRupees = Math.round(pricePaise / 100);
 
-  // Check current balance
-  const freshUser = await db.findUserById(user.id);
-  if (!freshUser) {
-    return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'User not found' });
-  }
-
-  const currentBalance = Number(freshUser.walletBalance || 0);
-  if (currentBalance < priceRupees) {
-    const shortfall = Math.round((priceRupees - currentBalance) * 100) / 100;
-    return res.status(400).json({
-      error: 'INSUFFICIENT_FUNDS',
-      code: 'INSUFFICIENT_WALLET_BALANCE',
-      message: `Insufficient wallet balance. Required: ₹${priceRupees.toFixed(2)}, Available: ₹${currentBalance.toFixed(2)}. Shortfall: ₹${shortfall.toFixed(2)}.`,
-      requiredAmount: priceRupees,
-      currentBalance,
-      shortfall,
-      topUpRecommended: Math.ceil(shortfall)
-    });
-  }
-
-  try {
-    const purchaseResult = await db.purchaseSubscription(user.id, tier as SubscriptionTier, period, priceRupees, idempotencyKey || undefined);
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'SUBSCRIPTION_PURCHASED_VIA_WALLET',
-      targetType: 'SUBSCRIPTION',
-      targetId: tier,
-      metadata: {
-        tier,
-        billingPeriod: period,
-        amountDebited: priceRupees,
-        remainingBalance: purchaseResult.newBalance
-      }
-    });
-
-    res.json({
-      success: true,
-      paidVia: 'WALLET',
-      tier: purchaseResult.tier,
-      status: 'ACTIVE',
-      billingPeriod: purchaseResult.billingPeriod,
-      expiresAt: purchaseResult.subscriptionExpiresAt,
-      walletBalance: purchaseResult.newBalance,
-      amountDebited: priceRupees,
-      transactionId: purchaseResult.transactionId,
-      message: `Successfully upgraded to AstroVerse ${tier} (${period.toLowerCase()}) using wallet balance.`
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || 'Failed to complete wallet subscription purchase' });
-  }
-});
-
-// POST /api/subscriptions/create-order (Create Cashfree order for Plus/Premium subscription)
-app.post('/api/subscriptions/create-order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { tier, billingPeriod, paymentMethod } = req.body;
-  const user = req.user!;
-  const idempotencyKey = ((req.headers['x-idempotency-key'] as string) || (req.body.idempotencyKey as string) || '').trim();
-
-  if (!tier || !Object.values(SubscriptionTier).includes(tier) || tier === SubscriptionTier.FREE) {
-    return res.status(400).json({
-      error: 'INVALID_TIER',
-      message: 'A valid paid subscription tier (PLUS or PREMIUM) is required.'
-    });
-  }
-
-  const period: BillingPeriod = billingPeriod === BillingPeriod.ANNUAL ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
-  const plan = SUBSCRIPTION_PLANS[tier as SubscriptionTier];
-  const pricePaise = period === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
-  const priceRupees = Math.round(pricePaise / 100);
-
-  if (paymentMethod && String(paymentMethod).toUpperCase() === 'WALLET') {
+    // Check current balance
     const freshUser = await db.findUserById(user.id);
-    const currentBalance = Number(freshUser?.walletBalance || 0);
+    if (!freshUser) {
+      return res
+        .status(404)
+        .json({ error: "USER_NOT_FOUND", message: "User not found" });
+    }
+
+    const currentBalance = Number(freshUser.walletBalance || 0);
     if (currentBalance < priceRupees) {
       const shortfall = Math.round((priceRupees - currentBalance) * 100) / 100;
       return res.status(400).json({
-        error: 'INSUFFICIENT_FUNDS',
-        code: 'INSUFFICIENT_WALLET_BALANCE',
+        error: "INSUFFICIENT_FUNDS",
+        code: "INSUFFICIENT_WALLET_BALANCE",
         message: `Insufficient wallet balance. Required: ₹${priceRupees.toFixed(2)}, Available: ₹${currentBalance.toFixed(2)}. Shortfall: ₹${shortfall.toFixed(2)}.`,
         requiredAmount: priceRupees,
         currentBalance,
         shortfall,
-        topUpRecommended: Math.ceil(shortfall)
+        topUpRecommended: Math.ceil(shortfall),
       });
     }
 
     try {
-      const purchaseResult = await db.purchaseSubscription(user.id, tier as SubscriptionTier, period, priceRupees, idempotencyKey || undefined);
+      const purchaseResult = await db.purchaseSubscription(
+        user.id,
+        tier as SubscriptionTier,
+        period,
+        priceRupees,
+        idempotencyKey || undefined,
+      );
+
       await db.recordAuditEvent({
         userId: user.id,
-        action: 'SUBSCRIPTION_PURCHASED_VIA_WALLET',
-        targetType: 'SUBSCRIPTION',
+        action: "SUBSCRIPTION_PURCHASED_VIA_WALLET",
+        targetType: "SUBSCRIPTION",
         targetId: tier,
-        metadata: { tier, billingPeriod: period, amountDebited: priceRupees, remainingBalance: purchaseResult.newBalance }
+        metadata: {
+          tier,
+          billingPeriod: period,
+          amountDebited: priceRupees,
+          remainingBalance: purchaseResult.newBalance,
+        },
       });
-      return res.json({
+
+      res.json({
         success: true,
-        paidVia: 'WALLET',
+        paidVia: "WALLET",
         tier: purchaseResult.tier,
-        status: 'ACTIVE',
+        status: "ACTIVE",
         billingPeriod: purchaseResult.billingPeriod,
         expiresAt: purchaseResult.subscriptionExpiresAt,
         walletBalance: purchaseResult.newBalance,
         amountDebited: priceRupees,
         transactionId: purchaseResult.transactionId,
-        message: `Successfully upgraded to AstroVerse ${tier} (${period.toLowerCase()}) using wallet balance.`
+        message: `Successfully upgraded to AstroVerse ${tier} (${period.toLowerCase()}) using wallet balance.`,
       });
     } catch (err: any) {
-      return res.status(500).json({ error: err.message || 'Failed to complete wallet subscription purchase' });
-    }
-  }
-
-  // Idempotency check: Reuse existing active order if same idempotencyKey provided
-  if (idempotencyKey) {
-    const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(user.id, idempotencyKey);
-    if (existingOrder && existingOrder.cfPaymentSessionId && existingOrder.status === OrderStatus.CREATED) {
-      return res.json({
-        success: true,
-        orderId: existingOrder.providerOrderId,
-        amount: existingOrder.amountPaise || Math.round(existingOrder.amount * 100),
-        amountPaise: existingOrder.amountPaise || Math.round(existingOrder.amount * 100),
-        amountRupees: existingOrder.amount,
-        tier,
-        billingPeriod: period,
-        paymentSessionId: existingOrder.cfPaymentSessionId,
-        cfOrderId: existingOrder.cfOrderId || existingOrder.providerOrderId,
-        gateway: 'CASHFREE',
-        checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
-        reused: true,
-        isReused: true
+      res.status(500).json({
+        error: err.message || "Failed to complete wallet subscription purchase",
       });
     }
-  }
+  },
+);
 
-  await syncGatewayCredentialsFromDb();
-  const readiness = getPaymentReadinessStatus();
-  if (!readiness.configured) {
-    return res.status(503).json({
-      error: 'PAYMENTS_NOT_CONFIGURED',
-      readinessState: readiness.state,
-      specificError: readiness.state,
-      message: readiness.customerMessage,
-      adminExplanation: readiness.adminExplanation,
-      gateway: 'CASHFREE'
-    });
-  }
+// POST /api/subscriptions/create-order (Create Cashfree order for Plus/Premium subscription)
+app.post(
+  "/api/subscriptions/create-order",
+  orderLimiter,
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { tier, billingPeriod, paymentMethod } = req.body;
+    const user = req.user!;
+    const idempotencyKey = (
+      (req.headers["x-idempotency-key"] as string) ||
+      (req.body.idempotencyKey as string) ||
+      ""
+    ).trim();
 
-  try {
-    const orderReceipt = idempotencyKey
-      ? `sub_${crypto.createHash('sha256').update(user.id + '_' + idempotencyKey).digest('hex').slice(0, 16)}`
-      : `sub_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    const userRecord = await db.findUserById(user.id);
-    const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
-    const cfOrder = await createCashfreeOrder({
-      orderId: `cf_${orderReceipt}`,
-      orderAmount: priceRupees,
-      orderCurrency: 'INR',
-      customer: {
-        customer_id: user.id,
-        customer_email: userRecord?.email || undefined,
-        customer_phone: userRecord?.phone || '9999999999',
-        customer_name: userRecord?.displayName || 'AstroVerse Seeker'
-      },
-      returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=subscription`,
-      orderNote: `Subscription: ${tier} (${period})`,
-      idempotencyKey: idempotencyKey || undefined
-    });
+    if (
+      !tier ||
+      !Object.values(SubscriptionTier).includes(tier) ||
+      tier === SubscriptionTier.FREE
+    ) {
+      return res.status(400).json({
+        error: "INVALID_TIER",
+        message:
+          "A valid paid subscription tier (PLUS or PREMIUM) is required.",
+      });
+    }
 
-    const order = await db.createPaymentOrder({
-      userId: user.id,
-      amount: priceRupees,
-      currency: 'INR',
-      provider: 'CASHFREE',
-      providerOrderId: cfOrder.order_id,
-      gateway: 'CASHFREE',
-      cfOrderId: cfOrder.order_id,
-      cfPaymentSessionId: cfOrder.payment_session_id,
-      productType: 'SUBSCRIPTION',
-      productId: tier,
-      billingPeriod: period,
-      idempotencyKey: idempotencyKey || undefined,
-      pricingSnapshot: {
-        priceRupees,
-        pricePaise,
-        tier,
-        billingPeriod: period,
-        catalogueVersion: '2026.01'
-      },
-      metadata: {
-        productType: 'SUBSCRIPTION',
-        productId: tier,
-        tier,
-        billingPeriod: period
-      }
-    });
+    const period: BillingPeriod =
+      billingPeriod === BillingPeriod.ANNUAL
+        ? BillingPeriod.ANNUAL
+        : BillingPeriod.MONTHLY;
+    const plan = SUBSCRIPTION_PLANS[tier as SubscriptionTier];
+    const pricePaise =
+      period === BillingPeriod.ANNUAL
+        ? plan.annualPricePaise
+        : plan.monthlyPricePaise;
+    const priceRupees = Math.round(pricePaise / 100);
 
-    res.json({
-      success: true,
-      orderId: order.providerOrderId,
-      amount: pricePaise,
-      amountPaise: pricePaise,
-      amountRupees: priceRupees,
-      tier,
-      billingPeriod: period,
-      paymentSessionId: cfOrder.payment_session_id,
-      cfOrderId: cfOrder.cf_order_id,
-      gateway: 'CASHFREE',
-      environment: readiness.environment,
-      checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Subscription order creation failed');
-  }
-});
-
-// POST /api/subscriptions/verify-payment (Activate subscription upon verified Cashfree payment)
-app.post('/api/subscriptions/verify-payment', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { orderId, paymentId, signature, tier, billingPeriod } = req.body;
-  const user = req.user!;
-
-  if (!orderId) {
-    return res.status(400).json({ error: 'MISSING_ORDER_ID', message: 'orderId is required.' });
-  }
-
-  const trimmedOrderId = String(orderId).trim();
-  if (signature && (trimmedOrderId.startsWith('order_') || !trimmedOrderId.startsWith('cf_'))) {
-    return res.status(410).json({
-      error: 'PAYMENT_PROVIDER_RETIRED',
-      message: 'Razorpay is retired. Active payments must be verified via Cashfree.'
-    });
-  }
-
-  let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
-  if (!order && isCashfreeConfigured()) {
-    try {
-      const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
-      if (cfStatus && cfStatus.order_id) {
-        const cfCustomerId = cfStatus.customer_details?.customer_id;
-        if (cfCustomerId && cfCustomerId !== user.id && user.role !== Role.SUPER_ADMIN) {
-          return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Payment order does not belong to authenticated user.' });
-        }
-        order = await db.createPaymentOrder({
-          userId: cfCustomerId || user.id,
-          amount: Number(cfStatus.order_amount),
-          currency: cfStatus.order_currency || 'INR',
-          provider: 'CASHFREE',
-          providerOrderId: cfStatus.order_id,
-          gateway: 'CASHFREE',
-          cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
-          cfPaymentSessionId: cfStatus.payment_session_id || undefined,
-          productType: 'SUBSCRIPTION',
-          productId: tier || SubscriptionTier.PLUS
+    if (paymentMethod && String(paymentMethod).toUpperCase() === "WALLET") {
+      const freshUser = await db.findUserById(user.id);
+      const currentBalance = Number(freshUser?.walletBalance || 0);
+      if (currentBalance < priceRupees) {
+        const shortfall =
+          Math.round((priceRupees - currentBalance) * 100) / 100;
+        return res.status(400).json({
+          error: "INSUFFICIENT_FUNDS",
+          code: "INSUFFICIENT_WALLET_BALANCE",
+          message: `Insufficient wallet balance. Required: ₹${priceRupees.toFixed(2)}, Available: ₹${currentBalance.toFixed(2)}. Shortfall: ₹${shortfall.toFixed(2)}.`,
+          requiredAmount: priceRupees,
+          currentBalance,
+          shortfall,
+          topUpRecommended: Math.ceil(shortfall),
         });
       }
-    } catch (_) {}
-  }
-  if (!order) {
-    return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Subscription payment order not found.' });
-  }
-  if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-    return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Payment order does not belong to authenticated user.' });
-  }
 
-  // Cross-product replay prevention (AV-SEC-02)
-  if (order.productType && order.productType !== 'SUBSCRIPTION') {
-    return res.status(400).json({
-      error: 'INVALID_ORDER_TYPE',
-      message: `Order type '${order.productType}' cannot be used to activate a subscription.`
-    });
-  }
-
-  if (order.status === OrderStatus.PAID) {
-    const userRec = await db.findUserById(user.id);
-    return res.json({
-      success: true,
-      alreadyProcessed: true,
-      tier: userRec?.subscriptionTier,
-      billingPeriod: userRec?.subscriptionBillingPeriod,
-      subscriptionExpiresAt: userRec?.subscriptionExpiresAt
-    });
-  }
-
-  // Tier mismatch check (AV-SEC-02)
-  if (tier && order.productId) {
-    const normOrderTier = order.productId.toLowerCase().includes('premium') ? 'PREMIUM' : (order.productId.toLowerCase().includes('plus') ? 'PLUS' : order.productId);
-    const normReqTier = String(tier).toUpperCase();
-    if (normOrderTier !== normReqTier && order.productId !== tier) {
-      return res.status(400).json({
-        error: 'TIER_MISMATCH',
-        message: `Order was created for tier '${order.productId}', cannot activate '${tier}'.`
-      });
-    }
-  }
-
-  if (!isCashfreeConfigured()) {
-    return res.status(503).json({
-      error: 'PAYMENTS_NOT_CONFIGURED',
-      message: 'Payment gateway credentials are not configured. Cashfree verification is unavailable in fail-closed state.',
-      gateway: 'CASHFREE'
-    });
-  }
-
-  const targetTier = (tier as SubscriptionTier) || (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-  if (order.productId && order.productId !== targetTier) {
-    return res.status(400).json({
-      error: 'TIER_MISMATCH',
-      message: `Order was created for tier '${order.productId}', cannot activate '${targetTier}'.`
-    });
-  }
-  const period = billingPeriod === BillingPeriod.ANNUAL ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
-  const plan = SUBSCRIPTION_PLANS[targetTier];
-  if (!plan) {
-    return res.status(400).json({ error: 'INVALID_TIER', message: 'Subscription tier not recognized.' });
-  }
-  const expectedPaise = period === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
-  const expectedRupees = Math.round(expectedPaise / 100);
-  if (order.amount !== expectedRupees) {
-    return res.status(400).json({
-      error: 'INVALID_ORDER_AMOUNT',
-      message: `Order amount ₹${order.amount} does not match required subscription price ₹${expectedRupees}.`
-    });
-  }
-
-  if (!isCashfreeConfigured()) {
-    return res.status(503).json({
-      error: 'PAYMENTS_NOT_CONFIGURED',
-      message: 'Online payments are currently unconfigured.',
-      gateway: 'CASHFREE'
-    });
-  }
-
-  try {
-    const cfStatus = await getCashfreeOrderStatus(order.providerOrderId || order.cfOrderId || trimmedOrderId);
-    if (cfStatus.order_status !== 'PAID') {
-      return res.status(400).json({
-        error: 'PAYMENT_NOT_SETTLED',
-        message: `Cashfree reports order status as ${cfStatus.order_status}.`
-      });
-    }
-
-    const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-    const settledPaymentId = cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
-    const updatedUser = await db.fulfillPaidSubscriptionOrder({
-      userId: user.id,
-      tier: targetTier as any,
-      billingPeriod: period as any,
-      durationDays,
-      orderId: order.providerOrderId || order.cfOrderId || trimmedOrderId,
-      paymentId: settledPaymentId,
-      amount: order.amount,
-      provider: 'CASHFREE',
-      currency: 'INR'
-    });
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'SUBSCRIPTION_ACTIVATED',
-      targetType: 'SUBSCRIPTION',
-      targetId: `${targetTier}_${period}`,
-      metadata: {
-        tier: targetTier,
-        period,
-        durationDays,
-        expiresAt: updatedUser.subscriptionExpiresAt,
-        paymentId: settledPaymentId,
-        provider: 'CASHFREE'
+      try {
+        const purchaseResult = await db.purchaseSubscription(
+          user.id,
+          tier as SubscriptionTier,
+          period,
+          priceRupees,
+          idempotencyKey || undefined,
+        );
+        await db.recordAuditEvent({
+          userId: user.id,
+          action: "SUBSCRIPTION_PURCHASED_VIA_WALLET",
+          targetType: "SUBSCRIPTION",
+          targetId: tier,
+          metadata: {
+            tier,
+            billingPeriod: period,
+            amountDebited: priceRupees,
+            remainingBalance: purchaseResult.newBalance,
+          },
+        });
+        return res.json({
+          success: true,
+          paidVia: "WALLET",
+          tier: purchaseResult.tier,
+          status: "ACTIVE",
+          billingPeriod: purchaseResult.billingPeriod,
+          expiresAt: purchaseResult.subscriptionExpiresAt,
+          walletBalance: purchaseResult.newBalance,
+          amountDebited: priceRupees,
+          transactionId: purchaseResult.transactionId,
+          message: `Successfully upgraded to AstroVerse ${tier} (${period.toLowerCase()}) using wallet balance.`,
+        });
+      } catch (err: any) {
+        return res.status(500).json({
+          error:
+            err.message || "Failed to complete wallet subscription purchase",
+        });
       }
-    });
+    }
 
-    res.json({
-      success: true,
-      subscriptionTier: updatedUser.subscriptionTier,
-      tier: updatedUser.subscriptionTier,
-      billingPeriod: updatedUser.subscriptionBillingPeriod,
-      subscriptionExpiresAt: updatedUser.subscriptionExpiresAt,
-      expiresAt: updatedUser.subscriptionExpiresAt,
-      subscriptionStatus: updatedUser.subscriptionStatus
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Subscription activation failed');
-  }
-});
+    // Idempotency check: Reuse existing active order if same idempotencyKey provided
+    if (idempotencyKey) {
+      const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(
+        user.id,
+        idempotencyKey,
+      );
+      if (
+        existingOrder &&
+        existingOrder.cfPaymentSessionId &&
+        existingOrder.status === OrderStatus.CREATED
+      ) {
+        return res.json({
+          success: true,
+          orderId: existingOrder.providerOrderId,
+          amount:
+            existingOrder.amountPaise || Math.round(existingOrder.amount * 100),
+          amountPaise:
+            existingOrder.amountPaise || Math.round(existingOrder.amount * 100),
+          amountRupees: existingOrder.amount,
+          tier,
+          billingPeriod: period,
+          paymentSessionId: existingOrder.cfPaymentSessionId,
+          cfOrderId: existingOrder.cfOrderId || existingOrder.providerOrderId,
+          gateway: "CASHFREE",
+          checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+          reused: true,
+          isReused: true,
+        });
+      }
+    }
+
+    await syncGatewayCredentialsFromDb();
+    const readiness = getPaymentReadinessStatus();
+    if (!readiness.configured) {
+      return res.status(503).json({
+        error: "PAYMENTS_NOT_CONFIGURED",
+        readinessState: readiness.state,
+        specificError: readiness.state,
+        message: readiness.customerMessage,
+        adminExplanation: readiness.adminExplanation,
+        gateway: "CASHFREE",
+      });
+    }
+
+    try {
+      const orderReceipt = idempotencyKey
+        ? `sub_${crypto
+            .createHash("sha256")
+            .update(user.id + "_" + idempotencyKey)
+            .digest("hex")
+            .slice(0, 16)}`
+        : `sub_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+      const userRecord = await db.findUserById(user.id);
+      const appBaseUrl = (
+        process.env.APP_BASE_URL || "https://astroverse-eta.vercel.app"
+      ).replace(/\/+$/, "");
+      const cfOrder = await createCashfreeOrder({
+        orderId: `cf_${orderReceipt}`,
+        orderAmount: priceRupees,
+        orderCurrency: "INR",
+        customer: {
+          customer_id: user.id,
+          customer_email: userRecord?.email || undefined,
+          customer_phone: userRecord?.phone || "9999999999",
+          customer_name: userRecord?.displayName || "AstroVerse Seeker",
+        },
+        returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=subscription`,
+        orderNote: `Subscription: ${tier} (${period})`,
+        idempotencyKey: idempotencyKey || undefined,
+      });
+
+      const order = await db.createPaymentOrder({
+        userId: user.id,
+        amount: priceRupees,
+        currency: "INR",
+        provider: "CASHFREE",
+        providerOrderId: cfOrder.order_id,
+        gateway: "CASHFREE",
+        cfOrderId: cfOrder.order_id,
+        cfPaymentSessionId: cfOrder.payment_session_id,
+        productType: "SUBSCRIPTION",
+        productId: tier,
+        billingPeriod: period,
+        idempotencyKey: idempotencyKey || undefined,
+        pricingSnapshot: {
+          priceRupees,
+          pricePaise,
+          tier,
+          billingPeriod: period,
+          catalogueVersion: "2026.01",
+        },
+        metadata: {
+          productType: "SUBSCRIPTION",
+          productId: tier,
+          tier,
+          billingPeriod: period,
+        },
+      });
+
+      res.json({
+        success: true,
+        orderId: order.providerOrderId,
+        amount: pricePaise,
+        amountPaise: pricePaise,
+        amountRupees: priceRupees,
+        tier,
+        billingPeriod: period,
+        paymentSessionId: cfOrder.payment_session_id,
+        cfOrderId: cfOrder.cf_order_id,
+        gateway: "CASHFREE",
+        environment: readiness.environment,
+        checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Subscription order creation failed");
+    }
+  },
+);
+
+// POST /api/subscriptions/verify-payment (Activate subscription upon verified Cashfree payment)
+app.post(
+  "/api/subscriptions/verify-payment",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { orderId, paymentId, signature, tier, billingPeriod } = req.body;
+    const user = req.user!;
+
+    if (!orderId) {
+      return res
+        .status(400)
+        .json({ error: "MISSING_ORDER_ID", message: "orderId is required." });
+    }
+
+    const trimmedOrderId = String(orderId).trim();
+    if (
+      signature &&
+      (trimmedOrderId.startsWith("order_") || !trimmedOrderId.startsWith("cf_"))
+    ) {
+      return res.status(410).json({
+        error: "PAYMENT_PROVIDER_RETIRED",
+        message:
+          "Razorpay is retired. Active payments must be verified via Cashfree.",
+      });
+    }
+
+    let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
+    if (!order && isCashfreeConfigured()) {
+      try {
+        const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
+        if (cfStatus && cfStatus.order_id) {
+          const cfCustomerId = cfStatus.customer_details?.customer_id;
+          if (
+            cfCustomerId &&
+            cfCustomerId !== user.id &&
+            user.role !== Role.SUPER_ADMIN
+          ) {
+            return res.status(403).json({
+              error: "ORDER_USER_MISMATCH",
+              message: "Payment order does not belong to authenticated user.",
+            });
+          }
+          order = await db.createPaymentOrder({
+            userId: cfCustomerId || user.id,
+            amount: Number(cfStatus.order_amount),
+            currency: cfStatus.order_currency || "INR",
+            provider: "CASHFREE",
+            providerOrderId: cfStatus.order_id,
+            gateway: "CASHFREE",
+            cfOrderId: cfStatus.cf_order_id
+              ? String(cfStatus.cf_order_id)
+              : undefined,
+            cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+            productType: "SUBSCRIPTION",
+            productId: tier || SubscriptionTier.PLUS,
+          });
+        }
+      } catch (_) {}
+    }
+    if (!order) {
+      return res.status(404).json({
+        error: "ORDER_NOT_FOUND",
+        message: "Subscription payment order not found.",
+      });
+    }
+    if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({
+        error: "ORDER_USER_MISMATCH",
+        message: "Payment order does not belong to authenticated user.",
+      });
+    }
+
+    // Cross-product replay prevention (AV-SEC-02)
+    if (order.productType && order.productType !== "SUBSCRIPTION") {
+      return res.status(400).json({
+        error: "INVALID_ORDER_TYPE",
+        message: `Order type '${order.productType}' cannot be used to activate a subscription.`,
+      });
+    }
+
+    if (order.status === OrderStatus.PAID) {
+      const userRec = await db.findUserById(user.id);
+      return res.json({
+        success: true,
+        alreadyProcessed: true,
+        tier: userRec?.subscriptionTier,
+        billingPeriod: userRec?.subscriptionBillingPeriod,
+        subscriptionExpiresAt: userRec?.subscriptionExpiresAt,
+      });
+    }
+
+    // Tier mismatch check (AV-SEC-02)
+    if (tier && order.productId) {
+      const normOrderTier = order.productId.toLowerCase().includes("premium")
+        ? "PREMIUM"
+        : order.productId.toLowerCase().includes("plus")
+          ? "PLUS"
+          : order.productId;
+      const normReqTier = String(tier).toUpperCase();
+      if (normOrderTier !== normReqTier && order.productId !== tier) {
+        return res.status(400).json({
+          error: "TIER_MISMATCH",
+          message: `Order was created for tier '${order.productId}', cannot activate '${tier}'.`,
+        });
+      }
+    }
+
+    if (!isCashfreeConfigured()) {
+      return res.status(503).json({
+        error: "PAYMENTS_NOT_CONFIGURED",
+        message:
+          "Payment gateway credentials are not configured. Cashfree verification is unavailable in fail-closed state.",
+        gateway: "CASHFREE",
+      });
+    }
+
+    const targetTier =
+      (tier as SubscriptionTier) ||
+      (order.productId as SubscriptionTier) ||
+      SubscriptionTier.PLUS;
+    if (order.productId && order.productId !== targetTier) {
+      return res.status(400).json({
+        error: "TIER_MISMATCH",
+        message: `Order was created for tier '${order.productId}', cannot activate '${targetTier}'.`,
+      });
+    }
+    const period =
+      billingPeriod === BillingPeriod.ANNUAL
+        ? BillingPeriod.ANNUAL
+        : BillingPeriod.MONTHLY;
+    const plan = SUBSCRIPTION_PLANS[targetTier];
+    if (!plan) {
+      return res.status(400).json({
+        error: "INVALID_TIER",
+        message: "Subscription tier not recognized.",
+      });
+    }
+    const expectedPaise =
+      period === BillingPeriod.ANNUAL
+        ? plan.annualPricePaise
+        : plan.monthlyPricePaise;
+    const expectedRupees = Math.round(expectedPaise / 100);
+    if (order.amount !== expectedRupees) {
+      return res.status(400).json({
+        error: "INVALID_ORDER_AMOUNT",
+        message: `Order amount ₹${order.amount} does not match required subscription price ₹${expectedRupees}.`,
+      });
+    }
+
+    if (!isCashfreeConfigured()) {
+      return res.status(503).json({
+        error: "PAYMENTS_NOT_CONFIGURED",
+        message: "Online payments are currently unconfigured.",
+        gateway: "CASHFREE",
+      });
+    }
+
+    try {
+      const cfStatus = await getCashfreeOrderStatus(
+        order.providerOrderId || order.cfOrderId || trimmedOrderId,
+      );
+      if (cfStatus.order_status !== "PAID") {
+        return res.status(400).json({
+          error: "PAYMENT_NOT_SETTLED",
+          message: `Cashfree reports order status as ${cfStatus.order_status}.`,
+        });
+      }
+
+      const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+      const settledPaymentId =
+        cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
+      const updatedUser = await db.fulfillPaidSubscriptionOrder({
+        userId: user.id,
+        tier: targetTier as any,
+        billingPeriod: period as any,
+        durationDays,
+        orderId: order.providerOrderId || order.cfOrderId || trimmedOrderId,
+        paymentId: settledPaymentId,
+        amount: order.amount,
+        provider: "CASHFREE",
+        currency: "INR",
+      });
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: "SUBSCRIPTION_ACTIVATED",
+        targetType: "SUBSCRIPTION",
+        targetId: `${targetTier}_${period}`,
+        metadata: {
+          tier: targetTier,
+          period,
+          durationDays,
+          expiresAt: updatedUser.subscriptionExpiresAt,
+          paymentId: settledPaymentId,
+          provider: "CASHFREE",
+        },
+      });
+
+      res.json({
+        success: true,
+        subscriptionTier: updatedUser.subscriptionTier,
+        tier: updatedUser.subscriptionTier,
+        billingPeriod: updatedUser.subscriptionBillingPeriod,
+        subscriptionExpiresAt: updatedUser.subscriptionExpiresAt,
+        expiresAt: updatedUser.subscriptionExpiresAt,
+        subscriptionStatus: updatedUser.subscriptionStatus,
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Subscription activation failed");
+    }
+  },
+);
 
 // POST /api/subscriptions/cancel (Cancel recurring auto-renewal)
-app.post('/api/subscriptions/cancel', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const updated = await db.cancelSubscription(req.user!.id);
-    res.json({
-      success: true,
-      status: updated.subscriptionStatus,
-      subscriptionStatus: updated.subscriptionStatus,
-      expiresAt: updated.subscriptionExpiresAt,
-      message: 'Subscription renewal has been cancelled. Access remains active until the expiration date.'
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Subscription cancellation failed');
-  }
-});
+app.post(
+  "/api/subscriptions/cancel",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const updated = await db.cancelSubscription(req.user!.id);
+      res.json({
+        success: true,
+        status: updated.subscriptionStatus,
+        subscriptionStatus: updated.subscriptionStatus,
+        expiresAt: updated.subscriptionExpiresAt,
+        message:
+          "Subscription renewal has been cancelled. Access remains active until the expiration date.",
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Subscription cancellation failed");
+    }
+  },
+);
 
 // Durable set to guarantee idempotent processing of webhook event deliveries across serverless restarts (AV-SEC-04)
 const processedWebhookEvents = {
   has: (eventId: string): boolean => db.isWebhookEventProcessed(eventId),
-  add: (eventId: string, provider = 'CASHFREE'): void => db.markWebhookEventProcessed(eventId, provider)
+  add: (eventId: string, provider = "CASHFREE"): void =>
+    db.markWebhookEventProcessed(eventId, provider),
 };
 
 // POST /api/webhooks/razorpay (Retired Razorpay Webhook Endpoint)
-app.post('/api/webhooks/razorpay', async (_req: Request, res: Response) => {
+app.post("/api/webhooks/razorpay", async (_req: Request, res: Response) => {
   return res.status(410).json({
-    error: 'GATEWAY_RETIRED',
-    message: 'Razorpay webhooks are retired. Use Cashfree.'
+    error: "GATEWAY_RETIRED",
+    message: "Razorpay webhooks are retired. Use Cashfree.",
   });
 });
 
 // ==================== CASHFREE PAYMENT INTEGRATION (AV-SEC-03) ====================
 
 // POST /api/cashfree/create-order
-app.post('/api/cashfree/create-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { amount, productType, productId, billingPeriod, packageId, returnUrl } = req.body;
-    const user = req.user!;
+app.post(
+  "/api/cashfree/create-order",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const {
+        amount,
+        productType,
+        productId,
+        billingPeriod,
+        packageId,
+        returnUrl,
+      } = req.body;
+      const user = req.user!;
 
-    if (!isCashfreeConfigured()) {
-      return res.status(503).json({
-        error: 'CASHFREE_GATEWAY_NOT_CONFIGURED',
-        message: 'Cashfree Payment Gateway is not configured with live credentials.'
-      });
-    }
-
-    const normalizedType = String(productType || 'WALLET_RECHARGE').toUpperCase();
-
-    let finalPriceRupees: number;
-    let finalPricePaise: number;
-    let finalTier: SubscriptionTier | undefined = undefined;
-    let finalBillingPeriod: BillingPeriod | undefined = undefined;
-    let baseAmount: number | undefined = undefined;
-    let gstAmount: number | undefined = undefined;
-    let bonusAmount: number | undefined = undefined;
-    let creditAmount: number | undefined = undefined;
-    let resolvedProductId: string | null = null;
-    let orderNote: string;
-
-    if (normalizedType === 'SUBSCRIPTION') {
-      const tierKey = String(productId || '').toUpperCase() as SubscriptionTier;
-      if (!tierKey || !SUBSCRIPTION_PLANS[tierKey]) {
-        return res.status(400).json({
-          error: 'INVALID_SUBSCRIPTION_TIER',
-          message: `Invalid or missing subscription tier: ${productId}. Must be one of: ${Object.keys(SUBSCRIPTION_PLANS).join(', ')}`
+      if (!isCashfreeConfigured()) {
+        return res.status(503).json({
+          error: "CASHFREE_GATEWAY_NOT_CONFIGURED",
+          message:
+            "Cashfree Payment Gateway is not configured with live credentials.",
         });
       }
-      finalTier = tierKey;
-      resolvedProductId = tierKey;
-      finalBillingPeriod = (String(billingPeriod || '').toUpperCase() === 'ANNUAL') ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
-      const plan = SUBSCRIPTION_PLANS[finalTier];
-      finalPricePaise = finalBillingPeriod === BillingPeriod.ANNUAL ? plan.annualPricePaise : plan.monthlyPricePaise;
-      finalPriceRupees = Math.round(finalPricePaise / 100);
-      baseAmount = Math.round((finalPriceRupees / 1.18) * 100) / 100;
-      gstAmount = Math.round((finalPriceRupees - baseAmount) * 100) / 100;
-      orderNote = `Subscription: ${finalTier} (${finalBillingPeriod})`;
-    } else if (normalizedType === 'REPORT') {
-      const reportSku = String(productId || '').toLowerCase();
-      const reportDef = REPORT_CATALOGUE[reportSku];
-      if (!reportDef) {
-        return res.status(400).json({
-          error: 'INVALID_REPORT_SKU',
-          message: `Invalid or missing report product: ${productId}.`
-        });
-      }
-      resolvedProductId = reportSku;
-      const userRecord = await db.findUserById(user.id);
-      const userTier = (userRecord?.subscriptionTier || 'FREE') as SubscriptionTier;
-      const pricing = calculateReportPrice(reportSku, userTier);
-      finalPriceRupees = pricing.finalPriceRupees;
-      finalPricePaise = pricing.finalPricePaise;
-      baseAmount = pricing.basePricePaise / 100;
-      gstAmount = Math.round((finalPriceRupees - finalPriceRupees / 1.18) * 100) / 100;
-      orderNote = `Report Purchase: ${reportDef.displayName}`;
-    } else if (normalizedType === 'WALLET_RECHARGE') {
-      const pricing = calculateWalletRechargePricing(amount, packageId);
-      if (!pricing.valid) {
-        return res.status(400).json({
-          error: 'INVALID_AMOUNT',
-          message: pricing.error || 'A valid recharge amount between ₹1.00 and ₹50,000 is required.'
-        });
-      }
-      finalPriceRupees = pricing.totalPayableAmount;
-      finalPricePaise = pricing.totalPayablePaise;
-      baseAmount = pricing.baseAmount;
-      gstAmount = pricing.gstAmount;
-      bonusAmount = pricing.bonusAmount;
-      creditAmount = pricing.creditAmount;
-      resolvedProductId = packageId || null;
-      orderNote = `Wallet Recharge: ₹${pricing.baseAmount.toFixed(2)} (+₹${pricing.gstAmount.toFixed(2)} GST)`;
-    } else {
-      return res.status(400).json({
-        error: 'INVALID_PRODUCT_TYPE',
-        message: `Unsupported productType: ${productType}. Must be WALLET_RECHARGE, SUBSCRIPTION, or REPORT.`
-      });
-    }
 
-    const orderId = `cf_ord_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    const userRecord = await db.findUserById(user.id);
-    const cfOrder = await createCashfreeOrder({
-      orderId,
-      orderAmount: finalPriceRupees,
-      orderCurrency: 'INR',
-      customer: {
-        customer_id: user.id,
-        customer_phone: userRecord?.phone || '9999999999',
-        customer_email: userRecord?.email || 'seeker@astroverse.ai',
-        customer_name: userRecord?.displayName || 'AstroVerse Seeker'
-      },
-      returnUrl,
-      orderNote
-    });
+      const normalizedType = String(
+        productType || "WALLET_RECHARGE",
+      ).toUpperCase();
 
-    const pricingSnapshot = {
-      finalPriceRupees,
-      finalPricePaise,
-      baseAmount,
-      gstAmount,
-      bonusAmount,
-      creditAmount,
-      billingPeriod: finalBillingPeriod,
-      tier: finalTier,
-      catalogueVersion: '2026.01'
-    };
+      let finalPriceRupees: number;
+      let finalPricePaise: number;
+      let finalTier: SubscriptionTier | undefined = undefined;
+      let finalBillingPeriod: BillingPeriod | undefined = undefined;
+      let baseAmount: number | undefined = undefined;
+      let gstAmount: number | undefined = undefined;
+      let bonusAmount: number | undefined = undefined;
+      let creditAmount: number | undefined = undefined;
+      let resolvedProductId: string | null = null;
+      let orderNote: string;
 
-    await db.createPaymentOrder({
-      userId: user.id,
-      amount: finalPriceRupees,
-      currency: 'INR',
-      provider: 'CASHFREE',
-      providerOrderId: cfOrder.order_id,
-      gateway: 'CASHFREE',
-      cfOrderId: cfOrder.cf_order_id,
-      cfPaymentSessionId: cfOrder.payment_session_id,
-      productType: normalizedType,
-      productId: resolvedProductId || undefined,
-      billingPeriod: finalBillingPeriod,
-      baseAmount,
-      gstAmount,
-      bonusAmount,
-      creditAmount,
-      pricingSnapshot,
-      metadata: {
-        productType: normalizedType,
-        productId: resolvedProductId,
-        billingPeriod: finalBillingPeriod,
-        pricingSnapshot
-      }
-    });
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'CASHFREE_ORDER_CREATED',
-      targetType: 'PAYMENT_ORDER',
-      targetId: cfOrder.order_id,
-      metadata: {
-        amount: finalPriceRupees,
-        amountPaise: finalPricePaise,
-        productType: normalizedType,
-        productId: resolvedProductId,
-        billingPeriod: finalBillingPeriod,
-        cfOrderId: cfOrder.cf_order_id
-      }
-    });
-
-    res.json({
-      success: true,
-      orderId: cfOrder.order_id,
-      cfOrderId: cfOrder.cf_order_id,
-      paymentSessionId: cfOrder.payment_session_id,
-      amount: cfOrder.order_amount,
-      amountPaise: finalPricePaise,
-      currency: cfOrder.order_currency,
-      productType: normalizedType,
-      billingPeriod: finalBillingPeriod
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Cashfree order creation failed');
-  }
-});
-
-// ALL /api/cashfree/verify-order (Synchronous Cashfree Order Status & Payment Verification)
-app.all('/api/cashfree/verify-order', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const orderId = ((req.body?.orderId || req.query?.orderId || '') as string).trim();
-    const user = req.user!;
-    if (!orderId) {
-      return res.status(400).json({ error: 'MISSING_ORDER_ID', message: 'orderId is required.' });
-    }
-
-    let order = await db.findPaymentOrderByIdAsync(orderId);
-
-    // Auto-recovery path: if order record is missing from platform DB, query Cashfree authoritatively!
-    if (!order && isCashfreeConfigured()) {
-      try {
-        const cfStatus = await getCashfreeOrderStatus(orderId);
-        if (cfStatus && cfStatus.order_id) {
-          const cfCustomerId = cfStatus.customer_details?.customer_id;
-          if (cfCustomerId && cfCustomerId !== user.id && user.role !== Role.SUPER_ADMIN) {
-            return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Order does not belong to the authenticated user.' });
-          }
-
-          const orderNote = cfStatus.order_note || '';
-          const totalAmount = Number(cfStatus.order_amount);
-          let productType = 'WALLET_RECHARGE';
-          let productId: string | undefined = undefined;
-          let baseAmount: number = totalAmount;
-          let gstAmount: number = 0;
-          let bonusAmount: number = 0;
-          let creditAmount: number = totalAmount;
-
-          if (orderId.startsWith('cf_sub_') || orderNote.includes('Subscription')) {
-            productType = 'SUBSCRIPTION';
-          } else if (orderId.startsWith('cf_rep_') || orderNote.includes('Report')) {
-            productType = 'REPORT';
-          } else {
-            productType = 'WALLET_RECHARGE';
-            const pkg = APPROVED_RECHARGE_PACKAGES.find(p => Math.abs(p.totalPayable - totalAmount) < 0.01);
-            if (pkg) {
-              baseAmount = pkg.baseAmount;
-              gstAmount = pkg.gstAmount;
-              bonusAmount = pkg.bonus;
-              creditAmount = pkg.totalCredit;
-            } else {
-              const totalPaise = Math.round(totalAmount * 100);
-              const basePaise = Math.round(totalPaise / 1.18);
-              const gstPaise = totalPaise - basePaise;
-              baseAmount = basePaise / 100;
-              gstAmount = gstPaise / 100;
-              bonusAmount = 0;
-              creditAmount = baseAmount;
-            }
-          }
-
-          order = await db.createPaymentOrder({
-            userId: cfCustomerId || user.id,
-            amount: totalAmount,
-            currency: cfStatus.order_currency || 'INR',
-            provider: 'CASHFREE',
-            providerOrderId: cfStatus.order_id,
-            gateway: 'CASHFREE',
-            cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
-            cfPaymentSessionId: cfStatus.payment_session_id || undefined,
-            productType,
-            productId,
-            baseAmount,
-            gstAmount,
-            bonusAmount,
-            creditAmount
-          });
-
-          await db.recordAuditEvent({
-            userId: user.id,
-            action: 'CASHFREE_ORDER_AUTO_RECOVERED',
-            targetType: 'PAYMENT_ORDER',
-            targetId: orderId,
-            metadata: {
-              recoveredFrom: 'CASHFREE_API',
-              cfOrderId: cfStatus.cf_order_id,
-              amount: totalAmount,
-              orderStatus: cfStatus.order_status
-            }
+      if (normalizedType === "SUBSCRIPTION") {
+        const tierKey = String(
+          productId || "",
+        ).toUpperCase() as SubscriptionTier;
+        if (!tierKey || !SUBSCRIPTION_PLANS[tierKey]) {
+          return res.status(400).json({
+            error: "INVALID_SUBSCRIPTION_TIER",
+            message: `Invalid or missing subscription tier: ${productId}. Must be one of: ${Object.keys(SUBSCRIPTION_PLANS).join(", ")}`,
           });
         }
-      } catch (cfErr: any) {
-        console.warn(`[CASHFREE_VERIFY] Gateway lookup failed for ${orderId}:`, cfErr?.message || cfErr);
+        finalTier = tierKey;
+        resolvedProductId = tierKey;
+        finalBillingPeriod =
+          String(billingPeriod || "").toUpperCase() === "ANNUAL"
+            ? BillingPeriod.ANNUAL
+            : BillingPeriod.MONTHLY;
+        const plan = SUBSCRIPTION_PLANS[finalTier];
+        finalPricePaise =
+          finalBillingPeriod === BillingPeriod.ANNUAL
+            ? plan.annualPricePaise
+            : plan.monthlyPricePaise;
+        finalPriceRupees = Math.round(finalPricePaise / 100);
+        baseAmount = Math.round((finalPriceRupees / 1.18) * 100) / 100;
+        gstAmount = Math.round((finalPriceRupees - baseAmount) * 100) / 100;
+        orderNote = `Subscription: ${finalTier} (${finalBillingPeriod})`;
+      } else if (normalizedType === "REPORT") {
+        const reportSku = String(productId || "").toLowerCase();
+        const reportDef = REPORT_CATALOGUE[reportSku];
+        if (!reportDef) {
+          return res.status(400).json({
+            error: "INVALID_REPORT_SKU",
+            message: `Invalid or missing report product: ${productId}.`,
+          });
+        }
+        resolvedProductId = reportSku;
+        const userRecord = await db.findUserById(user.id);
+        const userTier = (userRecord?.subscriptionTier ||
+          "FREE") as SubscriptionTier;
+        const pricing = calculateReportPrice(reportSku, userTier);
+        finalPriceRupees = pricing.finalPriceRupees;
+        finalPricePaise = pricing.finalPricePaise;
+        baseAmount = pricing.basePricePaise / 100;
+        gstAmount =
+          Math.round((finalPriceRupees - finalPriceRupees / 1.18) * 100) / 100;
+        orderNote = `Report Purchase: ${reportDef.displayName}`;
+      } else if (normalizedType === "WALLET_RECHARGE") {
+        const pricing = calculateWalletRechargePricing(amount, packageId);
+        if (!pricing.valid) {
+          return res.status(400).json({
+            error: "INVALID_AMOUNT",
+            message:
+              pricing.error ||
+              "A valid recharge amount between ₹1.00 and ₹50,000 is required.",
+          });
+        }
+        finalPriceRupees = pricing.totalPayableAmount;
+        finalPricePaise = pricing.totalPayablePaise;
+        baseAmount = pricing.baseAmount;
+        gstAmount = pricing.gstAmount;
+        bonusAmount = pricing.bonusAmount;
+        creditAmount = pricing.creditAmount;
+        resolvedProductId = packageId || null;
+        orderNote = `Wallet Recharge: ₹${pricing.baseAmount.toFixed(2)} (+₹${pricing.gstAmount.toFixed(2)} GST)`;
+      } else {
+        return res.status(400).json({
+          error: "INVALID_PRODUCT_TYPE",
+          message: `Unsupported productType: ${productType}. Must be WALLET_RECHARGE, SUBSCRIPTION, or REPORT.`,
+        });
       }
-    }
 
-    if (!order) {
-      return res.status(404).json({
-        error: 'ORDER_NOT_FOUND',
-        message: 'Cashfree payment order was not found.',
+      const orderId = `cf_ord_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+      const userRecord = await db.findUserById(user.id);
+      const cfOrder = await createCashfreeOrder({
         orderId,
-        status: 'RECONCILIATION_REQUIRED'
+        orderAmount: finalPriceRupees,
+        orderCurrency: "INR",
+        customer: {
+          customer_id: user.id,
+          customer_phone: userRecord?.phone || "9999999999",
+          customer_email: userRecord?.email || "seeker@astroverse.ai",
+          customer_name: userRecord?.displayName || "AstroVerse Seeker",
+        },
+        returnUrl,
+        orderNote,
       });
-    }
-    if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-      return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Order does not belong to the authenticated user.' });
-    }
-    if (order.status === OrderStatus.PAID) {
-      const userRec = await db.findUserById(order.userId);
-      return res.json({
+
+      const pricingSnapshot = {
+        finalPriceRupees,
+        finalPricePaise,
+        baseAmount,
+        gstAmount,
+        bonusAmount,
+        creditAmount,
+        billingPeriod: finalBillingPeriod,
+        tier: finalTier,
+        catalogueVersion: "2026.01",
+      };
+
+      await db.createPaymentOrder({
+        userId: user.id,
+        amount: finalPriceRupees,
+        currency: "INR",
+        provider: "CASHFREE",
+        providerOrderId: cfOrder.order_id,
+        gateway: "CASHFREE",
+        cfOrderId: cfOrder.cf_order_id,
+        cfPaymentSessionId: cfOrder.payment_session_id,
+        productType: normalizedType,
+        productId: resolvedProductId || undefined,
+        billingPeriod: finalBillingPeriod,
+        baseAmount,
+        gstAmount,
+        bonusAmount,
+        creditAmount,
+        pricingSnapshot,
+        metadata: {
+          productType: normalizedType,
+          productId: resolvedProductId,
+          billingPeriod: finalBillingPeriod,
+          pricingSnapshot,
+        },
+      });
+
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: "CASHFREE_ORDER_CREATED",
+        targetType: "PAYMENT_ORDER",
+        targetId: cfOrder.order_id,
+        metadata: {
+          amount: finalPriceRupees,
+          amountPaise: finalPricePaise,
+          productType: normalizedType,
+          productId: resolvedProductId,
+          billingPeriod: finalBillingPeriod,
+          cfOrderId: cfOrder.cf_order_id,
+        },
+      });
+
+      res.json({
         success: true,
-        alreadyProcessed: true,
-        status: 'PAID',
-        orderId: order.providerOrderId,
-        amount: order.amount,
-        newBalance: userRec ? userRec.walletBalance : undefined,
-        message: 'Order was already verified and fulfilled.'
+        orderId: cfOrder.order_id,
+        cfOrderId: cfOrder.cf_order_id,
+        paymentSessionId: cfOrder.payment_session_id,
+        amount: cfOrder.order_amount,
+        amountPaise: finalPricePaise,
+        currency: cfOrder.order_currency,
+        productType: normalizedType,
+        billingPeriod: finalBillingPeriod,
       });
+    } catch (err: any) {
+      handleServiceError(res, err, "Cashfree order creation failed");
     }
+  },
+);
 
-    const cfStatus = await getCashfreeOrderStatus(orderId);
-    let isPaid = (cfStatus.order_status === 'PAID');
-    let verifiedPaymentId = cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : `cf_pay_${Date.now()}`;
+// ALL /api/cashfree/verify-order (Synchronous Cashfree Order Status & Payment Verification)
+app.all(
+  "/api/cashfree/verify-order",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const orderId = (
+        (req.body?.orderId || req.query?.orderId || "") as string
+      ).trim();
+      const user = req.user!;
+      if (!orderId) {
+        return res
+          .status(400)
+          .json({ error: "MISSING_ORDER_ID", message: "orderId is required." });
+      }
 
-    // Inspect payment entities for definitive verification
-    const payments = await getPaymentsForCashfreeOrder(orderId).catch(() => []);
-    const successfulPayment = payments.find(p => p.payment_status === 'SUCCESS');
-    if (successfulPayment) {
-      isPaid = true;
-      verifiedPaymentId = String(successfulPayment.cf_payment_id);
-    }
+      let order = await db.findPaymentOrderByIdAsync(orderId);
 
-    if (!isPaid) {
-      // Check for PENDING or USER_DROPPED states
-      const hasPending = payments.some(p => p.payment_status === 'PENDING');
-      if (hasPending) {
+      // Auto-recovery path: if order record is missing from platform DB, query Cashfree authoritatively!
+      if (!order && isCashfreeConfigured()) {
+        try {
+          const cfStatus = await getCashfreeOrderStatus(orderId);
+          if (cfStatus && cfStatus.order_id) {
+            const cfCustomerId = cfStatus.customer_details?.customer_id;
+            if (
+              cfCustomerId &&
+              cfCustomerId !== user.id &&
+              user.role !== Role.SUPER_ADMIN
+            ) {
+              return res.status(403).json({
+                error: "ORDER_USER_MISMATCH",
+                message: "Order does not belong to the authenticated user.",
+              });
+            }
+
+            const orderNote = cfStatus.order_note || "";
+            const totalAmount = Number(cfStatus.order_amount);
+            let productType = "WALLET_RECHARGE";
+            let productId: string | undefined = undefined;
+            let baseAmount: number = totalAmount;
+            let gstAmount: number = 0;
+            let bonusAmount: number = 0;
+            let creditAmount: number = totalAmount;
+
+            if (
+              orderId.startsWith("cf_sub_") ||
+              orderNote.includes("Subscription")
+            ) {
+              productType = "SUBSCRIPTION";
+            } else if (
+              orderId.startsWith("cf_rep_") ||
+              orderNote.includes("Report")
+            ) {
+              productType = "REPORT";
+            } else {
+              productType = "WALLET_RECHARGE";
+              const pkg = APPROVED_RECHARGE_PACKAGES.find(
+                (p) => Math.abs(p.totalPayable - totalAmount) < 0.01,
+              );
+              if (pkg) {
+                baseAmount = pkg.baseAmount;
+                gstAmount = pkg.gstAmount;
+                bonusAmount = pkg.bonus;
+                creditAmount = pkg.totalCredit;
+              } else {
+                const totalPaise = Math.round(totalAmount * 100);
+                const basePaise = Math.round(totalPaise / 1.18);
+                const gstPaise = totalPaise - basePaise;
+                baseAmount = basePaise / 100;
+                gstAmount = gstPaise / 100;
+                bonusAmount = 0;
+                creditAmount = baseAmount;
+              }
+            }
+
+            order = await db.createPaymentOrder({
+              userId: cfCustomerId || user.id,
+              amount: totalAmount,
+              currency: cfStatus.order_currency || "INR",
+              provider: "CASHFREE",
+              providerOrderId: cfStatus.order_id,
+              gateway: "CASHFREE",
+              cfOrderId: cfStatus.cf_order_id
+                ? String(cfStatus.cf_order_id)
+                : undefined,
+              cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+              productType,
+              productId,
+              baseAmount,
+              gstAmount,
+              bonusAmount,
+              creditAmount,
+            });
+
+            await db.recordAuditEvent({
+              userId: user.id,
+              action: "CASHFREE_ORDER_AUTO_RECOVERED",
+              targetType: "PAYMENT_ORDER",
+              targetId: orderId,
+              metadata: {
+                recoveredFrom: "CASHFREE_API",
+                cfOrderId: cfStatus.cf_order_id,
+                amount: totalAmount,
+                orderStatus: cfStatus.order_status,
+              },
+            });
+          }
+        } catch (cfErr: any) {
+          console.warn(
+            `[CASHFREE_VERIFY] Gateway lookup failed for ${orderId}:`,
+            cfErr?.message || cfErr,
+          );
+        }
+      }
+
+      if (!order) {
+        return res.status(404).json({
+          error: "ORDER_NOT_FOUND",
+          message: "Cashfree payment order was not found.",
+          orderId,
+          status: "RECONCILIATION_REQUIRED",
+        });
+      }
+      if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+        return res.status(403).json({
+          error: "ORDER_USER_MISMATCH",
+          message: "Order does not belong to the authenticated user.",
+        });
+      }
+      if (order.status === OrderStatus.PAID) {
+        const userRec = await db.findUserById(order.userId);
         return res.json({
           success: true,
-          status: 'PENDING',
-          message: 'Your payment is being verified by your bank. Please do not retry yet. We will update your order once confirmation is received.'
-        });
-      }
-      const hasDropped = payments.some(p => p.payment_status === 'USER_DROPPED' || p.payment_status === 'CANCELLED');
-      if (hasDropped) {
-        return res.json({
-          success: false,
-          status: 'USER_DROPPED',
-          message: 'Payment checkout was cancelled or closed. No money was debited.'
+          alreadyProcessed: true,
+          status: "PAID",
+          orderId: order.providerOrderId,
+          amount: order.amount,
+          newBalance: userRec ? userRec.walletBalance : undefined,
+          message: "Order was already verified and fulfilled.",
         });
       }
 
-      return res.status(400).json({
-        error: 'PAYMENT_NOT_COMPLETED',
-        message: `Cashfree reports order status as ${cfStatus.order_status}.`,
-        status: cfStatus.order_status,
-        orderId: order.providerOrderId,
-        amount: order.amount
-      });
-    }
+      const cfStatus = await getCashfreeOrderStatus(orderId);
+      let isPaid = cfStatus.order_status === "PAID";
+      let verifiedPaymentId = cfStatus.cf_order_id
+        ? String(cfStatus.cf_order_id)
+        : `cf_pay_${Date.now()}`;
 
-    if (Math.round(cfStatus.order_amount * 100) !== Math.round(order.amount * 100)) {
-      return res.status(400).json({
-        error: 'AMOUNT_MISMATCH',
-        message: `Verified Cashfree amount ₹${cfStatus.order_amount} does not match order amount ₹${order.amount}.`
-      });
-    }
+      // Inspect payment entities for definitive verification
+      const payments = await getPaymentsForCashfreeOrder(orderId).catch(
+        () => [],
+      );
+      const successfulPayment = payments.find(
+        (p) => p.payment_status === "SUCCESS",
+      );
+      if (successfulPayment) {
+        isPaid = true;
+        verifiedPaymentId = String(successfulPayment.cf_payment_id);
+      }
 
-    // Authoritative fulfillment
-    let updatedUser: UserRecord | null = null;
-    if (order.productType === 'WALLET_RECHARGE' || !order.productType) {
-      updatedUser = await db.rechargeWallet(user.id, order.amount, verifiedPaymentId, order.providerOrderId, 'CASHFREE');
-    } else if (order.productType === 'SUBSCRIPTION') {
-      const targetTier = (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
-      const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
-      const period: BillingPeriod = rawPeriod === 'ANNUAL' || rawPeriod === BillingPeriod.ANNUAL
-        ? BillingPeriod.ANNUAL
-        : (rawPeriod === 'MONTHLY' || rawPeriod === BillingPeriod.MONTHLY
-          ? BillingPeriod.MONTHLY
-          : (SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise && Math.round(SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100) === Math.round(order.amount)
+      if (!isPaid) {
+        // Check for PENDING or USER_DROPPED states
+        const hasPending = payments.some((p) => p.payment_status === "PENDING");
+        if (hasPending) {
+          return res.json({
+            success: true,
+            status: "PENDING",
+            message:
+              "Your payment is being verified by your bank. Please do not retry yet. We will update your order once confirmation is received.",
+          });
+        }
+        const hasDropped = payments.some(
+          (p) =>
+            p.payment_status === "USER_DROPPED" ||
+            p.payment_status === "CANCELLED",
+        );
+        if (hasDropped) {
+          return res.json({
+            success: false,
+            status: "USER_DROPPED",
+            message:
+              "Payment checkout was cancelled or closed. No money was debited.",
+          });
+        }
+
+        return res.status(400).json({
+          error: "PAYMENT_NOT_COMPLETED",
+          message: `Cashfree reports order status as ${cfStatus.order_status}.`,
+          status: cfStatus.order_status,
+          orderId: order.providerOrderId,
+          amount: order.amount,
+        });
+      }
+
+      if (
+        Math.round(cfStatus.order_amount * 100) !==
+        Math.round(order.amount * 100)
+      ) {
+        return res.status(400).json({
+          error: "AMOUNT_MISMATCH",
+          message: `Verified Cashfree amount ₹${cfStatus.order_amount} does not match order amount ₹${order.amount}.`,
+        });
+      }
+
+      // Authoritative fulfillment
+      let updatedUser: UserRecord | null = null;
+      if (order.productType === "WALLET_RECHARGE" || !order.productType) {
+        updatedUser = await db.rechargeWallet(
+          user.id,
+          order.amount,
+          verifiedPaymentId,
+          order.providerOrderId,
+          "CASHFREE",
+        );
+      } else if (order.productType === "SUBSCRIPTION") {
+        const targetTier =
+          (order.productId as SubscriptionTier) || SubscriptionTier.PLUS;
+        const rawPeriod = order.billingPeriod || order.metadata?.billingPeriod;
+        const period: BillingPeriod =
+          rawPeriod === "ANNUAL" || rawPeriod === BillingPeriod.ANNUAL
             ? BillingPeriod.ANNUAL
-            : BillingPeriod.MONTHLY));
-      const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
-      updatedUser = await db.fulfillPaidSubscriptionOrder({
+            : rawPeriod === "MONTHLY" || rawPeriod === BillingPeriod.MONTHLY
+              ? BillingPeriod.MONTHLY
+              : SUBSCRIPTION_PLANS[targetTier]?.annualPricePaise &&
+                  Math.round(
+                    SUBSCRIPTION_PLANS[targetTier].annualPricePaise / 100,
+                  ) === Math.round(order.amount)
+                ? BillingPeriod.ANNUAL
+                : BillingPeriod.MONTHLY;
+        const durationDays = period === BillingPeriod.ANNUAL ? 365 : 30;
+        updatedUser = await db.fulfillPaidSubscriptionOrder({
+          userId: user.id,
+          tier: targetTier as any,
+          billingPeriod: period as any,
+          durationDays,
+          orderId: order.providerOrderId,
+          paymentId: verifiedPaymentId,
+          amount: order.amount,
+          provider: "CASHFREE",
+          currency: "INR",
+        });
+      } else {
+        await db.markPaymentOrderPaid(
+          order.providerOrderId,
+          verifiedPaymentId,
+          "CASHFREE",
+        );
+        updatedUser = await db.findUserById(user.id);
+      }
+
+      await db.recordAuditEvent({
         userId: user.id,
-        tier: targetTier as any,
-        billingPeriod: period as any,
-        durationDays,
-        orderId: order.providerOrderId,
-        paymentId: verifiedPaymentId,
-        amount: order.amount,
-        provider: 'CASHFREE',
-        currency: 'INR'
+        action: "CASHFREE_ORDER_VERIFIED",
+        targetType: "PAYMENT_ORDER",
+        targetId: orderId,
+        metadata: {
+          amount: order.amount,
+          cfOrderId: cfStatus.cf_order_id,
+          provider: "CASHFREE",
+        },
       });
-    } else {
-      await db.markPaymentOrderPaid(order.providerOrderId, verifiedPaymentId, 'CASHFREE');
-      updatedUser = await db.findUserById(user.id);
+
+      res.json({
+        success: true,
+        status: "PAID",
+        orderId: order.providerOrderId,
+        amount: order.amount,
+        newBalance: updatedUser ? updatedUser.walletBalance : undefined,
+        gateway: "CASHFREE",
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Cashfree order verification failed");
     }
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'CASHFREE_ORDER_VERIFIED',
-      targetType: 'PAYMENT_ORDER',
-      targetId: orderId,
-      metadata: { amount: order.amount, cfOrderId: cfStatus.cf_order_id, provider: 'CASHFREE' }
-    });
-
-    res.json({
-      success: true,
-      status: 'PAID',
-      orderId: order.providerOrderId,
-      amount: order.amount,
-      newBalance: updatedUser ? updatedUser.walletBalance : undefined,
-      gateway: 'CASHFREE'
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Cashfree order verification failed');
-  }
-});
+  },
+);
 
 // Note: Cashfree webhook endpoints are declared authoritatively in Section 5 (before /api/wallet/:userId)
 
 // GET /api/config (Public runtime client configuration without secret leakage)
-app.get('/api/config', async (_req: Request, res: Response) => {
+app.get("/api/config", async (_req: Request, res: Response) => {
   await syncGatewayCredentialsFromDb();
   const readiness = getPaymentReadinessStatus();
   res.json({
-    status: 'CONFIG_READY',
+    status: "CONFIG_READY",
     paymentsConfigured: readiness.configured,
     readinessState: readiness.state,
     readinessMessage: readiness.customerMessage,
-    currency: 'INR',
-    gateway: 'CASHFREE',
+    currency: "INR",
+    gateway: "CASHFREE",
     isLiveGateway: readiness.configured,
-    cashfreeAppId: readiness.configured ? (process.env.CASHFREE_APP_ID || CANONICAL_CASHFREE_APP_ID) : '',
+    cashfreeAppId: readiness.configured
+      ? process.env.CASHFREE_APP_ID || CANONICAL_CASHFREE_APP_ID
+      : "",
     cashfreeAppIdMasked: readiness.appIdMasked,
     cashfreeEnv: readiness.environment,
     isCashfreeConfigured: readiness.configured,
     firebase: {
-      apiKey: process.env.FIREBASE_API_KEY || '',
-      authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'astroverse-c0b90.firebaseapp.com',
-      projectId: process.env.FIREBASE_PROJECT_ID || 'astroverse-c0b90',
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'astroverse-c0b90.firebasestorage.app',
-      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || '719758726336',
-      appId: process.env.FIREBASE_APP_ID || '1:719758726336:web:1e9ed188ed9651562e4925',
-      measurementId: process.env.FIREBASE_MEASUREMENT_ID || 'G-C2JVGQ8GH2'
-    }
+      apiKey: process.env.FIREBASE_API_KEY || "",
+      authDomain:
+        process.env.FIREBASE_AUTH_DOMAIN || "astroverse-c0b90.firebaseapp.com",
+      projectId: process.env.FIREBASE_PROJECT_ID || "astroverse-c0b90",
+      storageBucket:
+        process.env.FIREBASE_STORAGE_BUCKET ||
+        "astroverse-c0b90.firebasestorage.app",
+      messagingSenderId:
+        process.env.FIREBASE_MESSAGING_SENDER_ID || "719758726336",
+      appId:
+        process.env.FIREBASE_APP_ID ||
+        "1:719758726336:web:1e9ed188ed9651562e4925",
+      measurementId: process.env.FIREBASE_MEASUREMENT_ID || "G-C2JVGQ8GH2",
+    },
   });
 });
 
 // GET /api/catalog/products (Public canonical product and pricing catalogue)
-app.get(['/api/catalog/products', '/api/subscriptions/catalog', '/api/wallet/catalog'], (_req: Request, res: Response) => {
-  res.json({
-    success: true,
-    currency: 'INR',
-    products: getAllCanonicalProducts('ALL'),
-    subscriptionPlans: Object.values(SUBSCRIPTION_PLANS),
-    timestamp: new Date().toISOString()
-  });
-});
+app.get(
+  [
+    "/api/catalog/products",
+    "/api/subscriptions/catalog",
+    "/api/wallet/catalog",
+  ],
+  (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      currency: "INR",
+      products: getAllCanonicalProducts("ALL"),
+      subscriptionPlans: Object.values(SUBSCRIPTION_PLANS),
+      timestamp: new Date().toISOString(),
+    });
+  },
+);
 
 // GET /api/admin/products (Admin view of canonical products, pricing, and versions)
-app.get('/api/admin/products', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
-  res.json({
-    success: true,
-    currency: 'INR',
-    products: getAllCanonicalProducts(),
-    subscriptionPlans: Object.values(SUBSCRIPTION_PLANS),
-    auditTrail: (db as any).data?.auditEvents?.filter((e: any) => e.action === 'PRODUCT_PRICE_UPDATED')?.slice(0, 20) || []
-  });
-});
+app.get(
+  "/api/admin/products",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_PAYMENTS),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    res.json({
+      success: true,
+      currency: "INR",
+      products: getAllCanonicalProducts(),
+      subscriptionPlans: Object.values(SUBSCRIPTION_PLANS),
+      auditTrail:
+        (db as any).data?.auditEvents
+          ?.filter((e: any) => e.action === "PRODUCT_PRICE_UPDATED")
+          ?.slice(0, 20) || [],
+    });
+  },
+);
 
 // POST /api/admin/products/preview (Preview price update calculations before publishing)
-app.post('/api/admin/products/preview', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (req: AuthenticatedRequest, res: Response) => {
-  const { id, proposedAmountRupees, proposedAnnualRupees } = req.body;
-  const prod = getCanonicalProduct(id);
-  if (!prod) {
-    return res.status(404).json({ error: 'PRODUCT_NOT_FOUND', message: `Product '${id}' does not exist.` });
-  }
-
-  const currentPrice = prod.amountRupees;
-  const newPrice = Number(proposedAmountRupees);
-  if (!Number.isFinite(newPrice) || newPrice <= 0) {
-    return res.status(400).json({ error: 'INVALID_PRICE', message: 'Proposed price must be a positive number.' });
-  }
-
-  const diffRupees = newPrice - currentPrice;
-  const diffPercent = currentPrice > 0 ? Number(((diffRupees / currentPrice) * 100).toFixed(1)) : 0;
-  const gstPercent = prod.taxConfiguration?.gstPercent || 18;
-  const taxInclusive = prod.taxConfiguration?.inclusive ?? true;
-
-  const payableRupees = taxInclusive ? newPrice : Number((newPrice * (1 + gstPercent / 100)).toFixed(2));
-
-  res.json({
-    success: true,
-    id: prod.id,
-    name: prod.name,
-    category: prod.category,
-    currentPriceRupees: currentPrice,
-    proposedPriceRupees: newPrice,
-    diffRupees,
-    diffPercent,
-    proposedAnnualRupees: proposedAnnualRupees ? Number(proposedAnnualRupees) : prod.annualPriceRupees,
-    taxConfiguration: {
-      gstPercent,
-      inclusive: taxInclusive,
-      calculatedPayableRupees: payableRupees
-    },
-    entitlementMapping: prod.entitlementMapping
-  });
-});
-
-// PUT /api/admin/products/:id (Authorized price update with audit logging and price version increment)
-app.put('/api/admin/products/:id', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_PRICING), requireAdminAssurance('pricing:update'), async (req: AuthenticatedRequest, res: Response) => {
-  const { id } = req.params;
-  const { amountRupees, annualPriceRupees, active, description, reason } = req.body;
-  const adminUser = req.user!;
-
-  if (reason !== undefined && (typeof reason !== 'string' || reason.trim().length < 5)) {
-    return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required.' });
-  }
-
-  const prod = getCanonicalProduct(id);
-  if (!prod) {
-    return res.status(404).json({ error: 'PRODUCT_NOT_FOUND', message: `Product '${id}' not found.` });
-  }
-
-  const oldPrice = prod.amountRupees;
-  const oldAnnual = prod.annualPriceRupees;
-
-  try {
-    const updated = updateCanonicalProductPrice(
-      id,
-      Number(amountRupees),
-      adminUser.email || adminUser.id,
-      annualPriceRupees ? Number(annualPriceRupees) : undefined
-    );
-
-    if (typeof active === 'boolean') {
-      updated.active = active;
-    }
-    if (typeof description === 'string' && description.trim()) {
-      updated.description = description.trim();
+app.post(
+  "/api/admin/products/preview",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_PAYMENTS),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id, proposedAmountRupees, proposedAnnualRupees } = req.body;
+    const prod = getCanonicalProduct(id);
+    if (!prod) {
+      return res.status(404).json({
+        error: "PRODUCT_NOT_FOUND",
+        message: `Product '${id}' does not exist.`,
+      });
     }
 
-    await db.recordAuditEvent({
-      userId: adminUser.id,
-      actorId: adminUser.id,
-      actorRole: adminUser.role,
-      action: 'PRODUCT_PRICE_UPDATED',
-      targetType: 'PRODUCT',
-      targetId: id,
-      outcome: 'SUCCESS',
-      metadata: {
-        productId: id,
-        oldPriceRupees: oldPrice,
-        newPriceRupees: updated.amountRupees,
-        oldAnnualRupees: oldAnnual,
-        newAnnualRupees: updated.annualPriceRupees,
-        version: updated.version,
-        reason: reason ? reason.trim() : 'Administrative price update',
-        updatedBy: adminUser.email || adminUser.id
-      }
-    });
+    const currentPrice = prod.amountRupees;
+    const newPrice = Number(proposedAmountRupees);
+    if (!Number.isFinite(newPrice) || newPrice <= 0) {
+      return res.status(400).json({
+        error: "INVALID_PRICE",
+        message: "Proposed price must be a positive number.",
+      });
+    }
+
+    const diffRupees = newPrice - currentPrice;
+    const diffPercent =
+      currentPrice > 0
+        ? Number(((diffRupees / currentPrice) * 100).toFixed(1))
+        : 0;
+    const gstPercent = prod.taxConfiguration?.gstPercent || 18;
+    const taxInclusive = prod.taxConfiguration?.inclusive ?? true;
+
+    const payableRupees = taxInclusive
+      ? newPrice
+      : Number((newPrice * (1 + gstPercent / 100)).toFixed(2));
 
     res.json({
       success: true,
-      message: `Product '${updated.name}' price updated to ₹${updated.amountRupees} (v${updated.version}).`,
-      product: updated
+      id: prod.id,
+      name: prod.name,
+      category: prod.category,
+      currentPriceRupees: currentPrice,
+      proposedPriceRupees: newPrice,
+      diffRupees,
+      diffPercent,
+      proposedAnnualRupees: proposedAnnualRupees
+        ? Number(proposedAnnualRupees)
+        : prod.annualPriceRupees,
+      taxConfiguration: {
+        gstPercent,
+        inclusive: taxInclusive,
+        calculatedPayableRupees: payableRupees,
+      },
+      entitlementMapping: prod.entitlementMapping,
     });
-  } catch (err: any) {
-    res.status(400).json({ error: 'UPDATE_FAILED', message: err.message });
-  }
-});
+  },
+);
+
+// PUT /api/admin/products/:id (Authorized price update with audit logging and price version increment)
+app.put(
+  "/api/admin/products/:id",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_PRICING),
+  requireAdminAssurance("pricing:update"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const { amountRupees, annualPriceRupees, active, description, reason } =
+      req.body;
+    const adminUser = req.user!;
+
+    if (
+      reason !== undefined &&
+      (typeof reason !== "string" || reason.trim().length < 5)
+    ) {
+      return res.status(400).json({
+        error: "REASON_REQUIRED",
+        message: "A detailed reason (at least 5 characters) is required.",
+      });
+    }
+
+    const prod = getCanonicalProduct(id);
+    if (!prod) {
+      return res.status(404).json({
+        error: "PRODUCT_NOT_FOUND",
+        message: `Product '${id}' not found.`,
+      });
+    }
+
+    const oldPrice = prod.amountRupees;
+    const oldAnnual = prod.annualPriceRupees;
+
+    try {
+      const updated = updateCanonicalProductPrice(
+        id,
+        Number(amountRupees),
+        adminUser.email || adminUser.id,
+        annualPriceRupees ? Number(annualPriceRupees) : undefined,
+      );
+
+      if (typeof active === "boolean") {
+        updated.active = active;
+      }
+      if (typeof description === "string" && description.trim()) {
+        updated.description = description.trim();
+      }
+
+      await db.recordAuditEvent({
+        userId: adminUser.id,
+        actorId: adminUser.id,
+        actorRole: adminUser.role,
+        action: "PRODUCT_PRICE_UPDATED",
+        targetType: "PRODUCT",
+        targetId: id,
+        outcome: "SUCCESS",
+        metadata: {
+          productId: id,
+          oldPriceRupees: oldPrice,
+          newPriceRupees: updated.amountRupees,
+          oldAnnualRupees: oldAnnual,
+          newAnnualRupees: updated.annualPriceRupees,
+          version: updated.version,
+          reason: reason ? reason.trim() : "Administrative price update",
+          updatedBy: adminUser.email || adminUser.id,
+        },
+      });
+
+      res.json({
+        success: true,
+        message: `Product '${updated.name}' price updated to ₹${updated.amountRupees} (v${updated.version}).`,
+        product: updated,
+      });
+    } catch (err: any) {
+      res.status(400).json({ error: "UPDATE_FAILED", message: err.message });
+    }
+  },
+);
 
 // Sync gateway credentials from PostgreSQL database if not present in process.env
 export async function syncGatewayCredentialsFromDb(): Promise<void> {
   try {
-    if (process.env.CASHFREE_SECRET_KEY === 'FORCE_EMPTY') return;
+    if (process.env.CASHFREE_SECRET_KEY === "FORCE_EMPTY") return;
     const saved = await db.getCashfreeGatewayConfig();
     if (saved && saved.env) {
       const { secretKey } = getResolvedCashfreeCredentials();
-      const isProdKey = secretKey.startsWith('cfsk_ma_prod_');
-      if (!(isProdKey && saved.env === 'sandbox')) {
+      const isProdKey = secretKey.startsWith("cfsk_ma_prod_");
+      if (!(isProdKey && saved.env === "sandbox")) {
         process.env.CASHFREE_ENV = saved.env;
       }
     }
   } catch (err: any) {
-    console.warn('[GATEWAY] syncGatewayCredentialsFromDb warning:', err?.message || err);
+    console.warn(
+      "[GATEWAY] syncGatewayCredentialsFromDb warning:",
+      err?.message || err,
+    );
   }
 }
 
 // GET /api/admin/payment-readiness (Comprehensive diagnostic status for Admin Control Centre)
-app.get('/api/admin/payment-readiness', authenticate, requireAdmin(AdminPermission.VIEW_PAYMENTS), async (_req: AuthenticatedRequest, res: Response) => {
-  await syncGatewayCredentialsFromDb();
-  const readiness = getPaymentReadinessStatus();
-  res.json({
-    success: true,
-    readiness,
-    activeGateway: 'CASHFREE',
-    apiVersion: process.env.CASHFREE_API_VERSION || '2026-01-01',
-    returnUrlPattern: 'https://astroverse-eta.vercel.app/?cf_order_id={order_id}',
-    webhookUrl: 'https://astroverse-eta.vercel.app/api/webhooks/cashfree',
-    timestamp: new Date().toISOString()
-  });
-});
+app.get(
+  "/api/admin/payment-readiness",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_PAYMENTS),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    await syncGatewayCredentialsFromDb();
+    const readiness = getPaymentReadinessStatus();
+    res.json({
+      success: true,
+      readiness,
+      activeGateway: "CASHFREE",
+      apiVersion: process.env.CASHFREE_API_VERSION || "2026-01-01",
+      returnUrlPattern:
+        "https://astroverse-eta.vercel.app/?cf_order_id={order_id}",
+      webhookUrl: "https://astroverse-eta.vercel.app/api/webhooks/cashfree",
+      timestamp: new Date().toISOString(),
+    });
+  },
+);
 
 // POST /api/admin/gateway-credentials (Super Admin / Owner activates Cashfree credentials)
-app.post('/api/admin/gateway-credentials', adminSensitiveMutationsLimiter, authenticate, requireAdmin([Role.OWNER, Role.SUPER_ADMIN]), requireAdminAssurance('gateway:credentials'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { secretKey, appId, env } = req.body;
-    if (!secretKey || typeof secretKey !== 'string') {
-      return res.status(400).json({ error: 'INVALID_CREDENTIALS', message: 'secretKey is required.' });
-    }
-
-    const trimmedSecret = secretKey.trim();
-    if (trimmedSecret.length < 24) {
-      return res.status(400).json({ error: 'INVALID_CREDENTIALS', message: 'Secret key is too short.' });
-    }
-
-    const effectiveAppId = (appId && typeof appId === 'string' && appId.trim()) || CANONICAL_CASHFREE_APP_ID;
-    const effectiveEnv = env === 'sandbox' ? 'sandbox' : 'production';
-
-    // Set runtime override in memory
-    setRuntimeCashfreeSecretKey(trimmedSecret);
-    process.env.CASHFREE_APP_ID = effectiveAppId;
-    process.env.CASHFREE_ENV = effectiveEnv;
-
-    // Persist to PostgreSQL database across all serverless lambda instances
-    await db.saveCashfreeGatewayConfig({
-      secretKey: trimmedSecret,
-      appId: effectiveAppId,
-      env: effectiveEnv
-    });
-
-    // Verify readiness
-    const readiness = getPaymentReadinessStatus();
-    const adminUser = req.user!;
-
-    await db.recordAuditEvent({
-      userId: adminUser.id,
-      actorId: adminUser.id,
-      actorRole: adminUser.role,
-      action: 'GATEWAY_CREDENTIALS_CONFIGURED',
-      targetType: 'GATEWAY',
-      targetId: 'CASHFREE',
-      outcome: 'SUCCESS',
-      metadata: {
-        gateway: 'CASHFREE',
-        appIdMasked: readiness.appIdMasked,
-        environment: readiness.environment,
-        state: readiness.state
+app.post(
+  "/api/admin/gateway-credentials",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin([Role.OWNER, Role.SUPER_ADMIN]),
+  requireAdminAssurance("gateway:credentials"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { secretKey, appId, env } = req.body;
+      if (!secretKey || typeof secretKey !== "string") {
+        return res.status(400).json({
+          error: "INVALID_CREDENTIALS",
+          message: "secretKey is required.",
+        });
       }
-    });
 
-    return res.json({
-      success: true,
-      message: 'Cashfree credentials activated and durably saved to PostgreSQL database.',
-      readiness
-    });
-  } catch (err: any) {
-    return handleServiceError(res, err, 'Failed to update gateway credentials');
-  }
-});
+      const trimmedSecret = secretKey.trim();
+      if (trimmedSecret.length < 24) {
+        return res.status(400).json({
+          error: "INVALID_CREDENTIALS",
+          message: "Secret key is too short.",
+        });
+      }
+
+      const effectiveAppId =
+        (appId && typeof appId === "string" && appId.trim()) ||
+        CANONICAL_CASHFREE_APP_ID;
+      const effectiveEnv = env === "sandbox" ? "sandbox" : "production";
+
+      // Set runtime override in memory
+      setRuntimeCashfreeSecretKey(trimmedSecret);
+      process.env.CASHFREE_APP_ID = effectiveAppId;
+      process.env.CASHFREE_ENV = effectiveEnv;
+
+      // Persist to PostgreSQL database across all serverless lambda instances
+      await db.saveCashfreeGatewayConfig({
+        secretKey: trimmedSecret,
+        appId: effectiveAppId,
+        env: effectiveEnv,
+      });
+
+      // Verify readiness
+      const readiness = getPaymentReadinessStatus();
+      const adminUser = req.user!;
+
+      await db.recordAuditEvent({
+        userId: adminUser.id,
+        actorId: adminUser.id,
+        actorRole: adminUser.role,
+        action: "GATEWAY_CREDENTIALS_CONFIGURED",
+        targetType: "GATEWAY",
+        targetId: "CASHFREE",
+        outcome: "SUCCESS",
+        metadata: {
+          gateway: "CASHFREE",
+          appIdMasked: readiness.appIdMasked,
+          environment: readiness.environment,
+          state: readiness.state,
+        },
+      });
+
+      return res.json({
+        success: true,
+        message:
+          "Cashfree credentials activated and durably saved to PostgreSQL database.",
+        readiness,
+      });
+    } catch (err: any) {
+      return handleServiceError(
+        res,
+        err,
+        "Failed to update gateway credentials",
+      );
+    }
+  },
+);
 
 // ============================================================================
 // ENTERPRISE OWNER CONTROL CENTRE & BUSINESS MANAGEMENT APIS
 // ============================================================================
 
 // GET /api/admin/customers/:id/360 (Comprehensive Customer 360 Profile)
-app.get('/api/admin/customers/:id/360', authenticate, requireAdmin(AdminPermission.VIEW_CUSTOMER_360), async (req: AuthenticatedRequest, res: Response) => {
-  const accessCheck = validatePrivilegedCustomerAccess(req.user!, req.params.id, req);
-  if (!accessCheck.authorized) {
-    return res.status(accessCheck.statusCode || 403).json({
-      error: accessCheck.error || 'FORBIDDEN',
-      message: accessCheck.message || 'Access denied'
-    });
-  }
-
-  try {
-    const customer360 = await db.getCustomer360(req.params.id);
-    if (!customer360) {
-      return res.status(404).json({ error: 'CUSTOMER_NOT_FOUND', message: 'Customer record does not exist.' });
+app.get(
+  "/api/admin/customers/:id/360",
+  authenticate,
+  requireAdmin(AdminPermission.VIEW_CUSTOMER_360),
+  async (req: AuthenticatedRequest, res: Response) => {
+    const accessCheck = validatePrivilegedCustomerAccess(
+      req.user!,
+      req.params.id,
+      req,
+    );
+    if (!accessCheck.authorized) {
+      return res.status(accessCheck.statusCode || 403).json({
+        error: accessCheck.error || "FORBIDDEN",
+        message: accessCheck.message || "Access denied",
+      });
     }
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_CUSTOMER_360_VIEWED',
-      targetType: 'CUSTOMER',
-      targetId: req.params.id,
-      outcome: 'SUCCESS',
-      metadata: { targetUserId: req.params.id, reason: accessCheck.reason }
-    });
+    try {
+      const customer360 = await db.getCustomer360(req.params.id);
+      if (!customer360) {
+        return res.status(404).json({
+          error: "CUSTOMER_NOT_FOUND",
+          message: "Customer record does not exist.",
+        });
+      }
 
-    return res.json({ success: true, customer: customer360 });
-  } catch (err: any) {
-    return handleServiceError(res, err, 'Failed to fetch customer 360 profile');
-  }
-});
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ADMIN_CUSTOMER_360_VIEWED",
+        targetType: "CUSTOMER",
+        targetId: req.params.id,
+        outcome: "SUCCESS",
+        metadata: { targetUserId: req.params.id, reason: accessCheck.reason },
+      });
+
+      return res.json({ success: true, customer: customer360 });
+    } catch (err: any) {
+      return handleServiceError(
+        res,
+        err,
+        "Failed to fetch customer 360 profile",
+      );
+    }
+  },
+);
 
 // POST /api/admin/customers/:id/notes (Add Internal Administrative Support Note)
-app.post('/api/admin/customers/:id/notes', authenticate, requireAdmin(AdminPermission.MANAGE_CUSTOMER_NOTES), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { content, category } = req.body;
-    if (!content || typeof content !== 'string' || !content.trim()) {
-      return res.status(400).json({ error: 'CONTENT_REQUIRED', message: 'Note content is required.' });
+app.post(
+  "/api/admin/customers/:id/notes",
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_CUSTOMER_NOTES),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { content, category } = req.body;
+      if (!content || typeof content !== "string" || !content.trim()) {
+        return res.status(400).json({
+          error: "CONTENT_REQUIRED",
+          message: "Note content is required.",
+        });
+      }
+      const adminUser = req.user!;
+      const note = await db.addCustomerNote(
+        req.params.id,
+        adminUser.id,
+        adminUser.email || "admin@astroverse.app",
+        content.trim(),
+        category || "GENERAL",
+      );
+
+      await db.recordAuditEvent({
+        userId: adminUser.id,
+        actorId: adminUser.id,
+        actorRole: adminUser.role,
+        action: "CUSTOMER_NOTE_ADDED",
+        targetType: "CUSTOMER",
+        targetId: req.params.id,
+        outcome: "SUCCESS",
+        metadata: {
+          targetUserId: req.params.id,
+          category: category || "GENERAL",
+        },
+      });
+
+      return res.status(201).json({ success: true, note });
+    } catch (err: any) {
+      return handleServiceError(res, err, "Failed to add customer note");
     }
-    const adminUser = req.user!;
-    const note = await db.addCustomerNote(
-      req.params.id,
-      adminUser.id,
-      adminUser.email || 'admin@astroverse.app',
-      content.trim(),
-      category || 'GENERAL'
-    );
-
-    await db.recordAuditEvent({
-      userId: adminUser.id,
-      actorId: adminUser.id,
-      actorRole: adminUser.role,
-      action: 'CUSTOMER_NOTE_ADDED',
-      targetType: 'CUSTOMER',
-      targetId: req.params.id,
-      outcome: 'SUCCESS',
-      metadata: { targetUserId: req.params.id, category: category || 'GENERAL' }
-    });
-
-    return res.status(201).json({ success: true, note });
-  } catch (err: any) {
-    return handleServiceError(res, err, 'Failed to add customer note');
-  }
-});
+  },
+);
 
 // GET /api/admin/entitlements (List Platform Entitlements)
-app.get('/api/admin/entitlements', authenticate, requireAdmin([AdminPermission.MANAGE_ENTITLEMENTS, AdminPermission.VIEW_USERS]), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.query.userId as string | undefined;
-    const activeOnly = req.query.activeOnly === 'true';
-    const entitlements = await db.listEntitlements({ userId, activeOnly });
-    return res.json({ success: true, entitlements, count: entitlements.length });
-  } catch (err: any) {
-    return handleServiceError(res, err, 'Failed to list entitlements');
-  }
-});
+app.get(
+  "/api/admin/entitlements",
+  authenticate,
+  requireAdmin([
+    AdminPermission.MANAGE_ENTITLEMENTS,
+    AdminPermission.VIEW_USERS,
+  ]),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.query.userId as string | undefined;
+      const activeOnly = req.query.activeOnly === "true";
+      const entitlements = await db.listEntitlements({ userId, activeOnly });
+      return res.json({
+        success: true,
+        entitlements,
+        count: entitlements.length,
+      });
+    } catch (err: any) {
+      return handleServiceError(res, err, "Failed to list entitlements");
+    }
+  },
+);
 
 // POST /api/admin/entitlements/grant (Grant Platform Feature Entitlement)
-app.post('/api/admin/entitlements/grant', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_ENTITLEMENTS), requireAdminAssurance('entitlements:grant'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { userId, featureKey, durationDays, source, reason, metadata } = req.body;
-    if (!userId || !featureKey) {
-      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and featureKey are required.' });
-    }
-    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
-      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
-    }
-    const validSources = ['ADMIN_GRANT', 'PROMOTIONAL_GRANT', 'SUPPORT_COMPENSATION', 'TRIAL_GRANT', 'PAID_SUBSCRIPTION'];
-    const effectiveSource = validSources.includes(source) ? source : 'ADMIN_GRANT';
-    const effectiveReason = reason.trim();
-    const effectiveDays = durationDays !== undefined && durationDays !== null ? Number(durationDays) : null;
-
-    const entitlement = await db.grantEntitlement(
-      userId,
-      featureKey,
-      effectiveDays,
-      effectiveSource as any,
-      req.user!.email || req.user!.id,
-      effectiveReason,
-      metadata
-    );
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ENTITLEMENT_GRANTED',
-      targetType: 'ENTITLEMENT',
-      targetId: featureKey,
-      outcome: 'SUCCESS',
-      metadata: {
-        targetUserId: userId,
-        featureKey,
-        durationDays: effectiveDays,
-        reason: effectiveReason,
-        source: effectiveSource
+app.post(
+  "/api/admin/entitlements/grant",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_ENTITLEMENTS),
+  requireAdminAssurance("entitlements:grant"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { userId, featureKey, durationDays, source, reason, metadata } =
+        req.body;
+      if (!userId || !featureKey) {
+        return res.status(400).json({
+          error: "INVALID_PARAMS",
+          message: "userId and featureKey are required.",
+        });
       }
-    });
+      if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
+      }
+      const validSources = [
+        "ADMIN_GRANT",
+        "PROMOTIONAL_GRANT",
+        "SUPPORT_COMPENSATION",
+        "TRIAL_GRANT",
+        "PAID_SUBSCRIPTION",
+      ];
+      const effectiveSource = validSources.includes(source)
+        ? source
+        : "ADMIN_GRANT";
+      const effectiveReason = reason.trim();
+      const effectiveDays =
+        durationDays !== undefined && durationDays !== null
+          ? Number(durationDays)
+          : null;
 
-    return res.status(201).json({ success: true, entitlement });
-  } catch (err: any) {
-    if (err?.message === 'USER_NOT_FOUND') {
-      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'Target user does not exist.' });
+      const entitlement = await db.grantEntitlement(
+        userId,
+        featureKey,
+        effectiveDays,
+        effectiveSource as any,
+        req.user!.email || req.user!.id,
+        effectiveReason,
+        metadata,
+      );
+
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ENTITLEMENT_GRANTED",
+        targetType: "ENTITLEMENT",
+        targetId: featureKey,
+        outcome: "SUCCESS",
+        metadata: {
+          targetUserId: userId,
+          featureKey,
+          durationDays: effectiveDays,
+          reason: effectiveReason,
+          source: effectiveSource,
+        },
+      });
+
+      return res.status(201).json({ success: true, entitlement });
+    } catch (err: any) {
+      if (err?.message === "USER_NOT_FOUND") {
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: "Target user does not exist.",
+        });
+      }
+      return handleServiceError(res, err, "Failed to grant entitlement");
     }
-    return handleServiceError(res, err, 'Failed to grant entitlement');
-  }
-});
+  },
+);
 
 // POST /api/admin/entitlements/revoke (Revoke Platform Feature Entitlement)
-app.post('/api/admin/entitlements/revoke', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_ENTITLEMENTS), requireAdminAssurance('entitlements:revoke'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { entitlementId, reason } = req.body;
-    if (!entitlementId) {
-      return res.status(400).json({ error: 'ENTITLEMENT_ID_REQUIRED', message: 'entitlementId is required.' });
-    }
-    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
-      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
-    }
-    const effectiveReason = reason.trim();
-    const result = await db.revokeEntitlement(entitlementId, req.user!.email || req.user!.id, effectiveReason);
-
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ENTITLEMENT_REVOKED',
-      targetType: 'ENTITLEMENT',
-      targetId: entitlementId,
-      outcome: 'SUCCESS',
-      metadata: {
-        entitlementId,
-        reason: effectiveReason
+app.post(
+  "/api/admin/entitlements/revoke",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_ENTITLEMENTS),
+  requireAdminAssurance("entitlements:revoke"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { entitlementId, reason } = req.body;
+      if (!entitlementId) {
+        return res.status(400).json({
+          error: "ENTITLEMENT_ID_REQUIRED",
+          message: "entitlementId is required.",
+        });
       }
-    });
+      if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
+      }
+      const effectiveReason = reason.trim();
+      const result = await db.revokeEntitlement(
+        entitlementId,
+        req.user!.email || req.user!.id,
+        effectiveReason,
+      );
 
-    return res.json(result);
-  } catch (err: any) {
-    if (err?.message === 'ENTITLEMENT_NOT_FOUND') {
-      return res.status(404).json({ error: 'ENTITLEMENT_NOT_FOUND', message: 'Entitlement record not found.' });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ENTITLEMENT_REVOKED",
+        targetType: "ENTITLEMENT",
+        targetId: entitlementId,
+        outcome: "SUCCESS",
+        metadata: {
+          entitlementId,
+          reason: effectiveReason,
+        },
+      });
+
+      return res.json(result);
+    } catch (err: any) {
+      if (err?.message === "ENTITLEMENT_NOT_FOUND") {
+        return res.status(404).json({
+          error: "ENTITLEMENT_NOT_FOUND",
+          message: "Entitlement record not found.",
+        });
+      }
+      return handleServiceError(res, err, "Failed to revoke entitlement");
     }
-    return handleServiceError(res, err, 'Failed to revoke entitlement');
-  }
-});
+  },
+);
 
 // POST /api/admin/subscriptions/assign (Direct Plan Assignment & Override)
-app.post('/api/admin/subscriptions/assign', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:assign'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { userId, tier, billingPeriod, durationDays, reason, grantSource } = req.body;
-    if (!userId || !tier) {
-      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId and tier are required.' });
-    }
-    if (!['FREE', 'PLUS', 'PREMIUM'].includes(tier)) {
-      return res.status(400).json({ error: 'INVALID_TIER', message: 'tier must be FREE, PLUS, or PREMIUM.' });
-    }
-    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
-      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
-    }
+app.post(
+  "/api/admin/subscriptions/assign",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS),
+  requireAdminAssurance("subscriptions:assign"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { userId, tier, billingPeriod, durationDays, reason, grantSource } =
+        req.body;
+      if (!userId || !tier) {
+        return res.status(400).json({
+          error: "INVALID_PARAMS",
+          message: "userId and tier are required.",
+        });
+      }
+      if (!["FREE", "PLUS", "PREMIUM"].includes(tier)) {
+        return res.status(400).json({
+          error: "INVALID_TIER",
+          message: "tier must be FREE, PLUS, or PREMIUM.",
+        });
+      }
+      if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
+      }
 
-    // Reject VERIFIED_PAID_PURCHASE from admin endpoint
-    if (grantSource === 'VERIFIED_PAID_PURCHASE') {
-      return res.status(400).json({
-        error: 'INVALID_GRANT_SOURCE',
-        message: 'VERIFIED_PAID_PURCHASE cannot be granted manually via admin endpoint. It requires verified payment gateway order settlement.'
-      });
-    }
+      // Reject VERIFIED_PAID_PURCHASE from admin endpoint
+      if (grantSource === "VERIFIED_PAID_PURCHASE") {
+        return res.status(400).json({
+          error: "INVALID_GRANT_SOURCE",
+          message:
+            "VERIFIED_PAID_PURCHASE cannot be granted manually via admin endpoint. It requires verified payment gateway order settlement.",
+        });
+      }
 
-    const validSources = ['ADMIN_COMPLIMENTARY', 'PROMOTIONAL', 'SUPPORT_COMPENSATION', 'MANUAL_MIGRATION'];
-    if (grantSource && !validSources.includes(grantSource)) {
-      return res.status(400).json({
-        error: 'INVALID_GRANT_SOURCE',
-        message: `grantSource must be one of: ${validSources.join(', ')}. Unsupported grant sources are rejected.`
-      });
-    }
-    const chosenSource = tier === 'FREE' ? 'ADMIN_COMPLIMENTARY' : (grantSource || 'ADMIN_COMPLIMENTARY');
-    const mappedEntitlementSource = chosenSource === 'PROMOTIONAL' 
-      ? 'PROMOTIONAL_GRANT' 
-      : (chosenSource === 'SUPPORT_COMPENSATION' 
-          ? 'SUPPORT_COMPENSATION' 
-          : (chosenSource === 'MANUAL_MIGRATION' ? 'MANUAL_MIGRATION' : 'ADMIN_COMPLIMENTARY'));
+      const validSources = [
+        "ADMIN_COMPLIMENTARY",
+        "PROMOTIONAL",
+        "SUPPORT_COMPENSATION",
+        "MANUAL_MIGRATION",
+      ];
+      if (grantSource && !validSources.includes(grantSource)) {
+        return res.status(400).json({
+          error: "INVALID_GRANT_SOURCE",
+          message: `grantSource must be one of: ${validSources.join(", ")}. Unsupported grant sources are rejected.`,
+        });
+      }
+      const chosenSource =
+        tier === "FREE"
+          ? "ADMIN_COMPLIMENTARY"
+          : grantSource || "ADMIN_COMPLIMENTARY";
+      const mappedEntitlementSource =
+        chosenSource === "PROMOTIONAL"
+          ? "PROMOTIONAL_GRANT"
+          : chosenSource === "SUPPORT_COMPENSATION"
+            ? "SUPPORT_COMPENSATION"
+            : chosenSource === "MANUAL_MIGRATION"
+              ? "MANUAL_MIGRATION"
+              : "ADMIN_COMPLIMENTARY";
 
-    // Validate billingPeriod if tier != FREE
-    if (tier !== 'FREE' && billingPeriod && !['MONTHLY', 'ANNUAL'].includes(billingPeriod)) {
-      return res.status(400).json({
-        error: 'INVALID_BILLING_PERIOD',
-        message: 'billingPeriod must be MONTHLY or ANNUAL.'
-      });
-    }
+      // Validate billingPeriod if tier != FREE
+      if (
+        tier !== "FREE" &&
+        billingPeriod &&
+        !["MONTHLY", "ANNUAL"].includes(billingPeriod)
+      ) {
+        return res.status(400).json({
+          error: "INVALID_BILLING_PERIOD",
+          message: "billingPeriod must be MONTHLY or ANNUAL.",
+        });
+      }
 
-    // Strict duration validation: 15, 30, 60, 90, 180, 365
-    let effectiveDays: number | null = null;
-    if (tier !== 'FREE') {
-      const allowedDurations = [15, 30, 60, 90, 180, 365];
-      if (durationDays !== undefined && durationDays !== null) {
-        const d = Number(durationDays);
-        if (!Number.isInteger(d) || !allowedDurations.includes(d)) {
-          return res.status(400).json({
-            error: 'INVALID_DURATION',
-            message: 'Subscription duration must be one of: 15, 30, 60, 90, 180, or 365 days. 0 days or permanent grants are prohibited.'
-          });
+      // Strict duration validation: 15, 30, 60, 90, 180, 365
+      let effectiveDays: number | null = null;
+      if (tier !== "FREE") {
+        const allowedDurations = [15, 30, 60, 90, 180, 365];
+        if (durationDays !== undefined && durationDays !== null) {
+          const d = Number(durationDays);
+          if (!Number.isInteger(d) || !allowedDurations.includes(d)) {
+            return res.status(400).json({
+              error: "INVALID_DURATION",
+              message:
+                "Subscription duration must be one of: 15, 30, 60, 90, 180, or 365 days. 0 days or permanent grants are prohibited.",
+            });
+          }
+          effectiveDays = d;
+        } else {
+          effectiveDays = billingPeriod === "ANNUAL" ? 365 : 30;
         }
-        effectiveDays = d;
-      } else {
-        effectiveDays = billingPeriod === 'ANNUAL' ? 365 : 30;
       }
-    }
 
-    const effectivePeriod = tier === 'FREE' ? null : (billingPeriod === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY');
-    const effectiveReason = reason.trim();
+      const effectivePeriod =
+        tier === "FREE"
+          ? null
+          : billingPeriod === "ANNUAL"
+            ? "ANNUAL"
+            : "MONTHLY";
+      const effectiveReason = reason.trim();
 
-    const updatedUser = await db.assignSubscriptionTier(
-      userId,
-      tier,
-      effectivePeriod,
-      effectiveDays,
-      req.user!.id,
-      effectiveReason,
-      mappedEntitlementSource as any,
-      (req.headers['x-request-id'] as string) || undefined
-    );
+      const updatedUser = await db.assignSubscriptionTier(
+        userId,
+        tier,
+        effectivePeriod,
+        effectiveDays,
+        req.user!.id,
+        effectiveReason,
+        mappedEntitlementSource as any,
+        (req.headers["x-request-id"] as string) || undefined,
+      );
 
-    return res.json({
-      success: true,
-      message: `Subscription plan ${tier} (${chosenSource}) successfully assigned to user ${userId}.`,
-      user: {
-        id: updatedUser.id,
-        subscriptionTier: updatedUser.subscriptionTier,
-        subscriptionStatus: updatedUser.subscriptionStatus,
-        subscriptionBillingPeriod: updatedUser.subscriptionBillingPeriod,
-        subscriptionExpiresAt: updatedUser.subscriptionExpiresAt
+      return res.json({
+        success: true,
+        message: `Subscription plan ${tier} (${chosenSource}) successfully assigned to user ${userId}.`,
+        user: {
+          id: updatedUser.id,
+          subscriptionTier: updatedUser.subscriptionTier,
+          subscriptionStatus: updatedUser.subscriptionStatus,
+          subscriptionBillingPeriod: updatedUser.subscriptionBillingPeriod,
+          subscriptionExpiresAt: updatedUser.subscriptionExpiresAt,
+        },
+      });
+    } catch (err: any) {
+      if (err?.message === "USER_NOT_FOUND") {
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: "Target user does not exist.",
+        });
       }
-    });
-  } catch (err: any) {
-    if (err?.message === 'USER_NOT_FOUND') {
-      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'Target user does not exist.' });
+      return handleServiceError(res, err, "Failed to assign subscription tier");
     }
-    return handleServiceError(res, err, 'Failed to assign subscription tier');
-  }
-});
+  },
+);
 
 // POST /api/admin/subscriptions/extend (Extend Active Subscription Expiration)
-app.post('/api/admin/subscriptions/extend', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:extend'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { userId, additionalDays, reason } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId is required.' });
-    }
-    const allowedExtensions = [15, 30, 60, 90, 180, 365];
-    const d = Number(additionalDays);
-    if (!Number.isInteger(d) || !allowedExtensions.includes(d)) {
-      return res.status(400).json({
-        error: 'INVALID_DURATION',
-        message: 'Extension days must be one of: 15, 30, 60, 90, 180, or 365 days.'
-      });
-    }
-    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
-      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
-    }
-    const effectiveReason = reason.trim();
-
-    const updatedUser = await db.extendSubscription(
-      userId,
-      additionalDays,
-      req.user!.id,
-      effectiveReason,
-      (req.headers['x-request-id'] as string) || undefined
-    );
-
-    return res.json({
-      success: true,
-      message: `Subscription successfully extended by ${additionalDays} days.`,
-      user: {
-        id: updatedUser.id,
-        subscriptionTier: updatedUser.subscriptionTier,
-        subscriptionStatus: updatedUser.subscriptionStatus,
-        subscriptionExpiresAt: updatedUser.subscriptionExpiresAt
+app.post(
+  "/api/admin/subscriptions/extend",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS),
+  requireAdminAssurance("subscriptions:extend"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { userId, additionalDays, reason } = req.body;
+      if (!userId) {
+        return res
+          .status(400)
+          .json({ error: "INVALID_PARAMS", message: "userId is required." });
       }
-    });
-  } catch (err: any) {
-    if (err?.message === 'USER_NOT_FOUND') {
-      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'Target user does not exist.' });
+      const allowedExtensions = [15, 30, 60, 90, 180, 365];
+      const d = Number(additionalDays);
+      if (!Number.isInteger(d) || !allowedExtensions.includes(d)) {
+        return res.status(400).json({
+          error: "INVALID_DURATION",
+          message:
+            "Extension days must be one of: 15, 30, 60, 90, 180, or 365 days.",
+        });
+      }
+      if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
+      }
+      const effectiveReason = reason.trim();
+
+      const updatedUser = await db.extendSubscription(
+        userId,
+        additionalDays,
+        req.user!.id,
+        effectiveReason,
+        (req.headers["x-request-id"] as string) || undefined,
+      );
+
+      return res.json({
+        success: true,
+        message: `Subscription successfully extended by ${additionalDays} days.`,
+        user: {
+          id: updatedUser.id,
+          subscriptionTier: updatedUser.subscriptionTier,
+          subscriptionStatus: updatedUser.subscriptionStatus,
+          subscriptionExpiresAt: updatedUser.subscriptionExpiresAt,
+        },
+      });
+    } catch (err: any) {
+      if (err?.message === "USER_NOT_FOUND") {
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: "Target user does not exist.",
+        });
+      }
+      if (err?.message === "NO_ACTIVE_SUBSCRIPTION_TO_EXTEND") {
+        return res.status(400).json({
+          error: "NO_ACTIVE_SUBSCRIPTION",
+          message:
+            "User does not have an active PLUS or PREMIUM subscription to extend.",
+        });
+      }
+      return handleServiceError(res, err, "Failed to extend subscription");
     }
-    if (err?.message === 'NO_ACTIVE_SUBSCRIPTION_TO_EXTEND') {
-      return res.status(400).json({ error: 'NO_ACTIVE_SUBSCRIPTION', message: 'User does not have an active PLUS or PREMIUM subscription to extend.' });
-    }
-    return handleServiceError(res, err, 'Failed to extend subscription');
-  }
-});
+  },
+);
 
 // POST /api/admin/subscriptions/cancel (Cancel Active Subscription - renewal vs immediate termination)
-app.post('/api/admin/subscriptions/cancel', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS), requireAdminAssurance('subscriptions:cancel'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { userId, cancelMode, reason } = req.body;
-    if (!userId) {
-      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'userId is required.' });
-    }
-    if (!reason || typeof reason !== 'string' || reason.trim().length < 5) {
-      return res.status(400).json({ error: 'REASON_REQUIRED', message: 'A detailed reason (at least 5 characters) is required for audit compliance.' });
-    }
-    const mode = (cancelMode === 'CANCEL_RENEWAL') ? 'CANCEL_RENEWAL' : 'IMMEDIATE_TERMINATION';
-    const effectiveReason = reason.trim();
-
-    const updatedUser = await db.cancelSubscription(
-      userId,
-      mode,
-      req.user!.id,
-      effectiveReason
-    );
-
-    return res.json({
-      success: true,
-      message: mode === 'CANCEL_RENEWAL'
-        ? `Subscription renewal cancelled. Paid access preserved until ${updatedUser.subscriptionExpiresAt || 'expiration'}.`
-        : `Subscription immediately terminated and reverted to FREE for user ${userId}.`,
-      user: {
-        id: updatedUser.id,
-        subscriptionTier: updatedUser.subscriptionTier,
-        subscriptionStatus: updatedUser.subscriptionStatus,
-        subscriptionExpiresAt: updatedUser.subscriptionExpiresAt
+app.post(
+  "/api/admin/subscriptions/cancel",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_SUBSCRIPTIONS),
+  requireAdminAssurance("subscriptions:cancel"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { userId, cancelMode, reason } = req.body;
+      if (!userId) {
+        return res
+          .status(400)
+          .json({ error: "INVALID_PARAMS", message: "userId is required." });
       }
-    });
-  } catch (err: any) {
-    if (err?.message === 'USER_NOT_FOUND') {
-      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'Target user does not exist.' });
+      if (!reason || typeof reason !== "string" || reason.trim().length < 5) {
+        return res.status(400).json({
+          error: "REASON_REQUIRED",
+          message:
+            "A detailed reason (at least 5 characters) is required for audit compliance.",
+        });
+      }
+      const mode =
+        cancelMode === "CANCEL_RENEWAL"
+          ? "CANCEL_RENEWAL"
+          : "IMMEDIATE_TERMINATION";
+      const effectiveReason = reason.trim();
+
+      const updatedUser = await db.cancelSubscription(
+        userId,
+        mode,
+        req.user!.id,
+        effectiveReason,
+      );
+
+      return res.json({
+        success: true,
+        message:
+          mode === "CANCEL_RENEWAL"
+            ? `Subscription renewal cancelled. Paid access preserved until ${updatedUser.subscriptionExpiresAt || "expiration"}.`
+            : `Subscription immediately terminated and reverted to FREE for user ${userId}.`,
+        user: {
+          id: updatedUser.id,
+          subscriptionTier: updatedUser.subscriptionTier,
+          subscriptionStatus: updatedUser.subscriptionStatus,
+          subscriptionExpiresAt: updatedUser.subscriptionExpiresAt,
+        },
+      });
+    } catch (err: any) {
+      if (err?.message === "USER_NOT_FOUND") {
+        return res.status(404).json({
+          error: "USER_NOT_FOUND",
+          message: "Target user does not exist.",
+        });
+      }
+      return handleServiceError(res, err, "Failed to cancel subscription");
     }
-    return handleServiceError(res, err, 'Failed to cancel subscription');
-  }
-});
+  },
+);
 
 // GET /api/admin/analytics/overview (Platform Business Analytics & KPI Overview)
-app.get('/api/admin/analytics/overview', authenticate, requireAdmin([AdminPermission.VIEW_ANALYTICS, AdminPermission.VIEW_OVERVIEW]), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const analytics = await db.getBusinessAnalytics();
-    return res.json({ success: true, ...analytics });
-  } catch (err: any) {
-    return handleServiceError(res, err, 'Failed to compute business analytics');
-  }
-});
+app.get(
+  "/api/admin/analytics/overview",
+  authenticate,
+  requireAdmin([AdminPermission.VIEW_ANALYTICS, AdminPermission.VIEW_OVERVIEW]),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const analytics = await db.getBusinessAnalytics();
+      return res.json({ success: true, ...analytics });
+    } catch (err: any) {
+      return handleServiceError(
+        res,
+        err,
+        "Failed to compute business analytics",
+      );
+    }
+  },
+);
 
 // GET /api/admin/promotions (List Platform Promotional Campaigns & Coupons)
-app.get('/api/admin/promotions', authenticate, requireAdmin([AdminPermission.MANAGE_PROMOTIONS, AdminPermission.VIEW_PAYMENTS]), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const promotions = await db.listPromotions();
-    return res.json({ success: true, promotions, count: promotions.length });
-  } catch (err: any) {
-    return handleServiceError(res, err, 'Failed to list promotions');
-  }
-});
+app.get(
+  "/api/admin/promotions",
+  authenticate,
+  requireAdmin([
+    AdminPermission.MANAGE_PROMOTIONS,
+    AdminPermission.VIEW_PAYMENTS,
+  ]),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const promotions = await db.listPromotions();
+      return res.json({ success: true, promotions, count: promotions.length });
+    } catch (err: any) {
+      return handleServiceError(res, err, "Failed to list promotions");
+    }
+  },
+);
 
 // POST /api/admin/promotions (Create New Promotional Campaign or Coupon Code)
-app.post('/api/admin/promotions', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_PROMOTIONS), requireAdminAssurance('promotions:create'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { code, description, discountType, discountValue, applicableTo, minOrderAmount, maxDiscount, maxUses, durationDays } = req.body;
-    if (!code || !discountType || discountValue === undefined || !applicableTo) {
-      return res.status(400).json({ error: 'INVALID_PARAMS', message: 'code, discountType, discountValue, and applicableTo are required.' });
-    }
-    const promo = await db.createPromotion({
-      code,
-      description: description || `Promotion code ${code.toUpperCase()}`,
-      discountType,
-      discountValue: Number(discountValue),
-      applicableTo,
-      minOrderAmount: minOrderAmount ? Number(minOrderAmount) : 0,
-      maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
-      maxUses: maxUses ? Number(maxUses) : 1000,
-      durationDays: durationDays ? Number(durationDays) : 30,
-      createdBy: req.user!.email || req.user!.id
-    });
+app.post(
+  "/api/admin/promotions",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_PROMOTIONS),
+  requireAdminAssurance("promotions:create"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const {
+        code,
+        description,
+        discountType,
+        discountValue,
+        applicableTo,
+        minOrderAmount,
+        maxDiscount,
+        maxUses,
+        durationDays,
+      } = req.body;
+      if (
+        !code ||
+        !discountType ||
+        discountValue === undefined ||
+        !applicableTo
+      ) {
+        return res.status(400).json({
+          error: "INVALID_PARAMS",
+          message:
+            "code, discountType, discountValue, and applicableTo are required.",
+        });
+      }
+      const promo = await db.createPromotion({
+        code,
+        description: description || `Promotion code ${code.toUpperCase()}`,
+        discountType,
+        discountValue: Number(discountValue),
+        applicableTo,
+        minOrderAmount: minOrderAmount ? Number(minOrderAmount) : 0,
+        maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
+        maxUses: maxUses ? Number(maxUses) : 1000,
+        durationDays: durationDays ? Number(durationDays) : 30,
+        createdBy: req.user!.email || req.user!.id,
+      });
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'PROMOTION_CREATED',
-      targetType: 'PROMOTION',
-      targetId: promo.id,
-      outcome: 'SUCCESS',
-      metadata: { code: promo.code, discountType, discountValue }
-    });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "PROMOTION_CREATED",
+        targetType: "PROMOTION",
+        targetId: promo.id,
+        outcome: "SUCCESS",
+        metadata: { code: promo.code, discountType, discountValue },
+      });
 
-    return res.status(201).json({ success: true, promotion: promo });
-  } catch (err: any) {
-    if (err?.message === 'PROMO_CODE_EXISTS') {
-      return res.status(409).json({ error: 'PROMO_CODE_EXISTS', message: 'A promotional campaign with this code already exists.' });
+      return res.status(201).json({ success: true, promotion: promo });
+    } catch (err: any) {
+      if (err?.message === "PROMO_CODE_EXISTS") {
+        return res.status(409).json({
+          error: "PROMO_CODE_EXISTS",
+          message: "A promotional campaign with this code already exists.",
+        });
+      }
+      return handleServiceError(res, err, "Failed to create promotion");
     }
-    return handleServiceError(res, err, 'Failed to create promotion');
-  }
-});
+  },
+);
 
 // PUT /api/admin/promotions/:id/status (Toggle Promotion Active State)
-app.put('/api/admin/promotions/:id/status', adminSensitiveMutationsLimiter, authenticate, requireAdmin(AdminPermission.MANAGE_PROMOTIONS), requireAdminAssurance('promotions:status'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { isActive } = req.body;
-    if (typeof isActive !== 'boolean') {
-      return res.status(400).json({ error: 'INVALID_STATUS', message: 'isActive boolean is required.' });
-    }
-    const promo = await db.togglePromotion(req.params.id, isActive);
+app.put(
+  "/api/admin/promotions/:id/status",
+  adminSensitiveMutationsLimiter,
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_PROMOTIONS),
+  requireAdminAssurance("promotions:status"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { isActive } = req.body;
+      if (typeof isActive !== "boolean") {
+        return res.status(400).json({
+          error: "INVALID_STATUS",
+          message: "isActive boolean is required.",
+        });
+      }
+      const promo = await db.togglePromotion(req.params.id, isActive);
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'PROMOTION_STATUS_UPDATED',
-      targetType: 'PROMOTION',
-      targetId: req.params.id,
-      outcome: 'SUCCESS',
-      metadata: { promotionId: req.params.id, isActive }
-    });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "PROMOTION_STATUS_UPDATED",
+        targetType: "PROMOTION",
+        targetId: req.params.id,
+        outcome: "SUCCESS",
+        metadata: { promotionId: req.params.id, isActive },
+      });
 
-    return res.json({ success: true, promotion: promo });
-  } catch (err: any) {
-    if (err?.message === 'PROMOTION_NOT_FOUND') {
-      return res.status(404).json({ error: 'PROMOTION_NOT_FOUND', message: 'Promotional campaign not found.' });
+      return res.json({ success: true, promotion: promo });
+    } catch (err: any) {
+      if (err?.message === "PROMOTION_NOT_FOUND") {
+        return res.status(404).json({
+          error: "PROMOTION_NOT_FOUND",
+          message: "Promotional campaign not found.",
+        });
+      }
+      return handleServiceError(res, err, "Failed to update promotion status");
     }
-    return handleServiceError(res, err, 'Failed to update promotion status');
-  }
-});
+  },
+);
 
 // GET /api/admin/astrologers (List Astrologers with Operational Metrics)
-app.get('/api/admin/astrologers', authenticate, requireAdmin([AdminPermission.VIEW_CONSULTATIONS, AdminPermission.VIEW_ASTROLOGY_HEALTH]), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const astrologers = await db.listAstrologers();
-    return res.json({ success: true, astrologers, count: astrologers.length });
-  } catch (err: any) {
-    return handleServiceError(res, err, 'Failed to list astrologers');
-  }
-});
+app.get(
+  "/api/admin/astrologers",
+  authenticate,
+  requireAdmin([
+    AdminPermission.VIEW_CONSULTATIONS,
+    AdminPermission.VIEW_ASTROLOGY_HEALTH,
+  ]),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const astrologers = await db.listAstrologers();
+      return res.json({
+        success: true,
+        astrologers,
+        count: astrologers.length,
+      });
+    } catch (err: any) {
+      return handleServiceError(res, err, "Failed to list astrologers");
+    }
+  },
+);
 
 // POST /api/admin/astrologers/:id/verify (Verify or Unverify Astrologer)
-app.post('/api/admin/astrologers/:id/verify', authenticate, requireAdmin(AdminPermission.MANAGE_CONSULTATIONS), requireAdminAssurance('astrologer:verify'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const isVerified = req.body.isVerified !== false;
-    const astro = await db.verifyAstrologer(req.params.id, isVerified);
+app.post(
+  "/api/admin/astrologers/:id/verify",
+  authenticate,
+  requireAdmin(AdminPermission.MANAGE_CONSULTATIONS),
+  requireAdminAssurance("astrologer:verify"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const isVerified = req.body.isVerified !== false;
+      const astro = await db.verifyAstrologer(req.params.id, isVerified);
 
-    await db.recordAuditEvent({
-      userId: req.user!.id,
-      actorId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ASTROLOGER_VERIFICATION_UPDATED',
-      targetType: 'ASTROLOGER',
-      targetId: req.params.id,
-      outcome: 'SUCCESS',
-      metadata: { astrologerId: req.params.id, isVerified }
-    });
+      await db.recordAuditEvent({
+        userId: req.user!.id,
+        actorId: req.user!.id,
+        actorRole: req.user!.role,
+        action: "ASTROLOGER_VERIFICATION_UPDATED",
+        targetType: "ASTROLOGER",
+        targetId: req.params.id,
+        outcome: "SUCCESS",
+        metadata: { astrologerId: req.params.id, isVerified },
+      });
 
-    return res.json({ success: true, astrologer: astro });
-  } catch (err: any) {
-    if (err?.message === 'ASTROLOGER_NOT_FOUND') {
-      return res.status(404).json({ error: 'ASTROLOGER_NOT_FOUND', message: 'Astrologer not found.' });
+      return res.json({ success: true, astrologer: astro });
+    } catch (err: any) {
+      if (err?.message === "ASTROLOGER_NOT_FOUND") {
+        return res.status(404).json({
+          error: "ASTROLOGER_NOT_FOUND",
+          message: "Astrologer not found.",
+        });
+      }
+      return handleServiceError(
+        res,
+        err,
+        "Failed to update astrologer verification",
+      );
     }
-    return handleServiceError(res, err, 'Failed to update astrologer verification');
-  }
-});
+  },
+);
 
 // GET /api/admin/consultations (List Platform Consultations & Free Trial Sessions)
-app.get('/api/admin/consultations', authenticate, requireAdmin([AdminPermission.VIEW_CONSULTATIONS, AdminPermission.VIEW_ASTROLOGY_HEALTH]), async (_req: AuthenticatedRequest, res: Response) => {
-  try {
-    const sessions = await db.listConsultationSessions(100);
-    return res.json({ success: true, sessions, count: sessions.length });
-  } catch (err: any) {
-    return handleServiceError(res, err, 'Failed to list consultation sessions');
-  }
-});
+app.get(
+  "/api/admin/consultations",
+  authenticate,
+  requireAdmin([
+    AdminPermission.VIEW_CONSULTATIONS,
+    AdminPermission.VIEW_ASTROLOGY_HEALTH,
+  ]),
+  async (_req: AuthenticatedRequest, res: Response) => {
+    try {
+      const sessions = await db.listConsultationSessions(100);
+      return res.json({ success: true, sessions, count: sessions.length });
+    } catch (err: any) {
+      return handleServiceError(
+        res,
+        err,
+        "Failed to list consultation sessions",
+      );
+    }
+  },
+);
 
 // ============================================================================
 // CANONICAL LOCATION INTELLIGENCE & GEOCODING PROXY
@@ -9299,58 +12584,436 @@ export interface CanonicalLocation {
   region: string;
   district?: string;
   timezone: string;
-  precision: 'city' | 'town' | 'village' | 'administrative' | 'manual';
-  source: 'open-meteo' | 'gazetteer' | 'manual';
+  precision: "city" | "town" | "village" | "administrative" | "manual";
+  source: "open-meteo" | "gazetteer" | "manual";
   resolved_at: string;
 }
 
-const BUILTIN_GAZETTEER: Array<Omit<CanonicalLocation, 'resolved_at'>> = [
-  { id: 'gaz-delhi', name: 'Delhi', display_name: 'Delhi, NCT, India', latitude: 28.6519, longitude: 77.2315, country: 'India', country_code: 'IN', region: 'NCT', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-new-delhi', name: 'New Delhi', display_name: 'New Delhi, Delhi, India', latitude: 28.6139, longitude: 77.2090, country: 'India', country_code: 'IN', region: 'Delhi', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-jabalpur', name: 'Jabalpur', display_name: 'Jabalpur, Madhya Pradesh, India', latitude: 23.1815, longitude: 79.9864, country: 'India', country_code: 'IN', region: 'Madhya Pradesh', district: 'Jabalpur', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-mumbai', name: 'Mumbai', display_name: 'Mumbai, Maharashtra, India', latitude: 19.0760, longitude: 72.8777, country: 'India', country_code: 'IN', region: 'Maharashtra', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-bengaluru', name: 'Bengaluru', display_name: 'Bengaluru, Karnataka, India', latitude: 12.9716, longitude: 77.5946, country: 'India', country_code: 'IN', region: 'Karnataka', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-kolkata', name: 'Kolkata', display_name: 'Kolkata, West Bengal, India', latitude: 22.5726, longitude: 88.3639, country: 'India', country_code: 'IN', region: 'West Bengal', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-chennai', name: 'Chennai', display_name: 'Chennai, Tamil Nadu, India', latitude: 13.0827, longitude: 80.2707, country: 'India', country_code: 'IN', region: 'Tamil Nadu', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-hyderabad', name: 'Hyderabad', display_name: 'Hyderabad, Telangana, India', latitude: 17.3850, longitude: 78.4867, country: 'India', country_code: 'IN', region: 'Telangana', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-ahmedabad', name: 'Ahmedabad', display_name: 'Ahmedabad, Gujarat, India', latitude: 23.0225, longitude: 72.5714, country: 'India', country_code: 'IN', region: 'Gujarat', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-pune', name: 'Pune', display_name: 'Pune, Maharashtra, India', latitude: 18.5204, longitude: 73.8567, country: 'India', country_code: 'IN', region: 'Maharashtra', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-jaipur', name: 'Jaipur', display_name: 'Jaipur, Rajasthan, India', latitude: 26.9124, longitude: 75.7873, country: 'India', country_code: 'IN', region: 'Rajasthan', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-lucknow', name: 'Lucknow', display_name: 'Lucknow, Uttar Pradesh, India', latitude: 26.8467, longitude: 80.9462, country: 'India', country_code: 'IN', region: 'Uttar Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-kanpur', name: 'Kanpur', display_name: 'Kanpur, Uttar Pradesh, India', latitude: 26.4499, longitude: 80.3319, country: 'India', country_code: 'IN', region: 'Uttar Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-nagpur', name: 'Nagpur', display_name: 'Nagpur, Maharashtra, India', latitude: 21.1458, longitude: 79.0882, country: 'India', country_code: 'IN', region: 'Maharashtra', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-indore', name: 'Indore', display_name: 'Indore, Madhya Pradesh, India', latitude: 22.7196, longitude: 75.8577, country: 'India', country_code: 'IN', region: 'Madhya Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-bhopal', name: 'Bhopal', display_name: 'Bhopal, Madhya Pradesh, India', latitude: 23.2599, longitude: 77.4126, country: 'India', country_code: 'IN', region: 'Madhya Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-patna', name: 'Patna', display_name: 'Patna, Bihar, India', latitude: 25.5941, longitude: 85.1376, country: 'India', country_code: 'IN', region: 'Bihar', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-varanasi', name: 'Varanasi', display_name: 'Varanasi, Uttar Pradesh, India', latitude: 25.3176, longitude: 82.9739, country: 'India', country_code: 'IN', region: 'Uttar Pradesh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-chandigarh', name: 'Chandigarh', display_name: 'Chandigarh, Punjab/Haryana, India', latitude: 30.7333, longitude: 76.7794, country: 'India', country_code: 'IN', region: 'Chandigarh', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-surat', name: 'Surat', display_name: 'Surat, Gujarat, India', latitude: 21.1702, longitude: 72.8311, country: 'India', country_code: 'IN', region: 'Gujarat', timezone: 'Asia/Kolkata', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-london', name: 'London', display_name: 'London, Greater London, United Kingdom', latitude: 51.5074, longitude: -0.1278, country: 'United Kingdom', country_code: 'GB', region: 'England', timezone: 'Europe/London', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-new-york', name: 'New York', display_name: 'New York, New York, United States', latitude: 40.7128, longitude: -74.0060, country: 'United States', country_code: 'US', region: 'New York', timezone: 'America/New_York', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-tokyo', name: 'Tokyo', display_name: 'Tokyo, Tokyo, Japan', latitude: 35.6762, longitude: 139.6503, country: 'Japan', country_code: 'JP', region: 'Tokyo', timezone: 'Asia/Tokyo', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-sydney', name: 'Sydney', display_name: 'Sydney, New South Wales, Australia', latitude: -33.8688, longitude: 151.2093, country: 'Australia', country_code: 'AU', region: 'New South Wales', timezone: 'Australia/Sydney', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-paris', name: 'Paris', display_name: 'Paris, Île-de-France, France', latitude: 48.8566, longitude: 2.3522, country: 'France', country_code: 'FR', region: 'Île-de-France', timezone: 'Europe/Paris', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-berlin', name: 'Berlin', display_name: 'Berlin, Berlin, Germany', latitude: 52.5200, longitude: 13.4050, country: 'Germany', country_code: 'DE', region: 'Berlin', timezone: 'Europe/Berlin', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-dubai', name: 'Dubai', display_name: 'Dubai, Dubai, United Arab Emirates', latitude: 25.2048, longitude: 55.2708, country: 'United Arab Emirates', country_code: 'AE', region: 'Dubai', timezone: 'Asia/Dubai', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-singapore', name: 'Singapore', display_name: 'Singapore, Singapore', latitude: 1.3521, longitude: 103.8198, country: 'Singapore', country_code: 'SG', region: 'Singapore', timezone: 'Asia/Singapore', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-toronto', name: 'Toronto', display_name: 'Toronto, Ontario, Canada', latitude: 43.6532, longitude: -79.3832, country: 'Canada', country_code: 'CA', region: 'Ontario', timezone: 'America/Toronto', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-san-francisco', name: 'San Francisco', display_name: 'San Francisco, California, United States', latitude: 37.7749, longitude: -122.4194, country: 'United States', country_code: 'US', region: 'California', timezone: 'America/Los_Angeles', precision: 'city', source: 'gazetteer' },
-  { id: 'gaz-chicago', name: 'Chicago', display_name: 'Chicago, Illinois, United States', latitude: 41.8781, longitude: -87.6298, country: 'United States', country_code: 'US', region: 'Illinois', timezone: 'America/Chicago', precision: 'city', source: 'gazetteer' }
+const BUILTIN_GAZETTEER: Array<Omit<CanonicalLocation, "resolved_at">> = [
+  {
+    id: "gaz-delhi",
+    name: "Delhi",
+    display_name: "Delhi, NCT, India",
+    latitude: 28.6519,
+    longitude: 77.2315,
+    country: "India",
+    country_code: "IN",
+    region: "NCT",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-new-delhi",
+    name: "New Delhi",
+    display_name: "New Delhi, Delhi, India",
+    latitude: 28.6139,
+    longitude: 77.209,
+    country: "India",
+    country_code: "IN",
+    region: "Delhi",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-jabalpur",
+    name: "Jabalpur",
+    display_name: "Jabalpur, Madhya Pradesh, India",
+    latitude: 23.1815,
+    longitude: 79.9864,
+    country: "India",
+    country_code: "IN",
+    region: "Madhya Pradesh",
+    district: "Jabalpur",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-mumbai",
+    name: "Mumbai",
+    display_name: "Mumbai, Maharashtra, India",
+    latitude: 19.076,
+    longitude: 72.8777,
+    country: "India",
+    country_code: "IN",
+    region: "Maharashtra",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-bengaluru",
+    name: "Bengaluru",
+    display_name: "Bengaluru, Karnataka, India",
+    latitude: 12.9716,
+    longitude: 77.5946,
+    country: "India",
+    country_code: "IN",
+    region: "Karnataka",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-kolkata",
+    name: "Kolkata",
+    display_name: "Kolkata, West Bengal, India",
+    latitude: 22.5726,
+    longitude: 88.3639,
+    country: "India",
+    country_code: "IN",
+    region: "West Bengal",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-chennai",
+    name: "Chennai",
+    display_name: "Chennai, Tamil Nadu, India",
+    latitude: 13.0827,
+    longitude: 80.2707,
+    country: "India",
+    country_code: "IN",
+    region: "Tamil Nadu",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-hyderabad",
+    name: "Hyderabad",
+    display_name: "Hyderabad, Telangana, India",
+    latitude: 17.385,
+    longitude: 78.4867,
+    country: "India",
+    country_code: "IN",
+    region: "Telangana",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-ahmedabad",
+    name: "Ahmedabad",
+    display_name: "Ahmedabad, Gujarat, India",
+    latitude: 23.0225,
+    longitude: 72.5714,
+    country: "India",
+    country_code: "IN",
+    region: "Gujarat",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-pune",
+    name: "Pune",
+    display_name: "Pune, Maharashtra, India",
+    latitude: 18.5204,
+    longitude: 73.8567,
+    country: "India",
+    country_code: "IN",
+    region: "Maharashtra",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-jaipur",
+    name: "Jaipur",
+    display_name: "Jaipur, Rajasthan, India",
+    latitude: 26.9124,
+    longitude: 75.7873,
+    country: "India",
+    country_code: "IN",
+    region: "Rajasthan",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-lucknow",
+    name: "Lucknow",
+    display_name: "Lucknow, Uttar Pradesh, India",
+    latitude: 26.8467,
+    longitude: 80.9462,
+    country: "India",
+    country_code: "IN",
+    region: "Uttar Pradesh",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-kanpur",
+    name: "Kanpur",
+    display_name: "Kanpur, Uttar Pradesh, India",
+    latitude: 26.4499,
+    longitude: 80.3319,
+    country: "India",
+    country_code: "IN",
+    region: "Uttar Pradesh",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-nagpur",
+    name: "Nagpur",
+    display_name: "Nagpur, Maharashtra, India",
+    latitude: 21.1458,
+    longitude: 79.0882,
+    country: "India",
+    country_code: "IN",
+    region: "Maharashtra",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-indore",
+    name: "Indore",
+    display_name: "Indore, Madhya Pradesh, India",
+    latitude: 22.7196,
+    longitude: 75.8577,
+    country: "India",
+    country_code: "IN",
+    region: "Madhya Pradesh",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-bhopal",
+    name: "Bhopal",
+    display_name: "Bhopal, Madhya Pradesh, India",
+    latitude: 23.2599,
+    longitude: 77.4126,
+    country: "India",
+    country_code: "IN",
+    region: "Madhya Pradesh",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-patna",
+    name: "Patna",
+    display_name: "Patna, Bihar, India",
+    latitude: 25.5941,
+    longitude: 85.1376,
+    country: "India",
+    country_code: "IN",
+    region: "Bihar",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-varanasi",
+    name: "Varanasi",
+    display_name: "Varanasi, Uttar Pradesh, India",
+    latitude: 25.3176,
+    longitude: 82.9739,
+    country: "India",
+    country_code: "IN",
+    region: "Uttar Pradesh",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-chandigarh",
+    name: "Chandigarh",
+    display_name: "Chandigarh, Punjab/Haryana, India",
+    latitude: 30.7333,
+    longitude: 76.7794,
+    country: "India",
+    country_code: "IN",
+    region: "Chandigarh",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-surat",
+    name: "Surat",
+    display_name: "Surat, Gujarat, India",
+    latitude: 21.1702,
+    longitude: 72.8311,
+    country: "India",
+    country_code: "IN",
+    region: "Gujarat",
+    timezone: "Asia/Kolkata",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-london",
+    name: "London",
+    display_name: "London, Greater London, United Kingdom",
+    latitude: 51.5074,
+    longitude: -0.1278,
+    country: "United Kingdom",
+    country_code: "GB",
+    region: "England",
+    timezone: "Europe/London",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-new-york",
+    name: "New York",
+    display_name: "New York, New York, United States",
+    latitude: 40.7128,
+    longitude: -74.006,
+    country: "United States",
+    country_code: "US",
+    region: "New York",
+    timezone: "America/New_York",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-tokyo",
+    name: "Tokyo",
+    display_name: "Tokyo, Tokyo, Japan",
+    latitude: 35.6762,
+    longitude: 139.6503,
+    country: "Japan",
+    country_code: "JP",
+    region: "Tokyo",
+    timezone: "Asia/Tokyo",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-sydney",
+    name: "Sydney",
+    display_name: "Sydney, New South Wales, Australia",
+    latitude: -33.8688,
+    longitude: 151.2093,
+    country: "Australia",
+    country_code: "AU",
+    region: "New South Wales",
+    timezone: "Australia/Sydney",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-paris",
+    name: "Paris",
+    display_name: "Paris, Île-de-France, France",
+    latitude: 48.8566,
+    longitude: 2.3522,
+    country: "France",
+    country_code: "FR",
+    region: "Île-de-France",
+    timezone: "Europe/Paris",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-berlin",
+    name: "Berlin",
+    display_name: "Berlin, Berlin, Germany",
+    latitude: 52.52,
+    longitude: 13.405,
+    country: "Germany",
+    country_code: "DE",
+    region: "Berlin",
+    timezone: "Europe/Berlin",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-dubai",
+    name: "Dubai",
+    display_name: "Dubai, Dubai, United Arab Emirates",
+    latitude: 25.2048,
+    longitude: 55.2708,
+    country: "United Arab Emirates",
+    country_code: "AE",
+    region: "Dubai",
+    timezone: "Asia/Dubai",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-singapore",
+    name: "Singapore",
+    display_name: "Singapore, Singapore",
+    latitude: 1.3521,
+    longitude: 103.8198,
+    country: "Singapore",
+    country_code: "SG",
+    region: "Singapore",
+    timezone: "Asia/Singapore",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-toronto",
+    name: "Toronto",
+    display_name: "Toronto, Ontario, Canada",
+    latitude: 43.6532,
+    longitude: -79.3832,
+    country: "Canada",
+    country_code: "CA",
+    region: "Ontario",
+    timezone: "America/Toronto",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-san-francisco",
+    name: "San Francisco",
+    display_name: "San Francisco, California, United States",
+    latitude: 37.7749,
+    longitude: -122.4194,
+    country: "United States",
+    country_code: "US",
+    region: "California",
+    timezone: "America/Los_Angeles",
+    precision: "city",
+    source: "gazetteer",
+  },
+  {
+    id: "gaz-chicago",
+    name: "Chicago",
+    display_name: "Chicago, Illinois, United States",
+    latitude: 41.8781,
+    longitude: -87.6298,
+    country: "United States",
+    country_code: "US",
+    region: "Illinois",
+    timezone: "America/Chicago",
+    precision: "city",
+    source: "gazetteer",
+  },
 ];
 
-const geocodeCache = new Map<string, { timestamp: number; data: { query: string; results: CanonicalLocation[] } }>();
+const geocodeCache = new Map<
+  string,
+  { timestamp: number; data: { query: string; results: CanonicalLocation[] } }
+>();
 const GEOCODE_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
 const MAX_GEOCODE_CACHE_SIZE = 500;
 
-export async function resolveGeocodeQuery(rawQuery: string): Promise<{ query: string; results: CanonicalLocation[] }> {
-  const q = (rawQuery || '').trim();
+export async function resolveGeocodeQuery(
+  rawQuery: string,
+): Promise<{ query: string; results: CanonicalLocation[] }> {
+  const q = (rawQuery || "").trim();
   if (q.length < 2) {
     return { query: q, results: [] };
   }
 
   const cacheKey = q.toLowerCase();
   const cached = geocodeCache.get(cacheKey);
-  if (cached && (Date.now() - cached.timestamp < GEOCODE_CACHE_TTL_MS)) {
+  if (cached && Date.now() - cached.timestamp < GEOCODE_CACHE_TTL_MS) {
     return cached.data;
   }
 
@@ -9362,7 +13025,10 @@ export async function resolveGeocodeQuery(rawQuery: string): Promise<{ query: st
     const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=10&language=en&format=json`;
     const response = await fetch(url, {
       signal: controller.signal,
-      headers: { 'User-Agent': 'AstroVerse-Geocoding-Proxy/2.0 (astroverse-eta.vercel.app)' }
+      headers: {
+        "User-Agent":
+          "AstroVerse-Geocoding-Proxy/2.0 (astroverse-eta.vercel.app)",
+      },
     });
     clearTimeout(timeoutId);
 
@@ -9370,16 +13036,35 @@ export async function resolveGeocodeQuery(rawQuery: string): Promise<{ query: st
       const json: any = await response.json();
       if (Array.isArray(json.results)) {
         for (const item of json.results) {
-          const lat = typeof item.latitude === 'number' ? item.latitude : parseFloat(item.latitude);
-          const lon = typeof item.longitude === 'number' ? item.longitude : parseFloat(item.longitude);
-          if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+          const lat =
+            typeof item.latitude === "number"
+              ? item.latitude
+              : parseFloat(item.latitude);
+          const lon =
+            typeof item.longitude === "number"
+              ? item.longitude
+              : parseFloat(item.longitude);
+          if (
+            isNaN(lat) ||
+            isNaN(lon) ||
+            lat < -90 ||
+            lat > 90 ||
+            lon < -180 ||
+            lon > 180
+          )
+            continue;
 
           const parts: string[] = [];
           if (item.name) parts.push(item.name);
           if (item.admin2 && item.admin2 !== item.name) parts.push(item.admin2);
-          if (item.admin1 && item.admin1 !== item.name && item.admin1 !== item.admin2) parts.push(item.admin1);
+          if (
+            item.admin1 &&
+            item.admin1 !== item.name &&
+            item.admin1 !== item.admin2
+          )
+            parts.push(item.admin1);
           if (item.country) parts.push(item.country);
-          const displayName = parts.join(', ');
+          const displayName = parts.join(", ");
 
           liveResults.push({
             id: item.id || `om-${lat.toFixed(4)}-${lon.toFixed(4)}`,
@@ -9387,14 +13072,14 @@ export async function resolveGeocodeQuery(rawQuery: string): Promise<{ query: st
             display_name: displayName,
             latitude: lat,
             longitude: lon,
-            country: item.country || '',
-            country_code: item.country_code || '',
-            region: item.admin1 || '',
+            country: item.country || "",
+            country_code: item.country_code || "",
+            region: item.admin1 || "",
             district: item.admin2 || undefined,
-            timezone: item.timezone || 'UTC',
-            precision: 'city',
-            source: 'open-meteo',
-            resolved_at: new Date().toISOString()
+            timezone: item.timezone || "UTC",
+            precision: "city",
+            source: "open-meteo",
+            resolved_at: new Date().toISOString(),
           });
         }
       }
@@ -9416,9 +13101,11 @@ export async function resolveGeocodeQuery(rawQuery: string): Promise<{ query: st
 
   // Built-in gazetteer matching as offline/resilient fallback
   const nowIso = new Date().toISOString();
-  const gazetteerMatches: CanonicalLocation[] = BUILTIN_GAZETTEER
-    .filter(g => g.name.toLowerCase().includes(cacheKey) || g.display_name.toLowerCase().includes(cacheKey))
-    .map(g => ({ ...g, resolved_at: nowIso }));
+  const gazetteerMatches: CanonicalLocation[] = BUILTIN_GAZETTEER.filter(
+    (g) =>
+      g.name.toLowerCase().includes(cacheKey) ||
+      g.display_name.toLowerCase().includes(cacheKey),
+  ).map((g) => ({ ...g, resolved_at: nowIso }));
 
   const fallbackPayload = { query: q, results: gazetteerMatches };
   if (gazetteerMatches.length > 0) {
@@ -9426,883 +13113,1234 @@ export async function resolveGeocodeQuery(rawQuery: string): Promise<{ query: st
       const firstKey = geocodeCache.keys().next().value;
       if (firstKey) geocodeCache.delete(firstKey);
     }
-    geocodeCache.set(cacheKey, { timestamp: Date.now(), data: fallbackPayload });
+    geocodeCache.set(cacheKey, {
+      timestamp: Date.now(),
+      data: fallbackPayload,
+    });
   }
   return fallbackPayload;
 }
 
 // GET /api/geocode (Worldwide Location Search & Geocoding Gateway)
-app.get('/api/geocode', async (req: Request, res: Response) => {
-  const query = (req.query.q || req.query.name || req.query.query || '').toString().trim();
+app.get("/api/geocode", async (req: Request, res: Response) => {
+  const query = (req.query.q || req.query.name || req.query.query || "")
+    .toString()
+    .trim();
   if (query.length < 2) {
-    return res.status(400).json({ error: 'Query parameter q must be at least 2 characters long', results: [] });
+    return res.status(400).json({
+      error: "Query parameter q must be at least 2 characters long",
+      results: [],
+    });
   }
 
   try {
     const outcome = await resolveGeocodeQuery(query);
     return res.json(outcome);
   } catch (err: any) {
-    return res.status(500).json({ error: 'Failed to resolve location query', details: err?.message || String(err), results: [] });
+    return res.status(500).json({
+      error: "Failed to resolve location query",
+      details: err?.message || String(err),
+      results: [],
+    });
   }
 });
 
 // GET /api/billing/config (Public payment gateway configuration)
-app.get('/api/billing/config', (_req: Request, res: Response) => {
+app.get("/api/billing/config", (_req: Request, res: Response) => {
   res.json({
     paymentsConfigured: isCashfreeConfigured(),
-    currency: 'INR',
-    gateway: 'CASHFREE',
+    currency: "INR",
+    gateway: "CASHFREE",
     isLiveGateway: isCashfreeConfigured(),
-    cashfreeAppId: process.env.CASHFREE_APP_ID || '',
-    cashfreeEnv: (process.env.CASHFREE_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase(),
-    isCashfreeConfigured: isCashfreeConfigured()
+    cashfreeAppId: process.env.CASHFREE_APP_ID || "",
+    cashfreeEnv: (
+      process.env.CASHFREE_ENV ||
+      (process.env.NODE_ENV === "production" ? "production" : "sandbox")
+    ).toLowerCase(),
+    isCashfreeConfigured: isCashfreeConfigured(),
   });
 });
 
 // GET /api/billing/status (Active tier, subscription renewal, wallet balance, and entitlements)
-app.get('/api/billing/status', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const user = await db.findUserById(req.user!.id);
-    if (!user) {
-      return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'User not found.' });
-    }
-    const snapshot = EntitlementManager.getEntitlementSnapshot(user);
+app.get(
+  "/api/billing/status",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = await db.findUserById(req.user!.id);
+      if (!user) {
+        return res
+          .status(404)
+          .json({ error: "USER_NOT_FOUND", message: "User not found." });
+      }
+      const snapshot = EntitlementManager.getEntitlementSnapshot(user);
 
-    res.json({
-      userId: user.id,
-      tier: snapshot.tier,
-      subscriptionStatus: snapshot.subscriptionStatus,
-      subscriptionExpiresAt: snapshot.expiresAt,
-      walletBalance: user.walletBalance || 0,
-      currency: 'INR',
-      entitlements: snapshot,
-      billingCycle: snapshot.billingPeriod || (snapshot.subscriptionStatus === 'ACTIVE' ? 'monthly' : null)
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to fetch billing status');
-  }
-});
+      res.json({
+        userId: user.id,
+        tier: snapshot.tier,
+        subscriptionStatus: snapshot.subscriptionStatus,
+        subscriptionExpiresAt: snapshot.expiresAt,
+        walletBalance: user.walletBalance || 0,
+        currency: "INR",
+        entitlements: snapshot,
+        billingCycle:
+          snapshot.billingPeriod ||
+          (snapshot.subscriptionStatus === "ACTIVE" ? "monthly" : null),
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to fetch billing status");
+    }
+  },
+);
 
 // GET /api/billing/history (User payment orders and wallet statement history)
-app.get('/api/billing/history', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const orders = db.getUserPaymentOrders(userId);
-    const statement = await db.getWalletStatement(userId);
+app.get(
+  "/api/billing/history",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const orders = db.getUserPaymentOrders(userId);
+      const statement = await db.getWalletStatement(userId);
 
-    res.json({
-      userId,
-      orders,
-      ledger: statement,
-      totalOrders: orders.length,
-      totalTransactions: statement.length
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to fetch billing history');
-  }
-});
+      res.json({
+        userId,
+        orders,
+        ledger: statement,
+        totalOrders: orders.length,
+        totalTransactions: statement.length,
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to fetch billing history");
+    }
+  },
+);
 
 // Helper to validate and normalize inline birth profile payloads with strict coordinate and format bounds
-function validateProfileInputData(pd: any): { error?: string; message?: string; cleanData?: any } {
-  if (!pd || typeof pd !== 'object') {
-    return { error: 'INVALID_PROFILE_DATA', message: 'Profile data must be an object.' };
+function validateProfileInputData(pd: any): {
+  error?: string;
+  message?: string;
+  cleanData?: any;
+} {
+  if (!pd || typeof pd !== "object") {
+    return {
+      error: "INVALID_PROFILE_DATA",
+      message: "Profile data must be an object.",
+    };
   }
   const latRaw = pd.latitude ?? pd.lat;
   const lonRaw = pd.longitude ?? pd.lon;
   if (latRaw !== undefined) {
     const lat = Number(latRaw);
     if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
-      return { error: 'INVALID_COORDINATES', message: 'Latitude must be a valid number between -90 and 90.' };
+      return {
+        error: "INVALID_COORDINATES",
+        message: "Latitude must be a valid number between -90 and 90.",
+      };
     }
   }
   if (lonRaw !== undefined) {
     const lon = Number(lonRaw);
     if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
-      return { error: 'INVALID_COORDINATES', message: 'Longitude must be a valid number between -180 and 180.' };
+      return {
+        error: "INVALID_COORDINATES",
+        message: "Longitude must be a valid number between -180 and 180.",
+      };
     }
   }
   const dob = pd.dateOfBirth || pd.dob;
   if (dob) {
     const parsedDob = Date.parse(dob);
     if (isNaN(parsedDob)) {
-      return { error: 'INVALID_BIRTH_DATA', message: 'Date of birth must be a valid parseable date string (YYYY-MM-DD).' };
+      return {
+        error: "INVALID_BIRTH_DATA",
+        message:
+          "Date of birth must be a valid parseable date string (YYYY-MM-DD).",
+      };
     }
   }
   const tob = pd.timeOfBirth || pd.tob;
   if (tob) {
     if (!/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(String(tob).trim())) {
-      return { error: 'INVALID_BIRTH_DATA', message: 'Time of birth must be in valid HH:MM 24-hour format.' };
+      return {
+        error: "INVALID_BIRTH_DATA",
+        message: "Time of birth must be in valid HH:MM 24-hour format.",
+      };
     }
   }
   return {
     cleanData: {
-      profileName: pd.profileName || pd.name || 'Primary Profile',
-      relationship: pd.relationship || 'Self',
-      dateOfBirth: dob || '1995-01-01',
-      timeOfBirth: tob || '12:00',
-      birthplaceName: pd.birthplaceName || pd.city || 'New Delhi, India',
+      profileName: pd.profileName || pd.name || "Primary Profile",
+      relationship: pd.relationship || "Self",
+      dateOfBirth: dob || "1995-01-01",
+      timeOfBirth: tob || "12:00",
+      birthplaceName: pd.birthplaceName || pd.city || "New Delhi, India",
       latitude: Number(latRaw ?? 28.6139),
-      longitude: Number(lonRaw ?? 77.2090),
-      resolvedTimezone: pd.resolvedTimezone || pd.timezone || 'Asia/Kolkata'
-    }
+      longitude: Number(lonRaw ?? 77.209),
+      resolvedTimezone: pd.resolvedTimezone || pd.timezone || "Asia/Kolkata",
+    },
   };
 }
 
 // POST /api/reports/order (Create order for individual personalized report)
-app.post('/api/reports/order', orderLimiter, authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { productId, profileId, partnerProfileId, options, paymentMethod } = req.body;
-  const user = req.user!;
-  const idempotencyKey = ((req.headers['x-idempotency-key'] as string) || req.body?.idempotencyKey || '').trim();
+app.post(
+  "/api/reports/order",
+  orderLimiter,
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const { productId, profileId, partnerProfileId, options, paymentMethod } =
+      req.body;
+    const user = req.user!;
+    const idempotencyKey = (
+      (req.headers["x-idempotency-key"] as string) ||
+      req.body?.idempotencyKey ||
+      ""
+    ).trim();
 
-  if (idempotencyKey) {
-    const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(user.id, idempotencyKey);
-    if (existingOrder && existingOrder.cfPaymentSessionId && existingOrder.status === OrderStatus.CREATED) {
-      const isRecent = (Date.now() - new Date(existingOrder.createdAt).getTime()) < 5 * 60 * 1000;
-      if (isRecent) {
-        return res.json({
-          orderId: existingOrder.providerOrderId,
-          amountPaise: Math.round(existingOrder.amount * 100),
-          amountRupees: existingOrder.amount,
-          discountPercent: 0,
-          productId,
-          paymentSessionId: existingOrder.cfPaymentSessionId,
-          cfOrderId: existingOrder.cfOrderId,
-          gateway: 'CASHFREE',
-          checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
-          reused: true
-        });
+    if (idempotencyKey) {
+      const existingOrder = db.findPaymentOrderByCustomerAndIdempotencyKey(
+        user.id,
+        idempotencyKey,
+      );
+      if (
+        existingOrder &&
+        existingOrder.cfPaymentSessionId &&
+        existingOrder.status === OrderStatus.CREATED
+      ) {
+        const isRecent =
+          Date.now() - new Date(existingOrder.createdAt).getTime() <
+          5 * 60 * 1000;
+        if (isRecent) {
+          return res.json({
+            orderId: existingOrder.providerOrderId,
+            amountPaise: Math.round(existingOrder.amount * 100),
+            amountRupees: existingOrder.amount,
+            discountPercent: 0,
+            productId,
+            paymentSessionId: existingOrder.cfPaymentSessionId,
+            cfOrderId: existingOrder.cfOrderId,
+            gateway: "CASHFREE",
+            checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+            reused: true,
+          });
+        }
       }
     }
-  }
 
-  const product = REPORT_CATALOGUE[productId];
-  if (!product) {
-    return res.status(400).json({ error: 'INVALID_PRODUCT', message: `Product '${productId}' not found in catalogue.` });
-  }
+    const product = REPORT_CATALOGUE[productId];
+    if (!product) {
+      return res.status(400).json({
+        error: "INVALID_PRODUCT",
+        message: `Product '${productId}' not found in catalogue.`,
+      });
+    }
 
-  try {
-    // Verify birth profile exists and is owned by this user
-    let profile = await db.getProfileById(profileId);
-    if (!profile) {
-      if (req.body.profileData && typeof req.body.profileData === 'object') {
-        const pValidation = validateProfileInputData(req.body.profileData);
-        if (pValidation.error) {
-          return res.status(400).json({ error: pValidation.error, message: pValidation.message });
+    try {
+      // Verify birth profile exists and is owned by this user
+      let profile = await db.getProfileById(profileId);
+      if (!profile) {
+        if (req.body.profileData && typeof req.body.profileData === "object") {
+          const pValidation = validateProfileInputData(req.body.profileData);
+          if (pValidation.error) {
+            return res
+              .status(400)
+              .json({ error: pValidation.error, message: pValidation.message });
+          }
+          profile = await db.createProfile({
+            userId: user.id,
+            ...pValidation.cleanData,
+            profileName:
+              pValidation.cleanData.profileName ||
+              user.displayName ||
+              "Primary Profile",
+          });
+        } else {
+          const userProfiles = await db.getProfilesByUserId(user.id);
+          if (userProfiles && userProfiles.length > 0) {
+            profile = userProfiles[0];
+          } else {
+            return res.status(404).json({
+              error: "PROFILE_NOT_FOUND",
+              message: "Selected birth profile not found.",
+            });
+          }
         }
-        profile = await db.createProfile({
+      }
+      if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+        return res.status(403).json({
+          error: "FORBIDDEN",
+          message: "Cannot generate report using another user's profile.",
+        });
+      }
+
+      let partnerProfile: any = null;
+      if (
+        partnerProfileId &&
+        partnerProfileId !== "default_partner" &&
+        partnerProfileId !== "none"
+      ) {
+        partnerProfile = await db.getProfileById(partnerProfileId);
+        if (!partnerProfile) {
+          return res.status(404).json({
+            error: "PARTNER_PROFILE_NOT_FOUND",
+            message: "Selected partner profile not found.",
+          });
+        }
+        if (
+          partnerProfile.userId !== user.id &&
+          user.role !== Role.SUPER_ADMIN
+        ) {
+          return res.status(403).json({
+            error: "FORBIDDEN",
+            message:
+              "Cannot generate report using another user's partner profile.",
+          });
+        }
+      } else if (
+        req.body.partnerProfileData &&
+        typeof req.body.partnerProfileData === "object"
+      ) {
+        const pValidation = validateProfileInputData(
+          req.body.partnerProfileData,
+        );
+        if (pValidation.error) {
+          return res
+            .status(400)
+            .json({ error: pValidation.error, message: pValidation.message });
+        }
+        partnerProfile = await db.createProfile({
           userId: user.id,
           ...pValidation.cleanData,
-          profileName: pValidation.cleanData.profileName || user.displayName || 'Primary Profile'
         });
-      } else {
-        const userProfiles = await db.getProfilesByUserId(user.id);
-        if (userProfiles && userProfiles.length > 0) {
-          profile = userProfiles[0];
-        } else {
-          return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Selected birth profile not found.' });
+      }
+
+      if (productId === "report_kundli_milan") {
+        if (!partnerProfile) {
+          return res.status(400).json({
+            error: "MISSING_PARTNER_PROFILE",
+            message:
+              "Kundli Milan synastry requires a distinct partner birth profile.",
+          });
+        }
+        if (partnerProfile.id === profile.id) {
+          return res.status(400).json({
+            error: "SELF_AS_PARTNER_INVALID",
+            message:
+              "Subject profile and partner profile cannot be identical for synastry matchmaking.",
+          });
         }
       }
-    }
-    if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's profile." });
-    }
 
-    let partnerProfile: any = null;
-    if (partnerProfileId && partnerProfileId !== 'default_partner' && partnerProfileId !== 'none') {
-      partnerProfile = await db.getProfileById(partnerProfileId);
-      if (!partnerProfile) {
-        return res.status(404).json({ error: 'PARTNER_PROFILE_NOT_FOUND', message: 'Selected partner profile not found.' });
+      // Resolve user's effective subscription tier to apply legitimate member discounts
+      const dbUser = await db.findUserById(user.id);
+      const { tier } = EntitlementManager.resolveEffectiveTier(dbUser);
+      const pricing = calculateReportPrice(productId, tier);
+
+      // Free report product (Basic Summary)
+      if (pricing.finalPricePaise === 0) {
+        const doc = await ReportDocumentGenerator.generateReport(
+          productId,
+          dbUser,
+          profile,
+          { partnerProfile, ...options },
+        );
+        const saved = await db.createSavedReport({
+          userId: user.id,
+          title: product.displayName,
+          reportType: productId,
+          payload: doc,
+        });
+        return res.json({
+          success: true,
+          reportId: saved.id,
+          title: saved.title,
+          reportType: saved.reportType,
+          paidAmountPaise: 0,
+          discountPercent: 0,
+          document: doc,
+          status: "READY_FOR_READER",
+          free: true,
+        });
       }
-      if (partnerProfile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-        return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's partner profile." });
+
+      // If user opts to pay via Wallet balance
+      if (paymentMethod && String(paymentMethod).toUpperCase() === "WALLET") {
+        const currentBal = Number(dbUser?.walletBalance || 0);
+        if (currentBal < pricing.finalPriceRupees) {
+          const shortfall =
+            Math.round((pricing.finalPriceRupees - currentBal) * 100) / 100;
+          return res.status(400).json({
+            error: "INSUFFICIENT_FUNDS",
+            code: "INSUFFICIENT_WALLET_BALANCE",
+            message: `Insufficient wallet balance. This report requires ₹${pricing.finalPriceRupees.toFixed(2)}, but available balance is ₹${currentBal.toFixed(2)}. Shortfall: ₹${shortfall.toFixed(2)}.`,
+            requiredAmount: pricing.finalPriceRupees,
+            currentBalance: currentBal,
+            shortfall,
+            topUpRecommended: Math.ceil(shortfall),
+          });
+        }
+
+        // Debit wallet via dedicated purchaseReport mechanism with idempotency
+        const clientKey =
+          req.body.clientKey || `REPORT_${user.id}_${productId}_${Date.now()}`;
+        await db.purchaseReport(
+          user.id,
+          product.displayName,
+          pricing.finalPriceRupees,
+          profile.id,
+          clientKey,
+        );
+
+        // Generate canonical document
+        const doc = await ReportDocumentGenerator.generateReport(
+          productId,
+          dbUser,
+          profile,
+          { partnerProfile, ...options },
+        );
+        const saved = await db.createSavedReport({
+          userId: user.id,
+          title: `${product.displayName} (${profile.profileName})`,
+          reportType: productId,
+          payload: doc,
+        });
+
+        return res.json({
+          success: true,
+          reportId: saved.id,
+          title: saved.title,
+          reportType: saved.reportType,
+          paidAmountPaise: pricing.finalPricePaise,
+          discountPercent: pricing.discountPercent,
+          document: doc,
+          status: "READY_FOR_READER",
+          paidVia: "WALLET",
+          deduction: pricing.finalPriceRupees,
+        });
       }
-    } else if (req.body.partnerProfileData && typeof req.body.partnerProfileData === 'object') {
-      const pValidation = validateProfileInputData(req.body.partnerProfileData);
-      if (pValidation.error) {
-        return res.status(400).json({ error: pValidation.error, message: pValidation.message });
+
+      // If user opts to pay via DEMO Mode wallet balance (Non-production testing only)
+      if (
+        paymentMethod &&
+        (String(paymentMethod).toUpperCase() === "DEMO_WALLET" ||
+          String(paymentMethod).toUpperCase() === "DEMO")
+      ) {
+        if (!isDemoModeActive()) {
+          return res.status(403).json({
+            error: "DEMO_MODE_DISABLED",
+            message: "Demo purchases are strictly forbidden in production.",
+          });
+        }
+
+        if (Number(dbUser?.demoWalletBalance || 0) < pricing.finalPriceRupees) {
+          return res.status(400).json({
+            error: "INSUFFICIENT_FUNDS",
+            message: `Insufficient demo wallet balance. This report requires ₹${pricing.finalPriceRupees.toFixed(2)} in demo credits.`,
+            requiredAmount: pricing.finalPriceRupees,
+            currentBalance: dbUser?.demoWalletBalance || 0,
+            isDemo: true,
+          });
+        }
+
+        // Debit demo balance exclusively via purchaseReportWithDemo
+        const clientKey =
+          req.body.clientKey ||
+          `DEMO_REPORT_${user.id}_${productId}_${Date.now()}`;
+        const demoResult = await db.purchaseReportWithDemo(
+          user.id,
+          product.displayName,
+          pricing.finalPriceRupees,
+          profile.id,
+          clientKey,
+        );
+
+        // Generate canonical document with demo notice watermark
+        const doc = await ReportDocumentGenerator.generateReport(
+          productId,
+          dbUser,
+          profile,
+          {
+            partnerProfile,
+            isDemoPurchase: true,
+            ...options,
+          },
+        );
+        const saved = await db.createSavedReport({
+          userId: user.id,
+          title: `[DEMO] ${product.displayName} (${profile.profileName})`,
+          reportType: productId,
+          payload: doc,
+        });
+
+        return res.json({
+          success: true,
+          reportId: saved.id,
+          title: saved.title,
+          reportType: saved.reportType,
+          paidAmountPaise: pricing.finalPricePaise,
+          discountPercent: pricing.discountPercent,
+          document: doc,
+          status: "READY_FOR_READER",
+          paidVia: "DEMO_WALLET",
+          deduction: pricing.finalPriceRupees,
+          newDemoBalance: demoResult.newDemoBalance,
+          isDemo: true,
+        });
       }
-      partnerProfile = await db.createProfile({
+
+      // Cashfree Checkout flow for paid report purchases
+      const readiness = getPaymentReadinessStatus();
+      if (!readiness.configured) {
+        return res.status(503).json({
+          error: "PAYMENTS_NOT_CONFIGURED",
+          readinessState: readiness.state,
+          specificError: readiness.state,
+          message: readiness.customerMessage,
+          adminExplanation: readiness.adminExplanation,
+          gateway: "CASHFREE",
+        });
+      }
+
+      const orderReceipt = idempotencyKey
+        ? `rep_${crypto
+            .createHash("sha256")
+            .update(user.id + "_" + idempotencyKey)
+            .digest("hex")
+            .slice(0, 16)}`
+        : `rep_ord_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+      const userRecord = await db.findUserById(user.id);
+      const appBaseUrl = (
+        process.env.APP_BASE_URL || "https://astroverse-eta.vercel.app"
+      ).replace(/\/+$/, "");
+      const cfOrder = await createCashfreeOrder({
+        orderId: `cf_${orderReceipt}`,
+        orderAmount: pricing.finalPriceRupees,
+        orderCurrency: "INR",
+        customer: {
+          customer_id: user.id,
+          customer_email: userRecord?.email || undefined,
+          customer_phone: userRecord?.phone || "9999999999",
+          customer_name: userRecord?.displayName || "AstroVerse Seeker",
+        },
+        returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=report`,
+        orderNote: `Report Purchase: ${product.displayName}`,
+        idempotencyKey: idempotencyKey || undefined,
+      });
+
+      const basePriceRupees = pricing.basePricePaise / 100;
+      const gstAmountRupees =
+        Math.round(
+          (pricing.finalPriceRupees - pricing.finalPriceRupees / 1.18) * 100,
+        ) / 100;
+      const discountRupees = pricing.discountPaise / 100;
+
+      const order = await db.createPaymentOrder({
         userId: user.id,
-        ...pValidation.cleanData
+        amount: pricing.finalPriceRupees,
+        currency: "INR",
+        provider: "CASHFREE",
+        providerOrderId: cfOrder.order_id,
+        gateway: "CASHFREE",
+        cfOrderId: cfOrder.order_id,
+        cfPaymentSessionId: cfOrder.payment_session_id,
+        productType: "REPORT",
+        productId,
+        idempotencyKey: idempotencyKey || undefined,
+        baseAmount: basePriceRupees,
+        gstAmount: gstAmountRupees,
+        pricingSnapshot: {
+          finalPriceRupees: pricing.finalPriceRupees,
+          finalPricePaise: pricing.finalPricePaise,
+          basePriceRupees,
+          gstAmountRupees,
+          discountPercent: pricing.discountPercent,
+          discountRupees,
+          catalogueVersion: "2026.01",
+        },
+        metadata: {
+          productType: "REPORT",
+          productId,
+          pricing,
+        },
+      });
+
+      res.json({
+        orderId: order.providerOrderId,
+        amountPaise: pricing.finalPricePaise,
+        amountRupees: pricing.finalPriceRupees,
+        discountPercent: pricing.discountPercent,
+        productId,
+        profileId: profile.id,
+        paymentSessionId: cfOrder.payment_session_id,
+        cfOrderId: cfOrder.cf_order_id,
+        gateway: "CASHFREE",
+        environment: readiness.environment,
+        checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`,
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Report order generation failed");
+    }
+  },
+);
+
+// POST /api/reports/verify-and-generate (Verify Cashfree payment and compile canonical document)
+app.post(
+  "/api/reports/verify-and-generate",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const {
+      orderId,
+      paymentId,
+      signature,
+      productId,
+      profileId,
+      partnerProfileId,
+      options,
+    } = req.body;
+    const user = req.user!;
+
+    if (!orderId) {
+      return res
+        .status(400)
+        .json({ error: "MISSING_ORDER_ID", message: "orderId is required." });
+    }
+
+    const trimmedOrderId = String(orderId).trim();
+    if (
+      signature &&
+      (trimmedOrderId.startsWith("order_") || !trimmedOrderId.startsWith("cf_"))
+    ) {
+      return res.status(410).json({
+        error: "PAYMENT_PROVIDER_RETIRED",
+        message:
+          "Razorpay is retired. Active payments must be verified via Cashfree.",
       });
     }
 
-    if (productId === 'report_kundli_milan') {
-      if (!partnerProfile) {
-        return res.status(400).json({
-          error: 'MISSING_PARTNER_PROFILE',
-          message: 'Kundli Milan synastry requires a distinct partner birth profile.'
+    const product = REPORT_CATALOGUE[productId];
+    if (!product) {
+      return res
+        .status(400)
+        .json({ error: "INVALID_PRODUCT", message: "Product not recognized." });
+    }
+
+    // 1. Order lookup & verification (AV-SEC-01 mitigation)
+    let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
+    if (!order && isCashfreeConfigured()) {
+      try {
+        const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
+        if (cfStatus && cfStatus.order_id) {
+          const cfCustomerId = cfStatus.customer_details?.customer_id;
+          if (
+            cfCustomerId &&
+            cfCustomerId !== user.id &&
+            user.role !== Role.SUPER_ADMIN
+          ) {
+            return res.status(403).json({
+              error: "ORDER_USER_MISMATCH",
+              message:
+                "Payment order does not belong to the authenticated user.",
+            });
+          }
+          order = await db.createPaymentOrder({
+            userId: cfCustomerId || user.id,
+            amount: Number(cfStatus.order_amount),
+            currency: cfStatus.order_currency || "INR",
+            provider: "CASHFREE",
+            providerOrderId: cfStatus.order_id,
+            gateway: "CASHFREE",
+            cfOrderId: cfStatus.cf_order_id
+              ? String(cfStatus.cf_order_id)
+              : undefined,
+            cfPaymentSessionId: cfStatus.payment_session_id || undefined,
+            productType: "REPORT",
+            productId,
+          });
+        }
+      } catch (_) {}
+    }
+    if (!order) {
+      return res.status(404).json({
+        error: "ORDER_NOT_FOUND",
+        message: "Payment order was not found in platform records.",
+      });
+    }
+    if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+      return res.status(403).json({
+        error: "ORDER_USER_MISMATCH",
+        message: "Payment order does not belong to the authenticated user.",
+      });
+    }
+
+    // Cross-product replay prevention (AV-SEC-02)
+    if (order.productType && order.productType !== "REPORT") {
+      return res.status(400).json({
+        error: "INVALID_ORDER_TYPE",
+        message: `Order type '${order.productType}' cannot be used to fulfill a report publication.`,
+      });
+    }
+    if (order.productId && order.productId !== productId) {
+      return res.status(400).json({
+        error: "PRODUCT_MISMATCH",
+        message: `Order is bound to product '${order.productId}', cannot fulfill '${productId}'.`,
+      });
+    }
+
+    const userRecord = await db.findUserById(user.id);
+    const userTier = resolveRequestTier(userRecord, req);
+    const pricing = calculateReportPrice(productId, userTier);
+
+    // If order not yet marked paid, verify directly with Cashfree
+    if (order.status !== OrderStatus.PAID) {
+      if (!isCashfreeConfigured()) {
+        return res.status(503).json({
+          error: "PAYMENTS_NOT_CONFIGURED",
+          message: "Online payments are currently unconfigured.",
         });
       }
-      if (partnerProfile.id === profile.id) {
-        return res.status(400).json({
-          error: 'SELF_AS_PARTNER_INVALID',
-          message: 'Subject profile and partner profile cannot be identical for synastry matchmaking.'
-        });
+
+      try {
+        const cfStatus = await getCashfreeOrderStatus(
+          order.providerOrderId || order.cfOrderId || trimmedOrderId,
+        );
+        if (cfStatus.order_status !== "PAID") {
+          return res.status(400).json({
+            error: "PAYMENT_NOT_SETTLED",
+            message: `Cashfree reports order status as ${cfStatus.order_status}.`,
+          });
+        }
+        if (Math.round(cfStatus.order_amount * 100) < pricing.finalPricePaise) {
+          return res.status(400).json({
+            error: "AMOUNT_MISMATCH",
+            message: `Verified Cashfree amount ₹${cfStatus.order_amount} is less than required publication price ₹${pricing.finalPriceRupees}.`,
+          });
+        }
+        const settledPaymentId =
+          cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
+        await db.markPaymentOrderPaid(
+          order.providerOrderId,
+          settledPaymentId,
+          "CASHFREE",
+        );
+      } catch (cfErr: any) {
+        return handleServiceError(res, cfErr, "Cashfree verification failed");
       }
     }
 
-    // Resolve user's effective subscription tier to apply legitimate member discounts
-    const dbUser = await db.findUserById(user.id);
-    const { tier } = EntitlementManager.resolveEffectiveTier(dbUser);
-    const pricing = calculateReportPrice(productId, tier);
-
-    // Free report product (Basic Summary)
-    if (pricing.finalPricePaise === 0) {
-      const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, { partnerProfile, ...options });
-      const saved = await db.createSavedReport({
-        userId: user.id,
-        title: product.displayName,
-        reportType: productId,
-        payload: doc
-      });
-      return res.json({
-        success: true,
-        reportId: saved.id,
-        title: saved.title,
-        reportType: saved.reportType,
-        paidAmountPaise: 0,
-        discountPercent: 0,
-        document: doc,
-        status: 'READY_FOR_READER',
-        free: true
-      });
-    }
-
-    // If user opts to pay via Wallet balance
-    if (paymentMethod && String(paymentMethod).toUpperCase() === 'WALLET') {
-      const currentBal = Number(dbUser?.walletBalance || 0);
-      if (currentBal < pricing.finalPriceRupees) {
-        const shortfall = Math.round((pricing.finalPriceRupees - currentBal) * 100) / 100;
-        return res.status(400).json({
-          error: 'INSUFFICIENT_FUNDS',
-          code: 'INSUFFICIENT_WALLET_BALANCE',
-          message: `Insufficient wallet balance. This report requires ₹${pricing.finalPriceRupees.toFixed(2)}, but available balance is ₹${currentBal.toFixed(2)}. Shortfall: ₹${shortfall.toFixed(2)}.`,
-          requiredAmount: pricing.finalPriceRupees,
-          currentBalance: currentBal,
-          shortfall,
-          topUpRecommended: Math.ceil(shortfall)
+    try {
+      let profile = await db.getProfileById(profileId);
+      if (!profile) {
+        if (req.body.profileData && typeof req.body.profileData === "object") {
+          const pValidation = validateProfileInputData(req.body.profileData);
+          if (pValidation.error) {
+            return res
+              .status(400)
+              .json({ error: pValidation.error, message: pValidation.message });
+          }
+          profile = await db.createProfile({
+            userId: user.id,
+            ...pValidation.cleanData,
+            profileName:
+              pValidation.cleanData.profileName ||
+              user.displayName ||
+              "Primary Profile",
+          });
+        } else {
+          const userProfiles = await db.getProfilesByUserId(user.id);
+          if (userProfiles && userProfiles.length > 0) {
+            profile = userProfiles[0];
+          } else {
+            return res.status(404).json({
+              error: "PROFILE_NOT_FOUND",
+              message: "Profile not found.",
+            });
+          }
+        }
+      }
+      if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
+        return res.status(403).json({
+          error: "FORBIDDEN",
+          message: "Cannot generate report using another user's profile.",
         });
       }
 
-      // Debit wallet via dedicated purchaseReport mechanism with idempotency
-      const clientKey = req.body.clientKey || `REPORT_${user.id}_${productId}_${Date.now()}`;
-      await db.purchaseReport(user.id, product.displayName, pricing.finalPriceRupees, profile.id, clientKey);
+      let partnerProfile: any = null;
+      if (
+        partnerProfileId &&
+        partnerProfileId !== "default_partner" &&
+        partnerProfileId !== "none"
+      ) {
+        partnerProfile = await db.getProfileById(partnerProfileId);
+        if (!partnerProfile) {
+          return res.status(404).json({
+            error: "PARTNER_PROFILE_NOT_FOUND",
+            message: "Selected partner profile not found.",
+          });
+        }
+        if (
+          partnerProfile.userId !== user.id &&
+          user.role !== Role.SUPER_ADMIN
+        ) {
+          return res.status(403).json({
+            error: "FORBIDDEN",
+            message:
+              "Cannot generate report using another user's partner profile.",
+          });
+        }
+      } else if (
+        req.body.partnerProfileData &&
+        typeof req.body.partnerProfileData === "object"
+      ) {
+        const pValidation = validateProfileInputData(
+          req.body.partnerProfileData,
+        );
+        if (pValidation.error) {
+          return res
+            .status(400)
+            .json({ error: pValidation.error, message: pValidation.message });
+        }
+        partnerProfile = await db.createProfile({
+          userId: user.id,
+          ...pValidation.cleanData,
+        });
+      }
 
-      // Generate canonical document
-      const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, { partnerProfile, ...options });
+      if (productId === "report_kundli_milan") {
+        if (!partnerProfile) {
+          return res.status(400).json({
+            error: "MISSING_PARTNER_PROFILE",
+            message:
+              "Kundli Milan synastry requires a distinct partner birth profile.",
+          });
+        }
+        if (partnerProfile.id === profile.id) {
+          return res.status(400).json({
+            error: "SELF_AS_PARTNER_INVALID",
+            message:
+              "Subject profile and partner profile cannot be identical for synastry matchmaking.",
+          });
+        }
+      }
+
+      const dbUser = await db.findUserById(user.id);
+      const doc = await ReportDocumentGenerator.generateReport(
+        productId,
+        dbUser,
+        profile,
+        { partnerProfile, ...options },
+      );
+
       const saved = await db.createSavedReport({
         userId: user.id,
         title: `${product.displayName} (${profile.profileName})`,
         reportType: productId,
-        payload: doc
+        payload: doc,
       });
 
-      return res.json({
+      await db.recordAuditEvent({
+        userId: user.id,
+        action: "REPORT_PURCHASED_AND_GENERATED",
+        targetType: "SAVED_REPORT",
+        targetId: saved.id,
+        metadata: {
+          productId,
+          profileId,
+          orderId: order.providerOrderId,
+          provider: "CASHFREE",
+        },
+      });
+
+      res.json({
         success: true,
         reportId: saved.id,
-        title: saved.title,
-        reportType: saved.reportType,
-        paidAmountPaise: pricing.finalPricePaise,
-        discountPercent: pricing.discountPercent,
+        status: "READY_FOR_READER",
+        paidVia: "CASHFREE",
         document: doc,
-        status: 'READY_FOR_READER',
-        paidVia: 'WALLET',
-        deduction: pricing.finalPriceRupees
       });
+    } catch (err: any) {
+      handleServiceError(
+        res,
+        err,
+        "Report verification and compilation failed",
+      );
     }
-
-    // If user opts to pay via DEMO Mode wallet balance (Non-production testing only)
-    if (paymentMethod && (String(paymentMethod).toUpperCase() === 'DEMO_WALLET' || String(paymentMethod).toUpperCase() === 'DEMO')) {
-      if (!isDemoModeActive()) {
-        return res.status(403).json({
-          error: 'DEMO_MODE_DISABLED',
-          message: 'Demo purchases are strictly forbidden in production.'
-        });
-      }
-
-      if (Number(dbUser?.demoWalletBalance || 0) < pricing.finalPriceRupees) {
-        return res.status(400).json({
-          error: 'INSUFFICIENT_FUNDS',
-          message: `Insufficient demo wallet balance. This report requires ₹${pricing.finalPriceRupees.toFixed(2)} in demo credits.`,
-          requiredAmount: pricing.finalPriceRupees,
-          currentBalance: dbUser?.demoWalletBalance || 0,
-          isDemo: true
-        });
-      }
-
-      // Debit demo balance exclusively via purchaseReportWithDemo
-      const clientKey = req.body.clientKey || `DEMO_REPORT_${user.id}_${productId}_${Date.now()}`;
-      const demoResult = await db.purchaseReportWithDemo(user.id, product.displayName, pricing.finalPriceRupees, profile.id, clientKey);
-
-      // Generate canonical document with demo notice watermark
-      const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, {
-        partnerProfile,
-        isDemoPurchase: true,
-        ...options
-      });
-      const saved = await db.createSavedReport({
-        userId: user.id,
-        title: `[DEMO] ${product.displayName} (${profile.profileName})`,
-        reportType: productId,
-        payload: doc
-      });
-
-      return res.json({
-        success: true,
-        reportId: saved.id,
-        title: saved.title,
-        reportType: saved.reportType,
-        paidAmountPaise: pricing.finalPricePaise,
-        discountPercent: pricing.discountPercent,
-        document: doc,
-        status: 'READY_FOR_READER',
-        paidVia: 'DEMO_WALLET',
-        deduction: pricing.finalPriceRupees,
-        newDemoBalance: demoResult.newDemoBalance,
-        isDemo: true
-      });
-    }
-
-    // Cashfree Checkout flow for paid report purchases
-    const readiness = getPaymentReadinessStatus();
-    if (!readiness.configured) {
-      return res.status(503).json({
-        error: 'PAYMENTS_NOT_CONFIGURED',
-        readinessState: readiness.state,
-        specificError: readiness.state,
-        message: readiness.customerMessage,
-        adminExplanation: readiness.adminExplanation,
-        gateway: 'CASHFREE'
-      });
-    }
-
-    const orderReceipt = idempotencyKey
-      ? `rep_${crypto.createHash('sha256').update(user.id + '_' + idempotencyKey).digest('hex').slice(0, 16)}`
-      : `rep_ord_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
-    const userRecord = await db.findUserById(user.id);
-    const appBaseUrl = (process.env.APP_BASE_URL || 'https://astroverse-eta.vercel.app').replace(/\/+$/, '');
-    const cfOrder = await createCashfreeOrder({
-      orderId: `cf_${orderReceipt}`,
-      orderAmount: pricing.finalPriceRupees,
-      orderCurrency: 'INR',
-      customer: {
-        customer_id: user.id,
-        customer_email: userRecord?.email || undefined,
-        customer_phone: userRecord?.phone || '9999999999',
-        customer_name: userRecord?.displayName || 'AstroVerse Seeker'
-      },
-      returnUrl: `${appBaseUrl}/?cf_order_id={order_id}&cf_type=report`,
-      orderNote: `Report Purchase: ${product.displayName}`,
-      idempotencyKey: idempotencyKey || undefined
-    });
-
-    const basePriceRupees = pricing.basePricePaise / 100;
-    const gstAmountRupees = Math.round((pricing.finalPriceRupees - pricing.finalPriceRupees / 1.18) * 100) / 100;
-    const discountRupees = pricing.discountPaise / 100;
-
-    const order = await db.createPaymentOrder({
-      userId: user.id,
-      amount: pricing.finalPriceRupees,
-      currency: 'INR',
-      provider: 'CASHFREE',
-      providerOrderId: cfOrder.order_id,
-      gateway: 'CASHFREE',
-      cfOrderId: cfOrder.order_id,
-      cfPaymentSessionId: cfOrder.payment_session_id,
-      productType: 'REPORT',
-      productId,
-      idempotencyKey: idempotencyKey || undefined,
-      baseAmount: basePriceRupees,
-      gstAmount: gstAmountRupees,
-      pricingSnapshot: {
-        finalPriceRupees: pricing.finalPriceRupees,
-        finalPricePaise: pricing.finalPricePaise,
-        basePriceRupees,
-        gstAmountRupees,
-        discountPercent: pricing.discountPercent,
-        discountRupees,
-        catalogueVersion: '2026.01'
-      },
-      metadata: {
-        productType: 'REPORT',
-        productId,
-        pricing
-      }
-    });
-
-    res.json({
-      orderId: order.providerOrderId,
-      amountPaise: pricing.finalPricePaise,
-      amountRupees: pricing.finalPriceRupees,
-      discountPercent: pricing.discountPercent,
-      productId,
-      profileId: profile.id,
-      paymentSessionId: cfOrder.payment_session_id,
-      cfOrderId: cfOrder.cf_order_id,
-      gateway: 'CASHFREE',
-      environment: readiness.environment,
-      checkoutUrl: `${getCashfreeBaseUrl()}/view/sessions/checkout`
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Report order generation failed');
-  }
-});
-
-// POST /api/reports/verify-and-generate (Verify Cashfree payment and compile canonical document)
-app.post('/api/reports/verify-and-generate', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { orderId, paymentId, signature, productId, profileId, partnerProfileId, options } = req.body;
-  const user = req.user!;
-
-  if (!orderId) {
-    return res.status(400).json({ error: 'MISSING_ORDER_ID', message: 'orderId is required.' });
-  }
-
-  const trimmedOrderId = String(orderId).trim();
-  if (signature && (trimmedOrderId.startsWith('order_') || !trimmedOrderId.startsWith('cf_'))) {
-    return res.status(410).json({
-      error: 'PAYMENT_PROVIDER_RETIRED',
-      message: 'Razorpay is retired. Active payments must be verified via Cashfree.'
-    });
-  }
-
-  const product = REPORT_CATALOGUE[productId];
-  if (!product) {
-    return res.status(400).json({ error: 'INVALID_PRODUCT', message: 'Product not recognized.' });
-  }
-
-  // 1. Order lookup & verification (AV-SEC-01 mitigation)
-  let order = await db.findPaymentOrderByIdAsync(trimmedOrderId);
-  if (!order && isCashfreeConfigured()) {
-    try {
-      const cfStatus = await getCashfreeOrderStatus(trimmedOrderId);
-      if (cfStatus && cfStatus.order_id) {
-        const cfCustomerId = cfStatus.customer_details?.customer_id;
-        if (cfCustomerId && cfCustomerId !== user.id && user.role !== Role.SUPER_ADMIN) {
-          return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Payment order does not belong to the authenticated user.' });
-        }
-        order = await db.createPaymentOrder({
-          userId: cfCustomerId || user.id,
-          amount: Number(cfStatus.order_amount),
-          currency: cfStatus.order_currency || 'INR',
-          provider: 'CASHFREE',
-          providerOrderId: cfStatus.order_id,
-          gateway: 'CASHFREE',
-          cfOrderId: cfStatus.cf_order_id ? String(cfStatus.cf_order_id) : undefined,
-          cfPaymentSessionId: cfStatus.payment_session_id || undefined,
-          productType: 'REPORT',
-          productId
-        });
-      }
-    } catch (_) {}
-  }
-  if (!order) {
-    return res.status(404).json({ error: 'ORDER_NOT_FOUND', message: 'Payment order was not found in platform records.' });
-  }
-  if (order.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-    return res.status(403).json({ error: 'ORDER_USER_MISMATCH', message: 'Payment order does not belong to the authenticated user.' });
-  }
-
-  // Cross-product replay prevention (AV-SEC-02)
-  if (order.productType && order.productType !== 'REPORT') {
-    return res.status(400).json({
-      error: 'INVALID_ORDER_TYPE',
-      message: `Order type '${order.productType}' cannot be used to fulfill a report publication.`
-    });
-  }
-  if (order.productId && order.productId !== productId) {
-    return res.status(400).json({
-      error: 'PRODUCT_MISMATCH',
-      message: `Order is bound to product '${order.productId}', cannot fulfill '${productId}'.`
-    });
-  }
-
-  const userRecord = await db.findUserById(user.id);
-  const userTier = resolveRequestTier(userRecord, req);
-  const pricing = calculateReportPrice(productId, userTier);
-
-  // If order not yet marked paid, verify directly with Cashfree
-  if (order.status !== OrderStatus.PAID) {
-    if (!isCashfreeConfigured()) {
-      return res.status(503).json({
-        error: 'PAYMENTS_NOT_CONFIGURED',
-        message: 'Online payments are currently unconfigured.'
-      });
-    }
-
-    try {
-      const cfStatus = await getCashfreeOrderStatus(order.providerOrderId || order.cfOrderId || trimmedOrderId);
-      if (cfStatus.order_status !== 'PAID') {
-        return res.status(400).json({
-          error: 'PAYMENT_NOT_SETTLED',
-          message: `Cashfree reports order status as ${cfStatus.order_status}.`
-        });
-      }
-      if (Math.round(cfStatus.order_amount * 100) < pricing.finalPricePaise) {
-        return res.status(400).json({
-          error: 'AMOUNT_MISMATCH',
-          message: `Verified Cashfree amount ₹${cfStatus.order_amount} is less than required publication price ₹${pricing.finalPriceRupees}.`
-        });
-      }
-      const settledPaymentId = cfStatus.cf_order_id || paymentId || `cf_pay_${Date.now()}`;
-      await db.markPaymentOrderPaid(order.providerOrderId, settledPaymentId, 'CASHFREE');
-    } catch (cfErr: any) {
-      return handleServiceError(res, cfErr, 'Cashfree verification failed');
-    }
-  }
-
-  try {
-    let profile = await db.getProfileById(profileId);
-    if (!profile) {
-      if (req.body.profileData && typeof req.body.profileData === 'object') {
-        const pValidation = validateProfileInputData(req.body.profileData);
-        if (pValidation.error) {
-          return res.status(400).json({ error: pValidation.error, message: pValidation.message });
-        }
-        profile = await db.createProfile({
-          userId: user.id,
-          ...pValidation.cleanData,
-          profileName: pValidation.cleanData.profileName || user.displayName || 'Primary Profile'
-        });
-      } else {
-        const userProfiles = await db.getProfilesByUserId(user.id);
-        if (userProfiles && userProfiles.length > 0) {
-          profile = userProfiles[0];
-        } else {
-          return res.status(404).json({ error: 'PROFILE_NOT_FOUND', message: 'Profile not found.' });
-        }
-      }
-    }
-    if (profile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-      return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's profile." });
-    }
-
-    let partnerProfile: any = null;
-    if (partnerProfileId && partnerProfileId !== 'default_partner' && partnerProfileId !== 'none') {
-      partnerProfile = await db.getProfileById(partnerProfileId);
-      if (!partnerProfile) {
-        return res.status(404).json({ error: 'PARTNER_PROFILE_NOT_FOUND', message: 'Selected partner profile not found.' });
-      }
-      if (partnerProfile.userId !== user.id && user.role !== Role.SUPER_ADMIN) {
-        return res.status(403).json({ error: 'FORBIDDEN', message: "Cannot generate report using another user's partner profile." });
-      }
-    } else if (req.body.partnerProfileData && typeof req.body.partnerProfileData === 'object') {
-      const pValidation = validateProfileInputData(req.body.partnerProfileData);
-      if (pValidation.error) {
-        return res.status(400).json({ error: pValidation.error, message: pValidation.message });
-      }
-      partnerProfile = await db.createProfile({
-        userId: user.id,
-        ...pValidation.cleanData
-      });
-    }
-
-    if (productId === 'report_kundli_milan') {
-      if (!partnerProfile) {
-        return res.status(400).json({
-          error: 'MISSING_PARTNER_PROFILE',
-          message: 'Kundli Milan synastry requires a distinct partner birth profile.'
-        });
-      }
-      if (partnerProfile.id === profile.id) {
-        return res.status(400).json({
-          error: 'SELF_AS_PARTNER_INVALID',
-          message: 'Subject profile and partner profile cannot be identical for synastry matchmaking.'
-        });
-      }
-    }
-
-    const dbUser = await db.findUserById(user.id);
-    const doc = await ReportDocumentGenerator.generateReport(productId, dbUser, profile, { partnerProfile, ...options });
-
-    const saved = await db.createSavedReport({
-      userId: user.id,
-      title: `${product.displayName} (${profile.profileName})`,
-      reportType: productId,
-      payload: doc
-    });
-
-    await db.recordAuditEvent({
-      userId: user.id,
-      action: 'REPORT_PURCHASED_AND_GENERATED',
-      targetType: 'SAVED_REPORT',
-      targetId: saved.id,
-      metadata: {
-        productId,
-        profileId,
-        orderId: order.providerOrderId,
-        provider: 'CASHFREE'
-      }
-    });
-
-    res.json({
-      success: true,
-      reportId: saved.id,
-      status: 'READY_FOR_READER',
-      paidVia: 'CASHFREE',
-      document: doc
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Report verification and compilation failed');
-  }
-});
+  },
+);
 
 // POST /api/ai-astrologer/consume-quota (Server-side daily question limit enforcement)
-app.post('/api/ai-astrologer/consume-quota', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const user = await db.findUserById(req.user!.id);
-    const tier = resolveRequestTier(user, req);
-    const result = EntitlementManager.consumeAiQuery(req.user!.id, tier);
-    res.json({
-      success: true,
-      usedToday: result.usedToday,
-      consumedToday: result.usedToday,
-      totalAllowed: result.totalAllowed,
-      allowedLimit: result.totalAllowed,
-      limit: result.totalAllowed,
-      remaining: result.remaining,
-      remainingToday: result.remaining
-    });
-  } catch (err: any) {
-    if (err.code === 'AI_QUOTA_EXCEEDED') {
-      return res.status(429).json({
-        error: 'DAILY_AI_QUOTA_EXCEEDED',
-        message: err.message,
-        tier: err.tier,
-        dailyLimit: err.dailyLimit,
-        allowedLimit: err.dailyLimit,
-        upgradeRequired: err.upgradeRequired
+app.post(
+  "/api/ai-astrologer/consume-quota",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = await db.findUserById(req.user!.id);
+      const tier = resolveRequestTier(user, req);
+      const result = EntitlementManager.consumeAiQuery(req.user!.id, tier);
+      res.json({
+        success: true,
+        usedToday: result.usedToday,
+        consumedToday: result.usedToday,
+        totalAllowed: result.totalAllowed,
+        allowedLimit: result.totalAllowed,
+        limit: result.totalAllowed,
+        remaining: result.remaining,
+        remainingToday: result.remaining,
       });
+    } catch (err: any) {
+      if (err.code === "AI_QUOTA_EXCEEDED") {
+        return res.status(429).json({
+          error: "DAILY_AI_QUOTA_EXCEEDED",
+          message: err.message,
+          tier: err.tier,
+          dailyLimit: err.dailyLimit,
+          allowedLimit: err.dailyLimit,
+          upgradeRequired: err.upgradeRequired,
+        });
+      }
+      handleServiceError(res, err, "Quota check failed");
     }
-    handleServiceError(res, err, 'Quota check failed');
-  }
-});
+  },
+);
 
 // ==================== PROMOTIONS & CONSULTATION SESSION APIS ====================
 
 // GET /api/promotions/active
-app.get('/api/promotions/active', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const user = req.user;
-    const guestTrialId = typeof req.query.guestTrialId === 'string' ? req.query.guestTrialId : undefined;
-    const lookupId = user ? user.id : (guestTrialId ? `guest_${guestTrialId}` : null);
+app.get(
+  "/api/promotions/active",
+  optionalAuthenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = req.user;
+      const guestTrialId =
+        typeof req.query.guestTrialId === "string"
+          ? req.query.guestTrialId
+          : undefined;
+      const lookupId = user
+        ? user.id
+        : guestTrialId
+          ? `guest_${guestTrialId}`
+          : null;
 
-    let isEligible = true;
-    let activeSession: ConsultationSessionRecord | null = null;
+      let isEligible = true;
+      let activeSession: ConsultationSessionRecord | null = null;
 
-    if (user) {
-      isEligible = isEligibleForFreeMinute(user);
-      activeSession = await db.findActiveConsultationSession(user.id);
-    } else if (lookupId) {
-      activeSession = await db.findActiveConsultationSession(lookupId);
-      const rawUser = guestTrialId ? (db as any).data?.users?.find((u: any) => u.id === guestTrialId) : null;
-      if (rawUser && rawUser.freeMinuteConsumed) {
-        isEligible = false;
-      } else if (!activeSession) {
-        const prior = (db as any).data?.consultationSessions?.find(
-          (cs: any) => (cs.userId === lookupId || (guestTrialId && cs.userId === guestTrialId)) && cs.freeConsumedAt != null
-        );
-        if (prior) {
+      if (user) {
+        isEligible = isEligibleForFreeMinute(user);
+        activeSession = await db.findActiveConsultationSession(user.id);
+      } else if (lookupId) {
+        activeSession = await db.findActiveConsultationSession(lookupId);
+        const rawUser = guestTrialId
+          ? (db as any).data?.users?.find((u: any) => u.id === guestTrialId)
+          : null;
+        if (rawUser && rawUser.freeMinuteConsumed) {
           isEligible = false;
+        } else if (!activeSession) {
+          const prior = (db as any).data?.consultationSessions?.find(
+            (cs: any) =>
+              (cs.userId === lookupId ||
+                (guestTrialId && cs.userId === guestTrialId)) &&
+              cs.freeConsumedAt != null,
+          );
+          if (prior) {
+            isEligible = false;
+          }
         }
       }
-    }
 
-    res.json({
-      success: true,
-      offer: ACTIVE_PROMOTIONAL_OFFER,
-      isEligible,
-      activeSession: activeSession ? {
-        id: activeSession.id,
-        personaId: activeSession.personaId,
-        astrologerName: activeSession.astrologerName,
-        status: activeSession.status,
-        freeDeadline: activeSession.freeDeadline,
-        ratePerMinute: activeSession.ratePerMinute
-      } : null
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to fetch active promotion');
-  }
-});
+      res.json({
+        success: true,
+        offer: ACTIVE_PROMOTIONAL_OFFER,
+        isEligible,
+        activeSession: activeSession
+          ? {
+              id: activeSession.id,
+              personaId: activeSession.personaId,
+              astrologerName: activeSession.astrologerName,
+              status: activeSession.status,
+              freeDeadline: activeSession.freeDeadline,
+              ratePerMinute: activeSession.ratePerMinute,
+            }
+          : null,
+      });
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to fetch active promotion");
+    }
+  },
+);
 
 // POST /api/consultation/start-session
-app.post('/api/consultation/start-session', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { personaId, astrologerName, guestTrialId } = req.body || {};
-    const isGuest = !req.user;
-    const sanitizedGuestId = guestTrialId && typeof guestTrialId === 'string'
-      ? guestTrialId.trim().replace(/[^a-zA-Z0-9_-]/g, '')
-      : null;
-    const userId = req.user ? req.user.id : `guest_${sanitizedGuestId || crypto.randomUUID()}`;
-
-    const persona = typeof personaId === 'string' && personaId.trim() ? personaId.trim() : 'acharya_devratan';
-    const astrologer = typeof astrologerName === 'string' && astrologerName.trim() ? astrologerName.trim() : 'Acharya Devratan';
-
-    const result = await db.createOrGetConsultationSession({
-      userId,
-      personaId: persona,
-      astrologerName: astrologer,
-      isGuest,
-      guestTrialId: sanitizedGuestId || undefined
-    });
-
-    res.json({
-      success: true,
-      session: result.session,
-      isNew: result.isNew,
-      remainingFreeSeconds: result.remainingFreeSeconds,
-      billingConfig: {
-        ratePerMinuteRupees: AI_CONSULTATION_SERVICE.ratePerMinuteRupees,
-        billingMode: AI_CONSULTATION_SERVICE.billingMode,
-        freeAllowanceSeconds: ACTIVE_PROMOTIONAL_OFFER.freeAllowanceSeconds
-      }
-    });
-  } catch (err: any) {
-    handleServiceError(res, err, 'Failed to start consultation session');
-  }
-});
-
-// GET /api/consultation/session/:sessionId
-app.get('/api/consultation/session/:sessionId', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { sessionId } = req.params;
-    const sessionRecord = await db.findConsultationSessionById(sessionId);
-    if (!sessionRecord) {
-      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
-    }
-
-    const guestTrialId = typeof req.query.guestTrialId === 'string' ? req.query.guestTrialId : undefined;
-    const userId = req.user ? req.user.id : (guestTrialId ? `guest_${guestTrialId}` : sessionRecord.userId);
-
-    const result = await db.checkConsultationSession(sessionId, userId);
-    res.json({
-      success: true,
-      session: result.session,
-      remainingFreeSeconds: result.remainingFreeSeconds,
-      isFreeActive: result.isFreeActive,
-      isExpired: result.isExpired,
-      ratePerMinuteRupees: AI_CONSULTATION_SERVICE.ratePerMinuteRupees,
-      billingMode: AI_CONSULTATION_SERVICE.billingMode
-    });
-  } catch (err: any) {
-    if (err.message === 'SESSION_NOT_FOUND') {
-      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
-    }
-    if (err.message === 'FORBIDDEN_SESSION_ACCESS') {
-      return res.status(403).json({ error: 'FORBIDDEN_SESSION_ACCESS', message: 'Not authorized to access this session.' });
-    }
-    handleServiceError(res, err, 'Failed to check consultation session');
-  }
-});
-
-// POST /api/consultation/continue-paid
-app.post('/api/consultation/continue-paid', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { sessionId, paymentMethod, guestTrialId } = req.body || {};
-    if (!sessionId || typeof sessionId !== 'string') {
-      return res.status(400).json({ error: 'SESSION_ID_REQUIRED', message: 'Session ID is required.' });
-    }
-
-    const sessionRecord = await db.findConsultationSessionById(sessionId);
-    if (!sessionRecord) {
-      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
-    }
-
-    const userId = req.user ? req.user.id : (guestTrialId ? `guest_${guestTrialId}` : sessionRecord.userId);
-    const method = paymentMethod === 'DEMO_WALLET' ? 'DEMO_WALLET' : 'REAL_WALLET';
-
+app.post(
+  "/api/consultation/start-session",
+  optionalAuthenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const result = await db.confirmPaidConsultation({
-        sessionId,
+      const { personaId, astrologerName, guestTrialId } = req.body || {};
+      const isGuest = !req.user;
+      const sanitizedGuestId =
+        guestTrialId && typeof guestTrialId === "string"
+          ? guestTrialId.trim().replace(/[^a-zA-Z0-9_-]/g, "")
+          : null;
+      const userId = req.user
+        ? req.user.id
+        : `guest_${sanitizedGuestId || crypto.randomUUID()}`;
+
+      const persona =
+        typeof personaId === "string" && personaId.trim()
+          ? personaId.trim()
+          : "acharya_devratan";
+      const astrologer =
+        typeof astrologerName === "string" && astrologerName.trim()
+          ? astrologerName.trim()
+          : "Acharya Devratan";
+
+      const result = await db.createOrGetConsultationSession({
         userId,
-        method
+        personaId: persona,
+        astrologerName: astrologer,
+        isGuest,
+        guestTrialId: sanitizedGuestId || undefined,
       });
-      return res.json({
+
+      res.json({
         success: true,
         session: result.session,
-        newBalance: result.newBalance,
-        rateDeducted: result.session.ratePerMinute,
-        paidMinutesConsumed: result.session.paidMinutesConsumed
+        isNew: result.isNew,
+        remainingFreeSeconds: result.remainingFreeSeconds,
+        billingConfig: {
+          ratePerMinuteRupees: AI_CONSULTATION_SERVICE.ratePerMinuteRupees,
+          billingMode: AI_CONSULTATION_SERVICE.billingMode,
+          freeAllowanceSeconds: ACTIVE_PROMOTIONAL_OFFER.freeAllowanceSeconds,
+        },
       });
-    } catch (payErr: any) {
-      if (payErr.message === 'INSUFFICIENT_FUNDS') {
-        return res.status(402).json({
-          error: 'INSUFFICIENT_WALLET_BALANCE',
-          message: 'Insufficient balance to continue consultation. Please recharge your wallet to proceed.',
-          requiredAmount: payErr.requiredAmount,
-          currentBalance: payErr.currentBalance,
-          ratePerMinute: payErr.requiredAmount,
-          isDemo: Boolean(payErr.isDemo),
-          rechargeRequired: true
+    } catch (err: any) {
+      handleServiceError(res, err, "Failed to start consultation session");
+    }
+  },
+);
+
+// GET /api/consultation/session/:sessionId
+app.get(
+  "/api/consultation/session/:sessionId",
+  optionalAuthenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { sessionId } = req.params;
+      const sessionRecord = await db.findConsultationSessionById(sessionId);
+      if (!sessionRecord) {
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
         });
       }
-      throw payErr;
+
+      const guestTrialId =
+        typeof req.query.guestTrialId === "string"
+          ? req.query.guestTrialId
+          : undefined;
+      const userId = req.user
+        ? req.user.id
+        : guestTrialId
+          ? `guest_${guestTrialId}`
+          : sessionRecord.userId;
+
+      const result = await db.checkConsultationSession(sessionId, userId);
+      res.json({
+        success: true,
+        session: result.session,
+        remainingFreeSeconds: result.remainingFreeSeconds,
+        isFreeActive: result.isFreeActive,
+        isExpired: result.isExpired,
+        ratePerMinuteRupees: AI_CONSULTATION_SERVICE.ratePerMinuteRupees,
+        billingMode: AI_CONSULTATION_SERVICE.billingMode,
+      });
+    } catch (err: any) {
+      if (err.message === "SESSION_NOT_FOUND") {
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
+      }
+      if (err.message === "FORBIDDEN_SESSION_ACCESS") {
+        return res.status(403).json({
+          error: "FORBIDDEN_SESSION_ACCESS",
+          message: "Not authorized to access this session.",
+        });
+      }
+      handleServiceError(res, err, "Failed to check consultation session");
     }
-  } catch (err: any) {
-    if (err.message === 'SESSION_NOT_FOUND') {
-      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
+  },
+);
+
+// POST /api/consultation/continue-paid
+app.post(
+  "/api/consultation/continue-paid",
+  optionalAuthenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { sessionId, paymentMethod, guestTrialId } = req.body || {};
+      if (!sessionId || typeof sessionId !== "string") {
+        return res.status(400).json({
+          error: "SESSION_ID_REQUIRED",
+          message: "Session ID is required.",
+        });
+      }
+
+      const sessionRecord = await db.findConsultationSessionById(sessionId);
+      if (!sessionRecord) {
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
+      }
+
+      const userId = req.user
+        ? req.user.id
+        : guestTrialId
+          ? `guest_${guestTrialId}`
+          : sessionRecord.userId;
+      const method =
+        paymentMethod === "DEMO_WALLET" ? "DEMO_WALLET" : "REAL_WALLET";
+
+      try {
+        const result = await db.confirmPaidConsultation({
+          sessionId,
+          userId,
+          method,
+        });
+        return res.json({
+          success: true,
+          session: result.session,
+          newBalance: result.newBalance,
+          rateDeducted: result.session.ratePerMinute,
+          paidMinutesConsumed: result.session.paidMinutesConsumed,
+        });
+      } catch (payErr: any) {
+        if (payErr.message === "INSUFFICIENT_FUNDS") {
+          return res.status(402).json({
+            error: "INSUFFICIENT_WALLET_BALANCE",
+            message:
+              "Insufficient balance to continue consultation. Please recharge your wallet to proceed.",
+            requiredAmount: payErr.requiredAmount,
+            currentBalance: payErr.currentBalance,
+            ratePerMinute: payErr.requiredAmount,
+            isDemo: Boolean(payErr.isDemo),
+            rechargeRequired: true,
+          });
+        }
+        throw payErr;
+      }
+    } catch (err: any) {
+      if (err.message === "SESSION_NOT_FOUND") {
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
+      }
+      if (err.message === "FORBIDDEN_SESSION_ACCESS") {
+        return res.status(403).json({
+          error: "FORBIDDEN_SESSION_ACCESS",
+          message: "Not authorized to modify this session.",
+        });
+      }
+      handleServiceError(res, err, "Failed to confirm paid consultation");
     }
-    if (err.message === 'FORBIDDEN_SESSION_ACCESS') {
-      return res.status(403).json({ error: 'FORBIDDEN_SESSION_ACCESS', message: 'Not authorized to modify this session.' });
-    }
-    handleServiceError(res, err, 'Failed to confirm paid consultation');
-  }
-});
+  },
+);
 
 // POST /api/consultation/end-session
-app.post('/api/consultation/end-session', optionalAuthenticate, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { sessionId, guestTrialId } = req.body || {};
-    if (!sessionId || typeof sessionId !== 'string') {
-      return res.status(400).json({ error: 'SESSION_ID_REQUIRED', message: 'Session ID is required.' });
-    }
+app.post(
+  "/api/consultation/end-session",
+  optionalAuthenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { sessionId, guestTrialId } = req.body || {};
+      if (!sessionId || typeof sessionId !== "string") {
+        return res.status(400).json({
+          error: "SESSION_ID_REQUIRED",
+          message: "Session ID is required.",
+        });
+      }
 
-    const sessionRecord = await db.findConsultationSessionById(sessionId);
-    if (!sessionRecord) {
-      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
-    }
+      const sessionRecord = await db.findConsultationSessionById(sessionId);
+      if (!sessionRecord) {
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
+      }
 
-    const userId = req.user ? req.user.id : (guestTrialId ? `guest_${guestTrialId}` : sessionRecord.userId);
-    const session = await db.endConsultationSession(sessionId, userId);
+      const userId = req.user
+        ? req.user.id
+        : guestTrialId
+          ? `guest_${guestTrialId}`
+          : sessionRecord.userId;
+      const session = await db.endConsultationSession(sessionId, userId);
 
-    res.json({
-      success: true,
-      session
-    });
-  } catch (err: any) {
-    if (err.message === 'SESSION_NOT_FOUND') {
-      return res.status(404).json({ error: 'SESSION_NOT_FOUND', message: 'Consultation session not found.' });
+      res.json({
+        success: true,
+        session,
+      });
+    } catch (err: any) {
+      if (err.message === "SESSION_NOT_FOUND") {
+        return res.status(404).json({
+          error: "SESSION_NOT_FOUND",
+          message: "Consultation session not found.",
+        });
+      }
+      if (err.message === "FORBIDDEN_SESSION_ACCESS") {
+        return res.status(403).json({
+          error: "FORBIDDEN_SESSION_ACCESS",
+          message: "Not authorized to modify this session.",
+        });
+      }
+      handleServiceError(res, err, "Failed to end consultation session");
     }
-    if (err.message === 'FORBIDDEN_SESSION_ACCESS') {
-      return res.status(403).json({ error: 'FORBIDDEN_SESSION_ACCESS', message: 'Not authorized to modify this session.' });
-    }
-    handleServiceError(res, err, 'Failed to end consultation session');
-  }
-});
+  },
+);
 
 // POST /api/ai-astrologer/ask (Multi-turn, chart-grounded conversational AI astrologer)
-app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
+app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
   try {
-    const { category, question, dob, lat, lon, timezone, astrologer_name, session_history, lang, sessionId } = req.body;
-    if (!question || typeof question !== 'string' || !question.trim()) {
-      return res.status(400).json({ error: 'QUESTION_REQUIRED', message: 'Question string is required.' });
+    const {
+      category,
+      question,
+      dob,
+      lat,
+      lon,
+      timezone,
+      astrologer_name,
+      session_history,
+      lang,
+      sessionId,
+    } = req.body;
+    if (!question || typeof question !== "string" || !question.trim()) {
+      return res.status(400).json({
+        error: "QUESTION_REQUIRED",
+        message: "Question string is required.",
+      });
     }
 
     let activeConsultationSession: ConsultationSessionRecord | null = null;
-    if (sessionId && typeof sessionId === 'string') {
+    if (sessionId && typeof sessionId === "string") {
       const sessionRecord = await db.findConsultationSessionById(sessionId);
       if (sessionRecord) {
-        const checked = await db.checkConsultationSession(sessionId, sessionRecord.userId);
-        if (checked.isExpired && checked.session.status === ConsultationSessionStatus.FREE_EXHAUSTED) {
+        const checked = await db.checkConsultationSession(
+          sessionId,
+          sessionRecord.userId,
+        );
+        if (
+          checked.isExpired &&
+          checked.session.status === ConsultationSessionStatus.FREE_EXHAUSTED
+        ) {
           return res.status(402).json({
-            error: 'FREE_TRIAL_EXHAUSTED',
-            message: 'Your free consultation minute has concluded. Please confirm continuation at ₹15/minute to proceed.',
+            error: "FREE_TRIAL_EXHAUSTED",
+            message:
+              "Your free consultation minute has concluded. Please confirm continuation at ₹15/minute to proceed.",
             sessionId: checked.session.id,
             freeDeadline: checked.session.freeDeadline,
             ratePerMinuteRupees: AI_CONSULTATION_SERVICE.ratePerMinuteRupees,
             billingMode: AI_CONSULTATION_SERVICE.billingMode,
-            continuationRequired: true
+            continuationRequired: true,
           });
         }
         activeConsultationSession = checked.session;
@@ -10310,13 +14348,24 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
     }
 
     // Try Python kundli-engine first if available
-    const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+    const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
     try {
       const r = await fetch(`${kundliUrl}/api/ai-astrologer/ask`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, question, dob, lat, lon, timezone, astrologer_name, session_history, lang, sessionId }),
-        signal: AbortSignal.timeout(2500)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          question,
+          dob,
+          lat,
+          lon,
+          timezone,
+          astrologer_name,
+          session_history,
+          lang,
+          sessionId,
+        }),
+        signal: AbortSignal.timeout(2500),
       });
       if (r.ok) {
         const data = await r.json();
@@ -10332,73 +14381,150 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
 
     // Local deterministic astrological response generator
     const qLower = question.toLowerCase().trim();
-    const isHi = (lang && lang.toLowerCase().startsWith('hi')) || /[\u0900-\u097F]/.test(question);
-    const astro = (astrologer_name || '').toLowerCase();
-    const isSunita = astro.includes('sunita');
-    const isRaghavendra = astro.includes('raghavendra');
+    const isHi =
+      (lang && lang.toLowerCase().startsWith("hi")) ||
+      /[\u0900-\u097F]/.test(question);
+    const astro = (astrologer_name || "").toLowerCase();
+    const isSunita = astro.includes("sunita");
+    const isRaghavendra = astro.includes("raghavendra");
     const personaDisplay = isHi
-      ? (isSunita ? 'डॉ. सुनीता शास्त्री (AI ज्योतिषी)' : (isRaghavendra ? 'पंडित राघवेंद्र (AI ज्योतिषी)' : 'आचार्य देवव्रतन (AI ज्योतिषी)'))
-      : (isSunita ? 'Dr. Sunita Shastri (AI Astrologer)' : (isRaghavendra ? 'Pandit Raghavendra (AI Astrologer)' : 'Acharya Devratan (AI Astrologer)'));
+      ? isSunita
+        ? "डॉ. सुनीता शास्त्री (AI ज्योतिषी)"
+        : isRaghavendra
+          ? "पंडित राघवेंद्र (AI ज्योतिषी)"
+          : "आचार्य देवव्रतन (AI ज्योतिषी)"
+      : isSunita
+        ? "Dr. Sunita Shastri (AI Astrologer)"
+        : isRaghavendra
+          ? "Pandit Raghavendra (AI Astrologer)"
+          : "Acharya Devratan (AI Astrologer)";
 
-    const hasPriorTurn = Array.isArray(session_history) && session_history.some((m: any) => m && m.role === 'assistant');
-    const greetingPrefix = hasPriorTurn ? '' : (
-      isHi
-        ? (isSunita ? `नमस्ते! मैं ${personaDisplay} हूँ।\n\n` : (isRaghavendra ? `ॐ नमः शिवाय! मैं ${personaDisplay} हूँ।\n\n` : `प्रणाम! मैं ${personaDisplay} हूँ।\n\n`))
-        : (isSunita ? `Namaste! I am ${personaDisplay}.\n\n` : (isRaghavendra ? `Om Namah Shivaya! I am ${personaDisplay}.\n\n` : `Pranam! I am ${personaDisplay}.\n\n`))
+    const hasPriorTurn =
+      Array.isArray(session_history) &&
+      session_history.some((m: any) => m && m.role === "assistant");
+    const greetingPrefix = hasPriorTurn
+      ? ""
+      : isHi
+        ? isSunita
+          ? `नमस्ते! मैं ${personaDisplay} हूँ।\n\n`
+          : isRaghavendra
+            ? `ॐ नमः शिवाय! मैं ${personaDisplay} हूँ।\n\n`
+            : `प्रणाम! मैं ${personaDisplay} हूँ।\n\n`
+        : isSunita
+          ? `Namaste! I am ${personaDisplay}.\n\n`
+          : isRaghavendra
+            ? `Om Namah Shivaya! I am ${personaDisplay}.\n\n`
+            : `Pranam! I am ${personaDisplay}.\n\n`;
+
+    const isGreeting =
+      (qLower.startsWith("hi") ||
+        qLower.startsWith("hello") ||
+        qLower.startsWith("namaste") ||
+        qLower.startsWith("pranam") ||
+        qLower === "hey" ||
+        qLower.includes("नमस्ते") ||
+        qLower.includes("नमस्कार") ||
+        qLower.includes("प्रणाम")) &&
+      qLower.split(" ").length <= 6;
+
+    const isAmbiguousFuture =
+      qLower === "future" ||
+      qLower === "bhavishya" ||
+      /^(भविष्य|मेरा भविष्य|future)$/i.test(qLower);
+    const isCareerTransit =
+      (qLower.includes("transit") || qLower.includes("गोचर")) &&
+      (qLower.includes("career") ||
+        qLower.includes("switch") ||
+        qLower.includes("business") ||
+        qLower.includes("job") ||
+        /(नौकरी|व्यापार|व्यवसाय|परिवर्तन)/.test(question));
+    const isDashaStability =
+      (qLower.includes("dasha") || qLower.includes("दशा")) &&
+      (qLower.includes("stability") ||
+        qLower.includes("career") ||
+        qLower.includes("professional") ||
+        qLower.includes("work") ||
+        qLower.includes("job") ||
+        /(स्थिरता|कार्यक्षेत्र|नौकरी)/.test(question));
+
+    let isCareer =
+      !isCareerTransit &&
+      !isDashaStability &&
+      !isAmbiguousFuture &&
+      (qLower.includes("career") ||
+        qLower.includes("job") ||
+        qLower.includes("promot") ||
+        qLower.includes("business") ||
+        /(करियर|नौकरी|व्यापार|पदोन्नति)/.test(question));
+    let isMarriage =
+      qLower.includes("marri") ||
+      qLower.includes("love") ||
+      qLower.includes("relationship") ||
+      qLower.includes("partner") ||
+      qLower.includes("spouse") ||
+      /(विवाह|शादी|जीवनसाथी|सप्तम)/.test(question);
+    let isWealth =
+      qLower.includes("wealth") ||
+      qLower.includes("money") ||
+      qLower.includes("financ") ||
+      qLower.includes("invest") ||
+      /(धन|दौलत|निवेश|संपत्ति)/.test(question);
+    let isRemedy =
+      qLower.includes("remed") ||
+      qLower.includes("mantra") ||
+      qLower.includes("gem") ||
+      qLower.includes("stone") ||
+      /(उपाय|मन्त्र|रत्न|शांति)/.test(question);
+    let isTiming =
+      !isCareerTransit &&
+      !isDashaStability &&
+      (qLower.includes("when") ||
+        qLower.includes("timing") ||
+        qLower.includes("period") ||
+        /(कब|समय)/.test(question));
+
+    let intent = "general";
+    if (isGreeting) intent = "greeting";
+    else if (isAmbiguousFuture) intent = "ambiguous_future";
+    else if (isCareerTransit) intent = "career_transit_timing";
+    else if (isDashaStability) intent = "dasha_career_stability";
+    else if (isCareer) intent = "career";
+    else if (isMarriage) intent = "marriage";
+    else if (isWealth) intent = "wealth";
+    else if (isRemedy) intent = "remedy";
+    else if (isTiming) intent = "timing";
+
+    const hasChart = Boolean(
+      dob &&
+      lat !== null &&
+      lat !== undefined &&
+      lon !== null &&
+      lon !== undefined,
     );
 
-    const isGreeting = (
-      qLower.startsWith('hi') || qLower.startsWith('hello') || qLower.startsWith('namaste') ||
-      qLower.startsWith('pranam') || qLower === 'hey' ||
-      qLower.includes('नमस्ते') || qLower.includes('नमस्कार') || qLower.includes('प्रणाम')
-    ) && qLower.split(' ').length <= 6;
-
-    const isAmbiguousFuture = (qLower === 'future' || qLower === 'bhavishya' || /^(भविष्य|मेरा भविष्य|future)$/i.test(qLower));
-    const isCareerTransit = (qLower.includes('transit') || qLower.includes('गोचर')) &&
-      (qLower.includes('career') || qLower.includes('switch') || qLower.includes('business') || qLower.includes('job') || /(नौकरी|व्यापार|व्यवसाय|परिवर्तन)/.test(question));
-    const isDashaStability = (qLower.includes('dasha') || qLower.includes('दशा')) &&
-      (qLower.includes('stability') || qLower.includes('career') || qLower.includes('professional') || qLower.includes('work') || qLower.includes('job') || /(स्थिरता|कार्यक्षेत्र|नौकरी)/.test(question));
-
-    let isCareer = !isCareerTransit && !isDashaStability && !isAmbiguousFuture && (qLower.includes('career') || qLower.includes('job') || qLower.includes('promot') || qLower.includes('business') || /(करियर|नौकरी|व्यापार|पदोन्नति)/.test(question));
-    let isMarriage = qLower.includes('marri') || qLower.includes('love') || qLower.includes('relationship') || qLower.includes('partner') || qLower.includes('spouse') || /(विवाह|शादी|जीवनसाथी|सप्तम)/.test(question);
-    let isWealth = qLower.includes('wealth') || qLower.includes('money') || qLower.includes('financ') || qLower.includes('invest') || /(धन|दौलत|निवेश|संपत्ति)/.test(question);
-    let isRemedy = qLower.includes('remed') || qLower.includes('mantra') || qLower.includes('gem') || qLower.includes('stone') || /(उपाय|मन्त्र|रत्न|शांति)/.test(question);
-    let isTiming = !isCareerTransit && !isDashaStability && (qLower.includes('when') || qLower.includes('timing') || qLower.includes('period') || /(कब|समय)/.test(question));
-
-    let intent = 'general';
-    if (isGreeting) intent = 'greeting';
-    else if (isAmbiguousFuture) intent = 'ambiguous_future';
-    else if (isCareerTransit) intent = 'career_transit_timing';
-    else if (isDashaStability) intent = 'dasha_career_stability';
-    else if (isCareer) intent = 'career';
-    else if (isMarriage) intent = 'marriage';
-    else if (isWealth) intent = 'wealth';
-    else if (isRemedy) intent = 'remedy';
-    else if (isTiming) intent = 'timing';
-
-    const hasChart = Boolean(dob && lat !== null && lat !== undefined && lon !== null && lon !== undefined);
-
     // Profile coordinates (Standard Benchmark baseline)
-    const lagna = 'Scorpio';
-    const moon = 'Aquarius';
-    const dashaMaha = 'Jupiter';
-    const dashaAntar = 'Venus';
-    const sadesati = 'Phase 3 (Setting)';
-    const manglikVerdictStrEn = 'Mitigated / Pacified (Aries Swakshetra BPHS Cancellation)';
-    const manglikVerdictStrHi = 'शमित / शांत (मेष स्वक्षेत्री मंगल परिहार - BPHS Ch. 81)';
+    const lagna = "Scorpio";
+    const moon = "Aquarius";
+    const dashaMaha = "Jupiter";
+    const dashaAntar = "Venus";
+    const sadesati = "Phase 3 (Setting)";
+    const manglikVerdictStrEn =
+      "Mitigated / Pacified (Aries Swakshetra BPHS Cancellation)";
+    const manglikVerdictStrHi =
+      "शमित / शांत (मेष स्वक्षेत्री मंगल परिहार - BPHS Ch. 81)";
 
-    const lagnaDisplay = isHi ? 'वृश्चिक' : lagna;
-    const moonDisplay = isHi ? 'कुंभ' : moon;
-    const dashaMahaDisplay = isHi ? 'बृहस्पति (गुरु)' : dashaMaha;
-    const dashaAntarDisplay = isHi ? 'शुक्र' : dashaAntar;
+    const lagnaDisplay = isHi ? "वृश्चिक" : lagna;
+    const moonDisplay = isHi ? "कुंभ" : moon;
+    const dashaMahaDisplay = isHi ? "बृहस्पति (गुरु)" : dashaMaha;
+    const dashaAntarDisplay = isHi ? "शुक्र" : dashaAntar;
 
-    let message = '';
+    let message = "";
     let suggested: string[] = [];
     let remedyCard: any = null;
-    let summaryEn = '';
-    let summaryHi = '';
+    let summaryEn = "";
+    let summaryHi = "";
 
-    if (intent === 'greeting') {
+    if (intent === "greeting") {
       if (hasPriorTurn) {
         if (isHi) {
           message = `प्रणाम! मैं आपकी क्या सहायता कर सकता हूँ? आप अपनी **${lagnaDisplay} लग्न** पत्रिका (सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर प्रश्न पूछ सकते हैं।`;
@@ -10406,7 +14532,7 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
             "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
             "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
             "आगामी कौन सा गोचर करियर में सहायक होगा?",
-            "सक्रिय दशा में मानसिक शांति हेतु शास्त्रीय उपाय बताएं"
+            "सक्रिय दशा में मानसिक शांति हेतु शास्त्रीय उपाय बताएं",
           ];
         } else {
           message = `Pranam! How may I assist your astrological exploration today? Feel free to ask about your career, marriage timing, Dhana Yogas, or remedies for your **${lagna} Lagna** chart (**${dashaMaha}-${dashaAntar}** Dasha).`;
@@ -10414,7 +14540,7 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
             "Analyze my 10th House of Career & promotion timing",
             "When is an auspicious timing window for marriage?",
             "Which upcoming transit supports career acceleration?",
-            "What classical remedies are prescribed for my active Dasha?"
+            "What classical remedies are prescribed for my active Dasha?",
           ];
         }
       } else {
@@ -10424,7 +14550,7 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
             "मेरे दशम भाव के अनुसार करियर का समय बताइए",
             "मेरी कुंडली में कौन से धन योग सक्रिय हैं?",
             "आगामी कौन सा गोचर कार्यक्षेत्र में सहायक होगा?",
-            "वर्तमान व्यावसायिक तनाव का समाधान क्या है?"
+            "वर्तमान व्यावसायिक तनाव का समाधान क्या है?",
           ];
         } else {
           message = `Pranam! I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagna} Lagna**, **${moon} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**.\n\n### Strategic Guidance & Consultation\nYour chart is active and grounded in our consultation session. I am ready to explore your career milestones, leadership trajectory, Dhana Yogas, or upcoming planetary transits.\n\nWhat strategic objective, professional transition, or life question would you like to examine today?`;
@@ -10432,13 +14558,13 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
             "Analyze my 10th House of Career & promotion timing",
             "What does my chart reveal regarding Dhana Yogas?",
             "Which upcoming transit supports career acceleration?",
-            "How should I navigate current professional stress?"
+            "How should I navigate current professional stress?",
           ];
         }
       }
       summaryEn = "Welcomed seeker and initialized consultation session.";
       summaryHi = "परामर्श सत्र का आत्मीय स्वागत संदेश।";
-    } else if (intent === 'ambiguous_future') {
+    } else if (intent === "ambiguous_future") {
       if (isHi) {
         message = `${greetingPrefix}आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर सटीक और सार्थक फलादेश हेतु, आप भविष्य के किस विशिष्ट क्षेत्र पर पहले विचार करना चाहते हैं?
 
@@ -10450,7 +14576,7 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
           "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
           "विवाह एवं जीवनसाथी के योग कब बन रहे हैं?",
           "आर्थिक स्थिति एवं धन योग का विश्लेषण करें",
-          "सक्रिय दशा एवं साढ़े साती के शास्त्रीय उपाय क्या हैं?"
+          "सक्रिय दशा एवं साढ़े साती के शास्त्रीय उपाय क्या हैं?",
         ];
       } else {
         message = `${greetingPrefix}To give you the most accurate and meaningful astrological forecast from your chart (**${lagna} Lagna**, **${moon} Moon**, active **${dashaMaha}-${dashaAntar}** Dasha), which specific domain of your future would you like to explore first?
@@ -10463,12 +14589,13 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
           "Analyze my career trajectory and promotion timing",
           "When does my chart indicate relationship consolidation?",
           "What does my active Dasha period signify for finances?",
-          "Which traditional remedies bring balanced peace of mind?"
+          "Which traditional remedies bring balanced peace of mind?",
         ];
       }
-      summaryEn = "Presented structured inquiry options across Career, Wealth, Marriage, and Transits to clarify astrological focus.";
+      summaryEn =
+        "Presented structured inquiry options across Career, Wealth, Marriage, and Transits to clarify astrological focus.";
       summaryHi = "भविष्य के विशिष्ट क्षेत्र के चयन हेतु संरचित विकल्प प्रस्तुत किए।";
-    } else if (intent === 'career_transit_timing') {
+    } else if (intent === "career_transit_timing") {
       if (isHi) {
         message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु कार्यक्षेत्र परिवर्तन एवं व्यापार संवर्धन में आगामी ग्रहीय गोचर का सूक्ष्म विश्लेषण:
 
@@ -10487,7 +14614,7 @@ app.post('/api/ai-astrologer/ask', async (req: Request, res: Response) => {
           "गुरु के उच्च गोचर का मेरे दशम भाव पर क्या प्रभाव होगा?",
           "व्यापार आरंभ करने हेतु शुभ मुहूर्त एवं होरा क्या है?",
           "शनि गोचर के दौरान व्यावसायिक स्थिरता कैसे बनाए रखें?",
-          "करियर परिवर्तन में बाधक ग्रहों के वैदिक उपाय क्या हैं?"
+          "करियर परिवर्तन में बाधक ग्रहों के वैदिक उपाय क्या हैं?",
         ];
       } else {
         message = `${greetingPrefix}Evaluating upcoming planetary transits supporting a career switch or business venture for **${lagna} Lagna**:
@@ -10507,12 +14634,14 @@ The strongest window for formalizing an independent enterprise or executing a la
           "How will Jupiter's exaltation transit impact my 10th house?",
           "What is the most auspicious timing to launch a business?",
           "How should I navigate Saturn's aspect on my 2nd house of wealth?",
-          "Which Vedic mantras clear obstacles during a career transition?"
+          "Which Vedic mantras clear obstacles during a career transition?",
         ];
       }
-      summaryEn = "Analyzed upcoming Jupiter, Saturn, and nodal transits supporting career transition and business timing.";
-      summaryHi = "कार्यक्षेत्र परिवर्तन एवं व्यापार आरंभ हेतु आगामी गुरु, शनि एवं राहु-केतु गोचर का विश्लेषण किया।";
-    } else if (intent === 'dasha_career_stability') {
+      summaryEn =
+        "Analyzed upcoming Jupiter, Saturn, and nodal transits supporting career transition and business timing.";
+      summaryHi =
+        "कार्यक्षेत्र परिवर्तन एवं व्यापार आरंभ हेतु आगामी गुरु, शनि एवं राहु-केतु गोचर का विश्लेषण किया।";
+    } else if (intent === "dasha_career_stability") {
       if (isHi) {
         message = `${greetingPrefix}आपकी सक्रिय **${dashaMahaDisplay} महादशा** एवं **${dashaAntarDisplay} अंतर्दशा** का व्यावसायिक स्थिरता पर शास्त्रीय पाराशरी विश्लेषण:
 
@@ -10534,7 +14663,7 @@ The strongest window for formalizing an independent enterprise or executing a la
           "गुरु-शुक्र दशा के बाद आगामी अंतर्दशा कौन सी होगी?",
           "कार्यक्षेत्र में वरिष्ठों से संबंध सुधारने के वैदिक उपाय क्या हैं?",
           "क्या यह दशा काल नई जिम्मेदारियों के लिए उपयुक्त है?",
-          "द्वादशेश शुक्र के व्यय प्रभाव को कैसे नियंत्रित करें?"
+          "द्वादशेश शुक्र के व्यय प्रभाव को कैसे नियंत्रित करें?",
         ];
       } else {
         message = `${greetingPrefix}Scriptural Parashari evaluation of professional stability under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**:
@@ -10557,12 +14686,14 @@ The interaction between 2nd/5th lord Jupiter and 11th house Venus activates sign
           "Which upcoming Antardasha follows Jupiter-Venus?",
           "What classical remedies pacify 12th house Venus tensions?",
           "Is this Dasha phase favorable for executive promotions?",
-          "How should I manage team dynamics during this period?"
+          "How should I manage team dynamics during this period?",
         ];
       }
-      summaryEn = "Evaluated professional stability under active Jupiter-Venus Vimshottari Dasha and house lordships.";
-      summaryHi = "सक्रिय गुरु-शुक्र विंशोत्तरी दशा एवं भावेशों के आधार पर कार्यक्षेत्र की स्थिरता का मूल्यांकन किया।";
-    } else if (intent === 'marriage') {
+      summaryEn =
+        "Evaluated professional stability under active Jupiter-Venus Vimshottari Dasha and house lordships.";
+      summaryHi =
+        "सक्रिय गुरु-शुक्र विंशोत्तरी दशा एवं भावेशों के आधार पर कार्यक्षेत्र की स्थिरता का मूल्यांकन किया।";
+    } else if (intent === "marriage") {
       if (isHi) {
         message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु संबंध एवं वैवाहिक विश्लेषण:
 
@@ -10579,16 +14710,19 @@ The interaction between 2nd/5th lord Jupiter and 11th house Venus activates sign
 
         remedyCard = {
           title: "शुक्र ग्रह शांति एवं दांपत्य सामंजस्य (वृश्चिक लग्न)",
-          mantra: "ॐ क्लीं शुक्राय नमः (शुक्रवार प्रातः 108 बार जप) अथवा गौरी शंकर मन्त्र",
-          gemstone_note: "सफेद जरकन अथवा चांदी का छल्ला (लग्न परीक्षणोपरांत)। ध्यातव्य: वृश्चिक लग्न हेतु पन्ना (बुध) सर्वथा वर्जित है।",
-          charity_practice: "शुक्रवार को कन्याओं को खीर खिलाएं अथवा मंदिर में सफेद पुष्प अर्पित करें",
-          disclaimer: "वैदिक उपाय मन की शुद्धि एवं सामंजस्य हेतु पारंपरिक अनुष्ठान हैं।"
+          mantra:
+            "ॐ क्लीं शुक्राय नमः (शुक्रवार प्रातः 108 बार जप) अथवा गौरी शंकर मन्त्र",
+          gemstone_note:
+            "सफेद जरकन अथवा चांदी का छल्ला (लग्न परीक्षणोपरांत)। ध्यातव्य: वृश्चिक लग्न हेतु पन्ना (बुध) सर्वथा वर्जित है।",
+          charity_practice:
+            "शुक्रवार को कन्याओं को खीर खिलाएं अथवा मंदिर में सफेद पुष्प अर्पित करें",
+          disclaimer: "वैदिक उपाय मन की शुद्धि एवं सामंजस्य हेतु पारंपरिक अनुष्ठान हैं।",
         };
         suggested = [
           "सप्तम भाव से जीवनसाथी के स्वभाव के बारे में क्या संकेत मिलते हैं?",
           "D9 नवांश चक्र विवाह के समय को कैसे प्रभावित करता है?",
           "क्या आगामी 12 महीनों में विवाह हेतु शुभ गोचर हैं?",
-          "दांपत्य शांति हेतु कौन से पारंपरिक उपाय करने चाहिए?"
+          "दांपत्य शांति हेतु कौन से पारंपरिक उपाय करने चाहिए?",
         ];
       } else {
         message = `${greetingPrefix}Examining relationship architecture and marriage timing for **${lagna} Lagna**:
@@ -10606,21 +14740,26 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
 
         remedyCard = {
           title: "Venusian Harmony & Emotional Balance (Scorpio Lagna)",
-          mantra: "Om Kleem Shukraya Namah (Chant 108 times on Friday mornings) or Gauri Shankar Mantra",
-          gemstone_note: "Natural White Zircon set in silver (subject to Lagna dignity trial). Note: Emerald (Panna) is strictly contraindicated for Scorpio Lagna as Mercury rules the 8th & 11th houses.",
-          charity_practice: "Support women's education or offer white flowers at Lakshmi temples on Fridays",
-          disclaimer: "Traditional remedial practices cultivate inner mindfulness; they do not guarantee specific interpersonal outcomes."
+          mantra:
+            "Om Kleem Shukraya Namah (Chant 108 times on Friday mornings) or Gauri Shankar Mantra",
+          gemstone_note:
+            "Natural White Zircon set in silver (subject to Lagna dignity trial). Note: Emerald (Panna) is strictly contraindicated for Scorpio Lagna as Mercury rules the 8th & 11th houses.",
+          charity_practice:
+            "Support women's education or offer white flowers at Lakshmi temples on Fridays",
+          disclaimer:
+            "Traditional remedial practices cultivate inner mindfulness; they do not guarantee specific interpersonal outcomes.",
         };
         suggested = [
           "What does my 7th house reveal about partner compatibility?",
           "How does the D9 Navamsha chart modify relationship timing?",
           "Are there favorable transits for marriage in the next 12 months?",
-          "What classical practices promote peace and mutual understanding?"
+          "What classical practices promote peace and mutual understanding?",
         ];
       }
-      summaryEn = "Examined 7th house partnership geometry, D9 Navamsha, and marital timing.";
+      summaryEn =
+        "Examined 7th house partnership geometry, D9 Navamsha, and marital timing.";
       summaryHi = "सप्तम भाव, दांपत्य समन्वय, D9 नवांश एवं विवाह समय का विश्लेषण किया।";
-    } else if (intent === 'career') {
+    } else if (intent === "career") {
       if (isHi) {
         message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु आपकी आजीविका एवं करियर का सूक्ष्म विश्लेषण:
 
@@ -10636,7 +14775,7 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
           "मेरे दशमेश का पदोन्नति के समय पर क्या प्रभाव है?",
           "आगामी कौन सा गोचर नौकरी परिवर्तन में सहायक होगा?",
           "वर्तमान दशा अवधि कार्यक्षेत्र की स्थिरता को कैसे प्रभावित कर रही है?",
-          "कार्यस्थल पर सफलता हेतु कौन से वैदिक उपाय उत्तम हैं?"
+          "कार्यस्थल पर सफलता हेतु कौन से वैदिक उपाय उत्तम हैं?",
         ];
       } else {
         message = `${greetingPrefix}Analyzing the professional trajectory for **${lagna} Lagna**:
@@ -10655,12 +14794,14 @@ Align your high-stakes negotiations with planetary Horas governed by functional 
           "How does my 10th house lord influence promotion timing?",
           "Which upcoming transit supports a career switch?",
           "How does my active Dasha period affect professional stability?",
-          "What Vedic remedies strengthen workplace leadership?"
+          "What Vedic remedies strengthen workplace leadership?",
         ];
       }
-      summaryEn = "Analyzed 10th house career trajectory, Dasha timing, and leadership milestones.";
-      summaryHi = "दशम भाव, करियर दिशा, दशा अवधि एवं पदोन्नति का समय विश्लेषण किया।";
-    } else if (intent === 'remedy') {
+      summaryEn =
+        "Analyzed 10th house career trajectory, Dasha timing, and leadership milestones.";
+      summaryHi =
+        "दशम भाव, करियर दिशा, दशा अवधि एवं पदोन्नति का समय विश्लेषण किया।";
+    } else if (intent === "remedy") {
       if (isHi) {
         message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु शास्त्रीय वैदिक उपचारात्मक विवेचन:
 
@@ -10676,10 +14817,14 @@ Align your high-stakes negotiations with planetary Horas governed by functional 
 वैदिक उपाय आत्मिक शांति, अनुशासन और विनम्रता के लिए हैं। ये कोई व्यावसायिक गारंटी नहीं हैं।`;
         remedyCard = {
           title: "शास्त्रीय पाराशरी वैदिक उपाय (वृश्चिक लग्न)",
-          mantra: "महामृत्युंजय मन्त्र: ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम्। उर्वारुकमिव बन्धनान्मृत्योर्मुक्षीय मामृतात्॥ (प्रातः 108 बार)",
-          gemstone_note: "रक्त मूँगा (मंगल - लग्नेश) अथवा पीला पुखराज (गुरु - पंचमेश)। वृश्चिक लग्न हेतु पन्ना (बुध - अष्टमेश) सर्वथा वर्जित है।",
-          charity_practice: "मंगलवार को लाल मसूर का दान करें; शनिवार को पीपल के वृक्ष के नीचे तिल के तेल का दीपक प्रज्वलित करें",
-          disclaimer: "वैदिक उपाय मानसिक शांति एवं आत्मिक अनुशासन के लिए हैं; ये कोई व्यावसायिक गारंटी नहीं हैं।"
+          mantra:
+            "महामृत्युंजय मन्त्र: ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम्। उर्वारुकमिव बन्धनान्मृत्योर्मुक्षीय मामृतात्॥ (प्रातः 108 बार)",
+          gemstone_note:
+            "रक्त मूँगा (मंगल - लग्नेश) अथवा पीला पुखराज (गुरु - पंचमेश)। वृश्चिक लग्न हेतु पन्ना (बुध - अष्टमेश) सर्वथा वर्जित है।",
+          charity_practice:
+            "मंगलवार को लाल मसूर का दान करें; शनिवार को पीपल के वृक्ष के नीचे तिल के तेल का दीपक प्रज्वलित करें",
+          disclaimer:
+            "वैदिक उपाय मानसिक शांति एवं आत्मिक अनुशासन के लिए हैं; ये कोई व्यावसायिक गारंटी नहीं हैं।",
         };
       } else {
         message = `${greetingPrefix}Examining classical Vedic remedial harmonization for **${lagna} Lagna**:
@@ -10696,20 +14841,26 @@ Your chart is navigating **${dashaMaha} Mahadasha** and **${dashaAntar} Antardas
 Traditional remedies are cultural and spiritual practices intended to cultivate inner peace, discipline, and humility. They are not transactional commercial guarantees.`;
         remedyCard = {
           title: "Classical Parashari Remedial Discipline (Scorpio Lagna)",
-          mantra: "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe Sugandhim Pushtivardhanam Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat (108 times at sunrise)",
-          gemstone_note: "Red Coral (Mars, Lagna Lord) or Yellow Sapphire (Jupiter, 5th Lord). Emerald is strictly contraindicated for Scorpio Lagna.",
-          charity_practice: "Light a pure sesame oil lamp under a Peepal tree on Saturdays; donate red lentils or jaggery on Tuesdays",
-          disclaimer: "Vedic remedies are sacred traditional disciplines for mental peace; they carry no commercial guarantees."
+          mantra:
+            "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe Sugandhim Pushtivardhanam Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat (108 times at sunrise)",
+          gemstone_note:
+            "Red Coral (Mars, Lagna Lord) or Yellow Sapphire (Jupiter, 5th Lord). Emerald is strictly contraindicated for Scorpio Lagna.",
+          charity_practice:
+            "Light a pure sesame oil lamp under a Peepal tree on Saturdays; donate red lentils or jaggery on Tuesdays",
+          disclaimer:
+            "Vedic remedies are sacred traditional disciplines for mental peace; they carry no commercial guarantees.",
         };
       }
       suggested = [
         "What is the classical scriptural basis for this mantra?",
         "How can I pacify Saturn's transit without expensive stones?",
         "Explain the proper methodology for dawn planetary chanting.",
-        "Can you evaluate my Sade Sati timeline and precautions?"
+        "Can you evaluate my Sade Sati timeline and precautions?",
       ];
-      summaryEn = "Outlined classical Parashari remedies, mantras, and Saturnian practices.";
-      summaryHi = "शास्त्रीय पाराशरी उपाय, महामृत्युंजय मन्त्र एवं शनि शांति के नियम बताए।";
+      summaryEn =
+        "Outlined classical Parashari remedies, mantras, and Saturnian practices.";
+      summaryHi =
+        "शास्त्रीय पाराशरी उपाय, महामृत्युंजय मन्त्र एवं शनि शांति के नियम बताए।";
     } else {
       if (isHi) {
         message = `${greetingPrefix}**${lagnaDisplay} लग्न** एवं **${moonDisplay} चंद्र** हेतु समग्र वैदिक ज्योतिषीय विश्लेषण:
@@ -10723,7 +14874,7 @@ ${lagnaDisplay} लग्न और ${moonDisplay} राशि के साथ
           "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
           "संबंधों में अनुकूलता का समय कब बन रहा है?",
           "सक्रिय दशा काल में आर्थिक स्थिति कैसी रहेगी?",
-          "मानसिक शांति हेतु कौन से पारंपरिक उपाय शुभ हैं?"
+          "मानसिक शांति हेतु कौन से पारंपरिक उपाय शुभ हैं?",
         ];
       } else {
         message = `${greetingPrefix}Comprehensive Vedic astrological analysis for **${lagna} Lagna** and **${moon} Moon**:
@@ -10737,74 +14888,131 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
           "Analyze my career trajectory and promotion timing",
           "When does my chart indicate relationship consolidation?",
           "What does my active Dasha period signify for finances?",
-          "Which traditional remedies bring balanced peace of mind?"
+          "Which traditional remedies bring balanced peace of mind?",
         ];
       }
-      summaryEn = "Synthesized natal chart constitution, planetary climate, and personal guidance.";
-      summaryHi = "जन्म कुंडली, ग्रहीय प्रभाव एवं समग्र जीवन परामर्श का समन्वय प्रस्तुत किया।";
+      summaryEn =
+        "Synthesized natal chart constitution, planetary climate, and personal guidance.";
+      summaryHi =
+        "जन्म कुंडली, ग्रहीय प्रभाव एवं समग्र जीवन परामर्श का समन्वय प्रस्तुत किया।";
     }
 
     return res.json({
-      mode: hasChart ? 'PERSONALIZED_CHART_GROUNDED' : 'GENERAL_TRANSIT_UNPERSONALIZED',
+      mode: hasChart
+        ? "PERSONALIZED_CHART_GROUNDED"
+        : "GENERAL_TRANSIT_UNPERSONALIZED",
       profile_loaded: hasChart,
-      sessionId: activeConsultationSession ? activeConsultationSession.id : undefined,
-      sessionStatus: activeConsultationSession ? activeConsultationSession.status : undefined,
+      sessionId: activeConsultationSession
+        ? activeConsultationSession.id
+        : undefined,
+      sessionStatus: activeConsultationSession
+        ? activeConsultationSession.status
+        : undefined,
       category: intent,
       intent,
       message,
-      chartEvidence: hasChart ? [
-        { factor: 'Natal Ascendant (Lagna)', placement: `${lagna} (~24.17°)`, interpretation: 'Foundational constitutional temperament, vitality, and primary life focus.' },
-        { factor: 'Natal Moon (Chandra)', placement: `${moon} (12.21°, Satabhisha)`, interpretation: 'Mental baseline, emotional perceptions, and intuitive decision-making lens.' },
-        { factor: 'Active Vimshottari Dasha', placement: `${dashaMaha} Mahadasha / ${dashaAntar} Antardasha`, interpretation: 'Primary planetary rulership driving current circumstances and karmic timing.' }
-      ] : [],
+      chartEvidence: hasChart
+        ? [
+            {
+              factor: "Natal Ascendant (Lagna)",
+              placement: `${lagna} (~24.17°)`,
+              interpretation:
+                "Foundational constitutional temperament, vitality, and primary life focus.",
+            },
+            {
+              factor: "Natal Moon (Chandra)",
+              placement: `${moon} (12.21°, Satabhisha)`,
+              interpretation:
+                "Mental baseline, emotional perceptions, and intuitive decision-making lens.",
+            },
+            {
+              factor: "Active Vimshottari Dasha",
+              placement: `${dashaMaha} Mahadasha / ${dashaAntar} Antardasha`,
+              interpretation:
+                "Primary planetary rulership driving current circumstances and karmic timing.",
+            },
+          ]
+        : [],
       relatedInsights: [],
       suggestedQuestions: suggested,
       remedyCard,
       bilingual_summary: { en: summaryEn, hi: summaryHi },
-      status: 'completed'
+      status: "completed",
     });
   } catch (err: any) {
-    handleServiceError(res, err, 'AI Astrologer consultation failed');
+    handleServiceError(res, err, "AI Astrologer consultation failed");
   }
 });
 
 // ==================== 7.5 NUMEROLOGY & NAME CORRECTION API ====================
 
-app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
-  const { name, birthDate, dateOfBirth, calculationSpelling, analysisTarget, phoneNumber, language, industry } = req.body;
-  const targetDob = (typeof birthDate === 'string' ? birthDate : typeof dateOfBirth === 'string' ? dateOfBirth : '').trim();
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ error: 'NAME_REQUIRED', message: 'Name string is required.' });
+app.post("/api/numerology/analyze", async (req: Request, res: Response) => {
+  const {
+    name,
+    birthDate,
+    dateOfBirth,
+    calculationSpelling,
+    analysisTarget,
+    phoneNumber,
+    language,
+    industry,
+  } = req.body;
+  const targetDob = (
+    typeof birthDate === "string"
+      ? birthDate
+      : typeof dateOfBirth === "string"
+        ? dateOfBirth
+        : ""
+  ).trim();
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return res
+      .status(400)
+      .json({ error: "NAME_REQUIRED", message: "Name string is required." });
   }
 
   // Personal numerology requires a birth date; business and mobile have optional or no birth date requirement
-  if (analysisTarget !== 'business_name' && analysisTarget !== 'mobile_number') {
+  if (
+    analysisTarget !== "business_name" &&
+    analysisTarget !== "mobile_number"
+  ) {
     if (!targetDob) {
-      return res.status(400).json({ error: 'BIRTH_DATE_REQUIRED', message: 'Valid ISO birthDate (YYYY-MM-DD) is required.' });
+      return res.status(400).json({
+        error: "BIRTH_DATE_REQUIRED",
+        message: "Valid ISO birthDate (YYYY-MM-DD) is required.",
+      });
     }
   }
 
   // Validate birth date format & bounds whenever provided
   if (targetDob) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDob)) {
-      return res.status(400).json({ error: 'INVALID_BIRTH_DATE', message: 'Birth date must be in YYYY-MM-DD format.' });
+      return res.status(400).json({
+        error: "INVALID_BIRTH_DATE",
+        message: "Birth date must be in YYYY-MM-DD format.",
+      });
     }
     const dateObj = new Date(targetDob);
     const now = new Date();
     if (isNaN(dateObj.getTime()) || dateObj > now) {
-      return res.status(400).json({ error: 'FUTURE_BIRTH_DATE', message: 'Birth date cannot be in the future.' });
+      return res.status(400).json({
+        error: "FUTURE_BIRTH_DATE",
+        message: "Birth date cannot be in the future.",
+      });
     }
     const year = parseInt(targetDob.slice(0, 4), 10);
     if (year < 1900) {
-      return res.status(400).json({ error: 'INVALID_BIRTH_YEAR', message: 'Birth year must be 1900 or later.' });
+      return res.status(400).json({
+        error: "INVALID_BIRTH_YEAR",
+        message: "Birth year must be 1900 or later.",
+      });
     }
   }
 
   // Optional authentication check for tier resolution & quota consumption
   let user: any = null;
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1].trim();
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.split(" ")[1].trim();
     const tokenHash = hashToken(token);
     const session = await db.findSessionByTokenHash(tokenHash);
     if (session) {
@@ -10815,7 +15023,10 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
   const tier = resolveRequestTier(user, req);
 
   try {
-    if (analysisTarget === 'business_name' || analysisTarget === 'mobile_number') {
+    if (
+      analysisTarget === "business_name" ||
+      analysisTarget === "mobile_number"
+    ) {
       EntitlementManager.assertBusinessOrMobileAllowed(tier);
     }
 
@@ -10824,16 +15035,23 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
     }
 
     const targetName = (calculationSpelling || name).trim();
-    if (analysisTarget === 'mobile_number') {
-      if (!phoneNumber) return res.status(400).json({ error: 'PHONE_REQUIRED', message: 'phoneNumber is required.' });
-      const digits = String(phoneNumber).replace(/\D/g, '');
+    if (analysisTarget === "mobile_number") {
+      if (!phoneNumber)
+        return res.status(400).json({
+          error: "PHONE_REQUIRED",
+          message: "phoneNumber is required.",
+        });
+      const digits = String(phoneNumber).replace(/\D/g, "");
       const calcDigits = digits.slice(-10);
-      const total = calcDigits.split('').map(Number).reduce((a, b) => a + b, 0);
+      const total = calcDigits
+        .split("")
+        .map(Number)
+        .reduce((a, b) => a + b, 0);
       const root = digitRoot1To9(total);
       const pInfo = PLANET_DATA[root] || PLANET_DATA[1];
       return res.json({
         success: true,
-        target: 'mobile_number',
+        target: "mobile_number",
         digitCount: calcDigits.length,
         compoundTotal: total,
         reducedNumber: root,
@@ -10841,11 +15059,11 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
         governingPlanetHi: pInfo.planetHi,
         luckyColorsEn: pInfo.luckyColorsEn,
         luckyColorsHi: pInfo.luckyColorsHi,
-        sanitizedDisplay: `...${calcDigits.slice(-4)}`
+        sanitizedDisplay: `...${calcDigits.slice(-4)}`,
       });
     }
 
-    if (analysisTarget === 'business_name') {
+    if (analysisTarget === "business_name") {
       const naamank = calculateNaamank(targetName);
       const comp = naamank.chaldean.compoundTotal;
       const root = naamank.chaldean.naamank;
@@ -10861,15 +15079,15 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
         founderSynergy = {
           founderMoolank: moolank,
           founderBhagyank: bhagyank.destinyNumber,
-          harmony
+          harmony,
         };
       }
 
       return res.json({
         success: true,
-        target: 'business_name',
+        target: "business_name",
         originalName: name,
-        industry: industry || 'General Commerce',
+        industry: industry || "General Commerce",
         nameNumbers: {
           chaldean: {
             compoundTotal: comp,
@@ -10878,17 +15096,18 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
             governingPlanetHi: planetN.planetHi,
             breakdown: naamank.chaldean.breakdown,
             isPreferred: naamank.chaldean.isPreferred,
-            isChallenging: naamank.chaldean.isChallenging
+            isChallenging: naamank.chaldean.isChallenging,
           },
           pythagorean: {
             compoundTotal: naamank.pythagorean.compoundTotal,
             naamank: naamank.pythagorean.naamank,
-            governingPlanet: PLANET_DATA[naamank.pythagorean.naamank]?.planetEn || 'Unknown'
-          }
+            governingPlanet:
+              PLANET_DATA[naamank.pythagorean.naamank]?.planetEn || "Unknown",
+          },
         },
         founderSynergy,
         harmony,
-        userTier: tier
+        userTier: tier,
       });
     }
 
@@ -10896,7 +15115,11 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
     const moolank = calculateMoolank(day);
     const bhagyank = calculateBhagyank(targetDob);
     const naamank = calculateNaamank(targetName);
-    const harmony = calculateHarmonyScore(moolank, bhagyank.destinyNumber, naamank.chaldean.compoundTotal);
+    const harmony = calculateHarmonyScore(
+      moolank,
+      bhagyank.destinyNumber,
+      naamank.chaldean.compoundTotal,
+    );
 
     const planetM = PLANET_DATA[moolank] || PLANET_DATA[1];
     const planetB = PLANET_DATA[bhagyank.destinyNumber] || PLANET_DATA[1];
@@ -10909,44 +15132,44 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
       birthDate: targetDob,
       birthNumber: {
         value: moolank,
-        title: 'Moolank (Psychic / Birth Number)',
-        titleHi: 'मूलांक (जन्मांक)',
+        title: "Moolank (Psychic / Birth Number)",
+        titleHi: "मूलांक (जन्मांक)",
         governingPlanet: planetM.planetEn,
         governingPlanetHi: planetM.planetHi,
         archetype: planetM.archetypeEn,
         archetypeHi: planetM.archetypeHi,
         qualities: planetM.qualitiesEn,
         qualitiesHi: planetM.qualitiesHi,
-        element: planetM.elementEn
+        element: planetM.elementEn,
       },
       destinyNumber: {
         value: bhagyank.destinyNumber,
         masterNumber: bhagyank.masterNumber,
         totalCompound: bhagyank.totalSum,
-        title: 'Bhagyank (Destiny / Life Path Number)',
-        titleHi: 'भाग्यांक (जीवन पथ अंक)',
+        title: "Bhagyank (Destiny / Life Path Number)",
+        titleHi: "भाग्यांक (जीवन पथ अंक)",
         governingPlanet: planetB.planetEn,
         governingPlanetHi: planetB.planetHi,
         archetype: planetB.archetypeEn,
-        archetypeHi: planetB.archetypeHi
+        archetypeHi: planetB.archetypeHi,
       },
       nameNumbers: {
         chaldean: {
           naamank: naamank.chaldean.naamank,
           compoundTotal: naamank.chaldean.compoundTotal,
           breakdown: naamank.chaldean.breakdown,
-          system: 'Chaldean (Vedic Standard)',
+          system: "Chaldean (Vedic Standard)",
           governingPlanet: planetN.planetEn,
           governingPlanetHi: planetN.planetHi,
           isPreferred: naamank.chaldean.isPreferred,
-          isChallenging: naamank.chaldean.isChallenging
+          isChallenging: naamank.chaldean.isChallenging,
         },
         pythagorean: {
           naamank: naamank.pythagorean.naamank,
           compoundTotal: naamank.pythagorean.compoundTotal,
           breakdown: naamank.pythagorean.breakdown,
-          system: 'Pythagorean'
-        }
+          system: "Pythagorean",
+        },
       },
       harmony,
       favorableElements: {
@@ -10955,91 +15178,130 @@ app.post('/api/numerology/analyze', async (req: Request, res: Response) => {
         luckyDays: planetM.luckyDaysEn,
         luckyDaysHi: planetM.luckyDaysHi,
         luckyGemstone: planetM.luckyGemEn,
-        luckyGemstoneHi: planetM.luckyGemHi
+        luckyGemstoneHi: planetM.luckyGemHi,
       },
-      userTier: tier
+      userTier: tier,
     });
   } catch (err: any) {
-    if (err.code === 'NUMEROLOGY_QUOTA_EXCEEDED' || err.code === 'UPGRADE_REQUIRED') {
+    if (
+      err.code === "NUMEROLOGY_QUOTA_EXCEEDED" ||
+      err.code === "UPGRADE_REQUIRED"
+    ) {
       return res.status(403).json({
         error: err.code,
         message: err.message,
         tier: err.tier,
-        upgradeRequired: err.upgradeRequired
+        upgradeRequired: err.upgradeRequired,
       });
     }
-    handleServiceError(res, err, 'Numerology analysis failed');
+    handleServiceError(res, err, "Numerology analysis failed");
   }
 });
 
-app.post('/api/numerology/correct-name', authenticate, async (req: AuthenticatedRequest, res: Response) => {
-  const { name, birthDate, dateOfBirth, calculationSpelling, candidateCount, moonNakshatra, gender } = req.body;
-  const targetDob = birthDate || dateOfBirth;
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    return res.status(400).json({ error: 'NAME_REQUIRED', message: 'Name string is required.' });
-  }
-  if (!targetDob || typeof targetDob !== 'string') {
-    return res.status(400).json({ error: 'BIRTH_DATE_REQUIRED', message: 'Valid birthDate (YYYY-MM-DD) is required.' });
-  }
-
-  const user = await db.findUserById(req.user!.id);
-  const tier = resolveRequestTier(user, req);
-
-  try {
-    EntitlementManager.assertNameCorrectionAllowed(tier);
-
-    const targetName = (calculationSpelling || name).trim().toUpperCase();
-    const day = parseInt(targetDob.slice(8, 10), 10);
-    const moolank = calculateMoolank(day);
-    const bhagyank = calculateBhagyank(targetDob);
-    const baseNaam = calculateNaamank(targetName);
-    const baseHarmony = calculateHarmonyScore(moolank, bhagyank.destinyNumber, baseNaam.chaldean.compoundTotal);
-
-    const countLimit = Math.min(Math.max(Number(candidateCount) || 5, 1), 5);
-    const candidateList = generateNameCorrectionCandidates(targetName, moolank, bhagyank.destinyNumber, countLimit);
-
-    const candidates = candidateList.map(c => ({
-      proposedName: c.proposedName,
-      alterationNoteEn: c.transformationNote,
-      alterationNoteHi: c.transformationNote,
-      chaldeanCompound: c.chaldeanCompound,
-      chaldeanNaamank: c.chaldeanRoot,
-      pythagoreanCompound: c.chaldeanCompound,
-      pythagoreanNaamank: c.chaldeanRoot,
-      governingPlanetEn: c.governingPlanet,
-      harmonyScore: c.harmonyScore,
-      suitabilityScore: c.suitabilityScore,
-      editDistance: c.editDistance,
-      alignmentTierEn: c.harmonyScore >= 80 ? 'High Synergy (Highly Auspicious)' : c.harmonyScore >= 60 ? 'Moderate Synergy' : 'Planetary Friction',
-      alignmentTierHi: c.harmonyScore >= 80 ? 'अति उत्तम सामंजस्य' : c.harmonyScore >= 60 ? 'उत्तम सामंजस्य' : 'ग्रहीय विरोध',
-      isPreferredCompound: c.isPreferredCompound
-    }));
-
-    res.json({
-      success: true,
-      originalName: name,
-      calculationSpelling: targetName,
+app.post(
+  "/api/numerology/correct-name",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const {
+      name,
       birthDate,
-      baselineMoolank: moolank,
-      baselineBhagyank: bhagyank.destinyNumber,
-      baselineChaldeanCompound: baseNaam.chaldean.compoundTotal,
-      baselineHarmonyScore: baseHarmony.score,
-      baselineAlignmentTierEn: baseHarmony.alignmentTierEn,
-      baselineAlignmentTierHi: baseHarmony.alignmentTierHi,
-      candidatesCount: candidates.length,
-      candidates
-    });
-  } catch (err: any) {
-    if (err.code === 'PREMIUM_REQUIRED') {
-      return res.status(403).json({
-        error: 'PREMIUM_REQUIRED',
-        message: err.message,
-        upgradeRequired: SubscriptionTier.PREMIUM
+      dateOfBirth,
+      calculationSpelling,
+      candidateCount,
+      moonNakshatra,
+      gender,
+    } = req.body;
+    const targetDob = birthDate || dateOfBirth;
+    if (!name || typeof name !== "string" || !name.trim()) {
+      return res
+        .status(400)
+        .json({ error: "NAME_REQUIRED", message: "Name string is required." });
+    }
+    if (!targetDob || typeof targetDob !== "string") {
+      return res.status(400).json({
+        error: "BIRTH_DATE_REQUIRED",
+        message: "Valid birthDate (YYYY-MM-DD) is required.",
       });
     }
-    handleServiceError(res, err, 'Name correction failed');
-  }
-});
+
+    const user = await db.findUserById(req.user!.id);
+    const tier = resolveRequestTier(user, req);
+
+    try {
+      EntitlementManager.assertNameCorrectionAllowed(tier);
+
+      const targetName = (calculationSpelling || name).trim().toUpperCase();
+      const day = parseInt(targetDob.slice(8, 10), 10);
+      const moolank = calculateMoolank(day);
+      const bhagyank = calculateBhagyank(targetDob);
+      const baseNaam = calculateNaamank(targetName);
+      const baseHarmony = calculateHarmonyScore(
+        moolank,
+        bhagyank.destinyNumber,
+        baseNaam.chaldean.compoundTotal,
+      );
+
+      const countLimit = Math.min(Math.max(Number(candidateCount) || 5, 1), 5);
+      const candidateList = generateNameCorrectionCandidates(
+        targetName,
+        moolank,
+        bhagyank.destinyNumber,
+        countLimit,
+      );
+
+      const candidates = candidateList.map((c) => ({
+        proposedName: c.proposedName,
+        alterationNoteEn: c.transformationNote,
+        alterationNoteHi: c.transformationNote,
+        chaldeanCompound: c.chaldeanCompound,
+        chaldeanNaamank: c.chaldeanRoot,
+        pythagoreanCompound: c.chaldeanCompound,
+        pythagoreanNaamank: c.chaldeanRoot,
+        governingPlanetEn: c.governingPlanet,
+        harmonyScore: c.harmonyScore,
+        suitabilityScore: c.suitabilityScore,
+        editDistance: c.editDistance,
+        alignmentTierEn:
+          c.harmonyScore >= 80
+            ? "High Synergy (Highly Auspicious)"
+            : c.harmonyScore >= 60
+              ? "Moderate Synergy"
+              : "Planetary Friction",
+        alignmentTierHi:
+          c.harmonyScore >= 80
+            ? "अति उत्तम सामंजस्य"
+            : c.harmonyScore >= 60
+              ? "उत्तम सामंजस्य"
+              : "ग्रहीय विरोध",
+        isPreferredCompound: c.isPreferredCompound,
+      }));
+
+      res.json({
+        success: true,
+        originalName: name,
+        calculationSpelling: targetName,
+        birthDate,
+        baselineMoolank: moolank,
+        baselineBhagyank: bhagyank.destinyNumber,
+        baselineChaldeanCompound: baseNaam.chaldean.compoundTotal,
+        baselineHarmonyScore: baseHarmony.score,
+        baselineAlignmentTierEn: baseHarmony.alignmentTierEn,
+        baselineAlignmentTierHi: baseHarmony.alignmentTierHi,
+        candidatesCount: candidates.length,
+        candidates,
+      });
+    } catch (err: any) {
+      if (err.code === "PREMIUM_REQUIRED") {
+        return res.status(403).json({
+          error: "PREMIUM_REQUIRED",
+          message: err.message,
+          upgradeRequired: SubscriptionTier.PREMIUM,
+        });
+      }
+      handleServiceError(res, err, "Name correction failed");
+    }
+  },
+);
 
 // ==================== 7B. AUTHORITATIVE PREDICTION GATEWAY ====================
 
@@ -11054,17 +15316,21 @@ export interface HorizonAuthorizationResult {
 export async function authorizeUserForForecastHorizon(
   user: UserRecord | null,
   horizon: string,
-  req?: Request
+  req?: Request,
 ): Promise<HorizonAuthorizationResult> {
-  const cleanHorizon = String(horizon || 'hourly').toLowerCase().trim() as ForecastHorizon;
+  const cleanHorizon = String(horizon || "hourly")
+    .toLowerCase()
+    .trim() as ForecastHorizon;
 
   // 1. Hourly and Daily are universally free / unlocked for all visitors
-  if (cleanHorizon === 'hourly' || cleanHorizon === 'daily') {
-    const tier = user ? resolveRequestTier(user, req || ({} as Request)) : SubscriptionTier.FREE;
+  if (cleanHorizon === "hourly" || cleanHorizon === "daily") {
+    const tier = user
+      ? resolveRequestTier(user, req || ({} as Request))
+      : SubscriptionTier.FREE;
     return {
       isAuthorized: true,
       effectiveTier: tier,
-      reason: 'HORIZON_UNIVERSALLY_FREE'
+      reason: "HORIZON_UNIVERSALLY_FREE",
     };
   }
 
@@ -11073,7 +15339,7 @@ export async function authorizeUserForForecastHorizon(
     return {
       isAuthorized: false,
       effectiveTier: SubscriptionTier.FREE,
-      reason: 'AUTHENTICATION_REQUIRED'
+      reason: "AUTHENTICATION_REQUIRED",
     };
   }
 
@@ -11085,17 +15351,17 @@ export async function authorizeUserForForecastHorizon(
     return {
       isAuthorized: true,
       effectiveTier,
-      reason: 'SUBSCRIPTION_PREMIUM'
+      reason: "SUBSCRIPTION_PREMIUM",
     };
   }
 
   // PLUS tier includes hourly, daily, and weekly
   if (effectiveTier === SubscriptionTier.PLUS) {
-    if (cleanHorizon === 'weekly') {
+    if (cleanHorizon === "weekly") {
       return {
         isAuthorized: true,
         effectiveTier,
-        reason: 'SUBSCRIPTION_PLUS'
+        reason: "SUBSCRIPTION_PLUS",
       };
     }
   }
@@ -11104,17 +15370,21 @@ export async function authorizeUserForForecastHorizon(
   const now = Date.now();
   try {
     const orders = await db.getUserPaymentOrdersAsync(user.id);
-    for (const order of (orders || [])) {
+    for (const order of orders || []) {
       // Must be PAID; strictly ignore REFUNDED, FAILED, CREATED
       if (order.status !== OrderStatus.PAID) {
         continue;
       }
 
-      const rawProductId = String(order.productId || '').trim();
+      const rawProductId = String(order.productId || "").trim();
       const normalizedSku = SKU_HORIZON_ALIASES[rawProductId] || rawProductId;
       const def = PRODUCT_ENTITLEMENT_CATALOG[normalizedSku];
 
-      if (def && def.includedHorizons && def.includedHorizons.includes(cleanHorizon)) {
+      if (
+        def &&
+        def.includedHorizons &&
+        def.includedHorizons.includes(cleanHorizon)
+      ) {
         const orderTime = new Date(order.createdAt).getTime();
         const validityMs = (def.validityDays || 30) * 86400000;
         const expiryTime = orderTime + validityMs;
@@ -11125,62 +15395,111 @@ export async function authorizeUserForForecastHorizon(
             effectiveTier,
             reason: `PAID_ORDER_${def.productId.toUpperCase()}`,
             matchedSku: def.productId,
-            expiresAt: new Date(expiryTime).toISOString()
+            expiresAt: new Date(expiryTime).toISOString(),
           };
         }
       }
     }
   } catch (err: any) {
-    console.error('[AUTH_HORIZON] Error querying user payment orders:', err?.message || err);
+    console.error(
+      "[AUTH_HORIZON] Error querying user payment orders:",
+      err?.message || err,
+    );
   }
 
   // 5. Active Entitlements & Complimentary Grants
   try {
-    const entitlements = await db.listEntitlements({ userId: user.id, activeOnly: true });
-    for (const ent of (entitlements || [])) {
+    const entitlements = await db.listEntitlements({
+      userId: user.id,
+      activeOnly: true,
+    });
+    for (const ent of entitlements || []) {
       if (!ent.isActive) continue;
       if (ent.expiresAt && new Date(ent.expiresAt).getTime() < now) continue;
 
-      const feat = String(ent.featureKey || '').toLowerCase();
-      if (feat === cleanHorizon || feat === `forecast_${cleanHorizon}` || feat === 'full_access') {
+      const feat = String(ent.featureKey || "").toLowerCase();
+      if (
+        feat === cleanHorizon ||
+        feat === `forecast_${cleanHorizon}` ||
+        feat === "full_access"
+      ) {
         return {
           isAuthorized: true,
           effectiveTier,
           reason: `ENTITLEMENT_${feat.toUpperCase()}`,
-          expiresAt: ent.expiresAt || null
+          expiresAt: ent.expiresAt || null,
         };
       }
 
       const normalizedFeat: string = SKU_HORIZON_ALIASES[feat] || feat;
-      const def: ProductEntitlementDefinition | undefined = PRODUCT_ENTITLEMENT_CATALOG[normalizedFeat];
-      if (def && def.includedHorizons && def.includedHorizons.includes(cleanHorizon)) {
+      const def: ProductEntitlementDefinition | undefined =
+        PRODUCT_ENTITLEMENT_CATALOG[normalizedFeat];
+      if (
+        def &&
+        def.includedHorizons &&
+        def.includedHorizons.includes(cleanHorizon)
+      ) {
         return {
           isAuthorized: true,
           effectiveTier,
           reason: `ENTITLEMENT_SKU_${def.productId.toUpperCase()}`,
           matchedSku: def.productId,
-          expiresAt: ent.expiresAt || null
+          expiresAt: ent.expiresAt || null,
         };
       }
     }
   } catch (err: any) {
-    console.error('[AUTH_HORIZON] Error querying user entitlements:', err?.message || err);
+    console.error(
+      "[AUTH_HORIZON] Error querying user entitlements:",
+      err?.message || err,
+    );
   }
 
   // 6. Check SavedReport legacy store
   try {
     const reports = await db.getSavedReportsByUserId(user.id);
     const targetSkus: string[] = [];
-    if (cleanHorizon === 'weekly') targetSkus.push('report_weekly_transit_planner', 'report_one_month_forecast', 'report_twelve_month_varshphal', 'report_janam_kundli_deep_dive', 'report_bundle_kundli_varshphal', 'weekly_forecast', 'kundli_deep_dive');
-    else if (cleanHorizon === 'monthly') targetSkus.push('report_one_month_forecast', 'report_twelve_month_varshphal', 'report_three_year_roadmap', 'report_bundle_kundli_varshphal', 'monthly_forecast', 'yearly_varshphal');
-    else if (cleanHorizon === 'yearly') targetSkus.push('report_twelve_month_varshphal', 'report_three_year_roadmap', 'report_bundle_kundli_varshphal', 'yearly_varshphal', 'kundli_deep_dive');
-    else if (['mahadasha', '5year', 'five_year'].includes(cleanHorizon)) targetSkus.push('report_janam_kundli_deep_dive', 'report_three_year_roadmap', 'report_bundle_kundli_varshphal', 'mahadasha_5year', 'kundli_deep_dive');
+    if (cleanHorizon === "weekly")
+      targetSkus.push(
+        "report_weekly_transit_planner",
+        "report_one_month_forecast",
+        "report_twelve_month_varshphal",
+        "report_janam_kundli_deep_dive",
+        "report_bundle_kundli_varshphal",
+        "weekly_forecast",
+        "kundli_deep_dive",
+      );
+    else if (cleanHorizon === "monthly")
+      targetSkus.push(
+        "report_one_month_forecast",
+        "report_twelve_month_varshphal",
+        "report_three_year_roadmap",
+        "report_bundle_kundli_varshphal",
+        "monthly_forecast",
+        "yearly_varshphal",
+      );
+    else if (cleanHorizon === "yearly")
+      targetSkus.push(
+        "report_twelve_month_varshphal",
+        "report_three_year_roadmap",
+        "report_bundle_kundli_varshphal",
+        "yearly_varshphal",
+        "kundli_deep_dive",
+      );
+    else if (["mahadasha", "5year", "five_year"].includes(cleanHorizon))
+      targetSkus.push(
+        "report_janam_kundli_deep_dive",
+        "report_three_year_roadmap",
+        "report_bundle_kundli_varshphal",
+        "mahadasha_5year",
+        "kundli_deep_dive",
+      );
 
-    if ((reports || []).some(r => targetSkus.includes(r.reportType))) {
+    if ((reports || []).some((r) => targetSkus.includes(r.reportType))) {
       return {
         isAuthorized: true,
         effectiveTier,
-        reason: 'SAVED_REPORT_PURCHASE'
+        reason: "SAVED_REPORT_PURCHASE",
       };
     }
   } catch (_) {}
@@ -11188,7 +15507,7 @@ export async function authorizeUserForForecastHorizon(
   return {
     isAuthorized: false,
     effectiveTier,
-    reason: 'PAYWALL_LOCKED'
+    reason: "PAYWALL_LOCKED",
   };
 }
 
@@ -11199,44 +15518,47 @@ export async function authorizeUserForForecastHorizon(
  * subscription tier resolution before delegating to the Python Swiss Ephemeris calculation engine.
  * Eliminates client-tampered `is_unlocked` and `preview_tier` privilege escalation (P0 Security Invariant).
  */
-app.post('/api/predictions/generate', async (req: Request, res: Response) => {
+app.post("/api/predictions/generate", async (req: Request, res: Response) => {
   try {
     const {
-      horizon = 'hourly',
+      horizon = "hourly",
       target_date,
       dob,
       lat,
       lon,
-      timezone = 'Asia/Kolkata',
+      timezone = "Asia/Kolkata",
       profile_id,
       profileId,
       profile_name,
-      category = 'general',
-      lang = 'en',
+      category = "general",
+      lang = "en",
       active_hora_planet,
       hora_window,
       is_unknown_time,
       is_universal_preview,
-      mode
+      mode,
     } = req.body || {};
 
-    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1';
+    const clientIp =
+      (req.headers["x-forwarded-for"] as string) ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
 
     // 1. Authoritative Identity & Session Resolution
     let sessionUser: UserRecord | null = null;
     const authHeader = req.headers.authorization;
     if (authHeader) {
-      if (!authHeader.startsWith('Bearer ')) {
+      if (!authHeader.startsWith("Bearer ")) {
         return res.status(401).json({
-          error: 'UNAUTHORIZED',
-          message: 'Authentication token format must be Bearer <token>.'
+          error: "UNAUTHORIZED",
+          message: "Authentication token format must be Bearer <token>.",
         });
       }
-      const token = authHeader.split(' ')[1]?.trim();
+      const token = authHeader.split(" ")[1]?.trim();
       if (!token) {
         return res.status(401).json({
-          error: 'INVALID_OR_EXPIRED_SESSION',
-          message: 'Authentication token is empty or missing.'
+          error: "INVALID_OR_EXPIRED_SESSION",
+          message: "Authentication token is empty or missing.",
         });
       }
       const tokenHash = hashToken(token);
@@ -11250,51 +15572,56 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
             id: supaResult.user.id,
             email: supaResult.user.email,
             phone: supaResult.user.phone,
-            user_metadata: supaResult.user.user_metadata
+            user_metadata: supaResult.user.user_metadata,
           });
         }
       }
 
       if (!sessionUser) {
         return res.status(401).json({
-          error: 'INVALID_OR_EXPIRED_SESSION',
-          message: 'Provided authentication token is invalid or has expired.'
+          error: "INVALID_OR_EXPIRED_SESSION",
+          message: "Provided authentication token is invalid or has expired.",
         });
       }
 
       if (sessionUser.status !== AccountStatus.ACTIVE) {
         return res.status(403).json({
-          error: 'ACCOUNT_INACTIVE',
-          message: `Account is currently ${sessionUser.status.toLowerCase()}. Please contact support.`
+          error: "ACCOUNT_INACTIVE",
+          message: `Account is currently ${sessionUser.status.toLowerCase()}. Please contact support.`,
         });
       }
     }
 
     // 2. Personal Profile Ownership Enforcement (Tenant Isolation)
-    const rawProfileId = String(profileId || profile_id || '').trim();
+    const rawProfileId = String(profileId || profile_id || "").trim();
     let targetDob = dob;
     let targetLat = lat != null ? Number(lat) : null;
     let targetLon = lon != null ? Number(lon) : null;
-    let targetTz = timezone || 'Asia/Kolkata';
+    let targetTz = timezone || "Asia/Kolkata";
     let targetProfileName = profile_name;
     let resolvedProfileId = rawProfileId;
     let isProfileUnknownTime = Boolean(is_unknown_time);
-    let resolvedBirthTimeStatus: 'EXACT' | 'APPROXIMATE' | 'UNKNOWN' = isProfileUnknownTime ? 'UNKNOWN' : 'EXACT';
+    let resolvedBirthTimeStatus: "EXACT" | "APPROXIMATE" | "UNKNOWN" =
+      isProfileUnknownTime ? "UNKNOWN" : "EXACT";
     let resolvedTimeOfBirth: string | null = null;
 
-    if (rawProfileId && rawProfileId !== 'session_guest' && rawProfileId !== 'current') {
+    if (
+      rawProfileId &&
+      rawProfileId !== "session_guest" &&
+      rawProfileId !== "current"
+    ) {
       if (!sessionUser) {
         return res.status(401).json({
-          error: 'AUTHENTICATION_REQUIRED',
-          message: 'Authentication required to access saved birth profiles.'
+          error: "AUTHENTICATION_REQUIRED",
+          message: "Authentication required to access saved birth profiles.",
         });
       }
 
       const profile = await db.getProfileById(rawProfileId);
       if (!profile) {
         return res.status(404).json({
-          error: 'PROFILE_NOT_FOUND',
-          message: 'The requested birth profile was not found.'
+          error: "PROFILE_NOT_FOUND",
+          message: "The requested birth profile was not found.",
         });
       }
 
@@ -11303,72 +15630,103 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
       // Direct admin prediction generation against another user's profile through the customer gateway is blocked.
       if (profile.userId !== sessionUser.id) {
         return res.status(403).json({
-          error: 'FORBIDDEN',
-          message: 'Access denied: You do not own this birth profile.'
+          error: "FORBIDDEN",
+          message: "Access denied: You do not own this birth profile.",
         });
       }
 
       // Ground calculations in the canonical verified profile from the database
-      if (profile.birthTimeStatus === 'UNKNOWN' || !profile.timeOfBirth) {
+      if (profile.birthTimeStatus === "UNKNOWN" || !profile.timeOfBirth) {
         isProfileUnknownTime = true;
       }
 
-      const cleanTob = isProfileUnknownTime ? null : (profile.timeOfBirth || '').trim();
-      const normalizedTob = cleanTob ? (cleanTob.length === 5 ? `${cleanTob}:00` : cleanTob) : null;
-      targetDob = normalizedTob ? `${profile.dateOfBirth}T${normalizedTob}` : `${profile.dateOfBirth}T00:00:00`;
+      const cleanTob = isProfileUnknownTime
+        ? null
+        : (profile.timeOfBirth || "").trim();
+      const normalizedTob = cleanTob
+        ? cleanTob.length === 5
+          ? `${cleanTob}:00`
+          : cleanTob
+        : null;
+      targetDob = normalizedTob
+        ? `${profile.dateOfBirth}T${normalizedTob}`
+        : `${profile.dateOfBirth}T00:00:00`;
       targetLat = profile.latitude;
       targetLon = profile.longitude;
-      targetTz = profile.resolvedTimezone || 'Asia/Kolkata';
+      targetTz = profile.resolvedTimezone || "Asia/Kolkata";
       targetProfileName = profile.profileName;
       resolvedProfileId = profile.id;
-      resolvedBirthTimeStatus = isProfileUnknownTime ? 'UNKNOWN' : (profile.birthTimeStatus || 'EXACT');
+      resolvedBirthTimeStatus = isProfileUnknownTime
+        ? "UNKNOWN"
+        : profile.birthTimeStatus || "EXACT";
       resolvedTimeOfBirth = cleanTob;
     } else {
       // Ad-hoc or guest calculation: enforce guest rate limits
       if (!sessionUser) {
         if (!checkIpRateLimit(clientIp)) {
           return res.status(429).json({
-            error: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many prediction requests from this IP. Please wait a moment.'
+            error: "RATE_LIMIT_EXCEEDED",
+            message:
+              "Too many prediction requests from this IP. Please wait a moment.",
           });
         }
       }
-      resolvedProfileId = sessionUser ? `user_${sessionUser.id}` : 'session_guest';
-      targetProfileName = targetProfileName || (sessionUser ? (sessionUser.displayName || 'Seeker') : 'Consultant');
+      resolvedProfileId = sessionUser
+        ? `user_${sessionUser.id}`
+        : "session_guest";
+      targetProfileName =
+        targetProfileName ||
+        (sessionUser ? sessionUser.displayName || "Seeker" : "Consultant");
       if (is_unknown_time) {
-        const datePart = String(targetDob || '').split('T')[0];
+        const datePart = String(targetDob || "").split("T")[0];
         targetDob = datePart ? `${datePart}T00:00:00` : targetDob;
         isProfileUnknownTime = true;
       }
-      resolvedBirthTimeStatus = isProfileUnknownTime ? 'UNKNOWN' : (req.body.birthTimeStatus || 'EXACT');
-      resolvedTimeOfBirth = isProfileUnknownTime ? null : (req.body.time_of_birth || req.body.timeOfBirth || null);
+      resolvedBirthTimeStatus = isProfileUnknownTime
+        ? "UNKNOWN"
+        : req.body.birthTimeStatus || "EXACT";
+      resolvedTimeOfBirth = isProfileUnknownTime
+        ? null
+        : req.body.time_of_birth || req.body.timeOfBirth || null;
     }
 
     // 3. Server-Authoritative Entitlement Resolution (Phase 1 P0 Gate)
     // NEVER TRUST client-sent req.body.is_unlocked or req.body.preview_tier!
-    const horizonClean = String(horizon || 'hourly').toLowerCase().trim();
-    const authResult = await authorizeUserForForecastHorizon(sessionUser, horizonClean, req);
+    const horizonClean = String(horizon || "hourly")
+      .toLowerCase()
+      .trim();
+    const authResult = await authorizeUserForForecastHorizon(
+      sessionUser,
+      horizonClean,
+      req,
+    );
     const effectiveTier = authResult.effectiveTier;
     const serverUnlocked = authResult.isAuthorized;
 
     // 4. Secure Gateway Upstream Proxy to Python Swiss Ephemeris Engine
-    const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
-    let INTERNAL_SERVICE_KEY = '';
+    const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
+    let INTERNAL_SERVICE_KEY = "";
     try {
       INTERNAL_SERVICE_KEY = getValidatedInternalServiceKey();
     } catch (keyErr: any) {
-      console.error('[GATEWAY] Internal service key validation failed:', keyErr?.message || keyErr);
+      console.error(
+        "[GATEWAY] Internal service key validation failed:",
+        keyErr?.message || keyErr,
+      );
       return res.status(500).json({
-        error: 'GATEWAY_CONFIGURATION_ERROR',
-        message: 'Internal service authentication configuration is invalid.'
+        error: "GATEWAY_CONFIGURATION_ERROR",
+        message: "Internal service authentication configuration is invalid.",
       });
     }
 
-    if (!INTERNAL_SERVICE_KEY || KNOWN_COMPROMISED_INTERNAL_KEYS.has(INTERNAL_SERVICE_KEY)) {
-      console.error('[GATEWAY] Missing or compromised internal service key');
+    if (
+      !INTERNAL_SERVICE_KEY ||
+      KNOWN_COMPROMISED_INTERNAL_KEYS.has(INTERNAL_SERVICE_KEY)
+    ) {
+      console.error("[GATEWAY] Missing or compromised internal service key");
       return res.status(500).json({
-        error: 'GATEWAY_CONFIGURATION_ERROR',
-        message: 'Internal gateway authentication is missing or compromised.'
+        error: "GATEWAY_CONFIGURATION_ERROR",
+        message: "Internal gateway authentication is missing or compromised.",
       });
     }
 
@@ -11390,26 +15748,30 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
       is_unknown_time: isProfileUnknownTime,
       is_universal_preview: !!is_universal_preview,
       mode: mode,
-      is_unlocked: serverUnlocked,       // STRICT SERVER-AUTHORITATIVE VALUE
-      preview_tier: effectiveTier       // STRICT SERVER-AUTHORITATIVE VALUE
+      is_unlocked: serverUnlocked, // STRICT SERVER-AUTHORITATIVE VALUE
+      preview_tier: effectiveTier, // STRICT SERVER-AUTHORITATIVE VALUE
     };
 
     let upstreamRes: any;
     try {
       upstreamRes = await fetch(`${kundliUrl}/api/predictions/generate`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-astroverse-internal-key': INTERNAL_SERVICE_KEY
+          "Content-Type": "application/json",
+          "x-astroverse-internal-key": INTERNAL_SERVICE_KEY,
         },
         body: JSON.stringify(upstreamPayload),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(10000),
       });
     } catch (netErr: any) {
-      console.error('[GATEWAY] Upstream kundli-engine fetch failed:', netErr?.message || netErr);
+      console.error(
+        "[GATEWAY] Upstream kundli-engine fetch failed:",
+        netErr?.message || netErr,
+      );
       return res.status(502).json({
-        error: 'KUNDLI_ENGINE_UNAVAILABLE',
-        message: 'Astrological calculation service is temporarily unavailable. Please retry shortly.'
+        error: "KUNDLI_ENGINE_UNAVAILABLE",
+        message:
+          "Astrological calculation service is temporarily unavailable. Please retry shortly.",
       });
     }
 
@@ -11419,7 +15781,7 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
       try {
         errBody = JSON.parse(errText);
       } catch (_) {
-        errBody = { error: 'PREDICTION_SERVICE_ERROR', message: errText };
+        errBody = { error: "PREDICTION_SERVICE_ERROR", message: errText };
       }
       return res.status(upstreamRes.status).json(errBody);
     }
@@ -11436,10 +15798,10 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
 
     return res.json(predictionData);
   } catch (err: any) {
-    console.error('[GATEWAY] Error in /api/predictions/generate:', err);
+    console.error("[GATEWAY] Error in /api/predictions/generate:", err);
     return res.status(500).json({
-      error: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to generate prediction report.'
+      error: "INTERNAL_SERVER_ERROR",
+      message: "Failed to generate prediction report.",
     });
   }
 });
@@ -11447,48 +15809,53 @@ app.post('/api/predictions/generate', async (req: Request, res: Response) => {
 // ==================== 8. SERVER INITIALIZATION & HEALTH ====================
 
 // GET /api/release - Safe, minimal release identity endpoint (Section 7)
-app.get('/api/release', (_req: Request, res: Response) => {
-  const commitSha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT_SHA || '2d883d301cf895f1c3103349329ad7305c193cd6';
-  const environment = process.env.VERCEL_ENV || process.env.NODE_ENV || 'preview';
+app.get("/api/release", (_req: Request, res: Response) => {
+  const commitSha =
+    process.env.VERCEL_GIT_COMMIT_SHA ||
+    process.env.GIT_COMMIT_SHA ||
+    "2d883d301cf895f1c3103349329ad7305c193cd6";
+  const environment =
+    process.env.VERCEL_ENV || process.env.NODE_ENV || "preview";
   res.json({
-    application: 'astroverse-ai',
-    version: '2.5.0',
+    application: "astroverse-ai",
+    version: "2.5.0",
     gitCommitSha: commitSha,
-    buildTimestamp: process.env.BUILD_TIMESTAMP || '2026-11-04T18:50:00Z',
+    buildTimestamp: process.env.BUILD_TIMESTAMP || "2026-11-04T18:50:00Z",
     environmentLabel: environment,
-    schemaVersion: '20261104_07'
+    schemaVersion: "20261104_07",
   });
 });
 
-app.get('/api/health', (_req: Request, res: Response) => {
+app.get("/api/health", (_req: Request, res: Response) => {
   const pStatus = db.getPersistenceStatus();
-  const isHealthy = process.env.NODE_ENV !== 'production' || pStatus.durable;
+  const isHealthy = process.env.NODE_ENV !== "production" || pStatus.durable;
   res.status(isHealthy ? 200 : 503).json({
-    status: isHealthy ? 'ONLINE' : 'DEGRADED_DATABASE_REQUIRED',
-    service: 'astroverse-wallet-auth-gateway',
-    version: '2.5.0',
+    status: isHealthy ? "ONLINE" : "DEGRADED_DATABASE_REQUIRED",
+    service: "astroverse-wallet-auth-gateway",
+    version: "2.5.0",
     persistence: pStatus,
     guestModeAvailable: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
-app.get('/api/ready', (_req: Request, res: Response) => {
+app.get("/api/ready", (_req: Request, res: Response) => {
   const pStatus = db.getPersistenceStatus();
   if (pStatus.isProduction && !pStatus.durable) {
     return res.status(503).json({
-      status: 'NOT_READY',
-      error: 'DATABASE_CONFIGURATION_REQUIRED',
-      message: 'Production deployment requires DATABASE_URL or Supabase project configuration for durable persistence.',
+      status: "NOT_READY",
+      error: "DATABASE_CONFIGURATION_REQUIRED",
+      message:
+        "Production deployment requires DATABASE_URL or Supabase project configuration for durable persistence.",
       durable: false,
-      guestModeAvailable: true
+      guestModeAvailable: true,
     });
   }
   return res.json({
-    status: 'READY',
+    status: "READY",
     persistence: pStatus.mode,
     guestModeAvailable: true,
-    supabaseConnected: Boolean((pStatus as any).supabaseConnected)
+    supabaseConnected: Boolean((pStatus as any).supabaseConnected),
   });
 });
 
@@ -11497,17 +15864,21 @@ function getDeploymentCommit(): string {
     return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 9);
   }
   try {
-    const { execSync } = require('child_process');
-    const sha = execSync('git rev-parse --short=9 HEAD', { stdio: ['pipe', 'pipe', 'ignore'], encoding: 'utf8' }).trim();
+    const sha = execSync("git rev-parse --short=9 HEAD", {
+      stdio: ["pipe", "pipe", "ignore"],
+      encoding: "utf8",
+    }).trim();
     if (sha) return sha;
   } catch (_) {}
-  return 'c85d6178d';
+  return "c85d6178d";
 }
 
-app.get('/api/engine/version', async (_req: Request, res: Response) => {
-  const kundliUrl = process.env.KUNDLI_ENGINE_URL || 'http://localhost:8000';
+app.get("/api/engine/version", async (_req: Request, res: Response) => {
+  const kundliUrl = process.env.KUNDLI_ENGINE_URL || "http://localhost:8000";
   try {
-    const probe = await fetch(`${kundliUrl}/api/engine/version`, { signal: AbortSignal.timeout(3000) });
+    const probe = await fetch(`${kundliUrl}/api/engine/version`, {
+      signal: AbortSignal.timeout(3000),
+    });
     if (probe.ok) {
       const data = await probe.json();
       return res.json(data);
@@ -11515,37 +15886,50 @@ app.get('/api/engine/version', async (_req: Request, res: Response) => {
   } catch (_) {}
   const commit = getDeploymentCommit();
   return res.json({
-    status: 'HEALTHY',
-    service: 'kundli-engine',
-    engine_version: '2.1.0',
+    status: "HEALTHY",
+    service: "kundli-engine",
+    engine_version: "2.1.0",
     engine_commit: commit,
     backend_commit: commit,
     frontend_commit: commit,
-    ephemeris_version: 'Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)',
-    ephemeris_source: 'Moshier Analytical Model (FLG_MOSEPH)',
-    active_calculation_source: 'Moshier Analytical Model (FLG_MOSEPH)',
+    ephemeris_version: "Swiss Ephemeris 2.10.03 (pyswisseph 2.10.3.2)",
+    ephemeris_source: "Moshier Analytical Model (FLG_MOSEPH)",
+    active_calculation_source: "Moshier Analytical Model (FLG_MOSEPH)",
     ephemeris_flags: {
       moseph_active: true,
       swieph_active: false,
       jpleph_active: false,
-      sidereal_active: true
+      sidereal_active: true,
     },
-    numerical_precision: '0.1 arcsec (Planets) / 0.5 arcsec (Moon)',
+    numerical_precision: "0.1 arcsec (Planets) / 0.5 arcsec (Moon)",
     fallback_active: false,
-    methodology: 'ASTROVERSE_PARASHARI_LAHIRI_DRIK',
-    methodology_version: '2.0.0-parashari-lahiri-drik',
-    sidereal_mode: 'Lahiri (swe.SIDM_LAHIRI)',
-    ayanamsa_standard: 'Chitra Paksha / Lahiri',
+    methodology: "ASTROVERSE_PARASHARI_LAHIRI_DRIK",
+    methodology_version: "2.0.0-parashari-lahiri-drik",
+    sidereal_mode: "Lahiri (swe.SIDM_LAHIRI)",
+    ayanamsa_standard: "Chitra Paksha / Lahiri",
     deployment_timestamp: new Date().toISOString(),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
 const PORT = process.env.PORT || 5000;
-if (require.main === module && !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+
+if (process.env.NODE_ENV === "production" && !process.env.PORT) {
+  console.error(
+    "[CRITICAL] PORT environment variable must be explicitly set in production.",
+  );
+  process.exit(1);
+}
+if (
+  require.main === module &&
+  !process.env.VERCEL &&
+  !process.env.AWS_LAMBDA_FUNCTION_NAME
+) {
   const pStatus = db.getPersistenceStatus();
   if (pStatus.isProduction && !pStatus.durable) {
-    console.error('[CRITICAL_PRODUCTION_HALT] Production deployment cannot start: DATABASE_URL or durable PostgreSQL persistence is required. Ephemeral storage is strictly forbidden in production.');
+    console.error(
+      "[CRITICAL_PRODUCTION_HALT] Production deployment cannot start: DATABASE_URL or durable PostgreSQL persistence is required. Ephemeral storage is strictly forbidden in production.",
+    );
     process.exit(1);
   }
   if (isProductionEnvironment()) {
@@ -11557,7 +15941,9 @@ if (require.main === module && !process.env.VERCEL && !process.env.AWS_LAMBDA_FU
     }
   }
   app.listen(PORT, () => {
-    console.log(`[ASTROVERSE] Wallet, Auth & Admin Gateway running on port ${PORT}`);
+    console.log(
+      `[ASTROVERSE] Wallet, Auth & Admin Gateway running on port ${PORT}`,
+    );
   });
 }
 
@@ -11576,5 +15962,8 @@ module.exports.adminMonitoringLimiter = adminMonitoringLimiter;
 module.exports.adminSensitiveMutationsLimiter = adminSensitiveMutationsLimiter;
 module.exports.reconcileCashfreeOrder = reconcileCashfreeOrder;
 module.exports.reconcileUserPendingOrders = reconcileUserPendingOrders;
-module.exports.authorizeUserForForecastHorizon = authorizeUserForForecastHorizon;
+module.exports.authorizeUserForForecastHorizon =
+  authorizeUserForForecastHorizon;
+module.exports.panchangCache = panchangCache;
+module.exports.getPanchangCacheKey = getPanchangCacheKey;
 export default app;

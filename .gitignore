@@ -100,3 +100,13 @@ docs/screenshots/
 .agent/skills/cashfree-skills/
 services/wallet-service/data/ai_quota_config.json
 services/wallet-service/data/ai_usage_events.json
+test-results/
+test-results.json
+tests/e2e/test-results/
+tests/e2e/test-results.json
+
+# Understand-Anything intermediate and temporary scratch
+.ua/intermediate/
+.ua/tmp/
+.ua/*.mjs
+

@@ -1,0 +1,2506 @@
+{
+  "targetUrl": "https://astroverse-git-remed-41651b-knowledgeispower1715-1915s-projects.vercel.app/admin",
+  "timestamp": "2026-11-14T14:21:25.913Z",
+  "viewports": {
+    "Desktop": {
+      "viewport": {
+        "name": "Desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "rootMetrics": {
+        "windowInnerWidth": 1920,
+        "windowInnerHeight": 1080,
+        "docScrollWidth": 1920,
+        "docClientWidth": 1920,
+        "bodyScrollWidth": 1920,
+        "bodyClientWidth": 1920,
+        "hasHorizontalOverflow": false
+      },
+      "navInspection": {
+        "headerFound": true,
+        "headerRect": {
+          "width": 1392,
+          "height": 108,
+          "right": 1656
+        },
+        "searchInputVisible": true,
+        "favoritesBarVisible": true,
+        "toggleBtnDisplay": "none",
+        "toggleBtnVisible": false,
+        "sidebarDisplay": "flex",
+        "hasCloseButton": true
+      },
+      "sidebarToggleTest": null,
+      "panelAudits": [
+        {
+          "id": "overview",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 706,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "users",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 569,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 875,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 8,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "roles",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 304,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 733,
+              "parentOverflowX": "visible",
+              "isContained": true
+            },
+            {
+              "tableWidth": 561,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "security",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 349,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 462,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "astrology",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 132,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "reports",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 129,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 405,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "ai",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 173,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "payments",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 611,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 552,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 4,
+          "inputCount": 1,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "subscriptions",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 648,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 616,
+              "parentOverflowX": "visible",
+              "isContained": true
+            },
+            {
+              "tableWidth": 745,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 8,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "content",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 96,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "settings",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 183,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "privacy",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 161,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 474,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "audit",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 136,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 422,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "integrations",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 96,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "incidents",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 99,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "qa",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 882,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 15,
+          "inputCount": 1,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "database",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 480,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 1082,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "analytics",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 460,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 1050,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "customer360",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 263,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 1,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "entitlements",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 213,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 1050,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 3,
+          "inputCount": 5,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "promotions",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 213,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 1050,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 3,
+          "inputCount": 7,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "consultations",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 1132,
+            "height": 396,
+            "left": 524,
+            "right": 1656
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 1050,
+              "parentOverflowX": "auto",
+              "isContained": true
+            },
+            {
+              "tableWidth": 1050,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        }
+      ],
+      "workbenchAudits": [
+        {
+          "id": "kundli",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 0
+        },
+        {
+          "id": "forecasts",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 0
+        },
+        {
+          "id": "ai-astrologer",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 1
+        },
+        {
+          "id": "numerology",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "buttonCount": 3,
+          "inputCount": 0
+        },
+        {
+          "id": "reports",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "buttonCount": 1,
+          "inputCount": 0
+        },
+        {
+          "id": "billing",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 1920,
+          "innerWidth": 1920,
+          "overflowsWindow": false,
+          "buttonCount": 5,
+          "inputCount": 1
+        }
+      ],
+      "modalAudits": [
+        {
+          "id": "modal-admin-mfa",
+          "found": true,
+          "width": 1920,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-mfa-setup",
+          "found": true,
+          "width": 392,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-gateway-credentials",
+          "found": true,
+          "width": 450,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-edit-price",
+          "found": true,
+          "width": 0,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-assign-role",
+          "found": true,
+          "width": 470,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-grant-subscription",
+          "found": true,
+          "width": 470,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-extend-subscription",
+          "found": true,
+          "width": 258,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-cancel-subscription",
+          "found": true,
+          "width": 430,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-task-queue",
+          "found": true,
+          "width": 472,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-session-centre",
+          "found": true,
+          "width": 400,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-high-risk-action",
+          "found": true,
+          "width": 362,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        }
+      ],
+      "touchTargetAudit": null
+    },
+    "Tablet": {
+      "viewport": {
+        "name": "Tablet",
+        "width": 768,
+        "height": 1024
+      },
+      "rootMetrics": {
+        "windowInnerWidth": 768,
+        "windowInnerHeight": 1024,
+        "docScrollWidth": 768,
+        "docClientWidth": 768,
+        "bodyScrollWidth": 768,
+        "bodyClientWidth": 768,
+        "hasHorizontalOverflow": false
+      },
+      "navInspection": {
+        "headerFound": true,
+        "headerRect": {
+          "width": 748,
+          "height": 204,
+          "right": 758
+        },
+        "searchInputVisible": true,
+        "favoritesBarVisible": true,
+        "toggleBtnDisplay": "flex",
+        "toggleBtnVisible": true,
+        "sidebarDisplay": "none",
+        "hasCloseButton": true
+      },
+      "sidebarToggleTest": {
+        "initialOpen": false,
+        "openAfterClick": true,
+        "backdropOpen": true,
+        "sidebarWidth": 280,
+        "closedAfterBackdrop": true,
+        "openSecond": true,
+        "closedAfterEsc": true,
+        "success": true
+      },
+      "panelAudits": [
+        {
+          "id": "overview",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 710,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "users",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 731,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 8,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "roles",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 341,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            },
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "security",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 349,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "astrology",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 130,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "reports",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 113,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "ai",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 157,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "payments",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 751,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 4,
+          "inputCount": 1,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "subscriptions",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 807,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            },
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 8,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "content",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 80,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "settings",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 167,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "privacy",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 145,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "audit",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 120,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "integrations",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 80,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "incidents",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 83,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "qa",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 1024,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 15,
+          "inputCount": 1,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "database",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 656,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 722,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "analytics",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 531,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 690,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "customer360",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 301,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 1,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "entitlements",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 231,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 690,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 3,
+          "inputCount": 5,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "promotions",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 748,
+            "height": 197,
+            "left": 10,
+            "right": 758
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 690,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 3,
+          "inputCount": 7,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "consultations",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 0,
+            "height": 0,
+            "left": 0,
+            "right": 0
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 0,
+              "parentOverflowX": "auto",
+              "isContained": true
+            },
+            {
+              "tableWidth": 0,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        }
+      ],
+      "workbenchAudits": [
+        {
+          "id": "kundli",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 0
+        },
+        {
+          "id": "forecasts",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 0
+        },
+        {
+          "id": "ai-astrologer",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 1
+        },
+        {
+          "id": "numerology",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "buttonCount": 3,
+          "inputCount": 0
+        },
+        {
+          "id": "reports",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "buttonCount": 1,
+          "inputCount": 0
+        },
+        {
+          "id": "billing",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 768,
+          "innerWidth": 768,
+          "overflowsWindow": false,
+          "buttonCount": 5,
+          "inputCount": 1
+        }
+      ],
+      "modalAudits": [
+        {
+          "id": "modal-admin-mfa",
+          "found": true,
+          "width": 768,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-mfa-setup",
+          "found": true,
+          "width": 368,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-gateway-credentials",
+          "found": true,
+          "width": 714,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-edit-price",
+          "found": true,
+          "width": 0,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-assign-role",
+          "found": true,
+          "width": 627,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-grant-subscription",
+          "found": true,
+          "width": 714,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-extend-subscription",
+          "found": true,
+          "width": 286,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-cancel-subscription",
+          "found": true,
+          "width": 714,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-task-queue",
+          "found": true,
+          "width": 456,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-session-centre",
+          "found": true,
+          "width": 384,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-high-risk-action",
+          "found": true,
+          "width": 346,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        }
+      ],
+      "touchTargetAudit": null
+    },
+    "Mobile": {
+      "viewport": {
+        "name": "Mobile",
+        "width": 375,
+        "height": 812
+      },
+      "rootMetrics": {
+        "windowInnerWidth": 375,
+        "windowInnerHeight": 812,
+        "docScrollWidth": 375,
+        "docClientWidth": 375,
+        "bodyScrollWidth": 375,
+        "bodyClientWidth": 375,
+        "hasHorizontalOverflow": false
+      },
+      "navInspection": {
+        "headerFound": true,
+        "headerRect": {
+          "width": 355,
+          "height": 282,
+          "right": 365
+        },
+        "searchInputVisible": true,
+        "favoritesBarVisible": true,
+        "toggleBtnDisplay": "flex",
+        "toggleBtnVisible": true,
+        "sidebarDisplay": "none",
+        "hasCloseButton": true
+      },
+      "sidebarToggleTest": {
+        "initialOpen": false,
+        "openAfterClick": true,
+        "backdropOpen": true,
+        "sidebarWidth": 280,
+        "closedAfterBackdrop": true,
+        "openSecond": true,
+        "closedAfterEsc": true,
+        "success": true
+      },
+      "panelAudits": [
+        {
+          "id": "overview",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 1921,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "users",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 1031,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 533,
+              "parentOverflowX": "visible",
+              "isContained": false
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 8,
+          "overflowingElementCount": 7,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 554,
+              "width": 529
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 554,
+              "width": 529
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 438,
+              "width": 63
+            }
+          ]
+        },
+        {
+          "id": "roles",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 447,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 517,
+              "parentOverflowX": "visible",
+              "isContained": false
+            },
+            {
+              "tableWidth": 421,
+              "parentOverflowX": "visible",
+              "isContained": false
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 14,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 538,
+              "width": 513
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 538,
+              "width": 513
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 424,
+              "width": 50
+            }
+          ]
+        },
+        {
+          "id": "security",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 543,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 340,
+              "parentOverflowX": "visible",
+              "isContained": false
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "astrology",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 206,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "reports",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 174,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 329,
+              "parentOverflowX": "visible",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "ai",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 352,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "payments",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 1330,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 361,
+              "parentOverflowX": "visible",
+              "isContained": false
+            }
+          ],
+          "buttonCount": 4,
+          "inputCount": 1,
+          "overflowingElementCount": 6,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 382,
+              "width": 357
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 382,
+              "width": 357
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 382,
+              "width": 37
+            }
+          ]
+        },
+        {
+          "id": "subscriptions",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 1367,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 374,
+              "parentOverflowX": "visible",
+              "isContained": false
+            },
+            {
+              "tableWidth": 511,
+              "parentOverflowX": "visible",
+              "isContained": false
+            }
+          ],
+          "buttonCount": 2,
+          "inputCount": 8,
+          "overflowingElementCount": 14,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 395,
+              "width": 370
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 395,
+              "width": 370
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 395,
+              "width": 71
+            }
+          ]
+        },
+        {
+          "id": "content",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 99,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "settings",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 186,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "privacy",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 185,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 374,
+              "parentOverflowX": "visible",
+              "isContained": false
+            }
+          ],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 6,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 395,
+              "width": 370
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 395,
+              "width": 370
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 395,
+              "width": 60
+            }
+          ]
+        },
+        {
+          "id": "audit",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 189,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 385,
+              "parentOverflowX": "visible",
+              "isContained": false
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 6,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 406,
+              "width": 381
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 406,
+              "width": 381
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 406,
+              "width": 65
+            }
+          ]
+        },
+        {
+          "id": "integrations",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 80,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 0,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "incidents",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 131,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "qa",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 1871,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 15,
+          "inputCount": 1,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "database",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 986,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 379,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 6,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 402,
+              "width": 379
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 402,
+              "width": 379
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 402,
+              "width": 60
+            }
+          ]
+        },
+        {
+          "id": "analytics",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 1162,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 403,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 7,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 442,
+              "width": 403
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 442,
+              "width": 403
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 397,
+              "width": 69
+            }
+          ]
+        },
+        {
+          "id": "customer360",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 367,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 0,
+          "tableDetails": [],
+          "buttonCount": 1,
+          "inputCount": 1,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        },
+        {
+          "id": "entitlements",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 279,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 534,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 3,
+          "inputCount": 5,
+          "overflowingElementCount": 9,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 573,
+              "width": 534
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 573,
+              "width": 534
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 396,
+              "width": 68
+            }
+          ]
+        },
+        {
+          "id": "promotions",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 355,
+            "height": 270,
+            "left": 10,
+            "right": 365
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 1,
+          "tableDetails": [
+            {
+              "tableWidth": 462,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 3,
+          "inputCount": 7,
+          "overflowingElementCount": 8,
+          "overflowingElementsSample": [
+            {
+              "tag": "THEAD",
+              "id": "",
+              "className": "",
+              "right": 501,
+              "width": 462
+            },
+            {
+              "tag": "TR",
+              "id": "",
+              "className": "",
+              "right": 501,
+              "width": 462
+            },
+            {
+              "tag": "TH",
+              "id": "",
+              "className": "",
+              "right": 381,
+              "width": 47
+            }
+          ]
+        },
+        {
+          "id": "consultations",
+          "found": true,
+          "display": "block",
+          "rect": {
+            "width": 0,
+            "height": 0,
+            "left": 0,
+            "right": 0
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "tablesCount": 2,
+          "tableDetails": [
+            {
+              "tableWidth": 0,
+              "parentOverflowX": "auto",
+              "isContained": true
+            },
+            {
+              "tableWidth": 0,
+              "parentOverflowX": "auto",
+              "isContained": true
+            }
+          ],
+          "buttonCount": 1,
+          "inputCount": 0,
+          "overflowingElementCount": 0,
+          "overflowingElementsSample": []
+        }
+      ],
+      "workbenchAudits": [
+        {
+          "id": "kundli",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 0
+        },
+        {
+          "id": "forecasts",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 0
+        },
+        {
+          "id": "ai-astrologer",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "buttonCount": 6,
+          "inputCount": 1
+        },
+        {
+          "id": "numerology",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "buttonCount": 3,
+          "inputCount": 0
+        },
+        {
+          "id": "reports",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "buttonCount": 1,
+          "inputCount": 0
+        },
+        {
+          "id": "billing",
+          "found": true,
+          "display": "none",
+          "rect": {
+            "width": 0,
+            "height": 0
+          },
+          "docScrollWidth": 375,
+          "innerWidth": 375,
+          "overflowsWindow": false,
+          "buttonCount": 5,
+          "inputCount": 1
+        }
+      ],
+      "modalAudits": [
+        {
+          "id": "modal-admin-mfa",
+          "found": true,
+          "width": 375,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-mfa-setup",
+          "found": true,
+          "width": 355,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-gateway-credentials",
+          "found": true,
+          "width": 321,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-edit-price",
+          "found": true,
+          "width": 0,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-assign-role",
+          "found": true,
+          "width": 321,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-grant-subscription",
+          "found": true,
+          "width": 321,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-extend-subscription",
+          "found": true,
+          "width": 286,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-cancel-subscription",
+          "found": true,
+          "width": 321,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-task-queue",
+          "found": true,
+          "width": 355,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-session-centre",
+          "found": true,
+          "width": 355,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        },
+        {
+          "id": "modal-admin-high-risk-action",
+          "found": true,
+          "width": 346,
+          "fitsViewport": true,
+          "hasCloseBtn": true
+        }
+      ],
+      "touchTargetAudit": {
+        "totalInteractive": 8,
+        "pass44x44": 3,
+        "sub44": 5,
+        "keyMobileControls": {
+          "sidebarToggle": {
+            "width": 0,
+            "height": 0
+          },
+          "closeSignout": {
+            "width": 0,
+            "height": 0
+          }
+        },
+        "sub44Details": [
+          {
+            "tag": "A",
+            "id": "",
+            "className": "admin-brand",
+            "text": "AstroVerse Admin\nEnterpri",
+            "width": 205,
+            "height": 36,
+            "meets44x44": false,
+            "meets24x24": true
+          },
+          {
+            "tag": "BUTTON",
+            "id": "",
+            "className": "btn-admin-logout",
+            "text": "Sign Out",
+            "width": 81,
+            "height": 22,
+            "meets44x44": false,
+            "meets24x24": false
+          },
+          {
+            "tag": "BUTTON",
+            "id": "",
+            "className": "",
+            "text": "",
+            "width": 19,
+            "height": 19,
+            "meets44x44": false,
+            "meets24x24": false
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "",
+            "text": "Recovery Procedures",
+            "width": 117,
+            "height": 15,
+            "meets44x44": false,
+            "meets24x24": false
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "",
+            "text": "Return to AstroVerse Publ",
+            "width": 188,
+            "height": 15,
+            "meets44x44": false,
+            "meets24x24": false
+          }
+        ]
+      }
+    }
+  }
+}
