@@ -12817,7 +12817,7 @@
           </div>
           <div style="min-width: 0;">
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <h3 id="ai-chat-astrologer-name" style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; letter-spacing: -0.01em;">Acharya Devratan</h3>
+              <h3 id="ai-chat-astrologer-name" style="font-size: 16px; font-weight: 800; color: #FFFFFF; margin: 0; letter-spacing: -0.01em;">AstroVerse AI</h3>
               <span class="badge-ai-persona" id="ai-chat-persona-badge">
                 <i class="fa-solid fa-microchip"></i> AI Consultation Persona
               </span>
@@ -13015,17 +13015,34 @@
     // AUTHORITATIVE AI ASTROLOGER PERSONA REGISTRY (Phase 2 Master Configuration)
     // ==============================================================================
     const ASTROLOGER_PERSONAS = {
-      'acharya-devratan': {
-        id: 'acharya-devratan',
-        name: 'Acharya Devratan',
-        title: 'Acharya Devratan',
+      'astroverse-ai': {
+        id: 'astroverse-ai',
+        name: 'AstroVerse AI',
+        title: 'AstroVerse AI — Your Personal Vedic Astrology Guide',
         designation: 'AI Astrologer',
         portrait: 'assets/astrologers/acharya-devratan.webp',
-        alt: 'Portrait of the fictional AI persona Acharya Devratan',
+        alt: 'AstroVerse AI Astrologer Guide',
         fallbackSvg: 'assets/illustrations/persona-devratan.svg',
         methodology: 'Parashari Model',
-        specialty: 'Brihat Parashara Hora & Career Architecture',
-        focus: 'Brihat Parashara System • Career Architecture • Dhana Yogas',
+        specialty: 'Universal Vedic Astrological Intelligence & Consultation',
+        focus: 'Brihat Parashara System • Career Architecture • Dhana Yogas • Relationships',
+        grounding: 'Swiss Ephemeris & D1/D9 Grounded',
+        languages: ['English', 'Hindi'],
+        langCodes: ['en', 'hi'],
+        allowanceText: 'Daily Allowance Included',
+        rate: 0
+      },
+      'acharya-devratan': {
+        id: 'astroverse-ai',
+        name: 'AstroVerse AI',
+        title: 'AstroVerse AI — Your Personal Vedic Astrology Guide',
+        designation: 'AI Astrologer',
+        portrait: 'assets/astrologers/acharya-devratan.webp',
+        alt: 'AstroVerse AI Astrologer Guide',
+        fallbackSvg: 'assets/illustrations/persona-devratan.svg',
+        methodology: 'Parashari Model',
+        specialty: 'Universal Vedic Astrological Intelligence & Consultation',
+        focus: 'Brihat Parashara System • Career Architecture • Dhana Yogas • Relationships',
         grounding: 'Swiss Ephemeris & D1/D9 Grounded',
         languages: ['English', 'Hindi'],
         langCodes: ['en', 'hi'],
@@ -20423,22 +20440,42 @@
             ];
           }
         } else {
-          if (isHi) {
-            welcomeText = `प्रणाम! मैं आचार्य देवरात्न हूँ, शास्त्रीय पराशरी ज्योतिष, करियर मार्गदर्शन और रणनीतिक जीवन निर्णयों का विशेषज्ञ।\n\nआपकी जन्म कुंडली से जुड़ाव स्थापित है: **${d.lagnaSign} लग्न**, **${d.moonSign} चंद्र राशि** (${d.nakName} नक्षत्र), सक्रिय **${dashaMaha}-${dashaAntar} दशा**।\n\n### शास्त्रीय आधार एवं मार्गदर्शन\nआपके ${d.lagnaSign} लग्न के अंतर्गत आपका जीवन विशिष्ट क्षमता और सतत विकास का संकेत देता है। चाहे आप अपने करियर की दिशा, अनुकूल समय, धन योग अथवा समग्र जीवन संतुलन पर परामर्श चाहते हों, मैं पूर्ण स्पष्टता से आपका मार्गदर्शन करने के लिए उपस्थित हूँ।\n\nआज आप किस महत्वपूर्ण विषय पर विचार करना चाहते हैं?`;
-            initialChips = [
-              "मेरे दशम भाव (करियर) और पदोन्नति का समय बताएं",
-              "मेरी कुंडली में कौन से धन योग उपस्थित हैं?",
-              "विंशोत्तरी महादशा जीवन के निर्णयों को कैसे प्रभावित करती है?",
-              "मेरे करियर और प्रगति को बल देने वाले वैदिक उपाय क्या हैं?"
-            ];
+          const seekerName = d.seekerProfile?.name || d.name || (typeof currentUserSession !== 'undefined' && currentUserSession?.name) || '';
+          const firstName = seekerName ? seekerName.trim().split(/\s+/)[0] : '';
+          if (firstName && firstName !== 'Seeker') {
+            welcomeText = isHi
+              ? `नमस्ते, ${firstName}। क्या आप अपनी सहेजी गई जन्म कुंडली का आगे विश्लेषण करना चाहते हैं, या आपके मन में कुछ और है?`
+              : `Namaste, ${firstName}. Would you like to continue exploring your saved birth chart, or is there something else on your mind?`;
+            initialChips = isHi
+              ? [
+                  "मेरे दशम भाव के अनुसार करियर का समय बताइए",
+                  "विवाह एवं जीवनसाथी के योग कब बन रहे हैं?",
+                  "आगामी कौन सा गोचर कार्यक्षेत्र में सहायक होगा?",
+                  "सक्रिय दशा में मानसिक शांति हेतु शास्त्रीय उपाय बताएं"
+                ]
+              : [
+                  "Analyze my 10th House of Career & promotion timing",
+                  "When is an auspicious timing window for marriage?",
+                  "Which upcoming transit supports career acceleration?",
+                  "What classical remedies are prescribed for my active Dasha?"
+                ];
           } else {
-            welcomeText = `Pranam! I am Acharya Devratan (AI Astrologer), specializing in classical Parashari Jyotish, career architecture, and strategic life decisions.\n\nI have connected to your calculated chart: **${d.lagnaSign} Lagna**, Moon in **${d.moonSign}** (${d.nakName} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n### Astrological Foundation & Guidance\nUnder your ${d.lagnaSign} Ascendant, your chart carries distinct potential for purposeful achievement and structured growth. Whether you wish to examine professional direction, timing of opportunities, Dhana Yogas, or personal life balance, I am here to guide you with clarity and scriptural integrity.\n\nWhat strategic milestone, question, or goal would you like to explore today?`;
-            initialChips = [
-              "Analyze my 10th House of Career & promotion timing",
-              "What does my chart reveal regarding Dhana Yogas?",
-              "How does Vimshottari Dasha influence life timing?",
-              "What gemstones or Vedic practices support my path?"
-            ];
+            welcomeText = isHi
+              ? `नमस्ते! एस्ट्रोवर्स में आपका स्वागत है। मैं आपका वैदिक ज्योतिष AI मार्गदर्शक हूँ।\n\nआपकी जन्म कुंडली (**${d.lagnaSign} लग्न**, **${d.moonSign} चंद्र राशि**, सक्रिय **${dashaMaha}-${dashaAntar} दशा**) से जुड़ाव स्थापित है। आज आपके मन में क्या प्रश्न है?`
+              : `Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide.\n\nI have connected to your calculated chart: **${d.lagnaSign} Lagna**, Moon in **${d.moonSign}** (${d.nakName} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\nWhat would you like to explore today?`;
+            initialChips = isHi
+              ? [
+                  "मेरे दशम भाव (करियर) और पदोन्नति का समय बताएं",
+                  "मेरी कुंडली में कौन से धन योग उपस्थित हैं?",
+                  "विंशोत्तरी महादशा जीवन के निर्णयों को कैसे प्रभावित करती है?",
+                  "मेरे करियर और प्रगति को बल देने वाले वैदिक उपाय क्या हैं?"
+                ]
+              : [
+                  "Analyze my 10th House of Career & promotion timing",
+                  "What does my chart reveal regarding Dhana Yogas?",
+                  "How does Vimshottari Dasha influence life timing?",
+                  "What gemstones or Vedic practices support my path?"
+                ];
           }
         }
       } else {
@@ -20456,9 +20493,21 @@
           }
         } else {
           if (isHi) {
-            welcomeText = `प्रणाम! मैं आचार्य देवव्रतन (AI ज्योतिषी), AstroVerse का वरिष्ठ वैदिक ज्योतिषी एवं कार्यक्षेत्र रणनीतिकार हूँ।\n\nआपके इस निजी परामर्श में आपका हार्दिक स्वागत है। वैदिक ज्योतिष आपके जीवन के सर्वोच्च उद्देश्य, कर्मिक समय और धर्म मार्ग को प्रकाशित करने का एक पावन विज्ञान है। आपके परामर्श का प्रत्येक क्षण अत्यंत मूल्यवान है।\n\nआज आप किस महत्वपूर्ण विषय, करियर पड़ाव अथवा जीवन लक्ष्य पर विचार करना चाहते हैं? आप सीधे अपना प्रश्न पूछ सकते हैं।\n\n*(सटीक व्यक्तिगत जन्म कुंडली विश्लेषण हेतु आप अपनी जन्म तिथि, समय व स्थान भी सीधे यहीं चैट में साझा कर सकते हैं।)*`;
+            welcomeText = `नमस्ते! एस्ट्रोवर्स में आपका स्वागत है। मैं आपका वैदिक ज्योतिष AI मार्गदर्शक हूँ। आप मुझसे संबंध, विवाह, करियर, व्यापार, परिवार, कुंडली या किसी भी विषय पर प्रश्न पूछ सकते हैं। आज आपके मन में क्या है?`;
+            initialChips = [
+              "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+              "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
+              "जन्म कुंडली कैसे लिंक करें?",
+              "आज की ग्रहीय होरा क्या है?"
+            ];
           } else {
-            welcomeText = `Pranam! I am Acharya Devratan, Senior Vedic Astrologer & Career Architect at AstroVerse.\n\nWelcome to your private consultation. Vedic Jyotish is a sacred science of illuminating your highest potential, karmic timing, and dharmic path. Every minute of your consultation is valuable, and my focus is delivering genuine, actionable clarity for your life decisions.\n\nWhat strategic question, career milestone, or life goal would you like to explore today? Feel free to ask anything directly.\n\n*(If you wish to examine your personal Janam Kundli, you can also share your Date, Time, and City of birth right here in our chat.)*`;
+            welcomeText = `Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?`;
+            initialChips = [
+              "Analyze my 10th House of Career & promotion timing",
+              "When is an auspicious timing window for marriage?",
+              "How do I link or calculate my Janam Kundli?",
+              "Explain today's planetary Horas"
+            ];
           }
         }
       }
@@ -21235,7 +21284,41 @@
         }
       }
 
-      // Personal Introduction (Acknowledging name warmly, no career dump)
+      // Source inquiry / withdrawal check (Test C)
+      const isSourceInquiry =
+        /(?:how did you get this information|how do you know (?:this|that|my details|my chart)|where did you get (?:this|my) (?:info|information)|how come you know|who told you)\b/i.test(
+          q,
+        ) || /(?:यह जानकारी (?:कहाँ से|कैसे) मिली|आपको कैसे पता|किसने बताया)/.test(userQuery || '');
+
+      if (isSourceInquiry) {
+        return {
+          intent: 'source_inquiry',
+          message: isHi
+            ? "मुझे यह सुधार करना चाहिए। आपने अभी तक अपना जन्म विवरण नहीं दिया है, इसलिए आपके लग्न, चंद्र राशि या दशा के बारे में जो बातें पहले कही गईं उनका कोई आधार नहीं था। वे कथन असमर्थित थे और उन्हें निरस्त समझा जाना चाहिए। जब आप अपना जन्म विवरण साझा करेंगे या किसी सत्यापित प्रोफ़ाइल का उपयोग करेंगे, तभी मैं आपकी जन्म कुंडली की गणना करके व्यक्तिगत फलादेश दे सकता हूँ।"
+            : "I need to correct that. You haven't provided your birth details, so I had no basis to state your Ascendant, Moon sign or Dasha. Those earlier statements were unsupported and should be disregarded. I can provide a personal astrological reading after calculating your birth chart from details you choose to share, or by using a verified saved profile.",
+          chartEvidence: [],
+          relatedInsights: [],
+          suggestedQuestions: isHi
+            ? [
+                "मैं अपना जन्म विवरण देना चाहता हूँ",
+                "जन्म कुंडली के लिए क्या जानकारी चाहिए?",
+                "सामान्य ग्रह गोचर के बारे में बताएं",
+              ]
+            : [
+                "I want to share my birth details",
+                "What details are needed for a Janam Kundli?",
+                "Explain general planetary transits",
+              ],
+          bilingual_summary: {
+            en: "Acknowledged and corrected ungrounded statements, clarifying birth details are required for chart calculation.",
+            hi: "असमर्थित दावों को वापस लेकर सुधार किया तथा स्पष्ट किया कि व्यक्तिगत फलादेश हेतु जन्म विवरण आवश्यक है।",
+          },
+          remedyCard: null,
+          status: 'completed'
+        };
+      }
+
+      // Personal Introduction (Test B: Acknowledging name only, no chart claims)
       const nameMatch = q.match(/(?:i am|i'm|my name is|call me)\s+([a-zA-Z]{2,30})/i) ||
         (userQuery || '').match(/(?:मेरा नाम|मैं हूँ|मुझे)\s+([^\s,।!?]{2,30})/);
       const isPersonalIntro = !!nameMatch && !isOutOfScope && q.split(' ').length <= 10;
@@ -21243,31 +21326,26 @@
       if (isPersonalIntro) {
         let rawName = nameMatch[1].trim();
         let userName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-        let introMsg = '';
-        if (isHi) {
-          introMsg = `नमस्ते **${userName}** जी! मैं ${personaDisplay} हूँ।\n\nएस्ट्रोवर्स वैदिक परामर्श में आपका आत्मीय स्वागत है। मुझे आपसे मिलकर अत्यंत प्रसन्नता हुई।\n\n### मैं आपकी क्या सहायता कर सकता हूँ?\nआप मुझसे जीवन, करियर, संबंध, धन योग अथवा शास्त्रीय वैदिक सिद्धांतों से जुड़ा कोई भी प्रश्न पूछ सकते हैं।\n\n> **सटीक जन्म कुंडली विश्लेषण हेतु:** यदि आप अपनी जन्म कुंडली के आधार पर सटीक दशा, लग्न और गोचर का फल जानना चाहते हैं, तो आप किसी भी समय अपनी जन्म तिथि, समय और स्थान मुझे बता सकते हैं या ऊपर 'कुंडली लिंक करें' बटन का उपयोग कर सकते हैं।\n\nआज आप किस विषय पर चर्चा करना चाहते हैं?`;
-        } else {
-          introMsg = `Namaste **${userName}**! I am ${personaDisplay}.\n\nA warm welcome to our AstroVerse consultation. It is a genuine pleasure to meet you!\n\n### How I Can Guide You Today\nYou are welcome to explore questions about career trajectory, relationship harmony, financial foresight, or sacred classical Vedic Shastras.\n\n> **To Personalize Your Natal Guidance:** Whenever you wish to explore your exact Janam Kundli—including your Ascendant (Lagna), Moon sign, and active Vimshottari Dasha—simply share your birth date, time, and city right here in chat, or use the 'Link Kundli' button above.\n\nWhat question, goal, or curious inquiry would you like to explore today?`;
-        }
+        let introMsg = isHi
+          ? `आपसे मिलकर अच्छा लगा, ${userName}! आज आप क्या जानना चाहते हैं?`
+          : `Nice to meet you, ${userName}! What would you like to explore today?`;
         return {
-          intent: 'personal_introduction',
+          intent: 'name_introduction',
           message: introMsg,
           chartEvidence: [],
           relatedInsights: [],
           suggestedQuestions: isHi ? [
-            "वैदिक ज्योतिष में करियर का विश्लेषण कैसे होता है?",
-            "जन्म कुंडली से क्या जानकारी मिलती है?",
-            "आज की ग्रहीय होरा बताएं",
-            "मैं अपनी जन्म कुंडली के लिए विवरण देना चाहता हूँ"
+            "वैदिक ज्योतिष से क्या मार्गदर्शन मिल सकता है?",
+            "मैं अपनी जन्म कुंडली का विवरण देना चाहता हूँ",
+            "आज का दिन कैसा रहेगा?",
           ] : [
-            "How does Vedic astrology examine career?",
-            "What does a Janam Kundli reveal?",
-            "Explain today's planetary Horas",
-            "I want to share my birth details for a reading"
+            "What guidance does Vedic astrology provide?",
+            "I want to share my birth details for a Kundli reading",
+            "How are planetary Horas calculated?",
           ],
           bilingual_summary: {
-            en: `Welcomed ${userName} warmly and explained consultation capabilities without demanding immediate birth details.`,
-            hi: `${userName} जी का आत्मीय स्वागत किया और बिना किसी दबाव के परामर्श का परिचय दिया।`
+            en: `Acknowledged ${userName} without chart generation or ungrounded claims.`,
+            hi: `${userName} जी का बिना किसी ग्रहीय दावे के आत्मीय स्वागत किया।`
           },
           remedyCard: null,
           status: 'completed'
@@ -21695,105 +21773,65 @@
         let greetInsights = [];
 
         if (hasChart) {
-          const lagnaName = chart.lagnaSign || 'Aries';
-          const moonName = chart.moonSign || 'Moon';
-          const nakName = chart.nakName || 'Nakshatra';
-          const fd = chart.fullData;
-          const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
-          const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
-          const sadesati = fd?.doshas_and_remedies?.sade_sati?.phase || "Transit Analysis";
-
-          const lagnaDisplay = isHi ? (HINDI_SIGNS_MAP[lagnaName] || lagnaName) : lagnaName;
-          const moonDisplay = isHi ? (HINDI_SIGNS_MAP[moonName] || moonName) : moonName;
-          const dashaMahaDisplay = isHi ? (HINDI_PLANETS_MAP[dashaMaha] || dashaMaha) : dashaMaha;
-          const dashaAntarDisplay = isHi ? (HINDI_PLANETS_MAP[dashaAntar] || dashaAntar) : dashaAntar;
-
-          if (hasPriorAssistantTurn) {
-            if (isHi) {
-              greetMsg = `प्रणाम ${honorific ? `${honorific}! ` : ''}मैं आपकी क्या सहायता कर सकता हूँ? आप अपनी **${lagnaDisplay} लग्न** पत्रिका (सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर कोई भी प्रश्न सीधे पूछ सकते हैं।`;
-              greetSuggested = [];
-            } else {
-              greetMsg = `Pranam ${honorific ? `${honorific}! ` : ''}How may I assist your astrological exploration today? Feel free to ask about your career trajectory, marriage timing, Dhana Yogas, or remedies for your **${lagnaName} Lagna** chart (**${dashaMaha}-${dashaAntar}** Dasha).`;
-              greetSuggested = [];
-            }
-          } else if (isHi) {
-            if (isSunita) {
-              greetMsg = `नमस्ते ${honorific ? `${honorific}! ` : ''}मैं ${personaDisplay} हूँ।\n\nमैंने आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, ${nakName} नक्षत्र, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का अध्ययन कर लिया है। ${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन और करियर की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं। ` : ''}मैं प्रेम, वैवाहिक सामंजस्य और व्यक्तिगत जीवन में आपका शास्त्रीय मार्गदर्शन करने के लिए उपस्थित हूँ।\n\nआज आपके मन में कौन सा प्रश्न या चिंता सबसे प्रमुख है? आप सीधे पूछ सकते हैं।`;
-              greetSuggested = [];
-            } else if (isRaghavendra) {
-              greetMsg = `ॐ नमः शिवाय ${honorific ? `${honorific}! ` : ''}मैं ${personaDisplay} हूँ।\n\nआपकी जन्म पत्रिका (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) मेरे समक्ष है। ${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में ` : ''}शास्त्रसम्मत वैदिक परंपरा, ग्रह दोष निवारण एवं पारंपरिक अनुष्ठानों के लिए मैं यहाँ उपस्थित हूँ।\n\nआज आप किस कर्म, दशा या शास्त्रीय उपाय पर विचार करना चाहते हैं?`;
-              greetSuggested = [];
-            } else {
-              greetMsg = `प्रणाम ${honorific ? `${honorific}! ` : ''}मैं ${personaDisplay} हूँ।\n\nमैंने आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का विश्लेषण कर लिया है। ${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन, कौशल विकास और आजीविका की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं। ` : ''}सूर्य देव और मंगल देव का प्रभाव आपकी कार्यक्षमता को दिशा दे रहा है। मैं करियर, निर्णय, व्यापार और वित्तीय प्रगति में आपका शास्त्रीय मार्गदर्शन करने के लिए तैयार हूँ।\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
-              greetSuggested = [];
-            }
+          if (firstName && firstName !== 'Seeker') {
+            // Test D: Greeting after saved chart exists
+            greetMsg = isHi
+              ? `नमस्ते, ${firstName}। क्या आप अपनी सहेजी गई जन्म कुंडली का आगे विश्लेषण करना चाहते हैं, या आपके मन में कुछ और है?`
+              : `Namaste, ${firstName}. Would you like to continue exploring your saved birth chart, or is there something else on your mind?`;
+            greetSuggested = isHi ? [
+              "मेरे दशम भाव के अनुसार करियर का समय बताइए",
+              "विवाह एवं जीवनसाथी के योग कब बन रहे हैं?",
+              "आगामी कौन सा गोचर कार्यक्षेत्र में सहायक होगा?",
+              "सक्रिय दशा में मानसिक शांति हेतु शास्त्रीय उपाय बताएं"
+            ] : [
+              "Analyze my 10th House of Career & promotion timing",
+              "When is an auspicious timing window for marriage?",
+              "Which upcoming transit supports career acceleration?",
+              "What classical remedies are prescribed for my active Dasha?"
+            ];
           } else {
-            if (isSunita) {
-              greetMsg = `Namaste ${honorific ? `${honorific}! ` : ''}I am ${personaDisplay}.\n\nI have connected to your natal chart: **${lagnaName} Lagna**, Moon in **${moonName}** (${nakName} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**. ${seekerAge ? `At around ${seekerAge} years of age, you are standing at an essential threshold of shaping your life path. ` : ''}Whether you are seeking guidance on romantic timing, partner compatibility, marital harmony, or emotional healing, I am here to explore your chart with genuine empathy and respect.\n\nWhat relationship inquiry or milestone would you like to explore today?`;
-              greetSuggested = [];
-            } else if (isRaghavendra) {
-              greetMsg = `Om Namah Shivaya ${honorific ? `${honorific}! ` : ''}I am ${personaDisplay}.\n\nI have reviewed your sacred natal planetary coordinates: **${lagnaName} Lagna** with Moon in **${moonName}** (${nakName} Nakshatra), navigating your **${dashaMaha}-${dashaAntar}** Dasha, with Saturn in **${sadesati}**. ${seekerAge ? `At around ${seekerAge} years of age, ` : ''}classical mantras, disciplined habits, and charity grant spiritual resilience to navigate life with wisdom.\n\nWhat karmic inquiry, remedial clarification, or traditional practice would you like to explore?`;
-              greetSuggested = [];
-            } else {
-              greetMsg = `Pranam ${honorific ? `${honorific}! ` : ''}I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagnaName} Lagna**, **${moonName} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**. ${seekerAge ? `At around ${seekerAge} years of age, you are standing at an essential threshold—laying your educational foundation, mastering core skills, and preparing for your career launch. ` : ''}With your Sun and Mars placements, I am ready to explore your career milestones, leadership trajectory, Dhana Yogas, or upcoming planetary transits.\n\nTell me${honorific ? `, ${honorific}` : ''}: what specific concern, career goal, or life question is foremost on your mind today? Feel free to ask anything directly.`;
-              greetSuggested = [];
-            }
+            const lagnaName = chart.lagnaSign || 'Aries';
+            const moonName = chart.moonSign || 'Moon';
+            const nakName = chart.nakName || 'Nakshatra';
+            const fd = chart.fullData;
+            const dashaMaha = fd?.vimshottari_dasha?.active_now?.maha_dasha || "Jupiter";
+            const dashaAntar = fd?.vimshottari_dasha?.active_now?.antar_dasha || "Venus";
+            const lagnaDisplay = isHi ? (HINDI_SIGNS_MAP[lagnaName] || lagnaName) : lagnaName;
+            const moonDisplay = isHi ? (HINDI_SIGNS_MAP[moonName] || moonName) : moonName;
+            const dashaMahaDisplay = isHi ? (HINDI_PLANETS_MAP[dashaMaha] || dashaMaha) : dashaMaha;
+            const dashaAntarDisplay = isHi ? (HINDI_PLANETS_MAP[dashaAntar] || dashaAntar) : dashaAntar;
+
+            greetMsg = isHi
+              ? `प्रणाम! मैं ${personaDisplay} हूँ।\n\nआपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) से जुड़ाव स्थापित है। आज आपके मन में क्या प्रश्न है?`
+              : `Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide.\n\nI have connected to your calculated chart: **${lagnaName} Lagna**, Moon in **${moonName}** (${nakName} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\nWhat would you like to explore today?`;
+            greetSuggested = isHi ? [
+              "मेरे दशम भाव (करियर) और पदोन्नति का समय बताएं",
+              "मेरी कुंडली में कौन से धन योग उपस्थित हैं?",
+              "विंशोत्तरी महादशा जीवन के निर्णयों को कैसे प्रभावित करती है?",
+              "मेरे करियर और प्रगति को बल देने वाले वैदिक उपाय क्या हैं?"
+            ] : [
+              "Analyze my 10th House of Career & promotion timing",
+              "What does my chart reveal regarding Dhana Yogas?",
+              "How does Vimshottari Dasha influence life timing?",
+              "What gemstones or Vedic practices support my path?"
+            ];
           }
         } else {
-          // Universal Mode Greeting
-          if (isHi) {
-            if (isSunita) {
-              greetMsg = `नमस्ते! मैं ${personaDisplay} हूँ।\n\nमैं सार्वभौमिक गोचर एवं वैदिक ज्योतिषीय सिद्धांतों के आधार पर आपका स्वागत करती हूँ।\n\n### सार्वभौमिक संबंध एवं जीवन परामर्श\nमैं प्रेम, वैवाहिक जीवन और संबंधों पर सार्वभौमिक मार्गदर्शन प्रदान करती हूँ। सटीक व्यक्तिगत फलादेश हेतु आप ऊपर 'कुंडली लिंक करें' बटन से अपनी जन्म कुंडली जोड़ सकते हैं।\n\nआज मैं आपकी क्या सहायता कर सकती हूँ?`;
-              greetSuggested = [
-                "आज का सार्वभौमिक शुक्र और गुरु गोचर कैसा है?",
-                "वैदिक ज्योतिष में 7वें भाव का क्या महत्व है?",
-                "कुंडली लिंक करके व्यक्तिगत परामर्श कैसे प्राप्त करें?",
-                "संबंधों में शांति के सार्वभौमिक नियम क्या हैं?"
-              ];
-            } else if (isRaghavendra) {
-              greetMsg = `ॐ नमः शिवाय! मैं ${personaDisplay} हूँ।\n\nवृहत् पाराशर होरा शास्त्र के सार्वभौमिक गोचर सिद्धांतों में आपका स्वागत है।\n\n### शास्त्रीय एवं आध्यात्मिक मार्गदर्शन\nमैं पारंपरिक वैदिक सिद्धांतों, मन्त्र साधना एवं ग्रह शांति के नियमों पर चर्चा के लिए तत्पर हूँ। व्यक्तिगत जन्म चक्र विश्लेषण हेतु आप अपनी कुंडली जोड़ सकते हैं।\n\nआज आप किस विषय पर मार्गदर्शन चाहते हैं?`;
-              greetSuggested = [
-                "आज की सार्वभौमिक होरा एवं ग्रह स्थिति बताएं",
-                "दैनिक शांति हेतु शास्त्रीय गायत्री मन्त्र के नियम क्या हैं?",
-                "व्यक्तिगत फलादेश हेतु कुंडली कैसे जोड़ें?",
-                "वैदिक ज्योतिष के मूल ग्रंथ कौन से हैं?"
-              ];
-            } else {
-              greetMsg = `प्रणाम! मैं ${personaDisplay} हूँ।\n\nसार्वभौमिक गोचर एवं वैदिक ज्योतिषीय विश्लेषण में आपका स्वागत है।\n\n### वैदिक रणनीतिक मार्गदर्शन\nमैं करियर, आजीविका, जीवन दिशा एवं सामान्य ज्योतिषीय प्रश्नों पर आपका मार्गदर्शन कर सकता हूँ। व्यक्तिगत महादशा एवं दशमांश फलादेश हेतु आप ऊपर 'कुंडली लिंक करें' बटन से अपनी जन्म कुंडली जोड़ सकते हैं।\n\nआज आप किस विषय पर चर्चा करना चाहते हैं?`;
-              greetSuggested = [
-                "आज का सार्वभौमिक ग्रह गोचर कैसा है?",
-                "पाराशरी ज्योतिष के प्रमुख नियम क्या हैं?",
-                "करियर विश्लेषण के लिए कुंडली कैसे लिंक करें?",
-                "ग्रह होरा के अनुसार महत्वपूर्ण कार्य कब करें?"
-              ];
-            }
-          } else {
-            if (isSunita) {
-              greetMsg = `Namaste! I am ${personaDisplay}.\n\nWelcome to our consultation. I am operating in Universal Transit Mode.\n\n### Relational Harmony & Emotional Well-Being\nI specialize in relationship dynamics, emotional empathy, and synastry through classical Jaimini principles. You can ask general astrological questions, or link your Janam Kundli for personalized compatibility and timing.\n\nHow may I support your journey today?`;
-              greetSuggested = [
-                "Explain today's universal planetary Horas",
-                "What general transit energies are active this week?",
-                "How can I personalize this consultation with my Kundli?",
-                "What are the classical principles of relationship synastry?"
-              ];
-            } else if (isRaghavendra) {
-              greetMsg = `Om Namah Shivaya! I am ${personaDisplay}.\n\nWelcome. I am operating in Universal Transit Mode, referencing traditional Vedic principles from Brihat Parashara Hora Shastra.\n\n### Classical Shastra & Spiritual Remedies\nI am here to discuss scriptural philosophy, traditional planetary mantras, and karma principles. For specific gemstone prescriptions and Sade Sati timelines, you can link your Kundli anytime.\n\nWhat classical or remedial topic would you like to explore?`;
-              greetSuggested = [
-                "What classical mantras support daily peace?",
-                "Explain the cosmic role of Saturn transits",
-                "How can I link my Kundli for verified remedy analysis?",
-                "What are the foundations of Brihat Parashara Hora Shastra?"
-              ];
-            } else {
-              greetMsg = `Pranam! I am ${personaDisplay}.\n\nWelcome to our consultation session. I am operating in Universal Transit Mode.\n\n### Strategic Life & Vedic Guidance\nI specialize in classical Parashari Jyotish, career trajectory analysis, and practical astrological strategies. You can ask conceptual questions about Vedic astrology or explore general planetary currents.\n\nTo analyze your personal 10th house, D10 Dashamsha, and active Dasha periods, you may link your Janam Kundli at any time.\n\nWhat question or topic would you like to examine today?`;
-              greetSuggested = [
-                "Explain today's universal planetary Horas",
-                "What general transit energies are active this week?",
-                "How can I personalize this consultation with my Kundli?",
-                "What are the classical principles of Parashari Jyotish?"
-              ];
-            }
-          }
+          // Test A: Initial Greeting with no chart
+          greetMsg = isHi
+            ? "नमस्ते! एस्ट्रोवर्स में आपका स्वागत है। मैं आपका वैदिक ज्योतिष AI मार्गदर्शक हूँ। आप मुझसे संबंध, विवाह, करियर, व्यापार, परिवार, कुंडली या किसी भी विषय पर प्रश्न पूछ सकते हैं। आज आपके मन में क्या है?"
+            : "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?";
+          greetSuggested = isHi ? [
+            "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+            "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
+            "जन्म कुंडली कैसे लिंक करें?",
+            "आज की ग्रहीय होरा क्या है?"
+          ] : [
+            "Analyze my 10th House of Career & promotion timing",
+            "When is an auspicious timing window for marriage?",
+            "How do I link or calculate my Janam Kundli?",
+            "Explain today's planetary Horas"
+          ];
         }
 
         return {

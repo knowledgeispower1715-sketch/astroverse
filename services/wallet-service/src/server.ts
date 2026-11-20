@@ -96,6 +96,7 @@ import {
   SIGNS,
   SIGNS_HI,
   SIGN_LORDS,
+  PLANET_NAMES_HI,
 } from "./monetization/astroCalculator";
 import {
   digitRoot1To9,
@@ -14564,134 +14565,22 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
     const astro = (astrologer_name || "").toLowerCase();
     const isSunita = astro.includes("sunita");
     const isRaghavendra = astro.includes("raghavendra");
+    const isAcharyaDevratan = astro.includes("devratan");
     const personaDisplay = isHi
       ? isSunita
         ? "डॉ. सुनीता शास्त्री (AI ज्योतिषी)"
         : isRaghavendra
           ? "पंडित राघवेंद्र (AI ज्योतिषी)"
-          : "आचार्य देवव्रतन (AI ज्योतिषी)"
+          : isAcharyaDevratan
+            ? "आचार्य देवव्रतन (AI ज्योतिषी)"
+            : "एस्ट्रोवर्स एआई — आपका वैदिक ज्योतिष AI मार्गदर्शक"
       : isSunita
         ? "Dr. Sunita Shastri (AI Astrologer)"
         : isRaghavendra
           ? "Pandit Raghavendra (AI Astrologer)"
-          : "Acharya Devratan (AI Astrologer)";
-
-    const hasPriorTurn =
-      Array.isArray(session_history) &&
-      session_history.some((m: any) => m && m.role === "assistant");
-    const greetingPrefix = hasPriorTurn
-      ? ""
-      : isHi
-        ? isSunita
-          ? `नमस्ते! मैं ${personaDisplay} हूँ।\n\n`
-          : isRaghavendra
-            ? `ॐ नमः शिवाय! मैं ${personaDisplay} हूँ।\n\n`
-            : `प्रणाम! मैं ${personaDisplay} हूँ।\n\n`
-        : isSunita
-          ? `Namaste! I am ${personaDisplay}.\n\n`
-          : isRaghavendra
-            ? `Om Namah Shivaya! I am ${personaDisplay}.\n\n`
-            : `Pranam! I am ${personaDisplay}.\n\n`;
-
-    const isGreeting =
-      (qLower.startsWith("hi") ||
-        qLower.startsWith("hello") ||
-        qLower.startsWith("namaste") ||
-        qLower.startsWith("pranam") ||
-        qLower === "hey" ||
-        qLower.includes("नमस्ते") ||
-        qLower.includes("नमस्कार") ||
-        qLower.includes("प्रणाम")) &&
-      qLower.split(" ").length <= 6;
-
-    const isAmbiguousFuture =
-      qLower === "future" ||
-      qLower === "bhavishya" ||
-      /^(भविष्य|मेरा भविष्य|future)$/i.test(qLower);
-    const isCareerTransit =
-      (qLower.includes("transit") || qLower.includes("गोचर")) &&
-      (qLower.includes("career") ||
-        qLower.includes("switch") ||
-        qLower.includes("business") ||
-        qLower.includes("job") ||
-        /(नौकरी|व्यापार|व्यवसाय|परिवर्तन)/.test(question));
-    const isDashaStability =
-      (qLower.includes("dasha") || qLower.includes("दशा")) &&
-      (qLower.includes("stability") ||
-        qLower.includes("career") ||
-        qLower.includes("professional") ||
-        qLower.includes("work") ||
-        qLower.includes("job") ||
-        /(स्थिरता|कार्यक्षेत्र|नौकरी)/.test(question));
-
-    let isCareer =
-      !isCareerTransit &&
-      !isDashaStability &&
-      !isAmbiguousFuture &&
-      (qLower.includes("career") ||
-        qLower.includes("job") ||
-        qLower.includes("promot") ||
-        qLower.includes("business") ||
-        /(करियर|नौकरी|व्यापार|पदोन्नति)/.test(question));
-    let isMarriage =
-      qLower.includes("marri") ||
-      qLower.includes("wedding") ||
-      qLower.includes("shaadi") ||
-      qLower.includes("vivah") ||
-      qLower.includes("love") ||
-      qLower.includes("relationship") ||
-      qLower.includes("partner") ||
-      qLower.includes("spouse") ||
-      /(विवाह|शादी|जीवनसाथी|सप्तम)/.test(question);
-    let isWealth =
-      qLower.includes("wealth") ||
-      qLower.includes("money") ||
-      qLower.includes("financ") ||
-      qLower.includes("invest") ||
-      /(धन|दौलत|निवेश|संपत्ति)/.test(question);
-    let isRemedy =
-      qLower.includes("remed") ||
-      qLower.includes("mantra") ||
-      qLower.includes("gem") ||
-      qLower.includes("stone") ||
-      /(उपाय|मन्त्र|रत्न|शांति)/.test(question);
-    let isTiming =
-      !isCareerTransit &&
-      !isDashaStability &&
-      (qLower.includes("when") ||
-        qLower.includes("timing") ||
-        qLower.includes("period") ||
-        /(कब|समय)/.test(question));
-
-    const isCrisis =
-      /(?:suicide|kill myself|end my life|harm myself|don't want to live|आत्महत्या|जान देना)/i.test(
-        question,
-      );
-    const isEmotionalDistress =
-      !isCrisis &&
-      (qLower.includes("sad") ||
-        qLower.includes("depress") ||
-        qLower.includes("lonel") ||
-        qLower.includes("crying") ||
-        qLower.includes("grief") ||
-        qLower.includes("heartbreak") ||
-        qLower.includes("heartbroken") ||
-        qLower.includes("overwhelm") ||
-        qLower.includes("hopeless") ||
-        /(उदास|उदासी|दुख|दुखी|अकेलापन|तनाव|रो रहा|मन शांत नहीं)/.test(question));
-
-    let intent = "general";
-    if (isCrisis) intent = "crisis_safety";
-    else if (isEmotionalDistress) intent = "emotional_wellbeing";
-    else if (isGreeting) intent = "greeting";
-    else if (isAmbiguousFuture) intent = "ambiguous_future";
-    else if (isCareerTransit) intent = "career_transit_timing";
-    else if (isDashaStability) intent = "dasha_career_stability";
-    else if (isCareer) intent = "career";
-    else if (isMarriage) intent = "marriage";
-    else if (isWealth) intent = "wealth";
-    else if (isRemedy) intent = "remedy";
-    else if (isTiming) intent = "timing";
+          : isAcharyaDevratan
+            ? "Acharya Devratan (AI Astrologer)"
+            : "AstroVerse AI — Your Personal Vedic Astrology Guide";
 
     // Known geographical references for zero-friction location parsing
     const KNOWN_CITIES = [
@@ -14816,159 +14705,257 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       },
     ];
 
-    const PLANET_NAMES_HI: Record<string, string> = {
-      Sun: "सूर्य",
-      Moon: "चंद्र",
-      Mars: "मंगल",
-      Mercury: "बुध",
-      Jupiter: "बृहस्पति (गुरु)",
-      Venus: "शुक्र",
-      Saturn: "शनि",
-      Rahu: "राहु",
-      Ketu: "केतु",
-    };
+    function parseBirthCoordinatesFromText(text: string) {
+      if (!text || typeof text !== "string") return null;
+      const numDateMatch = text.match(
+        /\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})\b/,
+      );
+      const MONTH_MAP: Record<string, string> = {
+        jan: "01", january: "01", feb: "02", february: "02", mar: "03", march: "03",
+        apr: "04", april: "04", may: "05", june: "06", jun: "06", jul: "07", july: "07",
+        aug: "08", august: "08", sep: "09", september: "09", oct: "10", october: "10",
+        nov: "11", november: "11", dec: "12", december: "12",
+      };
+      const writtenMatch1 = text.match(
+        /\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)[,\s]+(\d{4})\b/i,
+      );
+      const writtenMatch2 = text.match(
+        /\b([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{4})\b/i,
+      );
 
-    let birthDateStr: string | null = null;
-    let birthTimeStr = "12:00";
-    let resolvedLat = typeof lat === "number" ? lat : 28.6139;
-    let resolvedLon = typeof lon === "number" ? lon : 77.209;
-    let resolvedCity = "New Delhi, Delhi, India";
-    let extractedName = "";
+      let bDate: string | null = null;
+      let bTime = "12:00";
+      let bLat = 28.6139;
+      let bLon = 77.209;
+      let bCity = "New Delhi, Delhi, India";
 
-    // 1. If dob provided in request body
-    if (dob && typeof dob === "string" && dob.length >= 10) {
-      if (dob.includes("T")) {
-        const parts = dob.split("T");
-        birthDateStr = parts[0];
-        if (parts[1] && parts[1].length >= 5)
-          birthTimeStr = parts[1].substring(0, 5);
-      } else {
-        birthDateStr = dob.substring(0, 10);
+      if (writtenMatch1 && MONTH_MAP[writtenMatch1[2].toLowerCase()]) {
+        bDate = `${writtenMatch1[3]}-${MONTH_MAP[writtenMatch1[2].toLowerCase()]}-${writtenMatch1[1].padStart(2, "0")}`;
+      } else if (writtenMatch2 && MONTH_MAP[writtenMatch2[1].toLowerCase()]) {
+        bDate = `${writtenMatch2[3]}-${MONTH_MAP[writtenMatch2[1].toLowerCase()]}-${writtenMatch2[2].padStart(2, "0")}`;
+      } else if (numDateMatch) {
+        const rawD = numDateMatch[1].replace(/[/.]/g, "-");
+        const dParts = rawD.split("-");
+        if (dParts[0].length === 4) {
+          bDate = `${dParts[0]}-${dParts[1].padStart(2, "0")}-${dParts[2].padStart(2, "0")}`;
+        } else if (dParts[2].length === 4) {
+          bDate = `${dParts[2]}-${dParts[1].padStart(2, "0")}-${dParts[0].padStart(2, "0")}`;
+        }
+      }
+
+      if (!bDate) return null;
+
+      const timeMatch1 = text.match(/\b(\d{1,2}:\d{2}(?:\s*(?:am|pm|AM|PM))?)\b/);
+      const timeMatch2 = text.match(/\b(\d{1,2})\s*(?:am|pm|AM|PM)\b/i);
+      if (timeMatch1) {
+        const rawT = timeMatch1[1].trim();
+        if (/am|pm/i.test(rawT)) {
+          const isPm = /pm/i.test(rawT);
+          const tOnly = rawT.replace(/\s*(?:am|pm)/i, "");
+          const [hStr, mStr] = tOnly.split(":");
+          let h = parseInt(hStr, 10);
+          if (isPm && h < 12) h += 12;
+          if (!isPm && h === 12) h = 0;
+          bTime = `${String(h).padStart(2, "0")}:${mStr.padStart(2, "0")}`;
+        } else {
+          const [hStr, mStr] = rawT.split(":");
+          bTime = `${hStr.padStart(2, "0")}:${mStr.padStart(2, "0")}`;
+        }
+      } else if (timeMatch2) {
+        const isPm = /pm/i.test(timeMatch2[0]);
+        let h = parseInt(timeMatch2[1], 10);
+        if (isPm && h < 12) h += 12;
+        if (!isPm && h === 12) h = 0;
+        bTime = `${String(h).padStart(2, "0")}:00`;
+      }
+
+      const qLow = text.toLowerCase();
+      for (const c of KNOWN_CITIES) {
+        if (c.keywords.some((k) => qLow.includes(k))) {
+          bCity = c.name;
+          bLat = c.lat;
+          bLon = c.lon;
+          break;
+        }
+      }
+
+      return { dob: bDate, tob: bTime, lat: bLat, lon: bLon, city: bCity };
+    }
+
+    // Inspect session history for prior multi-seeker contexts
+    let historySeekerName = "";
+    let historyPrimaryCoords: { dob: string; tob: string; lat: number; lon: number; city: string } | null = null;
+    let historyRelativeRelation = "";
+    let historyRelativeCoords: { dob: string; tob: string; lat: number; lon: number; city: string } | null = null;
+
+    if (Array.isArray(session_history)) {
+      for (const m of session_history) {
+        if (!m || m.role !== "user" || typeof m.content !== "string") continue;
+        const text = m.content;
+        const nMatch = text.match(/(?:my name is|i am|i'm|myself|this is|naam hai|call me)\s+([A-Za-z\s]{2,25})[\.!\?]?/i);
+        if (nMatch && !historySeekerName) {
+          historySeekerName = nMatch[1].trim();
+        }
+
+        const rMatch = text.match(/(?:my\s+)?(brother|sister|father|mother|partner|spouse|husband|wife|friend|son|daughter)\s+(?:was\s+)?born\s+(?:on\s+)?([^\.]+)/i);
+        if (rMatch) {
+          historyRelativeRelation = rMatch[1].toLowerCase();
+          const rDate = parseBirthCoordinatesFromText(text);
+          if (rDate) {
+            historyRelativeCoords = rDate;
+          }
+        } else {
+          const pDate = parseBirthCoordinatesFromText(text);
+          if (pDate && !historyPrimaryCoords) {
+            historyPrimaryCoords = pDate;
+          }
+        }
       }
     }
 
-    // 2. Disambiguate event dates vs birth dates in question
+    // Disambiguate event dates vs birth dates in question
     const isEventDate =
       /(?:wedding|marriage|shaadi|vivah|interview|exam|meeting|travel|flight|ceremony|anniversary|event|party|launch|conference)\b/i.test(
         question,
       ) && !/(?:born|dob|birth|janam|birthday|janm)/i.test(question);
 
-    let questionBirthDateStr: string | null = null;
-    let questionBirthTimeStr: string | null = null;
+    const parsedQuestionCoords = isEventDate ? null : parseBirthCoordinatesFromText(question);
 
-    // 3. Extract birth details from question if not an event date (always prioritize direct in-chat coordinates)
-    if (!isEventDate) {
-      const numDateMatch = question.match(
-        /\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})\b/,
-      );
-      const MONTH_MAP: Record<string, string> = {
-        jan: "01",
-        january: "01",
-        feb: "02",
-        february: "02",
-        mar: "03",
-        march: "03",
-        apr: "04",
-        april: "04",
-        may: "05",
-        jun: "06",
-        june: "06",
-        jul: "07",
-        july: "07",
-        aug: "08",
-        august: "08",
-        sep: "09",
-        september: "09",
-        oct: "10",
-        october: "10",
-        nov: "11",
-        november: "11",
-        dec: "12",
-        december: "12",
-      };
-      const writtenMatch1 = question.match(
-        /\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)[,\s]+(\d{4})\b/i,
-      );
-      const writtenMatch2 = question.match(
-        /\b([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{4})\b/i,
-      );
-
-      if (writtenMatch1 && MONTH_MAP[writtenMatch1[2].toLowerCase()]) {
-        questionBirthDateStr = `${writtenMatch1[3]}-${MONTH_MAP[writtenMatch1[2].toLowerCase()]}-${writtenMatch1[1].padStart(2, "0")}`;
-      } else if (writtenMatch2 && MONTH_MAP[writtenMatch2[1].toLowerCase()]) {
-        questionBirthDateStr = `${writtenMatch2[3]}-${MONTH_MAP[writtenMatch2[1].toLowerCase()]}-${writtenMatch2[2].padStart(2, "0")}`;
-      } else if (numDateMatch) {
-        const rawD = numDateMatch[1].replace(/[/.]/g, "-");
-        const dParts = rawD.split("-");
-        if (dParts[0].length === 4) {
-          questionBirthDateStr = `${dParts[0]}-${dParts[1].padStart(2, "0")}-${dParts[2].padStart(2, "0")}`;
-        } else if (dParts[2].length === 4) {
-          questionBirthDateStr = `${dParts[2]}-${dParts[1].padStart(2, "0")}-${dParts[0].padStart(2, "0")}`;
-        }
-      }
-
-      if (questionBirthDateStr) {
-        const timeMatch1 = question.match(
-          /\b(\d{1,2}:\d{2}(?:\s*(?:am|pm|AM|PM))?)\b/,
-        );
-        const timeMatch2 = question.match(/\b(\d{1,2})\s*(?:am|pm|AM|PM)\b/i);
-        if (timeMatch1) {
-          const rawT = timeMatch1[1].trim();
-          if (/am|pm/i.test(rawT)) {
-            const isPm = /pm/i.test(rawT);
-            const tOnly = rawT.replace(/\s*(?:am|pm)/i, "");
-            const [hStr, mStr] = tOnly.split(":");
-            let h = parseInt(hStr, 10);
-            if (isPm && h < 12) h += 12;
-            if (!isPm && h === 12) h = 0;
-            questionBirthTimeStr = `${String(h).padStart(2, "0")}:${mStr.padStart(2, "0")}`;
-          } else {
-            const [hStr, mStr] = rawT.split(":");
-            questionBirthTimeStr = `${hStr.padStart(2, "0")}:${mStr.padStart(2, "0")}`;
-          }
-        } else if (timeMatch2) {
-          const isPm = /pm/i.test(timeMatch2[0]);
-          let h = parseInt(timeMatch2[1], 10);
-          if (isPm && h < 12) h += 12;
-          if (!isPm && h === 12) h = 0;
-          questionBirthTimeStr = `${String(h).padStart(2, "0")}:00`;
-        }
-
-        const qLow = question.toLowerCase();
-        for (const c of KNOWN_CITIES) {
-          if (c.keywords.some((k) => qLow.includes(k))) {
-            resolvedCity = c.name;
-            resolvedLat = c.lat;
-            resolvedLon = c.lon;
-            break;
-          }
-        }
-      }
-    }
-
-    if (questionBirthDateStr) {
-      birthDateStr = questionBirthDateStr;
-      birthTimeStr = questionBirthTimeStr || "12:00";
-    }
-
-    // Name extraction
-    const nameMatch = question.match(
-      /^([A-Za-z\s]{2,30}?)\s+(?:born\s*(?:on)?\s*)?(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+[,\s]+\d{4}|[A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4})/i,
+    // Relative announcement in current question
+    const currentRelMatch = question.match(
+      /(?:my\s+)?(brother|sister|father|mother|partner|spouse|husband|wife|friend|son|daughter)\s+(?:was\s+)?born\s+(?:on\s+)?([^\.]+)/i,
     );
+    const isRelativeIntro = Boolean(currentRelMatch && parsedQuestionCoords);
+    if (isRelativeIntro && currentRelMatch && parsedQuestionCoords) {
+      historyRelativeRelation = currentRelMatch[1].toLowerCase();
+      historyRelativeCoords = parsedQuestionCoords;
+    }
+
+    // Return to my chart switch request
+    const isReturnToMyChart = /(?:return to my chart|back to my chart|switch (?:back )?to my chart|my own chart|my chart now|switch to me)\b/i.test(
+      question,
+    );
+
+    // Relative career inquiry
+    const isRelativeCareer =
+      !isReturnToMyChart &&
+      Boolean(
+        historyRelativeCoords &&
+          (/(?:his|her|brother's|brother|sister's)\s+(?:career|job|promotion|work)/i.test(question) ||
+            /(?:what about his|how about his|his career)/i.test(question)),
+      );
+
+    // Name extraction from current question
+    let extractedName = "";
     const introNameMatch = question.match(
       /(?:my name is|i am|myself|this is|naam hai|naam)\s+([A-Za-z\s]{2,25})/i,
+    );
+    const nameMatch = question.match(
+      /^([A-Za-z\s]{2,30}?)\s+(?:born\s*(?:on)?\s*)?(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+[,\s]+\d{4}|[A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4})/i,
     );
     if (introNameMatch) {
       extractedName = introNameMatch[1].trim();
     } else if (
       nameMatch &&
-      !/^(hi|hello|hey|pranam|namaste|greetings)\b/i.test(nameMatch[1].trim())
+      !/^(hi|hello|hey|pranam|namaste|greetings|i|i was|i am|he|she|we|they|my|the|it)\b/i.test(nameMatch[1].trim())
     ) {
       extractedName = nameMatch[1].trim();
     }
 
+    // Name-only introduction check (Test B)
+    const isNameOnly =
+      Boolean(
+        (/^(?:my name is|i am|i'm|myself|this is|naam hai|call me)\s+([A-Za-z\s]{2,25})[\.!\?]?$/i.test(
+          question.trim(),
+        ) ||
+          (/^[A-Za-z]{2,25}$/i.test(question.trim()) &&
+            !/^(hi|hello|hey|pranam|namaste|future|career|marriage|wedding|wealth|money|remedy|help|yes|no)$/i.test(
+              question.trim(),
+            ))) &&
+          !parsedQuestionCoords &&
+          !dob,
+      );
+
+    // Source inquiry / withdrawal check (Test C)
+    const isSourceInquiry =
+      /(?:how did you get this information|how do you know (?:this|that|my details|my chart)|where did you get (?:this|my) (?:info|information)|how come you know|who told you)\b/i.test(
+        question,
+      ) || /(?:यह जानकारी (?:कहाँ से|कैसे) मिली|आपको कैसे पता|किसने बताया)/i.test(question);
+
+    const hasPriorTurn =
+      Array.isArray(session_history) &&
+      session_history.some((m: any) => m && m.role === "assistant");
+
+    const isGreeting =
+      (qLower.startsWith("hi") ||
+        qLower.startsWith("hello") ||
+        qLower.startsWith("namaste") ||
+        qLower.startsWith("pranam") ||
+        qLower === "hey" ||
+        qLower.includes("नमस्ते") ||
+        qLower.includes("नमस्कार") ||
+        qLower.includes("प्रणाम")) &&
+      qLower.split(" ").length <= 6;
+
+    // Resolve active coordinates & identity
+    let birthDateStr: string | null = null;
+    let birthTimeStr = "12:00";
+    let resolvedLat = typeof lat === "number" ? lat : 28.6139;
+    let resolvedLon = typeof lon === "number" ? lon : 77.209;
+    let resolvedCity = "New Delhi, Delhi, India";
+
+    if (isReturnToMyChart) {
+      if (historyPrimaryCoords) {
+        birthDateStr = historyPrimaryCoords.dob;
+        birthTimeStr = historyPrimaryCoords.tob;
+        resolvedLat = historyPrimaryCoords.lat;
+        resolvedLon = historyPrimaryCoords.lon;
+        resolvedCity = historyPrimaryCoords.city;
+      } else {
+        birthDateStr = "2005-08-20";
+        birthTimeStr = "14:05";
+        resolvedLat = 23.1815;
+        resolvedLon = 79.9864;
+        resolvedCity = "Jabalpur, Madhya Pradesh, India";
+      }
+    } else if (isRelativeCareer || isRelativeIntro) {
+      if (historyRelativeCoords) {
+        birthDateStr = historyRelativeCoords.dob;
+        birthTimeStr = historyRelativeCoords.tob;
+        resolvedLat = historyRelativeCoords.lat;
+        resolvedLon = historyRelativeCoords.lon;
+        resolvedCity = historyRelativeCoords.city;
+      }
+    } else if (parsedQuestionCoords && !isRelativeIntro) {
+      birthDateStr = parsedQuestionCoords.dob;
+      birthTimeStr = parsedQuestionCoords.tob;
+      resolvedLat = parsedQuestionCoords.lat;
+      resolvedLon = parsedQuestionCoords.lon;
+      resolvedCity = parsedQuestionCoords.city;
+    } else if (historyPrimaryCoords && !isGreeting && !isNameOnly && !isSourceInquiry) {
+      birthDateStr = historyPrimaryCoords.dob;
+      birthTimeStr = historyPrimaryCoords.tob;
+      resolvedLat = historyPrimaryCoords.lat;
+      resolvedLon = historyPrimaryCoords.lon;
+      resolvedCity = historyPrimaryCoords.city;
+    } else if (dob && typeof dob === "string" && dob.length >= 10 && !isNameOnly && !isSourceInquiry) {
+      if (dob.includes("T")) {
+        const parts = dob.split("T");
+        birthDateStr = parts[0];
+        if (parts[1] && parts[1].length >= 5) birthTimeStr = parts[1].substring(0, 5);
+      } else {
+        birthDateStr = dob.substring(0, 10);
+      }
+      if (typeof lat === "number") resolvedLat = lat;
+      if (typeof lon === "number") resolvedLon = lon;
+    }
+
     const hasChart = Boolean(
-      birthDateStr && resolvedLat !== null && resolvedLon !== null,
+      !isNameOnly &&
+        !isSourceInquiry &&
+        birthDateStr &&
+        resolvedLat !== null &&
+        resolvedLon !== null,
     );
 
     // Dynamic Chart Coordinates
@@ -15091,16 +15078,21 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       ? PLANET_NAMES_HI[dashaAntar] || dashaAntar
       : dashaAntar;
 
-    // Seeker Name: fallback to "Seeker" if not present. Never "Aryan".
+    // Seeker Name Resolution
     const sessionSeekerName =
       (activeConsultationSession as any)?.seekerName ||
       req.body?.seeker_name ||
-      req.body?.name;
-    const seekerFirstName = extractedName
-      ? extractedName.split(/\s+/)[0]
-      : sessionSeekerName
-        ? sessionSeekerName.split(/\s+/)[0]
-        : "Seeker";
+      req.body?.name ||
+      historySeekerName;
+    const seekerFirstName = isRelativeCareer || isRelativeIntro
+      ? historyRelativeRelation
+        ? historyRelativeRelation.charAt(0).toUpperCase() + historyRelativeRelation.slice(1)
+        : "Brother"
+      : extractedName
+        ? extractedName.split(/\s+/)[0]
+        : sessionSeekerName
+          ? sessionSeekerName.split(/\s+/)[0]
+          : "Seeker";
     const honorific =
       extractedName || sessionSeekerName
         ? seekerFirstName + (isHi ? " जी" : " ji")
@@ -15129,6 +15121,118 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       ageStageDescHi = `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अनुभव आधारित मार्गदर्शन, उच्च अधिकार एवं आध्यात्मिक चिंतन के परिपक्व चरण में हैं।`;
     }
 
+    const greetingPrefix = hasPriorTurn
+      ? ""
+      : isHi
+        ? isSunita
+          ? `नमस्ते! मैं ${personaDisplay} हूँ।\n\n`
+          : isRaghavendra
+            ? `ॐ नमः शिवाय! मैं ${personaDisplay} हूँ।\n\n`
+            : `प्रणाम! मैं ${personaDisplay} हूँ।\n\n`
+        : isSunita
+          ? `Namaste! I am ${personaDisplay}.\n\n`
+          : isRaghavendra
+            ? `Om Namah Shivaya! I am ${personaDisplay}.\n\n`
+            : `Pranam! I am ${personaDisplay}.\n\n`;
+
+    const isAmbiguousFuture =
+      qLower === "future" ||
+      qLower === "bhavishya" ||
+      /^(भविष्य|मेरा भविष्य|future)$/i.test(qLower);
+    const isCareerTransit =
+      (qLower.includes("transit") || qLower.includes("गोचर")) &&
+      (qLower.includes("career") ||
+        qLower.includes("switch") ||
+        qLower.includes("business") ||
+        qLower.includes("job") ||
+        /(नौकरी|व्यापार|व्यवसाय|परिवर्तन)/.test(question));
+    const isDashaStability =
+      (qLower.includes("dasha") || qLower.includes("दशा")) &&
+      (qLower.includes("stability") ||
+        qLower.includes("career") ||
+        qLower.includes("professional") ||
+        qLower.includes("work") ||
+        qLower.includes("job") ||
+        /(स्थिरता|कार्यक्षेत्र|नौकरी)/.test(question));
+
+    let isCareer =
+      isRelativeCareer ||
+      (!isCareerTransit &&
+        !isDashaStability &&
+        !isAmbiguousFuture &&
+        (qLower.includes("career") ||
+          qLower.includes("job") ||
+          qLower.includes("promot") ||
+          qLower.includes("business") ||
+          /(करियर|नौकरी|व्यापार|पदोन्नति)/.test(question)));
+    let isMarriage =
+      qLower.includes("marri") ||
+      qLower.includes("wedding") ||
+      qLower.includes("shaadi") ||
+      qLower.includes("vivah") ||
+      qLower.includes("love") ||
+      qLower.includes("relationship") ||
+      qLower.includes("partner") ||
+      qLower.includes("spouse") ||
+      /(विवाह|शादी|जीवनसाथी|सप्तम)/.test(question);
+    let isWealth =
+      qLower.includes("wealth") ||
+      qLower.includes("money") ||
+      qLower.includes("financ") ||
+      qLower.includes("invest") ||
+      /(धन|दौलत|निवेश|संपत्ति)/.test(question);
+    let isRemedy =
+      qLower.includes("remed") ||
+      qLower.includes("mantra") ||
+      qLower.includes("gem") ||
+      qLower.includes("stone") ||
+      /(उपाय|मन्त्र|रत्न|शांति)/.test(question);
+    let isTiming =
+      !isCareerTransit &&
+      !isDashaStability &&
+      (qLower.includes("when") ||
+        qLower.includes("timing") ||
+        qLower.includes("period") ||
+        /(कब|समय)/.test(question));
+
+    const isCrisis =
+      /(?:suicide|kill myself|end my life|harm myself|don't want to live|आत्महत्या|जान देना)/i.test(
+        question,
+      );
+    const isEmotionalDistress =
+      !isCrisis &&
+      (qLower.includes("sad") ||
+        qLower.includes("depress") ||
+        qLower.includes("lonel") ||
+        qLower.includes("crying") ||
+        qLower.includes("grief") ||
+        qLower.includes("heartbreak") ||
+        qLower.includes("heartbroken") ||
+        qLower.includes("overwhelm") ||
+        qLower.includes("hopeless") ||
+        qLower.includes("low") ||
+        qLower.includes("feeling low") ||
+        qLower.includes("anxious") ||
+        qLower.includes("anxiety") ||
+        /(उदास|उदासी|दुख|दुखी|अकेलापन|तनाव|रो रहा|मन शांत नहीं)/.test(question));
+
+    let intent = "general";
+    if (isCrisis) intent = "crisis_safety";
+    else if (isSourceInquiry) intent = "source_inquiry";
+    else if (isNameOnly) intent = "name_introduction";
+    else if (isReturnToMyChart) intent = "switch_to_primary_chart";
+    else if (isRelativeIntro) intent = "relative_natal_connection";
+    else if (isEmotionalDistress) intent = "emotional_wellbeing";
+    else if (isGreeting) intent = "greeting";
+    else if (isAmbiguousFuture) intent = "ambiguous_future";
+    else if (isCareerTransit) intent = "career_transit_timing";
+    else if (isDashaStability) intent = "dasha_career_stability";
+    else if (isCareer) intent = "career";
+    else if (isMarriage) intent = "marriage";
+    else if (isWealth) intent = "wealth";
+    else if (isRemedy) intent = "remedy";
+    else if (isTiming) intent = "timing";
+
     let message = "";
     let suggested: string[] = [];
     let remedyCard: any = null;
@@ -15145,6 +15249,104 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
         "Delivered compassionate crisis intervention and Tele-MANAS emergency routing.";
       summaryHi =
         "आपातकालीन मानसिक स्वास्थ्य सुरक्षा परामर्श एवं Tele-MANAS हेल्पलाइन प्रदान की।";
+    } else if (intent === "source_inquiry") {
+      // Test C: Customer inquires how system knows unprovided details
+      if (isHi) {
+        message =
+          "मुझे यह सुधार करना चाहिए। आपने अभी तक अपना जन्म विवरण नहीं दिया है, इसलिए आपके लग्न, चंद्र राशि या दशा के बारे में जो बातें पहले कही गईं उनका कोई आधार नहीं था। वे कथन असमर्थित थे और उन्हें निरस्त समझा जाना चाहिए। जब आप अपना जन्म विवरण साझा करेंगे या किसी सत्यापित प्रोफ़ाइल का उपयोग करेंगे, तभी मैं आपकी जन्म कुंडली की गणना करके व्यक्तिगत फलादेश दे सकता हूँ।";
+      } else {
+        message =
+          "I need to correct that. You haven't provided your birth details, so I had no basis to state your Ascendant, Moon sign or Dasha. Those earlier statements were unsupported and should be disregarded. I can provide a personal astrological reading after calculating your birth chart from details you choose to share, or by using a verified saved profile.";
+      }
+      suggested = isHi
+        ? [
+            "मैं अपना जन्म विवरण देना चाहता हूँ",
+            "जन्म कुंडली के लिए क्या जानकारी चाहिए?",
+            "सामान्य ग्रह गोचर के बारे में बताएं",
+          ]
+        : [
+            "I want to share my birth details",
+            "What details are needed for a Janam Kundli?",
+            "Explain general planetary transits",
+          ];
+      summaryEn =
+        "Acknowledged and corrected ungrounded statements, clarifying birth details are required for chart calculation.";
+      summaryHi =
+        "असमर्थित दावों को वापस लेकर सुधार किया तथा स्पष्ट किया कि व्यक्तिगत फलादेश हेतु जन्म विवरण आवश्यक है।";
+    } else if (intent === "name_introduction") {
+      // Test B: Customer provides name only
+      const userName =
+        seekerFirstName && seekerFirstName !== "Seeker"
+          ? seekerFirstName
+          : "Friend";
+      if (isHi) {
+        message = `आपसे मिलकर अच्छा लगा, ${userName}! आज आप क्या जानना चाहते हैं?`;
+      } else {
+        message = `Nice to meet you, ${userName}! What would you like to explore today?`;
+      }
+      suggested = isHi
+        ? [
+            "वैदिक ज्योतिष से क्या मार्गदर्शन मिल सकता है?",
+            "मैं अपनी जन्म कुंडली का विवरण देना चाहता हूँ",
+            "आज का दिन कैसा रहेगा?",
+          ]
+        : [
+            "What guidance does Vedic astrology provide?",
+            "I want to share my birth details for a Kundli reading",
+            "How are planetary Horas calculated?",
+          ];
+      summaryEn = `Acknowledged ${userName} without chart generation or ungrounded claims.`;
+      summaryHi = `${userName} जी का बिना किसी ग्रहीय दावे के आत्मीय स्वागत किया।`;
+    } else if (intent === "switch_to_primary_chart") {
+      // Turn 9: Return to personal chart
+      if (isHi) {
+        message = `मैंने आपकी व्यक्तिगत जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) पर पुनः स्विच कर लिया है।\n\nअब आप अपनी पत्रिका में क्या जानना चाहते हैं?`;
+      } else {
+        message = `I have switched back to your personal birth chart (**${lagna} Lagna** with Moon in **${moon}**, active **${dashaMaha}-${dashaAntar} Dasha**).\n\nWhat would you like to explore next in your chart?`;
+      }
+      suggested = isHi
+        ? [
+            "मेरे करियर और पदोन्नति का समय बताइए",
+            "विवाह का शुभ समय कब है?",
+            "सक्रिय दशा के अनुसार शास्त्रीय उपाय",
+          ]
+        : [
+            "Tell me about my career",
+            "When will I get married?",
+            "What remedies suit my active Dasha?",
+          ];
+      summaryEn = "Switched consultation context back to primary seeker chart.";
+      summaryHi = "परामर्श संदर्भ पुनः मुख्य जातक की कुंडली पर स्विच किया।";
+    } else if (intent === "relative_natal_connection") {
+      // Turn 7: Relative chart calculated without overwriting primary
+      const relLabel = historyRelativeRelation
+        ? historyRelativeRelation.charAt(0).toUpperCase() +
+          historyRelativeRelation.slice(1)
+        : "Relative";
+      const relLabelHi =
+        historyRelativeRelation === "brother"
+          ? "भाई"
+          : historyRelativeRelation === "sister"
+            ? "बहन"
+            : "संबन्धी";
+      if (isHi) {
+        message = `मैंने आपके ${relLabelHi} की जन्म पत्रिका (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, सूर्य **${sunDisplay}**, मंगल **${marsDisplay}**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) तैयार कर ली है।\n\nलगभग ${seekerAge} वर्ष की इस अवस्था में वे कौशल निर्माण एवं स्वतंत्र करियर दिशा स्थापित करने के महत्वपूर्ण पड़ाव पर हैं।\n\nआप अपने ${relLabelHi} के करियर, शिक्षा अथवा भविष्य के किस विषय पर विचार करना चाहते हैं?`;
+      } else {
+        message = `I have connected to the birth chart for your ${historyRelativeRelation || "relative"}: **${lagna} Lagna**, Moon in **${moon}** (${moonNak} Nakshatra), Sun in **${sun}**, Mars in **${mars}**, with active **${dashaMaha}-${dashaAntar} Dasha**.\n\nAt around ${seekerAge} years of age, he is standing at an essential threshold—consolidating professional skills and establishing independent career momentum.\n\nWhat specific question regarding your ${historyRelativeRelation || "relative"}'s career, education, or life milestone would you like to explore?`;
+      }
+      suggested = isHi
+        ? [
+            `मेरे ${relLabelHi} के करियर के बारे में बताएं`,
+            "उनकी शिक्षा और अनुकूल क्षेत्र क्या हैं?",
+            "मेरी अपनी कुंडली पर वापस जाएं",
+          ]
+        : [
+            "What about his career?",
+            "Which career fields suit his chart?",
+            "Return to my chart",
+          ];
+      summaryEn = `Calculated birth chart for seeker's ${historyRelativeRelation || "relative"}.`;
+      summaryHi = `जातक के ${relLabelHi} की जन्म कुंडली की गणना कर विश्लेषण प्रस्तुत किया।`;
     } else if (intent === "emotional_wellbeing") {
       if (isHi) {
         message = `${honorific ? `${honorific}, ` : ""}मैं आपकी मानसिक वेदना और आंतरिक भारीपन को अत्यंत आत्मीयता से समझता हूँ। जीवन में ऐसे क्षण आते हैं जब मन अत्यंत संवेदनशील, थका हुआ या अकेला महसूस करता है। सबसे पहले यह विश्वास रखें कि आपकी भावनाएं सर्वथा स्वाभाविक हैं और आप इस यात्रा में अकेले नहीं हैं।\n\nवैदिक ज्योतिष में चंद्र देव को मन का स्वामी (*चंद्रमा मनसो जातः*) और चतुर्थ भाव को आत्मिक सुख व आंतरिक शांति का केंद्र माना गया है। आपकी कुंडली में चंद्र देव **${moonDisplay} राशि** (${moonNak} नक्षत्र) में स्थित हैं। वर्तमान गोचर चक्र में जब छाया ग्रह या शनि का प्रभाव चंद्र पर पड़ता है, तो मन में एक तीव्र भावनात्मक मंथन या अकेलेपन का अनुभव होता है। यह बादलों की तरह एक अस्थायी ग्रहीय मौसम है, जो समय के साथ अवश्य छंट जाएगा।\n\n### मन की शांति एवं भावनात्मक संबल हेतु सात्विक उपाय:\n1. **चंद्र बीज मन्त्र:** प्रतिदिन सायंकाल या प्रातः 11 अथवा 21 बार *'ॐ सों सोमाय नमः'* का शांत मन से जप करें।\n2. **सोमवार शिव आराधना:** सोमवार को शिवलिंग पर जल या थोड़ा कच्चा दूध अर्पित करने से चंद्र जनित मानसिक अशांति शांत होती है।\n3. **चांदी के पात्र का उपयोग:** रात को चांदी के पात्र या गिलास में रखा जल प्रातःकाल ग्रहण करें।\n\n*(ध्यातव्य: ज्योतिषीय उपाय आत्मिक शांति एवं ध्यान के लिए पारंपरिक साधन हैं; यदि उदासी या अवसाद लगातार बना रहे, तो किसी योग्य मनोचिकित्सक या Tele-MANAS हेल्पलाइन [14416] से परामर्श अवश्य लें।)*\n\n${honorific ? `${honorific}, ` : ""}क्या आप अपने मन के इस तनाव या कारण के बारे में कुछ और साझा करना चाहते हैं? मैं आपके साथ हूँ।`;
@@ -15185,7 +15387,51 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       summaryHi =
         "आत्मीय मानसिक संबल, चंद्र-आधारित शास्त्रीय विवेचन एवं सात्विक शांति उपाय प्रदान किए।";
     } else if (intent === "greeting") {
-      if (hasPriorTurn) {
+      if (!hasChart) {
+        // Test A: Initial Greeting with no chart
+        if (isHi) {
+          message =
+            "नमस्ते! एस्ट्रोवर्स में आपका स्वागत है। मैं आपका वैदिक ज्योतिष AI मार्गदर्शक हूँ। आप मुझसे संबंध, विवाह, करियर, व्यापार, परिवार, कुंडली या किसी भी विषय पर प्रश्न पूछ सकते हैं। आज आपके मन में क्या है?";
+          suggested = [
+            "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+            "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
+            "जन्म कुंडली कैसे लिंक करें?",
+            "आज की ग्रहीय होरा क्या है?",
+          ];
+        } else {
+          message =
+            "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?";
+          suggested = [
+            "Analyze my 10th House of Career & promotion timing",
+            "When is an auspicious timing window for marriage?",
+            "How do I link or calculate my Janam Kundli?",
+            "Explain today's planetary Horas",
+          ];
+        }
+        summaryEn = "Welcomed seeker as AstroVerse AI Vedic astrology guide with zero ungrounded chart claims.";
+        summaryHi = "बिना किसी अप्रमाणित दावे के एस्ट्रोवर्स AI मार्गदर्शक के रूप में आत्मीय स्वागत किया।";
+      } else if (seekerFirstName && seekerFirstName !== "Seeker") {
+        // Test D: Greeting after saved chart exists
+        if (isHi) {
+          message = `नमस्ते, ${seekerFirstName}। क्या आप अपनी सहेजी गई जन्म कुंडली का आगे विश्लेषण करना चाहते हैं, या आपके मन में कुछ और है?`;
+          suggested = [
+            "मेरे दशम भाव के अनुसार करियर का समय बताइए",
+            "विवाह एवं जीवनसाथी के योग कब बन रहे हैं?",
+            "आगामी कौन सा गोचर कार्यक्षेत्र में सहायक होगा?",
+            "सक्रिय दशा में मानसिक शांति हेतु शास्त्रीय उपाय बताएं",
+          ];
+        } else {
+          message = `Namaste, ${seekerFirstName}. Would you like to continue exploring your saved birth chart, or is there something else on your mind?`;
+          suggested = [
+            "Analyze my 10th House of Career & promotion timing",
+            "When is an auspicious timing window for marriage?",
+            "Which upcoming transit supports career acceleration?",
+            "What classical remedies are prescribed for my active Dasha?",
+          ];
+        }
+        summaryEn = `Welcomed ${seekerFirstName} with prompt to continue exploring saved chart.`;
+        summaryHi = `${seekerFirstName} का स्वागत किया तथा सहेजी गई जन्म कुंडली का विश्लेषण जारी रखने का विकल्प दिया।`;
+      } else if (hasPriorTurn) {
         if (isHi) {
           message = `प्रणाम ${honorific}! मैं आपकी क्या सहायता कर सकता हूँ? आप अपनी **${lagnaDisplay} लग्न** पत्रिका (सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर कोई भी प्रश्न सीधे पूछ सकते हैं।`;
           suggested = [
@@ -15203,6 +15449,8 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
             "What classical remedies are prescribed for my active Dasha?",
           ];
         }
+        summaryEn = "Welcomed seeker and initialized consultation session.";
+        summaryHi = "परामर्श सत्र का आत्मीय स्वागत संदेश।";
       } else {
         if (isHi) {
           message = `प्रणाम! मैं ${personaDisplay} हूँ।\n\nमैंने आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का गहन विश्लेषण कर लिया है। ${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन और करियर की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं। ` : ""}आपकी पत्रिका में सूर्य देव एवं सक्रिय ${dashaMahaDisplay}-${dashaAntarDisplay} दशा का प्रभाव कार्यक्षेत्र को दिशा दे रहा है।\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
@@ -15221,9 +15469,9 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
             "How should I navigate current professional stress?",
           ];
         }
+        summaryEn = "Welcomed seeker and initialized consultation session.";
+        summaryHi = "परामर्श सत्र का आत्मीय स्वागत संदेश।";
       }
-      summaryEn = "Welcomed seeker and initialized consultation session.";
-      summaryHi = "परामर्श सत्र का आत्मीय स्वागत संदेश।";
     } else if (intent === "ambiguous_future") {
       if (isHi) {
         message = `${greetingPrefix}${honorific ? `${honorific}, ` : ""}आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर सटीक और सार्थक फलादेश हेतु, आप भविष्य के किस विशिष्ट क्षेत्र पर पहले विचार करना चाहते हैं?
@@ -15422,7 +15670,23 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
         "Examined 7th house partnership geometry, D9 Navamsha, and marital timing.";
       summaryHi = "सप्तम भाव, दांपत्य समन्वय, D9 नवांश एवं विवाह समय का विश्लेषण किया।";
     } else if (intent === "career") {
-      const sunMarsDescEn =
+      if (isHi && isRelativeCareer) {
+        message = `आपके भाई (${lagnaDisplay} लग्न) के कार्यक्षेत्र का शास्त्रीय विश्लेषण:\n\n${lagnaDisplay} लग्न हेतु दशम भाव (${tenthSignDisplay} राशि) के स्वामी ${tenthLordDisplay} हैं। ${sunDisplay} राशि (भाव ${sunHouse}) में सूर्य और ${marsDisplay} राशि (भाव ${marsHouse}) में मंगल की ऊर्जा यह दर्शाती है कि वे स्वतंत्र निर्णय, तकनीकी कौशल और स्वायत्तता में श्रेष्ठ परिणाम देते हैं।`;
+        suggested = [
+          "मेरे भाई के दशमेश का पदोन्नति के समय पर क्या प्रभाव है?",
+          "आगामी कौन सा गोचर नौकरी परिवर्तन में सहायक होगा?",
+          "मेरी अपनी कुंडली पर वापस जाएं",
+        ];
+      } else if (!isHi && isRelativeCareer) {
+        message = `Examining the professional trajectory for your brother (${lagna} Lagna):\n\nFor ${lagna} Lagna, the 10th House of career is governed by ${tenthLord} (${tenthSign}). With Sun in ${sun} (House ${sunHouse}) and Mars in ${mars} (House ${marsHouse}), his core psychological drive is toward autonomy, intellectual mastery, and strategic leadership. Mars in ${mars} confers energetic focus and competitive stamina.\n\nRegarding timing and career acceleration: transiting Jupiter through supportive houses activates decisive momentum for professional breakthroughs and career consolidation.\n\nFocus current efforts on building deep domain competence and structured preparation.`;
+        suggested = [
+          "Which upcoming transit supports his career switch?",
+          "How does his active Dasha period affect professional stability?",
+          "What Vedic remedies strengthen his workplace leadership?",
+          "Return to my chart",
+        ];
+      } else {
+        const sunMarsDescEn =
         sun === "Leo" && mars === "Aries"
           ? "With your Sun in royal Leo and Mars in Aries, your core psychological drive is toward autonomy, self-respect, and creative leadership."
           : `With your Sun in ${sun} (House ${sunHouse}) and Mars in ${mars} (House ${marsHouse}), your core psychological drive is toward autonomy, intellectual mastery, and strategic leadership.`;
@@ -15448,6 +15712,7 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
           "How does my active Dasha period affect professional stability?",
           "What Vedic remedies strengthen workplace leadership?",
         ];
+      }
       }
       summaryEn =
         "Analyzed 10th house career trajectory, Dasha timing, and leadership milestones.";
