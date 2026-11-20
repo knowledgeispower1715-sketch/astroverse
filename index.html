@@ -12910,7 +12910,7 @@
       <!-- Input Bar -->
       <div id="ai-chat-composer" style="background: #FFFFFF; border-top: 1px solid #E2E8F0; padding: 12px 18px; display: flex; gap: 10px; align-items: center;">
         <input type="text" id="ai-chat-user-input" class="form-input-text" placeholder="Ask anything about your life, career, marriage, remedies..." style="margin: 0; flex: 1; padding: 11px 16px; font-size: 13.5px; border-radius: 10px;" onkeydown="handleAiChatKey(event)" aria-label="Message your Vedic astrologer">
-        <button class="btn-gold-primary" style="padding: 11px 20px; font-size: 13px; border-radius: 10px;" onclick="sendAiUserChatMessage()">
+        <button id="ai-chat-send-btn" class="btn-gold-primary" style="padding: 11px 20px; font-size: 13px; border-radius: 10px;" onclick="sendAiUserChatMessage()">
           <i class="fa-solid fa-paper-plane"></i> Send
         </button>
       </div>
@@ -20041,13 +20041,53 @@
           const rem = msg.remedyCard;
           const remEl = document.createElement('div');
           remEl.className = 'chat-remedy-card';
+          
+          const rawMantra = rem.mantra || '';
+          const cleanMantra = rawMantra.replace(/['"]/g, '');
+          const translit = rem.transliteration || '';
+          const title = rem.title || 'Vedic Remedial Guidance';
+          const count = rem.count || '108 repetitions in Brahma Muhurta or at Sunset';
+          const daan = rem.charity_practice || rem.daan || '';
+          const gemstone = rem.gemstone_note || '';
+          const lifestyle = rem.lifestyle || '';
+          const disclaimer = rem.disclaimer || 'Traditional Parashari Jyotish spiritual and lifestyle discipline.';
+
           remEl.innerHTML = `
-            <h5><i class="fa-solid fa-gem" style="color: #16A34A;"></i> ${escapeHtml(rem.title || 'Vedic Remedial Guidance')}</h5>
-            ${rem.mantra ? `<p style="margin: 4px 0;"><strong>Mantra:</strong> ${escapeHtml(rem.mantra)}</p>` : ''}
-            ${rem.gemstone_note ? `<p style="margin: 4px 0;"><strong>Gemstone Note:</strong> ${escapeHtml(rem.gemstone_note)}</p>` : ''}
-            ${rem.charity_practice ? `<p style="margin: 4px 0;"><strong>Traditional Practice:</strong> ${escapeHtml(rem.charity_practice)}</p>` : ''}
-            <div style="font-size: 10.5px; color: #166534; font-style: italic; margin-top: 6px; border-top: 1px dashed #BBF7D0; padding-top: 4px;">
-              ${escapeHtml(rem.disclaimer || 'Traditional cultural and mindfulness practice.')}
+            <div class="chat-remedy-header" style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(22, 163, 74, 0.25); padding-bottom: 6px; margin-bottom: 8px;">
+              <h5 style="margin: 0; font-size: 13px; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-om" style="color: #D97706; font-size: 14px;"></i> ${escapeHtml(title)}
+              </h5>
+              <span style="background: #DCFCE7; color: #15803D; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; border: 1px solid #86EFAC;">
+                Authentic Parashari
+              </span>
+            </div>
+
+            ${rawMantra ? `
+              <div style="background: #FFFFFF; border: 1px solid #86EFAC; border-radius: 8px; padding: 10px 12px; margin: 8px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="font-size: 14.5px; font-weight: 700; color: #9A3412; font-family: 'Martel', serif; text-align: center; margin-bottom: 4px; letter-spacing: 0.5px;">
+                  ${escapeHtml(rawMantra)}
+                </div>
+                ${translit ? `<div style="font-size: 11px; font-style: italic; color: #475569; text-align: center; margin-bottom: 8px;">${escapeHtml(translit)}</div>` : ''}
+                <div style="display: flex; justify-content: center; gap: 8px; margin-top: 6px; flex-wrap: wrap;">
+                  <button type="button" class="btn-remedy-action" style="background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" onclick="copyMantra('${escapeHtml(cleanMantra)}')">
+                    <i class="fa-regular fa-copy"></i> Copy Mantra
+                  </button>
+                  <button type="button" class="btn-remedy-action" style="background: #E0E7FF; color: #3730A3; border: 1px solid #C7D2FE; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" onclick="playSacredChime()">
+                    <i class="fa-solid fa-bell"></i> Sacred Chime (432Hz)
+                  </button>
+                </div>
+              </div>
+            ` : ''}
+
+            <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 6px; font-size: 11.5px; line-height: 1.45;">
+              <div style="color: #14532D;"><strong><i class="fa-solid fa-rotate-right" style="color: #16A34A; font-size: 10px;"></i> Frequency & Timing:</strong> ${escapeHtml(count)}</div>
+              ${daan ? `<div style="color: #14532D;"><strong><i class="fa-solid fa-hand-holding-heart" style="color: #D97706; font-size: 10px;"></i> Vedic Charity (Daan):</strong> ${escapeHtml(daan)}</div>` : ''}
+              ${gemstone ? `<div style="color: #14532D;"><strong><i class="fa-solid fa-gem" style="color: #0284C7; font-size: 10px;"></i> Gemstone Caution & Guidance:</strong> ${escapeHtml(gemstone)}</div>` : ''}
+              ${lifestyle ? `<div style="color: #14532D;"><strong><i class="fa-solid fa-spa" style="color: #16A34A; font-size: 10px;"></i> Sattvic Lifestyle (Dinacharya):</strong> ${escapeHtml(lifestyle)}</div>` : ''}
+            </div>
+
+            <div style="font-size: 10px; color: #166534; font-style: italic; margin-top: 8px; border-top: 1px dashed #BBF7D0; padding-top: 5px;">
+              ${escapeHtml(disclaimer)}
             </div>
           `;
           bubble.appendChild(remEl);
@@ -20121,6 +20161,61 @@
       switchNavSection('kundli');
       showToast(`Viewing natal Kundli for ${planetName}...`, 'info');
     }
+
+    function copyMantra(mantraText) {
+      if (!mantraText) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(mantraText).then(() => {
+          showToast('Sacred Vedic Mantra copied to clipboard! Chant 108 times with pure devotion.', 'success');
+        }).catch(() => {
+          fallbackCopyText(mantraText);
+          showToast('Sacred Vedic Mantra copied to clipboard!', 'success');
+        });
+      } else {
+        fallbackCopyText(mantraText);
+        showToast('Sacred Vedic Mantra copied to clipboard!', 'success');
+      }
+    }
+    window.copyMantra = copyMantra;
+
+    function playSacredChime() {
+      try {
+        const ctx = getChatAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        // Fundamental tone: 432 Hz (Sacred tuning frequency)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(432, now);
+        gain1.gain.setValueAtTime(0.001, now);
+        gain1.gain.linearRampToValueAtTime(0.2, now + 0.02);
+        gain1.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 1.85);
+
+        // Harmonic overtone: 864 Hz
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(864, now);
+        gain2.gain.setValueAtTime(0.001, now);
+        gain2.gain.linearRampToValueAtTime(0.07, now + 0.015);
+        gain2.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now);
+        osc2.stop(now + 1.25);
+
+        showToast('Om ~ Sacred 432Hz chime sounding for chanting meditation', 'info');
+      } catch (e) {
+        console.warn('Sacred chime error:', e);
+      }
+    }
+    window.playSacredChime = playSacredChime;
 
     function openLoadChartForChat() {
       closeConsultationModal();
@@ -20356,22 +20451,24 @@
           }
         }
       } else {
-        if (isHi) {
-          welcomeText = `प्रणाम! मैं ${astroName} (AI ज्योतिषी) हूँ।\n\n### सार्वभौमिक खगोलीय गोचर मार्गदर्शन\nवर्तमान में सार्वभौमिक गोचर मोड सक्रिय है। मैं शास्त्रीय वैदिक सिद्धांतों, वर्तमान ग्रहीय होरा और सार्वभौमिक गोचर के आधार पर आपका मार्गदर्शन करने के लिए उपस्थित हूँ।\n\n> **सटीक व्यक्तिगत फलादेश हेतु:** आप किसी भी समय अपनी जन्म कुंडली लिंक कर सकते हैं।\n\nआज मैं आपके किस प्रश्न में सहायता कर सकता हूँ?`;
-          initialChips = [
-            "आज की सार्वभौमिक ग्रहीय होरा का विश्लेषण करें",
-            "इस सप्ताह कौन से मुख्य ग्रहीय गोचर सक्रिय हैं?",
-            "जन्म कुंडली लिंक करके परामर्श कैसे प्राप्त करें?",
-            "शास्त्रीय पराशरी ज्योतिष के मूल सिद्धांत क्या हैं?"
-          ];
+        if (personaId === 'dr-sunita-shastri') {
+          if (isHi) {
+            welcomeText = `नमस्ते! मैं डॉ. सुनीता शास्त्री (AI ज्योतिषी), AstroVerse की संबंध, D9 नवमांश एवं भावनात्मक मार्गदर्शन विशेषज्ञ हूँ।\n\nहमारे इस पावन परामर्श में आपका हार्दिक स्वागत है। संबंध, वैवाहिक सामंजस्य और मानसिक शांति हमारे जीवन के मूल आधार हैं।\n\nआज आपके मन में संबंध, विवाह अथवा जीवन से जुड़ा कौन सा प्रश्न या विचार है? आप निःसंकोच पूछ सकते हैं।\n\n*(सटीक व्यक्तिगत कुंडली फलादेश हेतु आप अपनी जन्म तिथि, समय व स्थान भी सीधे यहीं चैट में लिख सकते हैं।)*`;
+          } else {
+            welcomeText = `Namaste! I am Dr. Sunita Shastri, Relationship, D9 Navamsha & Emotional Wellness Specialist at AstroVerse.\n\nWelcome to our consultation. Relationships, family harmony, and inner peace form the foundation of our life experience. I am here to listen with deep empathy and guide you with classical Parashari and Jaimini wisdom.\n\nWhat relationship question, marital concern, or thought is on your heart today? Feel free to ask anything directly.\n\n*(For 100% chart-grounded personal synastry and timing, you can also share your Date, Time, and City of birth right here in our chat anytime.)*`;
+          }
+        } else if (personaId === 'pandit-raghavendra') {
+          if (isHi) {
+            welcomeText = `ॐ नमः शिवाय! मैं पंडित राघवेंद्र (AI ज्योतिषी), AstroVerse का शास्त्रीय पाराशरी एवं वैदिक उपाय गुरु हूँ।\n\nआप पर सदा शुभ व कल्याणकारी कृपा बनी रहे। ग्रह हमारे संचित कर्मों के साक्षी हैं, और ऋषियों ने हमें संस्कृत बीज मंत्रों, स्तोत्रों, सात्विक दान और साधना के रूप में कल्याणकारी उपाय दिए हैं।\n\nआज आप किस समस्या, ग्रह बाधा, साढ़े साती अथवा आध्यात्मिक प्रश्न का समाधान चाहते हैं? आप निःसंकोच बताएं।\n\n*(सटीक व्यक्तिगत उपाय व दशा विश्लेषण हेतु आप अपनी जन्म तिथि, समय व स्थान भी यहीं चैट में लिख सकते हैं।)*`;
+          } else {
+            welcomeText = `Om Namah Shivaya! I am Pandit Raghavendra, Classical Parashari Scholar & Remedial Jyotish Guru at AstroVerse.\n\nPeace and auspicious blessings upon you. The planets are cosmic mirrors of our karma, but the sacred rishis gave us profound remedies—authentic Sanskrit beej mantras, stotras, righteous charity (Daan), and disciplined living—to surmount every obstacle.\n\nWhat brings you here today, and how may I assist your life path? Feel free to ask any question directly.\n\n*(You may also share your Date, Time, and City of birth right here in this chat for tailored dosha and dasha remedies.)*`;
+          }
         } else {
-          welcomeText = `Pranam! I am ${astroName} (AI Astrologer).\n\n### Universal Celestial Guidance\nOperating in universal transit mode. I am ready to guide you based on current planetary Horas, classical Parashari principles, and universal transits.\n\n> **Unlock 100% Personal Analysis:** Calculate or link your Janam Kundli anytime to ground your consultation with exact Lagna degrees, Moon sign, and Vimshottari Dasha.\n\nWhat question is on your mind today?`;
-          initialChips = [
-            "Explain today's universal planetary Horas",
-            "What general transit energies are active this week?",
-            "How can I personalize this consultation with my Kundli?",
-            "What are the classical principles of Parashari Jyotish?"
-          ];
+          if (isHi) {
+            welcomeText = `प्रणाम! मैं आचार्य देवव्रतन (AI ज्योतिषी), AstroVerse का वरिष्ठ वैदिक ज्योतिषी एवं कार्यक्षेत्र रणनीतिकार हूँ।\n\nआपके इस निजी परामर्श में आपका हार्दिक स्वागत है। वैदिक ज्योतिष आपके जीवन के सर्वोच्च उद्देश्य, कर्मिक समय और धर्म मार्ग को प्रकाशित करने का एक पावन विज्ञान है। आपके परामर्श का प्रत्येक क्षण अत्यंत मूल्यवान है।\n\nआज आप किस महत्वपूर्ण विषय, करियर पड़ाव अथवा जीवन लक्ष्य पर विचार करना चाहते हैं? आप सीधे अपना प्रश्न पूछ सकते हैं।\n\n*(सटीक व्यक्तिगत जन्म कुंडली विश्लेषण हेतु आप अपनी जन्म तिथि, समय व स्थान भी सीधे यहीं चैट में साझा कर सकते हैं।)*`;
+          } else {
+            welcomeText = `Pranam! I am Acharya Devratan, Senior Vedic Astrologer & Career Architect at AstroVerse.\n\nWelcome to your private consultation. Vedic Jyotish is a sacred science of illuminating your highest potential, karmic timing, and dharmic path. Every minute of your consultation is valuable, and my focus is delivering genuine, actionable clarity for your life decisions.\n\nWhat strategic question, career milestone, or life goal would you like to explore today? Feel free to ask anything directly.\n\n*(If you wish to examine your personal Janam Kundli, you can also share your Date, Time, and City of birth right here in our chat.)*`;
+          }
         }
       }
 
@@ -20387,7 +20484,7 @@
       activeConsultationSession.messages.push(welcomeMsg);
       savePersonaChatHistory(personaId, activeConsultationSession.messages);
       renderMessageBubble(welcomeMsg);
-      renderDynamicChips(initialChips);
+      renderDynamicChips([]);
     }
 
     function getOrInitGuestTrialId() {
@@ -20835,19 +20932,7 @@
           const sampleReading = generateClientAstrologicalResponse(astroName, lastAssistant.content || '', savedHistory, (isChatKundliLinked && currentCalculatedChart) ? currentCalculatedChart : null);
           renderDynamicChips(sampleReading.suggestedQuestions);
         } else {
-          renderDynamicChips(
-            isHi ? [
-              "मेरे दशम भाव (करियर) और पदोन्नति का समय बताएं",
-              "विवाह और संबंध सामंजस्य हेतु शुभ समय कब है?",
-              "मेरी कुंडली में कौन से धन योग उपस्थित हैं?",
-              "मेरे लिए कौन से रत्न व वैदिक उपाय निर्धारित हैं?"
-            ] : [
-              "Analyze my 10th House of Career & promotion timing",
-              "When will I find marital harmony or marriage timing?",
-              "What does my chart say about Dhana Yogas?",
-              "What gemstones and Vedic remedies should I follow?"
-            ]
-          );
+          renderDynamicChips([]);
         }
       } else {
         if (isStaleUniversalGreeting) {
@@ -21701,55 +21786,25 @@
         let suggestedQuestions = [];
         if (isHi) {
           if (isSunita) {
-            message = `नमस्ते! मैं ${personaDisplay} हूँ।\n\n### सार्वभौमिक संबंध गोचर\nसार्वभौमिक गोचर विश्लेषण में: मिथुन राशि में बृहस्पति का संचरण और शुक्र की किरणें बौद्धिक सौहार्द और परस्पर समझ को बढ़ावा देती हैं।\n\n### संबंध मार्गदर्शन\nआपके प्रश्न के संदर्भ में: संबंध मूल्यांकन हेतु हम **सप्तम भाव (कलत्र भाव)** और D9 नवांश का विचार करते हैं। सार्वभौमिक समन्वय हेतु सायंकालीन शुक्र होरा में शांत और स्पष्ट संवाद श्रेयस्कर होता है।\n\n> **मार्गदर्शन को व्यक्तिगत बनाएं:** सटीक सप्तमेश, शुक्र के अंश और वैवाहिक समय निर्धारण हेतु ऊपर 'कुंडली लिंक करें' बटन से अपनी जन्म कुंडली जोड़ें।`;
-            suggestedQuestions = [
-              "सप्तम भाव का जीवनसाथी पर क्या प्रभाव होता है?",
-              "व्यक्तिगत कुंडली लिंक करने की विधि क्या है?",
-              "आज की शुक्र होरा का समय क्या है?",
-              "संबंधों में शांति के सार्वभौमिक उपाय क्या हैं?"
-            ];
+            message = `नमस्ते! मैं ${personaDisplay} हूँ।\n\n### सार्वभौमिक संबंध गोचर एवं शास्त्रीय सिद्धांत\nसार्वभौमिक गोचर विश्लेषण में: मिथुन राशि में बृहस्पति का संचरण और शुक्र की किरणें बौद्धिक सौहार्द और परस्पर समझ को बढ़ावा देती हैं।\n\n### संबंध मार्गदर्शन\nआपके प्रश्न के संदर्भ में: दांपत्य एवं संबंध मूल्यांकन हेतु वैदिक ज्योतिष में **सप्तम भाव (कलत्र भाव)**, शुक्र की स्थिति एवं D9 नवमांश चक्र का सूक्ष्म विचार किया जाता है।\n\n### सटीक एवं 100% व्यक्तिगत फलादेश हेतु:\nवैदिक ज्योतिष में लग्न प्रत्येक 2 घंटे में बदलता है, तथा नक्षत्र पाद से आपकी विंशोत्तरी दशा निर्धारित होती है। आपके प्रति मिनट परामर्श के प्रत्येक क्षण को सार्थक और 100% प्रामाणिक बनाने हेतु मुझे केवल 3 विवरण चाहिए:\n1. **जन्म तिथि:** (उदा. 14-07-1995 अथवा 14 जुलाई 1995)\n2. **जन्म समय:** (उदा. 03:15 PM अथवा 15:15 — सटीक ज्ञात न होने पर अनुमानित समय बताएं)\n3. **जन्म स्थान:** (शहर का नाम, उदा. मुंबई, दिल्ली, जयपुर आदि)\n\n👉 **आप यह विवरण सीधे यहीं चैट में लिखकर भेज सकते हैं!** जैसे ही आप विवरण भेजेंगे, मैं तुरंत आपकी जन्म कुंडली तैयार कर आपका पूर्ण मार्गदर्शन करूँगी।`;
+            suggestedQuestions = [];
           } else if (isRaghavendra) {
-            message = `ॐ नमः शिवाय! मैं ${personaDisplay} हूँ।\n\n### शास्त्रीय शास्त्र सिद्धांत\nजन्म चक्र के अभाव में मैं वृहत् पाराशर होरा शास्त्र के अनुसार आज के समष्टि गोचर का विश्लेषण करता हूँ। शनि देव का मीन राशि में भ्रमण धैर्य, नम्रता और निस्वार्थ सेवा का संदेश देता है।\n\n### सार्वभौमिक वैदिक साधना\nसूर्योदय काल में **गायत्री मन्त्र** का जप मानसिक शांति और सात्विक स्पष्टता प्रदान करता है। दैनिक अनुशासन बनाए रखें और शुभ दिनों में दान का नियम लें।\n\n> **मार्गदर्शन को व्यक्तिगत बनाएं:** विशिष्ट रत्न परामर्श और साढ़े साती के सटीक फलादेश हेतु जन्म समय और स्थान की आवश्यकता होती है। व्यक्तिगत विश्लेषण के लिए कुंडली लिंक करें।`;
-            suggestedQuestions = [
-              "गायत्री मन्त्र के नित्य जप के क्या नियम हैं?",
-              "साढ़े साती के निवारण हेतु सामान्य उपाय क्या हैं?",
-              "व्यक्तिगत विश्लेषण हेतु कुंडली कैसे जोड़ें?",
-              "आज की शुभ होरा कौन सी है?"
-            ];
+            message = `ॐ नमः शिवाय! मैं ${personaDisplay} हूँ।\n\n### शास्त्रीय शास्त्र सिद्धांत\nजन्म चक्र के अभाव में मैं वृहत् पाराशर होरा शास्त्र के अनुसार आज के समष्टि गोचर का विश्लेषण करता हूँ। शनि देव का मीन राशि में भ्रमण धैर्य, नम्रता और निस्वार्थ सेवा का संदेश देता है।\n\n### सार्वभौमिक वैदिक साधना\nसूर्योदय काल में **गायत्री मन्त्र** का जप मानसिक शांति और सात्विक स्पष्टता प्रदान करता है। दैनिक अनुशासन बनाए रखें और शुभ दिनों में दान का नियम लें।\n\n### 100% सटीक व्यक्तिगत उपाय व दोष शांति हेतु:\nविशिष्ट रत्न परामर्श, साढ़े साती की सही कालावधि, एवं विंशोत्तरी महादशा के सटीक फलादेश हेतु आपकी जन्म कुंडली अनिवार्य है:\n1. **जन्म तिथि:** (उदा. 14-07-1995 अथवा 14 जुलाई 1995)\n2. **जन्म समय:** (उदा. 03:15 PM अथवा 15:15 — सटीक ज्ञात न होने पर अनुमानित बताएं)\n3. **जन्म स्थान:** (शहर का नाम, उदा. मुंबई, दिल्ली, जयपुर आदि)\n\n👉 **आप यह विवरण सीधे यहीं चैट में लिखकर भेज सकते हैं!** मैं तुरंत आपकी कुंडली गणना कर शास्त्रीय उपाय प्रस्तुत करूँगा।`;
+            suggestedQuestions = [];
           } else {
-            message = `प्रणाम! मैं ${personaDisplay} हूँ।\n\n### सार्वभौमिक रणनीतिक गोचर\nसार्वभौमिक गोचर विधा में: समष्टि ग्रह स्थितियां दर्शाती हैं कि बृहस्पति का प्रभाव संगठनात्मक योजना और बौद्धिक रणनीति में सहायक है।\n\n### आजीविका एवं कार्यक्षेत्र निर्देश\nपाराशरी ज्योतिष में आजीविका का निर्धारण **दशम भाव (कर्म भाव)** और सक्रिय विंशोत्तरी दशा से होता है। महत्वपूर्ण निर्णय अथवा वार्ता को दिन में गुरु या बुध की होरा में संरेखित करना उत्तम रहता है।\n\n> **मार्गदर्शन को व्यक्तिगत बनाएं:** पदोन्नति के सटीक समय, वेतन वृद्धि के अवसर और व्यक्तिगत धन योगों के लिए ऊपर 'कुंडली लिंक करें' से अपनी जन्म कुंडली जोड़ें।`;
-            suggestedQuestions = [
-              "करियर के लिए दशम भाव का क्या महत्व है?",
-              "आज की गुरु और बुध होरा का समय क्या है?",
-              "कुंडली लिंक करके पदोन्नति का समय कैसे जानें?",
-              "पाराशरी ज्योतिष के मुख्य सिद्धांत क्या हैं?"
-            ];
+            message = `प्रणाम! मैं ${personaDisplay} हूँ।\n\n### सार्वभौमिक रणनीतिक गोचर\nसार्वभौमिक गोचर विधा में: समष्टि ग्रह स्थितियां दर्शाती हैं कि बृहस्पति का प्रभाव संगठनात्मक योजना और बौद्धिक रणनीति में सहायक है।\n\n### आजीविका एवं कार्यक्षेत्र निर्देश\nपाराशरी ज्योतिष में आजीविका का निर्धारण **दशम भाव (कर्म भाव)**, एकादश भाव (लाभ) और सक्रिय विंशोत्तरी दशा से होता है।\n\n### 100% सटीक व्यक्तिगत करियर एवं धन योग फलादेश हेतु:\nसटीक पदोन्नति समय, वेतन वृद्धि के अवसर और व्यक्तिगत धन योगों के सटीक विश्लेषण हेतु मुझे आपके 3 जन्म विवरण चाहिए:\n1. **जन्म तिथि:** (उदा. 14-07-1995 अथवा 14 जुलाई 1995)\n2. **जन्म समय:** (उदा. 03:15 PM अथवा 15:15 — अनुमानित समय भी मान्य)\n3. **जन्म स्थान:** (शहर का नाम, उदा. मुंबई, दिल्ली, जयपुर आदि)\n\n👉 **आप यह विवरण सीधे यहीं चैट में लिखकर भेज सकते हैं!** मैं तुरंत आपकी जन्म कुंडली गणना कर आपका पूर्ण फलादेश प्रस्तुत करूँगा।`;
+            suggestedQuestions = [];
           }
         } else {
           if (isSunita) {
-            message = `Namaste! I am ${personaDisplay}.\n\n### Universal Relationship Transits\nIn universal transit analysis: Transiting Jupiter in Gemini and Venusian alignments foster collaborative intellectual warmth and mutual curiosity.\n\n### Mindful Relationship Guidance\nRegarding your question: When evaluating partnership dynamics, we inspect the **7th House of Kalatra** and D9 Navamsha. For universal alignment, practice transparent dialogue and gentle listening during evening Venus Horas.\n\n> **Personalize Your Guidance:** Load your Janam Kundli to evaluate exact 7th house lordships, Venus degrees, and compatibility windows.`;
-            suggestedQuestions = [
-              "What does the 7th house signify in relationships?",
-              "How can I link my Janam Kundli for personalized synastry?",
-              "Explain today's Venus Hora timing",
-              "What are universal practices for partnership harmony?"
-            ];
+            message = `Namaste! I am ${personaDisplay}.\n\n### Universal Relationship Transits\nIn universal transit analysis: Transiting Jupiter in Gemini and Venusian alignments foster collaborative intellectual warmth and mutual curiosity.\n\n### Mindful Relationship Guidance\nRegarding your question: When evaluating partnership dynamics, Vedic Jyotish inspects the **7th House of Kalatra**, Venus dignity, and the D9 Navamsha harmonic chart.\n\n### To Give You an Exact, 100% Chart-Grounded Answer:\nIn Vedic astrology, your Ascendant (Lagna) shifts every ~2 hours, and exact degrees determine your Moon Nakshatra and operating Vimshottari Dasha subperiods. To ground this reading in your authentic chart and make every second of your consultation worth it, could you please share:\n1. **Date of Birth:** (e.g. 14 July 1995 or 14-07-1995)\n2. **Time of Birth:** (e.g. 03:15 PM or 15:15 — approximate is fine if exact is unknown!)\n3. **Birth City:** (e.g. Mumbai, New Delhi, Jaipur, etc.)\n\n👉 **Simply reply with these details right here in this chat!** As soon as you send them, I will compute your Janam Kundli in the background and deliver your full relationship reading.`;
+            suggestedQuestions = [];
           } else if (isRaghavendra) {
-            message = `Om Namah Shivaya! I am ${personaDisplay}.\n\n### Classical Scriptural Principles\nWithout a natal chart, I evaluate today's macrocosmic planetary alignments through Brihat Parashara Hora Shastra. Saturn transits sidereal Pisces, urging patience, humility, and selfless service.\n\n### Universal Remedial Practice\nReciting the **Gayatri Mantra** at sunrise clears mental haze and cultivates sattvic clarity. Maintain disciplined daily habits and practice charity on planetary days.\n\n> **Personalize Your Guidance:** Specific gemstone prescriptions and Sade Sati timelines strictly require your birth time and coordinates. Calculate your Kundli to unlock verified analysis.`;
-            suggestedQuestions = [
-              "What are the classical rules for daily Gayatri Mantra?",
-              "What universal remedies ease Saturn transits?",
-              "How do I link my Janam Kundli for verified remedies?",
-              "What is the classical significance of planetary Horas?"
-            ];
+            message = `Om Namah Shivaya! I am ${personaDisplay}.\n\n### Classical Scriptural Principles\nWithout a natal chart, I evaluate today's macrocosmic planetary alignments through Brihat Parashara Hora Shastra. Saturn transits sidereal Pisces, urging patience, humility, and selfless service.\n\n### Universal Remedial Practice\nReciting the **Gayatri Mantra** at sunrise clears mental haze and cultivates sattvic clarity. Maintain disciplined daily habits and practice charity on planetary days.\n\n### To Give You 100% Verified, Chart-Grounded Remedies:\nSpecific gemstone prescriptions, exact Sade Sati timelines, and tailored mantra counts strictly require your birth time and coordinates:\n1. **Date of Birth:** (e.g. 14 July 1995 or 14-07-1995)\n2. **Time of Birth:** (e.g. 03:15 PM or 15:15 — approximate is fine if exact is unknown!)\n3. **Birth City:** (e.g. Mumbai, New Delhi, Jaipur, etc.)\n\n👉 **Simply reply with these details right here in this chat!** I will calculate your Janam Kundli and provide your authentic Parashari remedies immediately.`;
+            suggestedQuestions = [];
           } else {
-            message = `Pranam! I am ${personaDisplay}.\n\n### Universal Strategic Transits\nOperating in universal transit mode: Macrocosmic planetary currents show Jupiter supporting structured innovation and corporate strategy.\n\n### Professional & Life Directives\nIn Parashari Jyotish, authority is governed by the **10th House of Karma** and active Vimshottari cycles. Align important negotiations with daytime Jupiter or Mercury Horas for optimal focus.\n\n> **Personalize Your Guidance:** For exact promotion milestones, salary negotiation windows, and personalized Dhana Yogas, calculate your Janam Kundli in the Kundli section.`;
-            suggestedQuestions = [
-              "Explain today's universal planetary Horas",
-              "What general transit energies are active this week?",
-              "How can I personalize this consultation with my Kundli?",
-              "What are the classical principles of Parashari Jyotish?"
-            ];
+            message = `Pranam! I am ${personaDisplay}.\n\n### Universal Strategic Transits\nOperating in universal transit mode: Macrocosmic planetary currents show Jupiter supporting structured innovation and corporate strategy.\n\n### Professional & Life Directives\nIn Parashari Jyotish, authority is governed by the **10th House of Karma**, 11th House of Gains, and active Vimshottari cycles.\n\n### To Give You an Exact, 100% Chart-Grounded Answer:\nTo calculate your exact Lagna, Moon sign, and operating Vimshottari Dasha subperiods and deliver the precise career clarity you are paying for, could you please share:\n1. **Date of Birth:** (e.g. 14 July 1995 or 14-07-1995)\n2. **Time of Birth:** (e.g. 03:15 PM or 15:15 — approximate is fine if exact is unknown!)\n3. **Birth City:** (e.g. Mumbai, New Delhi, Jaipur, etc.)\n\n👉 **Simply reply with these details right here in this chat!** As soon as you send them, I will compute your Janam Kundli in the background and deliver your full strategic analysis.`;
+            suggestedQuestions = [];
           }
         }
 
@@ -21761,8 +21816,8 @@
           suggestedQuestions: suggestedQuestions,
           remedyCard: null,
           bilingual_summary: {
-            en: "Analyzed universal macrocosmic transits and invited natal chart linking for personalized insights.",
-            hi: "सार्वभौमिक गोचर विश्लेषण प्रस्तुत किया और व्यक्तिगत फलादेश हेतु जन्म कुंडली लिंक करने का आमंत्रण दिया।"
+            en: "Analyzed universal macrocosmic transits and invited birth coordinates for personalized chart-grounded reading.",
+            hi: "सार्वभौमिक गोचर विश्लेषण प्रस्तुत किया और व्यक्तिगत फलादेश हेतु जन्म विवरण का अनुरोध किया।"
           },
           status: 'completed'
         };
@@ -22342,21 +22397,52 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
 
       // Progressive in-chat birth details calculation
       if (!isChatKundliLinked || !currentCalculatedChart) {
+        if (!activeConsultationSession.pendingBirthProfile) {
+          activeConsultationSession.pendingBirthProfile = {
+            dob: null,
+            tob: null,
+            city: null,
+            lat: null,
+            lon: null,
+            timezone: 'Asia/Kolkata'
+          };
+        }
+        const pendingProfile = activeConsultationSession.pendingBirthProfile;
         const textToParse = text;
-        const dateMatch = textToParse.match(/\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})\b/);
-        const timeMatch = textToParse.match(/\b(\d{1,2}:\d{2}(?:\s*(?:am|pm|AM|PM))?)\b/);
-        if (dateMatch && timeMatch) {
-          let rawD = dateMatch[1].replace(/[/.]/g, '-');
-          let dParts = rawD.split('-');
-          let cleanDob = '';
-          if (dParts[0].length === 4) {
-            cleanDob = `${dParts[0]}-${dParts[1].padStart(2, '0')}-${dParts[2].padStart(2, '0')}`;
-          } else if (dParts[2].length === 4) {
-            cleanDob = `${dParts[2]}-${dParts[1].padStart(2, '0')}-${dParts[0].padStart(2, '0')}`;
-          }
 
-          let rawT = timeMatch[1].trim();
-          let cleanTob = '12:00';
+        // A. Extract Date of Birth
+        const numDateMatch = textToParse.match(/\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})\b/);
+        if (numDateMatch) {
+          const rawD = numDateMatch[1].replace(/[/.]/g, '-');
+          const dParts = rawD.split('-');
+          if (dParts[0].length === 4) {
+            pendingProfile.dob = `${dParts[0]}-${dParts[1].padStart(2, '0')}-${dParts[2].padStart(2, '0')}`;
+          } else if (dParts[2].length === 4) {
+            pendingProfile.dob = `${dParts[2]}-${dParts[1].padStart(2, '0')}-${dParts[0].padStart(2, '0')}`;
+          }
+        } else {
+          const MONTH_MAP = {
+            jan: '01', january: '01', feb: '02', february: '02', mar: '03', march: '03',
+            apr: '04', april: '04', may: '05', jun: '06', june: '06', jul: '07', july: '07',
+            aug: '08', august: '08', sep: '09', september: '09', oct: '10', october: '10',
+            nov: '11', november: '11', dec: '12', december: '12'
+          };
+          const writtenMatch1 = textToParse.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)[,\s]+(\d{4})\b/i);
+          const writtenMatch2 = textToParse.match(/\b([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{4})\b/i);
+          if (writtenMatch1 && MONTH_MAP[writtenMatch1[2].toLowerCase()]) {
+            const mStr = MONTH_MAP[writtenMatch1[2].toLowerCase()];
+            pendingProfile.dob = `${writtenMatch1[3]}-${mStr}-${writtenMatch1[1].padStart(2, '0')}`;
+          } else if (writtenMatch2 && MONTH_MAP[writtenMatch2[1].toLowerCase()]) {
+            const mStr = MONTH_MAP[writtenMatch2[1].toLowerCase()];
+            pendingProfile.dob = `${writtenMatch2[3]}-${mStr}-${writtenMatch2[2].padStart(2, '0')}`;
+          }
+        }
+
+        // B. Extract Time of Birth
+        const timeMatch1 = textToParse.match(/\b(\d{1,2}:\d{2}(?:\s*(?:am|pm|AM|PM))?)\b/);
+        const timeMatch2 = textToParse.match(/\b(\d{1,2})\s*(?:am|pm|AM|PM)\b/i);
+        if (timeMatch1) {
+          const rawT = timeMatch1[1].trim();
           if (/am|pm/i.test(rawT)) {
             const isPm = /pm/i.test(rawT);
             const tOnly = rawT.replace(/\s*(?:am|pm)/i, '');
@@ -22364,36 +22450,67 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
             let h = parseInt(hStr, 10);
             if (isPm && h < 12) h += 12;
             if (!isPm && h === 12) h = 0;
-            cleanTob = `${String(h).padStart(2, '0')}:${mStr.padStart(2, '0')}`;
+            pendingProfile.tob = `${String(h).padStart(2, '0')}:${mStr.padStart(2, '0')}`;
           } else {
             const [hStr, mStr] = rawT.split(':');
-            cleanTob = `${hStr.padStart(2, '0')}:${mStr.padStart(2, '0')}`;
+            pendingProfile.tob = `${hStr.padStart(2, '0')}:${mStr.padStart(2, '0')}`;
           }
+        } else if (timeMatch2) {
+          const isPm = /pm/i.test(timeMatch2[0]);
+          let h = parseInt(timeMatch2[1], 10);
+          if (isPm && h < 12) h += 12;
+          if (!isPm && h === 12) h = 0;
+          pendingProfile.tob = `${String(h).padStart(2, '0')}:00`;
+        }
 
-          if (cleanDob && cleanDob.length === 10) {
-            let resolvedLat = 28.6139;
-            let resolvedLon = 77.2090;
-            let resolvedCity = 'New Delhi, Delhi, India';
+        // C. Extract City / Place of Birth
+        const cityLower = textToParse.toLowerCase();
+        const KNOWN_CITIES = [
+          { name: 'New Delhi, Delhi, India', keywords: ['delhi', 'new delhi'], lat: 28.6139, lon: 77.2090, tz: 'Asia/Kolkata' },
+          { name: 'Mumbai, Maharashtra, India', keywords: ['mumbai', 'bombay'], lat: 19.0760, lon: 72.8777, tz: 'Asia/Kolkata' },
+          { name: 'Bengaluru, Karnataka, India', keywords: ['bangalore', 'bengaluru'], lat: 12.9716, lon: 77.5946, tz: 'Asia/Kolkata' },
+          { name: 'Kolkata, West Bengal, India', keywords: ['kolkata', 'calcutta'], lat: 22.5726, lon: 88.3639, tz: 'Asia/Kolkata' },
+          { name: 'Chennai, Tamil Nadu, India', keywords: ['chennai', 'madras'], lat: 13.0827, lon: 80.2707, tz: 'Asia/Kolkata' },
+          { name: 'Hyderabad, Telangana, India', keywords: ['hyderabad'], lat: 17.3850, lon: 78.4867, tz: 'Asia/Kolkata' },
+          { name: 'Pune, Maharashtra, India', keywords: ['pune'], lat: 18.5204, lon: 73.8567, tz: 'Asia/Kolkata' },
+          { name: 'Jaipur, Rajasthan, India', keywords: ['jaipur'], lat: 26.9124, lon: 75.7873, tz: 'Asia/Kolkata' },
+          { name: 'Ahmedabad, Gujarat, India', keywords: ['ahmedabad'], lat: 23.0225, lon: 72.5714, tz: 'Asia/Kolkata' },
+          { name: 'Lucknow, Uttar Pradesh, India', keywords: ['lucknow'], lat: 26.8467, lon: 80.9462, tz: 'Asia/Kolkata' },
+          { name: 'Varanasi, Uttar Pradesh, India', keywords: ['varanasi', 'kashi', 'banaras'], lat: 25.3176, lon: 82.9739, tz: 'Asia/Kolkata' },
+          { name: 'Ujjain, Madhya Pradesh, India', keywords: ['ujjain'], lat: 23.1765, lon: 75.7885, tz: 'Asia/Kolkata' },
+          { name: 'Jabalpur, Madhya Pradesh, India', keywords: ['jabalpur'], lat: 23.1815, lon: 79.9864, tz: 'Asia/Kolkata' },
+          { name: 'Indore, Madhya Pradesh, India', keywords: ['indore'], lat: 22.7196, lon: 75.8577, tz: 'Asia/Kolkata' },
+          { name: 'Bhopal, Madhya Pradesh, India', keywords: ['bhopal'], lat: 23.2599, lon: 77.4126, tz: 'Asia/Kolkata' },
+          { name: 'Patna, Bihar, India', keywords: ['patna'], lat: 25.5941, lon: 85.1376, tz: 'Asia/Kolkata' },
+          { name: 'Chandigarh, India', keywords: ['chandigarh'], lat: 30.7333, lon: 76.7794, tz: 'Asia/Kolkata' },
+          { name: 'London, UK', keywords: ['london'], lat: 51.5074, lon: -0.1278, tz: 'Europe/London' },
+          { name: 'New York, USA', keywords: ['new york', 'nyc'], lat: 40.7128, lon: -74.0060, tz: 'America/New_York' },
+          { name: 'Dubai, UAE', keywords: ['dubai'], lat: 25.2048, lon: 55.2708, tz: 'Asia/Dubai' },
+          { name: 'Singapore', keywords: ['singapore'], lat: 1.3521, lon: 103.8198, tz: 'Asia/Singapore' },
+          { name: 'Kathmandu, Nepal', keywords: ['kathmandu'], lat: 27.7172, lon: 85.3240, tz: 'Asia/Kathmandu' }
+        ];
 
-            const cityLower = textToParse.toLowerCase();
-            if (cityLower.includes('mumbai') || cityLower.includes('bombay')) {
-              resolvedLat = 19.0760; resolvedLon = 72.8777; resolvedCity = 'Mumbai, Maharashtra, India';
-            } else if (cityLower.includes('bangalore') || cityLower.includes('bengaluru')) {
-              resolvedLat = 12.9716; resolvedLon = 77.5946; resolvedCity = 'Bengaluru, Karnataka, India';
-            } else if (cityLower.includes('kolkata') || cityLower.includes('calcutta')) {
-              resolvedLat = 22.5726; resolvedLon = 88.3639; resolvedCity = 'Kolkata, West Bengal, India';
-            } else if (cityLower.includes('chennai') || cityLower.includes('madras')) {
-              resolvedLat = 13.0827; resolvedLon = 80.2707; resolvedCity = 'Chennai, Tamil Nadu, India';
-            } else if (cityLower.includes('hyderabad')) {
-              resolvedLat = 17.3850; resolvedLon = 78.4867; resolvedCity = 'Hyderabad, Telangana, India';
-            } else if (cityLower.includes('pune')) {
-              resolvedLat = 18.5204; resolvedLon = 73.8567; resolvedCity = 'Pune, Maharashtra, India';
-            } else if (cityLower.includes('jaipur')) {
-              resolvedLat = 26.9124; resolvedLon = 75.7873; resolvedCity = 'Jaipur, Rajasthan, India';
-            } else if (cityLower.includes('jabalpur')) {
-              resolvedLat = 23.1815; resolvedLon = 79.9864; resolvedCity = 'Jabalpur, Madhya Pradesh, India';
-            }
+        for (const city of KNOWN_CITIES) {
+          if (city.keywords.some(k => cityLower.includes(k))) {
+            pendingProfile.city = city.name;
+            pendingProfile.lat = city.lat;
+            pendingProfile.lon = city.lon;
+            pendingProfile.timezone = city.tz;
+            break;
+          }
+        }
 
+        // If Date is present, check if we can compute the Kundli!
+        if (pendingProfile.dob && pendingProfile.dob.length === 10) {
+          const cleanDob = pendingProfile.dob;
+          const cleanTob = pendingProfile.tob || '12:00';
+          const resolvedLat = pendingProfile.lat !== null && pendingProfile.lat !== undefined ? pendingProfile.lat : 28.6139;
+          const resolvedLon = pendingProfile.lon !== null && pendingProfile.lon !== undefined ? pendingProfile.lon : 77.2090;
+          const resolvedCity = pendingProfile.city || 'New Delhi, Delhi, India';
+          const resolvedTz = pendingProfile.timezone || 'Asia/Kolkata';
+
+          // If Time was provided or explicit birth query received:
+          if (pendingProfile.tob || numDateMatch) {
             try {
               const clientData = calculateClientKundli(cleanDob, cleanTob, resolvedLat, resolvedLon, false);
               if (clientData && clientData.d1_rashi_chart) {
@@ -22409,8 +22526,8 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
                   tob: cleanTob,
                   lat: resolvedLat,
                   lon: resolvedLon,
-                  timezone: "Asia/Kolkata",
-                  tz: "Asia/Kolkata",
+                  timezone: resolvedTz,
+                  tz: resolvedTz,
                   lagnaSign: lagna.sign,
                   lagnaIdx: signsList.indexOf(lagna.sign),
                   moonSign: moon.sign,
@@ -22419,13 +22536,14 @@ Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining 
                   nakName: moon.nakshatra || "Rohini",
                   pada: moon.pada || 1,
                   fullData: clientData,
-                  isUnknownTime: false
+                  isUnknownTime: !pendingProfile.tob
                 };
                 toggleChatKundliLink(true);
-                showToast("Birth details recognized! Calculated Janam Kundli and linked to this consultation.", "success");
+                showToast("Birth details recognized! Janam Kundli calculated and linked to this consultation.", "success");
+                activeConsultationSession.pendingBirthProfile = null;
               }
             } catch (calcErr) {
-              console.warn("[CHAT] In-chat Kundli calculation fallback:", calcErr);
+              console.warn("[CHAT] In-chat Kundli calculation error:", calcErr);
             }
           }
         }
@@ -26629,7 +26747,7 @@ window.loadStoredCalendarPreferences = loadStoredCalendarPreferences;
     }
 
     // ==================== GOOGLE IDENTITY SERVICES & OAUTH 2.0 CONTROLLERS ====================
-    const ASTRO_GOOGLE_CLIENT_ID = '488224636987-pom8ojcl2jnkeiogerplksgmh457m3ub.apps.googleusercontent.com';
+    const ASTRO_GOOGLE_CLIENT_ID = '488224636987-pom8ojcl2jnkeiogerplksgmh457m3ub.apps.googleusercontent.com'; // Authorized client ID (aliases 488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com)
     let isGoogleAuthInitialized = false;
     let googleCodeClient = null;
 
