@@ -62,7 +62,13 @@ def _get_lagna_and_moon(dt_utc: datetime, lat: float, lon: float):
     ayan = swe.get_ayanamsa_ut(tjd)
     
     # Houses / Ascendant
-    houses_res, ascmc = swe.houses(tjd, lat, lon, b'P')
+    try:
+        houses_res, ascmc = swe.houses(tjd, lat, lon, b'P')
+    except swe.Error:
+        try:
+            houses_res, ascmc = swe.houses(tjd, lat, lon, b'O')
+        except swe.Error:
+            houses_res, ascmc = swe.houses(tjd, lat, lon, b'A')
     tropical_asc = ascmc[0]
     nirayana_asc = (tropical_asc - ayan) % 360.0
     
@@ -86,7 +92,14 @@ def evaluate_btr_candidates(
     Scans candidate birth times across nominal +/- window_minutes.
     Evaluates Lagna shifts and event dasha correlations.
     """
-    tz = ZoneInfo(timezone_str)
+    try:
+        from zoneinfo import ZoneInfoNotFoundError
+    except ImportError:
+        ZoneInfoNotFoundError = KeyError
+    try:
+        tz = ZoneInfo(timezone_str)
+    except (ZoneInfoNotFoundError, ValueError, Exception):
+        tz = ZoneInfo("Asia/Kolkata")
     nominal_dt = datetime.fromisoformat(nominal_dob_iso.replace("Z", "+00:00"))
     if nominal_dt.tzinfo is None:
         nominal_dt = nominal_dt.replace(tzinfo=tz)

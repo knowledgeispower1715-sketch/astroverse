@@ -23,6 +23,7 @@ env/
 *~
 
 # Local agent tooling
+tmp_m4_adversarial_probe/
 .codex/
 .devin/
 .factory/

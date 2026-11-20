@@ -23,11 +23,21 @@ export function createRateLimiter(options: RateLimiterOptions) {
     max,
     message = 'Too many requests. Please wait a few moments before trying again.',
     keyGenerator = (req: Request) => {
-      const forwarded = req.headers['x-forwarded-for'];
-      if (typeof forwarded === 'string') {
-        return forwarded.split(',')[0].trim();
+      const cfIp = req.headers['cf-connecting-ip'];
+      if (typeof cfIp === 'string' && cfIp.trim()) {
+        return cfIp.trim();
       }
-      return req.socket.remoteAddress || req.ip || '127.0.0.1';
+      if (process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1') {
+        const forwarded = req.headers['x-forwarded-for'];
+        if (typeof forwarded === 'string' && forwarded.trim()) {
+          return forwarded.split(',')[0].trim();
+        }
+      }
+      const socketIp = req.socket?.remoteAddress;
+      if (req.ip && socketIp && req.ip !== socketIp) {
+        return req.ip;
+      }
+      return socketIp || req.ip || '127.0.0.1';
     },
     skip = () => process.env.NODE_ENV === 'test'
   } = options;

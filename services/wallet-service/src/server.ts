@@ -294,7 +294,6 @@ export const KNOWN_COMPROMISED_INTERNAL_KEYS = new Set([
   "astroverse-internal-gateway-secret",
   "dummy_internal_key",
   "internal_secret",
-  "astroverse-consultation-internal-secret-2026",
 ]);
 
 export function isProductionEnvironment(): boolean {

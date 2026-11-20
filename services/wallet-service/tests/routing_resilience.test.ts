@@ -22,8 +22,8 @@ function runRoutingTests() {
   const rewrites = vercelContent.rewrites;
 
   console.log(`[CHECK] Total rewrites found: ${rewrites.length}`);
-  if (rewrites.length !== 38) {
-    throw new Error(`Expected exactly 38 rewrites, found ${rewrites.length}`);
+  if (rewrites.length !== 49) {
+    throw new Error(`Expected exactly 49 rewrites, found ${rewrites.length}`);
   }
 
   const compiledRules = rewrites.map((r, idx) => {
@@ -118,12 +118,23 @@ function runRoutingTests() {
     33: '/api/matchmaking/ashtakoota',
     34: '/api/complete-kundli/pdf',
     35: '/api/kundli/birth-chart',
-    36: '/api/ephemeris/planetary-positions',
-    37: '/socket.io/handshake',
-    38: '/index.html'
+    36: '/api/kundli',
+    37: '/api/rashifal/daily',
+    38: '/api/rashifal',
+    39: '/api/transits/jupiter',
+    40: '/api/transits',
+    41: '/api/holidays/upcoming',
+    42: '/api/holidays',
+    43: '/api/calendar/daily',
+    44: '/api/calendar',
+    45: '/api/hora/active',
+    46: '/api/hora',
+    47: '/api/ephemeris/planetary-positions',
+    48: '/socket.io/handshake',
+    49: '/index.html'
   };
 
-  for (let i = 1; i <= 38; i++) {
+  for (let i = 1; i <= 49; i++) {
     const samplePath = samplePathsPerRule[i];
     const matched = resolve(samplePath);
     if (!matched || matched.index !== i) {

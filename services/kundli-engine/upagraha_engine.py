@@ -21,8 +21,8 @@ based on Brihat Parashara Hora Shastra (BPHS):
 """
 
 from typing import Dict, Any, List, Optional
-from datetime import datetime, date, time, timedelta
-from zoneinfo import ZoneInfo
+from datetime import datetime, date, time, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import swisseph as swe
 
 from hora_engine import calculate_sun_times
@@ -69,7 +69,15 @@ def calculate_upagrahas(
     """
     Computes all 11 Upagrahas for a given birth/event datetime and location.
     """
-    tz = ZoneInfo(timezone_str)
+    try:
+        tz = ZoneInfo(timezone_str)
+    except (ZoneInfoNotFoundError, ValueError, Exception):
+        try:
+            tz = ZoneInfo("Asia/Kolkata")
+            timezone_str = "Asia/Kolkata"
+        except Exception:
+            tz = timezone.utc
+            timezone_str = "UTC"
     dt = datetime.fromisoformat(dob_iso.replace("Z", "+00:00"))
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=tz)
@@ -154,7 +162,13 @@ def calculate_upagrahas(
         u_dt = dt_moment.astimezone(ZoneInfo("UTC"))
         t_jd = swe.julday(u_dt.year, u_dt.month, u_dt.day, u_dt.hour + u_dt.minute/60.0 + u_dt.second/3600.0)
         ayan = swe.get_ayanamsa_ut(t_jd)
-        houses_res, ascmc = swe.houses(t_jd, lat, lon, b'P')
+        try:
+            houses_res, ascmc = swe.houses(t_jd, lat, lon, b'P')
+        except swe.Error:
+            try:
+                houses_res, ascmc = swe.houses(t_jd, lat, lon, b'O')
+            except swe.Error:
+                houses_res, ascmc = swe.houses(t_jd, lat, lon, b'A')
         tropical_asc = ascmc[0]
         return _normalize_degrees(tropical_asc - ayan)
         

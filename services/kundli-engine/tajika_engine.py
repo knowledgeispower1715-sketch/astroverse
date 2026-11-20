@@ -169,7 +169,13 @@ def calculate_varshaphal(
     natal_sun_res, _ = swe.calc_ut(natal_jd, swe.SUN, swe.FLG_SIDEREAL)
     natal_sun_deg = natal_sun_res[0]
 
-    natal_cusps, natal_ascmc = swe.houses_ex(natal_jd, lat, lon, b'P', swe.FLG_SIDEREAL)
+    try:
+        natal_cusps, natal_ascmc = swe.houses_ex(natal_jd, lat, lon, b'P', swe.FLG_SIDEREAL)
+    except swe.Error:
+        try:
+            natal_cusps, natal_ascmc = swe.houses_ex(natal_jd, lat, lon, b'O', swe.FLG_SIDEREAL)
+        except swe.Error:
+            natal_cusps, natal_ascmc = swe.houses_ex(natal_jd, lat, lon, b'A', swe.FLG_SIDEREAL)
     natal_lagna_deg = natal_ascmc[0]
     natal_lagna_sign = SIGNS[int(natal_lagna_deg / 30.0) % 12]
 
@@ -185,7 +191,13 @@ def calculate_varshaphal(
     sr_utc_dt = datetime(year, month, day, hour, minute, second, tzinfo=timezone.utc)
 
     # 3. Varshaphal Lagna & Planets
-    sr_cusps, sr_ascmc = swe.houses_ex(sr_jd, lat, lon, b'P', swe.FLG_SIDEREAL)
+    try:
+        sr_cusps, sr_ascmc = swe.houses_ex(sr_jd, lat, lon, b'P', swe.FLG_SIDEREAL)
+    except swe.Error:
+        try:
+            sr_cusps, sr_ascmc = swe.houses_ex(sr_jd, lat, lon, b'O', swe.FLG_SIDEREAL)
+        except swe.Error:
+            sr_cusps, sr_ascmc = swe.houses_ex(sr_jd, lat, lon, b'A', swe.FLG_SIDEREAL)
     varsha_lagna_deg = sr_ascmc[0]
     varsha_lagna_sign_idx = int(varsha_lagna_deg / 30.0) % 12
     varsha_lagna_sign = SIGNS[varsha_lagna_sign_idx]

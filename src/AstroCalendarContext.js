@@ -85,4 +85,7 @@ class AstroCalendarContext {
 }
 
 export const astroCalendarContext = new AstroCalendarContext();
+if (typeof window !== 'undefined') {
+  window.astroCalendarContext = astroCalendarContext;
+}
 export default AstroCalendarContext;

@@ -155,8 +155,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "127.0.0.1"
-        if "x-forwarded-for" in request.headers:
-            client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
+        if os.environ.get("TRUST_PROXY") in ("1", "true", "TRUE"):
+            if "cf-connecting-ip" in request.headers:
+                client_ip = request.headers["cf-connecting-ip"].strip()
+            elif "x-forwarded-for" in request.headers:
+                client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
+        elif "cf-connecting-ip" in request.headers and client_ip in ("127.0.0.1", "::1", "localhost"):
+            client_ip = request.headers["cf-connecting-ip"].strip()
 
         now = time.time()
         # Periodic cleanup of expired records every 5 minutes
@@ -593,6 +598,10 @@ def geocode_location(q: str = Query(..., min_length=2, description="City, town, 
 @app.post("/api/kundli")
 def get_base_kundli(req: BirthDetails):
     """Calculates D1 Lagna, 9 planetary longitudes, Nakshatras & Panchang."""
+    try:
+        datetime.fromisoformat(req.dob)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid ISO date format for dob")
     return calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
 
 @app.post("/api/complete-kundli")
@@ -609,6 +618,11 @@ def get_complete_kundli(req: BirthDetails):
     - Advanced Manglik, Kaal Sarp & Shani Sade Sati analysis
     - Ghataka Chakra personalized timing factors
     """
+    try:
+        birth_dt = datetime.fromisoformat(req.dob)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid ISO date format for dob")
+
     d1 = calculate_kundli(req.dob, req.lat, req.lon, req.timezone)
     lagna_total_deg = d1["lagna"]["total_degree"]
 
@@ -626,7 +640,7 @@ def get_complete_kundli(req: BirthDetails):
     moon_sign_idx = SIGNS.index(d1["planets"]["Moon"]["sign"])
     moon_abs_deg = (moon_sign_idx * 30.0) + d1["planets"]["Moon"]["degree"]
 
-    dashas = calculate_vimshottari_dasha(moon_abs_deg, datetime.fromisoformat(req.dob))
+    dashas = calculate_vimshottari_dasha(moon_abs_deg, birth_dt)
     doshas = analyze_doshas_and_remedies(d1["planets"], d1["lagna"]["sign"])
     yogas = detect_classical_yogas(d1["planets"], d1["lagna"]["sign"])
     shadbala = calculate_shadbala(d1["planets"], d1["lagna"]["sign"])

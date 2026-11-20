@@ -107,6 +107,27 @@ async function runRateLimiterTests() {
   assert(nextCalled === true, 'After windowMs elapsed, original IP is unblocked and passes');
   assert(capturedHeaders['ratelimit-remaining'] === 2, 'Quota resets after window elapsed');
 
+  // Anti-Spoofing: Client rotating X-Forwarded-For with untrusted socket remoteAddress cannot bypass rate limit
+  console.log('\n--- 3. ANTI-SPOOFING X-FORWARDED-FOR RESILIENCE ---');
+  const untrustedReq = {
+    headers: { 'x-forwarded-for': '198.51.100.1' },
+    socket: { remoteAddress: '203.0.113.50' }
+  } as unknown as Request;
+
+  limiter(untrustedReq, createMockRes(), () => {});
+  limiter(untrustedReq, createMockRes(), () => {});
+  limiter(untrustedReq, createMockRes(), () => {});
+
+  const spoofedReq = {
+    headers: { 'x-forwarded-for': '198.51.100.99' },
+    socket: { remoteAddress: '203.0.113.50' }
+  } as unknown as Request;
+
+  nextCalled = false;
+  statusCode = 200;
+  limiter(spoofedReq, createMockRes(), () => { nextCalled = true; });
+  assert(nextCalled === false && statusCode === 429, 'Rotating X-Forwarded-For on same socket remoteAddress does NOT bypass rate limit');
+
   console.log('\n===============================================================');
   console.log(`SECURITY & RATE LIMITING SUITE FINISHED: ${passCount} PASSED, ${failCount} FAILED`);
   console.log('===============================================================');

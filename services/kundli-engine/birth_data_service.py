@@ -230,7 +230,13 @@ def analyze_time_window_uncertainty(
             utc_dt.hour + utc_dt.minute / 60.0 + utc_dt.second / 3600.0
         )
         # Ascendant
-        cusps, ascmc = swe.houses_ex(jd, lat, lon, b'P', swe.FLG_SIDEREAL)
+        try:
+            cusps, ascmc = swe.houses_ex(jd, lat, lon, b'P', swe.FLG_SIDEREAL)
+        except swe.Error:
+            try:
+                cusps, ascmc = swe.houses_ex(jd, lat, lon, b'O', swe.FLG_SIDEREAL)
+            except swe.Error:
+                cusps, ascmc = swe.houses_ex(jd, lat, lon, b'A', swe.FLG_SIDEREAL)
         lagna_deg = ascmc[0]
         lagna_sign_idx = int(lagna_deg / 30.0) % 12
 

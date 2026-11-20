@@ -118,7 +118,13 @@ def calculate_kp_chart(
 
     # Placidus Cusps with KP Sidereal Ayanamsha
     # swe.houses_ex returns (cusps, ascmc) where cusps[0..11] are house cusps
-    cusps, ascmc = swe.houses_ex(jd_ut, lat, lon, b'P', swe.FLG_SIDEREAL)
+    try:
+        cusps, ascmc = swe.houses_ex(jd_ut, lat, lon, b'P', swe.FLG_SIDEREAL)
+    except swe.Error:
+        try:
+            cusps, ascmc = swe.houses_ex(jd_ut, lat, lon, b'O', swe.FLG_SIDEREAL)
+        except swe.Error:
+            cusps, ascmc = swe.houses_ex(jd_ut, lat, lon, b'A', swe.FLG_SIDEREAL)
 
     house_cusps = {}
     for h in range(1, 13):

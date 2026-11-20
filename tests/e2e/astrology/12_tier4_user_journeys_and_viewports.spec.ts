@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import { test, expect } from '@playwright/test';
 import { setupAstrologyMocks, gotoAstroVerse, navigateSection, assertZeroHorizontalOverflow } from './fixtures/astrology_fixtures.js';
 
@@ -116,20 +117,91 @@ test.describe('Tier 4: End-to-End User Journeys & Cross-Device Viewports', () =>
   });
 
   test('TC-T4-JOURNEY-05: Multi-Device Cross-Viewport Responsive Session Continuity', async ({ page }) => {
-    // Step 1: Overview
-    await navigateSection(page, 'overview');
-    await expect(page.locator('#view-overview')).toBeVisible();
-    await assertZeroHorizontalOverflow(page);
+    const viewport = page.viewportSize();
+    const isMobileOrTablet = viewport ? viewport.width <= 860 : false;
 
-    // Step 2: 3D Calendar View
-    await navigateSection(page, 'calendar');
-    await expect(page.locator('#view-calendar')).toBeVisible();
-    await assertZeroHorizontalOverflow(page);
+    if (isMobileOrTablet) {
+      // Mobile / Tablet Viewport (<= 860px): Assert bottom dock is visible
+      const dock = page.locator('.mobile-bottom-dock');
+      await expect(dock).toBeVisible();
 
-    // Step 3: Kundli Calculator View
-    await navigateSection(page, 'kundli');
-    await expect(page.locator('#view-kundli')).toBeVisible();
-    await assertZeroHorizontalOverflow(page);
+      // Mobile Menu Hamburger Drawer Interaction
+      const btnMobileMenu = page.locator('#btn-mobile-menu');
+      await expect(btnMobileMenu).toBeVisible();
+      await btnMobileMenu.click();
+      const mobileDrawer = page.locator('#mobile-nav-drawer');
+      await expect(mobileDrawer).toHaveClass(/open/);
+      await page.locator('.mobile-drawer-close').click();
+      await expect(mobileDrawer).not.toHaveClass(/open/);
+
+      // Step 1: Overview
+      await navigateSection(page, 'overview');
+      await expect(page.locator('#view-overview')).toBeVisible();
+      await assertZeroHorizontalOverflow(page);
+
+      // Step 2: 3D Calendar View via Mobile Bottom Dock
+      const calDockBtn = page.locator('#mob-dock-calendar');
+      await calDockBtn.click();
+      await expect(page.locator('#view-calendar')).toHaveClass(/active/);
+      await expect(page.locator('#view-calendar')).toBeVisible();
+      await expect(calDockBtn).toHaveClass(/active/);
+
+      // Explicit 2D/3D toggle interaction checks
+      const btn2d = page.locator('#cal-view-btn-2d');
+      const btn3d = page.locator('#cal-view-btn-3d');
+      const monthGrid = page.locator('#cal-month-grid');
+
+      await btn2d.click();
+      await expect(btn2d).toHaveClass(/active/);
+      await expect(monthGrid).toHaveClass(/cal-grid-2d/);
+
+      await btn3d.click();
+      await expect(btn3d).toHaveClass(/active/);
+      await expect(monthGrid).toHaveClass(/cal-grid-3d/);
+
+      await assertZeroHorizontalOverflow(page);
+
+      // Step 3: Kundli Calculator View via Mobile Bottom Dock
+      const kundliDockBtn = page.locator('#mob-dock-kundli');
+      await kundliDockBtn.click();
+      await expect(page.locator('#view-kundli')).toHaveClass(/active/);
+      await expect(page.locator('#view-kundli')).toBeVisible();
+      await expect(kundliDockBtn).toHaveClass(/active/);
+      await assertZeroHorizontalOverflow(page);
+    } else {
+      // Desktop Viewport (> 860px): Assert mobile-only elements are hidden
+      await expect(page.locator('.mobile-bottom-dock')).toBeHidden();
+      await expect(page.locator('#btn-mobile-menu')).toBeHidden();
+
+      // Step 1: Overview
+      await navigateSection(page, 'overview');
+      await expect(page.locator('#view-overview')).toBeVisible();
+      await assertZeroHorizontalOverflow(page);
+
+      // Step 2: 3D Calendar View
+      await navigateSection(page, 'calendar');
+      await expect(page.locator('#view-calendar')).toBeVisible();
+
+      // Explicit 2D/3D toggle interaction checks
+      const btn2d = page.locator('#cal-view-btn-2d');
+      const btn3d = page.locator('#cal-view-btn-3d');
+      const monthGrid = page.locator('#cal-month-grid');
+
+      await btn2d.click();
+      await expect(btn2d).toHaveClass(/active/);
+      await expect(monthGrid).toHaveClass(/cal-grid-2d/);
+
+      await btn3d.click();
+      await expect(btn3d).toHaveClass(/active/);
+      await expect(monthGrid).toHaveClass(/cal-grid-3d/);
+
+      await assertZeroHorizontalOverflow(page);
+
+      // Step 3: Kundli Calculator View
+      await navigateSection(page, 'kundli');
+      await expect(page.locator('#view-kundli')).toBeVisible();
+      await assertZeroHorizontalOverflow(page);
+    }
   });
 
   test('TC-T4-JOURNEY-06: Comprehensive Name Harmonization & Numerology Consultation', async ({ page }) => {

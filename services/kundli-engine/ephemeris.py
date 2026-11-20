@@ -97,7 +97,13 @@ def calculate_kundli(dob_iso: str, lat: float = 28.6139, lon: float = 77.2090, t
     )
 
     # Ascendant (Lagna) & Houses
-    cusps, ascmc = swe.houses_ex(jd_ut, lat, lon, b'P', swe.FLG_SIDEREAL)
+    try:
+        cusps, ascmc = swe.houses_ex(jd_ut, lat, lon, b'P', swe.FLG_SIDEREAL)
+    except swe.Error:
+        try:
+            cusps, ascmc = swe.houses_ex(jd_ut, lat, lon, b'O', swe.FLG_SIDEREAL)
+        except swe.Error:
+            cusps, ascmc = swe.houses_ex(jd_ut, lat, lon, b'A', swe.FLG_SIDEREAL)
     lagna_deg = ascmc[0]
     lagna_sign_idx = int(lagna_deg / 30.0) % 12
     lagna_nak_idx = int(lagna_deg / (360.0 / 27.0)) % 27

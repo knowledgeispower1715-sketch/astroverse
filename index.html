@@ -7740,7 +7740,7 @@
 
   <!-- Main Navigation Header -->
   <header class="main-navbar">
-    <button class="mobile-menu-btn" id="btn-mobile-menu" onclick="toggleMobileNavDrawer()" aria-label="Open Navigation Menu">
+    <button class="mobile-menu-btn" id="btn-mobile-menu" onclick="toggleMobileNavDrawer()" aria-label="Open Navigation Menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
       <i class="fa-solid fa-bars"></i>
     </button>
     <div class="brand-logo-wrap" onclick="switchNavSection('overview')">
@@ -7866,7 +7866,7 @@
 
   <!-- Mobile Navigation Backdrop & Drawer -->
   <div id="mobile-nav-backdrop" class="mobile-nav-backdrop" onclick="closeMobileNavDrawer()"></div>
-  <aside id="mobile-nav-drawer" class="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+  <aside id="mobile-nav-drawer" class="mobile-nav-drawer" role="dialog" aria-modal="true" aria-label="Mobile Navigation Menu">
     <div class="mobile-drawer-header">
       <div style="display: flex; align-items: center; gap: 8px;">
         <i class="fa-solid fa-om" style="font-size: 22px; color: #D97706;"></i>
@@ -13304,6 +13304,19 @@
         if (typeof initCalendarView === 'function') {
           initCalendarView();
         }
+        if (typeof currentCalendarState !== 'undefined' && currentCalendarState.viewMode === '3d') {
+          const canvasEl = document.getElementById('cal-celestial-canvas');
+          if (canvasEl) canvasEl.style.display = 'block';
+          if (typeof celestialCanvasState !== 'undefined' && !celestialCanvasState.animId) {
+            celestialCanvasState.animId = requestAnimationFrame(renderCelestialFrame);
+          }
+        }
+      } else {
+        // Switching away from calendar: cancel animation frame loop
+        if (typeof celestialCanvasState !== 'undefined' && celestialCanvasState.animId) {
+          cancelAnimationFrame(celestialCanvasState.animId);
+          celestialCanvasState.animId = null;
+        }
       }
 
       document.querySelectorAll('.page-tab-view').forEach(el => el.classList.remove('active'));
@@ -13417,7 +13430,44 @@
       updateNavbarTier();
     })();
 
-    // Mobile Drawer Navigation Controllers
+    // Mobile Drawer Navigation Controllers with WCAG Focus Management & Tab Trapping
+    let drawerPrevFocusedElement = null;
+
+    function handleDrawerKeydown(e) {
+      const drawer = document.getElementById('mobile-nav-drawer');
+      if (!drawer || !drawer.classList.contains('open')) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeMobileNavDrawer();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusable = Array.from(drawer.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter(el => {
+          return el.offsetWidth > 0 || el.offsetHeight > 0 || (el.style.display !== 'none' && window.getComputedStyle(el).display !== 'none');
+        });
+        if (focusable.length === 0) return;
+
+        const firstEl = focusable[0];
+        const lastEl = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstEl) {
+            e.preventDefault();
+            lastEl.focus();
+          }
+        } else {
+          if (document.activeElement === lastEl) {
+            e.preventDefault();
+            firstEl.focus();
+          }
+        }
+      }
+    }
+
     function toggleMobileNavDrawer() {
       const drawer = document.getElementById('mobile-nav-drawer');
       const backdrop = document.getElementById('mobile-nav-backdrop');
@@ -13426,19 +13476,47 @@
       if (isOpen) {
         closeMobileNavDrawer();
       } else {
+        drawerPrevFocusedElement = document.activeElement;
         drawer.classList.add('open');
+        drawer.setAttribute('aria-modal', 'true');
+        const menuBtn = document.getElementById('btn-mobile-menu');
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
         if (backdrop) backdrop.classList.add('open');
         document.body.style.overflow = 'hidden';
         updateMobileDrawerUI();
+
+        // Focus close button or first focusable element inside drawer
+        const closeBtn = drawer.querySelector('.mobile-drawer-close');
+        if (closeBtn) {
+          closeBtn.focus();
+        } else {
+          drawer.focus();
+        }
+
+        document.addEventListener('keydown', handleDrawerKeydown);
       }
     }
 
     function closeMobileNavDrawer() {
       const drawer = document.getElementById('mobile-nav-drawer');
       const backdrop = document.getElementById('mobile-nav-backdrop');
-      if (drawer) drawer.classList.remove('open');
+      if (drawer) {
+        drawer.classList.remove('open');
+      }
       if (backdrop) backdrop.classList.remove('open');
+      const menuBtn = document.getElementById('btn-mobile-menu');
+      if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
       document.body.style.overflow = '';
+
+      document.removeEventListener('keydown', handleDrawerKeydown);
+
+      // Restore focus to opener element
+      if (drawerPrevFocusedElement && typeof drawerPrevFocusedElement.focus === 'function') {
+        drawerPrevFocusedElement.focus();
+      } else if (menuBtn) {
+        menuBtn.focus();
+      }
+      drawerPrevFocusedElement = null;
     }
 
     function mobileNavNavigate(section) {
@@ -24549,7 +24627,24 @@ function focusTodayInCelestialStage() {
 function renderCelestialFrame() {
   const canvas = celestialCanvasState.canvas;
   const ctx = celestialCanvasState.ctx;
-  if (!canvas || !ctx) return;
+  if (!canvas || !ctx) {
+    if (celestialCanvasState.animId) {
+      cancelAnimationFrame(celestialCanvasState.animId);
+      celestialCanvasState.animId = null;
+    }
+    return;
+  }
+
+  // Prevent rAF loop when canvas is hidden (display: none), viewMode is 2D, or calendar is not the active tab
+  if (canvas.style.display === 'none' ||
+      (typeof currentCalendarState !== 'undefined' && currentCalendarState.viewMode === '2d') ||
+      (typeof currentActiveNavSection !== 'undefined' && currentActiveNavSection !== 'calendar')) {
+    if (celestialCanvasState.animId) {
+      cancelAnimationFrame(celestialCanvasState.animId);
+      celestialCanvasState.animId = null;
+    }
+    return;
+  }
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const w = canvas.width / dpr;
@@ -24813,7 +24908,16 @@ function renderCelestialFrame() {
 
   ctx.restore();
 
-  celestialCanvasState.animId = requestAnimationFrame(renderCelestialFrame);
+  if (canvas.style.display !== 'none' &&
+      !(typeof currentCalendarState !== 'undefined' && currentCalendarState.viewMode === '2d') &&
+      !(typeof currentActiveNavSection !== 'undefined' && currentActiveNavSection !== 'calendar')) {
+    celestialCanvasState.animId = requestAnimationFrame(renderCelestialFrame);
+  } else {
+    if (celestialCanvasState.animId) {
+      cancelAnimationFrame(celestialCanvasState.animId);
+      celestialCanvasState.animId = null;
+    }
+  }
 }
 
 // Dedicated 3D Lunar Orb Renderer (#cal-moon-sphere-canvas)
@@ -26059,6 +26163,21 @@ function setCalendarViewMode(mode = '3d', save = true) {
   const canvasEl = document.getElementById('cal-celestial-canvas');
   if (canvasEl) {
     canvasEl.style.display = (targetMode === '3d') ? 'block' : 'none';
+  }
+
+  if (targetMode === '2d') {
+    if (typeof celestialCanvasState !== 'undefined' && celestialCanvasState.animId) {
+      cancelAnimationFrame(celestialCanvasState.animId);
+      celestialCanvasState.animId = null;
+    }
+  } else if (targetMode === '3d' && (typeof currentActiveNavSection === 'undefined' || currentActiveNavSection === 'calendar')) {
+    if (typeof celestialCanvasState !== 'undefined' && !celestialCanvasState.animId) {
+      if (typeof initCelestialCanvas === 'function' && !celestialCanvasState.isInitialized) {
+        initCelestialCanvas();
+      } else if (typeof renderCelestialFrame === 'function') {
+        celestialCanvasState.animId = requestAnimationFrame(renderCelestialFrame);
+      }
+    }
   }
 }
 
@@ -37767,9 +37886,13 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
     let expandedAntarKey = null;
 
     function toggleDashaTimelineExpand(lord) {
-      const state = window.astroCalendarContext.getState();
+      const state = (typeof window.astroCalendarContext !== 'undefined' && window.astroCalendarContext?.getState)
+        ? window.astroCalendarContext.getState()
+        : {};
       const expandedDashaLord = (state.expandedDashaLord === lord) ? null : lord;
-      window.astroCalendarContext.setState({ expandedDashaLord });
+      if (typeof window.astroCalendarContext !== 'undefined' && window.astroCalendarContext?.setState) {
+        window.astroCalendarContext.setState({ expandedDashaLord });
+      }
       renderKundliDashasView();
     }
 
@@ -38050,7 +38173,7 @@ Navigating a 36-month timeline requires spiritual resilience and mindfulness dur
       if (container && Array.isArray(vd.timeline)) {
         const treeHtml = vd.timeline.map((m, mIdx) => {
           const isActive = m.is_active;
-          const isExpanded = (m.maha_dasha === window.astroCalendarContext.getState().expandedDashaLord);
+          const isExpanded = (m.maha_dasha === window.astroCalendarContext?.getState?.()?.expandedDashaLord);
           const isPast = (m.status === 'PAST');
           const isFuture = (m.status === 'FUTURE');
 
