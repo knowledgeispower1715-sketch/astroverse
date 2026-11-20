@@ -14690,6 +14690,41 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
     const dashaMahaDisplay = isHi ? "बृहस्पति (गुरु)" : dashaMaha;
     const dashaAntarDisplay = isHi ? "शुक्र" : dashaAntar;
 
+    // Seeker identity & age context from payload or question
+    let extractedName = "";
+    const nameMatch = question.match(
+      /^([A-Za-z\s]{2,30}?)\s+(?:born\s*(?:on)?\s*)?(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+[,\s]+\d{4}|[A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4})/i,
+    );
+    const introNameMatch = question.match(
+      /(?:my name is|i am|myself|this is|naam hai|naam)\s+([A-Za-z\s]{2,25})/i,
+    );
+    if (introNameMatch) {
+      extractedName = introNameMatch[1].trim();
+    } else if (
+      nameMatch &&
+      !/^(hi|hello|hey|pranam|namaste)\b/i.test(nameMatch[1].trim())
+    ) {
+      extractedName = nameMatch[1].trim();
+    }
+    const seekerFirstName = extractedName
+      ? extractedName.split(/\s+/)[0]
+      : "Aryan";
+    const honorific = seekerFirstName + (isHi ? " जी" : " ji");
+
+    let seekerAge = 20;
+    if (dob) {
+      const bYear = parseInt(dob.substring(0, 4), 10);
+      if (!isNaN(bYear))
+        seekerAge = Math.max(1, new Date().getFullYear() - bYear);
+    } else {
+      const yrMatch = question.match(/\b(19\d{2}|20\d{2})\b/);
+      if (yrMatch)
+        seekerAge = Math.max(
+          1,
+          new Date().getFullYear() - parseInt(yrMatch[1], 10),
+        );
+    }
+
     let message = "";
     let suggested: string[] = [];
     let remedyCard: any = null;
@@ -14699,7 +14734,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
     if (intent === "greeting") {
       if (hasPriorTurn) {
         if (isHi) {
-          message = `प्रणाम! मैं आपकी क्या सहायता कर सकता हूँ? आप अपनी **${lagnaDisplay} लग्न** पत्रिका (सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर प्रश्न पूछ सकते हैं।`;
+          message = `प्रणाम ${honorific}! मैं आपकी क्या सहायता कर सकता हूँ? आप अपनी **${lagnaDisplay} लग्न** पत्रिका (सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर कोई भी प्रश्न सीधे पूछ सकते हैं।`;
           suggested = [
             "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
             "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
@@ -14707,7 +14742,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
             "सक्रिय दशा में मानसिक शांति हेतु शास्त्रीय उपाय बताएं",
           ];
         } else {
-          message = `Pranam! How may I assist your astrological exploration today? Feel free to ask about your career, marriage timing, Dhana Yogas, or remedies for your **${lagna} Lagna** chart (**${dashaMaha}-${dashaAntar}** Dasha).`;
+          message = `Pranam ${honorific}! How may I assist your astrological exploration today? Feel free to ask about your career, marriage timing, Dhana Yogas, or remedies for your **${lagna} Lagna** chart (**${dashaMaha}-${dashaAntar}** Dasha).`;
           suggested = [
             "Analyze my 10th House of Career & promotion timing",
             "When is an auspicious timing window for marriage?",
@@ -14717,7 +14752,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
         }
       } else {
         if (isHi) {
-          message = `प्रणाम! मैं ${personaDisplay} हूँ।\n\nमैंने आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का विश्लेषण कर लिया है।\n\n### जीवन एवं करियर मार्गदर्शन\nआपकी जन्म कुंडली हमारे परामर्श सत्र से जुड़ चुकी है। मैं करियर, निर्णय, व्यापार और वित्तीय प्रगति में आपका शास्त्रीय मार्गदर्शन करने के लिए तैयार हूँ।\n\nआज आप किस विषय, कार्ययोजना या जीवन के प्रश्न पर विचार करना चाहते हैं?`;
+          message = `प्रणाम! मैं ${personaDisplay} हूँ।\n\nमैंने आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का गहन विश्लेषण कर लिया है। ${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन और करियर की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं। ` : ""}आपकी पत्रिका में सूर्य देव और गुरु-शुक्र दशा का प्रभाव कार्यक्षेत्र को दिशा दे रहा है।\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
           suggested = [
             "मेरे दशम भाव के अनुसार करियर का समय बताइए",
             "मेरी कुंडली में कौन से धन योग सक्रिय हैं?",
@@ -14725,7 +14760,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
             "वर्तमान व्यावसायिक तनाव का समाधान क्या है?",
           ];
         } else {
-          message = `Pranam! I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagna} Lagna**, **${moon} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**.\n\n### Strategic Guidance & Consultation\nYour chart is active and grounded in our consultation session. I am ready to explore your career milestones, leadership trajectory, Dhana Yogas, or upcoming planetary transits.\n\nWhat strategic objective, professional transition, or life question would you like to examine today?`;
+          message = `Pranam! I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagna} Lagna**, **${moon} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**. ${seekerAge ? `At around ${seekerAge} years of age, you are standing at an essential threshold—laying your educational foundation, mastering core skills, and preparing for your career launch. ` : ""}With your Sun and Venus placements, I am ready to explore your career milestones, leadership trajectory, Dhana Yogas, or upcoming planetary transits.\n\nTell me${honorific ? `, ${honorific}` : ""}: what strategic objective, professional transition, or life question would you like to examine today?`;
           suggested = [
             "Analyze my 10th House of Career & promotion timing",
             "What does my chart reveal regarding Dhana Yogas?",
@@ -14738,7 +14773,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       summaryHi = "परामर्श सत्र का आत्मीय स्वागत संदेश।";
     } else if (intent === "ambiguous_future") {
       if (isHi) {
-        message = `${greetingPrefix}आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर सटीक और सार्थक फलादेश हेतु, आप भविष्य के किस विशिष्ट क्षेत्र पर पहले विचार करना चाहते हैं?
+        message = `${greetingPrefix}${honorific ? `${honorific}, ` : ""}आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर सटीक और सार्थक फलादेश हेतु, आप भविष्य के किस विशिष्ट क्षेत्र पर पहले विचार करना चाहते हैं?
 
 1. **करियर एवं आजीविका:** पदोन्नति का समय, नेतृत्व की भूमिका और व्यापार या नौकरी में परिवर्तन।
 2. **आर्थिक स्थिति एवं धन योग:** आय में वृद्धि, निवेश का समय और संपत्ति संचय।
@@ -14751,7 +14786,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
           "सक्रिय दशा एवं साढ़े साती के शास्त्रीय उपाय क्या हैं?",
         ];
       } else {
-        message = `${greetingPrefix}To give you the most accurate and meaningful astrological forecast from your chart (**${lagna} Lagna**, **${moon} Moon**, active **${dashaMaha}-${dashaAntar}** Dasha), which specific domain of your future would you like to explore first?
+        message = `${greetingPrefix}${honorific ? `${honorific}, ` : ""}to give you the most accurate and meaningful astrological forecast from your chart (**${lagna} Lagna**, **${moon} Moon**, active **${dashaMaha}-${dashaAntar}** Dasha), which specific domain of your future would you like to explore first?
 
 1. **Career & Professional Trajectory:** Promotion timing, leadership roles, and business switch.
 2. **Financial Accumulation & Dhana Yogas:** Income growth, investment timing, and asset stability.
@@ -14769,19 +14804,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       summaryHi = "भविष्य के विशिष्ट क्षेत्र के चयन हेतु संरचित विकल्प प्रस्तुत किए।";
     } else if (intent === "career_transit_timing") {
       if (isHi) {
-        message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु कार्यक्षेत्र परिवर्तन एवं व्यापार संवर्धन में आगामी ग्रहीय गोचर का सूक्ष्म विश्लेषण:
-
-### 1. वृहस्पति (गुरु) का गोचर चक्र
-वर्तमान में वृहस्पति आपके सप्तम भाव (वृषभ राशि) से संचरण करते हुए आपके लग्न (वृश्चिक), तृतीय भाव (पराक्रम) और एकादश भाव (लाभ) पर अमृतमय दृष्टि डाल रहे हैं। इसके पश्चात मिथुन और विशेष रूप से कर्क राशि (नवम भाव - उच्च राशि) में गुरु का आगामी गोचर आपके भाग्य को जागृत करेगा और नए स्वतंत्र उपक्रम अथवा पदोन्नति हेतु अत्यंत शुभ समय खिड़की का निर्माण करेगा।
-
-### 2. शनि देव का मीन राशि में गोचर (पंचम भाव)
-शनि देव आपकी कुंडली के पंचम भाव से गोचर करते हुए एकादश भाव (आय), द्वितीय भाव (संचित धन) और सप्तम भाव पर दृष्टि डाल रहे हैं। यह गोचर स्पष्ट संदेश देता है कि बिना सोचे-समझे नौकरी छोड़ने के बजाय सुविचारित, योजनाबद्ध और अनुशासित कौशल उन्नयन के साथ ही करियर परिवर्तन करें।
-
-### 3. राहु-केतु अक्ष का प्रभाव
-राहु-केतु का संचरण कर्म भाव (दशम) और सुख भाव (चतुर्थ) के अक्ष को प्रभावित करता है, जो पारंपरिक सीमाओं से बाहर निकलकर नवीन तकनीकी अथवा दूरस्थ क्षेत्रों में विस्तार की प्रेरणा देता है।
-
-### रणनीतिक सिफारिश एवं शुभ समय
-व्यापार आरंभ करने अथवा नौकरी में बड़े परिवर्तन हेतु मई 2026 से आगे का समय, जब गुरु कर्क राशि में उच्च के होंगे, सर्वाधिक स्थिर और लाभदायक सिद्ध होगा। वर्तमान समय में आधारभूत तैयारी और वित्तीय सुरक्षा निधि को सुदृढ़ करें।`;
+        message = `${honorific ? `${honorific}, ` : ""}**${lagnaDisplay} लग्न** हेतु कार्यक्षेत्र परिवर्तन एवं व्यापार संवर्धन में आगामी ग्रहीय गोचर का सूक्ष्म और आत्मीय विश्लेषण:\n\nवर्तमान में वृहस्पति आपके सप्तम भाव (वृषभ राशि) से संचरण करते हुए आपके लग्न (वृश्चिक), तृतीय भाव (पराक्रम) और एकादश भाव (लाभ) पर अमृतमय दृष्टि डाल रहे हैं। इसके पश्चात मिथुन और विशेष रूप से कर्क राशि (नवम भाव - उच्च राशि) में गुरु का आगामी गोचर आपके भाग्य को जागृत करेगा और नए स्वतंत्र उपक्रम अथवा पदोन्नति हेतु अत्यंत शुभ समय खिड़की का निर्माण करेगा।\n\nशनि देव आपकी कुंडली के पंचम भाव (मीन राशि) से गोचर करते हुए एकादश भाव (आय), द्वितीय भाव (संचित धन) और सप्तम भाव पर दृष्टि डाल रहे हैं। यह गोचर स्पष्ट संदेश देता है कि बिना सोचे-समझे नौकरी या दिशा बदलने के बजाय सुविचारित, योजनाबद्ध और अनुशासित कौशल उन्नयन के साथ ही करियर परिवर्तन करें।\n\nव्यापार आरंभ करने अथवा कार्यक्षेत्र में बड़े परिवर्तन हेतु मई 2026 से आगे का समय, जब गुरु कर्क राशि में उच्च के होंगे, सर्वाधिक स्थिर और लाभदायक सिद्ध होगा। वर्तमान समय में आधारभूत तैयारी और वित्तीय सुरक्षा निधि को सुदृढ़ करें।\n\n${honorific ? `${honorific}, ` : ""}क्या आप अभी किसी नौकरी परिवर्तन या नए उद्यम की योजना बना रहे हैं? अपनी समय-सीमा बताएं, ताकि हम ग्रहों की गति से तालमेल बैठा सकें।`;
         suggested = [
           "गुरु के उच्च गोचर का मेरे दशम भाव पर क्या प्रभाव होगा?",
           "व्यापार आरंभ करने हेतु शुभ मुहूर्त एवं होरा क्या है?",
@@ -14789,19 +14812,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
           "करियर परिवर्तन में बाधक ग्रहों के वैदिक उपाय क्या हैं?",
         ];
       } else {
-        message = `${greetingPrefix}Evaluating upcoming planetary transits supporting a career switch or business venture for **${lagna} Lagna**:
-
-### 1. Jupiter (Guru) Transit Dynamics
-Currently, Jupiter transits through your 7th house (Taurus), casting auspicious trinal aspects on your 11th house of gains (Virgo) and 1st house (${lagna} Lagna). As Jupiter advances into Gemini and subsequently enters Cancer (your 9th house of Bhagya / Divine Fortune, where Jupiter is exalted in mid-2026), it initiates the prime strategic window for professional transitions, leadership elevation, and entrepreneurial ventures.
-
-### 2. Saturn (Shani) in Pisces (5th House)
-Saturn transiting Pisces in your 5th house casts its 10th aspect upon your 2nd house of accumulated wealth and its 7th aspect upon the 11th house of liquid gains. Parashari principles indicate that impulsive leaps without runway capital must be avoided; structured, phased transitions backed by disciplined preparation will yield enduring stability.
-
-### 3. Rahu-Ketu Axis & Professional Alignment
-The nodal axis transiting your 4th/10th and 5th/11th houses sparks ambition for innovative, tech-enabled, or cross-border ventures.
-
-### Strategic Timing Window
-The strongest window for formalizing an independent enterprise or executing a lateral career leap activates when Jupiter approaches its exaltation sign (Cancer in your 9th house). Focus current efforts on network building and financial buffer accumulation.`;
+        message = `${honorific ? `${honorific}, ` : ""}evaluating upcoming planetary transits supporting a career switch, promotion, or business venture for **${lagna} Lagna** reveals very clear strategic markers:\n\nCurrently, Jupiter transits through your 7th house (Taurus), casting auspicious trinal aspects on your 11th house of gains (Virgo) and 1st house (${lagna} Lagna). As Jupiter advances into Gemini and subsequently enters Cancer (your 9th house of Bhagya / Divine Fortune, where Jupiter is exalted in mid-2026), it initiates the prime strategic window for professional transitions, leadership elevation, and entrepreneurial ventures.\n\nAt the same time, Saturn transiting Pisces in your 5th house casts its 10th aspect upon your 2nd house of accumulated wealth and its 7th aspect upon the 11th house of liquid gains. Parashari principles indicate that impulsive leaps without runway capital or deep skills must be avoided; structured, phased transitions backed by disciplined preparation will yield enduring stability.\n\nThe strongest window for formalizing an independent enterprise or executing a lateral career leap activates when Jupiter approaches its exaltation sign in Cancer in your 9th house. Focus current efforts on network building, competitive skill building, and deep technical preparation.\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific transition timeline are you contemplating right now? Let us map your strategy with cosmic timing.`;
         suggested = [
           "How will Jupiter's exaltation transit impact my 10th house?",
           "What is the most auspicious timing to launch a business?",
@@ -14815,22 +14826,7 @@ The strongest window for formalizing an independent enterprise or executing a la
         "कार्यक्षेत्र परिवर्तन एवं व्यापार आरंभ हेतु आगामी गुरु, शनि एवं राहु-केतु गोचर का विश्लेषण किया।";
     } else if (intent === "dasha_career_stability") {
       if (isHi) {
-        message = `${greetingPrefix}आपकी सक्रिय **${dashaMahaDisplay} महादशा** एवं **${dashaAntarDisplay} अंतर्दशा** का व्यावसायिक स्थिरता पर शास्त्रीय पाराशरी विश्लेषण:
-
-### 1. विंशोत्तरी दशा स्वामियों का संबंध (गुरु-शुक्र)
-आपके **${lagnaDisplay} लग्न** हेतु:
-- **वृहस्पति (गुरु):** द्वितीय भाव (धन, वाणी) एवं पंचम भाव (बुद्धि, पूर्व पुण्य) के शुभ स्वामी हैं।
-- **शुक्र देव:** सप्तम भाव (साझेदारी, व्यापार) एवं द्वादश भाव (व्यय, दूरस्थ संबंध) के स्वामी होकर एकादश भाव (कन्या राशि) में स्थित हैं।
-गुरु और शुक्र दोनों नैसर्गिक शुभ ग्रह हैं, परंतु तत्कालीन संबंध में कार्यक्षेत्र में बौद्धिक विस्तार के साथ-साथ कूटनीतिक संतुलन की आवश्यकता होती है।
-
-### 2. व्यावसायिक स्थिरता पर प्रत्यक्ष प्रभाव
-- **सकारात्मक पक्ष:** गुरु का पंचमेश होना आपकी बौद्धिक क्षमता, निर्णय लेने की शक्ति और रणनीतिक दृष्टिकोण को बढ़ाता है। संस्थान में वरिष्ठों से सम्मान और प्रतिष्ठा में वृद्धि होती है।
-- **सावधानी के बिंदु:** शुक्र का द्वादशेश (12वें भाव का स्वामी) होना यह दर्शाता है कि कार्यस्थल पर अनावश्यक राजनीति, गोपनीय असंतोष अथवा सहकर्मियों के साथ अहंकार के टकराव से बचें। वित्तीय खर्चों पर कठोर नियंत्रण रखें।
-
-### 3. स्थिरता बनाए रखने के व्यावहारिक सूत्र
-1. संस्थागत नीतियों और लिखित समझौतों का पूर्ण पालन करें।
-2. कार्यस्थल पर मौखिक वादों के बजाय पारदर्शी ईमेल और लिखित रिकॉर्ड रखें।
-3. गुरुवार के दिन गुरु मंत्र का जप और सात्विक आहार मन को एकाग्र रखेगा।`;
+        message = `${honorific ? `${honorific}, ` : ""}यह आपकी आयु और जीवन के पड़ाव के अनुरूप अत्यंत गहरा, परिपक्व और सामयिक प्रश्न है।\n\nआपकी सक्रिय **${dashaMahaDisplay} महादशा** एवं **${dashaAntarDisplay} अंतर्दशा** ज्ञान (गुरु) और सांसारिक आकांक्षा (शुक्र) का एक सुंदर संगम है। आपकी कुंडली में गुरु देव द्वितीय भाव (धन, वाणी) एवं पंचम भाव (बुद्धि, पूर्व पुण्य) के शुभ स्वामी होकर ज्ञान और स्थिरता के आधार हैं, जबकि शुक्र देव सप्तम एवं द्वादश भाव के स्वामी होकर एकादश भाव में स्थित हैं।\n\nकिंतु शुक्र देव का अंतर-प्रभाव मन में शीघ्र सफलता, भौतिक परिणाम और सामाजिक प्रतिष्ठा की तीव्र इच्छा उत्पन्न करता है। ${seekerAge ? `${seekerAge} वर्ष की इस युवा अवस्था में ` : ""}यह योग कभी-कभी एक आंतरिक छटपटाहट पैदा करता है—जैसे कि 'क्या मैं सही गति से आगे बढ़ रहा हूँ?' या साथियों की प्रगति देखकर व्यर्थ की चिंता होना।\n\nमैं आपको पूर्ण विश्वास के साथ आश्वस्त करता हूँ: इस दशा में वास्तविक स्थिरता जल्दबाजी में नहीं, बल्कि अपने ज्ञान और कौशल को गहरा करने से आएगी। जब आप प्रतिदिन धैर्यपूर्वक अपने कौशल को निखारेंगे, तो यह ग्रह योग आपके भविष्य की स्थिरता और सम्मान की रक्षा करेगा।\n\nमानसिक शांति और स्थिरता हेतु: प्रातःकाल तांबे के पात्र से भगवान सूर्य को जल अर्पित करें और गायत्री मन्त्र का 11 अथवा 21 बार जप करें।\n\n${honorific ? `${honorific}, ` : ""}क्या हाल के दिनों में आपको अपने भविष्य या पढ़ाई को लेकर कोई मानसिक तनाव या अस्थिरता महसूस हो रही है? आप मुझसे अपने मन की बात साझा कर सकते हैं।`;
         suggested = [
           "गुरु-शुक्र दशा के बाद आगामी अंतर्दशा कौन सी होगी?",
           "कार्यक्षेत्र में वरिष्ठों से संबंध सुधारने के वैदिक उपाय क्या हैं?",
@@ -14838,22 +14834,7 @@ The strongest window for formalizing an independent enterprise or executing a la
           "द्वादशेश शुक्र के व्यय प्रभाव को कैसे नियंत्रित करें?",
         ];
       } else {
-        message = `${greetingPrefix}Scriptural Parashari evaluation of professional stability under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**:
-
-### 1. Planetary Lordship Dynamics for ${lagna} Lagna
-In your natal chart:
-- **Jupiter (Guru):** Rules the 2nd House (accumulated wealth, speech) and 5th House (intellect, discernment, Purva Punya), functioning as a premier functional benefic.
-- **Venus (Shukra):** Rules the 7th House (partnerships, contracts) and 12th House (expenditures, foreign relations), placed in your 11th House of gains (Virgo).
-The interaction between 2nd/5th lord Jupiter and 11th house Venus activates significant commercial intuition and financial acumen, but requires mindful navigation of Venus's 12th lordship.
-
-### 2. Concrete Impact on Professional Stability
-- **Strengths & Growth:** Jupiter's 5th lordship fortifies strategic advisory capabilities, conceptual leadership, and mentorship roles. Your counsel carries institutional weight.
-- **Vulnerabilities to Manage:** Because Venus governs the 12th house of hidden dynamics and outlays, interpersonal misalignment with peers or unvetted contractual commitments can cause temporary friction. Avoid workplace gossip and lateral distractions.
-
-### 3. Actionable Directives for Maximum Stability
-1. **Consolidate Core Authority:** Focus on delivering measurable institutional outcomes before petitioning for external expansions.
-2. **Written Documentation:** Keep commercial and operational agreements strictly documented in writing.
-3. **Disciplined Boundaries:** Maintain ethical neutrality during departmental reorganizations.`;
+        message = `${honorific ? `${honorific}, ` : ""}this is a very profound and mature question to ask at your stage of life.\n\nYour active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha** represent a sacred confluence between wisdom (Jupiter) and worldly ambition (Venus). In your chart, Jupiter rules your 2nd House of accumulated wealth and 5th House of intellect and discernment, acting as your premier functional anchor of professional stability. Meanwhile, Venus governs your 7th and 12th houses and is placed in your 11th House of gains.\n\nHowever, the sub-influence of Venus naturally creates a heightened desire for rapid tangible progress, recognition, and material milestones. ${seekerAge ? `At around ${seekerAge} years of age, ` : ""}this combination can sometimes trigger an internal psychological restlessness—a feeling of "am I moving fast enough?" or an impulse to compare your trajectory with peers on social media.\n\nLet me reassure you with complete certainty${honorific ? `, ${honorific}` : ""}: during this cycle, genuine stability is forged through depth of craft, not hurried shortcuts. The planetary currents urge you to build an unshakeable foundation. When you commit to mastering your core discipline with daily patience, this Dasha acts as an impregnable shield protecting your reputation and future authority.\n\nTo cultivate unwavering mental peace and professional poise, make it a sacred habit to offer water (Arghya) to the morning rising Sun while reciting the Gayatri Mantra, and maintain absolute transparency in all your commitments.\n\nTell me${honorific ? `, ${honorific}` : ""}: have you been experiencing any internal pressure, academic stress, or restlessness about the future lately? Share what is on your heart.`;
         suggested = [
           "Which upcoming Antardasha follows Jupiter-Venus?",
           "What classical remedies pacify 12th house Venus tensions?",
@@ -14933,16 +14914,7 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
       summaryHi = "सप्तम भाव, दांपत्य समन्वय, D9 नवांश एवं विवाह समय का विश्लेषण किया।";
     } else if (intent === "career") {
       if (isHi) {
-        message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु आपकी आजीविका एवं करियर का सूक्ष्म विश्लेषण:
-
-### ज्योतिषीय निदान एवं दशम भाव
-आपकी व्यावसायिक दिशा सक्रिय **${dashaMahaDisplay} महादशा** एवं **${dashaAntarDisplay} अंतर्दशा** से निर्देशित हो रही है। ${lagnaDisplay} लग्न हेतु दशम भाव (सिंह राशि) के स्वामी सूर्य देव हैं। ${moonDisplay} राशि में चंद्र देव की स्थिति आपको स्वाभाविक कूटनीति, गहन बौद्धिक एकाग्रता और रणनीतिक सूझबूझ प्रदान करती है।
-
-### पदोन्नति एवं सामंजस्य का समय
-आगामी 3 से 6 महीनों में शुभ ग्रहों का गोचर आपके कार्यक्षेत्र में उत्तरदायित्व वृद्धि के संकेत दे रहा है। महत्वपूर्ण संवाद में विनम्रता और धैर्य बनाए रखें।
-
-### व्यावहारिक परामर्श
-काम के साथ-साथ अपने व्यक्तिगत स्वास्थ्य का भी ध्यान रखें। स्थाई व्यावसायिक सफलता संतुलित और शांत मन से ही संभव है।`;
+        message = `${honorific ? `${honorific}, ` : ""}आइए आपकी आजीविका, करियर के मार्ग और ग्रहीय समय चक्र का अत्यंत सूक्ष्म और आत्मीय विश्लेषण करते हैं।\n\n${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आपकी सबसे बड़ी प्राथमिकता अपनी स्वाभाविक प्रतिभा को ठोस विशेषज्ञता में परिवर्तित करने की है। ` : ""}आपकी कुंडली में ${lagnaDisplay} लग्न हेतु दशम भाव (सिंह राशि) के स्वामी सूर्य देव हैं। सिंह राशि में सूर्य देव और मेष में मंगल की ऊर्जा यह दर्शाती है कि आप किसी दबावयुक्त अथवा नीरस अधीनता में कार्य करने के लिए नहीं बने हैं—आप वहाँ सर्वश्रेष्ठ परिणाम देते हैं जहाँ आपको निर्णय लेने की स्वतंत्रता, बौद्धिक सम्मान और योग्यता की पहचान मिले।\n\nउच्च तकनीकी क्षेत्र, प्रबंधन परामर्श, रणनीतिक नेतृत्व, वित्तीय विश्लेषण अथवा प्रतिष्ठित प्रतियोगी परीक्षाएं आपके लिए सर्वाधिक फलदायी सिद्ध होंगी।\n\nसमय और पदोन्नति की बात करें तो: वर्ष 2025 के मध्य से 2027 के बीच, जब गुरु देव अपनी उच्च राशि कर्क में संचरण करेंगे, आपके जीवन का पहला अत्यंत महत्वपूर्ण उत्थान काल (Breakthrough Window) आरंभ होगा। यह समय शीर्ष संस्थानों में चयन, उत्कृष्ट प्लेसमेंट या पहली बड़ी पदोन्नति हेतु अत्यंत भाग्यशाली है।\n\n${honorific ? `${honorific}, ` : ""}अभी आप किस विषय अथवा क्षेत्र में अध्ययन या तैयारी कर रहे हैं? मुझे अपने वर्तमान लक्ष्य के बारे में बताएं, ताकि मैं आपकी कुंडली के अनुसार सबसे सटीक रणनीति सुझा सकूं।`;
         suggested = [
           "मेरे दशमेश का पदोन्नति के समय पर क्या प्रभाव है?",
           "आगामी कौन सा गोचर नौकरी परिवर्तन में सहायक होगा?",
@@ -14950,18 +14922,7 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
           "कार्यस्थल पर सफलता हेतु कौन से वैदिक उपाय उत्तम हैं?",
         ];
       } else {
-        message = `${greetingPrefix}Analyzing the professional trajectory for **${lagna} Lagna**:
-
-### Professional Diagnosis & House Axis
-Your professional authority is strongly energized under your active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha**. For ${lagna} Lagna, the 10th House of career is ruled by the Sun (Leo), indicating that institutional leadership, authority, and structured accountability are key themes.
-
-### Strategic Milestones & Execution Timing
-1. **Next 60–90 Days:** High-visibility window. Initiate project proposals, performance evaluations, and stakeholder alignment.
-2. **Leadership Posture:** Maintain a composed, data-driven demeanor during high-pressure meetings.
-3. **Risk Management:** Consolidate your core deliverables before pursuing lateral transitions.
-
-### Practical Reflection
-Align your high-stakes negotiations with planetary Horas governed by functional benefics for optimum clarity.`;
+        message = `${honorific ? `${honorific}, ` : ""}let us look deeply into your professional path and the planetary currents shaping your trajectory.\n\n${seekerAge ? `At around ${seekerAge} years of age, you are at a vital and promising threshold—transitioning from academic foundations into building real-world mastery and independence. ` : ""}For ${lagna} Lagna, the 10th House of career is governed by the Sun (Leo). With your Sun in royal Leo and Mars in Aries, your core psychological drive is toward autonomy, self-respect, and creative leadership. You are not suited for mundane or mechanical subordination; you need an environment where your ideas matter and your merit is recognized.\n\nYour Mars in Aries gives you immense stamina, courage, and a competitive edge, while Mercury in Leo gives you quick intellectual synthesis. For your chart, career paths involving technology systems, management consulting, strategic leadership, quantitative analytics, or prestigious competitive examinations align harmoniously with your planetary dignities.\n\nRegarding your timing and career acceleration: between late 2025 and mid-2027, as transiting Jupiter moves into exalted Cancer (activating your 9th house of divine fortune and higher growth), you enter your primary breakthrough window. This period strongly favors major entrance breakthroughs, securing high-impact campus placements, or initial high-visibility career milestones.\n\nMy guidance to you is to cultivate depth over speed right now. Master your core technical or business discipline daily without being distracted by peer comparisons.\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific field or specialized domain are you currently pursuing or preparing for? Share your current academic or professional focus, and let us analyze the most auspicious sectors for your chart.`;
         suggested = [
           "How does my 10th house lord influence promotion timing?",
           "Which upcoming transit supports a career switch?",
@@ -15035,33 +14996,11 @@ Traditional remedies are cultural and spiritual practices intended to cultivate 
         "शास्त्रीय पाराशरी उपाय, महामृत्युंजय मन्त्र एवं शनि शांति के नियम बताए।";
     } else {
       if (isHi) {
-        message = `${greetingPrefix}**${lagnaDisplay} लग्न** एवं **${moonDisplay} चंद्र** हेतु समग्र वैदिक ज्योतिषीय विश्लेषण:
-
-### स्वभाव एवं जीवन धारा
-${lagnaDisplay} लग्न और ${moonDisplay} राशि के साथ आपकी कुंडली बौद्धिक गहराई और दृढ़ता को दर्शाती है। सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay}** दशा काल में जीवन में उद्देश्यपूर्ण प्रगति और परिपक्वता का समय है।
-
-### ग्रह गोचर एवं परामर्श
-शनि का गोचर (${sadesati}) धैर्य और दीर्घकालीन अनुशासन की सीख देता है। संयमित दिनचर्या से आप इस समय का श्रेष्ठ लाभ उठा सकते हैं।`;
-        suggested = [
-          "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
-          "संबंधों में अनुकूलता का समय कब बन रहा है?",
-          "सक्रिय दशा काल में आर्थिक स्थिति कैसी रहेगी?",
-          "मानसिक शांति हेतु कौन से पारंपरिक उपाय शुभ हैं?",
-        ];
+        message = `प्रणाम ${honorific ? `${honorific}! ` : ""}मैंने आपकी जन्म पत्रिका (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का अध्ययन कर लिया है।\n\n${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन, कौशल विकास और आजीविका की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं। ` : ""}आपकी कुंडली में सूर्य देव (सिंह राशि) और मंगल देव (मेष राशि) का प्रभाव आपके अंदर स्वतंत्र निर्णय क्षमता, उच्च आत्मसम्मान और नेतृत्व की स्वाभाविक ऊर्जा प्रदान करता है।\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा, संबंध या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
+        suggested = [];
       } else {
-        message = `${greetingPrefix}Comprehensive Vedic astrological analysis for **${lagna} Lagna** and **${moon} Moon**:
-
-### Natal Constitution & Life Themes
-With ${lagna} Lagna and Moon in ${moon}, your chart reflects intellectual depth and resilience. Your active **${dashaMaha}-${dashaAntar}** Dasha period emphasizes purpose, structured growth, and character maturation.
-
-### Planetary Climate & Advice
-Saturn in ${sadesati} teaches patience and long-term discipline. By maintaining composed focus and balanced daily routines, you navigate this period with graceful resilience.`;
-        suggested = [
-          "Analyze my career trajectory and promotion timing",
-          "When does my chart indicate relationship consolidation?",
-          "What does my active Dasha period signify for finances?",
-          "Which traditional remedies bring balanced peace of mind?",
-        ];
+        message = `Pranam ${honorific ? `${honorific}! ` : ""}I have successfully connected to your natal chart: **${lagna} Lagna**, Moon in **${moon}**, with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n${seekerAge ? `At around ${seekerAge} years of age, you are standing at an essential threshold—building your core skills, setting higher education or entrance goals, and preparing for your career launch. ` : ""}With your Sun in royal Leo and Mars in Aries, your chart reflects immense drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy.\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific concern, career goal, relationship question, or life milestone is foremost on your mind today? Feel free to ask anything directly.`;
+        suggested = [];
       }
       summaryEn =
         "Synthesized natal chart constitution, planetary climate, and personal guidance.";

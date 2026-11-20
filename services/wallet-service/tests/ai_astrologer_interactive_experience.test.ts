@@ -147,4 +147,33 @@ test("AI ASTROLOGER INTERACTIVE EXPERIENCE & ZERO-PREFILLED CHIPS SUITE", async 
       );
     },
   );
+
+  await t.test(
+    "6. Astrotalk-grade human conversational intelligence, name extraction & chip container hidden",
+    () => {
+      // Verify permanent hiding of chip container
+      assert.ok(
+        htmlContent.includes(
+          'id="ai-chat-chips-container" style="display: none !important;"',
+        ),
+        "#ai-chat-chips-container must be permanently hidden with display: none !important;",
+      );
+
+      // Verify name extraction from messages like 'Aryan Tiwari 20 august 2005'
+      assert.ok(
+        htmlContent.includes("nameDateMatch") &&
+          htmlContent.includes("seekerProfile") &&
+          htmlContent.includes("honorific"),
+        "sendAiUserChatMessage must extract seeker name and build seekerProfile",
+      );
+
+      // Verify human spoken dialogue replaces stiff textbook headers
+      assert.ok(
+        htmlContent.includes(
+          "let us look deeply into your professional path",
+        ) || htmlContent.includes("vital and promising threshold"),
+        "Career response must speak conversationally like a senior Astrotalk mentor",
+      );
+    },
+  );
 });
