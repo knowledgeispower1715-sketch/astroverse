@@ -21058,9 +21058,9 @@
       if (!seekerName) {
         const fullHistoryAndQuery = [...(history || []).filter(m => m.role === 'user').map(m => m.content || ''), userQuery || ''].join(' ');
         const nameDateMatch = fullHistoryAndQuery.match(/^([A-Za-z\s]{2,30}?)\s+(?:born\s*(?:on)?\s*)?(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+[,\s]+\d{4}|[A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4})/i);
-        const introNameMatch = fullHistoryAndQuery.match(/(?:my name is|i am|myself|this is|naam hai|naam)\s+([A-Za-z\s]{2,25})/i);
+        const introNameMatch = fullHistoryAndQuery.match(/(?:my name is|i am|i'm|im|call me|this is|myself|naam hai|naam)\s+([A-Za-z\s]{2,25})/i) || fullHistoryAndQuery.match(/\b([A-Za-z]{2,20})\s+here\b/i);
         if (introNameMatch) seekerName = introNameMatch[1].trim();
-        else if (nameDateMatch && !/^(hi|hello|hey|pranam|namaste)\b/i.test(nameDateMatch[1].trim())) seekerName = nameDateMatch[1].trim();
+        else if (nameDateMatch && !/^(hi|hello|hey|pranam|namaste|im|i'm|i am)\b/i.test(nameDateMatch[1].trim())) seekerName = nameDateMatch[1].trim();
       }
       
       let firstName = seekerProfile?.firstName || (seekerName ? seekerName.trim().split(/\s+/)[0] : '');
@@ -21319,7 +21319,9 @@
       }
 
       // Personal Introduction (Test B: Acknowledging name only, no chart claims)
-      const nameMatch = q.match(/(?:i am|i'm|my name is|call me)\s+([a-zA-Z]{2,30})/i) ||
+      const nameMatch = q.match(/(?:i am|i'm|im|my name is|call me|this is|myself|it's|its)\s+([a-zA-Z]{2,30})/i) ||
+        q.match(/\b([a-zA-Z]{2,20})\s+here\b/i) ||
+        (!isOutOfScope && /^[a-zA-Z]{2,25}$/i.test(q.trim()) && !/^(hi|hello|hey|pranam|namaste|future|career|marriage|wedding|wealth|money|remedy|help|yes|no)$/i.test(q.trim()) ? [null, q.trim()] : null) ||
         (userQuery || '').match(/(?:मेरा नाम|मैं हूँ|मुझे)\s+([^\s,।!?]{2,30})/);
       const isPersonalIntro = !!nameMatch && !isOutOfScope && q.split(' ').length <= 10;
 
@@ -21817,10 +21819,17 @@
             ];
           }
         } else {
-          // Test A: Initial Greeting with no chart
-          greetMsg = isHi
-            ? "नमस्ते! एस्ट्रोवर्स में आपका स्वागत है। मैं आपका वैदिक ज्योतिष AI मार्गदर्शक हूँ। आप मुझसे संबंध, विवाह, करियर, व्यापार, परिवार, कुंडली या किसी भी विषय पर प्रश्न पूछ सकते हैं। आज आपके मन में क्या है?"
-            : "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?";
+          if (hasPriorAssistantTurn) {
+            // Consecutive greeting in active session without chart
+            greetMsg = isHi
+              ? `प्रणाम ${honorific ? `${honorific}! ` : ''}मैं आपके साथ उपस्थित हूँ। आज आप किस विषय या प्रश्न पर मार्गदर्शन चाहते हैं?`
+              : `Pranam${honorific ? ` ${honorific}` : ''}! I am right here with you. What specific question, career milestone, or life milestone is on your mind today? Feel free to ask directly.`;
+          } else {
+            // Test A: Initial Greeting with no chart
+            greetMsg = isHi
+              ? "नमस्ते! एस्ट्रोवर्स में आपका स्वागत है। मैं आपका वैदिक ज्योतिष AI मार्गदर्शक हूँ। आप मुझसे संबंध, विवाह, करियर, व्यापार, परिवार, कुंडली या किसी भी विषय पर प्रश्न पूछ सकते हैं। आज आपके मन में क्या है?"
+              : "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?";
+          }
           greetSuggested = isHi ? [
             "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
             "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
@@ -22403,6 +22412,44 @@ Every insight in your consultation is directly derived from these mathematical c
         }
 
       } else {
+        if (!hasChart || !chart) {
+          const salutation = isSunita ? 'Namaste' : (isRaghavendra ? 'Om Namah Shivaya' : 'Pranam');
+          const salutationHi = isSunita ? 'नमस्ते' : (isRaghavendra ? 'ॐ नमः शिवाय' : 'प्रणाम');
+          const nameGreet = firstName ? `${firstName} ji` : '';
+          const nameGreetHi = firstName ? `${firstName} जी` : '';
+
+          if (isHi) {
+            message = `${salutationHi}${nameGreetHi ? ` ${nameGreetHi}` : ''}! मैं आपकी सहायता के लिए उपस्थित हूँ।\n\nआप करियर, व्यापार, शिक्षा, विवाह, संबंध, स्वास्थ्य अथवा जीवन के किसी भी महत्वपूर्ण निर्णय के विषय में परामर्श प्राप्त कर सकते हैं।\n\nयदि आप अपनी व्यक्तिगत जन्म कुंडली (लग्न, चंद्र राशि, महादशा) का सूक्ष्म अध्ययन कराना चाहते हैं, तो कृपया अपनी जन्म तिथि (Date of Birth), जन्म समय (Time of Birth) और जन्म स्थान (City of Birth) यहाँ साझा करें।\n\nआज आपके मन में क्या विचार अथवा प्रश्न है?`;
+            suggested = [
+              "मैं अपनी जन्म कुंडली का विश्लेषण कराना चाहता हूँ",
+              "वर्तमान में कौन से प्रमुख ग्रह गोचर चल रहे हैं?",
+              "वैदिक ज्योतिष से जीवन में क्या मार्गदर्शन प्राप्त हो सकता है?",
+              "करियर में स्थिरता और उन्नति के लिए क्या आवश्यक है?"
+            ];
+          } else {
+            message = `${salutation}${nameGreet ? ` ${nameGreet}` : ''}! I am here to assist you with deep Vedic astrological insight.\n\nWhether you are contemplating a career transition, evaluating educational paths, seeking clarity on relationships or marriage, or looking for auspicious timing (Muhurta), feel free to ask directly.\n\nTo conduct an exact natal chart (Janam Kundli) assessment—including your Ascendant, Moon sign, planetary dignity, and active Vimshottari Dasha periods—please share your Date of Birth, Time of Birth, and Place of Birth.\n\nWhat specific question or life milestone would you like to explore today?`;
+            suggested = [
+              "I would like to analyze my birth chart",
+              "What are the major active planetary transits currently?",
+              "How does Vedic Jyotish guide career and decision making?",
+              "What details are required for an accurate Kundli calculation?"
+            ];
+          }
+          return {
+            intent: 'general_guidance',
+            message: message,
+            chartEvidence: [],
+            relatedInsights: [],
+            suggestedQuestions: suggested,
+            bilingual_summary: {
+              en: "Provided comprehensive Vedic astrological consultation guidance and invited birth details for personalized Kundli calculations.",
+              hi: "शास्त्रीय वैदिक ज्योतिषीय मार्गदर्शन प्रदान किया तथा व्यक्तिगत कुंडली हेतु जन्म विवरण आमंत्रित किया।"
+            },
+            remedyCard: null,
+            status: 'completed'
+          };
+        }
+
         const sunMarsGeneralEn = (sunSign === 'Leo' && marsSign === 'Aries')
           ? "With your Sun in royal Leo and Mars in Aries, your chart reflects immense drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy."
           : `With your Sun in ${sunSign} (House ${sunHouse}) and Mars in ${marsSign} (House ${marsHouse}), your chart reflects thoughtful determination, disciplined energy, and focused purpose. You thrive where your dedication is valued and you have clarity of mission.`;
@@ -22644,20 +22691,24 @@ Every insight in your consultation is directly derived from these mathematical c
           }
         }
 
-        // D. Extract Seeker Name (e.g. "Arun dev 19 December 2001", "Aryan Tiwari 20 august 2005", "My name is Aryan", etc.)
+        // D. Extract Seeker Name (e.g. "Arun dev 19 December 2001", "Aryan Tiwari 20 august 2005", "im menex", "My name is Aryan", etc.)
         let extractedName = '';
         const nameDateMatch = textToParse.match(/^([A-Za-z\s]{2,30}?)\s+(?:born\s*(?:on)?\s*)?(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+[,\s]+\d{4}|[A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4})/i);
-        const introNameMatch = textToParse.match(/(?:my name is|i am|myself|this is|naam hai|naam)\s+([A-Za-z\s]{2,25})/i);
+        const introNameMatch = textToParse.match(/(?:my name is|i am|i'm|im|call me|myself|this is|naam hai|naam)\s+([A-Za-z\s]{2,25})/i) || textToParse.match(/\b([A-Za-z]{2,20})\s+here\b/i);
         if (introNameMatch) {
           extractedName = introNameMatch[1].trim();
         } else if (nameDateMatch) {
-          const rawN = nameDateMatch[1].trim();
+          let rawN = nameDateMatch[1].trim();
+          rawN = rawN.replace(/^(?:i am|i'm|im|this is|myself)\s+/i, '').trim();
           if (!/^(hi|hello|hey|pranam|namaste|greetings)\b/i.test(rawN)) {
             extractedName = rawN;
           }
+        } else if (/^[A-Za-z]{2,20}$/i.test(textToParse.trim()) && !/^(hi|hello|hey|pranam|namaste|future|career|marriage|wedding|wealth|money|remedy|help|yes|no)$/i.test(textToParse.trim())) {
+          extractedName = textToParse.trim();
         }
         if (extractedName) {
           extractedName = extractedName.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+          activeConsultationSession.seekerName = extractedName;
         }
 
         // If Date is present, compute the Kundli immediately!

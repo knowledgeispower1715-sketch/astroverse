@@ -167,6 +167,104 @@ test("AstroVerse AI Astrologer Acceptance Suite (Directive Acceptance Tests A-D 
       assert.equal(data.message.trim(), expectedD);
     });
 
+    // -------------------------------------------------------------------------
+    // TEST B.1: Customer introduces self with informal contraction ("im menex")
+    // -------------------------------------------------------------------------
+    await t.test("Test B.1 — Informal contraction name ('im menex') without apostrophe", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "im menex",
+          session_history: [
+            {
+              role: "assistant",
+              content:
+                "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?",
+            },
+          ],
+          lang: "en",
+        }),
+      });
+
+      assert.equal(res.status, 200);
+      const data = await res.json();
+
+      assert.equal(data.profile_loaded, false);
+      assert.deepEqual(data.chartEvidence, []);
+      assert.equal(data.intent, "name_introduction");
+      assert.equal(data.message.trim(), "Nice to meet you, Menex! What would you like to explore today?");
+
+      // Zero fabricated astrological coordinates
+      assert.doesNotMatch(data.message, /Scorpio/i);
+      assert.doesNotMatch(data.message, /Aquarius/i);
+      assert.doesNotMatch(data.message, /Lagna/i);
+      assert.doesNotMatch(data.message, /Dasha/i);
+      assert.doesNotMatch(data.message, /years of age/i);
+      assert.doesNotMatch(data.message, /Sun in royal Leo/i);
+      assert.doesNotMatch(data.message, /Mars in Aries/i);
+    });
+
+    // -------------------------------------------------------------------------
+    // TEST A.1: Consecutive greeting ("hi" in turn 2 with prior assistant turn)
+    // -------------------------------------------------------------------------
+    await t.test("Test A.1 — Consecutive greeting ('hi') during active chat without chart", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "hi",
+          session_history: [
+            {
+              role: "assistant",
+              content:
+                "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?",
+            },
+          ],
+          lang: "en",
+        }),
+      });
+
+      assert.equal(res.status, 200);
+      const data = await res.json();
+
+      assert.equal(data.profile_loaded, false);
+      assert.equal(data.intent, "greeting");
+      assert.match(data.message, /Pranam! I am right here with you/i);
+      assert.doesNotMatch(data.message, /Scorpio/i);
+      assert.doesNotMatch(data.message, /Lagna/i);
+    });
+
+    // -------------------------------------------------------------------------
+    // TEST E: General question with zero birth chart
+    // -------------------------------------------------------------------------
+    await t.test("Test E — General inquiry without birth coordinates", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "tell me something interesting about astrology",
+          session_history: [
+            {
+              role: "assistant",
+              content:
+                "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide.",
+            },
+          ],
+          lang: "en",
+        }),
+      });
+
+      assert.equal(res.status, 200);
+      const data = await res.json();
+
+      assert.equal(data.profile_loaded, false);
+      assert.ok(data.intent === "general" || data.intent === "general_guidance");
+      assert.match(data.message, /Date of Birth/i);
+      assert.doesNotMatch(data.message, /Scorpio Lagna/i);
+      assert.doesNotMatch(data.message, /Sun in royal Leo/i);
+    });
+
     // =========================================================================
     // SECTION 19: 10-TURN FULL ACCEPTANCE EVALUATION SCENARIO
     // =========================================================================

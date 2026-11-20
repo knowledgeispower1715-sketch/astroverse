@@ -14792,7 +14792,10 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       for (const m of session_history) {
         if (!m || m.role !== "user" || typeof m.content !== "string") continue;
         const text = m.content;
-        const nMatch = text.match(/(?:my name is|i am|i'm|myself|this is|naam hai|call me)\s+([A-Za-z\s]{2,25})[\.!\?]?/i);
+        const nMatch =
+          text.match(
+            /(?:my name is|i am|i'm|im|myself|this is|naam hai|naam|call me)\s+([A-Za-z\s]{2,25})[\.!\?]?/i,
+          ) || text.match(/\b([A-Za-z]{2,20})\s+here\b/i);
         if (nMatch && !historySeekerName) {
           historySeekerName = nMatch[1].trim();
         }
@@ -14847,9 +14850,10 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
 
     // Name extraction from current question
     let extractedName = "";
-    const introNameMatch = question.match(
-      /(?:my name is|i am|myself|this is|naam hai|naam)\s+([A-Za-z\s]{2,25})/i,
-    );
+    const introNameMatch =
+      question.match(
+        /(?:my name is|i am|i'm|im|myself|this is|call me|naam hai|naam)\s+([A-Za-z\s]{2,25})/i,
+      ) || question.match(/\b([A-Za-z]{2,20})\s+here\b/i);
     const nameMatch = question.match(
       /^([A-Za-z\s]{2,30}?)\s+(?:born\s*(?:on)?\s*)?(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+[,\s]+\d{4}|[A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4})/i,
     );
@@ -14857,7 +14861,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       extractedName = introNameMatch[1].trim();
     } else if (
       nameMatch &&
-      !/^(hi|hello|hey|pranam|namaste|greetings|i|i was|i am|he|she|we|they|my|the|it)\b/i.test(nameMatch[1].trim())
+      !/^(hi|hello|hey|pranam|namaste|greetings|i|i was|i am|im|he|she|we|they|my|the|it)\b/i.test(nameMatch[1].trim())
     ) {
       extractedName = nameMatch[1].trim();
     }
@@ -14865,9 +14869,10 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
     // Name-only introduction check (Test B)
     const isNameOnly =
       Boolean(
-        (/^(?:my name is|i am|i'm|myself|this is|naam hai|call me)\s+([A-Za-z\s]{2,25})[\.!\?]?$/i.test(
+        (/^(?:my name is|i am|i'm|im|myself|this is|naam hai|call me)\s+([A-Za-z\s]{2,25})[\.!\?]?$/i.test(
           question.trim(),
         ) ||
+          /^([A-Za-z]{2,20})\s+here[\.!\?]?$/i.test(question.trim()) ||
           (/^[A-Za-z]{2,25}$/i.test(question.trim()) &&
             !/^(hi|hello|hey|pranam|namaste|future|career|marriage|wedding|wealth|money|remedy|help|yes|no)$/i.test(
               question.trim(),
@@ -15084,7 +15089,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       req.body?.seeker_name ||
       req.body?.name ||
       historySeekerName;
-    const seekerFirstName = isRelativeCareer || isRelativeIntro
+    const rawSeekerFirst = isRelativeCareer || isRelativeIntro
       ? historyRelativeRelation
         ? historyRelativeRelation.charAt(0).toUpperCase() + historyRelativeRelation.slice(1)
         : "Brother"
@@ -15093,6 +15098,10 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
         : sessionSeekerName
           ? sessionSeekerName.split(/\s+/)[0]
           : "Seeker";
+    const seekerFirstName =
+      rawSeekerFirst && rawSeekerFirst !== "Seeker"
+        ? rawSeekerFirst.charAt(0).toUpperCase() + rawSeekerFirst.slice(1).toLowerCase()
+        : rawSeekerFirst;
     const honorific =
       extractedName || sessionSeekerName
         ? seekerFirstName + (isHi ? " जी" : " ji")
@@ -15388,28 +15397,51 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
         "आत्मीय मानसिक संबल, चंद्र-आधारित शास्त्रीय विवेचन एवं सात्विक शांति उपाय प्रदान किए।";
     } else if (intent === "greeting") {
       if (!hasChart) {
-        // Test A: Initial Greeting with no chart
-        if (isHi) {
-          message =
-            "नमस्ते! एस्ट्रोवर्स में आपका स्वागत है। मैं आपका वैदिक ज्योतिष AI मार्गदर्शक हूँ। आप मुझसे संबंध, विवाह, करियर, व्यापार, परिवार, कुंडली या किसी भी विषय पर प्रश्न पूछ सकते हैं। आज आपके मन में क्या है?";
-          suggested = [
-            "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
-            "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
-            "जन्म कुंडली कैसे लिंक करें?",
-            "आज की ग्रहीय होरा क्या है?",
-          ];
+        if (hasPriorTurn) {
+          // Returning greeting in active session without chart
+          if (isHi) {
+            message = `प्रणाम ${honorific ? `${honorific}! ` : ""}मैं आपके साथ उपस्थित हूँ। आज आप किस विषय या प्रश्न पर मार्गदर्शन चाहते हैं?`;
+            suggested = [
+              "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+              "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
+              "जन्म कुंडली कैसे लिंक करें?",
+              "आज की ग्रहीय होरा क्या है?",
+            ];
+          } else {
+            message = `Pranam${honorific ? ` ${honorific}` : ""}! I am right here with you. What specific question, career milestone, or life milestone is on your mind today? Feel free to ask directly.`;
+            suggested = [
+              "Analyze my 10th House of Career & promotion timing",
+              "When is an auspicious timing window for marriage?",
+              "How do I link or calculate my Janam Kundli?",
+              "Explain today's planetary Horas",
+            ];
+          }
+          summaryEn = "Acknowledged returning greeting in active consultation.";
+          summaryHi = "सक्रिय परामर्श में अभिवादन का उत्तर दिया।";
         } else {
-          message =
-            "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?";
-          suggested = [
-            "Analyze my 10th House of Career & promotion timing",
-            "When is an auspicious timing window for marriage?",
-            "How do I link or calculate my Janam Kundli?",
-            "Explain today's planetary Horas",
-          ];
+          // Test A: Initial Greeting with no chart
+          if (isHi) {
+            message =
+              "नमस्ते! एस्ट्रोवर्स में आपका स्वागत है। मैं आपका वैदिक ज्योतिष AI मार्गदर्शक हूँ। आप मुझसे संबंध, विवाह, करियर, व्यापार, परिवार, कुंडली या किसी भी विषय पर प्रश्न पूछ सकते हैं। आज आपके मन में क्या है?";
+            suggested = [
+              "मेरे करियर की दिशा एवं पदोन्नति का समय बताइए",
+              "विवाह एवं वैवाहिक सामंजस्य का समय कब है?",
+              "जन्म कुंडली कैसे लिंक करें?",
+              "आज की ग्रहीय होरा क्या है?",
+            ];
+          } else {
+            message =
+              "Namaste! Welcome to AstroVerse. I'm your AI Vedic astrology guide. You can ask me about relationships, marriage, career, business, family, Kundli or any question you'd like to explore. What is on your mind today?";
+            suggested = [
+              "Analyze my 10th House of Career & promotion timing",
+              "When is an auspicious timing window for marriage?",
+              "How do I link or calculate my Janam Kundli?",
+              "Explain today's planetary Horas",
+            ];
+          }
+          summaryEn = "Welcomed seeker as AstroVerse AI Vedic astrology guide with zero ungrounded chart claims.";
+          summaryHi = "बिना किसी अप्रमाणित दावे के एस्ट्रोवर्स AI मार्गदर्शक के रूप में आत्मीय स्वागत किया।";
         }
-        summaryEn = "Welcomed seeker as AstroVerse AI Vedic astrology guide with zero ungrounded chart claims.";
-        summaryHi = "बिना किसी अप्रमाणित दावे के एस्ट्रोवर्स AI मार्गदर्शक के रूप में आत्मीय स्वागत किया।";
       } else if (seekerFirstName && seekerFirstName !== "Seeker") {
         // Test D: Greeting after saved chart exists
         if (isHi) {
@@ -15786,27 +15818,46 @@ Traditional remedies are cultural and spiritual practices intended to cultivate 
       summaryHi =
         "शास्त्रीय पाराशरी उपाय, महामृत्युंजय मन्त्र एवं शनि शांति के नियम बताए।";
     } else {
-      const sunMarsGeneralEn =
-        sun === "Leo" && mars === "Aries"
-          ? "With your Sun in royal Leo and Mars in Aries, your chart reflects immense drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy."
-          : `With your Sun in ${sun} (House ${sunHouse}) and Mars in ${mars} (House ${marsHouse}), your chart reflects distinct drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy.`;
-
-      const sunMarsGeneralHi =
-        sun === "Leo" && mars === "Aries"
-          ? "आपकी कुंडली में सूर्य देव (सिंह राशि) और मंगल देव (मेष राशि) का प्रभाव आपके अंदर स्वतंत्र निर्णय क्षमता, उच्च आत्मसम्मान और नेतृत्व की स्वाभाविक ऊर्जा प्रदान करता है।"
-          : `आपकी कुंडली में सूर्य देव (${sunDisplay} राशि, भाव ${sunHouse}) और मंगल देव (${marsDisplay} राशि, भाव ${marsHouse}) का प्रभाव आपके अंदर स्वतंत्र निर्णय क्षमता, उच्च आत्मसम्मान और नेतृत्व की स्वाभाविक ऊर्जा प्रदान करता है।`;
-
-      if (isHi) {
-        message = `प्रणाम ${honorific ? `${honorific}! ` : ""}मैंने आपकी जन्म पत्रिका (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का अध्ययन कर लिया है।\n\n${ageStageDescHi} ${sunMarsGeneralHi}\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा, संबंध या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
-        suggested = [];
+      if (!hasChart) {
+        const nameGreeting = seekerFirstName && seekerFirstName !== "Seeker" ? ` ${honorific}` : "";
+        if (isHi) {
+          message = `नमस्ते${nameGreeting}! एस्ट्रोवर्स में आपका आत्मीय स्वागत है।\n\nएक वैदिक ज्योतिष AI मार्गदर्शक के रूप में, मैं आपके करियर, पदोन्नति के समय, संबंध एवं वैवाहिक सामंजस्य, धन योग अथवा आध्यात्मिक मार्ग पर गहन अंतर्दृष्टि प्रदान कर सकता हूँ।\n\nआपकी सटीक जन्म कुंडली (लग्न, चंद्र राशि एवं सक्रिय विंशोत्तरी महादशा) का सूक्ष्म विश्लेषण करने हेतु, कृपया अपनी **जन्म तिथि (Date of Birth)**, **जन्म समय (Time of Birth)** एवं **जन्म स्थान (Birth City)** साझा करें।\n\nअथवा यदि आपके मन में अभी कोई विशिष्ट प्रश्न या जीवन परिस्थिति है, तो मुझे बताएं—हम तुरंत विचार आरंभ कर सकते हैं!`;
+        } else {
+          message = `Namaste${nameGreeting}! It is a pleasure to connect with you at AstroVerse.\n\nAs your Vedic astrology guide, I am here to provide clear, actionable clarity on your career milestones, relationships & marital harmony, wealth yogas, or personal life decisions.\n\nTo examine your personal Janam Kundli—including your exact Ascendant (Lagna), Moon sign, and active Vimshottari Dasha subperiods—please share your **Date of Birth**, **Time of Birth**, and **Birth City** right here.\n\nOr if you have a specific question, career dilemma, or life milestone on your mind right now, tell me—we can begin exploring it immediately!`;
+        }
+        suggested = [
+          "Analyze my career trajectory and promotion timing",
+          "When is an auspicious timing window for marriage?",
+          "What details are needed for a Janam Kundli?",
+          "Explain today's planetary Horas",
+        ];
+        summaryEn =
+          "Welcomed seeker and invited birth coordinates for personalized chart calculation.";
+        summaryHi =
+          "जातक का आत्मीय स्वागत किया तथा व्यक्तिगत कुंडली गणना हेतु जन्म विवरण का अनुरोध किया।";
       } else {
-        message = `Pranam ${honorific ? `${honorific}! ` : ""}I have successfully connected to your natal chart: **${lagna} Lagna**, Moon in **${moon}** (${moonNak} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n${ageStageDescEn} ${sunMarsGeneralEn}\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific concern, career goal, relationship question, or life milestone is foremost on your mind today? Feel free to ask anything directly.`;
-        suggested = [];
+        const sunMarsGeneralEn =
+          sun === "Leo" && mars === "Aries"
+            ? "With your Sun in royal Leo and Mars in Aries, your chart reflects immense drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy."
+            : `With your Sun in ${sun} (House ${sunHouse}) and Mars in ${mars} (House ${marsHouse}), your chart reflects distinct drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy.`;
+
+        const sunMarsGeneralHi =
+          sun === "Leo" && mars === "Aries"
+            ? "आपकी कुंडली में सूर्य देव (सिंह राशि) और मंगल देव (मेष राशि) का प्रभाव आपके अंदर स्वतंत्र निर्णय क्षमता, उच्च आत्मसम्मान और नेतृत्व की स्वाभाविक ऊर्जा प्रदान करता है।"
+            : `आपकी कुंडली में सूर्य देव (${sunDisplay} राशि, भाव ${sunHouse}) और मंगल देव (${marsDisplay} राशि, भाव ${marsHouse}) का प्रभाव आपके अंदर स्वतंत्र निर्णय क्षमता, उच्च आत्मसम्मान और नेतृत्व की स्वाभाविक ऊर्जा प्रदान करता है।`;
+
+        if (isHi) {
+          message = `प्रणाम ${honorific ? `${honorific}! ` : ""}मैंने आपकी जन्म पत्रिका (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का अध्ययन कर लिया है।\n\n${ageStageDescHi} ${sunMarsGeneralHi}\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा, संबंध या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
+          suggested = [];
+        } else {
+          message = `Pranam ${honorific ? `${honorific}! ` : ""}I have successfully connected to your natal chart: **${lagna} Lagna**, Moon in **${moon}** (${moonNak} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n${ageStageDescEn} ${sunMarsGeneralEn}\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific concern, career goal, relationship question, or life milestone is foremost on your mind today? Feel free to ask anything directly.`;
+          suggested = [];
+        }
+        summaryEn =
+          "Synthesized natal chart constitution, planetary climate, and personal guidance.";
+        summaryHi =
+          "जन्म कुंडली, ग्रहीय प्रभाव एवं समग्र जीवन परामर्श का समन्वय प्रस्तुत किया।";
       }
-      summaryEn =
-        "Synthesized natal chart constitution, planetary climate, and personal guidance.";
-      summaryHi =
-        "जन्म कुंडली, ग्रहीय प्रभाव एवं समग्र जीवन परामर्श का समन्वय प्रस्तुत किया।";
     }
 
     return res.json({
