@@ -226,7 +226,7 @@ const ALLOWED_ORIGINS = process.env.CORS_ALLOWED_ORIGINS
       "http://127.0.0.1:3000",
       "http://localhost:5000",
       "http://127.0.0.1:5000",
-      "https://astroverse-eta.vercel.app"
+      "https://astroverse-eta.vercel.app",
     ];
 
 // Cashfree Webhook Endpoints (Canonical & Aliases, including trailing slashes)
@@ -2861,8 +2861,14 @@ app.post(
 // ============================================================================
 const GOOGLE_CLIENT_ID =
   process.env.GOOGLE_CLIENT_ID ||
-  "488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com";
+  "488224636987-pom8ojcl2jnkeiogerplksgmh457m3ub.apps.googleusercontent.com";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+
+const VALID_GOOGLE_CLIENT_IDS: string[] = [
+  GOOGLE_CLIENT_ID,
+  "488224636987-pom8ojcl2jnkeiogerplksgmh457m3ub.apps.googleusercontent.com",
+  "488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com",
+].filter(Boolean);
 
 interface GooglePayload {
   email: string;
@@ -2914,7 +2920,7 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
         );
         if (resp.ok) {
           const verified = await resp.json();
-          const isAudValid = verified.aud === GOOGLE_CLIENT_ID;
+          const isAudValid = VALID_GOOGLE_CLIENT_IDS.includes(verified.aud);
           const isIssValid =
             verified.iss === "accounts.google.com" ||
             verified.iss === "https://accounts.google.com";
@@ -2944,7 +2950,7 @@ async function verifyGoogleToken(token: string): Promise<GooglePayload | null> {
         }
       } catch {
         // Fallback to verified structure if client ID matches and network is offline
-        const isAudValid = payload.aud === GOOGLE_CLIENT_ID;
+        const isAudValid = VALID_GOOGLE_CLIENT_IDS.includes(payload.aud);
         const isIssValid = payload.iss?.includes("accounts.google.com");
         const isEmailVerified = payload.email_verified === true;
         const isNotExpired = payload.exp
@@ -5496,7 +5502,11 @@ async function handleConsultationSettlement(
   // Server-authoritative target user resolution
   let userId: string;
   if (isInternal) {
-    if (!clientUserId || typeof clientUserId !== "string" || !clientUserId.trim()) {
+    if (
+      !clientUserId ||
+      typeof clientUserId !== "string" ||
+      !clientUserId.trim()
+    ) {
       return res.status(400).json({
         error: "MISSING_FIELDS",
         message: "userId, astrologerId, and sessionId are required.",
@@ -5565,8 +5575,7 @@ async function handleConsultationSettlement(
       });
     }
     const mins = Math.max(1, Math.ceil(rawSecs / 60));
-    const serverCalculated =
-      Math.round(mins * astro.ratePerMinute * 100) / 100;
+    const serverCalculated = Math.round(mins * astro.ratePerMinute * 100) / 100;
 
     if (typeof rawDeduction === "number") {
       if (
@@ -5604,7 +5613,8 @@ async function handleConsultationSettlement(
   } else {
     return res.status(400).json({
       error: "MISSING_CHARGE_SPECIFICATION",
-      message: "Either totalDeduction (or amount) or duration must be provided.",
+      message:
+        "Either totalDeduction (or amount) or duration must be provided.",
     });
   }
 
@@ -5633,7 +5643,11 @@ async function handleConsultationSettlement(
         astrologerId,
         deduction: deductionAmount,
         newBalance: settlement.newBalance,
-        settledBy: isInternal ? "INTERNAL_SERVICE" : (sessionUser ? sessionUser.id : "UNKNOWN"),
+        settledBy: isInternal
+          ? "INTERNAL_SERVICE"
+          : sessionUser
+            ? sessionUser.id
+            : "UNKNOWN",
       },
     });
 
@@ -5643,8 +5657,7 @@ async function handleConsultationSettlement(
       const user = await db.findUserById(userId);
       return res.status(400).json({
         error: "INSUFFICIENT_FUNDS",
-        message:
-          "Wallet balance is insufficient to settle this consultation.",
+        message: "Wallet balance is insufficient to settle this consultation.",
         currentBalance: user ? user.walletBalance : 0,
         requiredAmount: deductionAmount,
       });
@@ -16071,9 +16084,14 @@ app.get("/api/engine/version", async (_req: Request, res: Response) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || (process.env.VERCEL ? 3000 : 5000);
 
-if (process.env.NODE_ENV === "production" && !process.env.PORT) {
+if (
+  process.env.NODE_ENV === "production" &&
+  !process.env.PORT &&
+  !process.env.VERCEL &&
+  !process.env.AWS_LAMBDA_FUNCTION_NAME
+) {
   console.error(
     "[CRITICAL] PORT environment variable must be explicitly set in production.",
   );
@@ -16109,7 +16127,8 @@ if (
 module.exports = app;
 module.exports.default = app;
 module.exports.app = app;
-module.exports.KNOWN_COMPROMISED_INTERNAL_KEYS = KNOWN_COMPROMISED_INTERNAL_KEYS;
+module.exports.KNOWN_COMPROMISED_INTERNAL_KEYS =
+  KNOWN_COMPROMISED_INTERNAL_KEYS;
 module.exports.getValidatedInternalServiceKey = getValidatedInternalServiceKey;
 module.exports.isProductionEnvironment = isProductionEnvironment;
 module.exports.authenticateSettlementCaller = authenticateSettlementCaller;

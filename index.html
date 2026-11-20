@@ -26499,6 +26499,12 @@ window.loadStoredCalendarPreferences = loadStoredCalendarPreferences;
           } catch (_) {}
         }
 
+        // 3. Built-in production fallback (guarantees client is immediately usable without network delay)
+        if (!supaUrl) {
+          supaUrl = 'https://nzeutydhfxhjufacqren.supabase.co';
+          supaAnonKey = 'sb_publishable_hiC2K6HupAtC67GrO1IoOw_j07AUacX';
+        }
+
         if (supaUrl && supaAnonKey) {
           try {
             supabaseClient = window.supabase.createClient(supaUrl, supaAnonKey, {
@@ -26623,7 +26629,7 @@ window.loadStoredCalendarPreferences = loadStoredCalendarPreferences;
     }
 
     // ==================== GOOGLE IDENTITY SERVICES & OAUTH 2.0 CONTROLLERS ====================
-    const ASTRO_GOOGLE_CLIENT_ID = '488224636987-ai5khc8s0cumhq3n243ca9rdpv9mt89j.apps.googleusercontent.com';
+    const ASTRO_GOOGLE_CLIENT_ID = '488224636987-pom8ojcl2jnkeiogerplksgmh457m3ub.apps.googleusercontent.com';
     let isGoogleAuthInitialized = false;
     let googleCodeClient = null;
 
@@ -26685,16 +26691,27 @@ window.loadStoredCalendarPreferences = loadStoredCalendarPreferences;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to Google...';
       }
 
+      // Ensure Supabase client is initialized
+      if (!supabaseClient) {
+        try {
+          await initSupabaseClient();
+        } catch (_) {}
+      }
+
       // 1. If Supabase client is configured, use standard Supabase Google OAuth!
       if (supabaseClient && isSupabaseConfigured) {
         try {
+          const cleanRedirect = window.location.origin + (window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/');
           const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-              redirectTo: window.location.origin + '/'
+              redirectTo: cleanRedirect
             }
           });
           if (error) throw error;
+          if (data && data.url) {
+            window.location.href = data.url;
+          }
           return;
         } catch (err) {
           console.warn('[Supabase Google OAuth] Error, trying GIS fallback:', err);
@@ -26704,10 +26721,8 @@ window.loadStoredCalendarPreferences = loadStoredCalendarPreferences;
             showToast('Google Sign-In is being activated in cloud settings. Please sign in or register with email and password below.', 'info');
             switchAuthModalTab('password');
             document.getElementById('modal-pwd-ident')?.focus();
-          } else {
-            showToast(msg || 'Google OAuth failed.', 'error');
+            return;
           }
-          return;
         }
       }
 
@@ -26744,7 +26759,10 @@ window.loadStoredCalendarPreferences = loadStoredCalendarPreferences;
         sessionStorage.setItem('astro_oauth_state', state);
       } catch (_) {}
 
-      const redirectUri = 'https://astroverse-eta.vercel.app/';
+      const currentOrigin = window.location.origin;
+      const redirectUri = (currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1'))
+        ? 'http://localhost:3000/'
+        : 'https://astroverse-eta.vercel.app/';
       const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
         'client_id=' + encodeURIComponent(ASTRO_GOOGLE_CLIENT_ID) +
         '&redirect_uri=' + encodeURIComponent(redirectUri) +
@@ -26882,7 +26900,10 @@ window.loadStoredCalendarPreferences = loadStoredCalendarPreferences;
           window.history.replaceState({}, document.title, cleanUrl);
 
           showToast('Verifying Google authorization code...', 'info');
-          await exchangeGoogleCodeOnBackend(code, 'https://astroverse-eta.vercel.app/');
+          const exchangeRedirectUri = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1'))
+            ? 'http://localhost:3000/'
+            : 'https://astroverse-eta.vercel.app/';
+          await exchangeGoogleCodeOnBackend(code, exchangeRedirectUri);
           return;
         }
 
