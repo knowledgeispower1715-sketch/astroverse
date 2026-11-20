@@ -91,7 +91,12 @@ import {
 } from "./monetization/promotions";
 import { EntitlementManager } from "./monetization/entitlements";
 import { ReportDocumentGenerator } from "./monetization/reportGenerator";
-import { AstroCalculator } from "./monetization/astroCalculator";
+import {
+  AstroCalculator,
+  SIGNS,
+  SIGNS_HI,
+  SIGN_LORDS,
+} from "./monetization/astroCalculator";
 import {
   digitRoot1To9,
   calculateMoolank,
@@ -14630,6 +14635,9 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
         /(करियर|नौकरी|व्यापार|पदोन्नति)/.test(question));
     let isMarriage =
       qLower.includes("marri") ||
+      qLower.includes("wedding") ||
+      qLower.includes("shaadi") ||
+      qLower.includes("vivah") ||
       qLower.includes("love") ||
       qLower.includes("relationship") ||
       qLower.includes("partner") ||
@@ -14655,8 +14663,27 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
         qLower.includes("period") ||
         /(कब|समय)/.test(question));
 
+    const isCrisis =
+      /(?:suicide|kill myself|end my life|harm myself|don't want to live|आत्महत्या|जान देना)/i.test(
+        question,
+      );
+    const isEmotionalDistress =
+      !isCrisis &&
+      (qLower.includes("sad") ||
+        qLower.includes("depress") ||
+        qLower.includes("lonel") ||
+        qLower.includes("crying") ||
+        qLower.includes("grief") ||
+        qLower.includes("heartbreak") ||
+        qLower.includes("heartbroken") ||
+        qLower.includes("overwhelm") ||
+        qLower.includes("hopeless") ||
+        /(उदास|उदासी|दुख|दुखी|अकेलापन|तनाव|रो रहा|मन शांत नहीं)/.test(question));
+
     let intent = "general";
-    if (isGreeting) intent = "greeting";
+    if (isCrisis) intent = "crisis_safety";
+    else if (isEmotionalDistress) intent = "emotional_wellbeing";
+    else if (isGreeting) intent = "greeting";
     else if (isAmbiguousFuture) intent = "ambiguous_future";
     else if (isCareerTransit) intent = "career_transit_timing";
     else if (isDashaStability) intent = "dasha_career_stability";
@@ -14666,32 +14693,265 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
     else if (isRemedy) intent = "remedy";
     else if (isTiming) intent = "timing";
 
-    const hasChart = Boolean(
-      dob &&
-      lat !== null &&
-      lat !== undefined &&
-      lon !== null &&
-      lon !== undefined,
-    );
+    // Known geographical references for zero-friction location parsing
+    const KNOWN_CITIES = [
+      {
+        name: "New Delhi, Delhi, India",
+        keywords: ["delhi", "new delhi"],
+        lat: 28.6139,
+        lon: 77.209,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Mumbai, Maharashtra, India",
+        keywords: ["mumbai", "bombay"],
+        lat: 19.076,
+        lon: 72.8777,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Bengaluru, Karnataka, India",
+        keywords: ["bangalore", "bengaluru"],
+        lat: 12.9716,
+        lon: 77.5946,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Kolkata, West Bengal, India",
+        keywords: ["kolkata", "calcutta"],
+        lat: 22.5726,
+        lon: 88.3639,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Chennai, Tamil Nadu, India",
+        keywords: ["chennai", "madras"],
+        lat: 13.0827,
+        lon: 80.2707,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Hyderabad, Telangana, India",
+        keywords: ["hyderabad"],
+        lat: 17.385,
+        lon: 78.4867,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Pune, Maharashtra, India",
+        keywords: ["pune"],
+        lat: 18.5204,
+        lon: 73.8567,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Jaipur, Rajasthan, India",
+        keywords: ["jaipur"],
+        lat: 26.9124,
+        lon: 75.7873,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Ahmedabad, Gujarat, India",
+        keywords: ["ahmedabad"],
+        lat: 23.0225,
+        lon: 72.5714,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Lucknow, Uttar Pradesh, India",
+        keywords: ["lucknow"],
+        lat: 26.8467,
+        lon: 80.9462,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Varanasi, Uttar Pradesh, India",
+        keywords: ["varanasi", "kashi", "banaras"],
+        lat: 25.3176,
+        lon: 82.9739,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Ujjain, Madhya Pradesh, India",
+        keywords: ["ujjain"],
+        lat: 23.1765,
+        lon: 75.7885,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Jabalpur, Madhya Pradesh, India",
+        keywords: ["jabalpur"],
+        lat: 23.1815,
+        lon: 79.9864,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Indore, Madhya Pradesh, India",
+        keywords: ["indore"],
+        lat: 22.7196,
+        lon: 75.8577,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Bhopal, Madhya Pradesh, India",
+        keywords: ["bhopal"],
+        lat: 23.2599,
+        lon: 77.4126,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Patna, Bihar, India",
+        keywords: ["patna"],
+        lat: 25.5941,
+        lon: 85.1376,
+        tz: "Asia/Kolkata",
+      },
+      {
+        name: "Chandigarh, India",
+        keywords: ["chandigarh"],
+        lat: 30.7333,
+        lon: 76.7794,
+        tz: "Asia/Kolkata",
+      },
+    ];
 
-    // Profile coordinates (Standard Benchmark baseline)
-    const lagna = "Scorpio";
-    const moon = "Aquarius";
-    const dashaMaha = "Jupiter";
-    const dashaAntar = "Venus";
-    const sadesati = "Phase 3 (Setting)";
-    const manglikVerdictStrEn =
-      "Mitigated / Pacified (Aries Swakshetra BPHS Cancellation)";
-    const manglikVerdictStrHi =
-      "शमित / शांत (मेष स्वक्षेत्री मंगल परिहार - BPHS Ch. 81)";
+    const PLANET_NAMES_HI: Record<string, string> = {
+      Sun: "सूर्य",
+      Moon: "चंद्र",
+      Mars: "मंगल",
+      Mercury: "बुध",
+      Jupiter: "बृहस्पति (गुरु)",
+      Venus: "शुक्र",
+      Saturn: "शनि",
+      Rahu: "राहु",
+      Ketu: "केतु",
+    };
 
-    const lagnaDisplay = isHi ? "वृश्चिक" : lagna;
-    const moonDisplay = isHi ? "कुंभ" : moon;
-    const dashaMahaDisplay = isHi ? "बृहस्पति (गुरु)" : dashaMaha;
-    const dashaAntarDisplay = isHi ? "शुक्र" : dashaAntar;
-
-    // Seeker identity & age context from payload or question
+    let birthDateStr: string | null = null;
+    let birthTimeStr = "12:00";
+    let resolvedLat = typeof lat === "number" ? lat : 28.6139;
+    let resolvedLon = typeof lon === "number" ? lon : 77.209;
+    let resolvedCity = "New Delhi, Delhi, India";
     let extractedName = "";
+
+    // 1. If dob provided in request body
+    if (dob && typeof dob === "string" && dob.length >= 10) {
+      if (dob.includes("T")) {
+        const parts = dob.split("T");
+        birthDateStr = parts[0];
+        if (parts[1] && parts[1].length >= 5)
+          birthTimeStr = parts[1].substring(0, 5);
+      } else {
+        birthDateStr = dob.substring(0, 10);
+      }
+    }
+
+    // 2. Disambiguate event dates vs birth dates in question
+    const isEventDate =
+      /(?:wedding|marriage|shaadi|vivah|interview|exam|meeting|travel|flight|ceremony|anniversary|event|party|launch|conference)\b/i.test(
+        question,
+      ) && !/(?:born|dob|birth|janam|birthday|janm)/i.test(question);
+
+    let questionBirthDateStr: string | null = null;
+    let questionBirthTimeStr: string | null = null;
+
+    // 3. Extract birth details from question if not an event date (always prioritize direct in-chat coordinates)
+    if (!isEventDate) {
+      const numDateMatch = question.match(
+        /\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4})\b/,
+      );
+      const MONTH_MAP: Record<string, string> = {
+        jan: "01",
+        january: "01",
+        feb: "02",
+        february: "02",
+        mar: "03",
+        march: "03",
+        apr: "04",
+        april: "04",
+        may: "05",
+        jun: "06",
+        june: "06",
+        jul: "07",
+        july: "07",
+        aug: "08",
+        august: "08",
+        sep: "09",
+        september: "09",
+        oct: "10",
+        october: "10",
+        nov: "11",
+        november: "11",
+        dec: "12",
+        december: "12",
+      };
+      const writtenMatch1 = question.match(
+        /\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]+)[,\s]+(\d{4})\b/i,
+      );
+      const writtenMatch2 = question.match(
+        /\b([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{4})\b/i,
+      );
+
+      if (writtenMatch1 && MONTH_MAP[writtenMatch1[2].toLowerCase()]) {
+        questionBirthDateStr = `${writtenMatch1[3]}-${MONTH_MAP[writtenMatch1[2].toLowerCase()]}-${writtenMatch1[1].padStart(2, "0")}`;
+      } else if (writtenMatch2 && MONTH_MAP[writtenMatch2[1].toLowerCase()]) {
+        questionBirthDateStr = `${writtenMatch2[3]}-${MONTH_MAP[writtenMatch2[1].toLowerCase()]}-${writtenMatch2[2].padStart(2, "0")}`;
+      } else if (numDateMatch) {
+        const rawD = numDateMatch[1].replace(/[/.]/g, "-");
+        const dParts = rawD.split("-");
+        if (dParts[0].length === 4) {
+          questionBirthDateStr = `${dParts[0]}-${dParts[1].padStart(2, "0")}-${dParts[2].padStart(2, "0")}`;
+        } else if (dParts[2].length === 4) {
+          questionBirthDateStr = `${dParts[2]}-${dParts[1].padStart(2, "0")}-${dParts[0].padStart(2, "0")}`;
+        }
+      }
+
+      if (questionBirthDateStr) {
+        const timeMatch1 = question.match(
+          /\b(\d{1,2}:\d{2}(?:\s*(?:am|pm|AM|PM))?)\b/,
+        );
+        const timeMatch2 = question.match(/\b(\d{1,2})\s*(?:am|pm|AM|PM)\b/i);
+        if (timeMatch1) {
+          const rawT = timeMatch1[1].trim();
+          if (/am|pm/i.test(rawT)) {
+            const isPm = /pm/i.test(rawT);
+            const tOnly = rawT.replace(/\s*(?:am|pm)/i, "");
+            const [hStr, mStr] = tOnly.split(":");
+            let h = parseInt(hStr, 10);
+            if (isPm && h < 12) h += 12;
+            if (!isPm && h === 12) h = 0;
+            questionBirthTimeStr = `${String(h).padStart(2, "0")}:${mStr.padStart(2, "0")}`;
+          } else {
+            const [hStr, mStr] = rawT.split(":");
+            questionBirthTimeStr = `${hStr.padStart(2, "0")}:${mStr.padStart(2, "0")}`;
+          }
+        } else if (timeMatch2) {
+          const isPm = /pm/i.test(timeMatch2[0]);
+          let h = parseInt(timeMatch2[1], 10);
+          if (isPm && h < 12) h += 12;
+          if (!isPm && h === 12) h = 0;
+          questionBirthTimeStr = `${String(h).padStart(2, "0")}:00`;
+        }
+
+        const qLow = question.toLowerCase();
+        for (const c of KNOWN_CITIES) {
+          if (c.keywords.some((k) => qLow.includes(k))) {
+            resolvedCity = c.name;
+            resolvedLat = c.lat;
+            resolvedLon = c.lon;
+            break;
+          }
+        }
+      }
+    }
+
+    if (questionBirthDateStr) {
+      birthDateStr = questionBirthDateStr;
+      birthTimeStr = questionBirthTimeStr || "12:00";
+    }
+
+    // Name extraction
     const nameMatch = question.match(
       /^([A-Za-z\s]{2,30}?)\s+(?:born\s*(?:on)?\s*)?(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+[,\s]+\d{4}|[A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4})/i,
     );
@@ -14702,27 +14962,171 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       extractedName = introNameMatch[1].trim();
     } else if (
       nameMatch &&
-      !/^(hi|hello|hey|pranam|namaste)\b/i.test(nameMatch[1].trim())
+      !/^(hi|hello|hey|pranam|namaste|greetings)\b/i.test(nameMatch[1].trim())
     ) {
       extractedName = nameMatch[1].trim();
     }
+
+    const hasChart = Boolean(
+      birthDateStr && resolvedLat !== null && resolvedLon !== null,
+    );
+
+    // Dynamic Chart Coordinates
+    let lagna = "Scorpio";
+    let lagnaDeg = 24.17;
+    let lagnaSignIdx = 7;
+    let moon = "Aquarius";
+    let moonDeg = 12.21;
+    let moonNak = "Shatabhisha";
+    let moonPada = 2;
+    let sun = "Leo";
+    let sunHouse = 10;
+    let mars = "Aries";
+    let marsHouse = 6;
+    let dashaMaha = "Jupiter";
+    let dashaAntar = "Venus";
+
+    if (hasChart && birthDateStr) {
+      try {
+        const calculated = AstroCalculator.calculateChart(
+          birthDateStr,
+          birthTimeStr,
+          resolvedLat,
+          resolvedLon,
+          false,
+        );
+        if (calculated && calculated.lagna && calculated.planets) {
+          lagna = calculated.lagna.sign;
+          lagnaDeg = calculated.lagna.degree;
+          lagnaSignIdx = calculated.lagna.signIndex;
+          moon = calculated.planets.Moon.sign;
+          moonDeg = calculated.planets.Moon.degree;
+          moonNak = calculated.planets.Moon.nakshatra || "Rohini";
+          moonPada = calculated.planets.Moon.pada || 1;
+          sun = calculated.planets.Sun.sign;
+          sunHouse = calculated.planets.Sun.house;
+          mars = calculated.planets.Mars.sign;
+          marsHouse = calculated.planets.Mars.house;
+
+          const dobDateTime = new Date(
+            `${birthDateStr}T${birthTimeStr.length === 5 ? birthTimeStr + ":00" : birthTimeStr}`,
+          );
+          const dashaRes = AstroCalculator.calculateVimshottariDasha(
+            calculated.planets.Moon.total_degree,
+            dobDateTime,
+          );
+          if (dashaRes && dashaRes.active_now) {
+            dashaMaha = dashaRes.active_now.maha_dasha;
+            dashaAntar = dashaRes.active_now.antar_dasha;
+          }
+        }
+      } catch (err) {
+        console.warn(
+          "[ASTRO_CALC] Dynamic chart calculation failed, using defaults:",
+          err,
+        );
+      }
+    }
+
+    // Dynamic 10th & 7th House derivation
+    const tenthSignIdx = (lagnaSignIdx + 9) % 12;
+    const tenthSign = SIGNS[tenthSignIdx];
+    const tenthLord = SIGN_LORDS[tenthSign];
+    const tenthSignDisplay = isHi
+      ? SIGNS_HI[tenthSign] || tenthSign
+      : tenthSign;
+    const tenthLordDisplay = isHi
+      ? PLANET_NAMES_HI[tenthLord] || tenthLord
+      : tenthLord;
+
+    const seventhSignIdx = (lagnaSignIdx + 6) % 12;
+    const seventhSign = SIGNS[seventhSignIdx];
+    const seventhLord = SIGN_LORDS[seventhSign];
+    const seventhSignDisplay = isHi
+      ? SIGNS_HI[seventhSign] || seventhSign
+      : seventhSign;
+    const seventhLordDisplay = isHi
+      ? PLANET_NAMES_HI[seventhLord] || seventhLord
+      : seventhLord;
+
+    // Sade Sati relative to natal Moon in 2026 (Saturn transiting Pisces)
+    let sadesati = "No Active Sade Sati";
+    let sadesatiHi = "साढ़े साती सक्रिय नहीं है";
+    if (moon === "Aquarius") {
+      sadesati = "Phase 3 (Setting)";
+      sadesatiHi = "तृतीय चरण (अवरोही / ढलती)";
+    } else if (moon === "Pisces") {
+      sadesati = "Phase 2 (Peak / Janma Shani)";
+      sadesatiHi = "द्वितीय चरण (शिखर)";
+    } else if (moon === "Aries") {
+      sadesati = "Phase 1 (Rising)";
+      sadesatiHi = "प्रथम चरण (आरोही)";
+    }
+
+    // Dynamic Manglik (Kuja Dosha)
+    const isManglikHouse = [1, 2, 4, 7, 8, 12].includes(marsHouse);
+    let manglikVerdictStrEn = "Absent / Non-Manglik (Favorable Mars Alignment)";
+    let manglikVerdictStrHi = "अनुपस्थित / दोष रहित (अनुकूल मंगल स्थिति)";
+    if (mars === "Aries" || mars === "Scorpio") {
+      manglikVerdictStrEn =
+        "Mitigated / Pacified (Aries Swakshetra BPHS Cancellation)";
+      manglikVerdictStrHi = "शमित / शांत (मेष स्वक्षेत्री मंगल परिहार - BPHS Ch. 81)";
+    } else if (mars === "Capricorn") {
+      manglikVerdictStrEn =
+        "Mitigated / Pacified (Exaltation Uchha BPHS Cancellation)";
+      manglikVerdictStrHi = "शमित / शांत (उच्च राशि मंगल परिहार - BPHS Ch. 81)";
+    } else if (isManglikHouse) {
+      manglikVerdictStrEn = `Active Kuja Dosha in House ${marsHouse} (${mars})`;
+      manglikVerdictStrHi = `सक्रिय कुज दोष (भाव ${marsHouse}, ${SIGNS_HI[mars] || mars})`;
+    }
+
+    const lagnaDisplay = isHi ? SIGNS_HI[lagna] || lagna : lagna;
+    const moonDisplay = isHi ? SIGNS_HI[moon] || moon : moon;
+    const sunDisplay = isHi ? SIGNS_HI[sun] || sun : sun;
+    const marsDisplay = isHi ? SIGNS_HI[mars] || mars : mars;
+    const dashaMahaDisplay = isHi
+      ? PLANET_NAMES_HI[dashaMaha] || dashaMaha
+      : dashaMaha;
+    const dashaAntarDisplay = isHi
+      ? PLANET_NAMES_HI[dashaAntar] || dashaAntar
+      : dashaAntar;
+
+    // Seeker Name: fallback to "Seeker" if not present. Never "Aryan".
+    const sessionSeekerName =
+      (activeConsultationSession as any)?.seekerName ||
+      req.body?.seeker_name ||
+      req.body?.name;
     const seekerFirstName = extractedName
       ? extractedName.split(/\s+/)[0]
-      : "Aryan";
-    const honorific = seekerFirstName + (isHi ? " जी" : " ji");
+      : sessionSeekerName
+        ? sessionSeekerName.split(/\s+/)[0]
+        : "Seeker";
+    const honorific =
+      extractedName || sessionSeekerName
+        ? seekerFirstName + (isHi ? " जी" : " ji")
+        : "";
 
     let seekerAge = 20;
-    if (dob) {
-      const bYear = parseInt(dob.substring(0, 4), 10);
+    if (birthDateStr) {
+      const bYear = parseInt(birthDateStr.substring(0, 4), 10);
       if (!isNaN(bYear))
         seekerAge = Math.max(1, new Date().getFullYear() - bYear);
+    }
+
+    let ageStageDescEn = "";
+    let ageStageDescHi = "";
+    if (seekerAge < 24) {
+      ageStageDescEn = `At around ${seekerAge} years of age, you are standing at an essential threshold—building your core skills, setting higher education or entrance goals, and preparing for your career launch.`;
+      ageStageDescHi = `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन और करियर की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं।`;
+    } else if (seekerAge <= 32) {
+      ageStageDescEn = `At around ${seekerAge} years of age, you are in a decisive prime phase—consolidating professional expertise, establishing independent career momentum, and structuring long-term partnerships.`;
+      ageStageDescHi = `लगभग ${seekerAge} वर्ष की इस अवस्था में आप कार्यक्षेत्र में अपनी स्वतंत्र पहचान बनाने, कौशल परिपक्वता एवं दीर्घकालिक लक्ष्यों को साधने के महत्वपूर्ण चरण में हैं।`;
+    } else if (seekerAge <= 45) {
+      ageStageDescEn = `At around ${seekerAge} years of age, you are navigating an impactful mid-career phase—advancing into leadership responsibility, wealth accumulation, and family consolidation.`;
+      ageStageDescHi = `लगभग ${seekerAge} वर्ष की इस अवस्था में आप वरिष्ठ नेतृत्व, धन संचय एवं पारिवारिक व सामाजिक दायित्वों के निर्वहन के महत्वपूर्ण पड़ाव पर हैं।`;
     } else {
-      const yrMatch = question.match(/\b(19\d{2}|20\d{2})\b/);
-      if (yrMatch)
-        seekerAge = Math.max(
-          1,
-          new Date().getFullYear() - parseInt(yrMatch[1], 10),
-        );
+      ageStageDescEn = `At around ${seekerAge} years of age, your life reflects a seasoned period of mentorship, executive authority, legacy building, and spiritual depth.`;
+      ageStageDescHi = `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अनुभव आधारित मार्गदर्शन, उच्च अधिकार एवं आध्यात्मिक चिंतन के परिपक्व चरण में हैं।`;
     }
 
     let message = "";
@@ -14731,7 +15135,56 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
     let summaryEn = "";
     let summaryHi = "";
 
-    if (intent === "greeting") {
+    if (intent === "crisis_safety") {
+      if (isHi) {
+        message = `मैं आपकी मानसिक वेदना और आंतरिक पीड़ा को अत्यंत गंभीरता और आत्मीयता से समझता हूँ। आपका जीवन अत्यंत अनमोल है और आप इस भारीपन में अकेले नहीं हैं।\n\nकृपया इस समय किसी भी ज्योतिषीय विचार से परे हटकर तुरंत पेशेवर सहायता लें। प्रशिक्षित परामर्शदाता 24 घंटे आपकी सहायता हेतु उपलब्ध हैं:\n\n- **Tele-MANAS (भारत सरकार मानसिक स्वास्थ्य हेल्पलाइन):** 14416 अथवा 1800-891-4416 (निःशुल्क, 24/7)\n- **KIRAN हेल्पलाइन (सामाजिक न्याय मंत्रालय):** 1800-599-0019\n- **राष्ट्रीय आपातकालीन सेवा:** 112\n\nकृपया अपने किसी करीबी, परिवार के सदस्य या डॉक्टर से तुरंत बात करें।`;
+      } else {
+        message = `I hear how much pain you are carrying right now, and I want you to know that your life is deeply precious. You do not have to carry this immense weight alone.\n\nPlease pause all astrological inquiries right now and connect immediately with compassionate professionals who are ready to support you 24/7:\n\n- **Tele-MANAS (Govt. of India Mental Health Helpline):** 14416 or 1800-891-4416 (Toll-Free, 24/7)\n- **KIRAN Helpline (Ministry of Social Justice):** 1800-599-0019\n- **National Emergency Service:** 112 (India) / 988 (USA)\n\nPlease reach out to a trusted loved one, counselor, or healthcare professional right away. Support is here for you.`;
+      }
+      summaryEn =
+        "Delivered compassionate crisis intervention and Tele-MANAS emergency routing.";
+      summaryHi =
+        "आपातकालीन मानसिक स्वास्थ्य सुरक्षा परामर्श एवं Tele-MANAS हेल्पलाइन प्रदान की।";
+    } else if (intent === "emotional_wellbeing") {
+      if (isHi) {
+        message = `${honorific ? `${honorific}, ` : ""}मैं आपकी मानसिक वेदना और आंतरिक भारीपन को अत्यंत आत्मीयता से समझता हूँ। जीवन में ऐसे क्षण आते हैं जब मन अत्यंत संवेदनशील, थका हुआ या अकेला महसूस करता है। सबसे पहले यह विश्वास रखें कि आपकी भावनाएं सर्वथा स्वाभाविक हैं और आप इस यात्रा में अकेले नहीं हैं।\n\nवैदिक ज्योतिष में चंद्र देव को मन का स्वामी (*चंद्रमा मनसो जातः*) और चतुर्थ भाव को आत्मिक सुख व आंतरिक शांति का केंद्र माना गया है। आपकी कुंडली में चंद्र देव **${moonDisplay} राशि** (${moonNak} नक्षत्र) में स्थित हैं। वर्तमान गोचर चक्र में जब छाया ग्रह या शनि का प्रभाव चंद्र पर पड़ता है, तो मन में एक तीव्र भावनात्मक मंथन या अकेलेपन का अनुभव होता है। यह बादलों की तरह एक अस्थायी ग्रहीय मौसम है, जो समय के साथ अवश्य छंट जाएगा।\n\n### मन की शांति एवं भावनात्मक संबल हेतु सात्विक उपाय:\n1. **चंद्र बीज मन्त्र:** प्रतिदिन सायंकाल या प्रातः 11 अथवा 21 बार *'ॐ सों सोमाय नमः'* का शांत मन से जप करें।\n2. **सोमवार शिव आराधना:** सोमवार को शिवलिंग पर जल या थोड़ा कच्चा दूध अर्पित करने से चंद्र जनित मानसिक अशांति शांत होती है।\n3. **चांदी के पात्र का उपयोग:** रात को चांदी के पात्र या गिलास में रखा जल प्रातःकाल ग्रहण करें।\n\n*(ध्यातव्य: ज्योतिषीय उपाय आत्मिक शांति एवं ध्यान के लिए पारंपरिक साधन हैं; यदि उदासी या अवसाद लगातार बना रहे, तो किसी योग्य मनोचिकित्सक या Tele-MANAS हेल्पलाइन [14416] से परामर्श अवश्य लें।)*\n\n${honorific ? `${honorific}, ` : ""}क्या आप अपने मन के इस तनाव या कारण के बारे में कुछ और साझा करना चाहते हैं? मैं आपके साथ हूँ।`;
+      } else {
+        message = `${honorific ? `${honorific}, ` : ""}I hear the heaviness in your words, and I want to honor your vulnerability in sharing this with me. Life brings seasons where the spirit feels tender, isolated, or overwhelmed. Please take a gentle breath and know with complete certainty: what you are feeling right now is human and valid, and you do not have to navigate this alone.\n\nIn Vedic Jyotish, the Moon is revered as *Manas Karaka*—the foundational anchor of the mind and emotional perception—while the 4th House represents *Sukha Bhava* (inner emotional refuge). In your natal chart, the Moon resides in **${moon}** (${moonNak} Nakshatra). During specific transit phases when Saturn or nodal currents interact with the lunar axis, the mind undergoes deep psychological churning, often amplifying feelings of fatigue or solitary heaviness. Think of this as passing cosmic weather across your consciousness, not a permanent reality.\n\n### Sattvic Classical Disciplines for Emotional Grounding:\n1. **Chandra Beej Mantra:** Gently recite *'Om Som Somaya Namah'* 11 or 21 times in a quiet space to soothe the nervous system.\n2. **Monday Shiva Aradhana:** Offering pure water to a Shiva Lingam on Mondays pacifies lunar turbulence and restores inner equilibrium.\n3. **Silver Vessel Practice:** Drinking water kept overnight in a pure silver cup provides traditional thermal coolness to the mind.\n\n*(Important Note: Vedic remedies provide spiritual mindfulness and emotional solace; they are never a substitute for clinical psychiatric care. If feelings of depression persist, please consult a licensed professional or call Tele-MANAS at 14416.)*\n\nTell me${honorific ? `, ${honorific}` : ""}: is there a specific life transition, relationship strain, or event weighing on your heart? You can speak freely.`;
+      }
+      remedyCard = {
+        title: isHi
+          ? "चंद्र शांति एवं मानसिक स्थिरता सात्विक साधना"
+          : "Lunar Pacification & Emotional Grounding Sadhana",
+        mantra: "ॐ सों सोमाय नमः (Om Som Somaya Namah - 11 or 108 times)",
+        gemstone_note: isHi
+          ? "चांदी का छल्ला अथवा मोती (केवल शुभ चंद्र परीक्षणोपरांत)।"
+          : "Natural Pearl or silver band (only after verifying functional lunar dignity).",
+        charity_practice: isHi
+          ? "सोमवार को चावल, दूध या मिश्री का दान करें।"
+          : "Offer rice, milk, or white flowers in charity on Mondays.",
+        disclaimer: isHi
+          ? "पारंपरिक उपाय मानसिक शांति हेतु आध्यात्मिक संबल हैं; चिकित्सीय उपचार का विकल्प नहीं हैं।"
+          : "Traditional practices cultivate mindfulness; not a substitute for clinical care.",
+      };
+      suggested = [
+        isHi
+          ? "चंद्रमा को मजबूत करने के दैनिक नियम क्या हैं?"
+          : "What daily habits strengthen lunar equilibrium?",
+        isHi
+          ? "मेरी कुंडली में चतुर्थ भाव की स्थिति क्या है?"
+          : "How does my 4th house support inner contentment?",
+        isHi
+          ? "क्या यह गोचर जनित मानसिक तनाव शीघ्र शांत होगा?"
+          : "Will upcoming transits ease this emotional heaviness?",
+        isHi
+          ? "सक्रिय दशा का मानसिक स्थिति पर क्या प्रभाव है?"
+          : "How does my active Dasha affect mental peace?",
+      ];
+      summaryEn =
+        "Offered empathetic emotional validation, lunar grounding perspective, and sattvic calming remedies.";
+      summaryHi =
+        "आत्मीय मानसिक संबल, चंद्र-आधारित शास्त्रीय विवेचन एवं सात्विक शांति उपाय प्रदान किए।";
+    } else if (intent === "greeting") {
       if (hasPriorTurn) {
         if (isHi) {
           message = `प्रणाम ${honorific}! मैं आपकी क्या सहायता कर सकता हूँ? आप अपनी **${lagnaDisplay} लग्न** पत्रिका (सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) के आधार पर करियर, विवाह, धन योग अथवा शास्त्रीय उपायों पर कोई भी प्रश्न सीधे पूछ सकते हैं।`;
@@ -14752,7 +15205,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
         }
       } else {
         if (isHi) {
-          message = `प्रणाम! मैं ${personaDisplay} हूँ।\n\nमैंने आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का गहन विश्लेषण कर लिया है। ${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन और करियर की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं। ` : ""}आपकी पत्रिका में सूर्य देव और गुरु-शुक्र दशा का प्रभाव कार्यक्षेत्र को दिशा दे रहा है।\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
+          message = `प्रणाम! मैं ${personaDisplay} हूँ।\n\nमैंने आपकी जन्म कुंडली (**${lagnaDisplay} लग्न**, **${moonDisplay} राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का गहन विश्लेषण कर लिया है। ${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन और करियर की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं। ` : ""}आपकी पत्रिका में सूर्य देव एवं सक्रिय ${dashaMahaDisplay}-${dashaAntarDisplay} दशा का प्रभाव कार्यक्षेत्र को दिशा दे रहा है।\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
           suggested = [
             "मेरे दशम भाव के अनुसार करियर का समय बताइए",
             "मेरी कुंडली में कौन से धन योग सक्रिय हैं?",
@@ -14760,7 +15213,7 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
             "वर्तमान व्यावसायिक तनाव का समाधान क्या है?",
           ];
         } else {
-          message = `Pranam! I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagna} Lagna**, **${moon} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**. ${seekerAge ? `At around ${seekerAge} years of age, you are standing at an essential threshold—laying your educational foundation, mastering core skills, and preparing for your career launch. ` : ""}With your Sun and Venus placements, I am ready to explore your career milestones, leadership trajectory, Dhana Yogas, or upcoming planetary transits.\n\nTell me${honorific ? `, ${honorific}` : ""}: what strategic objective, professional transition, or life question would you like to examine today?`;
+          message = `Pranam! I am ${personaDisplay}.\n\nI have analyzed your calculated chart: **${lagna} Lagna**, **${moon} Moon**, and active **${dashaMaha} Mahadasha** with **${dashaAntar} Antardasha**. ${seekerAge ? `At around ${seekerAge} years of age, you are standing at an essential threshold—laying your educational foundation, mastering core skills, and preparing for your career launch. ` : ""}With your active ${dashaMaha}-${dashaAntar} planetary period, I am ready to explore your career milestones, leadership trajectory, Dhana Yogas, or upcoming planetary transits.\n\nTell me${honorific ? `, ${honorific}` : ""}: what strategic objective, professional transition, or life question would you like to examine today?`;
           suggested = [
             "Analyze my 10th House of Career & promotion timing",
             "What does my chart reveal regarding Dhana Yogas?",
@@ -14804,19 +15257,19 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       summaryHi = "भविष्य के विशिष्ट क्षेत्र के चयन हेतु संरचित विकल्प प्रस्तुत किए।";
     } else if (intent === "career_transit_timing") {
       if (isHi) {
-        message = `${honorific ? `${honorific}, ` : ""}**${lagnaDisplay} लग्न** हेतु कार्यक्षेत्र परिवर्तन एवं व्यापार संवर्धन में आगामी ग्रहीय गोचर का सूक्ष्म और आत्मीय विश्लेषण:\n\nवर्तमान में वृहस्पति आपके सप्तम भाव (वृषभ राशि) से संचरण करते हुए आपके लग्न (वृश्चिक), तृतीय भाव (पराक्रम) और एकादश भाव (लाभ) पर अमृतमय दृष्टि डाल रहे हैं। इसके पश्चात मिथुन और विशेष रूप से कर्क राशि (नवम भाव - उच्च राशि) में गुरु का आगामी गोचर आपके भाग्य को जागृत करेगा और नए स्वतंत्र उपक्रम अथवा पदोन्नति हेतु अत्यंत शुभ समय खिड़की का निर्माण करेगा।\n\nशनि देव आपकी कुंडली के पंचम भाव (मीन राशि) से गोचर करते हुए एकादश भाव (आय), द्वितीय भाव (संचित धन) और सप्तम भाव पर दृष्टि डाल रहे हैं। यह गोचर स्पष्ट संदेश देता है कि बिना सोचे-समझे नौकरी या दिशा बदलने के बजाय सुविचारित, योजनाबद्ध और अनुशासित कौशल उन्नयन के साथ ही करियर परिवर्तन करें।\n\nव्यापार आरंभ करने अथवा कार्यक्षेत्र में बड़े परिवर्तन हेतु मई 2026 से आगे का समय, जब गुरु कर्क राशि में उच्च के होंगे, सर्वाधिक स्थिर और लाभदायक सिद्ध होगा। वर्तमान समय में आधारभूत तैयारी और वित्तीय सुरक्षा निधि को सुदृढ़ करें।\n\n${honorific ? `${honorific}, ` : ""}क्या आप अभी किसी नौकरी परिवर्तन या नए उद्यम की योजना बना रहे हैं? अपनी समय-सीमा बताएं, ताकि हम ग्रहों की गति से तालमेल बैठा सकें।`;
+        message = `${honorific ? `${honorific}, ` : ""}**${lagnaDisplay} लग्न** हेतु कार्यक्षेत्र परिवर्तन एवं व्यापार संवर्धन में आगामी ग्रहीय गोचर का सूक्ष्म और आत्मीय विश्लेषण:\n\nवर्तमान में वृहस्पति आपके गोचर चक्र से संचरण करते हुए आपके केंद्र व त्रिकोण भावों पर शुभ दृष्टि डाल रहे हैं। कर्क राशि में गुरु का आगामी गोचर आपके भाग्य को जागृत करेगा और नए स्वतंत्र उपक्रम अथवा पदोन्नति हेतु अत्यंत शुभ समय खिड़की का निर्माण करेगा।\n\nमीन राशि में शनि का गोचर स्पष्ट संकेत देता है कि बिना सोचे-समझे नौकरी या दिशा बदलने के बजाय सुविचारित, योजनाबद्ध और अनुशासित कौशल उन्नयन के साथ ही करियर परिवर्तन करें।\n\nव्यापार आरंभ करने अथवा कार्यक्षेत्र में बड़े परिवर्तन हेतु जब गुरु अनुकूल भावों में उच्च के होंगे, सर्वाधिक स्थिर और लाभदायक सिद्ध होगा। वर्तमान समय में आधारभूत तैयारी और वित्तीय सुरक्षा निधि को सुदृढ़ करें।\n\n${honorific ? `${honorific}, ` : ""}क्या आप अभी किसी नौकरी परिवर्तन या नए उद्यम की योजना बना रहे हैं? अपनी समय-सीमा बताएं, ताकि हम ग्रहों की गति से तालमेल बैठा सकें।`;
         suggested = [
-          "गुरु के उच्च गोचर का मेरे दशम भाव पर क्या प्रभाव होगा?",
+          "गुरु के गोचर का मेरे दशम भाव पर क्या प्रभाव होगा?",
           "व्यापार आरंभ करने हेतु शुभ मुहूर्त एवं होरा क्या है?",
           "शनि गोचर के दौरान व्यावसायिक स्थिरता कैसे बनाए रखें?",
           "करियर परिवर्तन में बाधक ग्रहों के वैदिक उपाय क्या हैं?",
         ];
       } else {
-        message = `${honorific ? `${honorific}, ` : ""}evaluating upcoming planetary transits supporting a career switch, promotion, or business venture for **${lagna} Lagna** reveals very clear strategic markers:\n\nCurrently, Jupiter transits through your 7th house (Taurus), casting auspicious trinal aspects on your 11th house of gains (Virgo) and 1st house (${lagna} Lagna). As Jupiter advances into Gemini and subsequently enters Cancer (your 9th house of Bhagya / Divine Fortune, where Jupiter is exalted in mid-2026), it initiates the prime strategic window for professional transitions, leadership elevation, and entrepreneurial ventures.\n\nAt the same time, Saturn transiting Pisces in your 5th house casts its 10th aspect upon your 2nd house of accumulated wealth and its 7th aspect upon the 11th house of liquid gains. Parashari principles indicate that impulsive leaps without runway capital or deep skills must be avoided; structured, phased transitions backed by disciplined preparation will yield enduring stability.\n\nThe strongest window for formalizing an independent enterprise or executing a lateral career leap activates when Jupiter approaches its exaltation sign in Cancer in your 9th house. Focus current efforts on network building, competitive skill building, and deep technical preparation.\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific transition timeline are you contemplating right now? Let us map your strategy with cosmic timing.`;
+        message = `${honorific ? `${honorific}, ` : ""}evaluating upcoming planetary transits supporting a career switch, promotion, or business venture for **${lagna} Lagna** reveals very clear strategic markers:\n\nCurrently, Jupiter transits through favorable houses relative to your ${lagna} Lagna, casting auspicious trinal aspects. As Jupiter advances into Cancer (exalted placement), it initiates a prime strategic window for professional transitions, leadership elevation, and entrepreneurial ventures.\n\nAt the same time, Saturn transiting Pisces casts its disciplined aspects across your financial and gain axes. Parashari principles indicate that impulsive leaps without runway capital or deep skills must be avoided; structured, phased transitions backed by disciplined preparation will yield enduring stability.\n\nThe strongest window for formalizing an independent enterprise or executing a lateral career leap activates when Jupiter approaches its peak dignity. Focus current efforts on network building, competitive skill building, and deep technical preparation.\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific transition timeline are you contemplating right now? Let us map your strategy with cosmic timing.`;
         suggested = [
-          "How will Jupiter's exaltation transit impact my 10th house?",
+          "How will Jupiter's transit impact my 10th house?",
           "What is the most auspicious timing to launch a business?",
-          "How should I navigate Saturn's aspect on my 2nd house of wealth?",
+          "How should I navigate Saturn's aspect on my wealth houses?",
           "Which Vedic mantras clear obstacles during a career transition?",
         ];
       }
@@ -14825,35 +15278,85 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
       summaryHi =
         "कार्यक्षेत्र परिवर्तन एवं व्यापार आरंभ हेतु आगामी गुरु, शनि एवं राहु-केतु गोचर का विश्लेषण किया।";
     } else if (intent === "dasha_career_stability") {
+      const dashaLordshipsEn =
+        dashaMaha === "Jupiter" && dashaAntar === "Venus"
+          ? "In your chart, Jupiter rules your 2nd House of accumulated wealth and 5th House of intellect and discernment, acting as your premier functional anchor of professional stability. Meanwhile, Venus governs your 7th and 12th houses and is placed in your 11th House of gains."
+          : `In your chart, ${dashaMaha} serves as your foundational karmic anchor, while ${dashaAntar} directs your current professional stability and aspirations.`;
+
+      const dashaLordshipsHi =
+        dashaMaha === "Jupiter" && dashaAntar === "Venus"
+          ? "आपकी कुंडली में गुरु देव द्वितीय भाव (धन, वाणी) एवं पंचम भाव (बुद्धि, पूर्व पुण्य) के शुभ स्वामी होकर ज्ञान और स्थिरता के आधार हैं, जबकि शुक्र देव सप्तम एवं द्वादश भाव के स्वामी होकर एकादश भाव में स्थित हैं।"
+          : `आपकी कुंडली में ${dashaMahaDisplay} महादशा और ${dashaAntarDisplay} अंतर्दशा आपके कार्यक्षेत्र की दिशा और स्थिरता को निर्धारित कर रही हैं।`;
+
       if (isHi) {
-        message = `${honorific ? `${honorific}, ` : ""}यह आपकी आयु और जीवन के पड़ाव के अनुरूप अत्यंत गहरा, परिपक्व और सामयिक प्रश्न है।\n\nआपकी सक्रिय **${dashaMahaDisplay} महादशा** एवं **${dashaAntarDisplay} अंतर्दशा** ज्ञान (गुरु) और सांसारिक आकांक्षा (शुक्र) का एक सुंदर संगम है। आपकी कुंडली में गुरु देव द्वितीय भाव (धन, वाणी) एवं पंचम भाव (बुद्धि, पूर्व पुण्य) के शुभ स्वामी होकर ज्ञान और स्थिरता के आधार हैं, जबकि शुक्र देव सप्तम एवं द्वादश भाव के स्वामी होकर एकादश भाव में स्थित हैं।\n\nकिंतु शुक्र देव का अंतर-प्रभाव मन में शीघ्र सफलता, भौतिक परिणाम और सामाजिक प्रतिष्ठा की तीव्र इच्छा उत्पन्न करता है। ${seekerAge ? `${seekerAge} वर्ष की इस युवा अवस्था में ` : ""}यह योग कभी-कभी एक आंतरिक छटपटाहट पैदा करता है—जैसे कि 'क्या मैं सही गति से आगे बढ़ रहा हूँ?' या साथियों की प्रगति देखकर व्यर्थ की चिंता होना।\n\nमैं आपको पूर्ण विश्वास के साथ आश्वस्त करता हूँ: इस दशा में वास्तविक स्थिरता जल्दबाजी में नहीं, बल्कि अपने ज्ञान और कौशल को गहरा करने से आएगी। जब आप प्रतिदिन धैर्यपूर्वक अपने कौशल को निखारेंगे, तो यह ग्रह योग आपके भविष्य की स्थिरता और सम्मान की रक्षा करेगा।\n\nमानसिक शांति और स्थिरता हेतु: प्रातःकाल तांबे के पात्र से भगवान सूर्य को जल अर्पित करें और गायत्री मन्त्र का 11 अथवा 21 बार जप करें।\n\n${honorific ? `${honorific}, ` : ""}क्या हाल के दिनों में आपको अपने भविष्य या पढ़ाई को लेकर कोई मानसिक तनाव या अस्थिरता महसूस हो रही है? आप मुझसे अपने मन की बात साझा कर सकते हैं।`;
+        message = `${honorific ? `${honorific}, ` : ""}यह आपकी आयु और जीवन के पड़ाव के अनुरूप अत्यंत गहरा, परिपक्व और सामयिक प्रश्न है।\n\nआपकी सक्रिय **${dashaMahaDisplay} महादशा** एवं **${dashaAntarDisplay} अंतर्दशा** ज्ञान और सांसारिक आकांक्षा का एक महत्वपूर्ण संगम है। ${dashaLordshipsHi}\n\nकिंतु अंतर्दशा स्वामी का प्रभाव मन में शीघ्र परिणाम और प्रगति की तीव्र इच्छा उत्पन्न करता है। ${seekerAge ? `${seekerAge} वर्ष की इस अवस्था में ` : ""}यह योग कभी-कभी एक आंतरिक छटपटाहट पैदा करता है—जैसे कि 'क्या मैं सही गति से आगे बढ़ रहा हूँ?' या साथियों की प्रगति देखकर व्यर्थ की चिंता होना।\n\nमैं आपको पूर्ण विश्वास के साथ आश्वस्त करता हूँ: इस दशा में वास्तविक स्थिरता जल्दबाजी में नहीं, बल्कि अपने ज्ञान और कौशल को गहरा करने से आएगी। जब आप प्रतिदिन धैर्यपूर्वक अपने कौशल को निखारेंगे, तो यह ग्रह योग आपके भविष्य की स्थिरता और सम्मान की रक्षा करेगा।\n\nमानसिक शांति और स्थिरता हेतु: प्रातःकाल तांबे के पात्र से भगवान सूर्य को जल अर्पित करें और गायत्री मन्त्र का 11 अथवा 21 बार जप करें।\n\n${honorific ? `${honorific}, ` : ""}क्या हाल के दिनों में आपको अपने भविष्य या पढ़ाई को लेकर कोई मानसिक तनाव या अस्थिरता महसूस हो रही है? आप मुझसे अपने मन की बात साझा कर सकते हैं।`;
         suggested = [
-          "गुरु-शुक्र दशा के बाद आगामी अंतर्दशा कौन सी होगी?",
+          "सक्रिय दशा के बाद आगामी अंतर्दशा कौन सी होगी?",
           "कार्यक्षेत्र में वरिष्ठों से संबंध सुधारने के वैदिक उपाय क्या हैं?",
           "क्या यह दशा काल नई जिम्मेदारियों के लिए उपयुक्त है?",
-          "द्वादशेश शुक्र के व्यय प्रभाव को कैसे नियंत्रित करें?",
+          "दशा स्वामी ग्रहों के शांति उपाय क्या हैं?",
         ];
       } else {
-        message = `${honorific ? `${honorific}, ` : ""}this is a very profound and mature question to ask at your stage of life.\n\nYour active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha** represent a sacred confluence between wisdom (Jupiter) and worldly ambition (Venus). In your chart, Jupiter rules your 2nd House of accumulated wealth and 5th House of intellect and discernment, acting as your premier functional anchor of professional stability. Meanwhile, Venus governs your 7th and 12th houses and is placed in your 11th House of gains.\n\nHowever, the sub-influence of Venus naturally creates a heightened desire for rapid tangible progress, recognition, and material milestones. ${seekerAge ? `At around ${seekerAge} years of age, ` : ""}this combination can sometimes trigger an internal psychological restlessness—a feeling of "am I moving fast enough?" or an impulse to compare your trajectory with peers on social media.\n\nLet me reassure you with complete certainty${honorific ? `, ${honorific}` : ""}: during this cycle, genuine stability is forged through depth of craft, not hurried shortcuts. The planetary currents urge you to build an unshakeable foundation. When you commit to mastering your core discipline with daily patience, this Dasha acts as an impregnable shield protecting your reputation and future authority.\n\nTo cultivate unwavering mental peace and professional poise, make it a sacred habit to offer water (Arghya) to the morning rising Sun while reciting the Gayatri Mantra, and maintain absolute transparency in all your commitments.\n\nTell me${honorific ? `, ${honorific}` : ""}: have you been experiencing any internal pressure, academic stress, or restlessness about the future lately? Share what is on your heart.`;
+        message = `${honorific ? `${honorific}, ` : ""}this is a very profound and mature question to ask at your stage of life.\n\nYour active **${dashaMaha} Mahadasha** and **${dashaAntar} Antardasha** represent a pivotal planetary cycle directing your professional momentum and karmic duties. ${dashaLordshipsEn}\n\nHowever, the sub-influence of the Antardasha naturally creates a heightened desire for rapid tangible progress, recognition, and material milestones. ${seekerAge ? `At around ${seekerAge} years of age, ` : ""}this combination can sometimes trigger an internal psychological restlessness—a feeling of "am I moving fast enough?" or an impulse to compare your trajectory with peers.\n\nLet me reassure you with complete certainty${honorific ? `, ${honorific}` : ""}: during this cycle, genuine stability is forged through depth of craft, not hurried shortcuts. The planetary currents urge you to build an unshakeable foundation. When you commit to mastering your core discipline with daily patience, this Dasha acts as an anchor protecting your reputation and future authority.\n\nTo cultivate unwavering mental peace and professional poise, make it a sacred habit to offer water (Arghya) to the morning rising Sun while reciting the Gayatri Mantra, and maintain absolute transparency in all your commitments.\n\nTell me${honorific ? `, ${honorific}` : ""}: have you been experiencing any internal pressure, academic stress, or restlessness about the future lately? Share what is on your heart.`;
         suggested = [
-          "Which upcoming Antardasha follows Jupiter-Venus?",
-          "What classical remedies pacify 12th house Venus tensions?",
+          "Which upcoming Antardasha follows this cycle?",
+          "What classical remedies pacify sub-period tensions?",
           "Is this Dasha phase favorable for executive promotions?",
           "How should I manage team dynamics during this period?",
         ];
       }
       summaryEn =
-        "Evaluated professional stability under active Jupiter-Venus Vimshottari Dasha and house lordships.";
+        "Evaluated professional stability under active Vimshottari Dasha and house lordships.";
       summaryHi =
-        "सक्रिय गुरु-शुक्र विंशोत्तरी दशा एवं भावेशों के आधार पर कार्यक्षेत्र की स्थिरता का मूल्यांकन किया।";
+        "सक्रिय विंशोत्तरी दशा एवं भावेशों के आधार पर कार्यक्षेत्र की स्थिरता का मूल्यांकन किया।";
     } else if (intent === "marriage") {
+      const manglikDetailEn =
+        mars === "Aries" || mars === "Scorpio"
+          ? `- **Marital Verification Status:** **${manglikVerdictStrEn}**. In your chart, Mars occupies its own sign Aries (Swakshetra), conferring classical scriptural cancellation per Brihat Parashara Hora Shastra (BPHS Ch. 81), transforming raw martial friction into constructive determination.`
+          : `- **Marital Verification Status:** **${manglikVerdictStrEn}**.`;
+
+      const manglikDetailHi =
+        mars === "Aries" || mars === "Scorpio"
+          ? `- **मांगलिक सत्यापन स्थिति:** **${manglikVerdictStrHi}**। आपकी कुंडली में मंगल देव अपनी स्वराशि मेष में विराजमान हैं, जिससे वृहत् पाराशर होरा शास्त्र (अध्याय 81) के अनुसार स्वतः शास्त्रीय परिहार (दोष शमन) प्राप्त होता है।`
+          : `- **मांगलिक सत्यापन स्थिति:** **${manglikVerdictStrHi}**।`;
+
+      const marriageRemedyMantraHi =
+        seventhLord === "Venus"
+          ? "ॐ क्लीं शुक्राय नमः (शुक्रवार प्रातः 108 बार जप) अथवा गौरी शंकर मन्त्र"
+          : seventhLord === "Sun"
+            ? "ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः अथवा गायत्री मन्त्र"
+            : seventhLord === "Mars"
+              ? "ॐ क्रां क्रीं क्रौं सः भौमाय नमः अथवा मंगल मन्त्र"
+              : seventhLord === "Jupiter"
+                ? "ॐ ग्रां ग्रीं ग्रौं सः गुरवे नमः अथवा विष्णु सहस्रनाम"
+                : seventhLord === "Mercury"
+                  ? "ॐ ब्रां ब्रीं ब्रौं सः बुधाय नमः"
+                  : seventhLord === "Saturn"
+                    ? "ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः अथवा शिव पंचाक्षरी मन्त्र"
+                    : "ॐ श्रां श्रीं श्रौं सः चंद्राय नमः";
+
+      const marriageRemedyMantraEn =
+        seventhLord === "Venus"
+          ? "Om Kleem Shukraya Namah (Chant 108 times on Friday mornings) or Gauri Shankar Mantra"
+          : seventhLord === "Sun"
+            ? "Om Hram Hrim Hroum Sah Suryaya Namah or Gayatri Mantra"
+            : seventhLord === "Mars"
+              ? "Om Kram Krim Kroum Sah Bhaumaya Namah or Mangal Gayatri"
+              : seventhLord === "Jupiter"
+                ? "Om Gram Grim Groum Sah Gurave Namah or Vishnu Sahasranama"
+                : seventhLord === "Mercury"
+                  ? "Om Bram Brim Broum Sah Budhaya Namah"
+                  : seventhLord === "Saturn"
+                    ? "Om Pram Prim Proum Sah Shanaischaraya Namah or Shiva Panchakshari Mantra"
+                    : "Om Shram Shrim Shroum Sah Chandraya Namah";
+
       if (isHi) {
-        message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु संबंध एवं वैवाहिक विश्लेषण:
+        message = `${greetingPrefix}${honorific ? `${honorific}, ` : ""}**${lagnaDisplay} लग्न** हेतु संबंध एवं वैवाहिक विश्लेषण:
 
 ### भावनात्मक एवं वैवाहिक संरचना
-आपके ${lagnaDisplay} लग्न में सप्तम भाव (वृषभ राशि) साझेदारी एवं वैवाहिक अनुबंध को दर्शाता है, जिसके स्वामी शुक्र देव हैं।
-- **मांगलिक सत्यापन स्थिति:** **${manglikVerdictStrHi}**। आपकी कुंडली में मंगल देव अपनी स्वराशि मेष में विराजमान हैं, जिससे वृहत् पाराशर होरा शास्त्र (अध्याय 81) के अनुसार स्वतः शास्त्रीय परिहार (दोष शमन) प्राप्त होता है।
-- **चंद्र स्थिति:** आपका चंद्र **${moonDisplay}** में स्थित है, जो निष्ठा और संवेदनशीलता प्रदान करता है।
+आपके ${lagnaDisplay} लग्न में सप्तम भाव (${seventhSignDisplay} राशि) साझेदारी एवं वैवाहिक अनुबंध को दर्शाता है, जिसके स्वामी ${seventhLordDisplay} हैं।
+${manglikDetailHi}
+- **चंद्र स्थिति:** आपका चंद्र **${moonDisplay}** (${moonNak} नक्षत्र) में स्थित है, जो निष्ठा और संवेदनशीलता प्रदान करता है।
 
 ### D9 नवांश एवं जीवनसाथी के गुण
 आपका D9 नवांश चक्र दर्शाता है कि आपके जीवनसाथी बौद्धिक रूप से परिपक्व, व्यावहारिक और पारिवारिक मूल्यों के प्रति समर्पित होंगे। सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay}** दशा में आगामी 8 से 14 महीनों का समय संबंध प्रगाढ़ करने अथवा विवाह के लिए अनुकूल समय खिड़की प्रदान करता है।
@@ -14862,13 +15365,16 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
 आपसी संवाद में पारदर्शिता रखें। सौम्य संवाद से संबंधों में मधुरता बनी रहती है।`;
 
         remedyCard = {
-          title: "शुक्र ग्रह शांति एवं दांपत्य सामंजस्य (वृश्चिक लग्न)",
-          mantra:
-            "ॐ क्लीं शुक्राय नमः (शुक्रवार प्रातः 108 बार जप) अथवा गौरी शंकर मन्त्र",
+          title: `${seventhLordDisplay} शांति एवं दांपत्य सामंजस्य (${lagnaDisplay} लग्न)`,
+          mantra: marriageRemedyMantraHi,
           gemstone_note:
-            "सफेद जरकन अथवा चांदी का छल्ला (लग्न परीक्षणोपरांत)। ध्यातव्य: वृश्चिक लग्न हेतु पन्ना (बुध) सर्वथा वर्जित है।",
+            lagna === "Scorpio"
+              ? "सफेद जरकन अथवा चांदी का छल्ला (लग्न परीक्षणोपरांत)। ध्यातव्य: वृश्चिक लग्न हेतु पन्ना (बुध) सर्वथा वर्जित है।"
+              : `सप्तमेश ${seventhLordDisplay} की सात्विक उपासना एवं शुभ होरा में संवाद।`,
           charity_practice:
-            "शुक्रवार को कन्याओं को खीर खिलाएं अथवा मंदिर में सफेद पुष्प अर्पित करें",
+            seventhLord === "Venus"
+              ? "शुक्रवार को कन्याओं को खीर खिलाएं अथवा मंदिर में सफेद पुष्प अर्पित करें"
+              : "पारिवारिक शांति हेतु निर्धनों को अन्न अथवा वस्त्र दान करें",
           disclaimer: "वैदिक उपाय मन की शुद्धि एवं सामंजस्य हेतु पारंपरिक अनुष्ठान हैं।",
         };
         suggested = [
@@ -14878,12 +15384,12 @@ app.post("/api/ai-astrologer/ask", async (req: Request, res: Response) => {
           "दांपत्य शांति हेतु कौन से पारंपरिक उपाय करने चाहिए?",
         ];
       } else {
-        message = `${greetingPrefix}Examining relationship architecture and marriage timing for **${lagna} Lagna**:
+        message = `${greetingPrefix}${honorific ? `${honorific}, ` : ""}examining relationship architecture and marriage timing for **${lagna} Lagna**:
 
 ### Emotional & Partnership Geometry
-Under your ${lagna} Lagna, the 7th House of partnership is Taurus, governed by Venus.
-- **Marital Verification Status:** **${manglikVerdictStrEn}**. In your chart, Mars occupies its own sign Aries (Swakshetra), conferring classical scriptural cancellation per Brihat Parashara Hora Shastra (BPHS Ch. 81), transforming raw martial friction into constructive determination.
-- **Emotional Core:** Your Moon in **${moon}** gives emotional loyalty and thoughtful discernment.
+Under your ${lagna} Lagna, the 7th House of partnership is ${seventhSign}, governed by ${seventhLord}.
+${manglikDetailEn}
+- **Emotional Core:** Your Moon in **${moon}** (${moonNak} Nakshatra) gives emotional loyalty and thoughtful discernment.
 
 ### D9 Navamsha & Partner Characteristics
 Your D9 Navamsha indicators point toward a companion who is intellectually mature, emotionally grounded, and shares your core life values. Under active **${dashaMaha}-${dashaAntar}** Dasha, transiting benefics in Kendra houses activate an auspicious 8 to 14-month window for formalizing alliances or deepening relationship harmony.
@@ -14892,13 +15398,16 @@ Your D9 Navamsha indicators point toward a companion who is intellectually matur
 Communicate openly regarding mutual expectations. Gentle transparency prevents needless misunderstandings.`;
 
         remedyCard = {
-          title: "Venusian Harmony & Emotional Balance (Scorpio Lagna)",
-          mantra:
-            "Om Kleem Shukraya Namah (Chant 108 times on Friday mornings) or Gauri Shankar Mantra",
+          title: `${seventhLord} Harmony & Emotional Balance (${lagna} Lagna)`,
+          mantra: marriageRemedyMantraEn,
           gemstone_note:
-            "Natural White Zircon set in silver (subject to Lagna dignity trial). Note: Emerald (Panna) is strictly contraindicated for Scorpio Lagna as Mercury rules the 8th & 11th houses.",
+            lagna === "Scorpio"
+              ? "Natural White Zircon set in silver (subject to Lagna dignity trial). Note: Emerald (Panna) is strictly contraindicated for Scorpio Lagna as Mercury rules the 8th & 11th houses."
+              : `Harmonize 7th lord ${seventhLord} through traditional sattvic practices and mindful communication.`,
           charity_practice:
-            "Support women's education or offer white flowers at Lakshmi temples on Fridays",
+            seventhLord === "Venus"
+              ? "Support women's education or offer white flowers at Lakshmi temples on Fridays"
+              : "Practice selfless charity and offer morning prayers for relationship harmony",
           disclaimer:
             "Traditional remedial practices cultivate inner mindfulness; they do not guarantee specific interpersonal outcomes.",
         };
@@ -14913,8 +15422,18 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
         "Examined 7th house partnership geometry, D9 Navamsha, and marital timing.";
       summaryHi = "सप्तम भाव, दांपत्य समन्वय, D9 नवांश एवं विवाह समय का विश्लेषण किया।";
     } else if (intent === "career") {
+      const sunMarsDescEn =
+        sun === "Leo" && mars === "Aries"
+          ? "With your Sun in royal Leo and Mars in Aries, your core psychological drive is toward autonomy, self-respect, and creative leadership."
+          : `With your Sun in ${sun} (House ${sunHouse}) and Mars in ${mars} (House ${marsHouse}), your core psychological drive is toward autonomy, intellectual mastery, and strategic leadership.`;
+
+      const sunMarsDescHi =
+        sun === "Leo" && mars === "Aries"
+          ? "सिंह राशि में सूर्य देव और मेष में मंगल की ऊर्जा यह दर्शाती है कि आप किसी दबावयुक्त अथवा नीरस अधीनता में कार्य करने के लिए नहीं बने हैं—आप वहाँ सर्वश्रेष्ठ परिणाम देते हैं जहाँ आपको निर्णय लेने की स्वतंत्रता, बौद्धिक सम्मान और योग्यता की पहचान मिले।"
+          : `${sunDisplay} राशि (भाव ${sunHouse}) में सूर्य और ${marsDisplay} राशि (भाव ${marsHouse}) में मंगल की ऊर्जा यह दर्शाती है कि आप किसी दबावयुक्त अथवा नीरस अधीनता में कार्य करने के लिए नहीं बने हैं—आप वहाँ सर्वश्रेष्ठ परिणाम देते हैं जहाँ आपको निर्णय लेने की स्वतंत्रता, बौद्धिक सम्मान और योग्यता की पहचान मिले।`;
+
       if (isHi) {
-        message = `${honorific ? `${honorific}, ` : ""}आइए आपकी आजीविका, करियर के मार्ग और ग्रहीय समय चक्र का अत्यंत सूक्ष्म और आत्मीय विश्लेषण करते हैं।\n\n${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आपकी सबसे बड़ी प्राथमिकता अपनी स्वाभाविक प्रतिभा को ठोस विशेषज्ञता में परिवर्तित करने की है। ` : ""}आपकी कुंडली में ${lagnaDisplay} लग्न हेतु दशम भाव (सिंह राशि) के स्वामी सूर्य देव हैं। सिंह राशि में सूर्य देव और मेष में मंगल की ऊर्जा यह दर्शाती है कि आप किसी दबावयुक्त अथवा नीरस अधीनता में कार्य करने के लिए नहीं बने हैं—आप वहाँ सर्वश्रेष्ठ परिणाम देते हैं जहाँ आपको निर्णय लेने की स्वतंत्रता, बौद्धिक सम्मान और योग्यता की पहचान मिले।\n\nउच्च तकनीकी क्षेत्र, प्रबंधन परामर्श, रणनीतिक नेतृत्व, वित्तीय विश्लेषण अथवा प्रतिष्ठित प्रतियोगी परीक्षाएं आपके लिए सर्वाधिक फलदायी सिद्ध होंगी।\n\nसमय और पदोन्नति की बात करें तो: वर्ष 2025 के मध्य से 2027 के बीच, जब गुरु देव अपनी उच्च राशि कर्क में संचरण करेंगे, आपके जीवन का पहला अत्यंत महत्वपूर्ण उत्थान काल (Breakthrough Window) आरंभ होगा। यह समय शीर्ष संस्थानों में चयन, उत्कृष्ट प्लेसमेंट या पहली बड़ी पदोन्नति हेतु अत्यंत भाग्यशाली है।\n\n${honorific ? `${honorific}, ` : ""}अभी आप किस विषय अथवा क्षेत्र में अध्ययन या तैयारी कर रहे हैं? मुझे अपने वर्तमान लक्ष्य के बारे में बताएं, ताकि मैं आपकी कुंडली के अनुसार सबसे सटीक रणनीति सुझा सकूं।`;
+        message = `${honorific ? `${honorific}, ` : ""}आइए आपकी आजीविका, करियर के मार्ग और ग्रहीय समय चक्र का अत्यंत सूक्ष्म और आत्मीय विश्लेषण करते हैं।\n\n${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आपकी सबसे बड़ी प्राथमिकता अपनी स्वाभाविक प्रतिभा को ठोस विशेषज्ञता में परिवर्तित करने की है। ` : ""}आपकी कुंडली में ${lagnaDisplay} लग्न हेतु दशम भाव (${tenthSignDisplay} राशि) के स्वामी ${tenthLordDisplay} हैं। ${sunMarsDescHi}\n\nउच्च तकनीकी क्षेत्र, प्रबंधन परामर्श, रणनीतिक नेतृत्व, वित्तीय विश्लेषण अथवा प्रतिष्ठित प्रतियोगी परीक्षाएं आपके लिए सर्वाधिक फलदायी सिद्ध होंगी।\n\nसमय और पदोन्नति की बात करें तो: वर्ष 2025 के मध्य से 2027 के बीच, जब गुरु देव केंद्र व त्रिकोण भावों में संचरण करेंगे, आपके जीवन का पहला अत्यंत महत्वपूर्ण उत्थान काल (Breakthrough Window) आरंभ होगा। यह समय शीर्ष संस्थानों में चयन, उत्कृष्ट प्लेसमेंट या पहली बड़ी पदोन्नति हेतु अत्यंत भाग्यशाली है।\n\n${honorific ? `${honorific}, ` : ""}अभी आप किस विषय अथवा क्षेत्र में अध्ययन या तैयारी कर रहे हैं? मुझे अपने वर्तमान लक्ष्य के बारे में बताएं, ताकि मैं आपकी कुंडली के अनुसार सबसे सटीक रणनीति सुझा सकूं।`;
         suggested = [
           "मेरे दशमेश का पदोन्नति के समय पर क्या प्रभाव है?",
           "आगामी कौन सा गोचर नौकरी परिवर्तन में सहायक होगा?",
@@ -14922,7 +15441,7 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
           "कार्यस्थल पर सफलता हेतु कौन से वैदिक उपाय उत्तम हैं?",
         ];
       } else {
-        message = `${honorific ? `${honorific}, ` : ""}let us look deeply into your professional path and the planetary currents shaping your trajectory.\n\n${seekerAge ? `At around ${seekerAge} years of age, you are at a vital and promising threshold—transitioning from academic foundations into building real-world mastery and independence. ` : ""}For ${lagna} Lagna, the 10th House of career is governed by the Sun (Leo). With your Sun in royal Leo and Mars in Aries, your core psychological drive is toward autonomy, self-respect, and creative leadership. You are not suited for mundane or mechanical subordination; you need an environment where your ideas matter and your merit is recognized.\n\nYour Mars in Aries gives you immense stamina, courage, and a competitive edge, while Mercury in Leo gives you quick intellectual synthesis. For your chart, career paths involving technology systems, management consulting, strategic leadership, quantitative analytics, or prestigious competitive examinations align harmoniously with your planetary dignities.\n\nRegarding your timing and career acceleration: between late 2025 and mid-2027, as transiting Jupiter moves into exalted Cancer (activating your 9th house of divine fortune and higher growth), you enter your primary breakthrough window. This period strongly favors major entrance breakthroughs, securing high-impact campus placements, or initial high-visibility career milestones.\n\nMy guidance to you is to cultivate depth over speed right now. Master your core technical or business discipline daily without being distracted by peer comparisons.\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific field or specialized domain are you currently pursuing or preparing for? Share your current academic or professional focus, and let us analyze the most auspicious sectors for your chart.`;
+        message = `${honorific ? `${honorific}, ` : ""}let us look deeply into your professional path and the planetary currents shaping your trajectory.\n\n${seekerAge ? `At around ${seekerAge} years of age, you are at a vital and promising threshold—transitioning from academic foundations into building real-world mastery and independence. ` : ""}For ${lagna} Lagna, the 10th House of career is governed by ${tenthLord} (${tenthSign}). ${sunMarsDescEn} You are not suited for mundane or mechanical subordination; you need an environment where your ideas matter and your merit is recognized.\n\nYour Mars in ${mars} gives you immense stamina, courage, and a competitive edge, while your Mercury and Sun placements support quick intellectual synthesis. For your chart, career paths involving technology systems, management consulting, strategic leadership, quantitative analytics, or prestigious competitive examinations align harmoniously with your planetary dignities.\n\nRegarding your timing and career acceleration: between late 2025 and mid-2027, as transiting Jupiter moves through supportive Kendra and Trikona houses, you enter your primary breakthrough window. This period strongly favors major entrance breakthroughs, securing high-impact campus placements, or initial high-visibility career milestones.\n\nMy guidance to you is to cultivate depth over speed right now. Master your core technical or business discipline daily without being distracted by peer comparisons.\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific field or specialized domain are you currently pursuing or preparing for? Share your current academic or professional focus, and let us analyze the most auspicious sectors for your chart.`;
         suggested = [
           "How does my 10th house lord influence promotion timing?",
           "Which upcoming transit supports a career switch?",
@@ -14935,25 +15454,33 @@ Communicate openly regarding mutual expectations. Gentle transparency prevents n
       summaryHi =
         "दशम भाव, करियर दिशा, दशा अवधि एवं पदोन्नति का समय विश्लेषण किया।";
     } else if (intent === "remedy") {
+      const gemstoneEn =
+        lagna === "Scorpio"
+          ? "Red Coral (Mars, Lagna Lord) or Yellow Sapphire (Jupiter, 5th Lord). Emerald is strictly contraindicated for Scorpio Lagna."
+          : `Strengthen Lagna Lord ${SIGN_LORDS[lagna]} through sattvic mantra meditation. Confirm gemstone compatibility before wearing stones.`;
+      const gemstoneHi =
+        lagna === "Scorpio"
+          ? "रक्त मूँगा (मंगल - लग्नेश) अथवा पीला पुखराज (गुरु - पंचमेश)। वृश्चिक लग्न हेतु पन्ना (बुध - अष्टमेश) सर्वथा वर्जित है।"
+          : `लग्नेश ${PLANET_NAMES_HI[SIGN_LORDS[lagna]] || SIGN_LORDS[lagna]} की सात्विक उपासना करें। रत्न धारण से पूर्व विस्तृत कुंडली परीक्षण आवश्यक है।`;
+
       if (isHi) {
         message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु शास्त्रीय वैदिक उपचारात्मक विवेचन:
 
 ### ग्रहीय स्थिति एवं गोचर शांति
-आपकी पत्रिका **${dashaMahaDisplay} महादशा** एवं **${dashaAntarDisplay} अंतर्दशा** में है, तथा शनि का प्रभाव **${sadesati}** में है।
+आपकी पत्रिका **${dashaMahaDisplay} महादशा** एवं **${dashaAntarDisplay} अंतर्दशा** में है, तथा शनि का प्रभाव **${sadesatiHi}** में है।
 
 ### विहित शास्त्रीय उपाय
 - **महामृत्युंजय मन्त्र:** सूर्योदय के समय 108 बार जप करने से गोचर जन्य बाधाएं शांत होती हैं और मानसिक व शारीरिक बल मिलता है।
 - **शनि देव की सेवा:** शनिवार को पीपल के वृक्ष के नीचे तिल के तेल का दीपक प्रज्वलित करें एवं असहायों को अन्न दान करें।
-- **रत्न विचार (वृश्चिक लग्न):** रक्त मूँगा (लग्नेश मंगल) अथवा पीला पुखराज (पंचमेश गुरु) धारण करना शुभ है। पन्ना (बुध - अष्टमेश) इस लग्न हेतु सर्वथा वर्जित है।
+- **रत्न विचार (${lagnaDisplay} लग्न):** ${gemstoneHi}
 
 ### शास्त्रीय मर्यादा
 वैदिक उपाय आत्मिक शांति, अनुशासन और विनम्रता के लिए हैं। ये कोई व्यावसायिक गारंटी नहीं हैं।`;
         remedyCard = {
-          title: "शास्त्रीय पाराशरी वैदिक उपाय (वृश्चिक लग्न)",
+          title: `शास्त्रीय पाराशरी वैदिक उपाय (${lagnaDisplay} लग्न)`,
           mantra:
             "महामृत्युंजय मन्त्र: ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम्। उर्वारुकमिव बन्धनान्मृत्योर्मुक्षीय मामृतात्॥ (प्रातः 108 बार)",
-          gemstone_note:
-            "रक्त मूँगा (मंगल - लग्नेश) अथवा पीला पुखराज (गुरु - पंचमेश)। वृश्चिक लग्न हेतु पन्ना (बुध - अष्टमेश) सर्वथा वर्जित है।",
+          gemstone_note: gemstoneHi,
           charity_practice:
             "मंगलवार को लाल मसूर का दान करें; शनिवार को पीपल के वृक्ष के नीचे तिल के तेल का दीपक प्रज्वलित करें",
           disclaimer:
@@ -14968,16 +15495,15 @@ Your chart is navigating **${dashaMaha} Mahadasha** and **${dashaAntar} Antardas
 ### Prescribed Classical Remedies
 - **Maha Mrityunjaya Mantra:** Chanting 108 times at sunrise pacifies malefic transit friction and restores physical and mental vitality.
 - **Saturnian Discipline:** On Saturdays, light a pure sesame or mustard oil lamp under a Peepal tree and practice selfless charity toward those in need.
-- **Gemstone Guidance (Scorpio Lagna):** Fortify your functional Lagna lord Mars with Red Coral (Moonga) or 5th lord Jupiter with Yellow Sapphire (Pukhraj). Emerald (Panna) is strictly contraindicated for Scorpio Lagna as Mercury rules the 8th & 11th houses.
+- **Gemstone Guidance (${lagna} Lagna):** ${gemstoneEn}
 
 ### Ethical Scriptural Principle
 Traditional remedies are cultural and spiritual practices intended to cultivate inner peace, discipline, and humility. They are not transactional commercial guarantees.`;
         remedyCard = {
-          title: "Classical Parashari Remedial Discipline (Scorpio Lagna)",
+          title: `Classical Parashari Remedial Discipline (${lagna} Lagna)`,
           mantra:
             "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe Sugandhim Pushtivardhanam Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat (108 times at sunrise)",
-          gemstone_note:
-            "Red Coral (Mars, Lagna Lord) or Yellow Sapphire (Jupiter, 5th Lord). Emerald is strictly contraindicated for Scorpio Lagna.",
+          gemstone_note: gemstoneEn,
           charity_practice:
             "Light a pure sesame oil lamp under a Peepal tree on Saturdays; donate red lentils or jaggery on Tuesdays",
           disclaimer:
@@ -14995,11 +15521,21 @@ Traditional remedies are cultural and spiritual practices intended to cultivate 
       summaryHi =
         "शास्त्रीय पाराशरी उपाय, महामृत्युंजय मन्त्र एवं शनि शांति के नियम बताए।";
     } else {
+      const sunMarsGeneralEn =
+        sun === "Leo" && mars === "Aries"
+          ? "With your Sun in royal Leo and Mars in Aries, your chart reflects immense drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy."
+          : `With your Sun in ${sun} (House ${sunHouse}) and Mars in ${mars} (House ${marsHouse}), your chart reflects distinct drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy.`;
+
+      const sunMarsGeneralHi =
+        sun === "Leo" && mars === "Aries"
+          ? "आपकी कुंडली में सूर्य देव (सिंह राशि) और मंगल देव (मेष राशि) का प्रभाव आपके अंदर स्वतंत्र निर्णय क्षमता, उच्च आत्मसम्मान और नेतृत्व की स्वाभाविक ऊर्जा प्रदान करता है।"
+          : `आपकी कुंडली में सूर्य देव (${sunDisplay} राशि, भाव ${sunHouse}) और मंगल देव (${marsDisplay} राशि, भाव ${marsHouse}) का प्रभाव आपके अंदर स्वतंत्र निर्णय क्षमता, उच्च आत्मसम्मान और नेतृत्व की स्वाभाविक ऊर्जा प्रदान करता है।`;
+
       if (isHi) {
-        message = `प्रणाम ${honorific ? `${honorific}! ` : ""}मैंने आपकी जन्म पत्रिका (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का अध्ययन कर लिया है।\n\n${seekerAge ? `लगभग ${seekerAge} वर्ष की इस अवस्था में आप अपने अध्ययन, कौशल विकास और आजीविका की सुदृढ़ नींव रखने के एक अत्यंत महत्वपूर्ण मोड़ पर हैं। ` : ""}आपकी कुंडली में सूर्य देव (सिंह राशि) और मंगल देव (मेष राशि) का प्रभाव आपके अंदर स्वतंत्र निर्णय क्षमता, उच्च आत्मसम्मान और नेतृत्व की स्वाभाविक ऊर्जा प्रदान करता है।\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा, संबंध या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
+        message = `प्रणाम ${honorific ? `${honorific}! ` : ""}मैंने आपकी जन्म पत्रिका (**${lagnaDisplay} लग्न**, **${moonDisplay} चंद्र राशि**, सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा**) का अध्ययन कर लिया है।\n\n${ageStageDescHi} ${sunMarsGeneralHi}\n\nआज आपके मन में करियर, शिक्षा, व्यक्तिगत दिशा, संबंध या जीवन का कौन सा प्रश्न सबसे प्रमुख है? आप बिना किसी संकोच के सीधे पूछ सकते हैं।`;
         suggested = [];
       } else {
-        message = `Pranam ${honorific ? `${honorific}! ` : ""}I have successfully connected to your natal chart: **${lagna} Lagna**, Moon in **${moon}**, with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n${seekerAge ? `At around ${seekerAge} years of age, you are standing at an essential threshold—building your core skills, setting higher education or entrance goals, and preparing for your career launch. ` : ""}With your Sun in royal Leo and Mars in Aries, your chart reflects immense drive, self-respect, and natural leadership potential. You thrive where your merit is recognized and you have autonomy.\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific concern, career goal, relationship question, or life milestone is foremost on your mind today? Feel free to ask anything directly.`;
+        message = `Pranam ${honorific ? `${honorific}! ` : ""}I have successfully connected to your natal chart: **${lagna} Lagna**, Moon in **${moon}** (${moonNak} Nakshatra), with active **${dashaMaha}-${dashaAntar} Dasha**.\n\n${ageStageDescEn} ${sunMarsGeneralEn}\n\nTell me${honorific ? `, ${honorific}` : ""}: what specific concern, career goal, relationship question, or life milestone is foremost on your mind today? Feel free to ask anything directly.`;
         suggested = [];
       }
       summaryEn =
@@ -15026,13 +15562,13 @@ Traditional remedies are cultural and spiritual practices intended to cultivate 
         ? [
             {
               factor: "Natal Ascendant (Lagna)",
-              placement: `${lagna} (~24.17°)`,
+              placement: `${lagna} (~${Math.round(lagnaDeg * 100) / 100}°)`,
               interpretation:
                 "Foundational constitutional temperament, vitality, and primary life focus.",
             },
             {
               factor: "Natal Moon (Chandra)",
-              placement: `${moon} (12.21°, Satabhisha)`,
+              placement: `${moon} (${Math.round(moonDeg * 100) / 100}°, ${moonNak})`,
               interpretation:
                 "Mental baseline, emotional perceptions, and intuitive decision-making lens.",
             },
