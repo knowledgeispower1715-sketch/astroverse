@@ -539,6 +539,165 @@ test("AstroVerse AI Astrologer Acceptance Suite (Directive Acceptance Tests A-D 
       assert.ok(data.remedyCard);
       assert.match(data.remedyCard.mantra, /Om Som Somaya Namah/i);
     });
+
+    // Domain Tests: Education & Competitive Exams
+    await t.test("Domain Test — Education: 'Will I clear my entrance exam?'", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "Will I clear my competitive entrance exam?",
+          session_history: conversationHistory,
+          lang: "en",
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.intent, "education");
+      assert.match(data.message, /Vidya & Buddhi Bhavas/i);
+      assert.match(data.message, /5th House/i);
+      assert.match(data.message, /Saraswati Mantra/i);
+      assert.ok(data.remedyCard);
+      assert.match(data.remedyCard.mantra, /Saraswati Mantra/i);
+    });
+
+    // Domain Tests: Health & Vitality
+    await t.test("Domain Test — Health: 'How is my health and physical vitality?'", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "How is my health and physical vitality?",
+          session_history: conversationHistory,
+          lang: "en",
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.intent, "health");
+      assert.match(data.message, /Constitutional Geometry/i);
+      assert.match(data.message, /1st, 6th & 8th Houses/i);
+      assert.match(data.message, /Medical Disclaimer/i);
+      assert.ok(data.remedyCard);
+      assert.match(data.remedyCard.mantra, /Maha Mrityunjaya/i);
+    });
+
+    // Domain Tests: Property & Land
+    await t.test("Domain Test — Property: 'Can I buy a house or real estate property soon?'", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "Can I buy a house or real estate property soon?",
+          session_history: conversationHistory,
+          lang: "en",
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.intent, "property");
+      assert.match(data.message, /4th House \(Sukhasthana\)/i);
+      assert.match(data.message, /Bhumi Karaka Mars/i);
+      assert.ok(data.remedyCard);
+      assert.match(data.remedyCard.mantra, /Hanuman/i);
+    });
+
+    // Domain Tests: Foreign Travel & Relocation
+    await t.test("Domain Test — Foreign Travel: 'Will I settle abroad or travel overseas?'", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "Will I settle abroad or travel overseas on a visa?",
+          session_history: conversationHistory,
+          lang: "en",
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.intent, "foreign_travel");
+      assert.match(data.message, /9th & 12th House Geometries/i);
+      assert.match(data.message, /Rahu/i);
+    });
+
+    // Domain Tests: Spiritual & Meditation
+    await t.test("Domain Test — Spiritual: 'How can I deepen my spiritual meditation?'", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "How can I deepen my spiritual meditation and discover my Ishta Devata?",
+          session_history: conversationHistory,
+          lang: "en",
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.intent, "spiritual");
+      assert.match(data.message, /Dharma & Moksha Houses/i);
+      assert.match(data.message, /Ketu/i);
+      assert.ok(data.remedyCard);
+      assert.match(data.remedyCard.mantra, /Om Namah Shivaya/i);
+    });
+
+    // Domain Tests: Kundli Matching & Ashta Koota
+    await t.test("Domain Test — Kundli Matching: 'Explain Ashta Koota 36 Guna matching'", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "Explain Ashta Koota 36 Guna matching and compatibility",
+          session_history: conversationHistory,
+          lang: "en",
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.intent, "kundli_matching");
+      assert.match(data.message, /Ashta Koota/i);
+      assert.match(data.message, /Graha Maitri/i);
+      assert.match(data.message, /Nadi Dosha/i);
+    });
+
+    // Domain Tests: Litigation & Dispute Resolution
+    await t.test("Domain Test — Litigation: 'How to resolve court cases and disputes with enemies?'", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "How to resolve court cases, lawsuits and disputes with enemies?",
+          session_history: conversationHistory,
+          lang: "en",
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.intent, "litigation");
+      assert.match(data.message, /6th House \(Shatrusthana\)/i);
+      assert.match(data.message, /Mediation/i);
+      assert.ok(data.remedyCard);
+      assert.match(data.remedyCard.mantra, /Bajrang Baan/i);
+    });
+
+    // Domain Tests: Children & Progeny
+    await t.test("Domain Test — Children: 'What does my chart indicate for children and santan bhava?'", async () => {
+      const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: "What does my chart indicate for children, pregnancy and santan bhava?",
+          session_history: conversationHistory,
+          lang: "en",
+        }),
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.intent, "children");
+      assert.match(data.message, /5th House & Putrakaraka/i);
+      assert.match(data.message, /Jupiter/i);
+      assert.ok(data.remedyCard);
+      assert.match(data.remedyCard.mantra, /Santana Gopala/i);
+    });
   } finally {
     await closeServer();
   }

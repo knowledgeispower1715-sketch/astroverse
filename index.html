@@ -4715,28 +4715,120 @@
     @media (max-width: 680px) {
       #modal-ai-consultation {
         padding: 0 !important;
+        margin: 0 !important;
+        align-items: stretch !important;
+        justify-content: stretch !important;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
         z-index: var(--z-modal, 10500) !important;
+        overflow: hidden !important;
       }
       #modal-ai-consultation .modal-dialog-card {
-        width: 100% !important;
-        max-width: 100% !important;
-        height: 100dvh !important;
-        max-height: 100dvh !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
         border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
         display: flex !important;
         flex-direction: column !important;
       }
-      #ai-chat-messages-container {
-        padding: 12px 10px !important;
+      /* Compact 52px Native App Header */
+      #modal-ai-consultation .modal-dialog-card > div:first-child {
+        padding: 6px 10px !important;
+        min-height: 50px !important;
+        max-height: 56px !important;
+        box-sizing: border-box !important;
+        gap: 6px !important;
       }
+      #modal-ai-consultation .ai-lang-switch-group {
+        padding: 2px !important;
+        gap: 2px !important;
+      }
+      #modal-ai-consultation .ai-lang-btn {
+        padding: 2px 7px !important;
+        font-size: 11px !important;
+        height: 26px !important;
+        line-height: 22px !important;
+      }
+      #ai-chat-avatar {
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 10px !important;
+      }
+      #ai-chat-astrologer-name {
+        font-size: 14px !important;
+        line-height: 1.2 !important;
+      }
+      #ai-chat-persona-badge {
+        display: none !important; /* Conceal badge on small mobile screens to prevent header wrapping */
+      }
+      #ai-chat-specialty {
+        font-size: 10.5px !important;
+        max-width: 130px !important;
+      }
+      /* Compact Context Bar */
+      #ai-chat-context-bar {
+        padding: 6px 12px !important;
+        font-size: 11px !important;
+        gap: 4px !important;
+      }
+      #ai-chat-messages-container {
+        flex: 1 1 0 !important;
+        min-height: 0 !important;
+        padding: 12px 10px !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      /* Composer and Input: Guarantees full-width input and non-compressed send button */
       #ai-chat-composer {
-        padding: 10px 12px max(10px, env(safe-area-inset-bottom, 10px)) !important;
+        padding: 8px 12px max(10px, env(safe-area-inset-bottom, 10px)) !important;
+        display: flex !important;
+        gap: 8px !important;
+        align-items: center !important;
+        background: #FFFFFF !important;
+        border-top: 1px solid #E2E8F0 !important;
+        box-sizing: border-box !important;
+      }
+      #ai-chat-user-input {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        width: auto !important;
+        font-size: 16px !important; /* Eliminates unwanted iOS Safari auto-zoom on focus */
+        padding: 10px 16px !important;
+        border-radius: 22px !important;
+        border: 1.5px solid #CBD5E1 !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+      }
+      #ai-chat-send-btn,
+      #ai-chat-composer .btn-gold-primary,
+      #ai-chat-composer button {
+        width: auto !important;
+        min-width: 44px !important;
+        height: 44px !important;
+        padding: 0 16px !important;
+        font-size: 13px !important;
+        border-radius: 22px !important;
+        flex-shrink: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
       }
       .chat-bubble-agent {
         max-width: 95% !important;
       }
       .chat-bubble-user {
         max-width: 90% !important;
+      }
+      #ai-chat-typing-indicator {
+        padding: 6px 12px !important;
       }
     }
 
@@ -21018,7 +21110,10 @@
       isContinuationModalVisible = false;
       document.body.classList.remove('consultation-modal-open');
       const modal = document.getElementById('modal-ai-consultation');
-      if (modal) modal.style.display = 'none';
+      if (modal) {
+        modal.style.display = 'none';
+        modal.style.top = '';
+      }
       const menu = document.getElementById('ai-chat-options-menu');
       if (menu) menu.style.display = 'none';
       activeConsultationSession = null;
@@ -21680,6 +21775,10 @@
       const isDashaStability = (q.includes('dasha') || q.includes('दशा')) &&
         (q.includes('stability') || q.includes('career') || q.includes('professional') || q.includes('work') || q.includes('job') || /(स्थिरता|कार्यक्षेत्र|नौकरी)/.test(userQuery || ''));
 
+      const isAstrologicalHouseMention =
+        /\b(?:1st|2nd|3rd|4th|5th|6th|7th|8th|9th|10th|11th|12th|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth)\s+house\b/i.test(q) ||
+        /\bhouse\s+of\s+(?:career|marriage|profession|wealth|partnership|fortune|children|progeny|health)\b/i.test(q);
+
       let isCareer = !isCareerTransit && !isDashaStability && !isAmbiguousFuture && (q.includes('career') || q.includes('job') || q.includes('promot') || q.includes('business') || q.includes('10th') || q.includes('work') || q.includes('office') || q.includes('transfer') || /(करियर|नौकरी|व्यापार|पदोन्नति|व्यवसाय|दशम भाव)/.test(userQuery || ''));
       let isMarriage = q.includes('marri') || q.includes('love') || q.includes('relationship') || q.includes('partner') || q.includes('spouse') || q.includes('7th') || q.includes('wedding') || q.includes('synastry') || /(विवाह|शादी|प्रेम|जीवनसाथी|सप्तम भाव|संबंध)/.test(userQuery || '');
       let isWealth = !isAppWalletQuery && (q.includes('wealth') || q.includes('money') || q.includes('financ') || q.includes('invest') || q.includes('stock') || q.includes('dhana') || q.includes('2nd') || q.includes('11th') || /(धन|दौलत|निवेश|संपत्ति|आर्थिक|धन योग)/.test(userQuery || ''));
@@ -21687,11 +21786,72 @@
       let isTiming = !isCareerTransit && !isDashaStability && (q.includes('when') || q.includes('timing') || q.includes('period') || q.includes('year') || q.includes('month') || q.includes('soon') || q.includes('dasha') || /(कब|समय|दशा|अवधि)/.test(userQuery || ''));
       let isExplanation = q.includes('why') || q.includes('explain') || q.includes('logic') || q.includes('how come') || q.includes('parashar') || q.includes('scripture') || /(क्यों|समझाएं|कारण)/.test(userQuery || '');
 
+      let isKundliMatching =
+        q.includes('gun milan') ||
+        q.includes('ashta koota') ||
+        q.includes('nadi dosha') ||
+        q.includes('bhakoot') ||
+        /\b(match|matching|compatibility)\b/i.test(q) ||
+        /(कुंडली मिलान|गुण मिलान|नाड़ी दोष|भकूट)/.test(userQuery || '');
+
+      let isEducation =
+        q.includes('entrance') ||
+        q.includes('competitive') ||
+        q.includes('academic') ||
+        /\b(study|studies|studying|exam|exams|examination|college|degree|degrees|school|phd|iit|neet|upsc)\b/i.test(q) ||
+        /(विद्या|शिक्षा|परीक्षा|अध्ययन|प्रतियोगी|आईआईटी|नीट|यूपीएससी)/.test(userQuery || '');
+
+      let isChildren =
+        q.includes('conceive') ||
+        q.includes('pregnancy') ||
+        q.includes('progeny') ||
+        q.includes('santan') ||
+        /\b(child|children|baby|babies|son|sons|daughter|daughters)\b/i.test(q) ||
+        /(संतान|बच्चा|पुत्र|पुत्री|गर्भ)/.test(userQuery || '');
+
+      let isHealth =
+        q.includes('vitality') ||
+        q.includes('immunity') ||
+        q.includes('hospital') ||
+        /\b(health|disease|diseases|illness|medical|surgery|doctor|doctors|cure|roga)\b/i.test(q) ||
+        /(रोग|स्वास्थ्य|बीमारी|शारीरिक|आरोग्य|तबीयत)/.test(userQuery || '');
+
+      let isProperty =
+        !isAstrologicalHouseMention &&
+        (q.includes('property') ||
+          q.includes('real estate') ||
+          /\b(flat|flats|land|plot|plots|vehicle|vehicles|car|cars|griha|vahana)\b/i.test(q) ||
+          (/\b(house|houses|home|homes)\b/i.test(q) &&
+            /\b(buy|buying|purchase|purchasing|build|building|construct|construction|own|owning|renovat|shift|shifting|sold|sale|sell|price|invest|investment)\b/i.test(q)) ||
+          /(मकान|घर|भूमि|जमीन|गाड़ी|वाहन|संपत्ति|प्लॉट)/.test(userQuery || ''));
+
+      let isForeignTravel =
+        q.includes('settle abroad') ||
+        q.includes('travel abroad') ||
+        /\b(abroad|foreign|visa|visas|relocate|relocation|overseas|immigration)\b/i.test(q) ||
+        /(विदेश|परदेश|वीजा|विदेशी|स्थानांतरण)/.test(userQuery || '');
+
+      let isSpiritual =
+        q.includes('spiritual') ||
+        q.includes('kundalini') ||
+        q.includes('enlighten') ||
+        /\b(moksha|meditation|sadhana|ishta|guru|dharma)\b/i.test(q) ||
+        /(आध्यात्मिक|मोक्ष|साधना|ध्यान|इष्ट देव|धर्म|गुरु)/.test(userQuery || '');
+
+      let isLitigation =
+        q.includes('lawsuit') ||
+        /\b(court|courts|case|cases|legal|police|dispute|disputes|enemy|enemies|competitor|competitors)\b/i.test(q) ||
+        /(मुकदमा|अदालत|शत्रु|विवाद|न्यायालय|केस)/.test(userQuery || '');
+
       // Inherit context if follow-up is terse
-      if ((isTiming || isExplanation || q.split(' ').length <= 4) && !isGreeting && !isAmbiguousFuture && !isCareerTransit && !isDashaStability && !isCareer && !isMarriage && !isWealth && !isRemedy) {
+      if ((isTiming || isExplanation || q.split(' ').length <= 4) && !isGreeting && !isAmbiguousFuture && !isCareerTransit && !isDashaStability && !isCareer && !isMarriage && !isWealth && !isRemedy && !isKundliMatching && !isEducation && !isChildren && !isHealth && !isProperty && !isForeignTravel && !isSpiritual && !isLitigation) {
         if (priorDiscussed('career', 'job', 'work', 'promot', 'करियर', 'नौकरी')) isCareer = true;
         else if (priorDiscussed('marri', 'love', 'partner', 'spouse', 'relationship', 'विवाह', 'शादी')) isMarriage = true;
         else if (priorDiscussed('wealth', 'money', 'invest', 'धन')) isWealth = true;
+        else if (priorDiscussed('exam', 'study', 'शिक्षा', 'विद्या')) isEducation = true;
+        else if (priorDiscussed('child', 'baby', 'संतान')) isChildren = true;
+        else if (priorDiscussed('house', 'property', 'भूमि', 'मकान')) isProperty = true;
+        else if (priorDiscussed('abroad', 'foreign', 'विदेश')) isForeignTravel = true;
         else if (priorDiscussed('remed', 'mantra', 'gem', 'dosha', 'उपाय', 'मन्त्र')) isRemedy = true;
       }
 
@@ -21713,6 +21873,14 @@
       else if (isCareer) intent = 'career';
       else if (isMarriage) intent = 'marriage';
       else if (isWealth) intent = 'wealth';
+      else if (isKundliMatching) intent = 'kundli_matching';
+      else if (isEducation) intent = 'education';
+      else if (isChildren) intent = 'children';
+      else if (isHealth) intent = 'health';
+      else if (isProperty) intent = 'property';
+      else if (isForeignTravel) intent = 'foreign_travel';
+      else if (isSpiritual) intent = 'spiritual';
+      else if (isLitigation) intent = 'litigation';
       else if (isRemedy) intent = 'remedy';
       else if (isTiming) intent = 'timing';
       else if (isExplanation) intent = 'explanation';
@@ -21928,6 +22096,54 @@
       const seventhLord = signLordsMap[seventhSign] || 'Venus';
       const seventhSignDisplay = isHi ? (HINDI_SIGNS_MAP[seventhSign] || seventhSign) : seventhSign;
       const seventhLordDisplay = isHi ? (HINDI_PLANETS_MAP[seventhLord] || seventhLord) : seventhLord;
+
+      const secondSignIdx = (lagnaIdx + 1) % 12;
+      const secondSign = signsList[secondSignIdx];
+      const secondLord = signLordsMap[secondSign] || 'Jupiter';
+      const secondSignDisplay = isHi ? (HINDI_SIGNS_MAP[secondSign] || secondSign) : secondSign;
+      const secondLordDisplay = isHi ? (HINDI_PLANETS_MAP[secondLord] || secondLord) : secondLord;
+
+      const fourthSignIdx = (lagnaIdx + 3) % 12;
+      const fourthSign = signsList[fourthSignIdx];
+      const fourthLord = signLordsMap[fourthSign] || 'Saturn';
+      const fourthSignDisplay = isHi ? (HINDI_SIGNS_MAP[fourthSign] || fourthSign) : fourthSign;
+      const fourthLordDisplay = isHi ? (HINDI_PLANETS_MAP[fourthLord] || fourthLord) : fourthLord;
+
+      const fifthSignIdx = (lagnaIdx + 4) % 12;
+      const fifthSign = signsList[fifthSignIdx];
+      const fifthLord = signLordsMap[fifthSign] || 'Jupiter';
+      const fifthSignDisplay = isHi ? (HINDI_SIGNS_MAP[fifthSign] || fifthSign) : fifthSign;
+      const fifthLordDisplay = isHi ? (HINDI_PLANETS_MAP[fifthLord] || fifthLord) : fifthLord;
+
+      const sixthSignIdx = (lagnaIdx + 5) % 12;
+      const sixthSign = signsList[sixthSignIdx];
+      const sixthLord = signLordsMap[sixthSign] || 'Mars';
+      const sixthSignDisplay = isHi ? (HINDI_SIGNS_MAP[sixthSign] || sixthSign) : sixthSign;
+      const sixthLordDisplay = isHi ? (HINDI_PLANETS_MAP[sixthLord] || sixthLord) : sixthLord;
+
+      const eighthSignIdx = (lagnaIdx + 7) % 12;
+      const eighthSign = signsList[eighthSignIdx];
+      const eighthLord = signLordsMap[eighthSign] || 'Mercury';
+      const eighthSignDisplay = isHi ? (HINDI_SIGNS_MAP[eighthSign] || eighthSign) : eighthSign;
+      const eighthLordDisplay = isHi ? (HINDI_PLANETS_MAP[eighthLord] || eighthLord) : eighthLord;
+
+      const ninthSignIdx = (lagnaIdx + 8) % 12;
+      const ninthSign = signsList[ninthSignIdx];
+      const ninthLord = signLordsMap[ninthSign] || 'Moon';
+      const ninthSignDisplay = isHi ? (HINDI_SIGNS_MAP[ninthSign] || ninthSign) : ninthSign;
+      const ninthLordDisplay = isHi ? (HINDI_PLANETS_MAP[ninthLord] || ninthLord) : ninthLord;
+
+      const eleventhSignIdx = (lagnaIdx + 10) % 12;
+      const eleventhSign = signsList[eleventhSignIdx];
+      const eleventhLord = signLordsMap[eleventhSign] || 'Mercury';
+      const eleventhSignDisplay = isHi ? (HINDI_SIGNS_MAP[eleventhSign] || eleventhSign) : eleventhSign;
+      const eleventhLordDisplay = isHi ? (HINDI_PLANETS_MAP[eleventhLord] || eleventhLord) : eleventhLord;
+
+      const twelfthSignIdx = (lagnaIdx + 11) % 12;
+      const twelfthSign = signsList[twelfthSignIdx];
+      const twelfthLord = signLordsMap[twelfthSign] || 'Venus';
+      const twelfthSignDisplay = isHi ? (HINDI_SIGNS_MAP[twelfthSign] || twelfthSign) : twelfthSign;
+      const twelfthLordDisplay = isHi ? (HINDI_PLANETS_MAP[twelfthLord] || twelfthLord) : twelfthLord;
 
       const d1Planets = fd?.d1_rashi_chart?.planets || fd?.planets || {};
       const sunPlanet = d1Planets.Sun || { sign: chart.sunSign || 'Leo', house: 10 };
@@ -22267,6 +22483,455 @@ In your chart, the 2nd House of liquid wealth (${secondSign} ruled by ${secondLo
         if (merCard) relatedInsights.push(merCard);
         if (jupCard) relatedInsights.push(jupCard);
 
+      } else if (intent === 'kundli_matching') {
+        if (isHi) {
+          message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु कुंडली मिलान, अष्टकूट गुण एवं दांपत्य सामंजस्य का शास्त्रीय विश्लेषण:
+
+### सप्तम भाव एवं जीवनसाथी का स्वरूप
+${lagnaDisplay} लग्न के लिए वैवाहिक संबंधों का सप्तम भाव **${seventhLordDisplay}** (${seventhSignDisplay} राशि) द्वारा शासित है। आपका जन्म चंद्र **${moonDisplay} राशि** (${nak} नक्षत्र) में स्थित है। अष्टकूट मिलान में आपकी चंद्र राशि और नक्षत्र गण, योनि और नाड़ी का निर्धारण करते हैं।
+
+### मिलान के महत्वपूर्ण शास्त्रीय नियम
+1. **ग्रह मैत्री की प्रधानता:** 36 में से 18+ गुणों का होना सामान्य नियम है, परंतु दोनों कुंडलियों में चंद्र स्वामियों की परस्पर मित्रता (*ग्रह मैत्री*) अंकों से कहीं अधिक महत्वपूर्ण है।
+2. **मांगलिक विचार (कुज दोष):** आपकी कुंडली में मंगल ${marsDisplay} राशि (भाव ${marsHouse}) में हैं -> **${manglikVerdictStrHi}**।
+3. **नाड़ी दोष परिहार:** यदि नाड़ी दोष बने भी, तो विभिन्न नक्षत्रों अथवा समान राशि स्वामियों की स्थिति में शास्त्रों में पूर्ण परिहार मान्य है।
+4. **वैचारिक सामंजस्य:** सच्चा दांपत्य सुख परस्पर विश्वास, संवाद और सम्मान पर टिका होता है।
+
+क्या आप किसी विशेष जातक का जन्म विवरण साझा करके परस्पर मिलान देखना चाहते हैं?`;
+          suggested = [
+            "मेरी चंद्र राशि के अनुसार कौन सी राशियां सर्वाधिक अनुकूल हैं?",
+            "सप्तम भाव का स्वामी वैवाहिक जीवन पर क्या प्रभाव डालता है?",
+            "दांपत्य सुख वृद्धि हेतु कौन से शास्त्रीय उपाय हैं?",
+            "D9 नवांश चक्र से जीवनसाथी का स्वभाव कैसे समझें?"
+          ];
+        } else {
+          message = `${greetingPrefix}Examining marital compatibility, Ashta Koota dynamics, and partnership synastry for **${lagna} Lagna**:
+
+### 7th House & Partner Dynamics
+For ${lagna} Lagna, the 7th House of partnership is governed by **${seventhLord}** (${seventhSign}). Your natal Moon is in **${moon}** (${nak} Nakshatra). In Ashta Koota 36-point matching, your Moon's placement and Nakshatra determine key Kootas: Gana (temperament), Yoni (instinctive harmony), and Nadi (genetic/physiological balance).
+
+### Essential Compatibility Foundations
+1. **Graha Maitri Primacy:** While scoring 18+ Gunas is a standard guideline, friendship between the two Moon lords (*Graha Maitri*) carries greater weight than mechanical point counts.
+2. **Kuja Dosha (Manglik) Assessment:** Mars is in ${marsSign} (House ${marsHouse}) -> **${manglikVerdictStrEn}**.
+3. **Nadi Dosha Nuances:** Even if same-Nadi arises, classical Parashari texts provide full cancellations if Nakshatras differ or the Moon sign lords are identical or mutual friends.
+4. **Mutual Spiritual Alignment:** A lasting union rests on mutual emotional transparency, shared dharma, and realistic expectations.
+
+Would you like to share the birth coordinates of a prospective partner to evaluate mutual synastry directly?`;
+          suggested = [
+            "Which Moon signs are most naturally compatible with mine?",
+            "How does my 7th house lord influence marital timing?",
+            "What classical practices foster relationship harmony?",
+            "How does the D9 Navamsha chart modify compatibility?"
+          ];
+        }
+        const venCard = getPlanetCard('Venus', isHi ? 'वैवाहिक सामंजस्य एवं कूटनीति के कारक।' : 'Significator of marital harmony, aesthetic connection, and partnership diplomacy.');
+        const jupCard = getPlanetCard('Jupiter', isHi ? 'वैवाहिक नीति एवं पारिवारिक स्थिरता के रक्षक।' : 'Protector of marital ethics, family blessings, and long-term stability.');
+        if (venCard) relatedInsights.push(venCard);
+        if (jupCard) relatedInsights.push(jupCard);
+
+      } else if (intent === 'education') {
+        if (isHi) {
+          message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु विद्या, बौद्धिक क्षमता एवं प्रतियोगी परीक्षा का शास्त्रीय विश्लेषण:
+
+### विद्या एवं बुद्धि भाव (चतुर्थ एवं पंचम भाव)
+आपकी कुंडली में औपचारिक विद्या का चतुर्थ भाव **${fourthLordDisplay}** (${fourthSignDisplay} राशि) द्वारा तथा उच्च मेधा व विवेक का पंचम भाव **${fifthLordDisplay}** (${fifthSignDisplay} राशि) द्वारा शासित है। ${sunDisplay} राशि (भाव ${sunHouse}) में सूर्य और ${marsDisplay} राशि (भाव ${marsHouse}) में मंगल का प्रभाव आपको गहरी तार्किक क्षमता और चुनौतीपूर्ण समस्याओं को सुलझाने की दृढ़ ऊर्जा देता है।
+
+### प्रतियोगी परीक्षा एवं अध्ययन रणनीति
+1. **अनुकूल क्षेत्र:** उच्च तकनीकी, डेटा एनालिटिक्स, प्रबंधन, वित्त, प्रशासनिक सेवाएं अथवा विधि (कानून) के क्षेत्र आपकी कुंडली के ग्रह योगों से पूर्ण सामंजस्य रखते हैं।
+2. **प्रतिस्पर्धा बल (षष्ठ भाव - ${sixthSignDisplay}):** षष्ठेश ${sixthLordDisplay} तथा मंगल देव की ऊर्जा आपको लंबी तैयारी और कठिन प्रतियोगी परीक्षाओं में टिके रहने का जुझारू धैर्य प्रदान करती है।
+3. **दशा प्रभाव:** सक्रिय **${dashaMahaDisplay}-${dashaAntarDisplay} दशा** गहन स्वाध्याय और निरंतर अभ्यास से बड़ी सफलता के संकेत देती है।
+
+### शास्त्रीय अध्ययन नियम
+प्रातः अध्ययन आरंभ करने से पूर्व **सरस्वती मन्त्र: ॐ ऐं सरस्वत्यै नमः** का स्मरण करें तथा अध्ययन कक्ष में पूर्व अथवा उत्तर दिशा की ओर मुख करके बैठें।
+
+आप वर्तमान में किस परीक्षा, पाठ्यक्रम अथवा प्रतियोगी लक्ष्य की तैयारी कर रहे हैं?`;
+          suggested = [
+            "मेरे पंचम भाव के स्वामी का परीक्षा परिणाम पर क्या प्रभाव है?",
+            "प्रतियोगी परीक्षा में एकाग्रता हेतु कौन से नियम श्रेष्ठ हैं?",
+            "आगामी कौन सा गोचर उच्च शिक्षा में सहायक होगा?",
+            "स्मरण शक्ति बढ़ाने हेतु सात्विक उपाय बताएं"
+          ];
+        } else {
+          message = `${greetingPrefix}Examining academic trajectory, intellectual strengths, and examination timing for **${lagna} Lagna**:
+
+### Vidya & Buddhi Bhavas (4th & 5th Houses)
+In your chart, foundational academic learning (4th House) is governed by **${fourthLord}** (${fourthSign}), while higher intellect, analytical logic, and competitive intelligence (5th House) are governed by **${fifthLord}** (${fifthSign}). With your Sun in **${sunSign}** (House ${sunHouse}) and Mars in **${marsSign}** (House ${marsHouse}), you possess vigorous intellectual stamina and natural problem-solving sharpness.
+
+### Competitive Examinations & Focus Strategy
+1. **Optimal Academic Fields:** Technology systems, engineering, quantitative finance, legal analysis, management strategy, or civil services align harmoniously with your planetary dignities.
+2. **Competitive Edge (6th House - ${sixthSign}):** Ruled by ${sixthLord}, your competitive fighting spirit is bolstered by Mars in ${marsSign}, providing endurance during intensive preparation phases.
+3. **Current Dasha Phase:** Your active **${dashaMaha}-${dashaAntar}** subperiod favors structured deep-work routines over fragmented multi-tasking.
+
+### Classical Academic Discipline
+Begin study mornings by reciting the Saraswati Mantra: *Om Aim Sarasvatyai Namah*. Keep your study desk facing East or North for enhanced mental clarity.
+
+What specific examination, field of study, or entrance goal are you currently focusing on?`;
+          suggested = [
+            "How does my 5th house lord affect competitive exam outcomes?",
+            "Which upcoming transit supports higher education admissions?",
+            "What planetary remedies sharpen memory and concentration?",
+            "How do my planets support civil services or engineering?"
+          ];
+        }
+
+        remedyCard = {
+          title: isHi
+            ? `विद्या एवं एकाग्रता साधना (${lagnaDisplay} लग्न)`
+            : `Academic Focus & Wisdom Discipline (${lagna} Lagna)`,
+          mantra: "Saraswati Mantra: Om Aim Sarasvatyai Namah (108 times before study sessions)",
+          gemstone_note: isHi
+            ? "मेधा वृद्धि हेतु बुधवार को तुलसी दल ग्रहण करें; रत्न केवल पूर्ण परीक्षण उपरांत।"
+            : "Nourish analytical intellect naturally; confirm gemstone suitability before wearing stones.",
+          charity_practice: isHi
+            ? "बुधवार को निर्धन विद्यार्थियों को पाठ्य सामग्री अथवा पुस्तकें दान करें"
+            : "Donate books, stationery, or study supplies to underprivileged students on Wednesdays",
+          disclaimer: isHi
+            ? "वैदिक उपाय मानसिक एकाग्रता हेतु हैं; परिश्रम और अभ्यास ही सफलता का मूल आधार है।"
+            : "Traditional disciplines foster concentration; consistent study remains the foundation of success."
+        };
+        const merCard = getPlanetCard('Mercury', isHi ? 'तार्किक बुद्धि, विश्लेषणात्मक मेधा एवं स्मरण शक्ति के कारक।' : 'Analytical logic, cognitive memory, and quick intellectual synthesis.');
+        const jupCard = getPlanetCard('Jupiter', isHi ? 'उच्च ज्ञान, दार्शनिक विवेक एवं गुरु कृपा के प्रदाता।' : 'Higher scholarship, conceptual wisdom, and academic mentorship.');
+        if (merCard) relatedInsights.push(merCard);
+        if (jupCard) relatedInsights.push(jupCard);
+
+      } else if (intent === 'children') {
+        if (isHi) {
+          message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु संतान भाव, संतति सुख एवं पारिवारिक समृद्धि का शास्त्रीय विश्लेषण:
+
+### पंचम भाव एवं संतान कारक गुरु
+आपकी जन्म पत्रिका में संतान का पंचम भाव **${fifthLordDisplay}** (${fifthSignDisplay} राशि) द्वारा शासित है। देवगुरु बृहस्पति नैसर्गिक संतान कारक हैं। पंचमेश और लग्नेश का शुभ संबंध संतान के साथ गहरा आत्मीय एवं सुरक्षात्मक संबंध दर्शाता है।
+
+### ज्योतिषीय समय एवं फलादेश
+1. **शुभ गोचर प्रभाव:** जब देवगुरु बृहस्पति का गोचर आपकी पत्रिका के पंचम भाव अथवा चंद्र राशि पर शुभ दृष्टि डालता है, तब संतति सुख एवं नए पारिवारिक दायित्वों हेतु अत्यंत अनुकूल समय बनता है।
+2. **D7 सप्तमांश चक्र:** ${fifthLordDisplay} एवं गुरु देव की सक्रिय दशा बच्चों के स्वास्थ्य, संस्कार एवं विद्या हेतु शुभ परिणाम देती है।
+3. **संस्कार नियम:** संतानों को अपनी इच्छाओं का साधन बनाने के बजाय उन्हें स्वावलंबन और उत्तम संस्कार प्रदान करना ही सच्चा धर्म है।
+
+### शास्त्रीय उपाय
+गुरुवार को भगवान विष्णु की आराधना तथा *संतान गोपाल मन्त्र* का जप पारिवारिक सुख एवं शांति की वृद्धि करता है।`;
+          suggested = [
+            "मेरी कुंडली में पंचमेश की क्या स्थिति है?",
+            "संतान सुख हेतु अनुकूल गोचर कब बन रहा है?",
+            "संतान गोपाल मन्त्र के जप की शास्त्रीय विधि क्या है?",
+            "पारिवारिक सुख शांति हेतु कौन से उपाय उत्तम हैं?"
+          ];
+        } else {
+          message = `${greetingPrefix}Examining Santan Bhava (progeny dynamics) and family expansion for **${lagna} Lagna**:
+
+### 5th House & Putrakaraka Dynamics
+In your natal chart, the 5th House of progeny is governed by **${fifthLord}** (${fifthSign}). Natural significator Jupiter acts as Putrakaraka, conferring auspicious blessings for family growth and parental fulfillment. The harmonious alignment between your 5th lord and Lagna lord indicates strong intuitive and protective bonds with children.
+
+### Timing & Astrological Windows
+1. **Transit Catalysts:** Transiting Jupiter casting its auspicious aspect (*Amrita Drishti*) over your 5th house or natal Moon creates a favorable window for conception and childbirth.
+2. **D7 Saptamsha Harmony:** The subperiods of ${fifthLord} and Jupiter support smooth parenting milestones and educational flourishing for children.
+3. **Mindful Parenting Principle:** Vedic astrology views children as independent souls on their own karmic journeys. Offer them unconditional support and values rather than projecting rigid expectations.
+
+### Traditional Remedial Practice
+Reciting the *Santana Gopala Mantra* or lighting a ghee lamp on Thursdays supports domestic peace and family harmony.`;
+          suggested = [
+            "What does my 5th house indicate for family growth?",
+            "When does transiting Jupiter aspect my progeny houses?",
+            "What is the classical practice for Santana Gopala Mantra?",
+            "How does the D7 chart confirm family blessings?"
+          ];
+        }
+
+        remedyCard = {
+          title: isHi
+            ? `संतान सुख एवं पारिवारिक शांति (${lagnaDisplay} लग्न)`
+            : `Santan Bhava Harmonization (${lagna} Lagna)`,
+          mantra: "Santana Gopala Mantra: Om Kleem Devakisuta Govinda Vasudeva Jagatpate Dehi Me Tanayam Krishna Tvaamaham Sharanam Gatah",
+          gemstone_note: isHi
+            ? "देवगुरु बृहस्पति की सात्विक उपासना करें।"
+            : "Strengthen Jupiter through prayer and ethical conduct.",
+          charity_practice: isHi
+            ? "गुरुवार को गाय को भीगी चने की दाल व गुड़ खिलाएं"
+            : "Feed soaked yellow gram and jaggery to cows on Thursdays",
+          disclaimer: isHi
+            ? "पारंपरिक उपाय पारिवारिक शांति हेतु हैं; यह चिकित्सकीय परामर्श का विकल्प नहीं है।"
+            : "Traditional practices foster domestic peace; they do not replace medical healthcare."
+        };
+        const jupCard = getPlanetCard('Jupiter', isHi ? 'संतान कारक जो संतति सुख एवं पारिवारिक संस्कार प्रदान करते हैं।' : 'Natural Putrakaraka conferring parental blessings and virtuous lineage.');
+        if (jupCard) relatedInsights.push(jupCard);
+
+      } else if (intent === 'health') {
+        if (isHi) {
+          message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु शारीरिक स्वास्थ्य, प्राण ऊर्जा एवं आरोग्य का शास्त्रीय विश्लेषण:
+
+### शारीरिक गठन एवं रोग भाव (प्रथम, षष्ठ एवं अष्टम भाव)
+${lagnaDisplay} लग्न के लिए आपकी मूल प्राण शक्ति लग्नेश **${HINDI_PLANETS_MAP[signLordsMap[lagna]] || signLordsMap[lagna]}** से निर्देशित होती है, जबकि स्वास्थ्य दिनचर्या का षष्ठ भाव **${sixthLordDisplay}** (${sixthSignDisplay} राशि) द्वारा शासित है। ${sunDisplay} राशि (भाव ${sunHouse}) में सूर्य का प्रभाव आपके भीतर प्राकृतिक जीवनी शक्ति और रोगों से लड़ने की आंतरिक ऊर्जा को बढ़ाता है।
+
+### स्वास्थ्य एवं दिनचर्या निर्देश
+1. **चंद्र देव का प्रभाव (${moonDisplay} राशि):** मन की शांति सीधे पाचन और रक्तचाप को प्रभावित करती है। नियमित निद्रा लें और रात्रि में अनावश्यक तनाव से बचें।
+2. **अनुशासित जीवनशैली:** षष्ठ भाव नियमित दिनचर्या और सात्विक आहार की मांग करता है। प्रतिदिन हल्का व्यायाम और पर्याप्त जल का सेवन करें।
+3. **दशा प्रभाव:** वर्तमान **${dashaMahaDisplay}-${dashaAntarDisplay} दशा** में कार्य और विश्राम का उचित संतुलन बनाए रखें।
+
+### शास्त्रीय स्वास्थ्य उपाय
+- सूर्योदय के समय सूर्य देव को तांबे के लोटे से जल अर्पित करें अथवा महामृत्युंजय मन्त्र का जप करें।
+
+*चिकित्सीय अस्वीकरण: यह विश्लेषण केवल ग्रहीय प्रवृत्तियों का शास्त्रीय विवेचन है; किसी भी शारीरिक कष्ट में योग्य चिकित्सक से परामर्श अवश्य लें।*`;
+          suggested = [
+            "मेरी कुंडली में लग्नेश का स्वास्थ्य पर क्या प्रभाव है?",
+            "मानसिक शांति एवं अनिद्रा दूर करने के वैदिक उपाय क्या हैं?",
+            "रोग प्रतिरोधक क्षमता बढ़ाने हेतु कौन सी शास्त्रीय साधना है?",
+            "मेरी चंद्र राशि के अनुसार दिनचर्या कैसी होनी चाहिए?"
+          ];
+        } else {
+          message = `${greetingPrefix}Examining constitutional vitality, wellness rhythms, and planetary indicators for **${lagna} Lagna**:
+
+### Constitutional Geometry (1st, 6th & 8th Houses)
+For ${lagna} Lagna, overall physical stamina is guided by your Lagna lord **${signLordsMap[lagna] || 'Lagna Lord'}**, while acute metabolic balance (6th House) is governed by **${sixthLord}** (${sixthSign}). Your Sun in **${sunSign}** (House ${sunHouse}) confers resilient core vitality and natural recuperative drive.
+
+### Wellness Directives & Mind-Body Rhythms
+1. **Moon in ${moon} (${nak}):** Mental peace directly dictates physical digestion. Maintain consistent sleep cycles and avoid late-night screen overstimulation.
+2. **Preventive Discipline:** The 6th house emphasizes structured daily routines. Regular physical exercise, clean hydration, and a sattvic diet neutralize inflammatory tendencies.
+3. **Active Dasha Climate:** During your current **${dashaMaha}-${dashaAntar}** period, prioritize sustainable pacing over burnout-inducing overexertion.
+
+### Traditional Vedic Wellness Practices
+- Recite the *Maha Mrityunjaya Mantra* or practice Surya Namaskar at dawn.
+- Consume pure water stored in a copper vessel in the morning.
+
+*Medical Disclaimer: Astrological insights describe traditional energetic rhythms; consult qualified medical doctors for all health concerns.*`;
+          suggested = [
+            "How does my Lagna lord influence overall physical stamina?",
+            "What Ayurvedic or yogic routines align with my Moon sign?",
+            "Which upcoming transit supports restorative physical health?",
+            "What classical mantras support peaceful sleep and vitality?"
+          ];
+        }
+
+        remedyCard = {
+          title: isHi
+            ? `आरोग्य एवं प्राण शक्ति संतुलन (${lagnaDisplay} लग्न)`
+            : `Vital Prana & Health Harmonization (${lagna} Lagna)`,
+          mantra: "Maha Mrityunjaya Mantra: Om Tryambakam Yajamahe Sugandhim Pushtivardhanam Urvarukamiva Bandhanan Mrityor Mukshiya Maamritat",
+          gemstone_note: isHi
+            ? "लग्नेश की सात्विक उपासना करें। किसी भी व्याधि में चिकित्सक की सलाह प्राथमिक है।"
+            : "Fortify Lagna lord through sattvic practices. Consult medical doctors for all ailments.",
+          charity_practice: isHi
+            ? "सोमवार को असहायों को जल अथवा अन्न दान करें"
+            : "Offer clean water or nutritious food to needy individuals on Mondays",
+          disclaimer: isHi
+            ? "महत्वपूर्ण: ज्योतिषीय उपाय पारंपरिक आत्मिक शांति हेतु हैं; यह किसी चिकित्सकीय निदान अथवा उपचार का विकल्प नहीं हैं।"
+            : "Important: Astrological insights describe traditional energetic rhythms; consult medical doctors for all health conditions."
+        };
+        const sunCard = getPlanetCard('Sun', isHi ? 'प्राण ऊर्जा, आरोग्य एवं आत्मबल के नैसर्गिक कारक।' : 'Natural significator of vital prana, stamina, and biological vitality.');
+        if (sunCard) relatedInsights.push(sunCard);
+
+      } else if (intent === 'property') {
+        if (isHi) {
+          message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु भूमि, भवन, संपत्ति एवं वाहन सुख का शास्त्रीय विश्लेषण:
+
+### चतुर्थ भाव (सुख भाव) एवं भूमि कारक मंगल
+आपकी जन्म पत्रिका में अचल संपत्ति, मकान एवं वाहन सुख का चतुर्थ भाव **${fourthLordDisplay}** (${fourthSignDisplay} राशि) द्वारा शासित है। भूमि एवं अचल संपत्ति के नैसर्गिक कारक **मंगल देव** ${marsDisplay} राशि (भाव ${marsHouse}) में स्थित हैं, जो संपत्ति निर्माण और अपना घर बनाने हेतु प्रबल प्रेरणा और सामर्थ्य प्रदान करते हैं।
+
+### संपत्ति क्रय का समय एवं सावधानियां
+1. **शुभ समय:** जब चतुर्थेश ${fourthLordDisplay} अथवा मंगल देव की शुभ अंतर्दशा सक्रिय होती है और गुरु का गोचर अनुकूल होता है, तब मकान खरीदने अथवा गृह निर्माण के श्रेष्ठ अवसर बनते हैं।
+2. **वाहन सुख (शुक्र कारकत्व):** चतुर्थ भाव का शुभ प्रभाव परिवार हेतु उत्तम और सुखद वाहन प्राप्ति का योग बनाता है।
+3. **सावधानी:** संपत्ति के क्रय-विक्रय में कानूनी कागजात और पंजीकरण की सूक्ष्म जांच अवश्य करें।
+
+### वास्तु एवं पारंपरिक उपाय
+घर के ईशान कोण (उत्तर-पूर्व) को सदैव स्वच्छ और प्रकाशमान रखें। मंगलवार को हनुमान चालीसा का पाठ भूमि संबंधी बाधाओं को दूर करता है।`;
+          suggested = [
+            "मेरी कुंडली में मकान खरीदने का सबसे शुभ समय कब है?",
+            "भूमि कारक मंगल संपत्ति निर्माण में कैसे सहायक हैं?",
+            "गृह प्रवेश अथवा नए वाहन हेतु शुभ नक्षत्र कौन से हैं?",
+            "वास्तु शुद्धि हेतु कौन से शास्त्रीय उपाय करने चाहिए?"
+          ];
+        } else {
+          message = `${greetingPrefix}Examining property acquisition, real estate prospects, and vehicular comfort for **${lagna} Lagna**:
+
+### 4th House (Sukhasthana) & Bhumi Karaka Mars
+In your horoscope, the 4th House of residence, landed property, and vehicles is governed by **${fourthLord}** (${fourthSign}). **Mars**, the natural significator of land and real estate (*Bhumi Karaka*), is stationed in **${marsSign}** (House ${marsHouse}), conferring decisive momentum and ambitious aspirations for tangible asset building.
+
+### Acquisition Timing & Asset Strategy
+1. **Property Purchase Windows:** Favorable transits of Jupiter or supportive subperiods of ${fourthLord} and Mars activate auspicious windows for property acquisitions, residential moves, or home renovations.
+2. **Vehicular Comfort (Venus Karakatva):** The harmonious aspect on domestic houses supports acquisition of comfortable conveyances aligned with family needs.
+3. **Practical Precaution:** Verify all legal paperwork, land titles, and municipal registrations thoroughly during Rahu transits before executing financial deeds.
+
+### Traditional Vastu & Remedial Guidance
+Maintain the Northeast (*Ishanya*) quadrant of your residence clean, uncluttered, and illuminated. Recite Hanuman Chalisa on Tuesdays to strengthen Mars' protective grace.`;
+          suggested = [
+            "When is the most auspicious window for property purchase?",
+            "How does Mars as Bhumi Karaka influence my home ownership?",
+            "What astrological factors govern vehicle acquisition?",
+            "Which Vastu practices enhance residential peace?"
+          ];
+        }
+
+        remedyCard = {
+          title: isHi
+            ? `भूमि एवं गृह सुख शांति (${lagnaDisplay} लग्न)`
+            : `Real Estate & Domestic Harmony (${lagna} Lagna)`,
+          mantra: "Bhoomi Gayatri / Hanuman Chalisa: Recite daily with pure devotion",
+          gemstone_note: isHi
+            ? "मंगल देव की सात्विक आराधना करें।"
+            : "Harmonize Mars through self-discipline and protective prayers.",
+          charity_practice: isHi
+            ? "मंगलवार को श्रमिकों अथवा निर्माण कार्य में लगे व्यक्तियों को गुड़ और चना दें"
+            : "Offer jaggery and roasted gram to laborers or service workers on Tuesdays",
+          disclaimer: isHi
+            ? "पारंपरिक उपाय सकारात्मक ऊर्जा हेतु हैं; संपत्ति के क्रय में कानूनी जांच अनिवार्य है।"
+            : "Traditional practices enhance positive space; verify all legal titles before purchasing property."
+        };
+        const marsCard = getPlanetCard('Mars', isHi ? 'भूमि कारक जो अचल संपत्ति एवं निर्माण क्षमता प्रदान करते हैं।' : 'Bhumi Karaka driving tangible real estate, construction, and property equity.');
+        if (marsCard) relatedInsights.push(marsCard);
+
+      } else if (intent === 'foreign_travel') {
+        if (isHi) {
+          message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु विदेश यात्रा, परदेश गमन एवं अंतरराष्ट्रीय अवसरों का शास्त्रीय विश्लेषण:
+
+### नवम एवं द्वादश भाव अक्ष
+आपकी जन्म पत्रिका में लंबी यात्राओं और भाग्य का नवम भाव **${ninthLordDisplay}** (${ninthSignDisplay} राशि) द्वारा तथा विदेश वास व सुदूर देशों का द्वादश भाव **${twelfthLordDisplay}** (${twelfthSignDisplay} राशि) द्वारा शासित है। राहु देव का प्रभाव पारंपरिक सीमाओं से परे वैश्विक फलक पर विस्तार की तीव्र आकांक्षा प्रदान करता है।
+
+### विदेश गमन का समय एवं दिशा
+1. **विदेशी करियर व शिक्षा:** दशम भाव (करियर) और द्वादश भाव का ग्रहीय संबंध बहुराष्ट्रीय कंपनियों, अंतरराष्ट्रीय परियोजनाओं अथवा विदेश में उच्च शिक्षा हेतु अत्यंत अनुकूल पृष्ठभूमि तैयार करता है।
+2. **शुभ गोचर काल:** नवमेश ${ninthLordDisplay} अथवा द्वादशेश ${twelfthLordDisplay} की अंतर्दशा और गुरु के शुभ गोचर में वीजा, पासपोर्ट अथवा विदेश स्थानांतरण के मार्ग सुगम होते हैं।
+3. **मार्गदर्शन:** विदेशी अवसरों हेतु आवश्यक दस्तावेजों और औपचारिकताओं की समय रहते पूरी तैयारी रखें।
+
+क्या आप विदेश में नौकरी, उच्च अध्ययन अथवा संक्षिप्त यात्रा की योजना बना रहे हैं?`;
+          suggested = [
+            "मेरी कुंडली में विदेश में बसने (PR) का योग है या केवल यात्रा का?",
+            "आगामी कौन सा गोचर वीजा स्वीकृति में सहायक होगा?",
+            "विदेश में करियर सफलता हेतु कौन से उपाय करने चाहिए?",
+            "नवमेश और द्वादशेश की दशा कब सक्रिय होगी?"
+          ];
+        } else {
+          message = `${greetingPrefix}Analyzing foreign travel yogas, overseas opportunities, and relocation timing for **${lagna} Lagna**:
+
+### 9th & 12th House Geometries
+In your chart, long-distance journeys and fortune are governed by the 9th House (**${ninthSign}** ruled by **${ninthLord}**), while foreign settlement and distant lands (12th House) are governed by **${twelfthLord}** (**${twelfthSign}**). Natural catalyst **Rahu** drives expansion into cross-cultural, global environments.
+
+### Overseas Trajectory & Timing
+1. **International Career & Studies:** Favorable connections between your 9th, 10th, and 12th houses support global professional stints, overseas tech consulting, multinational corporate roles, or academic exchanges.
+2. **Transit Windows:** Upcoming transits of Jupiter and supportive subperiods of ${ninthLord} or ${twelfthLord} create energized timing windows for international visa clearances and foreign transitions.
+3. **Practical Guidance:** Ground your documentation meticulously and maintain cultural adaptability when navigating international environments.
+
+Are you planning for overseas higher education, a job transfer abroad, or a short-term international journey?`;
+          suggested = [
+            "Does my chart indicate permanent settlement abroad or temporary work?",
+            "Which upcoming transit supports visa approval and international moves?",
+            "What planetary remedies ease travel hurdles and relocation friction?",
+            "How does Rahu influence my cross-border career trajectory?"
+          ];
+        }
+        const rahuCard = getPlanetCard('Rahu', isHi ? 'विदेशी संपर्क, सीमा पार विस्तार एवं अनूठे अवसरों के कारक।' : 'Catalyst for international horizons, unconventional connections, and cross-border mobility.');
+        if (rahuCard) relatedInsights.push(rahuCard);
+
+      } else if (intent === 'spiritual') {
+        if (isHi) {
+          message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु आध्यात्मिक उन्नति, आत्म-जागरण एवं धर्म-मोक्ष का शास्त्रीय विश्लेषण:
+
+### धर्म एवं मोक्ष भाव (नवम एवं द्वादश भाव)
+आपकी जन्म पत्रिका में धर्म, विवेक एवं गुरु कृपा का नवम भाव **${ninthLordDisplay}** (${ninthSignDisplay} राशि) द्वारा तथा मोक्ष, वैराग्य व आत्मिक शांति का द्वादश भाव **${twelfthLordDisplay}** (${twelfthSignDisplay} राशि) द्वारा शासित है। केतु देव का नैसर्गिक प्रभाव आपको वाह्याडंबर के बजाय आंतरिक सत्य और आत्म-अनुसंधान की ओर प्रेरित करता है।
+
+### साधना एवं मानसिक शांति के निर्देश
+1. **इष्ट देव एवं ध्यान:** आपकी कुंडली में पंचम भाव (मंत्र भाव - ${fifthSignDisplay} राशि) का शुभ संबंध यह दर्शाता है कि भगवान शिव अथवा जगदंबा की सात्विक उपासना से आपके मन को गहन शांति प्राप्त होती है।
+2. **ब्रह्म मुहूर्त साधना:** प्रातःकाल ॐ नमः शिवाय अथवा गायत्री मन्त्र का 108 बार जप करने से नाड़ी शुद्धि होती है और आत्मिक तेज बढ़ता है।
+3. **कर्मयोग का सिद्धांत:** संसार से पलायन अध्यात्म नहीं है; अपने कर्तव्यों का निष्ठापूर्वक पालन करते हुए अहंकार से मुक्त रहना ही सच्चा धर्म है।
+
+आपकी आध्यात्मिक यात्रा में यह विचार आपके अंतःकरण को शांत और प्रकाशित करे।`;
+          suggested = [
+            "मेरी कुंडली के अनुसार मेरे इष्ट देव कौन हैं?",
+            "दैनिक ध्यान एवं मन्त्र साधना का सबसे शुभ समय क्या है?",
+            "केतु का आध्यात्मिक प्रभाव अंतःचेतना को कैसे जगाता है?",
+            "मोक्ष और मानसिक शांति हेतु कौन से नियम पालनीय हैं?"
+          ];
+        } else {
+          message = `${greetingPrefix}Examining spiritual evolution, inner awakening, and Dharma-Moksha alignment for **${lagna} Lagna**:
+
+### Dharma & Moksha Houses (9th & 12th Houses)
+In your chart, Dharma and higher philosophical guidance are governed by the 9th House (**${ninthSign}** ruled by **${ninthLord}**), while spiritual transcendence and inner silence (12th House) are governed by **${twelfthLord}** (**${twelfthSign}**). Ketu acts as natural Mokshakaraka, driving you toward authentic self-inquiry rather than superficial dogma.
+
+### Inner Sadhana Directives
+1. **Ishta Devata & Meditation:** The alignment of your 5th house (Mantra Bhava - ${fifthSign}) and 9th house highlights devotional consistency. Practices connecting with Lord Shiva or Divine Mother (*Devi*) bring profound centering to your active mind.
+2. **Brahma Muhurta Practice:** Chanting the Gayatri Mantra or *Om Namah Shivaya* 108 times at dawn balances the subtle nervous system and aligns your active Vimshottari Dasha.
+3. **Karma Yoga Principle:** True spirituality is not running away from worldly duties; it is performing your daily work with complete integrity and zero attachment to the fruits.
+
+May your spiritual inquiry bring deep serenity, clarity, and inner fearlessness.`;
+          suggested = [
+            "How does my Navamsha chart reveal my Ishta Devata?",
+            "What is the classical scriptural approach to dawn meditation?",
+            "How does Ketu's placement influence spiritual discernment?",
+            "What daily practices cultivate inner stillness and detachment?"
+          ];
+        }
+
+        remedyCard = {
+          title: isHi
+            ? `आत्मिक शांति एवं इष्ट साधना (${lagnaDisplay} लग्न)`
+            : `Spiritual Awakening & Ishta Sadhana (${lagna} Lagna)`,
+          mantra: "Om Namah Shivaya (108 times at dawn) or Gayatri Mantra",
+          gemstone_note: isHi
+            ? "रुद्राक्ष अथवा तुलसी माला धारण करके ध्यान करें।"
+            : "Meditate with authentic Rudraksha or Tulsi beads for nervous system balance.",
+          charity_practice: isHi
+            ? "एकांत साधना, पक्षियों को दाना और असहायों की निःस्वार्थ सेवा करें"
+            : "Feed birds in the morning and engage in selfless voluntary service",
+          disclaimer: isHi
+            ? "आध्यात्मिक साधना आत्मशुद्धि हेतु है; यह अहंकार विसर्जन का मार्ग है।"
+            : "Spiritual practices foster inner stillness and dissolution of self-centered pride."
+        };
+        const ketuCard = getPlanetCard('Ketu', isHi ? 'मोक्ष कारक जो वैराग्य एवं आंतरिक जागरण प्रदान करते हैं।' : 'Mokshakaraka guiding detachment, intuitive awakening, and spiritual transcendence.');
+        if (ketuCard) relatedInsights.push(ketuCard);
+
+      } else if (intent === 'litigation') {
+        if (isHi) {
+          message = `${greetingPrefix}**${lagnaDisplay} लग्न** हेतु षष्ठ भाव, कानूनी विवाद एवं शत्रु शमन का शास्त्रीय विश्लेषण:
+
+### षष्ठ भाव (शत्रु स्थान) एवं प्रतिस्पर्धा स्थिति
+आपकी जन्म पत्रिका में विरोधी, विवाद एवं मुकदमों का षष्ठ भाव **${sixthLordDisplay}** (${sixthSignDisplay} राशि) द्वारा शासित है। आपके मंगल देव ${marsDisplay} राशि (भाव ${marsHouse}) में स्थित हैं, जो आपको किसी भी विपरीत परिस्थिति में अडिग रहने, धैर्यपूर्वक संघर्ष करने और *शत्रुहंता* क्षमता प्रदान करते हैं।
+
+### कानूनी एवं व्यावहारिक परामर्श
+1. **शांतिपूर्ण समाधान:** ज्योतिषीय दृष्टि से विवादों को अनावश्यक खींचने के बजाय दृढ़ एवं नीतिसम्मत समझौते (Mediation) द्वारा सुलझाना सर्वाधिक श्रेयस्कर होता है।
+2. **दशा प्रभाव:** षष्ठेश ${sixthLordDisplay} अथवा मंगल के प्रभाव में आवेश अथवा क्रोध में आकर कोई अनुचित कदम न उठाएं; कागजी प्रमाणों को सुदृढ़ रखें।
+3. **सत्य की विजय:** अपनी बात में पूर्ण सत्यता रखें, क्योंकि धर्म और सत्य ही अंततः रक्षा करते हैं।
+
+### शास्त्रीय उपाय
+मंगलवार को *बजरंग बाण* अथवा *संकट मोचन हनुमानाष्टक* का पाठ शत्रुकृत बाधाओं और मानसिक संताप को शांत करता है।`;
+          suggested = [
+            "मेरी कुंडली में षष्ठ भाव शत्रु शमन के क्या संकेत देता है?",
+            "विवाद सुलझाने हेतु अनुकूल ग्रहीय समय कब है?",
+            "अदालती मामलों में मानसिक शांति हेतु कौन से उपाय करें?",
+            "मंगल की स्थिति विरोधियों से सुरक्षा में कैसे सहायक है?"
+          ];
+        } else {
+          message = `${greetingPrefix}Examining 6th house adversarial dynamics, legal matters, and conflict resolution for **${lagna} Lagna**:
+
+### 6th House (Shatrusthana) & Conflict Geometry
+In your chart, competitive friction, adversaries, and dispute settlement are governed by the 6th House (**${sixthSign}** ruled by **${sixthLord}**). Your Mars is positioned in **${marsSign}** (House ${marsHouse}), conferring remarkable courage, tenacity, and fighting stamina (*Shatru Hanta* potential) to face adversity directly without crumbling.
+
+### Strategic Guidance for Dispute Resolution
+1. **De-escalation & Mediation:** Astrologically, the most enduring victory is achieved when disputes are resolved through firm, objective negotiation rather than prolonged, draining legal battles.
+2. **Dasha Timing:** Active subperiods of ${sixthLord} or Mars demand absolute adherence to legal documentation and ethical conduct; avoid reckless impulsiveness.
+3. **Integrity Precaution:** Keep your dealings completely transparent; the truth is the most powerful shield under Saturn's and Jupiter's transits.
+
+### Traditional Remedial Harmonization
+Recite *Bajrang Baan* or *Hanuman Vadavanala Stotra* on Tuesdays to neutralize adversarial ill-will and protect against negative projections.`;
+          suggested = [
+            "What does my 6th house indicate for dispute resolution?",
+            "When is an astrologically favorable window for legal settlement?",
+            "How does Mars provide protection against competitors?",
+            "What classical practices neutralize hostility and ill-will?"
+          ];
+        }
+
+        remedyCard = {
+          title: isHi
+            ? `शत्रु शमन एवं न्याय सुरक्षा (${lagnaDisplay} लग्न)`
+            : `Adversarial Protection & Conflict Resolution (${lagna} Lagna)`,
+          mantra: "Bajrang Baan or Sankat Mochan Hanumanashtak on Tuesdays",
+          gemstone_note: isHi
+            ? "अनावश्यक उत्तेजना से बचें; सत्य और धर्म का पालन करें।"
+            : "Maintain absolute integrity; truth and calm reasoning are the supreme shields.",
+          charity_practice: isHi
+            ? "मंगलवार को लाल मसूर अथवा गुड़ का दान करें"
+            : "Donate red lentils or jaggery on Tuesdays",
+          disclaimer: isHi
+            ? "विवादों को समझौते और विवेक से सुलझाना ही सर्वोत्तम मार्ग है।"
+            : "Resolve disputes through transparent mediation and lawful, ethical processes."
+        };
+        const marsCard = getPlanetCard('Mars', isHi ? 'शौर्य एवं शत्रु शमन के कारक जो विपरीत परिस्थितियों में धैर्य देते हैं।' : 'Courage and protective energy to withstand friction and emerge victorious.');
+        if (marsCard) relatedInsights.push(marsCard);
+
       } else if (intent === 'remedy') {
         const gemstoneEn = lagna === "Scorpio"
           ? "Red Coral (Mars, Lagna Lord) or Yellow Sapphire (Jupiter, 5th Lord). Emerald is strictly contraindicated for Scorpio Lagna."
@@ -22503,6 +23168,46 @@ Every insight in your consultation is directly derived from these mathematical c
         personalizedSummary = {
           en: "Evaluated 2nd and 11th house Dhana Yogas, liquidity, and financial timing.",
           hi: "द्वितीय व एकादश भाव, धन योग एवं वित्तीय सुरक्षा का विश्लेषण किया।"
+        };
+      } else if (intent === 'kundli_matching') {
+        personalizedSummary = {
+          en: "Assessed Ashta Koota 36 Gunas, Nadi Dosha cancellations, and relational synastry.",
+          hi: "अष्टकूट 36 गुण, नाड़ी दोष परिहार एवं दांपत्य सामंजस्य का विश्लेषण किया।"
+        };
+      } else if (intent === 'education') {
+        personalizedSummary = {
+          en: "Examined 4th and 5th houses, Mercury-Jupiter intellect, and competitive exam timing.",
+          hi: "चतुर्थ व पंचम भाव, विद्या-बुद्धि कारक एवं प्रतियोगी परीक्षा समय का विश्लेषण किया।"
+        };
+      } else if (intent === 'children') {
+        personalizedSummary = {
+          en: "Analyzed 5th house Santan Bhava, Putrakaraka Jupiter, and family expansion.",
+          hi: "पंचम भाव, संतान कारक गुरु एवं संतति सुख का विश्लेषण किया।"
+        };
+      } else if (intent === 'health') {
+        personalizedSummary = {
+          en: "Evaluated 1st and 6th houses, vital Prana, and lifestyle equilibrium.",
+          hi: "प्रथम व षष्ठ भाव, जीवनी शक्ति एवं स्वास्थ्य दिनचर्या का विश्लेषण किया।"
+        };
+      } else if (intent === 'property') {
+        personalizedSummary = {
+          en: "Examined 4th house Sukhasthana, Bhumi Karaka Mars, and property acquisition.",
+          hi: "चतुर्थ भाव, भूमि कारक मंगल एवं संपत्ति-वाहन योग का विश्लेषण किया।"
+        };
+      } else if (intent === 'foreign_travel') {
+        personalizedSummary = {
+          en: "Analyzed 9th and 12th houses, Rahu catalysts, and overseas relocation timing.",
+          hi: "नवम व द्वादश भाव, विदेश यात्रा एवं परदेश गमन का समय विश्लेषण किया।"
+        };
+      } else if (intent === 'spiritual') {
+        personalizedSummary = {
+          en: "Outlined Dharma-Moksha houses, Ketu liberation, and meditation alignment.",
+          hi: "धर्म-मोक्ष भाव, केतु का आत्मिक प्रभाव एवं ध्यान साधना के नियम बताए।"
+        };
+      } else if (intent === 'litigation') {
+        personalizedSummary = {
+          en: "Evaluated 6th house adversarial dynamics, dispute mitigation, and legal timing.",
+          hi: "षष्ठ भाव, कानूनी विवाद शमन एवं शत्रु शांति का विश्लेषण किया।"
         };
       } else if (intent === 'remedy') {
         personalizedSummary = {
@@ -23019,17 +23724,22 @@ Every insight in your consultation is directly derived from these mathematical c
 
     // Mobile Visual Viewport listener for on-screen virtual keyboard adjustment
     if (typeof window !== 'undefined' && window.visualViewport) {
-      window.visualViewport.addEventListener('resize', () => {
+      const handleVisualViewportChange = () => {
         const modal = document.getElementById('modal-ai-consultation');
         if (modal && modal.style.display === 'flex') {
           const dialogCard = modal.querySelector('.modal-dialog-card');
           if (dialogCard && window.innerWidth <= 680) {
             dialogCard.style.height = `${window.visualViewport.height}px`;
             dialogCard.style.maxHeight = `${window.visualViewport.height}px`;
+            if (typeof window.visualViewport.offsetTop === 'number') {
+              modal.style.top = `${window.visualViewport.offsetTop}px`;
+            }
             scrollChatToBottom(false);
           }
         }
-      });
+      };
+      window.visualViewport.addEventListener('resize', handleVisualViewportChange);
+      window.visualViewport.addEventListener('scroll', handleVisualViewportChange);
     }
 
     let pendingPujaBooking = null;
