@@ -4781,7 +4781,7 @@
       #ai-chat-messages-container {
         flex: 1 1 0 !important;
         min-height: 0 !important;
-        padding: 12px 10px !important;
+        padding: 12px 10px 36px 10px !important;
         -webkit-overflow-scrolling: touch !important;
       }
       /* Composer and Input: Guarantees full-width input and non-compressed send button */
@@ -12975,7 +12975,7 @@
       </div>
 
       <!-- Chat Message Area -->
-      <div id="ai-chat-messages-container" style="flex: 1; min-height: 280px; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 18px 20px; background: #FAF9F6; display: flex; flex-direction: column; gap: 14px; position: relative;">
+      <div id="ai-chat-messages-container" style="flex: 1; min-height: 280px; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; padding: 18px 20px 36px 20px; background: #FAF9F6; display: flex; flex-direction: column; gap: 14px; position: relative;">
         <!-- Message bubbles injected here -->
       </div>
 
@@ -20575,13 +20575,13 @@
           if (isHi) {
             welcomeText = `नमस्ते! मैं डॉ. सुनीता शास्त्री (AI ज्योतिषी), AstroVerse की संबंध, D9 नवमांश एवं भावनात्मक मार्गदर्शन विशेषज्ञ हूँ।\n\nहमारे इस पावन परामर्श में आपका हार्दिक स्वागत है। संबंध, वैवाहिक सामंजस्य और मानसिक शांति हमारे जीवन के मूल आधार हैं।\n\nआज आपके मन में संबंध, विवाह अथवा जीवन से जुड़ा कौन सा प्रश्न या विचार है? आप निःसंकोच पूछ सकते हैं।\n\n*(सटीक व्यक्तिगत कुंडली फलादेश हेतु आप अपनी जन्म तिथि, समय व स्थान भी सीधे यहीं चैट में लिख सकते हैं।)*`;
           } else {
-            welcomeText = `Namaste! I am Dr. Sunita Shastri, Relationship, D9 Navamsha & Emotional Wellness Specialist at AstroVerse.\n\nWelcome to our consultation. Relationships, family harmony, and inner peace form the foundation of our life experience. I am here to listen with deep empathy and guide you with classical Parashari and Jaimini wisdom.\n\nWhat relationship question, marital concern, or thought is on your heart today? Feel free to ask anything directly.\n\n*(For 100% chart-grounded personal synastry and timing, you can also share your Date, Time, and City of birth right here in our chat anytime.)*`;
+            welcomeText = `Namaste! I am Dr. Sunita Shastri (AI Astrologer), Relationship, D9 Navamsha & Emotional Wellness Specialist at AstroVerse.\n\nWelcome to our consultation. Relationships, family harmony, and inner peace form the foundation of our life experience. I am here to listen with deep empathy and guide you with classical Parashari and Jaimini wisdom.\n\nWhat relationship question, marital concern, or thought is on your heart today? Feel free to ask anything directly.\n\n*(For 100% chart-grounded personal synastry and timing, you can also share your Date, Time, and City of birth right here in our chat anytime.)*`;
           }
         } else if (personaId === 'pandit-raghavendra') {
           if (isHi) {
             welcomeText = `ॐ नमः शिवाय! मैं पंडित राघवेंद्र (AI ज्योतिषी), AstroVerse का शास्त्रीय पाराशरी एवं वैदिक उपाय गुरु हूँ।\n\nआप पर सदा शुभ व कल्याणकारी कृपा बनी रहे। ग्रह हमारे संचित कर्मों के साक्षी हैं, और ऋषियों ने हमें संस्कृत बीज मंत्रों, स्तोत्रों, सात्विक दान और साधना के रूप में कल्याणकारी उपाय दिए हैं।\n\nआज आप किस समस्या, ग्रह बाधा, साढ़े साती अथवा आध्यात्मिक प्रश्न का समाधान चाहते हैं? आप निःसंकोच बताएं।\n\n*(सटीक व्यक्तिगत उपाय व दशा विश्लेषण हेतु आप अपनी जन्म तिथि, समय व स्थान भी यहीं चैट में लिख सकते हैं।)*`;
           } else {
-            welcomeText = `Om Namah Shivaya! I am Pandit Raghavendra, Classical Parashari Scholar & Remedial Jyotish Guru at AstroVerse.\n\nPeace and auspicious blessings upon you. The planets are cosmic mirrors of our karma, but the sacred rishis gave us profound remedies—authentic Sanskrit beej mantras, stotras, righteous charity (Daan), and disciplined living—to surmount every obstacle.\n\nWhat brings you here today, and how may I assist your life path? Feel free to ask any question directly.\n\n*(You may also share your Date, Time, and City of birth right here in this chat for tailored dosha and dasha remedies.)*`;
+            welcomeText = `Om Namah Shivaya! I am Pandit Raghavendra (AI Astrologer), Classical Parashari Scholar & Remedial Jyotish Guru at AstroVerse.\n\nPeace and auspicious blessings upon you. The planets are cosmic mirrors of our karma, but the sacred rishis gave us profound remedies—authentic Sanskrit beej mantras, stotras, righteous charity (Daan), and disciplined living—to surmount every obstacle.\n\nWhat brings you here today, and how may I assist your life path? Feel free to ask any question directly.\n\n*(You may also share your Date, Time, and City of birth right here in this chat for tailored dosha and dasha remedies.)*`;
           }
         } else {
           if (isHi) {
@@ -20795,22 +20795,29 @@
     async function confirmContinuePaidConsultation(paymentMethod) {
       if (!activeConsultationSession) return;
       const btn = document.getElementById('btn-continue-consultation');
+      let originalBtnHtml = '';
       if (btn) {
+        originalBtnHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
       }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       try {
         const guestTrialId = getOrInitGuestTrialId();
         const res = await fetch(`${getAuthBase()}/api/consultation/continue-paid`, {
           method: 'POST',
           headers: getAuthHeaders(),
+          signal: controller.signal,
           body: JSON.stringify({
             sessionId: activeConsultationSession.sessionId,
             paymentMethod: paymentMethod || 'REAL_WALLET',
             guestTrialId: guestTrialId
           })
         });
+        clearTimeout(timeoutId);
 
         if (res.ok) {
           const data = await res.json();
@@ -20822,7 +20829,7 @@
             if (typeof currentDemoWalletBalance === 'number') {
               currentDemoWalletBalance = data.newBalance;
               updateDemoWalletDisplay();
-      syncPromotionalBannerState();
+              syncPromotionalBannerState();
             }
           } else {
             if (typeof currentWalletBalance === 'number') {
@@ -20863,14 +20870,27 @@
           showToast("Insufficient balance. Please recharge your wallet to continue.", "error");
           openWalletModal();
         } else {
-          const errData = await res.json();
-          showToast(errData.message || "Failed to continue consultation.", "error");
+          let errMsg = "Failed to continue consultation.";
+          try {
+            const errData = await res.json();
+            if (errData && errData.message) errMsg = errData.message;
+          } catch (_) {}
+          showToast(errMsg, "error");
         }
       } catch (err) {
+        clearTimeout(timeoutId);
         console.error('[CONSULTATION] Continuation failed:', err);
-        showToast("Network error. Please try again.", "error");
+        if (err && err.name === 'AbortError') {
+          showToast("Request timed out. Please check your network and try again.", "error");
+        } else {
+          showToast("Network error. Please try again.", "error");
+        }
       } finally {
-        if (btn) btn.disabled = false;
+        if (btn) {
+          btn.disabled = false;
+          const isHi = (typeof activeChatLanguage !== 'undefined' && activeChatLanguage === 'hi') || (typeof currentLanguage !== 'undefined' && currentLanguage === 'hi');
+          btn.innerHTML = originalBtnHtml || `<i class="fa-solid fa-play"></i> ${isHi ? '₹15/मिनट पर जारी रखें' : 'Continue at ₹15/min'}`;
+        }
       }
     }
 
@@ -21413,12 +21433,85 @@
         };
       }
 
+      // Everything Overview (Test 5 / Screenshot 4: User asks "Everything")
+      const isEverything =
+        /\b(everything|all|sab|sabkuch|all of it|entire chart|complete life|tell me everything|everything about me)\b/i.test(
+          q,
+        ) ||
+        /^(everything|all|sab|sabkuch|सब|सबकुछ|सब कुछ)$/i.test(q.trim()) ||
+        /(?:सब कुछ|पूरा चार्ट|पूरा विवरण|सबकुछ)/.test(userQuery || '');
+
+      if (isEverything) {
+        if (!hasChart) {
+          const everythingMsg = isHi
+            ? `वैदिक ज्योतिषीय परामर्श मुख्य रूप से पांच प्रमुख जीवन क्षेत्रों को सम्मिलित करता है:\n\n1. **करियर एवं आजीविका (दशम भाव एवं D10 दशमांश):** व्यावसायिक दिशा, पदोन्नति का समय, नेतृत्व क्षमता और अनुकूल कार्यक्षेत्र।\n2. **संबंध एवं विवाह (सप्तम भाव एवं D9 नवमांश):** विवाह का समय, जीवनसाथी का स्वभाव एवं वैवाहिक सामंजस्य।\n3. **आर्थिक स्थिति एवं धन योग (द्वितीय एवं एकादश भाव):** आय के स्रोत, धन योग और दीर्घकालिक संपत्ति संचय।\n4. **ग्रहीय कालचक्र (विंशोत्तरी दशा एवं गोचर):** जीवन के महत्वपूर्ण अवसरों एवं परिवर्तनों का सटीक समय।\n5. **शास्त्रीय उपाय एवं साधना:** मानसिक शांति एवं ग्रहीय संतुलन हेतु सात्विक मन्त्र, ध्यान और जीवनशैली।\n\nआपकी व्यक्तिगत पत्रिका के आधार पर इन सभी क्षेत्रों का सटीक विश्लेषण करने के लिए, मुझे आपके जन्म की तिथि, सही समय और जन्म स्थान की आवश्यकता होगी। यदि आप चाहें तो इन्हें साझा कर सकते हैं, अथवा आप जिस क्षेत्र पर पहले बात करना चाहते हैं, बता सकते हैं!`
+            : `Vedic astrology consultations generally cover five main areas:\n\n1. **Career & Vocation (10th House & D10):** Professional trajectory, promotion timing, leadership authority, and suitable business or service paths.\n2. **Relationships & Marriage (7th House & D9):** Partnership timing, marital compatibility, and relationship harmony.\n3. **Wealth & Financial Stability (2nd & 11th Houses):** Dhana Yogas, earning potential, and long-term asset accumulation.\n4. **Planetary Periods & Timing (Vimshottari Dasha & Transits):** When significant milestones, opportunities, or tests are primed to unfold.\n5. **Remedial Guidance:** Sattvic practices, mantras, and lifestyle alignments to navigate challenging periods.\n\nTo examine all of these areas specifically for your personal chart, I'll need your complete birth details (date, exact time, and city of birth). You can share them whenever you're ready, or tell me which of these areas you'd like to begin with!`;
+          return {
+            intent: 'everything_overview',
+            message: everythingMsg,
+            chartEvidence: [],
+            relatedInsights: [],
+            suggestedQuestions: isHi
+              ? [
+                  "मैं अपना जन्म विवरण देना चाहता हूँ",
+                  "करियर के बारे में पहले बताएं",
+                  "विवाह और संबंधों पर चर्चा करें",
+                  "मेरी कुंडली के अनुसार आर्थिक योग क्या हैं?",
+                ]
+              : [
+                  "I want to provide my birth details",
+                  "Tell me about my career first",
+                  "Let's discuss relationships & marriage",
+                  "What are my financial prospects?",
+                ],
+            bilingual_summary: {
+              en: "Presented the 5 core consultation pillars and prompted for birth coordinates.",
+              hi: "परामर्श के 5 मुख्य स्तंभ प्रस्तुत किए तथा जन्म विवरण प्रदान करने का अनुरोध किया।",
+            },
+            remedyCard: null,
+            status: 'completed'
+          };
+        } else {
+          const lagnaStr = currentCalculatedChart.lagnaSign || 'Aries';
+          const moonStr = currentCalculatedChart.moonSign || 'Aries';
+          const everythingChartMsg = isHi
+            ? `### आपकी जन्म पत्रिका का समग्र विश्लेषण\n\n#### 1. स्वभाव एवं मनःस्थिति (लग्न: ${lagnaStr}, चंद्र: ${moonStr})\nआपका लग्न व्यक्तित्व, शारीरिक ऊर्जा और जीवन के प्रति दृष्टिकोण को निर्धारित करता है, जबकि चंद्र मन की स्थिरता और भावनात्मक प्रवृत्तियों का संचालन करता है।\n\n#### 2. कर्म एवं आजीविका (दशम भाव)\nदशम भाव एवं दशमेश की स्थिति यह दर्शाती है कि आपकी क्षमताएं रणनीतिक दायित्वों और स्वतंत्र निर्णय लेने में उत्कृष्ट परिणाम देंगी।\n\n#### 3. संबंध एवं साझेदारी (सप्तम भाव)\nसप्तम भाव आपसी समझ और परस्पर सम्मान पर बल देता है।\n\nआप इनमें से किस विषय का गहन अध्ययन करना चाहेंगे?`
+            : `### Comprehensive Natal Chart Synthesis\n\n#### 1. Core Temperament & Mind (Ascendant: ${lagnaStr}, Moon: ${moonStr})\nYour Ascendant reflects your vitality and outward approach, while the Moon indicates emotional processing and internal focus.\n\n#### 2. Vocation & Career Axis (10th House)\nYour 10th house indicators highlight strategic focus and independence in decision-making.\n\n#### 3. Relationships & Harmony (7th House)\nThe 7th house underscores mutual respect and clear communication in long-term partnerships.\n\nWhich of these areas would you like to explore in depth?`;
+          return {
+            intent: 'everything_overview',
+            message: everythingChartMsg,
+            chartEvidence: [
+              `Ascendant: ${lagnaStr}`,
+              `Moon Sign: ${moonStr}`,
+            ],
+            relatedInsights: [],
+            suggestedQuestions: isHi
+              ? [
+                  "करियर के बारे में विस्तार से बताएं",
+                  "विवाह एवं वैवाहिक जीवन की स्थिति",
+                  "सक्रिय महादशा का क्या प्रभाव है?",
+                ]
+              : [
+                  "Deep dive into my career trajectory",
+                  "Analyze my relationship & marriage prospects",
+                  "What is my active Vimshottari Dasha period?",
+                ],
+            bilingual_summary: {
+              en: "Synthesized core pillars (Ascendant/Moon, Career, Relationships) from natal chart without repeated greeting.",
+              hi: "बिना पुनरावृत्ति अभिवादन के जन्म कुंडली के मुख्य स्तंभों (लग्न/चंद्र, कर्म, संबंध) का संश्लेषण प्रस्तुत किया।",
+            },
+            remedyCard: null,
+            status: 'completed'
+          };
+        }
+      }
+
       // Personal Introduction (Test B: Acknowledging name only, no chart claims)
       const nameMatch = q.match(/(?:i am|i'm|im|my name is|call me|this is|myself|it's|its)\s+([a-zA-Z]{2,30})/i) ||
         q.match(/\b([a-zA-Z]{2,20})\s+here\b/i) ||
-        (!isOutOfScope && /^[a-zA-Z]{2,25}$/i.test(q.trim()) && !/^(hi|hello|hey|pranam|namaste|future|career|marriage|wedding|wealth|money|remedy|help|yes|no)$/i.test(q.trim()) ? [null, q.trim()] : null) ||
+        (!isOutOfScope && !isEverything && /^[a-zA-Z]{2,25}$/i.test(q.trim()) && !/^(hi|hello|hey|pranam|namaste|future|career|marriage|wedding|wealth|money|remedy|help|yes|no|everything|all|sab|sabkuch|kuch)$/i.test(q.trim()) ? [null, q.trim()] : null) ||
         (userQuery || '').match(/(?:मेरा नाम|मैं हूँ|मुझे)\s+([^\s,।!?]{2,30})/);
-      const isPersonalIntro = !!nameMatch && !isOutOfScope && q.split(' ').length <= 10;
+      const isPersonalIntro = !!nameMatch && !isOutOfScope && !isEverything && q.split(' ').length <= 10;
 
       if (isPersonalIntro) {
         let rawName = nameMatch[1].trim();
@@ -21493,10 +21586,11 @@
 
       if (isProgressiveBirthData) {
         let progMsg = '';
+        const namePart = seekerName && seekerName !== 'Seeker' ? `, ${seekerName}` : '';
         if (isHi) {
-          progMsg = `### जन्म विवरण प्राप्ति एवं अग्रिम चरण\nमैंने आपकी जन्म तिथि का विवरण प्राप्त कर लिया है।\n\n#### समय एवं स्थान क्यों आवश्यक हैं?\nवैदिक ज्योतिष में **लग्न (Ascendant)** प्रत्येक 2 घंटे में राशि बदलता है, और **नक्षत्र चरण (Pada)** कुछ ही मिनटों के अंतराल पर परिवर्तित हो जाते हैं। सटीक भाव स्थिति एवं विंशोत्तरी महादशा गणना हेतु निम्नलिखित विवरण आवश्यक हैं:\n\n1. **जन्म समय (Time of Birth):** जैसे 02:30 PM अथवा 14:30\n2. **जन्म स्थान / नगर (City/Place of Birth):** जैसे नई दिल्ली, मुम्बई, जयपुर आदि।\n\n👉 **कृपया अपना जन्म समय और नगर यहाँ चैट में बताएं**, और मैं तुरंत आपकी जन्म कुंडली की गणना करके इस परामर्श को व्यक्तिगत बना दूँगा!`;
+          progMsg = `धन्यवाद! मुझे आपकी जन्म तिथि प्राप्त हो गई है। आपके लग्न और भावों की सटीक गणना हेतु, मुझे आपके जन्म का समय एवं जन्म स्थान की भी आवश्यकता होगी। क्या आप इन्हें जानते हैं?`;
         } else {
-          progMsg = `### Birth Details Received & Next Step\nI have acknowledged your date of birth!\n\n#### Why Exact Time and City Are Essential\nIn classical Parashari Jyotish, the **Lagna (Ascendant)** shifts signs every ~2 hours, and sensitive **Nakshatra Padas** change within minutes. To accurately establish your 12 houses and precise Vimshottari Dasha sequence, we require:\n\n1. **Time of Birth (TOB):** e.g., 02:30 PM or 14:30\n2. **Place / City of Birth (POB):** e.g., New Delhi, Mumbai, Bengaluru, etc.\n\n👉 **Please share your birth time and city right here in chat**, and I will calculate and link your Janam Kundli immediately!`;
+          progMsg = `Thanks${namePart}. I have your birth date. To calculate your Ascendant and houses accurately, I'll also need your birth time and birthplace. Do you know them?`;
         }
         return {
           intent: 'progressive_birth_data',
@@ -21506,17 +21600,17 @@
           suggestedQuestions: isHi ? [
             "मेरा जन्म दोपहर 2:30 बजे दिल्ली में हुआ था",
             "मुझे सही जन्म समय ज्ञात नहीं है",
-            "यदि केवल जन्म तिथि पता हो तो क्या करें?",
+            "सटीक समय और स्थान क्यों आवश्यक हैं?",
             "लग्न के लिए जन्म समय क्यों आवश्यक है?"
           ] : [
             "I was born at 02:30 PM in New Delhi",
             "I do not know my exact birth time",
-            "What if I only know my birth date?",
+            "Why are exact time and birthplace needed?",
             "Explain why birth time is needed for Lagna"
           ],
           bilingual_summary: {
-            en: "Acknowledged birth date and explained why time and city of birth are required to calculate Lagna and Dasha.",
-            hi: "जन्म तिथि स्वीकार की और लग्न व दशा गणना हेतु जन्म समय एवं स्थान का महत्व समझाया।"
+            en: "Acknowledged birth date and prompted for birth time and city to calculate Ascendant and houses accurately.",
+            hi: "जन्म तिथि प्राप्त कर लग्न एवं भावों की सटीक गणना हेतु जन्म समय एवं स्थान का अनुरोध किया।"
           },
           remedyCard: null,
           status: 'completed'
@@ -23408,7 +23502,7 @@ Every insight in your consultation is directly derived from these mathematical c
           if (!/^(hi|hello|hey|pranam|namaste|greetings)\b/i.test(rawN)) {
             extractedName = rawN;
           }
-        } else if (/^[A-Za-z]{2,20}$/i.test(textToParse.trim()) && !/^(hi|hello|hey|pranam|namaste|future|career|marriage|wedding|wealth|money|remedy|help|yes|no)$/i.test(textToParse.trim())) {
+        } else if (/^[A-Za-z]{2,20}$/i.test(textToParse.trim()) && !/^(hi|hello|hey|pranam|namaste|future|career|marriage|wedding|wealth|money|remedy|help|yes|no|everything|all|sab|sabkuch|kuch)$/i.test(textToParse.trim())) {
           extractedName = textToParse.trim();
         }
         if (extractedName) {
@@ -23416,8 +23510,12 @@ Every insight in your consultation is directly derived from these mathematical c
           activeConsultationSession.seekerName = extractedName;
         }
 
-        // If Date is present, compute the Kundli immediately!
-        if (pendingProfile.dob && pendingProfile.dob.length === 10) {
+        // Only compute full Kundli if Date is present AND either Time or City is explicitly provided!
+        const hasExplicitTime = Boolean(pendingProfile.tob);
+        const hasExplicitCity = Boolean(pendingProfile.city || (pendingProfile.lat !== null && pendingProfile.lat !== undefined));
+        const canComputeKundli = Boolean(pendingProfile.dob && pendingProfile.dob.length === 10 && (hasExplicitTime || hasExplicitCity));
+
+        if (canComputeKundli) {
           const cleanDob = pendingProfile.dob;
           const cleanTob = pendingProfile.tob || '12:00';
           const resolvedLat = pendingProfile.lat !== null && pendingProfile.lat !== undefined ? pendingProfile.lat : 28.6139;
@@ -23488,6 +23586,12 @@ Every insight in your consultation is directly derived from these mathematical c
             }
           } catch (calcErr) {
             console.warn("[CHAT] In-chat Kundli calculation error:", calcErr);
+          }
+        } else if (pendingProfile.dob && pendingProfile.dob.length === 10) {
+          // Date-only received: save profile for progressive multi-turn completion without ungrounded chart fabrication
+          activeConsultationSession.pendingBirthProfile = pendingProfile;
+          if (extractedName && !activeConsultationSession.seekerName) {
+            activeConsultationSession.seekerName = extractedName;
           }
         }
       }

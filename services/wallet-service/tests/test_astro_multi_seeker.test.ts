@@ -24,13 +24,13 @@ test("Universal Dynamic Multi-Seeker & Astrological Accuracy Test Suite", async 
     // TEST 1: Arun Dev - Initial Natal Connection & Greeting
     // ---------------------------------------------------------
     await t.test(
-      "1. Arun Dev (19 Dec 2001): Computes Aquarius Lagna, Capricorn Moon, Age 25",
+      "1. Arun Dev (19 Dec 2001 12:00 New Delhi): Computes Aquarius Lagna, Capricorn Moon, Age 25",
       async () => {
         const res = await fetch(`${baseUrl}/api/ai-astrologer/ask`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            question: "Arun dev 19 December 2001",
+            question: "Arun dev 19 December 2001 12:00 New Delhi",
             astrologer_name: "Acharya Devratan",
             session_history: [],
             lang: "en",
@@ -264,7 +264,7 @@ test("Universal Dynamic Multi-Seeker & Astrological Accuracy Test Suite", async 
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            question: "Arun dev 19 December 2001",
+            question: "Arun dev 19 December 2001 12:00 New Delhi",
             dob: "2005-08-20T14:05:00", // client stale DOB overridden by question
             astrologer_name: "Acharya Devratan",
             session_history: [
